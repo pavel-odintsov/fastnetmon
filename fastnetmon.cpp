@@ -151,6 +151,7 @@ vector<subnet> our_networks;
 vector<subnet> whitelist_networks;
 
 // prototypes
+void pcap_main_loop(char* dev);
 void ulog_main_loop();
 void signal_handler(int signal_number);
 uint32_t convert_cidr_to_binary_netmask(int cidr);
