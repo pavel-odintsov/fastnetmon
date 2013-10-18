@@ -40,9 +40,6 @@
 // ULOG
 #include "libipulog.h"
 
-// Мы используем механизмы ULOG2
-#define ULOG2
-
 /*
 
 Custom pcap:
@@ -499,9 +496,11 @@ int main(int argc,char **argv) {
  
     time(&start_time);
     printf("I need few seconds for collecting data, please wait. Thank you!\n");
-  
+ 
+#ifdef PCAP 
     if (argc != 2) {
         fprintf(stdout, "Usage: %s \"eth0\" or \"any\"\n", argv[0]);
+
         cout<< "We must automatically select interface"<<endl;
         /* Now get a device */
         dev = pcap_lookupdev(errbuf);
@@ -516,19 +515,19 @@ int main(int argc,char **argv) {
     } else { 
         dev = argv[1];
     }
+#endif
 
     // загружаем наши сети 
     load_our_networks_list();
- 
+
+#ifdef PCAP 
     /* open device for reading in promiscuous mode */
     int promisc = 1;
     int pcap_read_timeout = -1;
 
-
     bpf_u_int32 maskp; /* subnet mask */
     bpf_u_int32 netp;  /* ip */ 
 
-#ifdef PCAP
     cout<<"Start listening on "<<dev<<endl;
 
     /* Get the network address and mask */
@@ -617,8 +616,19 @@ int main(int argc,char **argv) {
 #ifdef PCAP 
     // пока деактивируем pcap, начинаем интегрировать ULOG
     pcap_loop(descr, -1, (pcap_handler)parse_packet, NULL);
+
+    /*  
+    Альтернативный парсер, пока не совсем корректно работает, так как возвращает NULL
+    const u_char* packetptr;
+    struct pcap_pkthdr packethdr;
+    while ( (packetptr = pcap_next(descr, &packethdr) ) != NULL) { 
+        parse_packet(NULL, &packethdr, packetptr);
+    } 
+    */ 
 #endif
 
+
+#ifdef ULOG2
     /* Size of the socket receive memory.  Should be at least the same size as the 'nlbufsiz' module loadtime parameter of ipt_ULOG.o If you have _big_ in-kernel queues, you may have to increase this number.  (
      * --qthreshold 100 * 1500 bytes/packet = 150kB  */
     int ULOGD_RMEM_DEFAULT = 131071;
@@ -683,16 +693,8 @@ int main(int argc,char **argv) {
     }
 
     free(libulog_buf);
-
-    /*
-    Альтернативный парсер, пока не совсем корректно работает, так как возвращает NULL
-    const u_char* packetptr;
-    struct pcap_pkthdr packethdr;
-    while ( (packetptr = pcap_next(descr, &packethdr) ) != NULL) { 
-        parse_packet(NULL, &packethdr, packetptr);
-    } 
-    */ 
-
+#endif
+    
     return 0; 
 }
 
