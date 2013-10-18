@@ -143,9 +143,6 @@ typedef pair<uint32_t, int> pair_of_map_elements;
 // стандартно у нас смещение для типа DLT_EN10MB, Ethernet
 int DATA_SHIFT_VALUE = 14;
 
-// Кого уведомляем в случае атаки 
-string email_notify = "odintsov@fastvps.ru,hohryakov@fastvps.ru,ziltsov@fastvps.ee";
-
 typedef pair<uint32_t, uint32_t> subnet;
 vector<subnet> our_networks;
 vector<subnet> whitelist_networks;
@@ -240,7 +237,8 @@ void draw_table(map_for_counters& my_map_packets, map_for_counters& my_map_traff
                         if (ban_list.count(client_ip) == 0) {
                             ban_list[client_ip] = pps;
                             cout << "*BAN EXECUTED* ";
-                            exec("echo 'Please execute reglaments and notify client' | mail -s \"Myflower Guard: IP " + client_ip_as_string  +" was locked, " + pps_as_string  + " pps/" + data_direction + "\" " + email_notify);
+                
+                            exec("./notify_about_attack.sh " + client_ip_as_string + " " + data_direction + " " + pps_as_string);
                         } else {
                             cout << "*BAN EXECUTED* ";
                             // already in ban list
@@ -252,7 +250,7 @@ void draw_table(map_for_counters& my_map_packets, map_for_counters& my_map_traff
                 int bps = my_map_traffic[ (*ii).first ] / check_period;
                 // convert to mbps
                 int mbps = bps / 1024 / 1024 * 8;
-                cout << client_ip_as_string << "\t\t" << pps << " pps " << mbps << " Mbps" << endl;
+                cout << client_ip_as_string << "\t\t" << pps << " pps " << mbps << " mbps" << endl;
             }   
         }   
 }
