@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ENGINE=PCAP
+ENGINE=ULOG2
 # ENGINE=PCAP
 
 g++ libipulog.c -c -o libipulog.o -Wno-write-strings
