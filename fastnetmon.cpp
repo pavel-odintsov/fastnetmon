@@ -1,10 +1,12 @@
 /*
  TODO:
+  0) Сделать красиво высылку информации о деталях атаки
   1) ДОбавить среднюю нагрузку за 30 секунд/минуту/5 минут, хз как ее сделать :)
   2) Добавить проверку на существование конфигам с сетями
   3) Подумать на тему выноса всех параметров в конфиг
   4) Сделать трейсер 100-200 пакетов при бане
   5) Почты получателей тоже в в конфигурацию
+  6) 
 */
 
 
@@ -115,6 +117,7 @@ struct simple_packet {
 
 map<uint32_t,int> ban_list;
 map<uint32_t, vector<simple_packet> > ban_list_details;
+int ban_details_records_count = 10;
 
 time_t start_time;
 int DEBUG = 0;
@@ -443,7 +446,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
         total_count_of_outgoing_packets ++;
         total_count_of_outgoing_bytes += packet_length;
 
-        if  (ban_list_details.count(src_ip) > 0 && ban_list_details[src_ip].size() < 100) {
+        if  (ban_list_details.count(src_ip) > 0 && ban_list_details[src_ip].size() < ban_details_records_count) {
             ban_list_details[src_ip].push_back(current_packet);
         }
 
@@ -455,7 +458,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
         total_count_of_incoming_packets++;
         total_count_of_incoming_bytes += packet_length;
 
-        if  (ban_list_details.count(dst_ip) > 0 && ban_list_details[dst_ip].size() < 100) {
+        if  (ban_list_details.count(dst_ip) > 0 && ban_list_details[dst_ip].size() < ban_details_records_count) {
             ban_list_details[dst_ip].push_back(current_packet);
         }
 
@@ -515,8 +518,8 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
             for( map<uint32_t,int>::iterator ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
                 cout<<convert_ip_as_uint_to_string((*ii).first)<<"/"<<(*ii).second<<" pps"<<endl;
 
-                // странная проверка, но при мощной атаке набить 100 пакетов - очень легко
-                if (ban_list_details.count( (*ii).first  ) > 0 && ban_list_details[ (*ii).first ].size() == 100) {
+                // странная проверка, но при мощной атаке набить ban_details_records_count пакетов - очень легко
+                if (false && ban_list_details.count( (*ii).first  ) > 0 && ban_list_details[ (*ii).first ].size() == ban_details_records_count) {
 
                     for( vector<simple_packet>::iterator iii=ban_list_details[ (*ii).first ].begin(); iii!=ban_list_details[ (*ii).first ].end(); ++iii) {
                         print_simple_packet(*iii);
