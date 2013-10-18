@@ -4,10 +4,10 @@
   2) Добавить проверку на существование конфигам с сетями
   3) Подумать на тему выноса всех параметров в конфиг
   4) Сделать трейсер 100-200 пакетов при бане
+  5) Почты получателей тоже в в конфигурацию
 */
 
 
-#include <pcap.h> 
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <errno.h> 
@@ -39,6 +39,10 @@
 
 #ifdef ULOG2
 #include "libipulog.h"
+#endif
+
+#ifdef PCAP
+#include <pcap.h>
 #endif
 
 /*
@@ -85,8 +89,10 @@ string get_direction_name(direction direction_value) {
     }
 }
 
+#ifdef PCAP
 // делаем глобальной, так как нам нужно иметь к ней доступ из обработчика сигнала
 pcap_t* descr;
+#endif
 
 int total_count_of_incoming_packets = 0;
 int total_count_of_outgoing_packets = 0;
@@ -110,10 +116,10 @@ int check_period = 3;
 int pcap_buffer_size_mbytes = 10; 
 
 // Нас не интересуют запросы IP, у которых менее XXX  pps в секунду
-int threshhold = 2000;
+int threshold = 2000;
 
 // Баним IP, если он превысил данный порог
-int ban_threshhold = 10000;
+int ban_threshold = 10000;
 
 // data structure for storing data in Vector
 typedef pair<uint32_t, int> pair_of_map_elements;
@@ -137,11 +143,15 @@ typedef pair<uint32_t, int> pair_of_map_elements;
 // стандартно у нас смещение для типа DLT_EN10MB, Ethernet
 int DATA_SHIFT_VALUE = 14;
 
+// Кого уведомляем в случае атаки 
+string email_notify = "odintsov@fastvps.ru,hohryakov@fastvps.ru,ziltsov@fastvps.ee";
+
 typedef pair<uint32_t, uint32_t> subnet;
 vector<subnet> our_networks;
 vector<subnet> whitelist_networks;
 
 // prototypes
+void ulog_main_loop();
 void signal_handler(int signal_number);
 uint32_t convert_cidr_to_binary_netmask(int cidr);
 bool belongs_to_networks(vector<subnet> networks_list, uint32_t ip);
@@ -211,14 +221,14 @@ void draw_table(map_for_counters& my_map_packets, map_for_counters& my_map_traff
             uint32_t client_ip = (*ii).first;
             string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
 
-            if (pps >= threshhold) {
+            if (pps >= threshold) {
                 string pps_as_string;
                 std::stringstream out;
                 out << pps;
                 pps_as_string = out.str();
 
                 // еси клиента еще нету в бан листе
-                if (pps > ban_threshhold) {
+                if (pps > ban_threshold) {
                     if (belongs_to_networks(whitelist_networks, client_ip)) {
                         // IP в белом списке 
                     } else {
@@ -229,7 +239,7 @@ void draw_table(map_for_counters& my_map_packets, map_for_counters& my_map_traff
                         if (ban_list.count(client_ip) == 0) {
                             ban_list[client_ip] = pps;
                             cout << "*BAN EXECUTED* ";
-                            exec("echo 'Please execute reglaments and notify client' | mail -s \"Myflower Guard: IP " + client_ip_as_string  +" was locked, " + pps_as_string  + " pps/" + data_direction + "\" odintsov@fastvps.ru,hohryakov@fastvps.ru,ziltsov@fastvps.ee");
+                            exec("echo 'Please execute reglaments and notify client' | mail -s \"Myflower Guard: IP " + client_ip_as_string  +" was locked, " + pps_as_string  + " pps/" + data_direction + "\" " + email_notify);
                         } else {
                             cout << "*BAN EXECUTED* ";
                             // already in ban list
@@ -391,7 +401,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
         // clean up screen
         system("clear");
 
-        cout<<"Below you can see all clients with more than "<<threshhold<<" pps"<<endl<<endl;
+        cout<<"Below you can see all clients with more than "<<threshold<<" pps"<<endl<<endl;
 
         cout<<"Incoming Traffic"<<"\t"<<total_count_of_incoming_packets/check_period<<" pps "<<total_count_of_incoming_bytes/check_period/1024/1024*8<<" mbps"<<endl;
         draw_table(PacketsCounterIncoming, TrafficCounterIncoming, "incoming");
@@ -498,14 +508,15 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
 
 
 int main(int argc,char **argv) {
-    int i;
     char *dev; 
+    
+#ifdef PCAP
     char errbuf[PCAP_ERRBUF_SIZE]; 
     const u_char *packet; 
     struct pcap_pkthdr hdr;
     struct ether_header *eptr;    /* net/ethernet.h */
-    struct bpf_program fp;        /* hold compiled program */
- 
+#endif 
+
     time(&start_time);
     printf("I need few seconds for collecting data, please wait. Thank you!\n");
  
@@ -529,10 +540,26 @@ int main(int argc,char **argv) {
     }
 #endif
 
-    // загружаем наши сети 
+    // загружаем наши сети и whitelist 
     load_our_networks_list();
 
+    // устанавливаем обработчик CTRL+C
+    signal(SIGINT, signal_handler);
+
+#ifdef PCAP
+    pcap_main_loop(dev);
+#endif
+
+#ifdef ULOG2 
+    ulog_main_loop();
+#endif
+
+    return 0;
+}
+   
 #ifdef PCAP 
+void pcap_main_loop(char* dev) {
+    char errbuf[PCAP_ERRBUF_SIZE];
     /* open device for reading in promiscuous mode */
     int promisc = 1;
     int pcap_read_timeout = -1;
@@ -584,17 +611,10 @@ int main(int argc,char **argv) {
         exit(1);
     }
 
-    /*
-    descr = pcap_open_live(dev, BUFSIZ, promisc, pcap_read_timeout, errbuf); 
-    if(descr == NULL) {
-        printf("pcap_open_live(): %s\n", errbuf);
-        exit(1);
-    }
-    */ 
-
     // В общем-то можно фильтровать то, что нам падает от PCAP, но в моем случае это совершенно не требуется
     // тут было argv[1], но я убрал фильтрацию
     /* Now we'll compile the filter expression*/
+    // struct bpf_program fp;        /* hold compiled program */
     //if(pcap_compile(descr, &fp, "", 0, netp) == -1) {
     //    fprintf(stderr, "Error calling pcap_compile\n");
     //    exit(1);
@@ -607,11 +627,6 @@ int main(int argc,char **argv) {
     //    exit(1);
     //} 
  
-    /* loop for callback function */
-    // pcap_setnonblock(descr, 1, NULL);
-
-    signal(SIGINT, signal_handler);
-
     // man pcap-linktype
     int link_layer_header_type = pcap_datalink(descr);
 
@@ -623,9 +638,7 @@ int main(int argc,char **argv) {
         printf("We did not support link type %d\n", link_layer_header_type);
         exit(0);
     }
-#endif
    
-#ifdef PCAP 
     // пока деактивируем pcap, начинаем интегрировать ULOG
     pcap_loop(descr, -1, (pcap_handler)parse_packet, NULL);
 
@@ -637,18 +650,19 @@ int main(int argc,char **argv) {
         parse_packet(NULL, &packethdr, packetptr);
     } 
     */ 
+}
 #endif
 
-
 #ifdef ULOG2
+void ulog_main_loop() {
     /* Size of the socket receive memory.  Should be at least the same size as the 'nlbufsiz' module loadtime parameter of ipt_ULOG.o If you have _big_ in-kernel queues, you may have to increase this number.  (
      * --qthreshold 100 * 1500 bytes/packet = 150kB  */
     int ULOGD_RMEM_DEFAULT = 131071;
 
     // В загрузке модуля есть параметры: modprobe ipt_ULOG nlbufsiz=131072
     // Увеличиваем размер буфера в ядре, так как стандартно он всего-то 3712    
-    // Так задать нельзя, только при запуске модуля ядром
-    //exec("echo '131072' > /sys/module/ipt_ULOG/parameters/nlbufsiz");
+    // Текущий размер буфера смотреть:  /sys/module/ipt_ULOG/parameters/nlbufsiz
+    // В рантайме его указать нельзя, только при загрузке модуля ipt_ULOG
 
     /* Size of the receive buffer for the netlink socket.  Should be at least of RMEM_DEFAULT size.  */
     int ULOGD_BUFSIZE_DEFAULT = 150000;
@@ -698,19 +712,18 @@ int main(int argc,char **argv) {
 
         ulog_packet_msg_t *upkt;
         while ((upkt = ipulog_get_packet(libulog_h, libulog_buf, len))) {
-            // вот такой хитрый хак, так как данные начинаются без ethernet хидера
+            // вот такой хитрый хак, так как данные начинаются без ethernet хидера и нам не нужно выполнять никакого смещения
             DATA_SHIFT_VALUE = 0;
             parse_packet(NULL, NULL, upkt->payload);
         }
     }
 
     free(libulog_buf);
-#endif
-    
-    return 0; 
 }
+#endif
+ 
 
-// для корректной останвоки программы
+// для корректной остановки программы по CTRL+C
 void signal_handler(int signal_number) {
 
 #ifdef PCAP
