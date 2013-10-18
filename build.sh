@@ -1,4 +1,7 @@
 #!/bin/bash
 
+ENGINE=PCAP
+# ENGINE=PCAP
+
 g++ libipulog.c -c -o libipulog.o -Wno-write-strings
-g++ fastnetmon.cpp libipulog.o -lpcap -o fastnetmon
+g++ -D$ENGINE fastnetmon.cpp libipulog.o -lpcap -o fastnetmon
