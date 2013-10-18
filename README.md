@@ -30,7 +30,9 @@ Server configuration for PCAP:
  no configuration needed
 
 Server configuration for ULOG2:
- iptables -A FORWARD -i br0 -j ULOG --ulog-nlgroup 1 --ulog-cprange 32 --ulog-qthreshold 45
+```bash
+iptables -A FORWARD -i br0 -j ULOG --ulog-nlgroup 1 --ulog-cprange 32 --ulog-qthreshold 45
+```
 
 If you use PCAP, u can set monitored interface as command line parameter (u can set 'any' as inerface name but it work not so fine):
 ```bash
