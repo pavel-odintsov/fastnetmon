@@ -104,7 +104,17 @@ int total_count_of_outgoing_bytes = 0;
 int total_count_of_other_bytes = 0;
 int total_count_of_internal_bytes = 0;
 
+// структура для "легкого" хранения статистики соединений в памяти 
+struct simple_packet {
+    uint32_t src_ip;
+    uint32_t dst_ip;
+    uint16_t source_port;
+    uint16_t destination_port;
+    int      protocol;
+};
+
 map<uint32_t,int> ban_list;
+map<uint32_t, vector<simple_packet> > ban_list_details;
 
 time_t start_time;
 int DEBUG = 0;
@@ -236,10 +246,16 @@ void draw_table(map_for_counters& my_map_packets, map_for_counters& my_map_traff
 
                         if (ban_list.count(client_ip) == 0) {
                             ban_list[client_ip] = pps;
+                            ban_list_details[client_ip] = vector<simple_packet>();
                             cout << "*BAN EXECUTED* ";
                 
                             exec("./notify_about_attack.sh " + client_ip_as_string + " " + data_direction + " " + pps_as_string);
                         } else {
+                            // Есдли вдруг атака стала мощнее, то обновим ее предельную мощность в памяти (на почте так и остается старая цифра)
+                            if (ban_list[client_ip] < pps) {
+                                ban_list[client_ip] = pps;
+                            }
+
                             cout << "*BAN EXECUTED* ";
                             // already in ban list
                         }
@@ -303,8 +319,6 @@ bool load_our_networks_list() {
         uint32_t netmask_as_int = convert_cidr_to_binary_netmask(cidr);
 
         subnet current_subnet = std::make_pair(subnet_as_int, netmask_as_int);
-        //current_subnet.first  = subnet_as_int;
-        //current_subnet.second = netmask_as_int;
 
         our_networks.push_back(current_subnet);
     }
@@ -337,6 +351,32 @@ bool belongs_to_networks(vector<subnet> networks_list, uint32_t ip) {
     return false;
 }
 
+void print_simple_packet(struct simple_packet packet) {
+    string proto_name;
+    switch (packet.protocol) {
+        case IPPROTO_TCP:
+            proto_name = "tcp";
+            break;
+        case IPPROTO_UDP:
+            proto_name = "udp";
+            break;
+        case IPPROTO_ICMP:
+            proto_name = "icmp";
+            break;
+        default:
+            proto_name = "unknown";
+            break;
+    }
+     
+
+    cout
+        <<"source ip: "<<convert_ip_as_uint_to_string(packet.src_ip)
+        <<":"<<packet.source_port<<" "
+        <<"dst ip: "<<convert_ip_as_uint_to_string(packet.dst_ip)
+        <<":"<<packet.destination_port<<" "
+        <<"proto: "<<proto_name<<endl;
+}
+
 // в случае прямого вызова скрипта колбэка - нужно конст, напрямую в хендлере - конст не нужно
 void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *packetptr) {
     struct ip* iphdr;
@@ -358,7 +398,33 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     uint32_t src_ip = iphdr->ip_src.s_addr;
     uint32_t dst_ip = iphdr->ip_dst.s_addr;
 
-    //cout<<srcip_char<<" > "<<dstip_char<<endl;
+    uint16_t source_port = 0;
+    uint16_t destination_port = 0;
+
+    // Advance to the transport layer header then parse and display
+    // the fields based on the type of hearder: tcp, udp or icmp
+    packetptr += 4*iphdr->ip_hl;
+    switch (iphdr->ip_p) {
+        case IPPROTO_TCP: 
+            tcphdr = (struct tcphdr*)packetptr;
+            source_port = ntohs(tcphdr->source);
+            destination_port = ntohs(tcphdr->dest);
+            break;
+        case IPPROTO_UDP: break;
+            udphdr = (struct udphdr*)packetptr;
+            source_port = ntohs(udphdr->source);
+            destination_port = ntohs(udphdr->dest);
+        case IPPROTO_ICMP: break;
+    }
+
+    simple_packet current_packet;
+    current_packet.protocol = IPPROTO_TCP;
+    current_packet.source_port = source_port;
+    current_packet.destination_port = destination_port;
+    current_packet.src_ip = src_ip;
+    current_packet.dst_ip = dst_ip;
+
+    //print_simple_packet(current_packet);
 
     // The ntohs() function converts the unsigned short integer netshort from network byte order to host byte order
     packet_length = ntohs(iphdr->ip_len);  
@@ -377,6 +443,10 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
         total_count_of_outgoing_packets ++;
         total_count_of_outgoing_bytes += packet_length;
 
+        if  (ban_list_details.count(src_ip) > 0 && ban_list_details[src_ip].size() < 100) {
+            ban_list_details[src_ip].push_back(current_packet);
+        }
+
         PacketsCounterOutgoing[ src_ip ]++; 
         TrafficCounterOutgoing[ src_ip ] += packet_length;
     } else if (belongs_to_networks(our_networks, dst_ip)) {
@@ -384,6 +454,10 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     
         total_count_of_incoming_packets++;
         total_count_of_incoming_bytes += packet_length;
+
+        if  (ban_list_details.count(dst_ip) > 0 && ban_list_details[dst_ip].size() < 100) {
+            ban_list_details[dst_ip].push_back(current_packet);
+        }
 
         PacketsCounterIncoming[ dst_ip ]++;
         TrafficCounterIncoming[ dst_ip ] += packet_length;
@@ -440,6 +514,15 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
  
             for( map<uint32_t,int>::iterator ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
                 cout<<convert_ip_as_uint_to_string((*ii).first)<<"/"<<(*ii).second<<" pps"<<endl;
+
+                // странная проверка, но при мощной атаке набить 100 пакетов - очень легко
+                if (ban_list_details.count( (*ii).first  ) > 0 && ban_list_details[ (*ii).first ].size() == 100) {
+
+                    for( vector<simple_packet>::iterator iii=ban_list_details[ (*ii).first ].begin(); iii!=ban_list_details[ (*ii).first ].end(); ++iii) {
+                        print_simple_packet(*iii);
+                    }
+                }
+
             }
         }
         
@@ -463,45 +546,6 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
  
         total_count_of_incoming_packets = 0;
         total_count_of_outgoing_packets = 0;
-    }
-    
-    // Advance to the transport layer header then parse and display
-    // the fields based on the type of hearder: tcp, udp or icmp.
-    packetptr += 4*iphdr->ip_hl;
-    switch (iphdr->ip_p) {
-    case IPPROTO_TCP:
-        tcphdr = (struct tcphdr*)packetptr;
-        if (DEBUG) {
-            printf("TCP %s:%d -> %s:%d\n", srcip_char, ntohs(tcphdr->source), dstip_char, ntohs(tcphdr->dest));
-        }
-        //printf("%s\n", iphdrInfo);
-        /*
-        printf("%c%c%c%c%c%c Seq: 0x%x Ack: 0x%x Win: 0x%x TcpLen: %d\n",
-               (tcphdr->urg ? 'U' : '*'),
-               (tcphdr->ack ? 'A' : '*'),
-               (tcphdr->psh ? 'P' : '*'),
-               (tcphdr->rst ? 'R' : '*'),
-               (tcphdr->syn ? 'S' : '*'),
-               (tcphdr->fin ? 'F' : '*'),
-               ntohl(tcphdr->seq), ntohl(tcphdr->ack_seq),
-               ntohs(tcphdr->window), 4*tcphdr->doff);
-        */
-        break;
- 
-    case IPPROTO_UDP:
-        udphdr = (struct udphdr*)packetptr;
-        if (DEBUG) {
-            printf("UDP %s:%d -> %s:%d\n", srcip_char, ntohs(udphdr->source), dstip_char, ntohs(udphdr->dest));
-        }
-        //printf("%s\n", iphdrInfo);
-        break;
- 
-    case IPPROTO_ICMP:
-        icmphdr = (struct icmphdr*)packetptr;
-        if (DEBUG) {
-            printf("ICMP %s -> %s\n", srcip_char, dstip_char);
-        }
-        break;
     }
 }
 
