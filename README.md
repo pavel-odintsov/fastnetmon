@@ -36,3 +36,29 @@ If you use PCAP, u can set monitored interface as command line parameter (u can 
 ```bash
 ./fastnetmon br0
 ``` 
+
+Example program screen:
+```bash
+Below you can see all clients with more than 2000 pps
+
+Incoming Traffic    66167 pps 88 mbps
+xx.yy.zz.15         3053  pps 0  Mbps
+xx.yy.zz.248        2948  pps 0  Mbps
+xx.yy.zz.192        2643  pps 0  Mbps
+
+Outgoing traffic    91676 pps 728 mbps
+xx.yy.zz.15         4471  pps 40  Mbps
+xx.yy.zz.248        4468  pps 40  Mbps
+xx.yy.zz.192        3905  pps 32  Mbps
+xx.yy.zz.157        2923  pps 24  Mbps
+xx.yy.zz.169        2809  pps 24  Mbps
+xx.yy.zz            2380  pps 24  Mbps
+xx.yy.zz            2105  pps 16  Mbps
+
+Internal traffic    1 pps
+
+Other traffic       25 pps
+
+ULOG buffer errors: 2 (0%)
+ULOG packets received: 19647
+```
