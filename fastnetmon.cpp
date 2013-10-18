@@ -37,8 +37,9 @@
 // for boost split
 #include <boost/algorithm/string.hpp>
 
-// ULOG
+#ifdef ULOG2
 #include "libipulog.h"
+#endif
 
 /*
 
@@ -164,6 +165,7 @@ string convert_ip_as_uint_to_string(uint32_t ip_as_string) {
     return (string)inet_ntoa(ip_addr);
 }
 
+
 vector<string> exec(string cmd) {
     vector<string> output_list;
 
@@ -249,6 +251,16 @@ void draw_table(map_for_counters& my_map_packets, map_for_counters& my_map_traff
 // bring 'operator+=()' into scope
 using namespace boost::assign;
 
+bool file_exists(string path) {
+    FILE* check_file = fopen(path.c_str(), "r");
+    if (check_file) {
+        fclose(check_file);
+        return true;
+    } else {
+        return false;
+    }
+}
+
 bool load_our_networks_list() {
     // вносим в белый список, IP из этой сети мы не баним
     subnet white_subnet = std::make_pair(convert_ip_as_string_to_uint("159.253.17.0"), convert_cidr_to_binary_netmask(24));
@@ -256,18 +268,18 @@ bool load_our_networks_list() {
 
     vector<string> networks_list_as_string;
     // если мы на openvz ноде, то "свои" IP мы можем получить из спец-файла в /proc
-    FILE *detect_openvz_file = fopen("/proc/vz/version", "r");
     string our_networks_netmask;
 
-    if (detect_openvz_file) {
-        fclose(detect_openvz_file);
+    if (file_exists("/proc/vz/version")) {
         cout<<"We found OpenVZ"<<endl;
         // тут искусствено добавляем суффикс 32
         networks_list_as_string = exec("cat /proc/vz/veip | awk '{print $1\"/32\"}' |grep -vi version |grep -v ':'");
     } 
-    
-    vector<string> network_list_from_config = exec("cat /etc/networks_list");
-    networks_list_as_string.insert(networks_list_as_string.end(), network_list_from_config.begin(), network_list_from_config.end());
+
+    if (file_exists("/etc/networks_list")) { 
+        vector<string> network_list_from_config = exec("cat /etc/networks_list");
+        networks_list_as_string.insert(networks_list_as_string.end(), network_list_from_config.begin(), network_list_from_config.end());
+    }
 
     // если это ложь, то в моих функциях косяк
     assert( convert_ip_as_string_to_uint("255.255.255.0")   == convert_cidr_to_binary_netmask(24) );
