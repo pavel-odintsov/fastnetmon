@@ -44,18 +44,12 @@
 #define ULOG2
 
 /*
- Installing guide:
-   apt-get install -y libpcap-dev g++ gcc libboost-all-dev
-   yum install -y libpcap-devel gcc-c++ boost-devel boost
- Compile it:
-   g++ fastsniffer.c -lpcap
- Custom pcap:
+
+Custom pcap:
   Install PCAP from sources: http://www.stableit.ru/2013/10/lib-pcap-debian-squeeze.html
   g++ sniffer.cpp -lpcap -I/opt/libpcap140/include -L/opt/libpcap140/lib
   g++ sniffer.cpp -Linclude
   LD_LIBRARY_PATH=/opt/libpcap140/lib ./a.out
-   
-
  Pcap docs:    
    http://www.linuxforu.com/2011/02/capturing-packets-c-program-libpcap/
    http://vichargrave.com/develop-a-packet-sniffer-with-libpcap/ парсер отсюда
@@ -64,26 +58,6 @@
 using namespace std;
 // not a good idea
 //using namespace boost;
-
-enum ulog_keys {
-        ULOG_KEY_RAW_MAC = 0,
-        ULOG_KEY_RAW_PCKT,
-        ULOG_KEY_RAW_PCKTLEN,
-        ULOG_KEY_RAW_PCKTCOUNT,
-        ULOG_KEY_OOB_PREFIX,
-        ULOG_KEY_OOB_TIME_SEC,
-        ULOG_KEY_OOB_TIME_USEC,
-        ULOG_KEY_OOB_MARK,
-        ULOG_KEY_OOB_IN,
-        ULOG_KEY_OOB_OUT,
-        ULOG_KEY_OOB_HOOK,
-        ULOG_KEY_RAW_MAC_LEN,
-        ULOG_KEY_OOB_FAMILY,
-        ULOG_KEY_OOB_PROTOCOL,
-        ULOG_KEY_RAW_LABEL,
-};
-
-
 
 // main data structure for storing traffic data for all our IPs
 typedef map <uint32_t, int> map_for_counters;
