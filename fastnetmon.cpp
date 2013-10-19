@@ -373,11 +373,10 @@ void print_simple_packet(struct simple_packet packet) {
      
 
     cout
-        <<"source ip: "<<convert_ip_as_uint_to_string(packet.src_ip)
-        <<":"<<packet.source_port<<" "
-        <<"dst ip: "<<convert_ip_as_uint_to_string(packet.dst_ip)
-        <<":"<<packet.destination_port<<" "
-        <<"proto: "<<proto_name<<endl;
+        <<convert_ip_as_uint_to_string(packet.src_ip)<<":"<<packet.source_port
+        <<" > "
+        <<convert_ip_as_uint_to_string(packet.dst_ip)<<":"<<packet.destination_port
+        <<" protocol: "<<proto_name<<endl;
 }
 
 // в случае прямого вызова скрипта колбэка - нужно конст, напрямую в хендлере - конст не нужно
@@ -401,8 +400,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     uint32_t src_ip = iphdr->ip_src.s_addr;
     uint32_t dst_ip = iphdr->ip_dst.s_addr;
 
-    uint16_t source_port = 0;
-    uint16_t destination_port = 0;
+    simple_packet current_packet;
 
     // Advance to the transport layer header then parse and display
     // the fields based on the type of hearder: tcp, udp or icmp
@@ -410,20 +408,18 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     switch (iphdr->ip_p) {
         case IPPROTO_TCP: 
             tcphdr = (struct tcphdr*)packetptr;
-            source_port = ntohs(tcphdr->source);
-            destination_port = ntohs(tcphdr->dest);
+            current_packet.source_port = ntohs(tcphdr->source);
+            current_packet.destination_port = ntohs(tcphdr->dest);
             break;
-        case IPPROTO_UDP: break;
+        case IPPROTO_UDP:
             udphdr = (struct udphdr*)packetptr;
-            source_port = ntohs(udphdr->source);
-            destination_port = ntohs(udphdr->dest);
+            current_packet.source_port = ntohs(udphdr->source);
+            current_packet.destination_port = ntohs(udphdr->dest);
+            break;
         case IPPROTO_ICMP: break;
     }
 
-    simple_packet current_packet;
-    current_packet.protocol = IPPROTO_TCP;
-    current_packet.source_port = source_port;
-    current_packet.destination_port = destination_port;
+    current_packet.protocol = iphdr->ip_p;
     current_packet.src_ip = src_ip;
     current_packet.dst_ip = dst_ip;
 
@@ -519,7 +515,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
                 cout<<convert_ip_as_uint_to_string((*ii).first)<<"/"<<(*ii).second<<" pps"<<endl;
 
                 // странная проверка, но при мощной атаке набить ban_details_records_count пакетов - очень легко
-                if (false && ban_list_details.count( (*ii).first  ) > 0 && ban_list_details[ (*ii).first ].size() == ban_details_records_count) {
+                if (ban_list_details.count( (*ii).first  ) > 0 && ban_list_details[ (*ii).first ].size() == ban_details_records_count) {
 
                     for( vector<simple_packet>::iterator iii=ban_list_details[ (*ii).first ].begin(); iii!=ban_list_details[ (*ii).first ].end(); ++iii) {
                         print_simple_packet(*iii);
