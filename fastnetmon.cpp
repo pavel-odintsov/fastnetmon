@@ -2,6 +2,10 @@
  TODO:
   1) Добавить среднюю нагрузку за 30 секунд/минуту/5 минут, хз как ее сделать  -- не уверен, что это нужно 
   2) Подумать на тему выноса всех параметров в конфиг
+  3) Подумать как бы сделать лимитер еще по суммарному трафику
+  4) Если собрано с редисом, то падает по сегменатции при его отключении
+  5) Вынести уведомления о ддосах/обсчет данных трафика в отдельный тред
+  6) Не забыть сделать синхронизацию при очистке аккумуляторов 
 */
 
 
@@ -42,6 +46,9 @@
 #include <pcap.h>
 #endif
 
+#ifdef REDIS
+#include <hiredis/hiredis.h>
+#endif
 /*
 
 Custom pcap:
@@ -134,7 +141,7 @@ int pcap_buffer_size_mbytes = 10;
 int threshold = 2000;
 
 // Баним IP, если он превысил данный порог
-int ban_threshold = 10000;
+int ban_threshold = 20000;
 
 // data structure for storing data in Vector
 typedef pair<uint32_t, int> pair_of_map_elements;
@@ -188,6 +195,14 @@ string convert_ip_as_uint_to_string(uint32_t ip_as_string) {
     return (string)inet_ntoa(ip_addr);
 }
 
+// convert integer to string
+string convert_in_to_string(int value) {
+    string pps_as_string;
+    std::stringstream out;
+    out << value;
+
+    return out.str();
+}
 
 vector<string> exec(string cmd) {
     vector<string> output_list;
@@ -226,6 +241,31 @@ bool exec_with_stdin_params(string cmd, string params) {
         return false;
     }
 }
+
+#ifdef REDIS
+void update_traffic_in_redis(uint32_t ip, int traffic_bytes, direction my_direction) {
+    string ip_as_string = convert_ip_as_uint_to_string(ip);
+
+    redisReply *reply;
+
+    // делаем переменную static, чтобы не реиницилизровать соединение каждый раз заново
+    static redisContext *c = NULL;
+        
+    if (!c) {
+        struct timeval timeout = { 1, 500000 }; // 1.5 seconds
+        c = redisConnectWithTimeout((char*)"127.0.0.1", 6379, timeout);
+        if (c->err) {
+            printf("Connection error: %s\n", c->errstr);
+            return;
+        }
+    }
+  
+    string key_name = ip_as_string + "_" + get_direction_name(my_direction);
+    string redis_command = "INCRBY " + key_name + " " + convert_in_to_string(traffic_bytes);
+    reply = (redisReply *)redisCommand(c, redis_command.c_str());
+    freeReplyObject(reply); 
+}
+#endif
 
 void draw_table(map_for_counters& my_map_packets, map_for_counters& my_map_traffic, direction data_direction) {
         string data_direction_as_string = get_direction_name(data_direction); 
@@ -290,7 +330,10 @@ void draw_table(map_for_counters& my_map_packets, map_for_counters& my_map_traff
                 // convert to mbps
                 int mbps = bps / 1024 / 1024 * 8;
                 cout << client_ip_as_string << "\t\t" << pps << " pps " << mbps << " mbps" << endl;
-            }   
+            }
+
+            //cout<<"Start updating traffic in redis"<<endl;
+            update_traffic_in_redis( (*ii).first, my_map_traffic[ (*ii).first ], data_direction); 
         }   
 }
 
