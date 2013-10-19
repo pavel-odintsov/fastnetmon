@@ -1,12 +1,8 @@
 /*
  TODO:
-  0) Сделать красиво высылку информации о деталях атаки
-  1) ДОбавить среднюю нагрузку за 30 секунд/минуту/5 минут, хз как ее сделать :)
-  2) Добавить проверку на существование конфигам с сетями
+  1) Сделать красиво высылку информации о деталях атаки
+  2) ДОбавить среднюю нагрузку за 30 секунд/минуту/5 минут, хз как ее сделать :)
   3) Подумать на тему выноса всех параметров в конфиг
-  4) Сделать трейсер 100-200 пакетов при бане
-  5) Почты получателей тоже в в конфигурацию
-  6) 
 */
 
 
@@ -113,6 +109,7 @@ struct simple_packet {
     uint16_t source_port;
     uint16_t destination_port;
     int      protocol;
+    int      length;
 };
 
 map<uint32_t,int> ban_list;
@@ -354,7 +351,9 @@ bool belongs_to_networks(vector<subnet> networks_list, uint32_t ip) {
     return false;
 }
 
-void print_simple_packet(struct simple_packet packet) {
+string print_simple_packet(struct simple_packet packet) {
+    std::stringstream buffer;
+
     string proto_name;
     switch (packet.protocol) {
         case IPPROTO_TCP:
@@ -372,11 +371,14 @@ void print_simple_packet(struct simple_packet packet) {
     }
      
 
-    cout
+    buffer
         <<convert_ip_as_uint_to_string(packet.src_ip)<<":"<<packet.source_port
         <<" > "
         <<convert_ip_as_uint_to_string(packet.dst_ip)<<":"<<packet.destination_port
-        <<" protocol: "<<proto_name<<endl;
+        <<" protocol: "<<proto_name
+        <<" size: "<<packet.length<<" bytes"<<endl;
+
+    return buffer.str();
 }
 
 // в случае прямого вызова скрипта колбэка - нужно конст, напрямую в хендлере - конст не нужно
@@ -387,7 +389,6 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     struct udphdr* udphdr;
     char iphdrInfo[256], srcip_char[256], dstip_char[256];
     unsigned short id, seq;
-    int packet_length;
 
     // Skip the datalink layer header and get the IP header fields.
     packetptr += DATA_SHIFT_VALUE;
@@ -399,6 +400,9 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
 
     uint32_t src_ip = iphdr->ip_src.s_addr;
     uint32_t dst_ip = iphdr->ip_dst.s_addr;
+
+    // The ntohs() function converts the unsigned short integer netshort from network byte order to host byte order
+    int packet_length = ntohs(iphdr->ip_len); 
 
     simple_packet current_packet;
 
@@ -416,17 +420,19 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
             current_packet.source_port = ntohs(udphdr->source);
             current_packet.destination_port = ntohs(udphdr->dest);
             break;
-        case IPPROTO_ICMP: break;
+        case IPPROTO_ICMP:
+            // there are no port for ICMP
+            current_packet.source_port = 0;
+            current_packet.destination_port = 0;
+            break;
     }
 
     current_packet.protocol = iphdr->ip_p;
     current_packet.src_ip = src_ip;
     current_packet.dst_ip = dst_ip;
+    current_packet.length = packet_length;
 
-    //print_simple_packet(current_packet);
-
-    // The ntohs() function converts the unsigned short integer netshort from network byte order to host byte order
-    packet_length = ntohs(iphdr->ip_len);  
+    //count<<print_simple_packet(current_packet);
 
     direction packet_direction;
 
@@ -518,7 +524,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
                 if (ban_list_details.count( (*ii).first  ) > 0 && ban_list_details[ (*ii).first ].size() == ban_details_records_count) {
 
                     for( vector<simple_packet>::iterator iii=ban_list_details[ (*ii).first ].begin(); iii!=ban_list_details[ (*ii).first ].end(); ++iii) {
-                        print_simple_packet(*iii);
+                        cout<<print_simple_packet(*iii);
                     }
                 }
 
