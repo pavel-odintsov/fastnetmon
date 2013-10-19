@@ -1,8 +1,7 @@
 /*
  TODO:
-  1) Сделать красиво высылку информации о деталях атаки
-  2) ДОбавить среднюю нагрузку за 30 секунд/минуту/5 минут, хз как ее сделать :)
-  3) Подумать на тему выноса всех параметров в конфиг
+  1) Добавить среднюю нагрузку за 30 секунд/минуту/5 минут, хз как ее сделать :)
+  2) Подумать на тему выноса всех параметров в конфиг
 */
 
 
@@ -114,7 +113,8 @@ struct simple_packet {
 
 map<uint32_t,int> ban_list;
 map<uint32_t, vector<simple_packet> > ban_list_details;
-int ban_details_records_count = 10;
+// сколько строк мы высылаем в деталях атаки на почту
+int ban_details_records_count = 500;
 
 time_t start_time;
 int DEBUG = 0;
@@ -207,6 +207,19 @@ vector<string> exec(string cmd) {
 
     pclose(pipe);
     return output_list;
+}
+
+bool exec_with_stdin_params(string cmd, string params) {
+    FILE* pipe = popen(cmd.c_str(), "w");
+    if (!pipe) return false;
+
+    if (fputs(params.c_str(), pipe)) {
+        fclose(pipe);
+        return true;
+    } else {
+        fclose(pipe);
+        return false;
+    }
 }
 
 void draw_table(map_for_counters& my_map_packets, map_for_counters& my_map_traffic, string data_direction) {
@@ -376,7 +389,8 @@ string print_simple_packet(struct simple_packet packet) {
         <<" > "
         <<convert_ip_as_uint_to_string(packet.dst_ip)<<":"<<packet.destination_port
         <<" protocol: "<<proto_name
-        <<" size: "<<packet.length<<" bytes"<<endl;
+        <<" size: "<<packet.length<<" bytes"<<"\n";
+    // используется \n вместо endl, ибо иначе начинается хрень всякая при передаче данной строки команде на stdin
 
     return buffer.str();
 }
@@ -518,14 +532,25 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
             cout<<endl<<"Ban list:"<<endl;  
  
             for( map<uint32_t,int>::iterator ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
-                cout<<convert_ip_as_uint_to_string((*ii).first)<<"/"<<(*ii).second<<" pps"<<endl;
+                string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
+                string pps_as_string;
+                std::stringstream out;
+                out << (*ii).second;
+                pps_as_string = out.str();
+
+                cout<<client_ip_as_string<<"/"<<pps_as_string<<" pps"<<endl;
 
                 // странная проверка, но при мощной атаке набить ban_details_records_count пакетов - очень легко
                 if (ban_list_details.count( (*ii).first  ) > 0 && ban_list_details[ (*ii).first ].size() == ban_details_records_count) {
-
+                    string attack_details;
                     for( vector<simple_packet>::iterator iii=ban_list_details[ (*ii).first ].begin(); iii!=ban_list_details[ (*ii).first ].end(); ++iii) {
-                        cout<<print_simple_packet(*iii);
+                        attack_details += print_simple_packet( *iii );
                     }
+
+                    // отсылаем детали атаки по почте, к сожалению, без направления атаки только
+                    exec_with_stdin_params("./notify_about_attack.sh " + client_ip_as_string + " " + "-"  + " " + pps_as_string, attack_details );
+                    // удаляем ключ из деталей атаки, чтобы он не выводился снова и в него не собирался трафик
+                    ban_list_details.erase((*ii).first); 
                 }
 
             }

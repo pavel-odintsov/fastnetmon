@@ -4,7 +4,8 @@
 #$2 data_direction
 #$3 pps_as_string
 
-email_notify="odintsov@fastvps.ru,hohryakov@fastvps.ru,ziltsov@fastvps.ee"
+#email_notify="odintsov@fastvps.ru,hohryakov@fastvps.ru,ziltsov@fastvps.ee"
+email_notify="odintsov@fastvps.ru"
 
 # Далее возможны два варианта:
 # это первый запуск, при котором нужно банить IP (на stdin пусто)
