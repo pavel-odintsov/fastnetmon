@@ -1,5 +1,5 @@
 fastnetmon
-==========
+=/=========
 
 FastNetMon - High Performance Network Load Analyzer with PCAP/ULOG2 support
 
@@ -10,6 +10,9 @@ Install
    apt-get install -y git libpcap-dev g++ gcc libboost-all-dev
    # CentOS
    yum install -y git libpcap-devel gcc-c++ boost-devel boost
+
+   # for traffic counting
+   apt-get install -y libhiredis-dev
 
    git clone https://github.com/FastVPSEestiOu/fastnetmon.git
    cd fastnetmon
