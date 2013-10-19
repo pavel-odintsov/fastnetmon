@@ -1,6 +1,6 @@
 /*
  TODO:
-  1) Добавить среднюю нагрузку за 30 секунд/минуту/5 минут, хз как ее сделать :)
+  1) Добавить среднюю нагрузку за 30 секунд/минуту/5 минут, хз как ее сделать  -- не уверен, что это нужно 
   2) Подумать на тему выноса всех параметров в конфиг
 */
 
@@ -84,6 +84,8 @@ string get_direction_name(direction direction_value) {
         case OTHER:    direction_name = "other";    break;
         default:       direction_name = "unknown";  break;
     }
+
+    return direction_name;
 }
 
 #ifdef PCAP
@@ -111,7 +113,10 @@ struct simple_packet {
     int      length;
 };
 
-map<uint32_t,int> ban_list;
+typedef pair<int, direction> banlist_item;
+
+// В информации о ддосе мы храним силу атаки и ее направление
+map<uint32_t, banlist_item> ban_list;
 map<uint32_t, vector<simple_packet> > ban_list_details;
 // сколько строк мы высылаем в деталях атаки на почту
 int ban_details_records_count = 500;
@@ -222,7 +227,9 @@ bool exec_with_stdin_params(string cmd, string params) {
     }
 }
 
-void draw_table(map_for_counters& my_map_packets, map_for_counters& my_map_traffic, string data_direction) {
+void draw_table(map_for_counters& my_map_packets, map_for_counters& my_map_traffic, direction data_direction) {
+        string data_direction_as_string = get_direction_name(data_direction); 
+
         std::vector<pair_of_map_elements> vector_for_sort;
 
         /* Вобщем-то весь код ниже зависит лишь от входных векторов и порядка сортировки данных */
@@ -258,16 +265,19 @@ void draw_table(map_for_counters& my_map_packets, map_for_counters& my_map_traff
                         // add IP to BAN list
 
                         if (ban_list.count(client_ip) == 0) {
-                            ban_list[client_ip] = pps;
+                            ban_list[client_ip].first = pps;
+                            ban_list[client_ip].second = data_direction;
+
                             ban_list_details[client_ip] = vector<simple_packet>();
                             cout << "*BAN EXECUTED* ";
                 
-                            exec("./notify_about_attack.sh " + client_ip_as_string + " " + data_direction + " " + pps_as_string);
+                            exec("./notify_about_attack.sh " + client_ip_as_string + " " + data_direction_as_string + " " + pps_as_string);
                         } else {
                             // Есдли вдруг атака стала мощнее, то обновим ее предельную мощность в памяти (на почте так и остается старая цифра)
-                            if (ban_list[client_ip] < pps) {
-                                ban_list[client_ip] = pps;
-                            }
+                            // в итоге я решил, что это плохая идея, так как гугл тогда перестает схлопывать темы двух писем идущих подряд =)
+                            //if (ban_list[client_ip].first < pps) {
+                            //    ban_list[client_ip].first = pps;
+                            //}
 
                             cout << "*BAN EXECUTED* ";
                             // already in ban list
@@ -496,12 +506,12 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
         cout<<"Below you can see all clients with more than "<<threshold<<" pps"<<endl<<endl;
 
         cout<<"Incoming Traffic"<<"\t"<<total_count_of_incoming_packets/check_period<<" pps "<<total_count_of_incoming_bytes/check_period/1024/1024*8<<" mbps"<<endl;
-        draw_table(PacketsCounterIncoming, TrafficCounterIncoming, "incoming");
+        draw_table(PacketsCounterIncoming, TrafficCounterIncoming, INCOMING);
     
         cout<<endl; 
 
         cout<<"Outgoing traffic"<<"\t"<<total_count_of_outgoing_packets/check_period<<" pps "<<total_count_of_outgoing_bytes/check_period/1024/1024*8<<" mbps"<<endl;
-        draw_table(PacketsCounterOutgoing, TrafficCounterOutgoing, "outgoing"); 
+        draw_table(PacketsCounterOutgoing, TrafficCounterOutgoing, OUTGOING); 
 
         cout<<endl;
 
@@ -531,14 +541,16 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
         if (ban_list.size() > 0) {
             cout<<endl<<"Ban list:"<<endl;  
  
-            for( map<uint32_t,int>::iterator ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
+            for( map<uint32_t,banlist_item>::iterator ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
                 string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
                 string pps_as_string;
                 std::stringstream out;
-                out << (*ii).second;
+                out << ((*ii).second).first;
                 pps_as_string = out.str();
 
-                cout<<client_ip_as_string<<"/"<<pps_as_string<<" pps"<<endl;
+                string attack_direction = get_direction_name(((*ii).second).second);
+
+                cout<<client_ip_as_string<<"/"<<pps_as_string<<" pps "<<attack_direction<<endl;
 
                 // странная проверка, но при мощной атаке набить ban_details_records_count пакетов - очень легко
                 if (ban_list_details.count( (*ii).first  ) > 0 && ban_list_details[ (*ii).first ].size() == ban_details_records_count) {
@@ -548,7 +560,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
                     }
 
                     // отсылаем детали атаки по почте, к сожалению, без направления атаки только
-                    exec_with_stdin_params("./notify_about_attack.sh " + client_ip_as_string + " " + "-"  + " " + pps_as_string, attack_details );
+                    exec_with_stdin_params("./notify_about_attack.sh " + client_ip_as_string + " " + attack_direction  + " " + pps_as_string, attack_details );
                     // удаляем ключ из деталей атаки, чтобы он не выводился снова и в него не собирался трафик
                     ban_list_details.erase((*ii).first); 
                 }

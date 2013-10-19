@@ -4,8 +4,7 @@
 #$2 data_direction
 #$3 pps_as_string
 
-#email_notify="odintsov@fastvps.ru,hohryakov@fastvps.ru,ziltsov@fastvps.ee"
-email_notify="odintsov@fastvps.ru"
+email_notify="odintsov@fastvps.ru,hohryakov@fastvps.ru,ziltsov@fastvps.ee"
 
 # Далее возможны два варианта:
 # это первый запуск, при котором нужно банить IP (на stdin пусто)
@@ -13,7 +12,7 @@ email_notify="odintsov@fastvps.ru"
 
 # check stdin type
 if [ -t 0 ]; then
-    echo "Subject, please execute all related tasks :) You may (not always) got atack details in next letter" | mail -s "Myflower Guard: IP $1 blocked bacause $2 attack with power $3 pps" $email_notify;
+    echo "Subject, please execute all related tasks :) You may (not always) got atack details in next letter" | mail -s "Myflower Guard: IP $1 blocked because $2 attack with power $3 pps" $email_notify;
 else
-    cat | mail -s "Myflower Guard: IP $1 blocked bacause $2 attack with power $3 pps" $email_notify;
+    cat | mail -s "Myflower Guard: IP $1 blocked because $2 attack with power $3 pps" $email_notify;
 fi
