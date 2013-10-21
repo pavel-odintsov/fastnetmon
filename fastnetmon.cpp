@@ -35,7 +35,7 @@
 #include <utility>
 #include <sstream>
 
-//#include <thread>
+#include <thread>
 
 // #include <boost/thread.hpp> - выливается в падение компилятора
 // for boost split
@@ -646,7 +646,9 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
 void calculation_programm() {
     time_t current_time;
     time(&current_time);
-   
+ 
+    //sleep(5);
+ 
     // вынести в поток!!! 
     if ( difftime(current_time, start_time) >= check_period ) {
         // clean up screen
