@@ -5,6 +5,7 @@
   3) Подумать как бы сделать лимитер еще по суммарному трафику
   4) Вынести уведомления о ддосах/обсчет данных трафика в отдельный тред
   5) Не забыть сделать синхронизацию при очистке аккумуляторов 
+  6) Перенести список бана в структуру черного списка
 */
 
 /* Author: pavel.odintsov@gmail.com */
@@ -34,6 +35,9 @@
 #include <utility>
 #include <sstream>
 
+//#include <thread>
+
+// #include <boost/thread.hpp> - выливается в падение компилятора
 // for boost split
 #include <boost/algorithm/string.hpp>
 
@@ -61,6 +65,16 @@ using namespace std;
 #ifdef REDIS
 int redis_port = 6379;
 string redis_host = "127.0.0.1";
+#endif
+
+#ifdef ULOG2
+// номер netlink группы для прослушивания трафика
+int ULOGD_NLGROUP_DEFAULT = 1;
+/* Size of the socket receive memory.  Should be at least the same size as the 'nlbufsiz' module loadtime parameter of ipt_ULOG.o If you have _big_ in-kernel queues, you may have to increase this number.  (
+ * --qthreshold 100 * 1500 bytes/packet = 150kB  */
+int ULOGD_RMEM_DEFAULT = 131071;
+/* Size of the receive buffer for the netlink socket.  Should be at least of RMEM_DEFAULT size.  */
+int ULOGD_BUFSIZE_DEFAULT = 150000;
 #endif
 
 int DEBUG = 0;
@@ -175,6 +189,7 @@ vector<subnet> whitelist_networks;
 */
 
 // prototypes
+void calculation_programm();
 void pcap_main_loop(char* dev);
 void ulog_main_loop();
 void signal_handler(int signal_number);
@@ -623,9 +638,16 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
         total_count_of_other_bytes += packet_length;
     }
 
+    // вынести в отдельный триад
+    calculation_programm();
+}
+
+
+void calculation_programm() {
     time_t current_time;
     time(&current_time);
-    
+   
+    // вынести в поток!!! 
     if ( difftime(current_time, start_time) >= check_period ) {
         // clean up screen
         system("clear");
@@ -766,6 +788,9 @@ int main(int argc,char **argv) {
     // устанавливаем обработчик CTRL+C
     signal(SIGINT, signal_handler);
 
+    // запускаем поток-обсчета данных
+    //thread calculation_thread(calculation_programm);
+
 #ifdef PCAP
     pcap_main_loop(dev);
 #endif
@@ -875,18 +900,11 @@ void pcap_main_loop(char* dev) {
 
 #ifdef ULOG2
 void ulog_main_loop() {
-    /* Size of the socket receive memory.  Should be at least the same size as the 'nlbufsiz' module loadtime parameter of ipt_ULOG.o If you have _big_ in-kernel queues, you may have to increase this number.  (
-     * --qthreshold 100 * 1500 bytes/packet = 150kB  */
-    int ULOGD_RMEM_DEFAULT = 131071;
-
     // В загрузке модуля есть параметры: modprobe ipt_ULOG nlbufsiz=131072
     // Увеличиваем размер буфера в ядре, так как стандартно он всего-то 3712    
     // Текущий размер буфера смотреть:  /sys/module/ipt_ULOG/parameters/nlbufsiz
     // В рантайме его указать нельзя, только при загрузке модуля ipt_ULOG
 
-    /* Size of the receive buffer for the netlink socket.  Should be at least of RMEM_DEFAULT size.  */
-    int ULOGD_BUFSIZE_DEFAULT = 150000;
-    int ULOGD_NLGROUP_DEFAULT = 1;
     struct ipulog_handle *libulog_h;
     unsigned char *libulog_buf;
 
