@@ -20,4 +20,5 @@ fi
 # TODO вынести в опции подключаемые либы
 
 g++ libipulog.c -c -o libipulog.o -Wno-write-strings
+# -std=c++11 
 g++ -DREDIS -D$ENGINE fastnetmon.cpp libipulog.o $LIBS -o fastnetmon -g
