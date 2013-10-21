@@ -52,30 +52,61 @@
 using namespace std;
 
 /*
-Custom pcap:
-  Install PCAP from sources: http://www.stableit.ru/2013/10/lib-pcap-debian-squeeze.html
-  g++ sniffer.cpp -lpcap -I/opt/libpcap140/include -L/opt/libpcap140/lib
-  g++ sniffer.cpp -Linclude
-  LD_LIBRARY_PATH=/opt/libpcap140/lib ./a.out
  Pcap docs:    
    http://www.linuxforu.com/2011/02/capturing-packets-c-program-libpcap/
    http://vichargrave.com/develop-a-packet-sniffer-with-libpcap/ парсер отсюда
 */
 
-// main data structure for storing traffic data for all our IPs
-typedef map <uint32_t, int> map_for_counters;
-map_for_counters PacketsCounterIncoming;
-map_for_counters PacketsCounterOutgoing;
-
-map_for_counters TrafficCounterIncoming;
-map_for_counters TrafficCounterOutgoing;
-
-enum direction {INCOMING, OUTGOING, INTERNAL, OTHER};
-
+/* Блок конфигурации */
 #ifdef REDIS
 int redis_port = 6379;
 string redis_host = "127.0.0.1";
-static redisContext *redis_context = NULL;
+#endif
+
+int DEBUG = 0;
+
+// Период, через который мы пересчитываем pps/трафик
+int check_period = 3;
+
+// Увеличиваем буфер, чтобы минимизировать потери пакетов
+int pcap_buffer_size_mbytes = 10;
+
+// Нас не интересуют запросы IP, у которых менее XXX  pps в секунду
+int threshold = 2000;
+
+// Баним IP, если он превысил данный порог
+int ban_threshold = 20000;
+
+// сколько строк мы высылаем в деталях атаки на почту
+int ban_details_records_count = 500;
+
+/* конец блока конфигурации */
+
+/* Блок наших структур данных */
+
+enum direction {INCOMING, OUTGOING, INTERNAL, OTHER};
+// структура для "легкого" хранения статистики соединений в памяти 
+struct simple_packet {
+    uint32_t src_ip;
+    uint32_t dst_ip;
+    uint16_t source_port;
+    uint16_t destination_port;
+    int      protocol;
+    int      length;
+};
+
+// data structure for storing data in Vector
+typedef pair<uint32_t, int> pair_of_map_elements;
+typedef pair<int, direction> banlist_item;
+typedef pair<uint32_t, uint32_t> subnet;
+
+// main data structure for storing traffic data for all our IPs
+typedef map <uint32_t, int> map_for_counters;
+
+/* конец объявления наших структур данных */
+
+#ifdef REDIS
+redisContext *redis_context = NULL;
 #endif
 
 #ifdef ULOG2
@@ -86,8 +117,14 @@ int netlink_packets_counter = 0;
 
 #ifdef PCAP
 // делаем глобальной, так как нам нужно иметь к ней доступ из обработчика сигнала
-pcap_t* descr;
+pcap_t* descr = NULL;
 #endif
+
+map_for_counters PacketsCounterIncoming;
+map_for_counters PacketsCounterOutgoing;
+
+map_for_counters TrafficCounterIncoming;
+map_for_counters TrafficCounterOutgoing;
 
 int total_count_of_incoming_packets = 0;
 int total_count_of_outgoing_packets = 0;
@@ -99,41 +136,17 @@ int total_count_of_outgoing_bytes = 0;
 int total_count_of_other_bytes = 0;
 int total_count_of_internal_bytes = 0;
 
-// структура для "легкого" хранения статистики соединений в памяти 
-struct simple_packet {
-    uint32_t src_ip;
-    uint32_t dst_ip;
-    uint16_t source_port;
-    uint16_t destination_port;
-    int      protocol;
-    int      length;
-};
-
-typedef pair<int, direction> banlist_item;
-
 // В информации о ддосе мы храним силу атаки и ее направление
 map<uint32_t, banlist_item> ban_list;
 map<uint32_t, vector<simple_packet> > ban_list_details;
-// сколько строк мы высылаем в деталях атаки на почту
-int ban_details_records_count = 500;
 
 time_t start_time;
-int DEBUG = 0;
 
-// Период, через который мы пересчитываем pps/трафик
-int check_period = 3;
+// стандартно у нас смещение для типа DLT_EN10MB, Ethernet
+int DATA_SHIFT_VALUE = 14;
 
-// Увеличиваем буфер, чтобы минимизировать потери пакетов
-int pcap_buffer_size_mbytes = 10; 
-
-// Нас не интересуют запросы IP, у которых менее XXX  pps в секунду
-int threshold = 2000;
-
-// Баним IP, если он превысил данный порог
-int ban_threshold = 20000;
-
-// data structure for storing data in Vector
-typedef pair<uint32_t, int> pair_of_map_elements;
+vector<subnet> our_networks;
+vector<subnet> whitelist_networks;
 
 /* 
  Тут кроется огромный баго-фич:
@@ -150,13 +163,6 @@ typedef pair<uint32_t, int> pair_of_map_elements;
   https://github.com/the-tcpdump-group/libpcap/issues/163
 
 */
-
-// стандартно у нас смещение для типа DLT_EN10MB, Ethernet
-int DATA_SHIFT_VALUE = 14;
-
-typedef pair<uint32_t, uint32_t> subnet;
-vector<subnet> our_networks;
-vector<subnet> whitelist_networks;
 
 // prototypes
 void pcap_main_loop(char* dev);
