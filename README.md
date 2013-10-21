@@ -11,7 +11,7 @@ Install
    # CentOS
    yum install -y git libpcap-devel gcc-c++ boost-devel boost
 
-   # for traffic counting
+   # If you need traffic counting
    apt-get install -y libhiredis-dev
 
    git clone https://github.com/FastVPSEestiOu/fastnetmon.git
