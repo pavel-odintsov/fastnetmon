@@ -2,10 +2,7 @@
  TODO:
   1) Добавить среднюю нагрузку за 30 секунд/минуту/5 минут, хз как ее сделать  -- не уверен, что это нужно 
   2) Подумать на тему выноса всех параметров в конфиг
-  3) Подумать как бы сделать лимитер еще по суммарному трафику
-  4) Вынести уведомления о ддосах/обсчет данных трафика в отдельный тред
-  5) Не забыть сделать синхронизацию при очистке аккумуляторов 
-  6) Перенести список бана в структуру черного списка
+  3) Перенести список бана в структуру черного списка
 */
 
 /* Author: pavel.odintsov@gmail.com */
@@ -399,38 +396,23 @@ void draw_table(map_for_counters& my_map_packets, direction data_direction, bool
                 if (belongs_to_networks(whitelist_networks, client_ip)) {
                     // IP в белом списке 
                 } else {
- 
-                    cout<<"!!!ALARM!!! WE MUST BAN THIS IP!!! ";
-                    // add IP to BAN list
-
                     // если клиента еще нету в бан листе
                     if (ban_list.count(client_ip) == 0) {
                         string data_direction_as_string = get_direction_name(data_direction);
-
-                        ban_list[client_ip].first = pps;
-                        ban_list[client_ip].second = data_direction;
+                        ban_list[client_ip] = make_pair(pps, data_direction);
 
                         ban_list_details[client_ip] = vector<simple_packet>();
-                        cout << "*BAN EXECUTED* ";
                
                         string pps_as_string = convert_int_to_string(pps); 
                         exec("./notify_about_attack.sh " + client_ip_as_string + " " + data_direction_as_string + " " + pps_as_string);
-                    } else {
-                        // Есдли вдруг атака стала мощнее, то обновим ее предельную мощность в памяти (на почте так и остается старая цифра)
-                        // в итоге я решил, что это плохая идея, так как гугл тогда перестает схлопывать темы двух писем идущих подряд =)
-                        //if (ban_list[client_ip].first < pps) {
-                        //    ban_list[client_ip].first = pps;
-                        //}
-
-                        cout << "*BAN EXECUTED* ";
-                        // already in ban list
                     }
                 } 
             } 
 
             // Выводим первые max_ips_in_list элементов в списке, при нашей сортировке, будут выданы топ 10 самых грузящих клиентов
             if (element_number < max_ips_in_list) {
-                cout << client_ip_as_string << "\t\t" << pps << " pps " << mbps << " mbps" << endl;
+                string is_banned = ban_list.count(client_ip) > 0 ? " *banned* " : "";
+                cout << client_ip_as_string << "\t\t" << pps << " pps " << mbps << " mbps" << is_banned << endl;
             }  
     
             if (do_redis_update) {
@@ -742,7 +724,7 @@ void calculation_programm() {
                         attack_details += print_simple_packet( *iii );
                     }
 
-                    // отсылаем детали атаки по почте, к сожалению, без направления атаки только
+                    // отсылаем детали атаки (отпечаток пакетов) по почте
                     exec_with_stdin_params("./notify_about_attack.sh " + client_ip_as_string + " " + attack_direction  + " " + pps_as_string, attack_details );
                     // удаляем ключ из деталей атаки, чтобы он не выводился снова и в него не собирался трафик
                     ban_list_details.erase((*ii).first); 
