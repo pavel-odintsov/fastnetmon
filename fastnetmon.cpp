@@ -71,8 +71,11 @@ int check_period = 3;
 // Увеличиваем буфер, чтобы минимизировать потери пакетов
 int pcap_buffer_size_mbytes = 10;
 
-// Нас не интересуют запросы IP, у которых менее XXX  pps в секунду
-int threshold = 2000;
+// По какому критерию мы сортируем клиентов? Допустимые варианты: packets/bytes
+string sort_parameter = "packets";
+
+// сколько всего выводим IP адресов в списках?
+int max_ips_in_list = 7;
 
 // Баним IP, если он превысил данный порог
 int ban_threshold = 20000;
@@ -83,6 +86,9 @@ int ban_details_records_count = 500;
 /* конец блока конфигурации */
 
 /* Блок наших структур данных */
+
+// поле, по которому мы сортируем данные 
+enum sort_type { PACKETS, BYTES };
 
 enum direction {INCOMING, OUTGOING, INTERNAL, OTHER};
 // структура для "легкого" хранения статистики соединений в памяти 
@@ -95,13 +101,20 @@ struct simple_packet {
     int      length;
 };
 
-// data structure for storing data in Vector
-typedef pair<uint32_t, int> pair_of_map_elements;
 typedef pair<int, direction> banlist_item;
 typedef pair<uint32_t, uint32_t> subnet;
 
 // main data structure for storing traffic data for all our IPs
-typedef map <uint32_t, int> map_for_counters;
+typedef struct {
+    int in_bytes;
+    int out_bytes;
+    int in_packets;
+    int out_packets;
+} map_element;
+
+typedef map <uint32_t, map_element> map_for_counters;
+// data structure for storing data in Vector
+typedef pair<uint32_t, map_element> pair_of_map_elements;
 
 /* конец объявления наших структур данных */
 
@@ -120,11 +133,8 @@ int netlink_packets_counter = 0;
 pcap_t* descr = NULL;
 #endif
 
-map_for_counters PacketsCounterIncoming;
-map_for_counters PacketsCounterOutgoing;
-
-map_for_counters TrafficCounterIncoming;
-map_for_counters TrafficCounterOutgoing;
+// счетчик трафика наш
+map_for_counters DataCounter;
 
 int total_count_of_incoming_packets = 0;
 int total_count_of_outgoing_packets = 0;
@@ -172,8 +182,20 @@ uint32_t convert_cidr_to_binary_netmask(int cidr);
 bool belongs_to_networks(vector<subnet> networks_list, uint32_t ip);
 
 // Function for sorting Vector of pairs
-bool compare_function (pair_of_map_elements a, pair_of_map_elements b) {
-    return a.second > b.second;
+bool compare_function_by_in_packets (pair_of_map_elements a, pair_of_map_elements b) {
+    return a.second.in_packets > b.second.in_packets;
+}
+
+bool compare_function_by_out_packets (pair_of_map_elements a, pair_of_map_elements b) {
+    return a.second.out_packets > b.second.out_packets;
+}
+
+bool compare_function_by_out_bytes (pair_of_map_elements a, pair_of_map_elements b) {
+    return a.second.out_bytes > b.second.out_bytes;
+}
+
+bool compare_function_by_in_bytes(pair_of_map_elements a, pair_of_map_elements b) {
+    return a.second.in_bytes > b.second.in_bytes;
 }
 
 string get_direction_name(direction direction_value) {
@@ -298,72 +320,108 @@ void update_traffic_in_redis(uint32_t ip, int traffic_bytes, direction my_direct
 }
 #endif
 
-void draw_table(map_for_counters& my_map_packets, map_for_counters& my_map_traffic, direction data_direction) {
+void draw_table(map_for_counters& my_map_packets, direction data_direction, bool do_redis_update, sort_type sort_item) {
         std::vector<pair_of_map_elements> vector_for_sort;
 
         /* Вобщем-то весь код ниже зависит лишь от входных векторов и порядка сортировки данных */
-        for( map<uint32_t,int>::iterator ii=my_map_packets.begin(); ii!=my_map_packets.end(); ++ii) {
+        for( map_for_counters::iterator ii=my_map_packets.begin(); ii!=my_map_packets.end(); ++ii) {
             // кладем все наши элементы в массив для последующей сортировки при отображении
             pair_of_map_elements current_pair = make_pair((*ii).first, (*ii).second);
-
             vector_for_sort.push_back(current_pair);
         }   
-   
-        std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function);
+  
+        if (sort_item == PACKETS) {
 
+            // используем разные сортировочные функции 
+            if (data_direction == INCOMING) {
+                std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_in_packets);
+            } else if (data_direction == OUTGOING) {
+                std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_out_packets);
+            } else {
+                // unexpected
+            }
+
+        } else if (sort_item = BYTES) {
+            if (data_direction == INCOMING) {
+                std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_in_bytes);
+            } else if (data_direction == OUTGOING) {
+                std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_out_bytes);
+            }
+        } else {
+            assert("Unexpected bahaviour");
+        }
+
+        int element_number = 0;
         for( vector<pair_of_map_elements>::iterator ii=vector_for_sort.begin(); ii!=vector_for_sort.end(); ++ii) {
-            int pps = (*ii).second / check_period;
             uint32_t client_ip = (*ii).first;
             string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
 
-            if (pps >= threshold) {
-                string pps_as_string;
-                std::stringstream out;
-                out << pps;
-                pps_as_string = out.str();
+            int in_pps = (*ii).second.in_packets   / check_period;
+            int out_pps = (*ii).second.out_packets / check_period;
 
-                // еси клиента еще нету в бан листе
-                if (pps > ban_threshold) {
-                    if (belongs_to_networks(whitelist_networks, client_ip)) {
-                        // IP в белом списке 
-                    } else {
- 
-                        cout<<"!!!ALARM!!! WE MUST BAN THIS IP!!! ";
-                        // add IP to BAN list
+            int in_bps  = (*ii).second.in_bytes  / check_period;
+            int out_bps = (*ii).second.out_bytes / check_period; 
 
-                        if (ban_list.count(client_ip) == 0) {
-                            string data_direction_as_string = get_direction_name(data_direction);
+            int pps = 0;
+            int bps = 0;
 
-                            ban_list[client_ip].first = pps;
-                            ban_list[client_ip].second = data_direction;
-
-                            ban_list_details[client_ip] = vector<simple_packet>();
-                            cout << "*BAN EXECUTED* ";
-                
-                            exec("./notify_about_attack.sh " + client_ip_as_string + " " + data_direction_as_string + " " + pps_as_string);
-                        } else {
-                            // Есдли вдруг атака стала мощнее, то обновим ее предельную мощность в памяти (на почте так и остается старая цифра)
-                            // в итоге я решил, что это плохая идея, так как гугл тогда перестает схлопывать темы двух писем идущих подряд =)
-                            //if (ban_list[client_ip].first < pps) {
-                            //    ban_list[client_ip].first = pps;
-                            //}
-
-                            cout << "*BAN EXECUTED* ";
-                            // already in ban list
-                        }
-                    } 
-                }   
-
-                // determine attack speed
-                int bps = my_map_traffic[ (*ii).first ] / check_period;
-                // convert to mbps
-                int mbps = bps / 1024 / 1024 * 8;
-                cout << client_ip_as_string << "\t\t" << pps << " pps " << mbps << " mbps" << endl;
+            // делаем "полиморфную" полосу и ппс
+            if (data_direction == INCOMING) {
+                pps = in_pps; 
+                bps = in_bps;
+            } else if (data_direction == OUTGOING) {
+                pps = out_pps;
+                bps = out_bps;
             }
 
-            //cout<<"Start updating traffic in redis"<<endl;
-            update_traffic_in_redis( (*ii).first, my_map_traffic[ (*ii).first ], data_direction); 
-        }   
+            int mbps = int((double)bps / 1024 / 1024 * 8);
+
+            if (pps > ban_threshold) {
+                if (belongs_to_networks(whitelist_networks, client_ip)) {
+                    // IP в белом списке 
+                } else {
+ 
+                    cout<<"!!!ALARM!!! WE MUST BAN THIS IP!!! ";
+                    // add IP to BAN list
+
+                    // если клиента еще нету в бан листе
+                    if (ban_list.count(client_ip) == 0) {
+                        string data_direction_as_string = get_direction_name(data_direction);
+
+                        ban_list[client_ip].first = pps;
+                        ban_list[client_ip].second = data_direction;
+
+                        ban_list_details[client_ip] = vector<simple_packet>();
+                        cout << "*BAN EXECUTED* ";
+               
+                        string pps_as_string = convert_int_to_string(pps); 
+                        exec("./notify_about_attack.sh " + client_ip_as_string + " " + data_direction_as_string + " " + pps_as_string);
+                    } else {
+                        // Есдли вдруг атака стала мощнее, то обновим ее предельную мощность в памяти (на почте так и остается старая цифра)
+                        // в итоге я решил, что это плохая идея, так как гугл тогда перестает схлопывать темы двух писем идущих подряд =)
+                        //if (ban_list[client_ip].first < pps) {
+                        //    ban_list[client_ip].first = pps;
+                        //}
+
+                        cout << "*BAN EXECUTED* ";
+                        // already in ban list
+                    }
+                } 
+            } 
+
+            // Выводим первые max_ips_in_list элементов в списке, при нашей сортировке, будут выданы топ 10 самых грузящих клиентов
+            if (element_number < max_ips_in_list) {
+                cout << client_ip_as_string << "\t\t" << pps << " pps " << mbps << " mbps" << endl;
+            }  
+    
+            if (do_redis_update) {
+                //cout<<"Start updating traffic in redis"<<endl;
+                update_traffic_in_redis( (*ii).first, (*ii).second.in_packets, INCOMING);
+                update_traffic_in_redis( (*ii).first, (*ii).second.out_packets, OUTGOING);
+            }
+        
+            element_number++;
+        } 
 }
 
 bool file_exists(string path) {
@@ -539,24 +597,26 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
         total_count_of_outgoing_packets ++;
         total_count_of_outgoing_bytes += packet_length;
 
+        // собираем данные для деталей при бане клиента
         if  (ban_list_details.count(src_ip) > 0 && ban_list_details[src_ip].size() < ban_details_records_count) {
             ban_list_details[src_ip].push_back(current_packet);
         }
 
-        PacketsCounterOutgoing[ src_ip ]++; 
-        TrafficCounterOutgoing[ src_ip ] += packet_length;
+        DataCounter[ src_ip ].out_packets++; 
+        DataCounter[ src_ip ].out_bytes += packet_length;
     } else if (belongs_to_networks(our_networks, dst_ip)) {
         packet_direction = INCOMING;
     
         total_count_of_incoming_packets++;
         total_count_of_incoming_bytes += packet_length;
 
+        // собираемы данные для деталей при бане клиента
         if  (ban_list_details.count(dst_ip) > 0 && ban_list_details[dst_ip].size() < ban_details_records_count) {
             ban_list_details[dst_ip].push_back(current_packet);
         }
 
-        PacketsCounterIncoming[ dst_ip ]++;
-        TrafficCounterIncoming[ dst_ip ] += packet_length;
+        DataCounter[ dst_ip ].in_packets ++;
+        DataCounter[ dst_ip ].in_bytes += packet_length;
     } else {
         packet_direction = OTHER;
         total_count_of_other_packets ++;
@@ -570,15 +630,22 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
         // clean up screen
         system("clear");
 
-        cout<<"Below you can see all clients with more than "<<threshold<<" pps"<<endl<<endl;
+        sort_type sorter;
+        if (sort_parameter == "packets") {
+            sorter = PACKETS;
+        } else if (sort_parameter == "bytes") {
+            sorter = BYTES;
+        }
+
+        cout<<"FastNetMon v1.0 "<<"all IPs ordered by: "<<sort_parameter<<endl<<endl;
 
         cout<<"Incoming Traffic"<<"\t"<<total_count_of_incoming_packets/check_period<<" pps "<<total_count_of_incoming_bytes/check_period/1024/1024*8<<" mbps"<<endl;
-        draw_table(PacketsCounterIncoming, TrafficCounterIncoming, INCOMING);
+        draw_table(DataCounter, INCOMING, true, sorter);
     
         cout<<endl; 
 
         cout<<"Outgoing traffic"<<"\t"<<total_count_of_outgoing_packets/check_period<<" pps "<<total_count_of_outgoing_bytes/check_period/1024/1024*8<<" mbps"<<endl;
-        draw_table(PacketsCounterOutgoing, TrafficCounterOutgoing, OUTGOING); 
+        draw_table(DataCounter, OUTGOING, false, sorter);
 
         cout<<endl;
 
@@ -610,10 +677,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
  
             for( map<uint32_t,banlist_item>::iterator ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
                 string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
-                string pps_as_string;
-                std::stringstream out;
-                out << ((*ii).second).first;
-                pps_as_string = out.str();
+                string pps_as_string = convert_int_to_string(((*ii).second).first);
 
                 string attack_direction = get_direction_name(((*ii).second).second);
 
@@ -637,13 +701,9 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
         
         // переустанавливаем время запуска
         time(&start_time);
-        // зануляем счетчики пакетов
-        PacketsCounterIncoming.clear();
-        PacketsCounterOutgoing.clear();
-        TrafficCounterIncoming.clear();
-        TrafficCounterOutgoing.clear();
-              
-        /* вот здесь можно сбросить данные в Redis */ 
+        // зануляем счетчик пакетов
+        DataCounter.clear();
+
         total_count_of_incoming_bytes = 0;
         total_count_of_outgoing_bytes = 0;
 
