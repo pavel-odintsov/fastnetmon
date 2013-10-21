@@ -3,6 +3,10 @@ fastnetmon
 
 FastNetMon - High Performance Network Load Analyzer with PCAP/ULOG2 support
 
+Why you write it?
+
+It's reasonable question in the open source world. 
+
 Install
 
 ```bash
@@ -66,6 +70,30 @@ Other traffic       25 pps
 
 ULOG buffer errors: 2 (0%)
 ULOG packets received: 19647
+```
+
+You can use this script for irq balancing on heavy loaded networks:
+```bash
+#!/bin/bash
+
+# from http://habrahabr.ru/post/108240/
+ncpus=`grep -ciw ^processor /proc/cpuinfo`
+test "$ncpus" -gt 1 || exit 1
+
+n=0
+for irq in `cat /proc/interrupts | grep eth | awk '{print $1}' | sed s/\://g`
+do
+    f="/proc/irq/$irq/smp_affinity"
+    test -r "$f" || continue
+    cpu=$[$ncpus - ($n % $ncpus) - 1]
+    if [ $cpu -ge 0 ]
+            then
+                mask=`printf %x $[2 ** $cpu]`
+                echo "Assign SMP affinity: eth queue $n, irq $irq, cpu $cpu, mask 0x$mask"
+                echo "$mask" > "$f"
+                let n+=1
+    fi
+done
 ```
 
 Author: Pavel Odintsov pavel.odintsov at gmail.com
