@@ -35,9 +35,11 @@
 #include <utility>
 #include <sstream>
 
+// C++ 11
 #include <thread>
+#include <chrono>
+#include <mutex>
 
-// #include <boost/thread.hpp> - выливается в падение компилятора
 // for boost split
 #include <boost/algorithm/string.hpp>
 
@@ -131,6 +133,8 @@ typedef map <uint32_t, map_element> map_for_counters;
 typedef pair<uint32_t, map_element> pair_of_map_elements;
 
 /* конец объявления наших структур данных */
+
+std::mutex counters_mutex;
 
 #ifdef REDIS
 redisContext *redis_context = NULL;
@@ -603,54 +607,78 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     if (belongs_to_networks(our_networks, src_ip) && belongs_to_networks(our_networks, dst_ip)) {
         packet_direction = INTERNAL;
 
+
+        counters_mutex.lock();
         total_count_of_internal_packets ++;
         total_count_of_internal_bytes += packet_length;
+        counters_mutex.unlock();
 
     } else if (belongs_to_networks(our_networks, src_ip)) {
         packet_direction = OUTGOING;
 
+        counters_mutex.lock();
         total_count_of_outgoing_packets ++;
         total_count_of_outgoing_bytes += packet_length;
+        counters_mutex.unlock();
 
         // собираем данные для деталей при бане клиента
         if  (ban_list_details.count(src_ip) > 0 && ban_list_details[src_ip].size() < ban_details_records_count) {
             ban_list_details[src_ip].push_back(current_packet);
         }
 
+        counters_mutex.lock();
         DataCounter[ src_ip ].out_packets++; 
         DataCounter[ src_ip ].out_bytes += packet_length;
+        counters_mutex.unlock();
+    
     } else if (belongs_to_networks(our_networks, dst_ip)) {
         packet_direction = INCOMING;
     
+        counters_mutex.lock();
         total_count_of_incoming_packets++;
         total_count_of_incoming_bytes += packet_length;
+        counters_mutex.unlock();
 
         // собираемы данные для деталей при бане клиента
         if  (ban_list_details.count(dst_ip) > 0 && ban_list_details[dst_ip].size() < ban_details_records_count) {
             ban_list_details[dst_ip].push_back(current_packet);
         }
 
+        counters_mutex.lock();
         DataCounter[ dst_ip ].in_packets ++;
         DataCounter[ dst_ip ].in_bytes += packet_length;
+        counters_mutex.unlock();
     } else {
         packet_direction = OTHER;
+
+        counters_mutex.lock();
         total_count_of_other_packets ++;
         total_count_of_other_bytes += packet_length;
+        counters_mutex.unlock();
     }
 
-    // вынести в отдельный триад
+#ifdef THREADLESS
     calculation_programm();
+#endif
 }
 
+
+// void* void* data
+void calculation_thread() {
+    while (1) {
+        //sleep(check_period);
+        std::this_thread::sleep_for(std::chrono::seconds( check_period ));
+        calculation_programm();
+    }
+}
 
 void calculation_programm() {
     time_t current_time;
     time(&current_time);
- 
-    //sleep(5);
- 
-    // вынести в поток!!! 
+
+#ifdef THREADLESS 
     if ( difftime(current_time, start_time) >= check_period ) {
+#endif
         // clean up screen
         system("clear");
 
@@ -726,6 +754,8 @@ void calculation_programm() {
         // переустанавливаем время запуска
         time(&start_time);
         // зануляем счетчик пакетов
+
+        counters_mutex.lock();
         DataCounter.clear();
 
         total_count_of_incoming_bytes = 0;
@@ -739,7 +769,10 @@ void calculation_programm() {
  
         total_count_of_incoming_packets = 0;
         total_count_of_outgoing_packets = 0;
+        counters_mutex.unlock();
+#ifdef THREADLESS
     }
+#endif
 }
 
 
@@ -790,17 +823,21 @@ int main(int argc,char **argv) {
     // устанавливаем обработчик CTRL+C
     signal(SIGINT, signal_handler);
 
+#ifndef THREADLESS
     // запускаем поток-обсчета данных
-    //thread calculation_thread(calculation_programm);
+    thread calc_thread(calculation_thread);
+#endif
 
 #ifdef PCAP
     pcap_main_loop(dev);
 #endif
 
 #ifdef ULOG2 
-    ulog_main_loop();
+    thread ulog_thread(ulog_main_loop);
 #endif
-
+    ulog_thread.join();
+    calc_thread.join();
+    
     return 0;
 }
    
