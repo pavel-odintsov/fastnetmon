@@ -3,29 +3,29 @@
   1) Добавить среднюю нагрузку за 30 секунд/минуту/5 минут, хз как ее сделать  -- не уверен, что это нужно 
   2) Подумать на тему выноса всех параметров в конфиг
   3) Подумать как бы сделать лимитер еще по суммарному трафику
-  4) Если собрано с редисом, то падает по сегменатции при его отключении
-  5) Вынести уведомления о ддосах/обсчет данных трафика в отдельный тред
-  6) Не забыть сделать синхронизацию при очистке аккумуляторов 
+  4) Вынести уведомления о ддосах/обсчет данных трафика в отдельный тред
+  5) Не забыть сделать синхронизацию при очистке аккумуляторов 
 */
 
+/* Author: pavel.odintsov@gmail.com */
+/* License: GPLv2 */
 
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <errno.h> 
-#include <sys/socket.h> 
-#include <netinet/in.h> 
-#include <arpa/inet.h> 
-#include <netinet/if_ether.h>
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+#include <time.h>
+
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
 #include <netinet/ip_icmp.h>
+#include <netinet/if_ether.h>
+#include <netinet/in.h>
 
 #include <algorithm>
 #include <iostream>
@@ -33,7 +33,6 @@
 #include <vector>
 #include <utility>
 #include <sstream>
-#include <time.h>
 
 // for boost split
 #include <boost/algorithm/string.hpp>
@@ -49,8 +48,10 @@
 #ifdef REDIS
 #include <hiredis/hiredis.h>
 #endif
-/*
 
+using namespace std;
+
+/*
 Custom pcap:
   Install PCAP from sources: http://www.stableit.ru/2013/10/lib-pcap-debian-squeeze.html
   g++ sniffer.cpp -lpcap -I/opt/libpcap140/include -L/opt/libpcap140/lib
@@ -60,10 +61,6 @@ Custom pcap:
    http://www.linuxforu.com/2011/02/capturing-packets-c-program-libpcap/
    http://vichargrave.com/develop-a-packet-sniffer-with-libpcap/ парсер отсюда
 */
-
-using namespace std;
-// not a good idea
-//using namespace boost;
 
 // main data structure for storing traffic data for all our IPs
 typedef map <uint32_t, int> map_for_counters;
@@ -75,25 +72,17 @@ map_for_counters TrafficCounterOutgoing;
 
 enum direction {INCOMING, OUTGOING, INTERNAL, OTHER};
 
+#ifdef REDIS
+int redis_port = 6379;
+string redis_host = "127.0.0.1";
+static redisContext *redis_context = NULL;
+#endif
+
 #ifdef ULOG2
 // для подсчета числа ошибок буфера при работе по netlink
 int netlink_error_counter = 0;
 int netlink_packets_counter = 0;
 #endif
-
-string get_direction_name(direction direction_value) {
-    string direction_name; 
-
-    switch (direction_value) {
-        case INCOMING: direction_name = "incoming"; break;
-        case OUTGOING: direction_name = "outgoing"; break;
-        case INTERNAL: direction_name = "internal"; break;
-        case OTHER:    direction_name = "other";    break;
-        default:       direction_name = "unknown";  break;
-    }
-
-    return direction_name;
-}
 
 #ifdef PCAP
 // делаем глобальной, так как нам нужно иметь к ней доступ из обработчика сигнала
@@ -181,6 +170,20 @@ bool compare_function (pair_of_map_elements a, pair_of_map_elements b) {
     return a.second > b.second;
 }
 
+string get_direction_name(direction direction_value) {
+    string direction_name; 
+
+    switch (direction_value) {
+        case INCOMING: direction_name = "incoming"; break;
+        case OUTGOING: direction_name = "outgoing"; break;
+        case INTERNAL: direction_name = "internal"; break;
+        case OTHER:    direction_name = "other";    break;
+        default:       direction_name = "unknown";  break;
+    }   
+
+    return direction_name;
+}
+
 uint32_t convert_ip_as_string_to_uint(string ip) {
     struct in_addr ip_addr;
     inet_aton(ip.c_str(), &ip_addr);
@@ -196,7 +199,7 @@ string convert_ip_as_uint_to_string(uint32_t ip_as_string) {
 }
 
 // convert integer to string
-string convert_in_to_string(int value) {
+string convert_int_to_string(int value) {
     string pps_as_string;
     std::stringstream out;
     out << value;
@@ -243,41 +246,59 @@ bool exec_with_stdin_params(string cmd, string params) {
 }
 
 #ifdef REDIS
+bool redis_init_connection() {
+    struct timeval timeout = { 1, 500000 }; // 1.5 seconds
+    redis_context = redisConnectWithTimeout(redis_host.c_str(), redis_port, timeout);
+    if (redis_context->err) {
+        printf("Connection error: %s\n", redis_context->errstr);
+        return false;
+    }
+
+    // Нужно проверить соединение пингом, так как, по-моему, оно не првоеряет само подключение при коннекте
+    redisReply* reply = (redisReply*)redisCommand(redis_context, "PING");
+    if (reply) {
+        freeReplyObject(reply);
+    } else {
+        return false;
+    }
+
+    return true;
+}
+
 void update_traffic_in_redis(uint32_t ip, int traffic_bytes, direction my_direction) {
     string ip_as_string = convert_ip_as_uint_to_string(ip);
-
     redisReply *reply;
 
-    // делаем переменную static, чтобы не реиницилизровать соединение каждый раз заново
-    static redisContext *c = NULL;
-        
-    if (!c) {
-        struct timeval timeout = { 1, 500000 }; // 1.5 seconds
-        c = redisConnectWithTimeout((char*)"127.0.0.1", 6379, timeout);
-        if (c->err) {
-            printf("Connection error: %s\n", c->errstr);
-            return;
-        }
+    if (!redis_context) {
+        printf("Please initialize Redis handle");
+        return;
     }
-  
+
     string key_name = ip_as_string + "_" + get_direction_name(my_direction);
-    string redis_command = "INCRBY " + key_name + " " + convert_in_to_string(traffic_bytes);
-    reply = (redisReply *)redisCommand(c, redis_command.c_str());
-    freeReplyObject(reply); 
+    reply = (redisReply *)redisCommand(redis_context, "INCRBY %s %s", key_name.c_str(), convert_int_to_string(traffic_bytes).c_str());
+
+    // Только в случае, если мы обновили без ошибки
+    if (!reply) {
+        printf("Can't increment traffic in redis error_code: %d error_string: %s", redis_context->err, redis_context->errstr);
+   
+        // Такое может быть в случае перезапуска redis, нам надо попробовать решить это без падения программы 
+        if (redis_context->err == 1 or redis_context->err == 3) {
+            // Connection refused            
+            redis_init_connection();
+        }
+    } else {
+        freeReplyObject(reply); 
+    }
 }
 #endif
 
 void draw_table(map_for_counters& my_map_packets, map_for_counters& my_map_traffic, direction data_direction) {
-        string data_direction_as_string = get_direction_name(data_direction); 
-
         std::vector<pair_of_map_elements> vector_for_sort;
 
         /* Вобщем-то весь код ниже зависит лишь от входных векторов и порядка сортировки данных */
         for( map<uint32_t,int>::iterator ii=my_map_packets.begin(); ii!=my_map_packets.end(); ++ii) {
             // кладем все наши элементы в массив для последующей сортировки при отображении
-            pair_of_map_elements current_pair;
-            current_pair.first = (*ii).first;
-            current_pair.second = (*ii).second;
+            pair_of_map_elements current_pair = make_pair((*ii).first, (*ii).second);
 
             vector_for_sort.push_back(current_pair);
         }   
@@ -305,6 +326,8 @@ void draw_table(map_for_counters& my_map_packets, map_for_counters& my_map_traff
                         // add IP to BAN list
 
                         if (ban_list.count(client_ip) == 0) {
+                            string data_direction_as_string = get_direction_name(data_direction);
+
                             ban_list[client_ip].first = pps;
                             ban_list[client_ip].second = data_direction;
 
@@ -336,11 +359,6 @@ void draw_table(map_for_counters& my_map_packets, map_for_counters& my_map_traff
             update_traffic_in_redis( (*ii).first, my_map_traffic[ (*ii).first ], data_direction); 
         }   
 }
-
-#include <boost/assign/std/vector.hpp>
-
-// bring 'operator+=()' into scope
-using namespace boost::assign;
 
 bool file_exists(string path) {
     FILE* check_file = fopen(path.c_str(), "r");
@@ -668,6 +686,14 @@ int main(int argc,char **argv) {
     }
 #endif
 
+    // иницилизируем соединение с Redis
+#ifdef REDIS
+    if (!redis_init_connection()) {
+        printf("Can't establish connection to the redis\n");
+        exit(1);
+    }
+#endif
+
     // загружаем наши сети и whitelist 
     load_our_networks_list();
 
@@ -857,6 +883,10 @@ void signal_handler(int signal_number) {
 #ifdef PCAP
     // останавливаем PCAP цикл
     pcap_breakloop(descr);
+#endif
+
+#ifdef REDIS
+    redisFree(redis_context);
 #endif
 
     exit(1); 
