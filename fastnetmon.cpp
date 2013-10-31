@@ -358,7 +358,7 @@ void draw_table(map_for_counters& my_map_packets, direction data_direction, bool
                 // unexpected
             }
 
-        } else if (sort_item = BYTES) {
+        } else if (sort_item == BYTES) {
             if (data_direction == INCOMING) {
                 std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_in_bytes);
             } else if (data_direction == OUTGOING) {
@@ -415,12 +415,14 @@ void draw_table(map_for_counters& my_map_packets, direction data_direction, bool
                 string is_banned = ban_list.count(client_ip) > 0 ? " *banned* " : "";
                 cout << client_ip_as_string << "\t\t" << pps << " pps " << mbps << " mbps" << is_banned << endl;
             }  
-    
+   
+#ifdef REDIS 
             if (do_redis_update) {
                 //cout<<"Start updating traffic in redis"<<endl;
                 update_traffic_in_redis( (*ii).first, (*ii).second.in_packets, INCOMING);
                 update_traffic_in_redis( (*ii).first, (*ii).second.out_packets, OUTGOING);
             }
+#endif
         
             element_number++;
         } 
@@ -817,8 +819,9 @@ int main(int argc,char **argv) {
 
 #ifdef ULOG2 
     thread ulog_thread(ulog_main_loop);
-#endif
     ulog_thread.join();
+#endif
+
     calc_thread.join();
     
     return 0;
