@@ -29,7 +29,7 @@ ifeq ($(REDIS_SUPPORT), yes)
 endif
 
 ifeq ($(ENGINE), PCAP)
- LIBS = -lpcap
+ LIBS += -lpcap
 endif
 
 fastnetmon: libipulog.o fastnetmon.o
