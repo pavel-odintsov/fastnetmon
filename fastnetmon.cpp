@@ -4,6 +4,9 @@
   2) Подумать на тему выноса всех параметров в конфиг
   3) Перенести список бана в структуру черного списка
   4) Перейти на cap_admin при работе от штатного юзера
+  5) Оптимизировать belongs_to_network на префиксном дереве
+  6) Не создавайте больших списков айпи сетей! Будет тормозить!
+
 */
 
 /* Author: pavel.odintsov@gmail.com */
@@ -29,6 +32,7 @@
 #include <algorithm>
 #include <iostream>
 #include <map>
+//#include <unordered_map>
 #include <vector>
 #include <utility>
 #include <sstream>
