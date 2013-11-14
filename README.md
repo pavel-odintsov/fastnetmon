@@ -1,5 +1,5 @@
 fastnetmon
-=/=========
+===========
 
 FastNetMon - High Performance Network Load Analyzer with PCAP/ULOG2 support
 
@@ -11,9 +11,9 @@ Install
 
 ```bash
    # Debian
-   apt-get install -y git libpcap-dev g++ gcc libboost-all-dev
+   apt-get install -y git libpcap-dev g++ gcc libboost-all-dev make
    # CentOS
-   yum install -y git libpcap-devel gcc-c++ boost-devel boost
+   yum install -y git libpcap-devel gcc-c++ boost-devel boost make
 
    # If you need traffic counting
    apt-get install -y libhiredis-dev
@@ -22,11 +22,11 @@ Install
    cd fastnetmon
 ```
 
-Select backend, we use ULOG2 as default, if you need PCAP u must change variable ENGINE in build.sh to PCAP
+Select backend, we use ULOG2 as default, if you need PCAP u must change variable ENGINE in Makefile to PCAP
 
 Compile it:
 ```bash
-./build.sh
+make
 ```
 
 Start it:
