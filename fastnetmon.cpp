@@ -6,7 +6,6 @@
   4) Перейти на cap_admin при работе от штатного юзера
   5) Оптимизировать belongs_to_network на префиксном дереве
   6) Не создавайте больших списков сетей! Будет тормозить!
-
 */
 
 /* Author: pavel.odintsov@gmail.com */
@@ -32,7 +31,7 @@
 #include <algorithm>
 #include <iostream>
 #include <map>
-//#include <unordered_map>
+#include <unordered_map>
 #include <vector>
 #include <utility>
 #include <sstream>
@@ -130,7 +129,7 @@ typedef struct {
     int out_packets;
 } map_element;
 
-typedef map <uint32_t, map_element> map_for_counters;
+typedef unordered_map <uint32_t, map_element> map_for_counters;
 // data structure for storing data in Vector
 typedef pair<uint32_t, map_element> pair_of_map_elements;
 
@@ -174,6 +173,9 @@ time_t start_time;
 
 // стандартно у нас смещение для типа DLT_EN10MB, Ethernet
 int DATA_SHIFT_VALUE = 14;
+
+// начальный размер unordered_map для хранения данных
+int MAP_INITIAL_SIZE = 1024;
 
 vector<subnet> our_networks;
 vector<subnet> whitelist_networks;
@@ -446,6 +448,9 @@ bool load_our_networks_list() {
     // вносим в белый список, IP из этой сети мы не баним
     subnet white_subnet = std::make_pair(convert_ip_as_string_to_uint("159.253.17.0"), convert_cidr_to_binary_netmask(24));
     whitelist_networks.push_back(white_subnet);
+
+    // Так как мы используем неотсортированный map, то для оптимизации его работы стоит указать требуемый размер хэша
+    DataCounter.reserve(MAP_INITIAL_SIZE);
 
     vector<string> networks_list_as_string;
     // если мы на openvz ноде, то "свои" IP мы можем получить из спец-файла в /proc
