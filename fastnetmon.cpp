@@ -5,7 +5,7 @@
   3) Перенести список бана в структуру черного списка
   4) Перейти на cap_admin при работе от штатного юзера
   5) Оптимизировать belongs_to_network на префиксном дереве
-  6) Не создавайте больших списков айпи сетей! Будет тормозить!
+  6) Не создавайте больших списков сетей! Будет тормозить!
 
 */
 
@@ -200,7 +200,7 @@ void pcap_main_loop(char* dev);
 void ulog_main_loop();
 void signal_handler(int signal_number);
 uint32_t convert_cidr_to_binary_netmask(int cidr);
-bool belongs_to_networks(vector<subnet> networks_list, uint32_t ip);
+bool belongs_to_networks(vector<subnet>& networks_list, uint32_t ip);
 
 // Function for sorting Vector of pairs
 bool compare_function_by_in_packets (pair_of_map_elements a, pair_of_map_elements b) {
@@ -496,7 +496,7 @@ uint32_t convert_cidr_to_binary_netmask(int cidr) {
     return htonl(binary_netmask);
 }
 
-bool belongs_to_networks(vector<subnet> networks_list, uint32_t ip) {
+bool belongs_to_networks(vector<subnet>& networks_list, uint32_t ip) {
     for( vector<subnet>::iterator ii=networks_list.begin(); ii!=networks_list.end(); ++ii) {
 
         if ( (ip & (*ii).second) == ((*ii).first & (*ii).second) ) {
