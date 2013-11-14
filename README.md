@@ -10,14 +10,15 @@ It's reasonable question in the open source world.
 Install
 
 ```bash
-   # Debian
+   # Debian 7 Wheezy
    apt-get install -y git libpcap-dev g++ gcc libboost-all-dev make
-   # CentOS
+   # CentOS 6
    yum install -y git libpcap-devel gcc-c++ boost-devel boost make
 
    # If you need traffic counting
    apt-get install -y libhiredis-dev
 
+   cd /usr/src
    git clone https://github.com/FastVPSEestiOu/fastnetmon.git
    cd fastnetmon
 ```
