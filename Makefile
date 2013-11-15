@@ -6,8 +6,8 @@ ENGINE = ULOG2
 REDIS_SUPPORT = yes
 
 # Develoepr parameters
-ENABLE_DEBUG = no
-ENABLE_PROFILER = no
+ENABLE_DEBUG = yes
+ENABLE_PROFILER = yes
 
 # Code
 ifeq ($(ENABLE_DEBUG), yes)
