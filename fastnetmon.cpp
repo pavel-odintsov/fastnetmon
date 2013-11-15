@@ -6,6 +6,8 @@
   4) Перейти на cap_admin при работе от штатного юзера
   5) Оптимизировать belongs_to_network на префиксном дереве
   6) Не создавайте больших списков сетей! Будет тормозить!
+  7) http://hg.python.org/cpython/file/3fa1414ce505/Lib/heapq.py#l183 - поиск топ 10
+  8) libsparsehash-dev
 */
 
 /* Author: pavel.odintsov@gmail.com */
@@ -122,6 +124,7 @@ struct simple_packet {
 // структура для LPM алгоритма
 typedef struct leaf {
     bool bit;
+    bool end_of_path;
     struct leaf *right, *left;
 } tree_leaf;
 
@@ -136,9 +139,12 @@ typedef struct {
     int out_packets;
 } map_element;
 
-typedef map <uint32_t, map_element> map_for_counters;
+typedef unordered_map <uint32_t, map_element> map_for_counters;
 // data structure for storing data in Vector
 typedef pair<uint32_t, map_element> pair_of_map_elements;
+
+/// buffers for parser
+char iphdrInfo[256], srcip_char[256], dstip_char[256];
 
 /* конец объявления наших структур данных */
 
@@ -369,9 +375,9 @@ void draw_table(map_for_counters& my_map_packets, direction data_direction, bool
         /* Вобщем-то весь код ниже зависит лишь от входных векторов и порядка сортировки данных */
         for( map_for_counters::iterator ii=my_map_packets.begin(); ii!=my_map_packets.end(); ++ii) {
             // кладем все наши элементы в массив для последующей сортировки при отображении
-            pair_of_map_elements current_pair = make_pair((*ii).first, (*ii).second);
-            vector_for_sort.push_back(current_pair);
-        }   
+            //pair_of_map_elements current_pair = make_pair((*ii).first, (*ii).second);
+            vector_for_sort.push_back( make_pair((*ii).first, (*ii).second) );
+        } 
   
         if (sort_item == PACKETS) {
 
@@ -468,6 +474,7 @@ bool load_our_networks_list() {
     // вносим в белый список, IP из этой сети мы не баним
     //whitelist_networks = new tree_leaf;    
     //whitelist_networks->left = whitelist_networks->right = NULL;
+    // whitelist_networks.end_of_path = false;
 
     //insert_prefix_bitwise_tree(whitelist_networks, "159.253.17.0", 24);
     
@@ -475,7 +482,7 @@ bool load_our_networks_list() {
     whitelist_networks.push_back(white_subnet);
     
     // Так как мы используем неотсортированный map, то для оптимизации его работы стоит указать требуемый размер хэша
-    //DataCounter.reserve(MAP_INITIAL_SIZE);
+    DataCounter.reserve(MAP_INITIAL_SIZE);
 
     vector<string> networks_list_as_string;
     // если мы на openvz ноде, то "свои" IP мы можем получить из спец-файла в /proc
@@ -580,7 +587,6 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     struct icmphdr* icmphdr;
     struct tcphdr* tcphdr;
     struct udphdr* udphdr;
-    char iphdrInfo[256], srcip_char[256], dstip_char[256];
     unsigned short id, seq;
 
     // Skip the datalink layer header and get the IP header fields.
@@ -630,16 +636,16 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     direction packet_direction;
 
     // try to cache succesful lookups
-    //bool our_ip_is_destination = DataCounter.count(dst_ip) > 0;
-    //bool our_ip_is_source      = DataCounter.count(src_ip) > 0;
+    bool our_ip_is_destination = DataCounter.count(dst_ip) > 0;
+    bool our_ip_is_source      = DataCounter.count(src_ip) > 0;
 
-    //if (! our_ip_is_destination) {
-        bool our_ip_is_destination = belongs_to_networks(our_networks, dst_ip);
-    //}
+    if (! our_ip_is_destination) {
+        our_ip_is_destination = belongs_to_networks(our_networks, dst_ip);
+    }
 
-    //if (!our_ip_is_source) {
-        bool our_ip_is_source      = belongs_to_networks(our_networks, src_ip);
-    //}
+    if (!our_ip_is_source) {
+        our_ip_is_source      = belongs_to_networks(our_networks, src_ip);
+    }
 
     if (our_ip_is_source && our_ip_is_destination) {
         packet_direction = INTERNAL;
