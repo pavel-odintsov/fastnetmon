@@ -10,7 +10,7 @@ ENABLE_DEBUG = no
 ENABLE_PROFILER = no
 
 # Code
-ifeq ($(BUILD_FLAGS), yes)
+ifeq ($(ENABLE_DEBUG), yes)
  BUILD_FLAGS += -g
 endif
 
@@ -33,7 +33,7 @@ ifeq ($(ENGINE), PCAP)
 endif
 
 fastnetmon: libipulog.o fastnetmon.o
-	g++ libipulog.o fastnetmon.o -o fastnetmon $(LIBS) -g $(BUILD_FLAGS)
+	g++ libipulog.o fastnetmon.o -o fastnetmon $(LIBS) $(BUILD_FLAGS)
 libipulog.o: libipulog.c
 	g++ -c libipulog.c    -o libipulog.o -Wno-write-strings
 fastnetmon.o: fastnetmon.cpp

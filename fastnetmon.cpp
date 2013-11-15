@@ -118,6 +118,13 @@ struct simple_packet {
     int      length;
 };
 
+
+// структура для LPM алгоритма
+typedef struct leaf {
+    bool bit;
+    struct leaf *right, *left;
+} tree_leaf;
+
 typedef pair<int, direction> banlist_item;
 typedef pair<uint32_t, uint32_t> subnet;
 
@@ -129,7 +136,7 @@ typedef struct {
     int out_packets;
 } map_element;
 
-typedef unordered_map <uint32_t, map_element> map_for_counters;
+typedef map <uint32_t, map_element> map_for_counters;
 // data structure for storing data in Vector
 typedef pair<uint32_t, map_element> pair_of_map_elements;
 
@@ -175,10 +182,12 @@ time_t start_time;
 int DATA_SHIFT_VALUE = 14;
 
 // начальный размер unordered_map для хранения данных
-int MAP_INITIAL_SIZE = 1024;
+int MAP_INITIAL_SIZE = 2048;
 
-vector<subnet> our_networks;
-vector<subnet> whitelist_networks;
+//vector<subnet> our_networks;
+//vector<subnet> whitelist_networks;
+tree_leaf* our_networks;
+tree_leaf* whitelist_networks;
 
 /* 
  Тут кроется огромный баго-фич:
@@ -197,12 +206,14 @@ vector<subnet> whitelist_networks;
 */
 
 // prototypes
+void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask); 
+bool belongs_to_networks(tree_leaf* root, uint32_t ip);
+// bool belongs_to_networks(vector<subnet>& networks_list, uint32_t ip);
 void calculation_programm();
 void pcap_main_loop(char* dev);
 void ulog_main_loop();
 void signal_handler(int signal_number);
 uint32_t convert_cidr_to_binary_netmask(int cidr);
-bool belongs_to_networks(vector<subnet>& networks_list, uint32_t ip);
 
 // Function for sorting Vector of pairs
 bool compare_function_by_in_packets (pair_of_map_elements a, pair_of_map_elements b) {
@@ -446,11 +457,18 @@ bool file_exists(string path) {
 
 bool load_our_networks_list() {
     // вносим в белый список, IP из этой сети мы не баним
+    whitelist_networks = new tree_leaf;    
+    whitelist_networks->left = whitelist_networks->right = NULL;
+
+    insert_prefix_bitwise_tree(whitelist_networks, "159.253.17.0", 24);
+    /*
     subnet white_subnet = std::make_pair(convert_ip_as_string_to_uint("159.253.17.0"), convert_cidr_to_binary_netmask(24));
     whitelist_networks.push_back(white_subnet);
-
+    */
+    
+    
     // Так как мы используем неотсортированный map, то для оптимизации его работы стоит указать требуемый размер хэша
-    DataCounter.reserve(MAP_INITIAL_SIZE);
+    //DataCounter.reserve(MAP_INITIAL_SIZE);
 
     vector<string> networks_list_as_string;
     // если мы на openvz ноде, то "свои" IP мы можем получить из спец-файла в /proc
@@ -471,6 +489,11 @@ bool load_our_networks_list() {
     assert( convert_ip_as_string_to_uint("255.255.255.0")   == convert_cidr_to_binary_netmask(24) );
     assert( convert_ip_as_string_to_uint("255.255.255.255") == convert_cidr_to_binary_netmask(32) );
 
+    //our_networks.push_back(current_subnet); 
+
+    our_networks = new tree_leaf;
+    our_networks->left = our_networks->right = NULL;
+
     for( vector<string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) {
         vector<string> subnet_as_string; 
         split( subnet_as_string, *ii, boost::is_any_of("/"), boost::token_compress_on );
@@ -481,7 +504,8 @@ bool load_our_networks_list() {
 
         subnet current_subnet = std::make_pair(subnet_as_int, netmask_as_int);
 
-        our_networks.push_back(current_subnet);
+        //our_networks.push_back(current_subnet);
+        insert_prefix_bitwise_tree(our_networks, subnet_as_string[0], cidr);
     }
  
     return true;
@@ -501,6 +525,8 @@ uint32_t convert_cidr_to_binary_netmask(int cidr) {
     return htonl(binary_netmask);
 }
 
+/*
+So slow and so stupid
 bool belongs_to_networks(vector<subnet>& networks_list, uint32_t ip) {
     for( vector<subnet>::iterator ii=networks_list.begin(); ii!=networks_list.end(); ++ii) {
 
@@ -511,6 +537,7 @@ bool belongs_to_networks(vector<subnet>& networks_list, uint32_t ip) {
 
     return false;
 }
+*/
 
 string print_simple_packet(struct simple_packet packet) {
     std::stringstream buffer;
@@ -598,16 +625,27 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
 
     direction packet_direction;
 
-    if (belongs_to_networks(our_networks, src_ip) && belongs_to_networks(our_networks, dst_ip)) {
-        packet_direction = INTERNAL;
+    // try to cache succesful lookups
+    //bool our_ip_is_destination = DataCounter.count(dst_ip) > 0;
+    //bool our_ip_is_source      = DataCounter.count(src_ip) > 0;
 
+    //if (! our_ip_is_destination) {
+        bool our_ip_is_destination = belongs_to_networks(our_networks, dst_ip);
+    //}
+
+    //if (!our_ip_is_source) {
+        bool our_ip_is_source      = belongs_to_networks(our_networks, src_ip);
+    //}
+
+    if (our_ip_is_source && our_ip_is_destination) {
+        packet_direction = INTERNAL;
 
         counters_mutex.lock();
         total_count_of_internal_packets ++;
         total_count_of_internal_bytes += packet_length;
         counters_mutex.unlock();
 
-    } else if (belongs_to_networks(our_networks, src_ip)) {
+    } else if (our_ip_is_source) {
         packet_direction = OUTGOING;
 
         counters_mutex.lock();
@@ -625,7 +663,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
         DataCounter[ src_ip ].out_bytes += packet_length;
         counters_mutex.unlock();
     
-    } else if (belongs_to_networks(our_networks, dst_ip)) {
+    } else if (our_ip_is_destination) {
         packet_direction = INCOMING;
     
         counters_mutex.lock();
@@ -1010,4 +1048,139 @@ void signal_handler(int signal_number) {
     exit(1); 
 }
 
+void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask) {
+   uint32_t netmask_as_int = convert_ip_as_string_to_uint(subnet);
 
+    //std::cout<<std::bitset<32>(netmask_as_int)<<endl;
+
+    // ntogl: network byte order to host, htonl - наоборот
+    netmask_as_int = ntohl(netmask_as_int);
+
+    // intruduce temporary pointer
+    tree_leaf* temp_root = root;
+
+    // интерируем по значимым битам сети, остальные игнорируем, они нас не интересуют
+    for (int i= 31; i >= 32 - cidr_mask; i--) {
+        uint32_t result_bit = netmask_as_int & (1 << i);
+        bool bit = result_bit == 0 ? false : true;
+        //cout<<"Insert: "<<bit<<" from position "<<i<<endl;      
+ 
+        // условимся, что слева - нули, справа - единицы
+
+        // теперь индекс может быть, а может и отсутствовать, смотрим мы только дочерние листья корня, корень не трогаем
+        if (bit) {
+            // проверяем правое поддерево
+            if (temp_root->right != NULL)  {
+                // ок, элемент уже есть, просто переключаем указатель
+                temp_root = temp_root->right;
+            } else {
+                // элемента нету, его нужно создать
+                tree_leaf* new_leaf = new tree_leaf;
+                new_leaf->right = new_leaf->left = NULL;
+                new_leaf->bit = bit;
+
+                temp_root->right = new_leaf;
+
+                temp_root = new_leaf;
+            }    
+       
+        } else {
+            // проверим левое поддерево
+            if (temp_root->left != NULL)  { 
+                // ок, элемент уже есть, просто переключаем указатель на левый
+                temp_root = temp_root->left;
+            } else {
+                // элемента нету, его нужно создать
+                tree_leaf* new_leaf = new tree_leaf;
+                new_leaf->right = new_leaf->left = NULL;
+                new_leaf->bit = bit;
+    
+                temp_root->left = new_leaf;
+
+                temp_root = new_leaf;
+            } 
+        }
+    }
+
+    // #include <bitset>
+    // std::cout<<bitset<32>(netmask_as_int)<<endl;
+}
+
+bool belongs_to_networks(tree_leaf* root, uint32_t ip) {
+    // introduce temporary pointer
+    tree_leaf* temp_root = root;
+
+    // Blank tree or tree with only root is blank, we can't find nothing in it
+    if (temp_root == NULL or ( temp_root->left == NULL && temp_root->right == NULL) ) {
+        return false;
+    }
+
+    // convert to host byte order
+    ip = ntohl(ip);
+
+    int bits_matched = 0;
+    for (int i= 31; i >= 0; i--) {
+        uint32_t result_bit = ip & (1 << i);
+        bool bit = result_bit == 0 ? false : true;
+
+        // Текущий узел - терминальный
+        if ( (temp_root->left == NULL && temp_root->right == NULL)) {
+            if (bits_matched > 0) {
+                // если более дочерних элементов нету (узел терминальный!) и совпадение хотя бы с одним битом - мы нашли маску
+                return true;
+            } else {
+                // обход кончился и мы ничего не нашли
+                return false;
+            }
+        }
+
+        if (bit) {
+            // смотрим правое поддерево
+            if (temp_root->right != NULL) {
+                // идем далее
+                temp_root = temp_root->right;
+                bits_matched++;
+            } else {
+                // справа ничего нету, но может быть слева
+                if (temp_root->left != NULL) {
+                    return false;
+                } else {
+                    // рассмотрено выше
+                }
+            }
+        } else {
+            if (temp_root->left != NULL) {
+                // идем влево
+                temp_root = temp_root->left;
+                bits_matched++;
+            } else {
+                // слева ничего нету, но может быть спарва
+                if (temp_root->right != NULL) {
+                    return false;
+                } else {
+                    // рассмотрено выше
+                }
+            }  
+        }
+
+    }
+
+    // это повтор аналогичной проверки в начале цикла, но это требуется, так как мы можем пройти цикл и не налететь на вариант, что мы достигли терминала - оба потомка стали нулл
+    if ( (temp_root->left == NULL && temp_root->right == NULL)) {
+        if (bits_matched > 0) {
+            // если более дочерних элементов нету (узел терминальный!) и совпадение хотя бы с одним битом - мы нашли маску
+            //std::cout<<"Bits matched: "<<bits_matched<<endl;
+            return true;
+        } else {
+            // обход кончился и мы ничего не нашли
+            return false;
+        }
+    }
+
+    // This point must not achieved in any cases! 
+    return false; 
+}
+
+void dump_ip_lookup_tree(tree_leaf* root) {
+
+}
