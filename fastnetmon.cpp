@@ -1,13 +1,13 @@
 /*
  TODO:
-  1) Добавить среднюю нагрузку за 30 секунд/минуту/5 минут, хз как ее сделать  -- не уверен, что это нужно 
-  2) Подумать на тему выноса всех параметров в конфиг
-  3) Перенести список бана в структуру черного списка
-  4) Перейти на cap_admin при работе от штатного юзера
-  5) Оптимизировать belongs_to_network на префиксном дереве
-  6) Не создавайте больших списков сетей! Будет тормозить!
+  1) Add network average load for 30 second/60 and 5 minutes
+  2) Migrate params to configuration
+  3) Migrate ban list to blacklist struct
+  4) Enable work as standard linux user with CAP Admin
+  5) Migrate belongs_to_network to prefix bitwise tree
+  6) Please do not create big network's list, it will be result to slooww ip lookup
   7) http://hg.python.org/cpython/file/3fa1414ce505/Lib/heapq.py#l183 - поиск топ 10
-  8) libsparsehash-dev
+  8) Try libsparsehash-dev
 */
 
 /* Author: pavel.odintsov@gmail.com */
@@ -33,7 +33,10 @@
 #include <algorithm>
 #include <iostream>
 #include <map>
-#include <unordered_map>
+
+// so buggy, http://www.stableit.ru/2013/11/unorderedmap-c11-debian-wheezy.html
+//#include <unordered_map>
+
 #include <vector>
 #include <utility>
 #include <sstream>
@@ -43,7 +46,7 @@
 #include <chrono>
 #include <mutex>
 
-// for boost split
+// Boost lib for strings split
 #include <boost/algorithm/string.hpp>
 
 #ifdef ULOG2
@@ -66,17 +69,18 @@ using namespace std;
    http://vichargrave.com/develop-a-packet-sniffer-with-libpcap/ парсер отсюда
 */
 
-/* Блок конфигурации */
+/* Configuration block, we must move it to configuration file  */
 #ifdef REDIS
 int redis_port = 6379;
 string redis_host = "127.0.0.1";
 #endif
 
 #ifdef ULOG2
-// номер netlink группы для прослушивания трафика
+// netlink group number for listening for traffic
 int ULOGD_NLGROUP_DEFAULT = 1;
 /* Size of the socket receive memory.  Should be at least the same size as the 'nlbufsiz' module loadtime parameter of ipt_ULOG.o If you have _big_ in-kernel queues, you may have to increase this number.  (
  * --qthreshold 100 * 1500 bytes/packet = 150kB  */
+
 int ULOGD_RMEM_DEFAULT = 131071;
 /* Size of the receive buffer for the netlink socket.  Should be at least of RMEM_DEFAULT size.  */
 int ULOGD_BUFSIZE_DEFAULT = 150000;
@@ -84,33 +88,36 @@ int ULOGD_BUFSIZE_DEFAULT = 150000;
 
 int DEBUG = 0;
 
-// Период, через который мы пересчитываем pps/трафик
+// Period for recounting pps/traffic
 int check_period = 3;
 
-// Увеличиваем буфер, чтобы минимизировать потери пакетов
+#ifdef PCAP
+// Enlarge receive buffer for PCAP for minimize packet drops
 int pcap_buffer_size_mbytes = 10;
+#endif
 
-// По какому критерию мы сортируем клиентов? Допустимые варианты: packets/bytes
+// Key used for sorting clients in output.  Allowed sort params: packets/bytes
 string sort_parameter = "packets";
 
-// сколько всего выводим IP адресов в списках?
+// Number of lines in programm output
 int max_ips_in_list = 7;
 
-// Баним IP, если он превысил данный порог
+// We must ban IP if it exceeed this limit in PPS
 int ban_threshold = 20000;
 
-// сколько строк мы высылаем в деталях атаки на почту
+// Number of lines for sending ben attack details to email
 int ban_details_records_count = 500;
 
-/* конец блока конфигурации */
+/* Configuration block ends */
 
-/* Блок наших структур данных */
+/* Our data structs */
 
-// поле, по которому мы сортируем данные 
+// Enum with availible sort by field
 enum sort_type { PACKETS, BYTES };
 
 enum direction {INCOMING, OUTGOING, INTERNAL, OTHER};
-// структура для "легкого" хранения статистики соединений в памяти 
+
+// simplified packet struct for lightweight save into memory
 struct simple_packet {
     uint32_t src_ip;
     uint32_t dst_ip;
@@ -121,7 +128,7 @@ struct simple_packet {
 };
 
 
-// структура для LPM алгоритма
+// Struct for Long Prefix Match Tree
 typedef struct leaf {
     bool bit;
     bool end_of_path;
@@ -139,14 +146,14 @@ typedef struct {
     int out_packets;
 } map_element;
 
-typedef unordered_map <uint32_t, map_element> map_for_counters;
+typedef map <uint32_t, map_element> map_for_counters;
 // data structure for storing data in Vector
 typedef pair<uint32_t, map_element> pair_of_map_elements;
 
 /// buffers for parser
 char iphdrInfo[256], srcip_char[256], dstip_char[256];
 
-/* конец объявления наших структур данных */
+/* End of our data structs */
 
 std::mutex counters_mutex;
 
@@ -155,17 +162,17 @@ redisContext *redis_context = NULL;
 #endif
 
 #ifdef ULOG2
-// для подсчета числа ошибок буфера при работе по netlink
+// For counting number of communication errors via netlink
 int netlink_error_counter = 0;
 int netlink_packets_counter = 0;
 #endif
 
 #ifdef PCAP
-// делаем глобальной, так как нам нужно иметь к ней доступ из обработчика сигнала
+// pcap handler, we want it as global variable beacuse it used in singnal handler
 pcap_t* descr = NULL;
 #endif
 
-// счетчик трафика наш
+// main map for storing traffic data
 map_for_counters DataCounter;
 
 int total_count_of_incoming_packets = 0;
@@ -471,6 +478,9 @@ bool file_exists(string path) {
 }
 
 bool load_our_networks_list() {
+    // enable core dumps
+    exec("ulimit -c unlimited");
+
     // вносим в белый список, IP из этой сети мы не баним
     //whitelist_networks = new tree_leaf;    
     //whitelist_networks->left = whitelist_networks->right = NULL;
@@ -481,8 +491,8 @@ bool load_our_networks_list() {
     subnet white_subnet = std::make_pair(convert_ip_as_string_to_uint("159.253.17.0"), convert_cidr_to_binary_netmask(24));
     whitelist_networks.push_back(white_subnet);
     
-    // Так как мы используем неотсортированный map, то для оптимизации его работы стоит указать требуемый размер хэша
-    DataCounter.reserve(MAP_INITIAL_SIZE);
+    // Whet we used unordered_map it will encrease it perfomance
+    //DataCounter.reserve(MAP_INITIAL_SIZE);
 
     vector<string> networks_list_as_string;
     // если мы на openvz ноде, то "свои" IP мы можем получить из спец-файла в /proc
@@ -1043,11 +1053,11 @@ void ulog_main_loop() {
 #endif
  
 
-// для корректной остановки программы по CTRL+C
+// For correct programm shutdown by CTRL+C
 void signal_handler(int signal_number) {
 
 #ifdef PCAP
-    // останавливаем PCAP цикл
+    // Stop PCAP loop
     pcap_breakloop(descr);
 #endif
 
@@ -1058,6 +1068,7 @@ void signal_handler(int signal_number) {
     exit(1); 
 }
 
+/*
 void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask) {
    uint32_t netmask_as_int = convert_ip_as_string_to_uint(subnet);
 
@@ -1115,6 +1126,7 @@ void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask) {
     // #include <bitset>
     // std::cout<<bitset<32>(netmask_as_int)<<endl;
 }
+*/
 
 /*
 bool belongs_to_networks(tree_leaf* root, uint32_t ip) {
