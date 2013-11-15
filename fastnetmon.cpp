@@ -184,10 +184,10 @@ int DATA_SHIFT_VALUE = 14;
 // начальный размер unordered_map для хранения данных
 int MAP_INITIAL_SIZE = 2048;
 
-//vector<subnet> our_networks;
-//vector<subnet> whitelist_networks;
-tree_leaf* our_networks;
-tree_leaf* whitelist_networks;
+vector<subnet> our_networks;
+vector<subnet> whitelist_networks;
+//tree_leaf* our_networks;
+//tree_leaf* whitelist_networks;
 
 /* 
  Тут кроется огромный баго-фич:
@@ -207,8 +207,17 @@ tree_leaf* whitelist_networks;
 
 // prototypes
 void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask); 
-bool belongs_to_networks(tree_leaf* root, uint32_t ip);
-// bool belongs_to_networks(vector<subnet>& networks_list, uint32_t ip);
+//bool belongs_to_networks(tree_leaf* root, uint32_t ip);
+bool belongs_to_networks(vector<subnet>& networks_list, uint32_t ip);
+
+/*
+Old on strings compare:
+23.56      0.53     0.53 10000000     0.00     0.00  belongs_to_networks(std::vector<std::pair<unsigned int, unsigned int>, std::a     llocator<std::pair<unsigned int, unsigned int> > >&, unsigned int)
+
+Fast lookup tree:
+14.67      1.21     0.33 10000000     0.00     0.00  fast_ip_lookup(leaf*, unsigned int)
+*/
+
 void calculation_programm();
 void pcap_main_loop(char* dev);
 void ulog_main_loop();
@@ -457,15 +466,13 @@ bool file_exists(string path) {
 
 bool load_our_networks_list() {
     // вносим в белый список, IP из этой сети мы не баним
-    whitelist_networks = new tree_leaf;    
-    whitelist_networks->left = whitelist_networks->right = NULL;
+    //whitelist_networks = new tree_leaf;    
+    //whitelist_networks->left = whitelist_networks->right = NULL;
 
-    insert_prefix_bitwise_tree(whitelist_networks, "159.253.17.0", 24);
-    /*
+    //insert_prefix_bitwise_tree(whitelist_networks, "159.253.17.0", 24);
+    
     subnet white_subnet = std::make_pair(convert_ip_as_string_to_uint("159.253.17.0"), convert_cidr_to_binary_netmask(24));
     whitelist_networks.push_back(white_subnet);
-    */
-    
     
     // Так как мы используем неотсортированный map, то для оптимизации его работы стоит указать требуемый размер хэша
     //DataCounter.reserve(MAP_INITIAL_SIZE);
@@ -491,8 +498,8 @@ bool load_our_networks_list() {
 
     //our_networks.push_back(current_subnet); 
 
-    our_networks = new tree_leaf;
-    our_networks->left = our_networks->right = NULL;
+    //our_networks = new tree_leaf;
+    //our_networks->left = our_networks->right = NULL;
 
     for( vector<string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) {
         vector<string> subnet_as_string; 
@@ -504,8 +511,8 @@ bool load_our_networks_list() {
 
         subnet current_subnet = std::make_pair(subnet_as_int, netmask_as_int);
 
-        //our_networks.push_back(current_subnet);
-        insert_prefix_bitwise_tree(our_networks, subnet_as_string[0], cidr);
+        our_networks.push_back(current_subnet);
+        //insert_prefix_bitwise_tree(our_networks, subnet_as_string[0], cidr);
     }
  
     return true;
@@ -525,8 +532,6 @@ uint32_t convert_cidr_to_binary_netmask(int cidr) {
     return htonl(binary_netmask);
 }
 
-/*
-So slow and so stupid
 bool belongs_to_networks(vector<subnet>& networks_list, uint32_t ip) {
     for( vector<subnet>::iterator ii=networks_list.begin(); ii!=networks_list.end(); ++ii) {
 
@@ -537,7 +542,6 @@ bool belongs_to_networks(vector<subnet>& networks_list, uint32_t ip) {
 
     return false;
 }
-*/
 
 string print_simple_packet(struct simple_packet packet) {
     std::stringstream buffer;
@@ -1106,6 +1110,7 @@ void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask) {
     // std::cout<<bitset<32>(netmask_as_int)<<endl;
 }
 
+/*
 bool belongs_to_networks(tree_leaf* root, uint32_t ip) {
     // introduce temporary pointer
     tree_leaf* temp_root = root;
@@ -1180,6 +1185,7 @@ bool belongs_to_networks(tree_leaf* root, uint32_t ip) {
     // This point must not achieved in any cases! 
     return false; 
 }
+*/
 
 void dump_ip_lookup_tree(tree_leaf* root) {
 
