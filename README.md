@@ -18,6 +18,9 @@ Install
    # If you need traffic counting
    apt-get install -y libhiredis-dev
 
+   # If you need ASN/geoip stats
+   apt-get install -y libgeoip-dev 
+
    cd /usr/src
    git clone https://github.com/FastVPSEestiOu/fastnetmon.git
    cd fastnetmon
@@ -28,6 +31,13 @@ Select backend, we use ULOG2 as default, if you need PCAP u must change variable
 Compile it:
 ```bash
 make
+```
+
+Download GeoIP database to current folder:
+```bash
+http://dev.maxmind.com/geoip/legacy/geolite/
+http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
+gunzip GeoIPASNum.dat.gz
 ```
 
 Start it:

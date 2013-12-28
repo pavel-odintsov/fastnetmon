@@ -5,6 +5,8 @@ ENGINE = ULOG2
 #ENGINE = PCAP
 REDIS_SUPPORT = yes
 
+GEOIP_SUPPORT = yes
+
 # Develoepr parameters
 ENABLE_DEBUG = no
 ENABLE_PROFILER = no
@@ -22,6 +24,11 @@ endif
 LIBS +=  -lpthread
 
 DEFINES += -D$(ENGINE)
+
+ifeq ($(GEOIP_SUPPORT), yes)
+ DEFINES += -DGEOIP
+ LIBS += -lGeoIP
+endif
 
 ifeq ($(REDIS_SUPPORT), yes)
  LIBS +=  -lhiredis
