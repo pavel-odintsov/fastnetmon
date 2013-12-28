@@ -53,6 +53,10 @@
 #include "libipulog.h"
 #endif
 
+#ifdef GEOIP
+#include "GeoIP.h"
+#endif
+
 #ifdef PCAP
 #include <pcap.h>
 #endif
@@ -73,6 +77,10 @@ using namespace std;
 #ifdef REDIS
 int redis_port = 6379;
 string redis_host = "127.0.0.1";
+#endif
+
+#ifdef GEOIP
+GeoIP * geo_ip = NULL;
 #endif
 
 #ifdef ULOG2
@@ -174,6 +182,10 @@ pcap_t* descr = NULL;
 
 // main map for storing traffic data
 map_for_counters DataCounter;
+
+#ifdef GEOIP
+map_for_counters GeoIpCounter;
+#endif
 
 int total_count_of_incoming_packets = 0;
 int total_count_of_outgoing_packets = 0;
@@ -328,6 +340,19 @@ bool exec_with_stdin_params(string cmd, string params) {
         return false;
     }
 }
+
+#ifdef GEOIP
+bool geoip_init() {
+    // load GeoIP ASN database to memory
+    geo_ip = GeoIP_open("/root/fastnetmon/GeoIPASNum.dat", GEOIP_MEMORY_CACHE);
+
+    if (geo_ip == NULL) {
+        return false;
+    } else {
+        return true;
+    }
+}
+#endif
 
 #ifdef REDIS
 bool redis_init_connection() {
@@ -682,7 +707,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
         DataCounter[ src_ip ].out_packets++; 
         DataCounter[ src_ip ].out_bytes += packet_length;
         counters_mutex.unlock();
-    
+ 
     } else if (our_ip_is_destination) {
         packet_direction = INCOMING;
     
@@ -708,6 +733,43 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
         total_count_of_other_bytes += packet_length;
         counters_mutex.unlock();
     }
+
+#ifdef GEOIP
+    // Execute GeoIP lookup
+    if (packet_direction == INCOMING or packet_direction == OUTGOING) {
+        uint32_t remote_ip = packet_direction == INCOMING ? src_ip : dst_ip; 
+        
+        char* asn_raw = GeoIP_org_by_name(geo_ip, convert_ip_as_uint_to_string(remote_ip).c_str());
+        uint32_t asn_number = 0;   
+
+        if (asn_raw == NULL) {
+            asn_number = 0; 
+        } else {
+            // split string: AS1299 TeliaSonera International Carrier
+            vector<string> asn_as_string;
+            split( asn_as_string, asn_raw, boost::is_any_of(" "), boost::token_compress_on );
+
+            // extract raw number
+            asn_number = atoi(asn_as_string[0].substr(2).c_str()); 
+            // packet_length
+        }
+
+        // кладем данные по трафику ASN в хэш
+        counters_mutex.lock();
+
+        if (packet_direction == INCOMING) {
+            // Incoming
+            GeoIpCounter[ asn_number ].out_packets++;
+            GeoIpCounter[ asn_number ].out_bytes += packet_length;
+        } else {
+            // Outgoing
+            GeoIpCounter[ asn_number ].in_packets++;
+            GeoIpCounter[ asn_number ].in_bytes += packet_length;
+        }
+
+        counters_mutex.unlock();
+    }
+#endif
 
 #ifdef THREADLESS
     calculation_programm();
@@ -869,6 +931,14 @@ int main(int argc,char **argv) {
     }
 #endif
 
+    // иницилизируем GeoIP
+#ifdef GEOIP
+    if(!geoip_init()) {
+        printf("Can't load geoip tables");
+        exit(1);
+    } 
+#endif
+
     // загружаем наши сети и whitelist 
     load_our_networks_list();
 
@@ -887,6 +957,11 @@ int main(int argc,char **argv) {
 #ifdef ULOG2 
     thread ulog_thread(ulog_main_loop);
     ulog_thread.join();
+#endif
+
+#ifdef GEOIP
+    // Free up geoip handle 
+    GeoIP_delete(geo_ip);
 #endif
 
     calc_thread.join();
