@@ -401,6 +401,59 @@ void update_traffic_in_redis(uint32_t ip, int traffic_bytes, direction my_direct
 }
 #endif
 
+// TODO: унифицировать с draw_table
+void draw_asn_table(map_for_counters& my_map_packets, direction data_direction) {
+    std::vector<pair_of_map_elements> vector_for_sort;
+
+    for( map_for_counters::iterator ii=my_map_packets.begin(); ii!=my_map_packets.end(); ++ii) {
+        vector_for_sort.push_back( make_pair((*ii).first, (*ii).second) );
+    }
+
+    // sort ONLY BY BYTES!!!
+
+    // используем разные сортировочные функции 
+    if (data_direction == INCOMING) {
+        std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_in_bytes);
+    } else if (data_direction == OUTGOING) {
+        std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_out_bytes);
+    } else {
+        // unexpected
+    }
+
+    int element_number = 0;
+    for( vector<pair_of_map_elements>::iterator ii=vector_for_sort.begin(); ii!=vector_for_sort.end(); ++ii) {
+            uint32_t client_ip = (*ii).first;
+            string asn_as_string = convert_int_to_string((*ii).first);
+
+            int in_pps = (*ii).second.in_packets   / check_period;
+            int out_pps = (*ii).second.out_packets / check_period;
+
+            int in_bps  = (*ii).second.in_bytes  / check_period;
+            int out_bps = (*ii).second.out_bytes / check_period;
+
+            int pps = 0;
+            int bps = 0;
+
+            // делаем "полиморфную" полосу и ппс
+            if (data_direction == INCOMING) {
+                pps = in_pps;
+                bps = in_bps;
+            } else if (data_direction == OUTGOING) {
+                pps = out_pps;
+                bps = out_bps;
+            }
+
+            int mbps = int((double)bps / 1024 / 1024 * 8);
+
+            // Выводим первые max_ips_in_list элементов в списке, при нашей сортировке, будут выданы топ 10 самых грузящих клиентов
+            if (element_number < max_ips_in_list) {
+                cout << asn_as_string << "\t\t" << pps << " pps " << mbps << " mbps" << endl;
+            }
+
+            element_number++;
+    }
+}
+
 void draw_table(map_for_counters& my_map_packets, direction data_direction, bool do_redis_update, sort_type sort_item) {
         std::vector<pair_of_map_elements> vector_for_sort;
 
@@ -823,6 +876,17 @@ void calculation_programm() {
 
         cout<<endl;
 
+        // TODO: ВРЕМЕННО ДЕАКТИВИРОВАНО
+        if (false) {
+            cout<<"Incoming channel: ASN traffic\n";
+            draw_asn_table(GeoIpCounter, OUTGOING);
+            cout<<endl;    
+
+            cout<<"Outgoing channel: ASN traffic\n";
+            draw_asn_table(GeoIpCounter, INCOMING);
+            cout<<endl;
+        }    
+
 #ifdef PCAP
         struct pcap_stat current_pcap_stats;
         if (pcap_stats(descr, &current_pcap_stats) == 0) {
@@ -871,6 +935,10 @@ void calculation_programm() {
 
         counters_mutex.lock();
         DataCounter.clear();
+
+#ifdef GEOIP
+        GeoIpCounter.clear();
+#endif 
 
         total_count_of_incoming_bytes = 0;
         total_count_of_outgoing_bytes = 0;
