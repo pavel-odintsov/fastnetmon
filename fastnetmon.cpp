@@ -802,6 +802,9 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
             vector<string> asn_as_string;
             split( asn_as_string, asn_raw, boost::is_any_of(" "), boost::token_compress_on );
 
+            // free up original string
+            free(asn_raw);
+
             // extract raw number
             asn_number = atoi(asn_as_string[0].substr(2).c_str()); 
             // packet_length
@@ -1027,13 +1030,13 @@ int main(int argc,char **argv) {
     ulog_thread.join();
 #endif
 
+    calc_thread.join();
+   
 #ifdef GEOIP
     // Free up geoip handle 
     GeoIP_delete(geo_ip);
 #endif
-
-    calc_thread.join();
-    
+ 
     return 0;
 }
    
