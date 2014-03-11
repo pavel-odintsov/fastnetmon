@@ -944,6 +944,20 @@ void calculation_programm() {
        cout<<"ULOG buffer errors: "   << netlink_error_counter<<" ("<<int((double)netlink_error_counter/netlink_packets_counter)<<"%)"<<endl; 
        cout<<"ULOG packets received: "<< netlink_packets_counter<<endl;
 #endif
+
+#ifdef PF_RING
+        pfring_stat pfring_status_data;
+        if(pfring_stats(pf_ring_descr, &pfring_status_data) >= 0) {
+            printf(
+                "Packets received:  %lu\n"
+                "Packets dropped:  %lu\n",
+                (long unsigned int) pfring_status_data.recv,
+                (long unsigned int) pfring_status_data.drop
+            ); 
+        } else {
+            cout<<"Can't get PF_RING stats"<<endl;
+        }
+#endif 
  
         if (ban_list.size() > 0) {
             cout<<endl<<"Ban list:"<<endl;  
