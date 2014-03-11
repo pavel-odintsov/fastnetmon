@@ -1,8 +1,10 @@
 all: fastnetmon
 
 # User parameters
-ENGINE = ULOG2
+ENGINE = PF_RING
+#ENGINE = ULOG2
 #ENGINE = PCAP
+#ENGINE = PF_RING
 REDIS_SUPPORT = yes
 
 GEOIP_SUPPORT = yes
@@ -39,11 +41,21 @@ ifeq ($(ENGINE), PCAP)
  LIBS += -lpcap
 endif
 
+# add path to PF_RING headers
+ifeq ($(ENGINE), PF_RING)
+ HEADERS += -I/opt/pf_ring/include 
+ LIBS += -lpfring
+ LIBS += -lnuma
+ # for clock_gettime
+ LIBS += -lrt
+ LIBS_PATH += -L/opt/pf_ring/lib
+endif
+
 fastnetmon: libipulog.o fastnetmon.o
-	g++ libipulog.o fastnetmon.o -o fastnetmon $(LIBS) $(BUILD_FLAGS)
+	g++ libipulog.o fastnetmon.o -o fastnetmon $(LIBS_PATH) $(LIBS) $(BUILD_FLAGS)
 libipulog.o: libipulog.c
 	g++ -c libipulog.c    -o libipulog.o -Wno-write-strings
 fastnetmon.o: fastnetmon.cpp
-	g++ $(DEFINES) -c fastnetmon.cpp -o fastnetmon.o -std=c++11 $(BUILD_FLAGS)
+	g++ $(DEFINES) $(HEADERS) -c fastnetmon.cpp -o fastnetmon.o -std=c++11 $(BUILD_FLAGS)
 clean:
 	rm -f libipulog.o fastnetmon.o fastnetmon

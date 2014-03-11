@@ -65,6 +65,10 @@
 #include <hiredis/hiredis.h>
 #endif
 
+#ifdef PF_RING
+#include "pfring.h"
+#endif
+
 using namespace std;
 
 /*
