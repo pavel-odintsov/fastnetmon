@@ -1136,8 +1136,20 @@ void pf_ring_main_loop(char* dev) {
     } else {
         fprintf(stdout, "Successully binded to: %s\n", dev);
 
+        u_char mac_address[6] = { 0 };
+        if(pfring_get_bound_device_address(pf_ring_descr, mac_address) != 0) {
+            fprintf(stderr, "Unable to read the device address\n");
+        } else {
+            int ifindex = -1; 
+
+            pfring_get_bound_device_ifindex(pf_ring_descr, &ifindex);
+            printf("Capturing from %s [%s][ifIndex: %d]\n", dev, mac_address, ifindex);
+        }  
+
+        fprintf(stdout, "Device RX channels number: %d\n", pfring_get_num_rx_channels(pf_ring_descr));
+
         u_int32_t version;
-        // TODO: WTF?
+        // задаемт имя приложения для его указания в переменной PCAP_PF_RING_APPNAME в статистике в /proc 
         pfring_set_application_name(pf_ring_descr, (char*)"fastnetmon");
         pfring_version(pf_ring_descr, &version);
 
@@ -1146,10 +1158,25 @@ void pf_ring_main_loop(char* dev) {
            (version & 0x0000FF00) >> 8,
            version & 0x000000FF);
     }
+    
+    int rc;
+    if((rc = pfring_set_socket_mode(pf_ring_descr, recv_only_mode)) != 0)
+        fprintf(stderr, "pfring_set_socket_mode returned [rc=%d]\n", rc);
+
+    char path[256] = { 0 };
+    if(pfring_get_appl_stats_file_name(pf_ring_descr, path, sizeof(path)) != NULL)
+        fprintf(stderr, "Dumping statistics on %s\n", path);
+
+    // enable ring
+    if (pfring_enable_ring(pf_ring_descr) != 0) {
+        printf("Unable to enable ring :-(\n");
+        pfring_close(pf_ring_descr);
+        exit(-1);
+    }
 
     // WTF?
     u_int8_t wait_for_packet = 1;
-    
+ 
     pfring_loop(pf_ring_descr, parse_packet_pf_ring, (u_char*)NULL, wait_for_packet);
 }
 #endif
