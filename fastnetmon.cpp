@@ -249,6 +249,8 @@ Fast lookup tree:
 
 void calculation_programm();
 void pcap_main_loop(char* dev);
+void pf_ring_main_loop(char* dev);
+void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *packetptr);
 void ulog_main_loop();
 void signal_handler(int signal_number);
 uint32_t convert_cidr_to_binary_netmask(int cidr);
@@ -673,6 +675,12 @@ string print_simple_packet(struct simple_packet packet) {
     return buffer.str();
 }
 
+// Обработчик для pf_ring, так как у него иной формат входных параметров
+void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const u_char *user_bytes) {
+    parse_packet(NULL, NULL, p);
+}
+
+
 // в случае прямого вызова скрипта колбэка - нужно конст, напрямую в хендлере - конст не нужно
 void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *packetptr) {
     struct ip* iphdr;
@@ -966,6 +974,7 @@ void calculation_programm() {
 
 
 int main(int argc,char **argv) {
+    // listened device
     char *dev; 
     
 #ifdef PCAP
@@ -977,6 +986,18 @@ int main(int argc,char **argv) {
 
     time(&start_time);
     printf("I need few seconds for collecting data, please wait. Thank you!\n");
+
+#ifdef PF_RING
+    
+    if (argc != 2) {
+        fprintf(stdout, "Usage: %s \"eth0\" or \"eth0,eth1\"\n", argv[0]);
+        exit(1);
+    }
+    
+    dev = argv[1];
+    fprintf(stdout, "We selected %s\n", dev);
+
+#endif
  
 #ifdef PCAP 
     if (argc != 2) {
@@ -1029,6 +1050,10 @@ int main(int argc,char **argv) {
     pcap_main_loop(dev);
 #endif
 
+#ifdef PF_RING
+    pf_ring_main_loop(dev);
+#endif
+
 #ifdef ULOG2 
     thread ulog_thread(ulog_main_loop);
     ulog_thread.join();
@@ -1043,7 +1068,52 @@ int main(int argc,char **argv) {
  
     return 0;
 }
-   
+  
+#ifdef PF_RING 
+void pf_ring_main_loop(char* dev) {
+    // We could pool device in multiple threads
+    int num_threads = 1;
+
+    int promisc = 1;
+    u_int8_t use_extended_pkt_header = 0, touch_payload = 0, enable_hw_timestamp = 0, dont_strip_timestamps = 0;    
+
+    u_int32_t flags = 0;
+    if(num_threads > 1)         flags |= PF_RING_REENTRANT;
+    if(use_extended_pkt_header) flags |= PF_RING_LONG_HEADER;
+    if(promisc)                 flags |= PF_RING_PROMISC;
+    if(enable_hw_timestamp)     flags |= PF_RING_HW_TIMESTAMP;
+    if(!dont_strip_timestamps)  flags |= PF_RING_STRIP_HW_TIMESTAMP;
+    flags |= PF_RING_DNA_SYMMETRIC_RSS;  /* Note that symmetric RSS is ignored by non-DNA drivers */ 
+
+    pfring  *pd;
+    // use default value from pfcount.c
+    int snaplen = 128;
+    pd = pfring_open(dev, snaplen, flags);
+
+    if(pd == NULL) {
+        fprintf(stderr, "pfring_open error [%s] (pf_ring not loaded or perhaps you use quick mode and have already a socket bound to %s ?)\n", strerror(errno), dev);
+        exit(1);
+    } else {
+        fprintf(stdout, "Successully binded to: %s\n", dev);
+
+        u_int32_t version;
+        // TODO: WTF?
+        pfring_set_application_name(pd, (char*)"fastnetmon");
+        pfring_version(pd, &version);
+
+        fprintf(stdout, "Using PF_RING v.%d.%d.%d\n",
+           (version & 0xFFFF0000) >> 16, 
+           (version & 0x0000FF00) >> 8,
+           version & 0x000000FF);
+    }
+
+    // WTF?
+    u_int8_t wait_for_packet = 1;
+    
+    pfring_loop(pd, parse_packet_pf_ring, (u_char*)NULL, wait_for_packet);
+}
+#endif
+ 
 #ifdef PCAP 
 void pcap_main_loop(char* dev) {
     char errbuf[PCAP_ERRBUF_SIZE];
