@@ -71,6 +71,13 @@
 
 using namespace std;
 
+/* 802.1Q VLAN tags are 4 bytes long. */
+#define VLAN_HDRLEN 4
+
+/* This is the decimal equivalent of the VLAN tag's ether frame type */
+#define VLAN_ETHERTYPE 33024
+
+
 /*
  Pcap docs:    
    http://www.linuxforu.com/2011/02/capturing-packets-c-program-libpcap/
@@ -182,6 +189,10 @@ int netlink_packets_counter = 0;
 #ifdef PCAP
 // pcap handler, we want it as global variable beacuse it used in singnal handler
 pcap_t* descr = NULL;
+#endif
+
+#ifdef PF_RING
+pfring* pf_ring_descr = NULL;
 #endif
 
 // main map for storing traffic data
@@ -680,7 +691,6 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
     parse_packet(NULL, NULL, p);
 }
 
-
 // в случае прямого вызова скрипта колбэка - нужно конст, напрямую в хендлере - конст не нужно
 void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *packetptr) {
     struct ip* iphdr;
@@ -689,8 +699,26 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     struct udphdr* udphdr;
     unsigned short id, seq;
 
-    // Skip the datalink layer header and get the IP header fields.
-    packetptr += DATA_SHIFT_VALUE;
+    struct ether_header *eptr;    /* net/ethernet.h */
+    eptr = (struct ether_header* )packetptr;
+
+    /*
+    if (ntohs(eptr->ether_type) ==  VLAN_ETHERTYPE) {
+        std::cout<<"TAGGED"<<endl;
+    } else {
+        std::cout<<"NOT TAGGED"<<endl;
+    } 
+    */
+   
+    // проверяем тип эзернет фрейма и его принадлежность к типу "фрейм с VLAN" 
+    if ( ntohs(eptr->ether_type) ==  VLAN_ETHERTYPE ) {
+        // это тегированный трафик, поэтому нужно отступить еще 4 байта, чтобы добраться до данных
+        packetptr += DATA_SHIFT_VALUE + VLAN_HDRLEN;
+    } else {
+        // Skip the datalink layer header and get the IP header fields.
+        packetptr += DATA_SHIFT_VALUE;
+    }
+
     iphdr = (struct ip*)packetptr;
 
     // исходящий/входящий айпи это in_addr, http://man7.org/linux/man-pages/man7/ip.7.html
@@ -731,7 +759,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     current_packet.dst_ip = dst_ip;
     current_packet.length = packet_length;
 
-    //count<<print_simple_packet(current_packet);
+    //cout<<"Dump: "<<print_simple_packet(current_packet);
 
     direction packet_direction;
 
@@ -981,7 +1009,6 @@ int main(int argc,char **argv) {
     char errbuf[PCAP_ERRBUF_SIZE]; 
     const u_char *packet; 
     struct pcap_pkthdr hdr;
-    struct ether_header *eptr;    /* net/ethernet.h */
 #endif 
 
     time(&start_time);
@@ -1085,12 +1112,11 @@ void pf_ring_main_loop(char* dev) {
     if(!dont_strip_timestamps)  flags |= PF_RING_STRIP_HW_TIMESTAMP;
     flags |= PF_RING_DNA_SYMMETRIC_RSS;  /* Note that symmetric RSS is ignored by non-DNA drivers */ 
 
-    pfring  *pd;
     // use default value from pfcount.c
     int snaplen = 128;
-    pd = pfring_open(dev, snaplen, flags);
+    pf_ring_descr = pfring_open(dev, snaplen, flags);
 
-    if(pd == NULL) {
+    if(pf_ring_descr == NULL) {
         fprintf(stderr, "pfring_open error [%s] (pf_ring not loaded or perhaps you use quick mode and have already a socket bound to %s ?)\n", strerror(errno), dev);
         exit(1);
     } else {
@@ -1098,8 +1124,8 @@ void pf_ring_main_loop(char* dev) {
 
         u_int32_t version;
         // TODO: WTF?
-        pfring_set_application_name(pd, (char*)"fastnetmon");
-        pfring_version(pd, &version);
+        pfring_set_application_name(pf_ring_descr, (char*)"fastnetmon");
+        pfring_version(pf_ring_descr, &version);
 
         fprintf(stdout, "Using PF_RING v.%d.%d.%d\n",
            (version & 0xFFFF0000) >> 16, 
@@ -1110,7 +1136,7 @@ void pf_ring_main_loop(char* dev) {
     // WTF?
     u_int8_t wait_for_packet = 1;
     
-    pfring_loop(pd, parse_packet_pf_ring, (u_char*)NULL, wait_for_packet);
+    pfring_loop(pf_ring_descr, parse_packet_pf_ring, (u_char*)NULL, wait_for_packet);
 }
 #endif
  
@@ -1279,6 +1305,10 @@ void signal_handler(int signal_number) {
 #ifdef PCAP
     // Stop PCAP loop
     pcap_breakloop(descr);
+#endif
+
+#ifdef PF_RING
+    pfring_breakloop(pf_ring_descr);
 #endif
 
 #ifdef REDIS
