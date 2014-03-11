@@ -18,6 +18,9 @@ Install
    # If you need traffic counting
    apt-get install -y libhiredis-dev
 
+   # If you need PF_RING abilities 
+   apt-get install -y libnuma-dev
+
    # If you need ASN/geoip stats
    apt-get install -y libgeoip-dev 
 
