@@ -7,7 +7,7 @@ ENGINE = PF_RING
 #ENGINE = PF_RING
 REDIS_SUPPORT = yes
 
-GEOIP_SUPPORT = yes
+GEOIP_SUPPORT = no
 
 # Develoepr parameters
 ENABLE_DEBUG = no
