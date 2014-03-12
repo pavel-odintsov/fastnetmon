@@ -950,9 +950,11 @@ void calculation_programm() {
         if(pfring_stats(pf_ring_descr, &pfring_status_data) >= 0) {
             printf(
                 "Packets received:  %lu\n"
-                "Packets dropped:  %lu\n",
+                "Packets dropped:  %lu\n"
+                "Packets dropped: %.1f %%\n",
                 (long unsigned int) pfring_status_data.recv,
-                (long unsigned int) pfring_status_data.drop
+                (long unsigned int) pfring_status_data.drop,
+                (double) pfring_status_data.drop/pfring_status_data.recv*100
             ); 
         } else {
             cout<<"Can't get PF_RING stats"<<endl;
