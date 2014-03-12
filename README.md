@@ -58,6 +58,10 @@ You should start fastnetmon using this options:
 LD_LIBRARY_PATH=/opt/pf_ring/lib/ ./fastnetmon eth3,eth4
 ```
 
+If you want to avoid LD_LIBRARY_PATH on eery call you should add pf_ring path to system:
+echo "/opt/pf_ring/lib" > /etc/ld.so.conf.d/pf_ring.conf
+ldconfig -v
+
 We disabled bpf because it requires linking to PCAP.
 
 Select backend, we use ULOG2 as default, if you need PCAP u must change variable ENGINE in Makefile to PCAP
@@ -116,6 +120,9 @@ Other traffic       25 pps
 ULOG buffer errors: 2 (0%)
 ULOG packets received: 19647
 ```
+
+I recommend you to disable CPU freq scaling for gain max performance (max frequency):
+echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 
 You can use this script for irq balancing on heavy loaded networks:
 ```bash
