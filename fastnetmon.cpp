@@ -952,9 +952,9 @@ void calculation_programm() {
         pfring_stat pfring_status_data;
         if(pfring_stats(pf_ring_descr, &pfring_status_data) >= 0) {
             printf(
-                "Packets received:  %lu\n"
-                "Packets dropped:  %lu\n"
-                "Packets dropped: %.1f %%\n",
+                "Packets received:\t%lu\n"
+                "Packets dropped:\t%lu\n"
+                "Packets dropped:\t%.1f %%\n",
                 (long unsigned int) pfring_status_data.recv,
                 (long unsigned int) pfring_status_data.drop,
                 (double) pfring_status_data.drop/pfring_status_data.recv*100
@@ -1141,6 +1141,7 @@ void pf_ring_main_loop(char* dev) {
     } else {
         fprintf(stdout, "Successully binded to: %s\n", dev);
 
+        /*
         u_char mac_address[6] = { 0 };
         if(pfring_get_bound_device_address(pf_ring_descr, mac_address) != 0) {
             fprintf(stderr, "Unable to read the device address\n");
@@ -1149,7 +1150,8 @@ void pf_ring_main_loop(char* dev) {
 
             pfring_get_bound_device_ifindex(pf_ring_descr, &ifindex);
             printf("Capturing from %s [%s][ifIndex: %d]\n", dev, mac_address, ifindex);
-        }  
+        }
+        */ 
 
         fprintf(stdout, "Device RX channels number: %d\n", pfring_get_num_rx_channels(pf_ring_descr));
 
