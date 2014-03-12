@@ -760,7 +760,6 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     current_packet.length = packet_length;
 
     //cout<<"Dump: "<<print_simple_packet(current_packet);
-
     direction packet_direction;
 
     // try to cache succesful lookups
@@ -853,6 +852,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
         // кладем данные по трафику ASN в хэш
         counters_mutex.lock();
 
+#ifdef GEOIP
         if (packet_direction == INCOMING) {
             // Incoming
             GeoIpCounter[ asn_number ].out_packets++;
@@ -862,6 +862,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
             GeoIpCounter[ asn_number ].in_packets++;
             GeoIpCounter[ asn_number ].in_bytes += packet_length;
         }
+#endif
 
         counters_mutex.unlock();
     }
@@ -920,6 +921,7 @@ void calculation_programm() {
         cout<<endl;
 
         // TODO: ВРЕМЕННО ДЕАКТИВИРОВАНО
+#ifdef GEOIP
         if (false) {
             cout<<"Incoming channel: ASN traffic\n";
             draw_asn_table(GeoIpCounter, OUTGOING);
@@ -928,7 +930,8 @@ void calculation_programm() {
             cout<<"Outgoing channel: ASN traffic\n";
             draw_asn_table(GeoIpCounter, INCOMING);
             cout<<endl;
-        }    
+        }   
+#endif 
 
 #ifdef PCAP
         struct pcap_stat current_pcap_stats;
