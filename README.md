@@ -29,6 +29,37 @@ Install
    cd fastnetmon
 ```
 
+If you want use PF_RING you should install it.
+
+```bash
+cd /usr/src
+wget 'http://downloads.sourceforge.net/project/ntop/PF_RING/PF_RING-5.6.2.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fntop%2Ffiles%2FPF_RING%2F&ts=1393755620&use_mirror=kent' -OPF_RING-5.6.2.tar.gz
+tar -xf PF_RING-5.6.2.tar.gz 
+cd PF_RING-5.6.2
+apt-get install build-essential bison flex linux-headers-$(uname -r) libnuma-dev
+```
+
+Build kernel:
+```bash
+cd kernel
+make 
+make install
+modprobe pf_ring
+```
+
+Build lib:
+```bash
+cd /usr/src/PF_RING-5.6.2/userland/lib
+./configure  --disable-bpf --prefix=/opt/pf_ring
+```
+
+You should start fastnetmon using this options:
+```bash
+LD_LIBRARY_PATH=/opt/pf_ring/lib/ ./fastnetmon eth3,eth4
+```
+
+We disabled bpf because it requires linking to PCAP.
+
 Select backend, we use ULOG2 as default, if you need PCAP u must change variable ENGINE in Makefile to PCAP
 
 Compile it:
