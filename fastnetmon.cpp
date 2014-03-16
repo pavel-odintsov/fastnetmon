@@ -250,14 +250,6 @@ void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask);
 //bool belongs_to_networks(tree_leaf* root, uint32_t ip);
 bool belongs_to_networks(vector<subnet>& networks_list, uint32_t ip);
 
-/*
-Old on strings compare:
-23.56      0.53     0.53 10000000     0.00     0.00  belongs_to_networks(std::vector<std::pair<unsigned int, unsigned int>, std::a     llocator<std::pair<unsigned int, unsigned int> > >&, unsigned int)
-
-Fast lookup tree:
-14.67      1.21     0.33 10000000     0.00     0.00  fast_ip_lookup(leaf*, unsigned int)
-*/
-
 void calculation_programm();
 void pcap_main_loop(char* dev);
 void pf_ring_main_loop(char* dev);
@@ -630,10 +622,6 @@ bool load_our_networks_list() {
     return true;
 }
 
-
-
-
-
 uint32_t convert_cidr_to_binary_netmask(int cidr) {
     uint32_t binary_netmask = 0xFFFFFFFF; 
     binary_netmask = binary_netmask << ( 32 - cidr );
@@ -702,14 +690,6 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     struct ether_header *eptr;    /* net/ethernet.h */
     eptr = (struct ether_header* )packetptr;
 
-    /*
-    if (ntohs(eptr->ether_type) ==  VLAN_ETHERTYPE) {
-        std::cout<<"TAGGED"<<endl;
-    } else {
-        std::cout<<"NOT TAGGED"<<endl;
-    } 
-    */
-   
     // проверяем тип эзернет фрейма и его принадлежность к типу "фрейм с VLAN" 
     if ( ntohs(eptr->ether_type) ==  VLAN_ETHERTYPE ) {
         // это тегированный трафик, поэтому нужно отступить еще 4 байта, чтобы добраться до данных
@@ -1242,22 +1222,6 @@ void pcap_main_loop(char* dev) {
         exit(1);
     }
 
-    // В общем-то можно фильтровать то, что нам падает от PCAP, но в моем случае это совершенно не требуется
-    // тут было argv[1], но я убрал фильтрацию
-    /* Now we'll compile the filter expression*/
-    // struct bpf_program fp;        /* hold compiled program */
-    //if(pcap_compile(descr, &fp, "", 0, netp) == -1) {
-    //    fprintf(stderr, "Error calling pcap_compile\n");
-    //    exit(1);
-
-    //} 
- 
-    /* set the filter */
-    //if(pcap_setfilter(descr, &fp) == -1) {
-    //    fprintf(stderr, "Error setting filter\n");
-    //    exit(1);
-    //} 
- 
     // man pcap-linktype
     int link_layer_header_type = pcap_datalink(descr);
 
