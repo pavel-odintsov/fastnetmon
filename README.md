@@ -148,4 +148,6 @@ do
 done
 ```
 
+You can find more info and graphics [here](http://forum.nag.ru/forum/index.php?showtopic=89703)
+
 Author: Pavel Odintsov pavel.odintsov at gmail.com
