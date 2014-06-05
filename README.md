@@ -59,8 +59,10 @@ LD_LIBRARY_PATH=/opt/pf_ring/lib/ ./fastnetmon eth3,eth4
 ```
 
 If you want to avoid LD_LIBRARY_PATH on eery call you should add pf_ring path to system:
+```bash
 echo "/opt/pf_ring/lib" > /etc/ld.so.conf.d/pf_ring.conf
 ldconfig -v
+```
 
 We disabled bpf because it requires linking to PCAP.
 
