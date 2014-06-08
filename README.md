@@ -1,11 +1,11 @@
 fastnetmon
 ===========
 
-FastNetMon - High Performance Network Load Analyzer with PCAP/ULOG2 support. But I recommends only PF_RING variant because other variants is so slow and use big amount of CPU and produce big packetloss.
+FastNetMon - High Performance Network DDoS and Load Analyzer with PCAP/ULOG2/PF_RING support. But I recommends only PF_RING variant because other variants is so slow and use big amount of CPU and expected big packetloss.
 
 What we do? We can detect hosts in OUR network with big amount of packets per second (30 000 pps in standard configuration) incoming or outgoing from certain host. And we can call external bash script which can send notify, switch off server or blackhole this client.
 
-Why you write it? Because we can't find any software for solving this problem not in proprietary world not in open source. NetFlow based solutions is so slow and can't react on atatck with fast speed.
+Why you write it? Because we can't find any software for solving this problem not in proprietary world not in open sourcу. NetFlow based solutions is so slow and can't react on atatck with acceptable speed.
 
 At now we start usage of C++11 and you can build this programm only on Debian 7 Wheezy, CentOS 6 has so old g++ compiler and can't compile it (but with CentOS 7 everything will be fine but it's not released yet). 
 
@@ -13,28 +13,10 @@ Main programm screen image:
 
 ![Main screen image](fastnetmon_screen.png)
 
+Example for cpu load for Intel i7 2600 with Intel X540 NIC on 250 kpps load:
+![Cpu consumption](fastnetmon_stats.png)
 
-Install:
-
-```bash
-   # Debian 7 Wheezy
-   apt-get install -y git libpcap-dev g++ gcc libboost-all-dev make
-
-   # If you need traffic counting
-   apt-get install -y libhiredis-dev
-
-   # If you need PF_RING abilities 
-   apt-get install -y libnuma-dev
-
-   # If you need ASN/geoip stats
-   apt-get install -y libgeoip-dev 
-
-   cd /usr/src
-   git clone https://github.com/FastVPSEestiOu/fastnetmon.git
-   cd fastnetmon
-```
-
-If you want use PF_RING you should install it.
+At first you should install PF_RING (we tested only work with 5.6.2 version, please use it):
 
 ```bash
 cd /usr/src
@@ -58,6 +40,26 @@ cd /usr/src/PF_RING-5.6.2/userland/lib
 ./configure  --disable-bpf --prefix=/opt/pf_ring
 ```
 
+Install FastNetMon:
+
+```bash
+   # Debian 7 Wheezy
+   apt-get install -y git libpcap-dev g++ gcc libboost-all-dev make
+
+   # If you need traffic counting
+   apt-get install -y libhiredis-dev
+
+   # If you need PF_RING abilities 
+   apt-get install -y libnuma-dev
+
+   # If you need ASN/geoip stats
+   apt-get install -y libgeoip-dev 
+
+   cd /usr/src
+   git clone https://github.com/FastVPSEestiOu/fastnetmon.git
+   cd fastnetmon
+```
+
 You should start fastnetmon using this options:
 ```bash
 LD_LIBRARY_PATH=/opt/pf_ring/lib/ ./fastnetmon eth3,eth4
@@ -69,7 +71,7 @@ echo "/opt/pf_ring/lib" > /etc/ld.so.conf.d/pf_ring.conf
 ldconfig -v
 ```
 
-Select backend, we use PF_RING as default, if you need PCAP/ULOG2 u must change variable ENGINE in Makefile.
+Select backend, we use PF_RING as default, if you need PCAP/ULOG2 you must change variable ENGINE in Makefile.
 
 Compile it:
 ```bash
@@ -83,7 +85,7 @@ http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
 gunzip GeoIPASNum.dat.gz
 ```
 
-It's REQUIRED to add all your networks in CIDR form to file /etc/networks_list if form when one subnet on one line.
+It's REQUIRED to add all your networks in CIDR form to file /etc/networks_list if form when one subnet on one line. And please change REDIS_SUPPORT = yes to no in Makefile if you do not need traffic counting feature.
 
 Start it:
 ```bash
@@ -93,32 +95,37 @@ Start it:
 
 Example program screen:
 ```bash
-Below you can see all clients with more than 2000 pps
+FastNetMon v1.0 all IPs ordered by: packets
 
-Incoming Traffic    66167 pps 88 mbps
-xx.yy.zz.15         3053  pps 0  Mbps
-xx.yy.zz.248        2948  pps 0  Mbps
-xx.yy.zz.192        2643  pps 0  Mbps
+Incoming Traffic        96667 pps 240 mbps
+xx.xx.xx.xx             7950 pps 3 mbps
+xx.xx.xx.xx             5863 pps 65 mbps
+xx.xx.xx.xx             2306 pps 1 mbps
+xx.xx.xx.xx             1535 pps 16 mbps
+xx.xx.xx.xx             1312 pps 14 mbps
+xx.xx.xx.xx             1153 pps 0 mbps
+xx.xx.xx.xx             1145 pps 0 mbps
 
-Outgoing traffic    91676 pps 728 mbps
-xx.yy.zz.15         4471  pps 40  Mbps
-xx.yy.zz.248        4468  pps 40  Mbps
-xx.yy.zz.192        3905  pps 32  Mbps
-xx.yy.zz.157        2923  pps 24  Mbps
-xx.yy.zz.169        2809  pps 24  Mbps
-xx.yy.zz            2380  pps 24  Mbps
-xx.yy.zz            2105  pps 16  Mbps
+Outgoing traffic        133265 pps 952 mbps
+xx.xx.xx.xx             7414 pps 4 mbps
+xx.xx.xx.xx             5047 pps 4 mbps
+xx.xx.xx.xx             3458 pps 3 mbps
+xx.xx.xx.xx             2959 pps 35 mbps
+xx.xx.xx.xx             2612 pps 29 mbps
+xx.xx.xx.xx             2334 pps 26 mbps
+xx.xx.xx.xx             1906 pps 21 mbps
 
-Internal traffic    1 pps
+Internal traffic        0 pps
 
-Other traffic       25 pps
+Other traffic           1815 pps
 
-ULOG buffer errors: 2 (0%)
-ULOG packets received: 19647
+Packets received:       6516913578
+Packets dropped:        0
+Packets dropped:        0.0 %
+
+Ban list:
+yy.yy.yy.yy/20613 pps incoming
 ```
-
-Example for cpu load for Intel i7 2600 with Intel X540 NIC on 250 kpps load:
-![My image](fastnetmon_stats.png)
 
 Enable programm start on server startup, please add to /etc/rc.local this lines:
 ```bash
@@ -126,7 +133,9 @@ cd /root/fastnetmon && screen -S fastnetmon -d -m ./fastnetmon eth3,eth4
 ```
 
 I recommend you to disable CPU freq scaling for gain max performance (max frequency):
+```bash
 echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+```
 
 You can use this script for irq balancing on heavy loaded networks:
 ```bash
