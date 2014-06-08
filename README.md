@@ -52,7 +52,7 @@ make install
 modprobe pf_ring
 ```
 
-Build lib:
+Build lib (We disabled bpf because it requires linking to PCAP):
 ```bash
 cd /usr/src/PF_RING-5.6.2/userland/lib
 ./configure  --disable-bpf --prefix=/opt/pf_ring
@@ -69,8 +69,6 @@ echo "/opt/pf_ring/lib" > /etc/ld.so.conf.d/pf_ring.conf
 ldconfig -v
 ```
 
-We disabled bpf because it requires linking to PCAP.
-
 Select backend, we use PF_RING as default, if you need PCAP/ULOG2 u must change variable ENGINE in Makefile.
 
 Compile it:
@@ -85,22 +83,13 @@ http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
 gunzip GeoIPASNum.dat.gz
 ```
 
+It's REQUIRED to add all your networks in CIDR form to file /etc/networks_list if form when one subnet on one line.
+
 Start it:
 ```bash
 ./fastnetmon
 ```
 
-Server configuration for PCAP: no configuration needed
-
-Server configuration for ULOG2:
-```bash
-iptables -A FORWARD -i br0 -j ULOG --ulog-nlgroup 1 --ulog-cprange 32 --ulog-qthreshold 45
-```
-
-If you use PCAP, u can set monitored interface as command line parameter (u can set 'any' as inerface name but it work not so fine):
-```bash
-./fastnetmon br0
-``` 
 
 Example program screen:
 ```bash
@@ -167,8 +156,22 @@ You can find more info and graphics [here](http://forum.nag.ru/forum/index.php?s
 
 Author: Pavel Odintsov pavel.odintsov at gmail.com
 
-Obsolet install guid in CentOS 6:
+Obsolet documentation.
+
+Install guide in CentOS 6:
 ```bash
    # CentOS 6
    yum install -y git libpcap-devel gcc-c++ boost-devel boost make
 ```
+
+Server configuration for PCAP: no configuration needed
+
+Server configuration for ULOG2:
+```bash
+iptables -A FORWARD -i br0 -j ULOG --ulog-nlgroup 1 --ulog-cprange 32 --ulog-qthreshold 45
+```
+
+If you use PCAP, u can set monitored interface as command line parameter (u can set 'any' as inerface name but it work not so fine):
+```bash
+./fastnetmon br0
+``` 
