@@ -22,9 +22,6 @@ ifeq ($(ENABLE_PROFILER), yes)
  BUILD_FLAGS += -pg
 endif
 
-# we use C++ 11 threads. We must include pthread library due gcc bug
-LIBS +=  -lpthread
-
 DEFINES += -D$(ENGINE)
 
 ifeq ($(GEOIP_SUPPORT), yes)
@@ -51,11 +48,18 @@ ifeq ($(ENGINE), PF_RING)
  LIBS_PATH += -L/opt/pf_ring/lib
 endif
 
+# We should add pthread as last argument: http://stackoverflow.com/questions/6919534/problem-linking-to-boost-thread
+# we use C++ 11 threads. We must include pthread library due gcc bug
+LIBS +=  -lpthread
+
+# If you need static compile, please uncomment this line
+# STATIC = -static
+
 fastnetmon: libipulog.o fastnetmon.o
-	g++ libipulog.o fastnetmon.o -o fastnetmon $(LIBS_PATH) $(LIBS) $(BUILD_FLAGS)
+	g++ $(STATIC) libipulog.o fastnetmon.o -o fastnetmon $(LIBS_PATH) $(LIBS) $(BUILD_FLAGS)
 libipulog.o: libipulog.c
-	g++ -c libipulog.c    -o libipulog.o -Wno-write-strings
+	g++ $(STATIC) -c libipulog.c    -o libipulog.o -Wno-write-strings
 fastnetmon.o: fastnetmon.cpp
-	g++ $(DEFINES) $(HEADERS) -c fastnetmon.cpp -o fastnetmon.o -std=c++11 $(BUILD_FLAGS)
+	g++ $(STATIC) $(DEFINES) $(HEADERS) -c fastnetmon.cpp -o fastnetmon.o -std=c++11 $(BUILD_FLAGS)
 clean:
 	rm -f libipulog.o fastnetmon.o fastnetmon
