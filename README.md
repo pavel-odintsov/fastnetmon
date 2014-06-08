@@ -66,7 +66,7 @@ ldconfig -v
 
 We disabled bpf because it requires linking to PCAP.
 
-Select backend, we use ULOG2 as default, if you need PCAP u must change variable ENGINE in Makefile to PCAP
+Select backend, we use PF_RING as default, if you need PCAP/ULOG2 u must change variable ENGINE in Makefile.
 
 Compile it:
 ```bash
@@ -122,6 +122,9 @@ Other traffic       25 pps
 ULOG buffer errors: 2 (0%)
 ULOG packets received: 19647
 ```
+
+Example for cpu load for Intel i7 2600 with Intel X540 NIC on 250 kpps load:
+![My image](fastnetmon_stats.png)
 
 I recommend you to disable CPU freq scaling for gain max performance (max frequency):
 echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
