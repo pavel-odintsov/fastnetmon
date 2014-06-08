@@ -34,6 +34,17 @@ make install
 modprobe pf_ring
 ```
 
+You can use precompiled and statically linced version of this tool without any compiling:
+```bash
+mkdir /root/fastnetmon
+cd /root/fastnetmon
+wget  https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/fastnetmon
+chmod +x fastnetmon
+./fastnetmon eth0
+```
+
+If you want to use static version you can skip this guide to part about "networks_list".
+
 Build lib (We disabled bpf because it requires linking to PCAP):
 ```bash
 cd /usr/src/PF_RING-5.6.2/userland/lib
