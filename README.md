@@ -9,6 +9,10 @@ Why you write it? Because we can't find any software for solving this problem no
 
 At now we start usage of C++11 and you can build this programm only on Debian 7 Wheezy, CentOS 6 has so old g++ compiler and can't compile it (but with CentOS 7 everything will be fine but it's not released yet). 
 
+Main programm screen image:
+![Main screen image](fastnetmon_screen.png)
+
+
 Install:
 
 ```bash
@@ -58,7 +62,7 @@ You should start fastnetmon using this options:
 LD_LIBRARY_PATH=/opt/pf_ring/lib/ ./fastnetmon eth3,eth4
 ```
 
-If you want to avoid LD_LIBRARY_PATH on eery call you should add pf_ring path to system:
+If you want to avoid LD_LIBRARY_PATH on every call you should add pf_ring path to system:
 ```bash
 echo "/opt/pf_ring/lib" > /etc/ld.so.conf.d/pf_ring.conf
 ldconfig -v
@@ -84,8 +88,8 @@ Start it:
 ```bash
 ./fastnetmon
 ```
-Server configuration for PCAP:
- no configuration needed
+
+Server configuration for PCAP: no configuration needed
 
 Server configuration for ULOG2:
 ```bash
@@ -125,6 +129,11 @@ ULOG packets received: 19647
 
 Example for cpu load for Intel i7 2600 with Intel X540 NIC on 250 kpps load:
 ![My image](fastnetmon_stats.png)
+
+Enable programm start on server startup, please add to /etc/rc.local this lines:
+```bash
+cd /root/fastnetmon && screen -S fastnetmon -d -m ./fastnetmon eth3,eth4
+```
 
 I recommend you to disable CPU freq scaling for gain max performance (max frequency):
 echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
