@@ -7,7 +7,7 @@ What we do? We can detect hosts in OUR network with big amount of packets per se
 
 Why you write it? Because we can't find any software for solving this problem not in proprietary world not in open sourcу. NetFlow based solutions is so slow and can't react on atatck with acceptable speed.
 
-At now we start usage of C++11 and you can build this programm only on Debian 7 Wheezy, CentOS 6 has so old g++ compiler and can't compile it (but with CentOS 7 everything will be fine but it's not released yet). 
+At now we start usage of C++11 and you can build this programm only on Debian 7 Wheezy, CentOS 6 has so old g++ compiler and can't compile it (but with CentOS 7 everything will be fine but it's not released yet). But you can use precompiled version on Debian 6, 7 and CentOS 6 without any problems.
 
 Main programm screen image:
 
@@ -23,7 +23,12 @@ cd /usr/src
 wget 'http://downloads.sourceforge.net/project/ntop/PF_RING/Old/PF_RING-5.6.2.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fntop%2Ffiles%2FPF_RING%2F&ts=1393755620&use_mirror=kent' -OPF_RING-5.6.2.tar.gz
 tar -xf PF_RING-5.6.2.tar.gz 
 cd PF_RING-5.6.2
+# Debian way
 apt-get install build-essential bison flex linux-headers-$(uname -r) libnuma-dev
+# CentOS
+yum install -y make bison flex kernel-devel 
+# CentOS openvz case 
+yum install -y make bison flex vzkernel-devel
 ```
 
 Build PF_RING kernel module:
