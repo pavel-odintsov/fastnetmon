@@ -1,4 +1,4 @@
-fastnetmon
+FastNetMon
 ===========
 
 FastNetMon - High Performance Network DDoS and Load Analyzer with PCAP/ULOG2/PF_RING support. But I recommends only PF_RING variant because other variants is so slow and use big amount of CPU and expected big packetloss.
@@ -131,6 +131,29 @@ Enable programm start on server startup, please add to /etc/rc.local this lines:
 ```bash
 cd /root/fastnetmon && screen -S fastnetmon -d -m ./fastnetmon eth3,eth4
 ```
+
+When incoming or outgoing attack arrives programm call bash script: /root/fastnetmon/notify_about_attack.sh two times. First time when threshold exceed (at this step we know IP, direction and power of attack). Second when we collect 100 packets for detailed audit what did happens.
+
+Example of first notification:
+```bash
+subject: Myflower Guard: IP xx.xx.xx.xx blocked because incoming attack with power 120613 pps
+body: blank
+```
+
+Example of second notification:
+```bash
+subject: Myflower Guard: IP xx.xx.xx.xx blocked because incoming attack with power 120613 pps
+body:
+xx.xx.xx.xx:80 > xx.xx.xx.xx:46804 protocol: tcp size: 233 bytes
+xx.xx.xx.xx:80 > xx.xx.xx.xx:46804 protocol: tcp size: 233 bytes
+xx.xx.xx.xx:80 > xx.xx.xx.xx:46804 protocol: tcp size: 233 bytes
+xx.xx.xx.xx:46804 > xx.xx.xx.xx:80 protocol: tcp size: 52 bytes
+xx.xx.xx.xx:46804 > xx.xx.xx.xx:80 protocol: tcp size: 52 bytes
+xx.xx.xx.xx:80 > xx.xx.xx.xx:46804 protocol: tcp size: 233 bytes
+xx.xx.xx.xx:80 > xx.xx.xx.xx:46804 protocol: tcp size: 233 bytes
+xx.xx.xx.xx:46804 > xx.xx.xx.xx:80 protocol: tcp size: 52 bytes
+```
+
 
 I recommend you to disable CPU freq scaling for gain max performance (max frequency):
 ```bash
