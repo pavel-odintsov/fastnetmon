@@ -1,19 +1,19 @@
 fastnetmon
 ===========
 
-FastNetMon - High Performance Network Load Analyzer with PCAP/ULOG2 support
+FastNetMon - High Performance Network Load Analyzer with PCAP/ULOG2 support. But I recommends only PF_RING variant because other variants is so slow and use big amount of CPU and produce big packetloss.
 
-Why you write it?
+What we do? We can detect hosts in OUR network with big amount of packets per second (30 000 pps in standard configuration) incoming or outgoing from certain host. And we can call external bash script which can send notify, switch off server or blackhole this client.
 
-It's reasonable question in the open source world. 
+Why you write it? Because we can't find any software for solving this problem not in proprietary world not in open source. NetFlow based solutions is so slow and can't react on atatck with fast speed.
 
-Install
+At now we start usage of C++11 and you can build this programm only on Debian 7 Wheezy, CentOS 6 has so old g++ compiler and can't compile it (but with CentOS 7 everything will be fine but it's not released yet). 
+
+Install:
 
 ```bash
    # Debian 7 Wheezy
    apt-get install -y git libpcap-dev g++ gcc libboost-all-dev make
-   # CentOS 6
-   yum install -y git libpcap-devel gcc-c++ boost-devel boost make
 
    # If you need traffic counting
    apt-get install -y libhiredis-dev
@@ -39,7 +39,7 @@ cd PF_RING-5.6.2
 apt-get install build-essential bison flex linux-headers-$(uname -r) libnuma-dev
 ```
 
-Build kernel:
+Build PF_RING kernel module:
 ```bash
 cd kernel
 make 
@@ -153,3 +153,9 @@ done
 You can find more info and graphics [here](http://forum.nag.ru/forum/index.php?showtopic=89703)
 
 Author: Pavel Odintsov pavel.odintsov at gmail.com
+
+Obsolet install guid in CentOS 6:
+```bash
+   # CentOS 6
+   yum install -y git libpcap-devel gcc-c++ boost-devel boost make
+```
