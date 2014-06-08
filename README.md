@@ -85,7 +85,7 @@ http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
 gunzip GeoIPASNum.dat.gz
 ```
 
-It's REQUIRED to add all your networks in CIDR form to file /etc/networks_list if form when one subnet on one line. And please change REDIS_SUPPORT = yes to no in Makefile if you do not need traffic counting feature.
+It's REQUIRED to add all your networks in CIDR form to file /etc/networks_list if form when one subnet on one line. And please change REDIS_SUPPORT = yes to no in Makefile if you do not need traffic counting feature. When you running this software in OpenVZ node you may did not specify networks explicitly, we can read it from file /proc/vz/veip.
 
 Start it:
 ```bash
