@@ -20,7 +20,7 @@ At first you should install PF_RING (we tested only work with 5.6.2 version, ple
 
 ```bash
 cd /usr/src
-wget 'http://downloads.sourceforge.net/project/ntop/PF_RING/PF_RING-5.6.2.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fntop%2Ffiles%2FPF_RING%2F&ts=1393755620&use_mirror=kent' -OPF_RING-5.6.2.tar.gz
+wget 'http://downloads.sourceforge.net/project/ntop/PF_RING/Old/PF_RING-5.6.2.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fntop%2Ffiles%2FPF_RING%2F&ts=1393755620&use_mirror=kent' -OPF_RING-5.6.2.tar.gz
 tar -xf PF_RING-5.6.2.tar.gz 
 cd PF_RING-5.6.2
 apt-get install build-essential bison flex linux-headers-$(uname -r) libnuma-dev
