@@ -1104,6 +1104,8 @@ int main(int argc,char **argv) {
     struct pcap_pkthdr hdr;
 #endif 
 
+    load_configuration_file();
+
     time(&start_time);
     printf("I need few seconds for collecting data, please wait. Thank you!\n");
 
@@ -1159,8 +1161,6 @@ int main(int argc,char **argv) {
 
     // загружаем наши сети и whitelist 
     load_our_networks_list();
-
-    load_configuration_file();
 
     // устанавливаем обработчик CTRL+C
     signal(SIGINT, signal_handler);
