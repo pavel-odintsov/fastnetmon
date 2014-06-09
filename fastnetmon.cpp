@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <iostream>
 #include <map>
+#include <fstream>
 
 // so buggy, http://www.stableit.ru/2013/11/unorderedmap-c11-debian-wheezy.html
 //#include <unordered_map>
@@ -117,6 +118,9 @@ int pcap_buffer_size_mbytes = 10;
 
 // Key used for sorting clients in output.  Allowed sort params: packets/bytes
 string sort_parameter = "packets";
+
+// Path to notify script 
+string notify_script_path = "/usr/local/bin/notify_about_attack.sh";
 
 // Number of lines in programm output
 int max_ips_in_list = 7;
@@ -310,6 +314,11 @@ string convert_int_to_string(int value) {
     out << value;
 
     return out.str();
+}
+
+// convert string to integer
+int convert_string_to_integer(string line) {
+    return atoi(line.c_str());
 }
 
 vector<string> exec(string cmd) {
@@ -531,7 +540,7 @@ void draw_table(map_for_counters& my_map_packets, direction data_direction, bool
                         ban_list_details[client_ip] = vector<simple_packet>();
                
                         string pps_as_string = convert_int_to_string(pps); 
-                        exec("./notify_about_attack.sh " + client_ip_as_string + " " + data_direction_as_string + " " + pps_as_string);
+                        exec(notify_script_path + " " + client_ip_as_string + " " + data_direction_as_string + " " + pps_as_string);
                     }
                 } 
             } 
@@ -561,6 +570,61 @@ bool file_exists(string path) {
         return true;
     } else {
         return false;
+    }
+}
+
+// Load configuration
+bool load_configuration_file() {
+
+    ifstream config_file ("/etc/fastnetmon.conf");
+    string line;
+
+    map<string, std::string> configuration_map;
+    
+    if (config_file.is_open()) {
+        while ( getline(config_file, line) ) {
+            //std::cout<<line<<std::endl;
+
+            vector<string> parsed_config; 
+            split( parsed_config, line, boost::is_any_of(" ="), boost::token_compress_on );
+            configuration_map[ parsed_config[0] ] = parsed_config[1];
+
+            std::cout<<"First: "<<parsed_config[0]<<" Second: "<< parsed_config[1]<<std::endl;
+        }
+
+        if (configuration_map.count("threshold_pps") != 0) {
+            ban_threshold = convert_string_to_integer( configuration_map[ "threshold_pps" ] );
+        }
+
+        if (configuration_map.count("redis_port") != 0) { 
+            redis_port = convert_string_to_integer(configuration_map[ "redis_port" ] );
+        }
+
+        if (configuration_map.count("redis_host") != 0) {
+            redis_host = configuration_map[ "redis_host" ];
+        }
+
+        if (configuration_map.count("ban_details_records_count") != 0 ) {
+            ban_details_records_count = convert_string_to_integer( configuration_map[ "ban_details_records_count" ]);
+        }
+
+        if (configuration_map.count("check_period") != 0) {
+            sort_parameter = convert_string_to_integer( configuration_map[ "check_period" ]);
+        }
+
+        if (configuration_map.count("sort_parameter") != 0) {
+            sort_parameter = configuration_map[ "sort_parameter" ];
+        }
+
+        if (configuration_map.count("max_ips_in_list") != 0) {
+            max_ips_in_list = convert_string_to_integer( configuration_map[ "max_ips_in_list" ]);
+        }
+
+        if (configuration_map.count("notify_script_path") != 0 ) {
+            notify_script_path = configuration_map[ "notify_script_path" ];
+        }
+    } else {
+        std::cout<<"Can't open config file"<<std::endl;
     }
 }
 
@@ -608,7 +672,7 @@ bool load_our_networks_list() {
     for( vector<string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) {
         vector<string> subnet_as_string; 
         split( subnet_as_string, *ii, boost::is_any_of("/"), boost::token_compress_on );
-        int cidr = atoi(subnet_as_string[1].c_str());
+        int cidr = convert_string_to_integer(subnet_as_string[1]);
 
         uint32_t subnet_as_int  = convert_ip_as_string_to_uint(subnet_as_string[0]);
         uint32_t netmask_as_int = convert_cidr_to_binary_netmask(cidr);
@@ -825,7 +889,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
             free(asn_raw);
 
             // extract raw number
-            asn_number = atoi(asn_as_string[0].substr(2).c_str()); 
+            asn_number = convert_string_to_integer(asn_as_string[0].substr(2)); 
             // packet_length
         }
 
@@ -880,7 +944,7 @@ void calculation_programm() {
             sorter = BYTES;
         }
 
-        cout<<"FastNetMon v1.0 "<<"all IPs ordered by: "<<sort_parameter<<endl<<endl;
+        cout<<"FastNetMon v1.0 "<<"IPs ordered by: "<<sort_parameter<<" "<<"threshold is: "<<ban_threshold<<endl<<endl;
 
         cout<<"Incoming Traffic"<<"\t"<<total_count_of_incoming_packets/check_period<<" pps "<<total_count_of_incoming_bytes/check_period/1024/1024*8<<" mbps"<<endl;
         draw_table(DataCounter, INCOMING, true, sorter);
@@ -963,7 +1027,7 @@ void calculation_programm() {
                     }
 
                     // отсылаем детали атаки (отпечаток пакетов) по почте
-                    exec_with_stdin_params("./notify_about_attack.sh " + client_ip_as_string + " " + attack_direction  + " " + pps_as_string, attack_details );
+                    exec_with_stdin_params(notify_script_path + " " + client_ip_as_string + " " + attack_direction  + " " + pps_as_string, attack_details );
                     // удаляем ключ из деталей атаки, чтобы он не выводился снова и в него не собирался трафик
                     ban_list_details.erase((*ii).first); 
                 }
@@ -1063,6 +1127,8 @@ int main(int argc,char **argv) {
 
     // загружаем наши сети и whitelist 
     load_our_networks_list();
+
+    load_configuration_file();
 
     // устанавливаем обработчик CTRL+C
     signal(SIGINT, signal_handler);
