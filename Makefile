@@ -52,8 +52,8 @@ endif
 # we use C++ 11 threads. We must include pthread library due gcc bug
 LIBS +=  -lpthread
 
-# If you need static compile, please uncomment this line
-# STATIC = -static
+# If you need dynamic compile, please comment this line
+STATIC = -static
 
 fastnetmon: libipulog.o fastnetmon.o
 	g++ $(STATIC) libipulog.o fastnetmon.o -o fastnetmon $(LIBS_PATH) $(LIBS) $(BUILD_FLAGS)
