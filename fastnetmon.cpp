@@ -130,6 +130,10 @@ int ban_threshold = 20000;
 // Number of lines for sending ben attack details to email
 int ban_details_records_count = 500;
 
+
+// log file
+ofstream log_file("/var/log/fastnetmon.log");
+
 /* Configuration block ends */
 
 /* Our data structs */
@@ -543,6 +547,7 @@ void draw_table(map_for_counters& my_map_packets, direction data_direction, bool
                
                         string pps_as_string = convert_int_to_string(pps);
                         if (file_exists(notify_script_path)) { 
+                            log_file<<"Attack with direction: "<<data_direction_as_string<<" IP: "<<client_ip_as_string<<" Power: "<<pps_as_string<<endl;
                             exec(notify_script_path + " " + client_ip_as_string + " " + data_direction_as_string + " " + pps_as_string);
                         }
                     }
@@ -667,7 +672,11 @@ bool load_our_networks_list() {
     
     subnet white_subnet = std::make_pair(convert_ip_as_string_to_uint("159.253.17.0"), convert_cidr_to_binary_netmask(24));
     whitelist_networks.push_back(white_subnet);
-    
+   
+    if (file_exists("/etc/networks_whitelist")) {
+
+    }
+ 
     // Whet we used unordered_map it will encrease it perfomance
     //DataCounter.reserve(MAP_INITIAL_SIZE);
 
@@ -972,6 +981,7 @@ void calculation_thread() {
     }
 }
 
+
 void calculation_programm() {
     time_t current_time;
     time(&current_time);
@@ -1074,6 +1084,8 @@ void calculation_programm() {
                     // отсылаем детали атаки (отпечаток пакетов) по почте
                     if (file_exists(notify_script_path)) {
                         exec_with_stdin_params(notify_script_path + " " + client_ip_as_string + " " + attack_direction  + " " + pps_as_string, attack_details );
+                        log_file<<"Attack with direction: "<<attack_direction<<" IP: "<<client_ip_as_string<<" Power: "<<pps_as_string<<endl;
+                        log_file<<attack_details<<endl;
                     }
                     // удаляем ключ из деталей атаки, чтобы он не выводился снова и в него не собирался трафик
                     ban_list_details.erase((*ii).first); 
@@ -1120,6 +1132,13 @@ int main(int argc,char **argv) {
     const u_char *packet; 
     struct pcap_pkthdr hdr;
 #endif 
+
+    if (!log_file.is_open()) {
+        printf("Can’t open log file, plese check filesystem!");
+        exit(1);
+    }
+
+    log_file<<"Read configuration file"<<endl;
 
     load_configuration_file();
 
