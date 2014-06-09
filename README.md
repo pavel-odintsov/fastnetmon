@@ -16,13 +16,13 @@ Main programm screen image:
 Example for cpu load for Intel i7 2600 with Intel X540 NIC on 250 kpps load:
 ![Cpu consumption](fastnetmon_stats.png)
 
-At first you should install PF_RING (we tested only work with 5.6.2 version, please use it):
+At first you should install PF_RING (you can install any latest version):
 
 ```bash
 cd /usr/src
-wget 'http://downloads.sourceforge.net/project/ntop/PF_RING/Old/PF_RING-5.6.2.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fntop%2Ffiles%2FPF_RING%2F&ts=1393755620&use_mirror=kent' -OPF_RING-5.6.2.tar.gz
-tar -xf PF_RING-5.6.2.tar.gz 
-cd PF_RING-5.6.2
+wget 'http://downloads.sourceforge.net/project/ntop/PF_RING/PF_RING-6.0.1.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fntop%2Ffiles%2FPF_RING%2F&ts=1402307916&use_mirror=cznic' -OPF_RING-6.0.1.tar.gz
+tar -xf PF_RING-6.0.1.tar.gz 
+cd PF_RING-6.0.1
 # Debian way
 apt-get install build-essential bison flex linux-headers-$(uname -r) libnuma-dev
 # CentOS
