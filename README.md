@@ -103,6 +103,8 @@ gunzip GeoIPASNum.dat.gz
 
 It's REQUIRED to add all your networks in CIDR form to file /etc/networks_list if form when one subnet on one line. Please aggregate your networks because long networks list will significatly slow down programm. And please change REDIS_SUPPORT = yes to no in Makefile if you do not need traffic counting feature. When you running this software in OpenVZ node you may did not specify networks explicitly, we can read it from file /proc/vz/veip.
 
+You can add whitelist subnets in similar form to /etc/networks_whitelist (CIDR masks too).
+
 Copy standard config file to /etc:
 ```bash
 cp fastnetmon.conf /etc/fastnetmon.conf
