@@ -1,13 +1,11 @@
 /*
  TODO:
   1) Add network average load for 30 second/60 and 5 minutes
-  2) Migrate params to configuration
-  3) Migrate ban list to blacklist struct
-  4) Enable work as standard linux user with CAP Admin
-  5) Migrate belongs_to_network to prefix bitwise tree
-  6) Please do not create big network's list, it will be result to slooww ip lookup
-  7) http://hg.python.org/cpython/file/3fa1414ce505/Lib/heapq.py#l183 - поиск топ 10
-  8) Try libsparsehash-dev
+  2) Migrate ban list to blacklist struct
+  3) Enable work as standard linux user with CAP Admin
+  4) Migrate belongs_to_network to prefix bitwise tree
+  5) http://hg.python.org/cpython/file/3fa1414ce505/Lib/heapq.py#l183 - поиск топ 10
+  6) Try libsparsehash-dev
 */
 
 /* Author: pavel.odintsov@gmail.com */
@@ -254,6 +252,7 @@ void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask);
 //bool belongs_to_networks(tree_leaf* root, uint32_t ip);
 bool belongs_to_networks(vector<subnet>& networks_list, uint32_t ip);
 
+bool file_exists(string path);
 void calculation_programm();
 void pcap_main_loop(char* dev);
 void pf_ring_main_loop(char* dev);
@@ -539,8 +538,10 @@ void draw_table(map_for_counters& my_map_packets, direction data_direction, bool
 
                         ban_list_details[client_ip] = vector<simple_packet>();
                
-                        string pps_as_string = convert_int_to_string(pps); 
-                        exec(notify_script_path + " " + client_ip_as_string + " " + data_direction_as_string + " " + pps_as_string);
+                        string pps_as_string = convert_int_to_string(pps);
+                        if (file_exists(notify_script_path)) { 
+                            exec(notify_script_path + " " + client_ip_as_string + " " + data_direction_as_string + " " + pps_as_string);
+                        }
                     }
                 } 
             } 
@@ -583,13 +584,9 @@ bool load_configuration_file() {
     
     if (config_file.is_open()) {
         while ( getline(config_file, line) ) {
-            //std::cout<<line<<std::endl;
-
             vector<string> parsed_config; 
             split( parsed_config, line, boost::is_any_of(" ="), boost::token_compress_on );
             configuration_map[ parsed_config[0] ] = parsed_config[1];
-
-            std::cout<<"First: "<<parsed_config[0]<<" Second: "<< parsed_config[1]<<std::endl;
         }
 
         if (configuration_map.count("threshold_pps") != 0) {
@@ -1027,7 +1024,9 @@ void calculation_programm() {
                     }
 
                     // отсылаем детали атаки (отпечаток пакетов) по почте
-                    exec_with_stdin_params(notify_script_path + " " + client_ip_as_string + " " + attack_direction  + " " + pps_as_string, attack_details );
+                    if (file_exists(notify_script_path)) {
+                        exec_with_stdin_params(notify_script_path + " " + client_ip_as_string + " " + attack_direction  + " " + pps_as_string, attack_details );
+                    }
                     // удаляем ключ из деталей атаки, чтобы он не выводился снова и в него не собирался трафик
                     ban_list_details.erase((*ii).first); 
                 }
