@@ -253,6 +253,7 @@ vector<subnet> whitelist_networks;
 */
 
 // prototypes
+void copy_networks_from_string_form_to_binary(vector<string> networks_list_as_string, vector<subnet>& our_networks);
 void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask); 
 //bool belongs_to_networks(tree_leaf* root, uint32_t ip);
 bool belongs_to_networks(vector<subnet>& networks_list, uint32_t ip);
@@ -670,11 +671,15 @@ bool load_our_networks_list() {
 
     //insert_prefix_bitwise_tree(whitelist_networks, "159.253.17.0", 24);
     
-    subnet white_subnet = std::make_pair(convert_ip_as_string_to_uint("159.253.17.0"), convert_cidr_to_binary_netmask(24));
-    whitelist_networks.push_back(white_subnet);
+    //subnet white_subnet = std::make_pair(convert_ip_as_string_to_uint("159.253.17.0"), convert_cidr_to_binary_netmask(24));
+    //whitelist_networks.push_back(white_subnet);
    
     if (file_exists("/etc/networks_whitelist")) {
+        vector<string> network_list_from_config = read_file_to_vector("/etc/networks_whitelist");
 
+        copy_networks_from_string_form_to_binary(network_list_from_config, whitelist_networks);
+
+        log_file<<"We loaded "<<network_list_from_config.size()<< " networks from whitelist file"<<endl;
     }
  
     // Whet we used unordered_map it will encrease it perfomance
@@ -705,13 +710,13 @@ bool load_our_networks_list() {
             string openvz_subnet = subnet_as_string[1] + "/32";
             networks_list_as_string.push_back(openvz_subnet);
         }
-    
-        //networks_list_as_string = exec("cat /proc/vz/veip | awk '{print $1\"/32\"}' |grep -vi version |grep -v ':'");
     } 
 
     if (file_exists("/etc/networks_list")) { 
         vector<string> network_list_from_config = read_file_to_vector("/etc/networks_list");
         networks_list_as_string.insert(networks_list_as_string.end(), network_list_from_config.begin(), network_list_from_config.end());
+
+        log_file<<"We loaded "<<network_list_from_config.size()<< " networks from networks file"<<endl;
     }
 
     // если это ложь, то в моих функциях косяк
@@ -723,6 +728,12 @@ bool load_our_networks_list() {
     //our_networks = new tree_leaf;
     //our_networks->left = our_networks->right = NULL;
 
+    copy_networks_from_string_form_to_binary(networks_list_as_string, our_networks);
+ 
+    return true;
+}
+
+void copy_networks_from_string_form_to_binary(vector<string> networks_list_as_string, vector<subnet>& our_networks ) {
     for( vector<string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) {
         vector<string> subnet_as_string; 
         split( subnet_as_string, *ii, boost::is_any_of("/"), boost::token_compress_on );
@@ -735,10 +746,8 @@ bool load_our_networks_list() {
 
         our_networks.push_back(current_subnet);
         //insert_prefix_bitwise_tree(our_networks, subnet_as_string[0], cidr);
-    }
- 
-    return true;
-}
+    }  
+} 
 
 uint32_t convert_cidr_to_binary_netmask(int cidr) {
     uint32_t binary_netmask = 0xFFFFFFFF; 
