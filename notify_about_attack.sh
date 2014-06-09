@@ -4,7 +4,7 @@
 #$2 data_direction
 #$3 pps_as_string
 
-email_notify="please_fix_this_email@domain.ru"
+email_notify="root,please_fix_this_email@domain.ru"
 
 # Далее возможны два варианта:
 # это первый запуск, при котором нужно банить IP (на stdin пусто)
