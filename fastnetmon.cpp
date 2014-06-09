@@ -33,8 +33,8 @@
 #include <map>
 #include <fstream>
 
-// so buggy, http://www.stableit.ru/2013/11/unorderedmap-c11-debian-wheezy.html
-//#include <unordered_map>
+// It's buggy, http://www.stableit.ru/2013/11/unorderedmap-c11-debian-wheezy.html
+// #include <unordered_map>
 
 #include <vector>
 #include <utility>
@@ -79,7 +79,7 @@ using namespace std;
 /*
  Pcap docs:    
    http://www.linuxforu.com/2011/02/capturing-packets-c-program-libpcap/
-   http://vichargrave.com/develop-a-packet-sniffer-with-libpcap/ парсер отсюда
+   http://vichargrave.com/develop-a-packet-sniffer-with-libpcap/ pcap parser
 */
 
 /* Configuration block, we must move it to configuration file  */
@@ -321,6 +321,7 @@ int convert_string_to_integer(string line) {
     return atoi(line.c_str());
 }
 
+// exec command in shell
 vector<string> exec(string cmd) {
     vector<string> output_list;
 
@@ -346,6 +347,7 @@ vector<string> exec(string cmd) {
     return output_list;
 }
 
+// exec command and pass data to it stdin
 bool exec_with_stdin_params(string cmd, string params) {
     FILE* pipe = popen(cmd.c_str(), "w");
     if (!pipe) return false;
@@ -565,6 +567,7 @@ void draw_table(map_for_counters& my_map_packets, direction data_direction, bool
         } 
 }
 
+// check file existence
 bool file_exists(string path) {
     FILE* check_file = fopen(path.c_str(), "r");
     if (check_file) {
@@ -676,11 +679,25 @@ bool load_our_networks_list() {
         cout<<"We found OpenVZ"<<endl;
         // тут искусствено добавляем суффикс 32
         vector<string> openvz_ips = read_file_to_vector("/proc/vz/veip");
-        for( vector<string>::iterator ii=openvz_ips.begin(); ii!=openvz_ips.end(); ++ii) { 
-            std::cout<<*ii<<std::endl;
+        for( vector<string>::iterator ii=openvz_ips.begin(); ii!=openvz_ips.end(); ++ii) {
+            // skip IPv6 addresses
+            if (strstr(ii->c_str(), ":") != NULL) {
+                continue;
+            }
+
+            // skip header
+            if (strstr(ii->c_str(), "Version") != NULL) {
+                continue;
+            }
+
+            vector<string> subnet_as_string; 
+            split( subnet_as_string, *ii, boost::is_any_of(" "), boost::token_compress_on );
+ 
+            string openvz_subnet = subnet_as_string[1] + "/32";
+            networks_list_as_string.push_back(openvz_subnet);
         }
     
-        networks_list_as_string = exec("cat /proc/vz/veip | awk '{print $1\"/32\"}' |grep -vi version |grep -v ':'");
+        //networks_list_as_string = exec("cat /proc/vz/veip | awk '{print $1\"/32\"}' |grep -vi version |grep -v ':'");
     } 
 
     if (file_exists("/etc/networks_list")) { 
