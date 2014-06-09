@@ -86,6 +86,8 @@ using namespace std;
 #ifdef REDIS
 int redis_port = 6379;
 string redis_host = "127.0.0.1";
+// because it's additional and very specific feature we should disable it by default
+bool redis_enabled = false;
 #endif
 
 #ifdef GEOIP
@@ -552,7 +554,7 @@ void draw_table(map_for_counters& my_map_packets, direction data_direction, bool
             }  
    
 #ifdef REDIS 
-            if (do_redis_update) {
+            if (redis_enabled && do_redis_update) {
                 //cout<<"Start updating traffic in redis"<<endl;
                 update_traffic_in_redis( (*ii).first, (*ii).second.in_packets, INCOMING);
                 update_traffic_in_redis( (*ii).first, (*ii).second.out_packets, OUTGOING);
@@ -615,6 +617,14 @@ bool load_configuration_file() {
         if (configuration_map.count("redis_host") != 0) {
             redis_host = configuration_map[ "redis_host" ];
         }
+
+        if (configuration_map.count("redis_enabled") != 0) {
+            if (configuration_map[ "redis_enabled" ] == "yes") {
+                redis_enabled = true;
+            } else {
+                redis_enabled = false;
+            } 
+        }
 #endif
 
         if (configuration_map.count("ban_details_records_count") != 0 ) {
@@ -665,6 +675,11 @@ bool load_our_networks_list() {
     if (file_exists("/proc/vz/version")) {
         cout<<"We found OpenVZ"<<endl;
         // тут искусствено добавляем суффикс 32
+        vector<string> openvz_ips = read_file_to_vector("/proc/vz/veip");
+        for( vector<string>::iterator ii=openvz_ips.begin(); ii!=openvz_ips.end(); ++ii) { 
+            std::cout<<*ii<<std::endl;
+        }
+    
         networks_list_as_string = exec("cat /proc/vz/veip | awk '{print $1\"/32\"}' |grep -vi version |grep -v ':'");
     } 
 
@@ -1126,9 +1141,11 @@ int main(int argc,char **argv) {
 
     // иницилизируем соединение с Redis
 #ifdef REDIS
-    if (!redis_init_connection()) {
-        printf("Can't establish connection to the redis\n");
-        exit(1);
+    if (redis_enabled) {
+        if (!redis_init_connection()) {
+            printf("Can't establish connection to the redis\n");
+            exit(1);
+        }
     }
 #endif
 
@@ -1405,7 +1422,9 @@ void signal_handler(int signal_number) {
 #endif
 
 #ifdef REDIS
-    redisFree(redis_context);
+    if (redis_enabled) {
+        redisFree(redis_context);
+    }
 #endif
 
     exit(1); 
