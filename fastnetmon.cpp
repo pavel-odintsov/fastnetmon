@@ -76,7 +76,6 @@ using namespace std;
 /* This is the decimal equivalent of the VLAN tag's ether frame type */
 #define VLAN_ETHERTYPE 33024
 
-
 /*
  Pcap docs:    
    http://www.linuxforu.com/2011/02/capturing-packets-c-program-libpcap/
@@ -574,6 +573,21 @@ bool file_exists(string path) {
     }
 }
 
+// read whole file to vector
+vector<string> read_file_to_vector(string file_name) {
+    vector<string> data;
+    string line;
+
+    ifstream reading_file (file_name);
+    if (reading_file.is_open()) {
+        while ( getline(reading_file, line) ) {
+            data.push_back(line); 
+        }
+    }
+
+    return data;
+}
+
 // Load configuration
 bool load_configuration_file() {
 
@@ -593,6 +607,7 @@ bool load_configuration_file() {
             ban_threshold = convert_string_to_integer( configuration_map[ "threshold_pps" ] );
         }
 
+#ifdef REDIS
         if (configuration_map.count("redis_port") != 0) { 
             redis_port = convert_string_to_integer(configuration_map[ "redis_port" ] );
         }
@@ -600,6 +615,7 @@ bool load_configuration_file() {
         if (configuration_map.count("redis_host") != 0) {
             redis_host = configuration_map[ "redis_host" ];
         }
+#endif
 
         if (configuration_map.count("ban_details_records_count") != 0 ) {
             ban_details_records_count = convert_string_to_integer( configuration_map[ "ban_details_records_count" ]);
@@ -653,7 +669,7 @@ bool load_our_networks_list() {
     } 
 
     if (file_exists("/etc/networks_list")) { 
-        vector<string> network_list_from_config = exec("cat /etc/networks_list");
+        vector<string> network_list_from_config = read_file_to_vector("/etc/networks_list");
         networks_list_as_string.insert(networks_list_as_string.end(), network_list_from_config.begin(), network_list_from_config.end());
     }
 
