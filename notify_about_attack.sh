@@ -4,7 +4,7 @@
 #$2 data_direction
 #$3 pps_as_string
 
-email_notify="odintsov@fastvps.ru,hohryakov@fastvps.ru,ziltsov@fastvps.ee,robot@bill2fast.com"
+email_notify="please_fix_this_email@domain.ru"
 
 # Далее возможны два варианта:
 # это первый запуск, при котором нужно банить IP (на stdin пусто)
@@ -13,8 +13,9 @@ email_notify="odintsov@fastvps.ru,hohryakov@fastvps.ru,ziltsov@fastvps.ee,robot@
 # check stdin type
 if [ -t 0 ]; then
     echo "Subject, please execute all related tasks :) You may (not always) got atack details in next letter" | mail -s "Myflower Guard: IP $1 blocked because $2 attack with power $3 pps" $email_notify;
-    ssh fastvpssupport@10.0.3.251 ban_to_blackhole.sh $1
-    ssh fastvpssupport@10.0.3.252 ban_to_blackhole.sh $1
+    # You can add ban code here!
+    # iptables -A INPUT -s $1 -j DROP
+    # iptables -A INPUT -d $1 -j DROP
 else
     cat | mail -s "Myflower Guard: IP $1 blocked because $2 attack with power $3 pps" $email_notify;
 fi
