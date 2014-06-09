@@ -101,7 +101,7 @@ http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
 gunzip GeoIPASNum.dat.gz
 ```
 
-It's REQUIRED to add all your networks in CIDR form to file /etc/networks_list if form when one subnet on one line. And please change REDIS_SUPPORT = yes to no in Makefile if you do not need traffic counting feature. When you running this software in OpenVZ node you may did not specify networks explicitly, we can read it from file /proc/vz/veip.
+It's REQUIRED to add all your networks in CIDR form to file /etc/networks_list if form when one subnet on one line. Please aggregate your networks because long networks list will significatly slow down programm. And please change REDIS_SUPPORT = yes to no in Makefile if you do not need traffic counting feature. When you running this software in OpenVZ node you may did not specify networks explicitly, we can read it from file /proc/vz/veip.
 
 Start it:
 ```bash
@@ -148,7 +148,7 @@ Enable programm start on server startup, please add to /etc/rc.local this lines:
 cd /root/fastnetmon && screen -S fastnetmon -d -m ./fastnetmon eth3,eth4
 ```
 
-When incoming or outgoing attack arrives programm call bash script: /root/fastnetmon/notify_about_attack.sh two times. First time when threshold exceed (at this step we know IP, direction and power of attack). Second when we collect 100 packets for detailed audit what did happens.
+When incoming or outgoing attack arrives programm call bash script (when it exists): /usr/local/bin/notify_about_attack.sh two times. First time when threshold exceed (at this step we know IP, direction and power of attack). Second when we collect 100 packets for detailed audit what did happens.
 
 Example of first notification:
 ```bash
