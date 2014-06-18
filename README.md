@@ -54,6 +54,8 @@ Build lib (We disabled bpf because it requires linking to PCAP):
 ```bash
 cd /usr/src/PF_RING-5.6.2/userland/lib
 ./configure  --disable-bpf --prefix=/opt/pf_ring
+make
+make install
 ```
 
 Install FastNetMon:
