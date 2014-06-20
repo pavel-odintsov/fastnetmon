@@ -1,5 +1,6 @@
 FastNetMon
 ===========
+Author: Pavel Odintsov pavel.odintsov at gmail.com
 
 FastNetMon - High Performance Network DDoS and Load Analyzer with PCAP/ULOG2/PF_RING support. But I recommends only PF_RING variant because other variants is so slow and use big amount of CPU and expected big packetloss.
 
@@ -211,24 +212,10 @@ done
 
 You can find more info and graphics [here](http://forum.nag.ru/forum/index.php?showtopic=89703)
 
-Author: Pavel Odintsov pavel.odintsov at gmail.com
-
-Obsolet documentation.
-
-Install guide in CentOS 6:
+Running tool without root permissions:
 ```bash
-   # CentOS 6
-   yum install -y git libpcap-devel gcc-c++ boost-devel boost make
+useradd fastnetmon
+setcap cap_net_admin+eip fastnetmon
+su fastnetmon
+./fastnetmon eth0,eth1
 ```
-
-Server configuration for PCAP: no configuration needed
-
-Server configuration for ULOG2:
-```bash
-iptables -A FORWARD -i br0 -j ULOG --ulog-nlgroup 1 --ulog-cprange 32 --ulog-qthreshold 45
-```
-
-If you use PCAP, u can set monitored interface as command line parameter (u can set 'any' as inerface name but it work not so fine):
-```bash
-./fastnetmon br0
-``` 
