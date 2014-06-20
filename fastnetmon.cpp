@@ -73,8 +73,17 @@ using namespace std;
 /* 802.1Q VLAN tags are 4 bytes long. */
 #define VLAN_HDRLEN 4
 
+
+/* Complete list of ethertypes: http://en.wikipedia.org/wiki/EtherType */
 /* This is the decimal equivalent of the VLAN tag's ether frame type */
-#define VLAN_ETHERTYPE 33024
+#define VLAN_ETHERTYPE 0x8100
+
+/* This is ethertype code for IP protocol */
+#define IP_ETHERTYPE 0x0800
+
+#define IP6_ETHERTYPE 0x86dd
+
+#define ARP_ETHERTYPE 0x0806
 
 /*
  Pcap docs:    
@@ -824,9 +833,13 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     if ( ntohs(eptr->ether_type) ==  VLAN_ETHERTYPE ) {
         // это тегированный трафик, поэтому нужно отступить еще 4 байта, чтобы добраться до данных
         packetptr += DATA_SHIFT_VALUE + VLAN_HDRLEN;
-    } else {
+    } else if (ntohs(eptr->ether_type) == IP_ETHERTYPE) {
         // Skip the datalink layer header and get the IP header fields.
         packetptr += DATA_SHIFT_VALUE;
+    } else if (ntohs(eptr->ether_type) == IP6_ETHERTYPE or ntohs(eptr->ether_type) == ARP_ETHERTYPE) {
+        // we know about it but does't not care now
+    } else  {
+        // printf("Packet with non standard ethertype found: 0x%x\n", ntohs(eptr->ether_type));
     }
 
     iphdr = (struct ip*)packetptr;
