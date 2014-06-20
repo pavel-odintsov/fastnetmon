@@ -107,6 +107,9 @@ int ULOGD_BUFSIZE_DEFAULT = 150000;
 
 int DEBUG = 0;
 
+// flag about dumping all packets to console
+bool DEBUG_DUMP_ALL_PACKETS = false;
+
 // Period for recounting pps/traffic
 int check_period = 3;
 
@@ -865,8 +868,12 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     current_packet.src_ip = src_ip;
     current_packet.dst_ip = dst_ip;
     current_packet.length = packet_length;
+    
+    // Packets dump is very useful for bug hunting
+    if (DEBUG_DUMP_ALL_PACKETS) {
+        cout<<"Dump: "<<print_simple_packet(current_packet);
+    }
 
-    //cout<<"Dump: "<<print_simple_packet(current_packet);
     direction packet_direction;
 
     // try to cache succesful lookups
@@ -1135,7 +1142,11 @@ void calculation_programm() {
 int main(int argc,char **argv) {
     // listened device
     char *dev; 
-    
+   
+    if (getenv("DUMP_ALL_PACKETS") != NULL) {
+        DEBUG_DUMP_ALL_PACKETS = true;
+    }
+ 
 #ifdef PCAP
     char errbuf[PCAP_ERRBUF_SIZE]; 
     const u_char *packet; 
