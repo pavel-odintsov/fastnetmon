@@ -219,3 +219,11 @@ setcap cap_net_admin+eip fastnetmon
 su fastnetmon
 ./fastnetmon eth0,eth1
 ```
+
+Debugging flags.
+
+DUMP_ALL_PACKETS will enable all packets dumping to console. It's very useful for testing tool on non standard platforms.
+
+```bash
+DUMP_ALL_PACKETS=yes ./fastnetmon eth3,eth4
+```
