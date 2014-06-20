@@ -44,7 +44,7 @@ You can use precompiled and statically linced version of this tool without any c
 ```bash
 mkdir /root/fastnetmon
 cd /root/fastnetmon
-wget  https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/fastnetmon
+wget  https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/fastnetmon -Ofastnetmon
 chmod +x fastnetmon
 ./fastnetmon eth0
 ```
