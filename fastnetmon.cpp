@@ -830,7 +830,7 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
         packet.length = h->len;
         packet.protocol = h->extended_hdr.parsed_pkt.l3_proto;
  
-        //process_packet(packet);
+        process_packet(packet);
         //std::cout<<print_simple_packet(packet)<<std::endl;
     }
 }
