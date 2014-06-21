@@ -265,6 +265,7 @@ vector<subnet> whitelist_networks;
 */
 
 // prototypes
+void process_packet(simple_packet& current_packet);
 void copy_networks_from_string_form_to_binary(vector<string> networks_list_as_string, vector<subnet>& our_networks);
 void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask); 
 //bool belongs_to_networks(tree_leaf* root, uint32_t ip);
@@ -816,6 +817,10 @@ string print_simple_packet(struct simple_packet packet) {
 // Обработчик для pf_ring, так как у него иной формат входных параметров
 void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const u_char *user_bytes) {
     parse_packet(NULL, NULL, p);
+    //printf("hash%d\n",h->extended_hdr.pkt_hash);
+
+    //printf("proto id: %d\n", h->extended_hdr.parsed_pkt.l3_proto); 
+    // описание полей: http://www.ntop.org/pfring_api/structpkt__parsing__info.html
 }
 
 // в случае прямого вызова скрипта колбэка - нужно конст, напрямую в хендлере - конст не нужно
@@ -882,23 +887,34 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     current_packet.dst_ip = dst_ip;
     current_packet.length = packet_length;
     
+    /* Передаем пакет в обработку */ 
+    process_packet(current_packet);
+
+#ifdef THREADLESS
+    calculation_programm();
+#endif
+}
+
+/* Производим обработку уже переданного нам пакета в простом формате */
+void process_packet(simple_packet& current_packet) { 
     // Packets dump is very useful for bug hunting
     if (DEBUG_DUMP_ALL_PACKETS) {
         cout<<"Dump: "<<print_simple_packet(current_packet);
     }
 
+    // определение направления пакета тоже нужно вынести в функцию!!!
     direction packet_direction;
 
     // try to cache succesful lookups
-    bool our_ip_is_destination = DataCounter.count(dst_ip) > 0;
-    bool our_ip_is_source      = DataCounter.count(src_ip) > 0;
+    bool our_ip_is_destination = DataCounter.count(current_packet.dst_ip) > 0;
+    bool our_ip_is_source      = DataCounter.count(current_packet.src_ip) > 0;
 
     if (! our_ip_is_destination) {
-        our_ip_is_destination = belongs_to_networks(our_networks, dst_ip);
+        our_ip_is_destination = belongs_to_networks(our_networks, current_packet.dst_ip);
     }
 
     if (!our_ip_is_source) {
-        our_ip_is_source      = belongs_to_networks(our_networks, src_ip);
+        our_ip_is_source      = belongs_to_networks(our_networks, current_packet.src_ip);
     }
 
     if (our_ip_is_source && our_ip_is_destination) {
@@ -906,7 +922,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
 
         counters_mutex.lock();
         total_count_of_internal_packets ++;
-        total_count_of_internal_bytes += packet_length;
+        total_count_of_internal_bytes += current_packet.length;
         counters_mutex.unlock();
 
     } else if (our_ip_is_source) {
@@ -914,17 +930,17 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
 
         counters_mutex.lock();
         total_count_of_outgoing_packets ++;
-        total_count_of_outgoing_bytes += packet_length;
+        total_count_of_outgoing_bytes += current_packet.length;
         counters_mutex.unlock();
 
         // собираем данные для деталей при бане клиента
-        if  (ban_list_details.count(src_ip) > 0 && ban_list_details[src_ip].size() < ban_details_records_count) {
-            ban_list_details[src_ip].push_back(current_packet);
+        if  (ban_list_details.count(current_packet.src_ip) > 0 && ban_list_details[current_packet.src_ip].size() < ban_details_records_count) {
+            ban_list_details[current_packet.src_ip].push_back(current_packet);
         }
 
         counters_mutex.lock();
-        DataCounter[ src_ip ].out_packets++; 
-        DataCounter[ src_ip ].out_bytes += packet_length;
+        DataCounter[ current_packet.src_ip ].out_packets++; 
+        DataCounter[ current_packet.src_ip ].out_bytes += current_packet.length;
         counters_mutex.unlock();
  
     } else if (our_ip_is_destination) {
@@ -932,31 +948,31 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     
         counters_mutex.lock();
         total_count_of_incoming_packets++;
-        total_count_of_incoming_bytes += packet_length;
+        total_count_of_incoming_bytes += current_packet.length;
         counters_mutex.unlock();
 
         // собираемы данные для деталей при бане клиента
-        if  (ban_list_details.count(dst_ip) > 0 && ban_list_details[dst_ip].size() < ban_details_records_count) {
-            ban_list_details[dst_ip].push_back(current_packet);
+        if  (ban_list_details.count(current_packet.dst_ip) > 0 && ban_list_details[current_packet.dst_ip].size() < ban_details_records_count) {
+            ban_list_details[current_packet.dst_ip].push_back(current_packet);
         }
 
         counters_mutex.lock();
-        DataCounter[ dst_ip ].in_packets ++;
-        DataCounter[ dst_ip ].in_bytes += packet_length;
+        DataCounter[ current_packet.dst_ip ].in_packets ++;
+        DataCounter[ current_packet.dst_ip ].in_bytes += current_packet.length;
         counters_mutex.unlock();
     } else {
         packet_direction = OTHER;
 
         counters_mutex.lock();
         total_count_of_other_packets ++;
-        total_count_of_other_bytes += packet_length;
+        total_count_of_other_bytes += current_packet.length;
         counters_mutex.unlock();
     }
 
 #ifdef GEOIP
     // Execute GeoIP lookup
     if (packet_direction == INCOMING or packet_direction == OUTGOING) {
-        uint32_t remote_ip = packet_direction == INCOMING ? src_ip : dst_ip; 
+        uint32_t remote_ip = packet_direction == INCOMING ? current_packet.src_ip : dst_ip; 
         
         char* asn_raw = GeoIP_org_by_name(geo_ip, convert_ip_as_uint_to_string(remote_ip).c_str());
         uint32_t asn_number = 0;   
@@ -973,7 +989,6 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
 
             // extract raw number
             asn_number = convert_string_to_integer(asn_as_string[0].substr(2)); 
-            // packet_length
         }
 
         // кладем данные по трафику ASN в хэш
@@ -983,11 +998,11 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
         if (packet_direction == INCOMING) {
             // Incoming
             GeoIpCounter[ asn_number ].out_packets++;
-            GeoIpCounter[ asn_number ].out_bytes += packet_length;
+            GeoIpCounter[ asn_number ].out_bytes += current_packet.length;
         } else {
             // Outgoing
             GeoIpCounter[ asn_number ].in_packets++;
-            GeoIpCounter[ asn_number ].in_bytes += packet_length;
+            GeoIpCounter[ asn_number ].in_bytes += current_packet.length;
         }
 #endif
 
@@ -995,11 +1010,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     }
 #endif
 
-#ifdef THREADLESS
-    calculation_programm();
-#endif
 }
-
 
 // void* void* data
 void calculation_thread() {
@@ -1268,7 +1279,9 @@ void pf_ring_main_loop(char* dev) {
     int num_threads = 1;
 
     int promisc = 1;
-    u_int8_t use_extended_pkt_header = 0, touch_payload = 0, enable_hw_timestamp = 0, dont_strip_timestamps = 0;    
+    /* This flag manages packet parser for extended_hdr */
+    u_int8_t use_extended_pkt_header = 0;
+    u_int8_t touch_payload = 0, enable_hw_timestamp = 0, dont_strip_timestamps = 0;    
 
     u_int32_t flags = 0;
     if(num_threads > 1)         flags |= PF_RING_REENTRANT;
