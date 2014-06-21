@@ -188,9 +188,6 @@ typedef map <uint32_t, map_element> map_for_counters;
 // data structure for storing data in Vector
 typedef pair<uint32_t, map_element> pair_of_map_elements;
 
-/// buffers for parser
-char iphdrInfo[256], srcip_char[256], dstip_char[256];
-
 /* End of our data structs */
 
 std::mutex counters_mutex;
@@ -816,11 +813,26 @@ string print_simple_packet(struct simple_packet packet) {
 
 // Обработчик для pf_ring, так как у него иной формат входных параметров
 void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const u_char *user_bytes) {
-    parse_packet(NULL, NULL, p);
     //printf("hash%d\n",h->extended_hdr.pkt_hash);
 
-    //printf("proto id: %d\n", h->extended_hdr.parsed_pkt.l3_proto); 
-    // описание полей: http://www.ntop.org/pfring_api/structpkt__parsing__info.html
+    // Описание всех полей: http://www.ntop.org/pfring_api/structpkt__parsing__info.html
+    simple_packet packet;
+
+    /* We handle only IPv4 */
+    if (h->extended_hdr.parsed_pkt.ip_version == 4) {
+        /* PF_RING хранит данные в host byte order, а мы использум только network byte order */
+        packet.src_ip = htonl(h->extended_hdr.parsed_pkt.ip_src.v4); 
+        packet.dst_ip = htonl( h->extended_hdr.parsed_pkt.ip_dst.v4);
+
+        packet.source_port = h->extended_hdr.parsed_pkt.l4_src_port;
+        packet.destination_port = h->extended_hdr.parsed_pkt.l4_dst_port;
+
+        packet.length = h->len;
+        packet.protocol = h->extended_hdr.parsed_pkt.l3_proto;
+ 
+        //process_packet(packet);
+        //std::cout<<print_simple_packet(packet)<<std::endl;
+    }
 }
 
 // в случае прямого вызова скрипта колбэка - нужно конст, напрямую в хендлере - конст не нужно
@@ -850,9 +862,6 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     iphdr = (struct ip*)packetptr;
 
     // исходящий/входящий айпи это in_addr, http://man7.org/linux/man-pages/man7/ip.7.html
-    strcpy(srcip_char, inet_ntoa(iphdr->ip_src));
-    strcpy(dstip_char, inet_ntoa(iphdr->ip_dst));
-
     uint32_t src_ip = iphdr->ip_src.s_addr;
     uint32_t dst_ip = iphdr->ip_dst.s_addr;
 
@@ -1280,7 +1289,7 @@ void pf_ring_main_loop(char* dev) {
 
     int promisc = 1;
     /* This flag manages packet parser for extended_hdr */
-    u_int8_t use_extended_pkt_header = 0;
+    u_int8_t use_extended_pkt_header = 1;
     u_int8_t touch_payload = 0, enable_hw_timestamp = 0, dont_strip_timestamps = 0;    
 
     u_int32_t flags = 0;
