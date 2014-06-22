@@ -678,10 +678,16 @@ bool load_configuration_file() {
     }
 }
 
+/* Enable core dumps for simplify debug tasks */
 void enable_core_dumps() {
     struct rlimit rlim;
 
-    if (!getrlimit(RLIMIT_CORE, &rlim)) {
+    int result = getrlimit(RLIMIT_CORE, &rlim);
+
+    if (result) {
+        std::cout<<"Can't get current rlimit for RLIMIT_CORE"<<endl;
+        return;
+    } else {
         rlim.rlim_cur = rlim.rlim_max;
         setrlimit(RLIMIT_CORE, &rlim);
     }
