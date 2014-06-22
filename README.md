@@ -220,6 +220,8 @@ su fastnetmon
 ./fastnetmon eth0,eth1
 ```
 
+Please keep in mind when run tool on OpenVZ because without root permissions tool can't get all VE ips and you should pass it explicitly.
+
 Debugging flags.
 
 DUMP_ALL_PACKETS will enable all packets dumping to console. It's very useful for testing tool on non standard platforms.

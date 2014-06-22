@@ -608,6 +608,8 @@ vector<string> read_file_to_vector(string file_name) {
         while ( getline(reading_file, line) ) {
             data.push_back(line); 
         }
+    } else {
+        std::cout<<"Can't open file: "<<file_name<<endl;
     }
 
     return data;
@@ -712,8 +714,8 @@ bool load_our_networks_list() {
         log_file<<"We loaded "<<network_list_from_config.size()<< " networks from whitelist file"<<endl;
     }
  
-    // Whet we used unordered_map it will encrease it perfomance
-    //DataCounter.reserve(MAP_INITIAL_SIZE);
+    // When we used unordered_map it will increase it perfomance
+    // DataCounter.reserve(MAP_INITIAL_SIZE);
 
     vector<string> networks_list_as_string;
     // если мы на openvz ноде, то "свои" IP мы можем получить из спец-файла в /proc
