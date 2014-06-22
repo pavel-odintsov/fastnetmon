@@ -147,7 +147,7 @@ int ban_details_records_count = 500;
 
 
 // log file
-ofstream log_file("/var/log/fastnetmon.log");
+ofstream log_file("/var/log/fastnetmon.log", std::ofstream::app);
 
 /* Configuration block ends */
 
