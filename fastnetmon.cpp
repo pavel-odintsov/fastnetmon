@@ -91,6 +91,8 @@ using namespace std;
    http://vichargrave.com/develop-a-packet-sniffer-with-libpcap/ pcap parser
 */
 
+string work_on_interfaces = "";
+
 /* Configuration block, we must move it to configuration file  */
 #ifdef REDIS
 int redis_port = 6379;
@@ -657,6 +659,10 @@ bool load_configuration_file() {
 
         if (configuration_map.count("sort_parameter") != 0) {
             sort_parameter = configuration_map[ "sort_parameter" ];
+        }
+
+        if (configuration_map.count("interfaces") != 0) {
+            work_on_interfaces = configuration_map[ "interfaces" ]; 
         }
 
         if (configuration_map.count("max_ips_in_list") != 0) {
@@ -1228,12 +1234,17 @@ int main(int argc,char **argv) {
 
 #ifdef PF_RING
     
-    if (argc != 2) {
-        fprintf(stdout, "Usage: %s \"eth0\" or \"eth0,eth1\"\n", argv[0]);
+    if (work_on_interfaces == "" && argc != 2) {
+        fprintf(stdout, "Usage: %s \"eth0\" or \"eth0,eth1\" or specify interfaces param in config file\n", argv[0]);
         exit(1);
     }
-    
-    dev = argv[1];
+   
+    if (work_on_interfaces != "") {
+        dev = const_cast<char*>(work_on_interfaces.c_str());
+    } else {
+        dev = argv[1];
+    }    
+
     fprintf(stdout, "We selected %s\n", dev);
 
 #endif
