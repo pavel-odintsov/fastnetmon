@@ -20,6 +20,7 @@
 #include <time.h>
 
 #include <sys/socket.h>
+#include <sys/resource.h>
 #include <arpa/inet.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
@@ -677,10 +678,16 @@ bool load_configuration_file() {
     }
 }
 
-bool load_our_networks_list() {
-    // enable core dumps
-    exec("ulimit -c unlimited");
+void enable_core_dumps() {
+    struct rlimit rlim;
 
+    if (!getrlimit(RLIMIT_CORE, &rlim)) {
+        rlim.rlim_cur = rlim.rlim_max;
+        setrlimit(RLIMIT_CORE, &rlim);
+    }
+}
+
+bool load_our_networks_list() {
     // вносим в белый список, IP из этой сети мы не баним
     //whitelist_networks = new tree_leaf;    
     //whitelist_networks->left = whitelist_networks->right = NULL;
@@ -1209,6 +1216,9 @@ std::string print_channel_speed(string traffic_type, int total_number_of_packets
 int main(int argc,char **argv) {
     // listened device
     char *dev; 
+
+    // enable core dumps
+    enable_core_dumps();
    
     if (getenv("DUMP_ALL_PACKETS") != NULL) {
         DEBUG_DUMP_ALL_PACKETS = true;
