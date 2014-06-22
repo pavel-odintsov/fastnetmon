@@ -262,6 +262,7 @@ vector<subnet> whitelist_networks;
 */
 
 // prototypes
+std::string print_channel_speed(string traffic_type, int total_number_of_packets, int total_number_of_bytes, int check_period);
 void process_packet(simple_packet& current_packet);
 void copy_networks_from_string_form_to_binary(vector<string> networks_list_as_string, vector<subnet>& our_networks);
 void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask); 
@@ -460,11 +461,11 @@ void draw_asn_table(map_for_counters& my_map_packets, direction data_direction) 
             uint32_t client_ip = (*ii).first;
             string asn_as_string = convert_int_to_string((*ii).first);
 
-            int in_pps = (*ii).second.in_packets   / check_period;
-            int out_pps = (*ii).second.out_packets / check_period;
+            int in_pps  = int( (double)(*ii).second.in_packets   / (double)check_period );
+            int out_pps = int( (double)(*ii).second.out_packets / (double)check_period  );
 
-            int in_bps  = (*ii).second.in_bytes  / check_period;
-            int out_bps = (*ii).second.out_bytes / check_period;
+            int in_bps  = int( (double)(*ii).second.in_bytes  / (double)check_period );
+            int out_bps = int( (double)(*ii).second.out_bytes / (double)check_period );
 
             int pps = 0;
             int bps = 0;
@@ -1050,21 +1051,21 @@ void calculation_programm() {
 
         cout<<"FastNetMon v1.0 "<<"IPs ordered by: "<<sort_parameter<<" "<<"threshold is: "<<ban_threshold<<endl<<endl;
 
-        cout<<"Incoming Traffic"<<"\t"<<total_count_of_incoming_packets/check_period<<" pps "<<total_count_of_incoming_bytes/check_period/1024/1024*8<<" mbps"<<endl;
+        cout<<print_channel_speed("Incoming Traffic", total_count_of_incoming_packets, total_count_of_incoming_bytes, check_period)<<endl;
         draw_table(DataCounter, INCOMING, true, sorter);
     
         cout<<endl; 
-
-        cout<<"Outgoing traffic"<<"\t"<<total_count_of_outgoing_packets/check_period<<" pps "<<total_count_of_outgoing_bytes/check_period/1024/1024*8<<" mbps"<<endl;
+    
+        cout<<print_channel_speed("Outgoing traffic", total_count_of_outgoing_packets, total_count_of_outgoing_bytes, check_period)<<endl;
         draw_table(DataCounter, OUTGOING, false, sorter);
 
         cout<<endl;
 
-        cout<<"Internal traffic"<<"\t"<<total_count_of_internal_packets/check_period<<" pps"<<endl;    
+        cout<<print_channel_speed("Internal traffic", total_count_of_internal_packets, total_count_of_internal_bytes, check_period)<<endl;
 
         cout<<endl;
 
-        cout<<"Other traffic"<<"\t\t"<<total_count_of_other_packets/check_period<<" pps"<<endl;
+        cout<<print_channel_speed("Other traffic", total_count_of_other_packets, total_count_of_other_bytes, check_period)<<endl;
 
         cout<<endl;
 
@@ -1171,6 +1172,30 @@ void calculation_programm() {
 #endif
 }
 
+// pretty print channel speed in pps and MBit
+std::string print_channel_speed(string traffic_type, int total_number_of_packets,
+    int total_number_of_bytes, int check_period) {
+  
+    int number_of_tabs = 1; 
+    // We need this for correct alignment of blocks
+    if (traffic_type == "Other traffic") {
+        number_of_tabs = 2;
+    }
+ 
+    std::stringstream stream;
+    stream<<traffic_type;
+
+    for (int i = 0; i < number_of_tabs; i ++ ) {
+        stream<<"\t";
+    }
+
+    int speed_in_pps    = int( (double)total_number_of_packets/(double)check_period );
+    double speed_in_bps = (double)total_number_of_bytes/(double)check_period;
+    int speed_in_mbps   = int(speed_in_bps/1024/1024*8);
+
+    stream<<speed_in_pps<<" pps "<< speed_in_mbps<<" mbps"; 
+    return stream.str();
+}    
 
 int main(int argc,char **argv) {
     // listened device
