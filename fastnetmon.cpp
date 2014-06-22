@@ -1047,6 +1047,9 @@ void calculation_programm() {
             sorter = PACKETS;
         } else if (sort_parameter == "bytes") {
             sorter = BYTES;
+        } else {
+            cout<<"Unexpected sorter type: "<<sort_parameter<<endl;
+            sorter = PACKETS;
         }
 
         cout<<"FastNetMon v1.0 "<<"IPs ordered by: "<<sort_parameter<<" "<<"threshold is: "<<ban_threshold<<endl<<endl;
