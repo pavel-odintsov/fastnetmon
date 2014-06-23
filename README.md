@@ -1,6 +1,7 @@
 FastNetMon
 ===========
 Author: Pavel Odintsov pavel.odintsov at gmail.com
+License: GPLv2
 
 FastNetMon - High Performance Network DDoS and Load Analyzer with PCAP/ULOG2/PF_RING support. But I recommends only PF_RING variant because other variants is so slow and use big amount of CPU and expected big packetloss.
 
