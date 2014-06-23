@@ -230,3 +230,14 @@ DUMP_ALL_PACKETS will enable all packets dumping to console. It's very useful fo
 ```bash
 DUMP_ALL_PACKETS=yes ./fastnetmon eth3,eth4
 ```
+
+Recommended configuration options for ixgbe Intel X540 driver:
+```bash
+cat /etc/modprobe.d/ixgbe.conf 
+options ixgbe IntMode=2,2 MQ=1,1 DCA=2,2 RSS=8,8 VMDQ=0,0 max_vfs=0,0 L2LBen=0,0 InterruptThrottleRate=1,1 FCoE=0,0 LRO=1,1 allow_unsupported_sfp=0,0
+```
+
+If you saw intel_idle in perf top with red higlihting you can disable it with following kernel params (more details you can find Performance_Tuning_Guide_for_Mellanox_Network_Adapters.pdf):
+```bash
+intel_idle.max_cstate=0 processor.max_cstate=1
+```
