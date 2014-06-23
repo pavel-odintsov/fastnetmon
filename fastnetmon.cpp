@@ -328,7 +328,6 @@ string convert_ip_as_uint_to_string(uint32_t ip_as_string) {
 
 // convert integer to string
 string convert_int_to_string(int value) {
-    string pps_as_string;
     std::stringstream out;
     out << value;
 
@@ -521,7 +520,7 @@ void draw_table(map_for_counters& my_map_packets, direction data_direction, bool
                 std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_out_bytes);
             }
         } else {
-            assert("Unexpected bahaviour");
+            printf("Unexpected bahaviour on sort function");
         }
 
         int element_number = 0;
@@ -719,8 +718,6 @@ bool load_our_networks_list() {
 
     vector<string> networks_list_as_string;
     // если мы на openvz ноде, то "свои" IP мы можем получить из спец-файла в /proc
-    string our_networks_netmask;
-
     if (file_exists("/proc/vz/version")) {
         cout<<"We found OpenVZ"<<endl;
         // тут искусствено добавляем суффикс 32
@@ -860,10 +857,8 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
 // в случае прямого вызова скрипта колбэка - нужно конст, напрямую в хендлере - конст не нужно
 void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *packetptr) {
     struct ip* iphdr;
-    struct icmphdr* icmphdr;
     struct tcphdr* tcphdr;
     struct udphdr* udphdr;
-    unsigned short id, seq;
 
     struct ether_header *eptr;    /* net/ethernet.h */
     eptr = (struct ether_header* )packetptr;
@@ -1137,7 +1132,7 @@ void calculation_programm() {
         }
 #endif 
  
-        if (ban_list.size() > 0) {
+        if (!ban_list.empty()) {
             cout<<endl<<"Ban list:"<<endl;  
  
             for( map<uint32_t,banlist_item>::iterator ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
@@ -1223,7 +1218,7 @@ std::string print_channel_speed(string traffic_type, int total_number_of_packets
 
 int main(int argc,char **argv) {
     // listened device
-    char *dev; 
+    char* dev; 
 
     // enable core dumps
     enable_core_dumps();
@@ -1234,7 +1229,6 @@ int main(int argc,char **argv) {
  
 #ifdef PCAP
     char errbuf[PCAP_ERRBUF_SIZE]; 
-    const u_char *packet; 
     struct pcap_pkthdr hdr;
 #endif 
 
@@ -1419,7 +1413,6 @@ void pcap_main_loop(char* dev) {
     char errbuf[PCAP_ERRBUF_SIZE];
     /* open device for reading in promiscuous mode */
     int promisc = 1;
-    int pcap_read_timeout = -1;
 
     bpf_u_int32 maskp; /* subnet mask */
     bpf_u_int32 netp;  /* ip */ 
@@ -1482,15 +1475,6 @@ void pcap_main_loop(char* dev) {
    
     // пока деактивируем pcap, начинаем интегрировать ULOG
     pcap_loop(descr, -1, (pcap_handler)parse_packet, NULL);
-
-    /*  
-    Альтернативный парсер, пока не совсем корректно работает, так как возвращает NULL
-    const u_char* packetptr;
-    struct pcap_pkthdr packethdr;
-    while ( (packetptr = pcap_next(descr, &packethdr) ) != NULL) { 
-        parse_packet(NULL, &packethdr, packetptr);
-    } 
-    */ 
 }
 #endif
 
