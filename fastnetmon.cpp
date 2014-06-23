@@ -443,7 +443,7 @@ void update_traffic_in_redis(uint32_t ip, int traffic_bytes, direction my_direct
 void draw_asn_table(map_for_counters& my_map_packets, direction data_direction) {
     std::vector<pair_of_map_elements> vector_for_sort;
 
-    for( map_for_counters::iterator ii=my_map_packets.begin(); ii!=my_map_packets.end(); ++ii) {
+    for( auto ii=my_map_packets.begin(); ii!=my_map_packets.end(); ++ii) {
         vector_for_sort.push_back( make_pair((*ii).first, (*ii).second) );
     }
 
@@ -459,7 +459,7 @@ void draw_asn_table(map_for_counters& my_map_packets, direction data_direction) 
     }
 
     int element_number = 0;
-    for( vector<pair_of_map_elements>::iterator ii=vector_for_sort.begin(); ii!=vector_for_sort.end(); ++ii) {
+    for( auto ii=vector_for_sort.begin(); ii!=vector_for_sort.end(); ++ii) {
             uint32_t client_ip = (*ii).first;
             string asn_as_string = convert_int_to_string((*ii).first);
 
@@ -496,7 +496,7 @@ void draw_table(map_for_counters& my_map_packets, direction data_direction, bool
         std::vector<pair_of_map_elements> vector_for_sort;
 
         /* Вобщем-то весь код ниже зависит лишь от входных векторов и порядка сортировки данных */
-        for( map_for_counters::iterator ii=my_map_packets.begin(); ii!=my_map_packets.end(); ++ii) {
+        for( auto ii=my_map_packets.begin(); ii!=my_map_packets.end(); ++ii) {
             // кладем все наши элементы в массив для последующей сортировки при отображении
             //pair_of_map_elements current_pair = make_pair((*ii).first, (*ii).second);
             vector_for_sort.push_back( make_pair((*ii).first, (*ii).second) );
@@ -524,7 +524,7 @@ void draw_table(map_for_counters& my_map_packets, direction data_direction, bool
         }
 
         int element_number = 0;
-        for( vector<pair_of_map_elements>::iterator ii=vector_for_sort.begin(); ii!=vector_for_sort.end(); ++ii) {
+        for( auto ii=vector_for_sort.begin(); ii!=vector_for_sort.end(); ++ii) {
             uint32_t client_ip = (*ii).first;
             string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
 
@@ -722,7 +722,7 @@ bool load_our_networks_list() {
         cout<<"We found OpenVZ"<<endl;
         // тут искусствено добавляем суффикс 32
         vector<string> openvz_ips = read_file_to_vector("/proc/vz/veip");
-        for( vector<string>::iterator ii=openvz_ips.begin(); ii!=openvz_ips.end(); ++ii) {
+        for( auto ii=openvz_ips.begin(); ii!=openvz_ips.end(); ++ii) {
             // skip IPv6 addresses
             if (strstr(ii->c_str(), ":") != NULL) {
                 continue;
@@ -763,7 +763,7 @@ bool load_our_networks_list() {
 }
 
 void copy_networks_from_string_form_to_binary(vector<string> networks_list_as_string, vector<subnet>& our_networks ) {
-    for( vector<string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) {
+    for( auto ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) {
         vector<string> subnet_as_string; 
         split( subnet_as_string, *ii, boost::is_any_of("/"), boost::token_compress_on );
         int cidr = convert_string_to_integer(subnet_as_string[1]);
@@ -789,7 +789,7 @@ uint32_t convert_cidr_to_binary_netmask(int cidr) {
 }
 
 bool belongs_to_networks(vector<subnet>& networks_list, uint32_t ip) {
-    for( vector<subnet>::iterator ii=networks_list.begin(); ii!=networks_list.end(); ++ii) {
+    for( auto ii=networks_list.begin(); ii!=networks_list.end(); ++ii) {
 
         if ( (ip & (*ii).second) == ((*ii).first & (*ii).second) ) {
             return true; 
@@ -1135,7 +1135,7 @@ void calculation_programm() {
         if (!ban_list.empty()) {
             cout<<endl<<"Ban list:"<<endl;  
  
-            for( map<uint32_t,banlist_item>::iterator ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
+            for( auto ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
                 string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
                 string pps_as_string = convert_int_to_string(((*ii).second).first);
 
@@ -1146,7 +1146,7 @@ void calculation_programm() {
                 // странная проверка, но при мощной атаке набить ban_details_records_count пакетов - очень легко
                 if (ban_list_details.count( (*ii).first  ) > 0 && ban_list_details[ (*ii).first ].size() == ban_details_records_count) {
                     string attack_details;
-                    for( vector<simple_packet>::iterator iii=ban_list_details[ (*ii).first ].begin(); iii!=ban_list_details[ (*ii).first ].end(); ++iii) {
+                    for( auto iii=ban_list_details[ (*ii).first ].begin(); iii!=ban_list_details[ (*ii).first ].end(); ++iii) {
                         attack_details += print_simple_packet( *iii );
                     }
 
