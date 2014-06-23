@@ -34,9 +34,6 @@
 #include <map>
 #include <fstream>
 
-// It's buggy, http://www.stableit.ru/2013/11/unorderedmap-c11-debian-wheezy.html
-// #include <unordered_map>
-
 #include <vector>
 #include <utility>
 #include <sstream>
@@ -48,6 +45,15 @@
 
 // Boost lib for strings split
 #include <boost/algorithm/string.hpp>
+
+// We use boost unordered map instead standard map because it faster:
+// http://tinodidriksen.com/2009/07/09/cpp-map-speeds/
+// standard map:         41% cpu in top
+// boost::unordered_map: 25% cpu in top
+#include <boost/unordered_map.hpp> 
+
+// It's buggy, http://www.stableit.ru/2013/11/unorderedmap-c11-debian-wheezy.html
+// #include <unordered_map>
 
 #ifdef ULOG2
 #include "libipulog.h"
@@ -187,7 +193,7 @@ typedef struct {
     int out_packets;
 } map_element;
 
-typedef map <uint32_t, map_element> map_for_counters;
+typedef boost::unordered_map <uint32_t, map_element> map_for_counters;
 // data structure for storing data in Vector
 typedef pair<uint32_t, map_element> pair_of_map_elements;
 
@@ -495,8 +501,11 @@ void draw_asn_table(map_for_counters& my_map_packets, direction data_direction) 
 void draw_table(map_for_counters& my_map_packets, direction data_direction, bool do_redis_update, sort_type sort_item) {
         std::vector<pair_of_map_elements> vector_for_sort;
 
+        // Preallocate memory for sort vector
+        vector_for_sort.reserve(my_map_packets.size());
+
         /* Вобщем-то весь код ниже зависит лишь от входных векторов и порядка сортировки данных */
-        for( auto ii=my_map_packets.begin(); ii!=my_map_packets.end(); ++ii) {
+        for( auto ii = my_map_packets.begin(); ii != my_map_packets.end(); ++ii) {
             // кладем все наши элементы в массив для последующей сортировки при отображении
             //pair_of_map_elements current_pair = make_pair((*ii).first, (*ii).second);
             vector_for_sort.push_back( make_pair((*ii).first, (*ii).second) );
