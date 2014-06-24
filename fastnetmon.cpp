@@ -1168,16 +1168,16 @@ void calculation_programm() {
 
                 // странная проверка, но при мощной атаке набить ban_details_records_count пакетов - очень легко
                 if (ban_list_details.count( (*ii).first  ) > 0 && ban_list_details[ (*ii).first ].size() == ban_details_records_count) {
-                    string attack_details;
+                    stringstream attack_details;
                     for( auto iii=ban_list_details[ (*ii).first ].begin(); iii!=ban_list_details[ (*ii).first ].end(); ++iii) {
-                        attack_details += print_simple_packet( *iii );
+                        attack_details<<print_simple_packet( *iii );
                     }
 
                     // отсылаем детали атаки (отпечаток пакетов) по почте
                     if (file_exists(notify_script_path)) {
-                        exec_with_stdin_params(notify_script_path + " " + client_ip_as_string + " " + attack_direction  + " " + pps_as_string, attack_details );
+                        exec_with_stdin_params(notify_script_path + " " + client_ip_as_string + " " + attack_direction  + " " + pps_as_string, attack_details.str() );
                         logger<<log4cpp::Priority::INFO<<"Attack with direction: "<<attack_direction<<" IP: "<<client_ip_as_string<<" Power: "<<pps_as_string;
-                        logger<<log4cpp::Priority::INFO<<attack_details;
+                        logger<<log4cpp::Priority::INFO<<attack_details.str();
                     }
                     // удаляем ключ из деталей атаки, чтобы он не выводился снова и в него не собирался трафик
                     ban_list_details.erase((*ii).first); 
