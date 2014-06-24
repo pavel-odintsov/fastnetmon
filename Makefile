@@ -52,13 +52,22 @@ endif
 # we use C++ 11 threads. We must include pthread library due gcc bug
 LIBS +=  -lpthread
 
+# We need ncurses
+LIBS += -lncurses
+# It's support libs for ncurses
+LIBS += -ltermcap
+LIBS += -lgpm
+
+# Logger
+LIBS += -llog4cpp
+
 # If you need dynamic compile, please comment this line
 STATIC = -static
 
 cppcheck:
 	cppcheck --enable=all -DPF_RING -DREDIS $(HEADERS) fastnetmon.cpp
 fastnetmon: libipulog.o fastnetmon.o
-	g++ $(STATIC) libipulog.o fastnetmon.o -o fastnetmon $(LIBS_PATH) $(LIBS) $(BUILD_FLAGS)
+	g++ $(STATIC) libipulog.o fastnetmon.o -o fastnetmon $(LIBS_PATH) $(LIBS) $(BUILD_FLAGS) -pthread
 libipulog.o: libipulog.c
 	g++ $(STATIC) -c libipulog.c -o libipulog.o -Wno-write-strings
 fastnetmon.o: fastnetmon.cpp
