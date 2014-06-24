@@ -1,13 +1,3 @@
-/*
- TODO:
-  1) Add network average load for 30 second/60 and 5 minutes
-  2) Migrate ban list to blacklist struct
-  3) Enable work as standard linux user with CAP Admin
-  4) Migrate belongs_to_network to prefix bitwise tree
-  5) http://hg.python.org/cpython/file/3fa1414ce505/Lib/heapq.py#l183 - поиск топ 10
-  6) Try libsparsehash-dev
-*/
-
 /* Author: pavel.odintsov@gmail.com */
 /* License: GPLv2 */
 
@@ -29,6 +19,8 @@
 #include <netinet/if_ether.h>
 #include <netinet/in.h>
 
+#include <ncurses.h>
+
 #include <algorithm>
 #include <iostream>
 #include <map>
@@ -42,6 +34,16 @@
 #include <thread>
 #include <chrono>
 #include <mutex>
+
+#include "log4cpp/Category.hh"
+#include "log4cpp/Appender.hh"
+#include "log4cpp/FileAppender.hh"
+#include "log4cpp/OstreamAppender.hh"
+#include "log4cpp/Layout.hh"
+#include "log4cpp/BasicLayout.hh"
+#include "log4cpp/PatternLayout.hh"
+#include "log4cpp/Priority.hh"
+
 
 // Boost lib for strings split
 #include <boost/algorithm/string.hpp>
@@ -153,7 +155,8 @@ int ban_details_records_count = 500;
 
 
 // log file
-ofstream log_file("/var/log/fastnetmon.log", std::ofstream::app);
+log4cpp::Category& logger = log4cpp::Category::getRoot();
+string log_file_path = "/var/log/fastnetmon.log";
 
 /* Configuration block ends */
 
@@ -403,7 +406,7 @@ bool redis_init_connection() {
     struct timeval timeout = { 1, 500000 }; // 1.5 seconds
     redis_context = redisConnectWithTimeout(redis_host.c_str(), redis_port, timeout);
     if (redis_context->err) {
-        printf("Connection error: %s\n", redis_context->errstr);
+        logger<<log4cpp::Priority::INFO<<"Connection error:"<<redis_context->errstr;
         return false;
     }
 
@@ -423,7 +426,7 @@ void update_traffic_in_redis(uint32_t ip, int traffic_bytes, direction my_direct
     redisReply *reply;
 
     if (!redis_context) {
-        printf("Please initialize Redis handle");
+        logger<< log4cpp::Priority::INFO<<"Please initialize Redis handle";
         return;
     }
 
@@ -432,7 +435,7 @@ void update_traffic_in_redis(uint32_t ip, int traffic_bytes, direction my_direct
 
     // Только в случае, если мы обновили без ошибки
     if (!reply) {
-        printf("Can't increment traffic in redis error_code: %d error_string: %s", redis_context->err, redis_context->errstr);
+        logger.info("Can't increment traffic in redis error_code: %d error_string: %s", redis_context->err, redis_context->errstr);
    
         // Такое может быть в случае перезапуска redis, нам надо попробовать решить это без падения программы 
         if (redis_context->err == 1 or redis_context->err == 3) {
@@ -529,7 +532,7 @@ void draw_table(map_for_counters& my_map_packets, direction data_direction, bool
                 std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_out_bytes);
             }
         } else {
-            printf("Unexpected bahaviour on sort function");
+            logger<< log4cpp::Priority::INFO<<"Unexpected bahaviour on sort function";
         }
 
         int element_number = 0;
@@ -570,7 +573,7 @@ void draw_table(map_for_counters& my_map_packets, direction data_direction, bool
                
                         string pps_as_string = convert_int_to_string(pps);
                         if (file_exists(notify_script_path)) { 
-                            log_file<<"Attack with direction: "<<data_direction_as_string<<" IP: "<<client_ip_as_string<<" Power: "<<pps_as_string<<endl;
+                            logger<<log4cpp::Priority::INFO<<"Attack with direction: " << data_direction_as_string << " IP: " << client_ip_as_string << " Power: "<<pps_as_string;
                             exec(notify_script_path + " " + client_ip_as_string + " " + data_direction_as_string + " " + pps_as_string);
                         }
                     }
@@ -617,7 +620,7 @@ vector<string> read_file_to_vector(string file_name) {
             data.push_back(line); 
         }
     } else {
-        std::cout<<"Can't open file: "<<file_name<<endl;
+        logger<< log4cpp::Priority::INFO <<"Can't open file: "<<file_name;
     }
 
     return data;
@@ -684,7 +687,7 @@ bool load_configuration_file() {
             notify_script_path = configuration_map[ "notify_script_path" ];
         }
     } else {
-        std::cout<<"Can't open config file"<<std::endl;
+        logger<< log4cpp::Priority::INFO<<"Can't open config file";
     }
 }
 
@@ -695,7 +698,7 @@ void enable_core_dumps() {
     int result = getrlimit(RLIMIT_CORE, &rlim);
 
     if (result) {
-        std::cout<<"Can't get current rlimit for RLIMIT_CORE"<<endl;
+        logger<< log4cpp::Priority::INFO<<"Can't get current rlimit for RLIMIT_CORE";
         return;
     } else {
         rlim.rlim_cur = rlim.rlim_max;
@@ -719,7 +722,7 @@ bool load_our_networks_list() {
 
         copy_networks_from_string_form_to_binary(network_list_from_config, whitelist_networks);
 
-        log_file<<"We loaded "<<network_list_from_config.size()<< " networks from whitelist file"<<endl;
+        logger<<log4cpp::Priority::INFO<<"We loaded "<<network_list_from_config.size()<< " networks from whitelist file";
     }
  
     // When we used unordered_map it will increase it perfomance
@@ -728,7 +731,7 @@ bool load_our_networks_list() {
     vector<string> networks_list_as_string;
     // если мы на openvz ноде, то "свои" IP мы можем получить из спец-файла в /proc
     if (file_exists("/proc/vz/version")) {
-        cout<<"We found OpenVZ"<<endl;
+        logger<< log4cpp::Priority::INFO<<"We found OpenVZ";
         // тут искусствено добавляем суффикс 32
         vector<string> openvz_ips = read_file_to_vector("/proc/vz/veip");
         for( auto ii=openvz_ips.begin(); ii!=openvz_ips.end(); ++ii) {
@@ -754,7 +757,7 @@ bool load_our_networks_list() {
         vector<string> network_list_from_config = read_file_to_vector("/etc/networks_list");
         networks_list_as_string.insert(networks_list_as_string.end(), network_list_from_config.begin(), network_list_from_config.end());
 
-        log_file<<"We loaded "<<network_list_from_config.size()<< " networks from networks file"<<endl;
+        logger<<log4cpp::Priority::INFO<<"We loaded "<<network_list_from_config.size()<< " networks from networks file";
     }
 
     // если это ложь, то в моих функциях косяк
@@ -841,8 +844,6 @@ string print_simple_packet(struct simple_packet packet) {
 
 // Обработчик для pf_ring, так как у него иной формат входных параметров
 void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const u_char *user_bytes) {
-    //printf("hash%d\n",h->extended_hdr.pkt_hash);
-
     // Описание всех полей: http://www.ntop.org/pfring_api/structpkt__parsing__info.html
     simple_packet packet;
 
@@ -860,6 +861,7 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
  
         process_packet(packet);
         //std::cout<<print_simple_packet(packet)<<std::endl;
+        //printf("hash%d\n",h->extended_hdr.pkt_hash);
     }
 }
 
@@ -934,7 +936,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
 void process_packet(simple_packet& current_packet) { 
     // Packets dump is very useful for bug hunting
     if (DEBUG_DUMP_ALL_PACKETS) {
-        cout<<"Dump: "<<print_simple_packet(current_packet);
+        logger<< log4cpp::Priority::INFO<<"Dump: "<<print_simple_packet(current_packet);
     }
 
     // определение направления пакета тоже нужно вынести в функцию!!!
@@ -1066,6 +1068,7 @@ void calculation_programm() {
 #endif
         // clean up screen
         system("clear");
+        //clear();
 
         sort_type sorter;
         if (sort_parameter == "packets") {
@@ -1073,7 +1076,7 @@ void calculation_programm() {
         } else if (sort_parameter == "bytes") {
             sorter = BYTES;
         } else {
-            cout<<"Unexpected sorter type: "<<sort_parameter<<endl;
+            logger<< log4cpp::Priority::INFO<<"Unexpected sorter type: "<<sort_parameter;
             sorter = PACKETS;
         }
 
@@ -1137,7 +1140,7 @@ void calculation_programm() {
                 (double) pfring_status_data.drop/pfring_status_data.recv*100
             ); 
         } else {
-            cout<<"Can't get PF_RING stats"<<endl;
+            logger<< log4cpp::Priority::INFO<<"Can't get PF_RING stats";
         }
 #endif 
  
@@ -1162,8 +1165,8 @@ void calculation_programm() {
                     // отсылаем детали атаки (отпечаток пакетов) по почте
                     if (file_exists(notify_script_path)) {
                         exec_with_stdin_params(notify_script_path + " " + client_ip_as_string + " " + attack_direction  + " " + pps_as_string, attack_details );
-                        log_file<<"Attack with direction: "<<attack_direction<<" IP: "<<client_ip_as_string<<" Power: "<<pps_as_string<<endl;
-                        log_file<<attack_details<<endl;
+                        logger<<log4cpp::Priority::INFO<<"Attack with direction: "<<attack_direction<<" IP: "<<client_ip_as_string<<" Power: "<<pps_as_string;
+                        logger<<log4cpp::Priority::INFO<<attack_details;
                     }
                     // удаляем ключ из деталей атаки, чтобы он не выводился снова и в него не собирался трафик
                     ban_list_details.erase((*ii).first); 
@@ -1225,12 +1228,30 @@ std::string print_channel_speed(string traffic_type, int total_number_of_packets
     return stream.str();
 }    
 
+void init_logging() {
+    log4cpp::PatternLayout* layout = new log4cpp::PatternLayout(); 
+    layout->setConversionPattern ("%d [%p] %m%n"); 
+
+    log4cpp::Appender *appender = new log4cpp::FileAppender("default", log_file_path);
+    //appender->setLayout(new log4cpp::BasicLayout());
+    appender->setLayout(layout);
+
+    logger.setPriority(log4cpp::Priority::INFO);
+    logger.addAppender(appender);
+    logger.info("Logger initialized!");
+}
+
 int main(int argc,char **argv) {
     // listened device
     char* dev; 
 
     // enable core dumps
     enable_core_dumps();
+
+    init_logging();
+
+    /* Init ncurses screen */
+    //initscr();
    
     if (getenv("DUMP_ALL_PACKETS") != NULL) {
         DEBUG_DUMP_ALL_PACKETS = true;
@@ -1241,17 +1262,12 @@ int main(int argc,char **argv) {
     struct pcap_pkthdr hdr;
 #endif 
 
-    if (!log_file.is_open()) {
-        printf("Can’t open log file, plese check filesystem!");
-        exit(1);
-    }
-
-    log_file<<"Read configuration file"<<endl;
+    logger<<log4cpp::Priority::INFO<<"Read configuration file";
 
     load_configuration_file();
 
     time(&start_time);
-    printf("I need few seconds for collecting data, please wait. Thank you!\n");
+    logger<< log4cpp::Priority::INFO<<"I need few seconds for collecting data, please wait. Thank you!";
 
 #ifdef PF_RING
     
@@ -1266,7 +1282,7 @@ int main(int argc,char **argv) {
         dev = argv[1];
     }    
 
-    fprintf(stdout, "We selected %s\n", dev);
+    logger<< log4cpp::Priority::INFO<<"We selected interface:"<<dev;
 
 #endif
  
@@ -1274,16 +1290,16 @@ int main(int argc,char **argv) {
     if (argc != 2) {
         fprintf(stdout, "Usage: %s \"eth0\" or \"any\"\n", argv[0]);
 
-        cout<< "We must automatically select interface"<<endl;
+        logger<< log4cpp::Priority::INFO<< "We must automatically select interface";
         /* Now get a device */
         dev = pcap_lookupdev(errbuf);
         
         if(dev == NULL) {
-            fprintf(stderr, "%s\n", errbuf);
+            logger<< log4cpp::Priority::INFO<<"Can't lookup device for pcap:" << errbuf;
             exit (1);    
         }
 
-        printf("Automatically selected %s device\n", dev);
+        logger << log4cpp::Priority::INFO<< "Automatically selected device: " << dev;
 
     } else { 
         dev = argv[1];
@@ -1294,7 +1310,7 @@ int main(int argc,char **argv) {
 #ifdef REDIS
     if (redis_enabled) {
         if (!redis_init_connection()) {
-            printf("Can't establish connection to the redis\n");
+            logger<< log4cpp::Priority::INFO<<"Can't establish connection to the redis";
             exit(1);
         }
     }
@@ -1303,7 +1319,7 @@ int main(int argc,char **argv) {
     // иницилизируем GeoIP
 #ifdef GEOIP
     if(!geoip_init()) {
-        printf("Can't load geoip tables");
+        logger<< log4cpp::Priority::INFO<<"Can't load geoip tables";
         exit(1);
     } 
 #endif
@@ -1365,31 +1381,19 @@ void pf_ring_main_loop(char* dev) {
     pf_ring_descr = pfring_open(dev, snaplen, flags);
 
     if(pf_ring_descr == NULL) {
-        fprintf(stderr, "pfring_open error [%s] (pf_ring not loaded or perhaps you use quick mode and have already a socket bound to %s ?)\n", strerror(errno), dev);
+        logger<< log4cpp::Priority::INFO<<"pfring_open error: "<<strerror(errno)<< " (pf_ring not loaded or perhaps you use quick mode and have already a socket bound to: "<<dev<< ")";
         exit(1);
     } else {
-        fprintf(stdout, "Successully binded to: %s\n", dev);
+        logger<< log4cpp::Priority::INFO<<"Successully binded to: "<<dev;
 
-        /*
-        u_char mac_address[6] = { 0 };
-        if(pfring_get_bound_device_address(pf_ring_descr, mac_address) != 0) {
-            fprintf(stderr, "Unable to read the device address\n");
-        } else {
-            int ifindex = -1; 
-
-            pfring_get_bound_device_ifindex(pf_ring_descr, &ifindex);
-            printf("Capturing from %s [%s][ifIndex: %d]\n", dev, mac_address, ifindex);
-        }
-        */ 
-
-        fprintf(stdout, "Device RX channels number: %d\n", pfring_get_num_rx_channels(pf_ring_descr));
+        logger<< log4cpp::Priority::INFO<<"Device RX channels number: "<< pfring_get_num_rx_channels(pf_ring_descr); 
 
         u_int32_t version;
         // задаемт имя приложения для его указания в переменной PCAP_PF_RING_APPNAME в статистике в /proc 
         pfring_set_application_name(pf_ring_descr, (char*)"fastnetmon");
         pfring_version(pf_ring_descr, &version);
 
-        fprintf(stdout, "Using PF_RING v.%d.%d.%d\n",
+        logger.info("Using PF_RING v.%d.%d.%d",
            (version & 0xFFFF0000) >> 16, 
            (version & 0x0000FF00) >> 8,
            version & 0x000000FF);
@@ -1397,15 +1401,15 @@ void pf_ring_main_loop(char* dev) {
     
     int rc;
     if((rc = pfring_set_socket_mode(pf_ring_descr, recv_only_mode)) != 0)
-        fprintf(stderr, "pfring_set_socket_mode returned [rc=%d]\n", rc);
+        logger.info("pfring_set_socket_mode returned [rc=%d]\n", rc);
 
     char path[256] = { 0 };
     if(pfring_get_appl_stats_file_name(pf_ring_descr, path, sizeof(path)) != NULL)
-        fprintf(stderr, "Dumping statistics on %s\n", path);
+        logger.info("Dumping statistics on %s\n", path);
 
     // enable ring
     if (pfring_enable_ring(pf_ring_descr) != 0) {
-        printf("Unable to enable ring :-(\n");
+        logger<< log4cpp::Priority::INFO<<"Unable to enable ring :-(";
         pfring_close(pf_ring_descr);
         exit(-1);
     }
@@ -1426,7 +1430,7 @@ void pcap_main_loop(char* dev) {
     bpf_u_int32 maskp; /* subnet mask */
     bpf_u_int32 netp;  /* ip */ 
 
-    cout<<"Start listening on "<<dev<<endl;
+    logger<< log4cpp::Priority::INFO<<"Start listening on "<<dev;
 
     /* Get the network address and mask */
     pcap_lookupnet(dev, &netp, &maskp, errbuf);
@@ -1434,17 +1438,17 @@ void pcap_main_loop(char* dev) {
     descr = pcap_create(dev, errbuf);
 
     if (descr == NULL) {
-        printf("pcap_create was failed with error: %s", errbuf);
+        logger<< log4cpp::Priority::INFO<<"pcap_create was failed with error: "<<errbuf;
         exit(0);
     }
 
     int set_buffer_size_res = pcap_set_buffer_size(descr, pcap_buffer_size_mbytes * 1024 * 1024);
     if (set_buffer_size_res != 0 ) { // выставляем буфер в 1 мегабайт
         if (set_buffer_size_res == PCAP_ERROR_ACTIVATED) {
-            printf("Can't set buffer size because pcap already activated\n");
+            logger<< log4cpp::Priority::INFO<<"Can't set buffer size because pcap already activated\n";
             exit(1);
         } else {
-            printf("Can't set buffer size due to error %d\n", set_buffer_size_res);
+            logger<< log4cpp::Priority::INFO<<"Can't set buffer size due to error: "<<set_buffer_size_res;
             exit(1);
         }   
     } 
@@ -1455,18 +1459,18 @@ void pcap_main_loop(char* dev) {
     */
     /*
     if (pcap_set_snaplen(descr, 32 ) != 0 ) {
-        printf("Can't set snap len\n");
+        logger<< log4cpp::Priority::INFO<<"Can't set snap len";
         exit(1);
     }
     */
 
     if (pcap_set_promisc(descr, promisc) != 0) {
-        printf("Can't activate promisc mode for interface: %s\n", dev);
+        logger<< log4cpp::Priority::INFO<<"Can't activate promisc mode for interface: "<<dev;
         exit(1);
     }
 
     if (pcap_activate(descr) != 0) {
-        printf("Call pcap_activate was failed: %s\n", pcap_geterr(descr));
+        logger<< log4cpp::Priority::INFO<<"Call pcap_activate was failed: "<<pcap_geterr(descr);
         exit(1);
     }
 
@@ -1478,7 +1482,7 @@ void pcap_main_loop(char* dev) {
     } else if (link_layer_header_type == DLT_LINUX_SLL) {
         DATA_SHIFT_VALUE = 16;
     } else {
-        printf("We did not support link type %d\n", link_layer_header_type);
+        logger<< log4cpp::Priority::INFO<<"We did not support link type:", link_layer_header_type;
         exit(0);
     }
    
@@ -1499,14 +1503,14 @@ void ulog_main_loop() {
 
     libulog_buf = (unsigned char*)malloc(ULOGD_BUFSIZE_DEFAULT);
     if (!libulog_buf) {
-        printf("Can't allocate buffer");
+        logger<< log4cpp::Priority::INFO<<"Can't allocate buffer";
         exit(1);
     }
 
     libulog_h = ipulog_create_handle(ipulog_group2gmask(ULOGD_NLGROUP_DEFAULT), ULOGD_RMEM_DEFAULT);
 
     if (!libulog_h) {
-        printf("Can't create ipulog handle");
+        logger<< log4cpp::Priority::INFO<<"Can't create ipulog handle";
         exit(0);
     }
     
@@ -1524,7 +1528,7 @@ void ulog_main_loop() {
             }
 
             // поймали ошибку - зафиксируем ее при расчетах
-            printf("ipulog_read = '%d'! "
+            logger.info("ipulog_read = '%d'! "
                 "ipulog_errno = '%d' ('%s'), "
                 "errno = '%d' ('%s')\n",
                 len, ipulog_errno,
