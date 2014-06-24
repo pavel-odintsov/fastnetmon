@@ -1076,8 +1076,7 @@ void calculation_programm() {
     if ( difftime(current_time, start_time) >= check_period ) {
 #endif
         // clean up screen
-        system("clear");
-        //clear();
+        clear();
 
         sort_type sorter;
         if (sort_parameter == "packets") {
@@ -1187,7 +1186,9 @@ void calculation_programm() {
             }
         }
         
-        std::cout<<output_buffer.str();
+        printw( (output_buffer.str()).c_str());
+        // update screen
+        refresh();
         // переустанавливаем время запуска
         time(&start_time);
         // зануляем счетчик пакетов
@@ -1264,7 +1265,7 @@ int main(int argc,char **argv) {
     init_logging();
 
     /* Init ncurses screen */
-    //initscr();
+    initscr();
    
     if (getenv("DUMP_ALL_PACKETS") != NULL) {
         DEBUG_DUMP_ALL_PACKETS = true;
@@ -1585,7 +1586,7 @@ void signal_handler(int signal_number) {
     }
 #endif
     /* End ncurses mode */
-    //endwin(); 
+    endwin(); 
     exit(1); 
 }
 
