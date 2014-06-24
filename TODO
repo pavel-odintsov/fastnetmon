@@ -1,3 +1,6 @@
+- Coolect all information about DDoS packets (all pf_ring headers)
+- Introduce ability for pretty print different type of packets
+- Introduce function for compare packets and found equal fields
 - Add network average load for 30 second/60 and 5 minutes
 - Migrate ban list to blacklist struct
 - Enable work as standard linux user with CAP Admin
