@@ -449,8 +449,9 @@ void update_traffic_in_redis(uint32_t ip, int traffic_bytes, direction my_direct
 #endif
 
 // TODO: унифицировать с draw_table
-void draw_asn_table(map_for_counters& my_map_packets, direction data_direction) {
+string draw_asn_table(map_for_counters& my_map_packets, direction data_direction) {
     std::vector<pair_of_map_elements> vector_for_sort;
+    stringstream output_buffer;
 
     for( auto ii=my_map_packets.begin(); ii!=my_map_packets.end(); ++ii) {
         vector_for_sort.push_back( make_pair((*ii).first, (*ii).second) );
@@ -494,15 +495,20 @@ void draw_asn_table(map_for_counters& my_map_packets, direction data_direction) 
 
             // Выводим первые max_ips_in_list элементов в списке, при нашей сортировке, будут выданы топ 10 самых грузящих клиентов
             if (element_number < max_ips_in_list) {
-                cout << asn_as_string << "\t\t" << pps << " pps " << mbps << " mbps" << endl;
+    
+                output_buffer << asn_as_string << "\t\t" << pps << " pps " << mbps << " mbps" << endl;
             }
 
             element_number++;
     }
+
+    return output_buffer.str();
 }
 
-void draw_table(map_for_counters& my_map_packets, direction data_direction, bool do_redis_update, sort_type sort_item) {
+string draw_table(map_for_counters& my_map_packets, direction data_direction, bool do_redis_update, sort_type sort_item) {
         std::vector<pair_of_map_elements> vector_for_sort;
+
+        stringstream output_buffer;
 
         // Preallocate memory for sort vector
         vector_for_sort.reserve(my_map_packets.size());
@@ -583,7 +589,7 @@ void draw_table(map_for_counters& my_map_packets, direction data_direction, bool
             // Выводим первые max_ips_in_list элементов в списке, при нашей сортировке, будут выданы топ 10 самых грузящих клиентов
             if (element_number < max_ips_in_list) {
                 string is_banned = ban_list.count(client_ip) > 0 ? " *banned* " : "";
-                cout << client_ip_as_string << "\t\t" << pps << " pps " << mbps << " mbps" << is_banned << endl;
+                output_buffer << client_ip_as_string << "\t\t" << pps << " pps " << mbps << " mbps" << is_banned << endl;
             }  
    
 #ifdef REDIS 
@@ -595,7 +601,9 @@ void draw_table(map_for_counters& my_map_packets, direction data_direction, bool
 #endif
         
             element_number++;
-        } 
+        }
+
+    return output_buffer.str(); 
 }
 
 // check file existence
@@ -1062,6 +1070,7 @@ void calculation_thread() {
 void calculation_programm() {
     time_t current_time;
     time(&current_time);
+    stringstream output_buffer;
 
 #ifdef THREADLESS 
     if ( difftime(current_time, start_time) >= check_period ) {
@@ -1080,43 +1089,43 @@ void calculation_programm() {
             sorter = PACKETS;
         }
 
-        cout<<"FastNetMon v1.0 "<<"IPs ordered by: "<<sort_parameter<<" "<<"threshold is: "<<ban_threshold<<endl<<endl;
+        output_buffer<<"FastNetMon v1.0 "<<"IPs ordered by: "<<sort_parameter<<" "<<"threshold is: "<<ban_threshold<<endl<<endl;
 
-        cout<<print_channel_speed("Incoming Traffic", total_count_of_incoming_packets, total_count_of_incoming_bytes, check_period)<<endl;
-        draw_table(DataCounter, INCOMING, true, sorter);
+        output_buffer<<print_channel_speed("Incoming Traffic", total_count_of_incoming_packets, total_count_of_incoming_bytes, check_period)<<endl;
+        output_buffer<<draw_table(DataCounter, INCOMING, true, sorter);
     
-        cout<<endl; 
+        output_buffer<<endl; 
     
-        cout<<print_channel_speed("Outgoing traffic", total_count_of_outgoing_packets, total_count_of_outgoing_bytes, check_period)<<endl;
-        draw_table(DataCounter, OUTGOING, false, sorter);
+        output_buffer<<print_channel_speed("Outgoing traffic", total_count_of_outgoing_packets, total_count_of_outgoing_bytes, check_period)<<endl;
+        output_buffer<<draw_table(DataCounter, OUTGOING, false, sorter);
 
-        cout<<endl;
+        output_buffer<<endl;
 
-        cout<<print_channel_speed("Internal traffic", total_count_of_internal_packets, total_count_of_internal_bytes, check_period)<<endl;
+        output_buffer<<print_channel_speed("Internal traffic", total_count_of_internal_packets, total_count_of_internal_bytes, check_period)<<endl;
 
-        cout<<endl;
+        output_buffer<<endl;
 
-        cout<<print_channel_speed("Other traffic", total_count_of_other_packets, total_count_of_other_bytes, check_period)<<endl;
+        output_buffer<<print_channel_speed("Other traffic", total_count_of_other_packets, total_count_of_other_bytes, check_period)<<endl;
 
-        cout<<endl;
+        output_buffer<<endl;
 
         // TODO: ВРЕМЕННО ДЕАКТИВИРОВАНО
 #ifdef GEOIP
         if (false) {
-            cout<<"Incoming channel: ASN traffic\n";
-            draw_asn_table(GeoIpCounter, OUTGOING);
-            cout<<endl;    
+            output_buffer<<"Incoming channel: ASN traffic\n";
+            output_buffer<<draw_asn_table(GeoIpCounter, OUTGOING);
+            output_buffer<<endl;    
 
-            cout<<"Outgoing channel: ASN traffic\n";
+            output_buffer<<"Outgoing channel: ASN traffic\n";
             draw_asn_table(GeoIpCounter, INCOMING);
-            cout<<endl;
+            output_buffer<<endl;
         }   
 #endif 
 
 #ifdef PCAP
         struct pcap_stat current_pcap_stats;
         if (pcap_stats(descr, &current_pcap_stats) == 0) {
-            cout<<"PCAP statistics"<<endl<<"Received packets: "<<current_pcap_stats.ps_recv<<endl
+            output_buffer<<"PCAP statistics"<<endl<<"Received packets: "<<current_pcap_stats.ps_recv<<endl
                 <<"Dropped packets: "<<current_pcap_stats.ps_drop
                 <<" ("<<int((double)current_pcap_stats.ps_drop/current_pcap_stats.ps_recv*100)<<"%)"<<endl
                 <<"Dropped by driver or interface: "<<current_pcap_stats.ps_ifdrop<<endl;
@@ -1124,14 +1133,16 @@ void calculation_programm() {
 #endif
 
 #ifdef ULOG2
-       cout<<"ULOG buffer errors: "   << netlink_error_counter<<" ("<<int((double)netlink_error_counter/netlink_packets_counter)<<"%)"<<endl; 
-       cout<<"ULOG packets received: "<< netlink_packets_counter<<endl;
+       output_buffer<<"ULOG buffer errors: "   << netlink_error_counter<<" ("<<int((double)netlink_error_counter/netlink_packets_counter)<<"%)"<<endl; 
+       output_buffer<<"ULOG packets received: "<< netlink_packets_counter<<endl;
 #endif
 
 #ifdef PF_RING
         pfring_stat pfring_status_data;
         if(pfring_stats(pf_ring_descr, &pfring_status_data) >= 0) {
-            printf(
+            char stats_buffer[256];
+            sprintf(
+                stats_buffer,
                 "Packets received:\t%lu\n"
                 "Packets dropped:\t%lu\n"
                 "Packets dropped:\t%.1f %%\n",
@@ -1139,13 +1150,14 @@ void calculation_programm() {
                 (long unsigned int) pfring_status_data.drop,
                 (double) pfring_status_data.drop/pfring_status_data.recv*100
             ); 
+            output_buffer<<stats_buffer;
         } else {
             logger<< log4cpp::Priority::INFO<<"Can't get PF_RING stats";
         }
 #endif 
  
         if (!ban_list.empty()) {
-            cout<<endl<<"Ban list:"<<endl;  
+            output_buffer<<endl<<"Ban list:"<<endl;  
  
             for( auto ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
                 string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
@@ -1153,7 +1165,7 @@ void calculation_programm() {
 
                 string attack_direction = get_direction_name(((*ii).second).second);
 
-                cout<<client_ip_as_string<<"/"<<pps_as_string<<" pps "<<attack_direction<<endl;
+                output_buffer<<client_ip_as_string<<"/"<<pps_as_string<<" pps "<<attack_direction<<endl;
 
                 // странная проверка, но при мощной атаке набить ban_details_records_count пакетов - очень легко
                 if (ban_list_details.count( (*ii).first  ) > 0 && ban_list_details[ (*ii).first ].size() == ban_details_records_count) {
@@ -1175,6 +1187,7 @@ void calculation_programm() {
             }
         }
         
+        std::cout<<output_buffer.str();
         // переустанавливаем время запуска
         time(&start_time);
         // зануляем счетчик пакетов
@@ -1571,7 +1584,8 @@ void signal_handler(int signal_number) {
         redisFree(redis_context);
     }
 #endif
-
+    /* End ncurses mode */
+    //endwin(); 
     exit(1); 
 }
 
