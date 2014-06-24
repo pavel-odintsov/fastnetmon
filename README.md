@@ -69,6 +69,9 @@ Install FastNetMon:
    # If you need traffic counting
    apt-get install -y libhiredis-dev
 
+   # Support libs
+   apt-get install -y libgpm-dev libncurses5-dev liblog4cpp5-dev
+
    # If you need PF_RING abilities 
    apt-get install -y libnuma-dev
 
