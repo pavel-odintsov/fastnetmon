@@ -318,9 +318,9 @@ uint32_t convert_ip_as_string_to_uint(string ip) {
     return ip_addr.s_addr;
 }
 
-string convert_ip_as_uint_to_string(uint32_t ip_as_string) {
+string convert_ip_as_uint_to_string(uint32_t ip_as_integer) {
     struct in_addr ip_addr;
-    ip_addr.s_addr = ip_as_string;
+    ip_addr.s_addr = ip_as_integer;
     return (string)inet_ntoa(ip_addr);
 }
 
@@ -493,8 +493,12 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
             int mbps = int((double)bps / 1024 / 1024 * 8);
 
             if (pps > ban_threshold) {
-                prefix_t* prefix_for_check_client_ip = ascii2prefix(AF_INET, const_cast<char*>(convert_ip_as_uint_to_string(client_ip).c_str()));
-                bool in_white_list = (patricia_search_best(whitelist_tree, prefix_for_check_client_ip) != NULL);
+                prefix_t prefix_for_check_adreess;
+                prefix_for_check_adreess.add.sin.s_addr = client_ip;
+                prefix_for_check_adreess.family = AF_INET;
+                prefix_for_check_adreess.bitlen = 32;
+
+                bool in_white_list = (patricia_search_best(whitelist_tree, &prefix_for_check_adreess) != NULL);
     
                 if (!in_white_list) {
                     // если клиента еще нету в бан листе
@@ -854,23 +858,22 @@ void process_packet(simple_packet& current_packet) {
 
     bool our_ip_is_destination = false;
 
-    prefix_t* prefix_for_check_dst = ascii2prefix(AF_INET, const_cast<char*>(convert_ip_as_uint_to_string(current_packet.dst_ip).c_str()));
+    prefix_t prefix_for_check_adreess;
+    prefix_for_check_adreess.add.sin.s_addr = current_packet.dst_ip;
+    prefix_for_check_adreess.family = AF_INET;
+    prefix_for_check_adreess.bitlen = 32;
 
-    if (patricia_search_best(lookup_tree, prefix_for_check_dst) != NULL) {
+    if (patricia_search_best(lookup_tree, &prefix_for_check_adreess) != NULL) {
         our_ip_is_destination = true;
     }
 
-    free(prefix_for_check_dst);
-
     bool our_ip_is_source      = false;
 
-    prefix_t* prefix_for_check_src = ascii2prefix(AF_INET, const_cast<char*>(convert_ip_as_uint_to_string(current_packet.src_ip).c_str()));
+    prefix_for_check_adreess.add.sin.s_addr = current_packet.src_ip;
 
-    if (patricia_search_best(lookup_tree, prefix_for_check_src) != NULL) {
+    if (patricia_search_best(lookup_tree, &prefix_for_check_adreess) != NULL) {
         our_ip_is_source = true;
     }
-
-    free(prefix_for_check_src);
 
     if (our_ip_is_source && our_ip_is_destination) {
         packet_direction = INTERNAL;
