@@ -133,6 +133,9 @@ bool DEBUG_DUMP_ALL_PACKETS = false;
 // Period for recounting pps/traffic
 int check_period = 3;
 
+// Time for rechecking traffic, at now we recalc traffic every 1 second
+int speed_calc_period = 1;
+
 #ifdef PCAP
 // Enlarge receive buffer for PCAP for minimize packet drops
 int pcap_buffer_size_mbytes = 10;
@@ -196,7 +199,10 @@ typedef struct {
     int out_packets;
 } map_element;
 
-typedef boost::unordered_map <uint32_t, map_element> map_for_counters;
+
+// TODO: please put back boost::unordered_map
+// switched off because segfaults
+typedef map <uint32_t, map_element> map_for_counters;
 // data structure for storing data in Vector
 typedef pair<uint32_t, map_element> pair_of_map_elements;
 
@@ -225,6 +231,9 @@ pfring* pf_ring_descr = NULL;
 
 // main map for storing traffic data
 map_for_counters DataCounter;
+
+// структура для сохранения мгновенных скоростей
+map_for_counters SpeedCounter;
 
 #ifdef GEOIP
 map_for_counters GeoIpCounter;
@@ -274,6 +283,7 @@ vector<subnet> whitelist_networks;
 */
 
 // prototypes
+void recalculate_speed();
 std::string print_channel_speed(string traffic_type, int total_number_of_packets, int total_number_of_bytes, int check_period);
 void process_packet(simple_packet& current_packet);
 void copy_networks_from_string_form_to_binary(vector<string> networks_list_as_string, vector<subnet>& our_networks);
@@ -448,63 +458,6 @@ void update_traffic_in_redis(uint32_t ip, int traffic_bytes, direction my_direct
 }
 #endif
 
-// TODO: унифицировать с draw_table
-string draw_asn_table(map_for_counters& my_map_packets, direction data_direction) {
-    std::vector<pair_of_map_elements> vector_for_sort;
-    stringstream output_buffer;
-
-    for( auto ii=my_map_packets.begin(); ii!=my_map_packets.end(); ++ii) {
-        vector_for_sort.push_back( make_pair((*ii).first, (*ii).second) );
-    }
-
-    // sort ONLY BY BYTES!!!
-
-    // используем разные сортировочные функции 
-    if (data_direction == INCOMING) {
-        std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_in_bytes);
-    } else if (data_direction == OUTGOING) {
-        std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_out_bytes);
-    } else {
-        // unexpected
-    }
-
-    int element_number = 0;
-    for( auto ii=vector_for_sort.begin(); ii!=vector_for_sort.end(); ++ii) {
-            uint32_t client_ip = (*ii).first;
-            string asn_as_string = convert_int_to_string((*ii).first);
-
-            int in_pps  = int( (double)(*ii).second.in_packets   / (double)check_period );
-            int out_pps = int( (double)(*ii).second.out_packets / (double)check_period  );
-
-            int in_bps  = int( (double)(*ii).second.in_bytes  / (double)check_period );
-            int out_bps = int( (double)(*ii).second.out_bytes / (double)check_period );
-
-            int pps = 0;
-            int bps = 0;
-
-            // делаем "полиморфную" полосу и ппс
-            if (data_direction == INCOMING) {
-                pps = in_pps;
-                bps = in_bps;
-            } else if (data_direction == OUTGOING) {
-                pps = out_pps;
-                bps = out_bps;
-            }
-
-            int mbps = int((double)bps / 1024 / 1024 * 8);
-
-            // Выводим первые max_ips_in_list элементов в списке, при нашей сортировке, будут выданы топ 10 самых грузящих клиентов
-            if (element_number < max_ips_in_list) {
-    
-                output_buffer << asn_as_string << "\t\t" << pps << " pps " << mbps << " mbps" << endl;
-            }
-
-            element_number++;
-    }
-
-    return output_buffer.str();
-}
-
 string draw_table(map_for_counters& my_map_packets, direction data_direction, bool do_redis_update, sort_type sort_item) {
         std::vector<pair_of_map_elements> vector_for_sort;
 
@@ -546,22 +499,16 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
             uint32_t client_ip = (*ii).first;
             string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
 
-            int in_pps = (*ii).second.in_packets   / check_period;
-            int out_pps = (*ii).second.out_packets / check_period;
-
-            int in_bps  = (*ii).second.in_bytes  / check_period;
-            int out_bps = (*ii).second.out_bytes / check_period; 
-
             int pps = 0;
             int bps = 0;
 
             // делаем "полиморфную" полосу и ппс
             if (data_direction == INCOMING) {
-                pps = in_pps; 
-                bps = in_bps;
+                pps = SpeedCounter[client_ip].in_packets; 
+                bps = SpeedCounter[client_ip].in_bytes;
             } else if (data_direction == OUTGOING) {
-                pps = out_pps;
-                bps = out_bps;
+                pps = SpeedCounter[client_ip].out_packets;
+                bps = SpeedCounter[client_ip].out_bytes;
             }
 
             int mbps = int((double)bps / 1024 / 1024 * 8);
@@ -951,16 +898,17 @@ void process_packet(simple_packet& current_packet) {
     direction packet_direction;
 
     // try to cache succesful lookups
-    bool our_ip_is_destination = DataCounter.count(current_packet.dst_ip) > 0;
-    bool our_ip_is_source      = DataCounter.count(current_packet.src_ip) > 0;
+    // TODO: REMOVE THIS CODE!!!!
+    //bool our_ip_is_destination = SpeedCounter.count(current_packet.dst_ip) > 0;
+    //bool our_ip_is_source      = SpeedCounter.count(current_packet.src_ip) > 0;
 
-    if (! our_ip_is_destination) {
-        our_ip_is_destination = belongs_to_networks(our_networks, current_packet.dst_ip);
-    }
+    //if (! our_ip_is_destination) {
+    bool our_ip_is_destination = belongs_to_networks(our_networks, current_packet.dst_ip);
+    //}
 
-    if (!our_ip_is_source) {
-        our_ip_is_source      = belongs_to_networks(our_networks, current_packet.src_ip);
-    }
+    //if (!our_ip_is_source) {
+    bool our_ip_is_source      = belongs_to_networks(our_networks, current_packet.src_ip);
+    //}
 
     if (our_ip_is_source && our_ip_is_destination) {
         packet_direction = INTERNAL;
@@ -1013,59 +961,82 @@ void process_packet(simple_packet& current_packet) {
         total_count_of_other_bytes += current_packet.length;
         counters_mutex.unlock();
     }
-
-#ifdef GEOIP
-    // Execute GeoIP lookup
-    if (packet_direction == INCOMING or packet_direction == OUTGOING) {
-        uint32_t remote_ip = packet_direction == INCOMING ? current_packet.src_ip : dst_ip; 
-        
-        char* asn_raw = GeoIP_org_by_name(geo_ip, convert_ip_as_uint_to_string(remote_ip).c_str());
-        uint32_t asn_number = 0;   
-
-        if (asn_raw == NULL) {
-            asn_number = 0; 
-        } else {
-            // split string: AS1299 TeliaSonera International Carrier
-            vector<string> asn_as_string;
-            split( asn_as_string, asn_raw, boost::is_any_of(" "), boost::token_compress_on );
-
-            // free up original string
-            free(asn_raw);
-
-            // extract raw number
-            asn_number = convert_string_to_integer(asn_as_string[0].substr(2)); 
-        }
-
-        // кладем данные по трафику ASN в хэш
-        counters_mutex.lock();
-
-#ifdef GEOIP
-        if (packet_direction == INCOMING) {
-            // Incoming
-            GeoIpCounter[ asn_number ].out_packets++;
-            GeoIpCounter[ asn_number ].out_bytes += current_packet.length;
-        } else {
-            // Outgoing
-            GeoIpCounter[ asn_number ].in_packets++;
-            GeoIpCounter[ asn_number ].in_bytes += current_packet.length;
-        }
-#endif
-
-        counters_mutex.unlock();
-    }
-#endif
-
 }
+
+#ifdef GEOIP
+int get_asn_for_ip(uint32_t ip) { 
+    char* asn_raw = GeoIP_org_by_name(geo_ip, convert_ip_as_uint_to_string(remote_ip).c_str());
+    uint32_t asn_number = 0;
+   
+    if (asn_raw == NULL) {
+        asn_number = 0; 
+    } else {
+        // split string: AS1299 TeliaSonera International Carrier
+        vector<string> asn_as_string;
+        split( asn_as_string, asn_raw, boost::is_any_of(" "), boost::token_compress_on );
+
+        // free up original string
+        free(asn_raw);
+
+        // extract raw number
+        asn_number = convert_string_to_integer(asn_as_string[0].substr(2)); 
+    }
+ 
+    return asn_number;
+}
+#endif 
 
 // void* void* data
 void calculation_thread() {
+    // we need wait one second for calculating speed by recalculate_speed
+
     while (1) {
-        //sleep(check_period);
         std::this_thread::sleep_for(std::chrono::seconds( check_period ));
         calculation_programm();
     }
 }
 
+void recalculate_speed_thread_handler() {
+    while (1) {
+        // recalculate data every one second
+        std::this_thread::sleep_for(std::chrono::seconds( 1 ));
+        recalculate_speed();
+    }
+}
+
+/* Пересчитать мгновенную скорость для всех известных соединений  */
+void recalculate_speed() {
+    // calculate speed for all our IPs
+    for( auto ii = DataCounter.begin(); ii != DataCounter.end(); ++ii) {
+        uint32_t client_ip = (*ii).first;
+            
+        int in_pps  = int((double)(*ii).second.in_packets   / (double)speed_calc_period);
+        int out_pps = int((double)(*ii).second.out_packets / (double)speed_calc_period);
+
+        int in_bps  = int((double)(*ii).second.in_bytes  / (double)speed_calc_period);
+        int out_bps = int((double)(*ii).second.out_bytes / (double)speed_calc_period);     
+
+        // add speed values to speed struct
+        SpeedCounter[client_ip].in_bytes    = in_bps;
+        SpeedCounter[client_ip].out_bytes   = out_bps;
+
+        SpeedCounter[client_ip].in_packets  = in_pps;
+        SpeedCounter[client_ip].out_packets = out_pps;
+
+        DataCounter[client_ip].in_bytes = 0;
+        DataCounter[client_ip].out_bytes = 0;
+        DataCounter[client_ip].in_packets = 0;
+        DataCounter[client_ip].out_packets = 0;
+    }
+
+    counters_mutex.lock();
+#ifdef GEOIP
+    GeoIpCounter.clear();
+#endif 
+    //DataCounter.clear();
+
+    counters_mutex.unlock();
+}
 
 void calculation_programm() {
     time_t current_time;
@@ -1077,6 +1048,9 @@ void calculation_programm() {
 #endif
         // clean up screen
         clear();
+
+        // recalculate speed
+        //recalculate_speed();
 
         sort_type sorter;
         if (sort_parameter == "packets") {
@@ -1091,12 +1065,12 @@ void calculation_programm() {
         output_buffer<<"FastNetMon v1.0 "<<"IPs ordered by: "<<sort_parameter<<" "<<"threshold is: "<<ban_threshold<<endl<<endl;
 
         output_buffer<<print_channel_speed("Incoming Traffic", total_count_of_incoming_packets, total_count_of_incoming_bytes, check_period)<<endl;
-        output_buffer<<draw_table(DataCounter, INCOMING, true, sorter);
+        output_buffer<<draw_table(SpeedCounter, INCOMING, true, sorter);
     
         output_buffer<<endl; 
     
         output_buffer<<print_channel_speed("Outgoing traffic", total_count_of_outgoing_packets, total_count_of_outgoing_bytes, check_period)<<endl;
-        output_buffer<<draw_table(DataCounter, OUTGOING, false, sorter);
+        output_buffer<<draw_table(SpeedCounter, OUTGOING, false, sorter);
 
         output_buffer<<endl;
 
@@ -1193,34 +1167,32 @@ void calculation_programm() {
         time(&start_time);
         // зануляем счетчик пакетов
 
-        counters_mutex.lock();
-        DataCounter.clear();
-
-#ifdef GEOIP
-        GeoIpCounter.clear();
-#endif 
-
-        total_count_of_incoming_bytes = 0;
-        total_count_of_outgoing_bytes = 0;
-
-        total_count_of_other_packets = 0;
-        total_count_of_other_bytes   = 0;
-
-        total_count_of_internal_packets = 0;
-        total_count_of_internal_bytes = 0;
- 
-        total_count_of_incoming_packets = 0;
-        total_count_of_outgoing_packets = 0;
-        counters_mutex.unlock();
 #ifdef THREADLESS
     }
 #endif
+
+
+    counters_mutex.lock();
+
+    total_count_of_incoming_bytes = 0; 
+    total_count_of_outgoing_bytes = 0; 
+
+    total_count_of_other_packets = 0; 
+    total_count_of_other_bytes   = 0; 
+
+    total_count_of_internal_packets = 0; 
+    total_count_of_internal_bytes = 0; 
+ 
+    total_count_of_incoming_packets = 0; 
+    total_count_of_outgoing_packets = 0; 
+    counters_mutex.unlock();
 }
 
 // pretty print channel speed in pps and MBit
 std::string print_channel_speed(string traffic_type, int total_number_of_packets,
     int total_number_of_bytes, int check_period) {
-  
+
+    // Потому что к нам скорость приходит в чистом виде 
     int number_of_tabs = 1; 
     // We need this for correct alignment of blocks
     if (traffic_type == "Other traffic") {
@@ -1347,6 +1319,7 @@ int main(int argc,char **argv) {
 #ifndef THREADLESS
     // запускаем поток-обсчета данных
     thread calc_thread(calculation_thread);
+    thread recalculate_speed_thread(recalculate_speed_thread_handler);
 #endif
 
 #ifdef PCAP
@@ -1362,8 +1335,8 @@ int main(int argc,char **argv) {
     ulog_thread.join();
 #endif
 
+    recalculate_speed_thread.join();
     calc_thread.join();
-   
 #ifdef GEOIP
     // Free up geoip handle 
     GeoIP_delete(geo_ip);
@@ -1392,7 +1365,8 @@ void pf_ring_main_loop(char* dev) {
 
     // use default value from pfcount.c
     int snaplen = 128;
-    pf_ring_descr = pfring_open(dev, snaplen, flags);
+
+    pf_ring_descr = pfring_open(dev, snaplen, flags); 
 
     if(pf_ring_descr == NULL) {
         logger<< log4cpp::Priority::INFO<<"pfring_open error: "<<strerror(errno)<< " (pf_ring not loaded or perhaps you use quick mode and have already a socket bound to: "<<dev<< ")";
