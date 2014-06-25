@@ -253,8 +253,6 @@ int total_count_of_internal_bytes = 0;
 map<uint32_t, banlist_item> ban_list;
 map<uint32_t, vector<simple_packet> > ban_list_details;
 
-time_t start_time;
-
 // стандартно у нас смещение для типа DLT_EN10MB, Ethernet
 int DATA_SHIFT_VALUE = 14;
 
@@ -881,10 +879,6 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     
     /* Передаем пакет в обработку */ 
     process_packet(current_packet);
-
-#ifdef THREADLESS
-    calculation_programm();
-#endif
 }
 
 /* Производим обработку уже переданного нам пакета в простом формате */
@@ -1039,70 +1033,49 @@ void recalculate_speed() {
 }
 
 void calculation_programm() {
-    time_t current_time;
-    time(&current_time);
     stringstream output_buffer;
 
-#ifdef THREADLESS 
-    if ( difftime(current_time, start_time) >= check_period ) {
-#endif
-        // clean up screen
-        clear();
+    // clean up screen
+    clear();
 
-        // recalculate speed
-        //recalculate_speed();
+    sort_type sorter;
+    if (sort_parameter == "packets") {
+        sorter = PACKETS;
+    } else if (sort_parameter == "bytes") {
+        sorter = BYTES;
+    } else {
+        logger<< log4cpp::Priority::INFO<<"Unexpected sorter type: "<<sort_parameter;
+        sorter = PACKETS;
+    }
 
-        sort_type sorter;
-        if (sort_parameter == "packets") {
-            sorter = PACKETS;
-        } else if (sort_parameter == "bytes") {
-            sorter = BYTES;
-        } else {
-            logger<< log4cpp::Priority::INFO<<"Unexpected sorter type: "<<sort_parameter;
-            sorter = PACKETS;
-        }
+    output_buffer<<"FastNetMon v1.0 "<<"IPs ordered by: "<<sort_parameter<<" "<<"threshold is: "<<ban_threshold<<endl<<endl;
 
-        output_buffer<<"FastNetMon v1.0 "<<"IPs ordered by: "<<sort_parameter<<" "<<"threshold is: "<<ban_threshold<<endl<<endl;
-
-        output_buffer<<print_channel_speed("Incoming Traffic", total_count_of_incoming_packets, total_count_of_incoming_bytes, check_period)<<endl;
-        output_buffer<<draw_table(SpeedCounter, INCOMING, true, sorter);
+    output_buffer<<print_channel_speed("Incoming Traffic", total_count_of_incoming_packets, total_count_of_incoming_bytes, check_period)<<endl;
+    output_buffer<<draw_table(SpeedCounter, INCOMING, true, sorter);
     
-        output_buffer<<endl; 
+    output_buffer<<endl; 
     
-        output_buffer<<print_channel_speed("Outgoing traffic", total_count_of_outgoing_packets, total_count_of_outgoing_bytes, check_period)<<endl;
-        output_buffer<<draw_table(SpeedCounter, OUTGOING, false, sorter);
+    output_buffer<<print_channel_speed("Outgoing traffic", total_count_of_outgoing_packets, total_count_of_outgoing_bytes, check_period)<<endl;
+    output_buffer<<draw_table(SpeedCounter, OUTGOING, false, sorter);
 
-        output_buffer<<endl;
+    output_buffer<<endl;
 
-        output_buffer<<print_channel_speed("Internal traffic", total_count_of_internal_packets, total_count_of_internal_bytes, check_period)<<endl;
+    output_buffer<<print_channel_speed("Internal traffic", total_count_of_internal_packets, total_count_of_internal_bytes, check_period)<<endl;
 
-        output_buffer<<endl;
+    output_buffer<<endl;
 
-        output_buffer<<print_channel_speed("Other traffic", total_count_of_other_packets, total_count_of_other_bytes, check_period)<<endl;
+    output_buffer<<print_channel_speed("Other traffic", total_count_of_other_packets, total_count_of_other_bytes, check_period)<<endl;
 
-        output_buffer<<endl;
-
-        // TODO: ВРЕМЕННО ДЕАКТИВИРОВАНО
-#ifdef GEOIP
-        if (false) {
-            output_buffer<<"Incoming channel: ASN traffic\n";
-            output_buffer<<draw_asn_table(GeoIpCounter, OUTGOING);
-            output_buffer<<endl;    
-
-            output_buffer<<"Outgoing channel: ASN traffic\n";
-            draw_asn_table(GeoIpCounter, INCOMING);
-            output_buffer<<endl;
-        }   
-#endif 
+    output_buffer<<endl;
 
 #ifdef PCAP
-        struct pcap_stat current_pcap_stats;
-        if (pcap_stats(descr, &current_pcap_stats) == 0) {
-            output_buffer<<"PCAP statistics"<<endl<<"Received packets: "<<current_pcap_stats.ps_recv<<endl
-                <<"Dropped packets: "<<current_pcap_stats.ps_drop
-                <<" ("<<int((double)current_pcap_stats.ps_drop/current_pcap_stats.ps_recv*100)<<"%)"<<endl
-                <<"Dropped by driver or interface: "<<current_pcap_stats.ps_ifdrop<<endl;
-        }
+    struct pcap_stat current_pcap_stats;
+    if (pcap_stats(descr, &current_pcap_stats) == 0) {
+        output_buffer<<"PCAP statistics"<<endl<<"Received packets: "<<current_pcap_stats.ps_recv<<endl
+            <<"Dropped packets: "<<current_pcap_stats.ps_drop
+            <<" ("<<int((double)current_pcap_stats.ps_drop/current_pcap_stats.ps_recv*100)<<"%)"<<endl
+             <<"Dropped by driver or interface: "<<current_pcap_stats.ps_ifdrop<<endl;
+    }
 #endif
 
 #ifdef ULOG2
@@ -1163,14 +1136,7 @@ void calculation_programm() {
         printw( (output_buffer.str()).c_str());
         // update screen
         refresh();
-        // переустанавливаем время запуска
-        time(&start_time);
         // зануляем счетчик пакетов
-
-#ifdef THREADLESS
-    }
-#endif
-
 
     counters_mutex.lock();
 
@@ -1252,7 +1218,6 @@ int main(int argc,char **argv) {
 
     load_configuration_file();
 
-    time(&start_time);
     logger<< log4cpp::Priority::INFO<<"I need few seconds for collecting data, please wait. Thank you!";
 
 #ifdef PF_RING
@@ -1316,11 +1281,9 @@ int main(int argc,char **argv) {
     // устанавливаем обработчик CTRL+C
     signal(SIGINT, signal_handler);
 
-#ifndef THREADLESS
     // запускаем поток-обсчета данных
     thread calc_thread(calculation_thread);
     thread recalculate_speed_thread(recalculate_speed_thread_handler);
-#endif
 
 #ifdef PCAP
     pcap_main_loop(dev);
