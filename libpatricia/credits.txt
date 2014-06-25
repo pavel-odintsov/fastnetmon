@@ -1,0 +1,73 @@
+
+   [newtool.gif]
+   
+MRT Credits
+
+    The Multi-Threaded Routing Toolkit
+     _________________________________________________________________
+   
+   MRT was developed by [1]Merit Network, Inc., under National Science
+   Foundation grant NCR-9318902, "Experimentation with Routing Technology
+   to be Used for Inter-Domain Routing in the Internet."
+   
+    Current MRT Staff
+    
+     * [2]Craig Labovitz <labovit@merit.edu>
+     * [3]Makaki Hirabaru <masaki@merit.edu>
+     * [4]Farnam Jahanian <farnam@eecs.umich.edu>
+     * Susan Hares <skh@merit.edu>
+     * Susan R. Harris <srh@merit.edu>
+     * Nathan Binkert <binkertn@eecs.umich.edu>
+     * Gerald Winters <gerald@merit.edu>
+       
+    Project Alumni
+    
+     * [5]Marc Unangst <mju@merit.edu>
+     * John Scudder <jgs@ieng.com>
+       
+   The BGP4+ extension was originally written by Francis Dupont
+   <Francis.Dupont@inria.fr>.
+   
+   The public domain Struct C-library of linked list, hash table and
+   memory allocation routines was developed by Jonathan Dekock
+   <dekock@cadence.com>.
+   
+   Susan Rebecca Harris <srh@merit.edu> provided help with the
+   documentation.
+   David Ward <dward@netstar.com> provided bug fixes and helpful
+   suggestions.
+   Some sections of code and architecture ideas were taken from the GateD
+   routing daemon.
+   
+   The first port to Linux with IPv6 was done by Pedro Roque
+   <roque@di.fc.ul.pt>. Some interface routines to the Linux kernel were
+   originally written by him.
+   
+   Alexey Kuznetsov made enhancements to 1.4.3a and fixed the Linux
+   kernel intarface. Linux's netlink interface was written, referring to
+   his code "iproute2".
+   
+   We would also like to thank our other colleagues in Japan, Portugal,
+   the Netherlands, the UK, and the US for their many contributions to
+   the MRT development effort.
+     _________________________________________________________________
+   
+   Cisco is a registered trademark of Cisco Systems Inc.
+     _________________________________________________________________
+                                                                         
+        Merit Network 4251 Plymouth Road Suite C Ann Arbor, MI 48105-2785
+                                                             734-764-9430
+                                                           info@merit.edu
+     _________________________________________________________________
+                                                                         
+                                               © 1999 Merit Network, Inc.
+                                                         [6]www@merit.edu
+
+References
+
+   1. http://www.merit.edu/
+   2. http://www.merit.edu/~labovit
+   3. http://www.merit.edu/~masaki
+   4. http://www.eecs.umich.edu/~farnam
+   5. http://www.contrib.andrew.cmu.edu/~mju/
+   6. mailto:www@merit.edu
