@@ -19,6 +19,7 @@
 #include <netinet/if_ether.h>
 #include <netinet/in.h>
 
+#include "libpatricia/patricia.h"
 #include <ncurses.h>
 
 #include <algorithm>
@@ -35,6 +36,7 @@
 #include <chrono>
 #include <mutex>
 
+// log4cpp logging facility
 #include "log4cpp/Category.hh"
 #include "log4cpp/Appender.hh"
 #include "log4cpp/FileAppender.hh"
@@ -44,15 +46,14 @@
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
-
-// Boost lib for strings split
+// Boost libs
 #include <boost/algorithm/string.hpp>
+#include <boost/unordered_map.hpp>
 
 // We use boost unordered map instead standard map because it faster:
 // http://tinodidriksen.com/2009/07/09/cpp-map-speeds/
 // standard map:         41% cpu in top
 // boost::unordered_map: 25% cpu in top
-#include <boost/unordered_map.hpp> 
 
 // It's buggy, http://www.stableit.ru/2013/11/unorderedmap-c11-debian-wheezy.html
 // #include <unordered_map>
@@ -82,24 +83,14 @@ using namespace std;
 /* 802.1Q VLAN tags are 4 bytes long. */
 #define VLAN_HDRLEN 4
 
-
 /* Complete list of ethertypes: http://en.wikipedia.org/wiki/EtherType */
 /* This is the decimal equivalent of the VLAN tag's ether frame type */
 #define VLAN_ETHERTYPE 0x8100
-
-/* This is ethertype code for IP protocol */
 #define IP_ETHERTYPE 0x0800
-
 #define IP6_ETHERTYPE 0x86dd
-
 #define ARP_ETHERTYPE 0x0806
 
-/*
- Pcap docs:    
-   http://www.linuxforu.com/2011/02/capturing-packets-c-program-libpcap/
-   http://vichargrave.com/develop-a-packet-sniffer-with-libpcap/ pcap parser
-*/
-
+// Interface name or interface list (delimitered by comma)
 string work_on_interfaces = "";
 
 /* Configuration block, we must move it to configuration file  */
@@ -114,6 +105,8 @@ bool redis_enabled = false;
 GeoIP * geo_ip = NULL;
 #endif
 
+patricia_tree_t *lookup_tree, *whitelist_tree;
+
 #ifdef ULOG2
 // netlink group number for listening for traffic
 int ULOGD_NLGROUP_DEFAULT = 1;
@@ -121,6 +114,7 @@ int ULOGD_NLGROUP_DEFAULT = 1;
  * --qthreshold 100 * 1500 bytes/packet = 150kB  */
 
 int ULOGD_RMEM_DEFAULT = 131071;
+
 /* Size of the receive buffer for the netlink socket.  Should be at least of RMEM_DEFAULT size.  */
 int ULOGD_BUFSIZE_DEFAULT = 150000;
 #endif
@@ -168,7 +162,7 @@ string log_file_path = "/var/log/fastnetmon.log";
 // Enum with availible sort by field
 enum sort_type { PACKETS, BYTES };
 
-enum direction {INCOMING, OUTGOING, INTERNAL, OTHER};
+enum direction { INCOMING, OUTGOING, INTERNAL, OTHER };
 
 // simplified packet struct for lightweight save into memory
 struct simple_packet {
@@ -673,7 +667,11 @@ bool load_our_networks_list() {
     if (file_exists("/etc/networks_whitelist")) {
         vector<string> network_list_from_config = read_file_to_vector("/etc/networks_whitelist");
 
-        copy_networks_from_string_form_to_binary(network_list_from_config, whitelist_networks);
+        for( auto ii=network_list_from_config.begin(); ii!=network_list_from_config.end(); ++ii) { 
+            make_and_lookup(whitelist_tree, const_cast<char*>(ii->c_str())); 
+        }
+
+        //copy_networks_from_string_form_to_binary(network_list_from_config, whitelist_networks);
 
         logger<<log4cpp::Priority::INFO<<"We loaded "<<network_list_from_config.size()<< " networks from whitelist file";
     }
@@ -722,8 +720,12 @@ bool load_our_networks_list() {
     //our_networks = new tree_leaf;
     //our_networks->left = our_networks->right = NULL;
 
-    copy_networks_from_string_form_to_binary(networks_list_as_string, our_networks);
+    //copy_networks_from_string_form_to_binary(networks_list_as_string, our_networks);
  
+    for( auto ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) { 
+        make_and_lookup(whitelist_tree, const_cast<char*>(ii->c_str())); 
+    }    
+
     return true;
 }
 
@@ -1197,6 +1199,9 @@ int main(int argc,char **argv) {
     // listened device
     char* dev; 
 
+    lookup_tree = New_Patricia(32);
+    whitelist_tree = New_Patricia(32);
+
     // enable core dumps
     enable_core_dumps();
 
@@ -1304,6 +1309,9 @@ int main(int argc,char **argv) {
     // Free up geoip handle 
     GeoIP_delete(geo_ip);
 #endif
+
+    Destroy_Patricia(lookup_tree,    (void_fn_t)0);
+    Destroy_Patricia(whitelist_tree, (void_fn_t)0);
  
     return 0;
 }
@@ -1319,11 +1327,11 @@ void pf_ring_main_loop(char* dev) {
     u_int8_t touch_payload = 0, enable_hw_timestamp = 0, dont_strip_timestamps = 0;    
 
     u_int32_t flags = 0;
-    if(num_threads > 1)         flags |= PF_RING_REENTRANT;
-    if(use_extended_pkt_header) flags |= PF_RING_LONG_HEADER;
-    if(promisc)                 flags |= PF_RING_PROMISC;
-    if(enable_hw_timestamp)     flags |= PF_RING_HW_TIMESTAMP;
-    if(!dont_strip_timestamps)  flags |= PF_RING_STRIP_HW_TIMESTAMP;
+    if (num_threads > 1)         flags |= PF_RING_REENTRANT;
+    if (use_extended_pkt_header) flags |= PF_RING_LONG_HEADER;
+    if (promisc)                 flags |= PF_RING_PROMISC;
+    if (enable_hw_timestamp)     flags |= PF_RING_HW_TIMESTAMP;
+    if (!dont_strip_timestamps)  flags |= PF_RING_STRIP_HW_TIMESTAMP;
     flags |= PF_RING_DNA_SYMMETRIC_RSS;  /* Note that symmetric RSS is ignored by non-DNA drivers */ 
 
     // use default value from pfcount.c
@@ -1365,7 +1373,7 @@ void pf_ring_main_loop(char* dev) {
         exit(-1);
     }
 
-    // WTF?
+    // Active wait wor packets. But I did not know what is mean..
     u_int8_t wait_for_packet = 1;
  
     pfring_loop(pf_ring_descr, parse_packet_pf_ring, (u_char*)NULL, wait_for_packet);
@@ -1527,6 +1535,3 @@ void signal_handler(int signal_number) {
     exit(1); 
 }
 
-void dump_ip_lookup_tree(tree_leaf* root) {
-
-}

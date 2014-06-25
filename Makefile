@@ -62,15 +62,17 @@ LIBS += -lgpm
 LIBS += -llog4cpp
 
 # If you need dynamic compile, please comment this line
-STATIC = -static
+#STATIC = -static
 
 cppcheck:
 	cppcheck --enable=all -DPF_RING -DREDIS $(HEADERS) fastnetmon.cpp
-fastnetmon: libipulog.o fastnetmon.o
-	g++ $(STATIC) libipulog.o fastnetmon.o -o fastnetmon $(LIBS_PATH) $(LIBS) $(BUILD_FLAGS) -pthread
+fastnetmon: libipulog.o fastnetmon.o libpatricia/patricia.o
+	g++ $(STATIC) libipulog.o libpatricia/patricia.o fastnetmon.o -o fastnetmon $(LIBS_PATH) $(LIBS) $(BUILD_FLAGS) -pthread 
 libipulog.o: libipulog.c
 	g++ $(STATIC) -c libipulog.c -o libipulog.o -Wno-write-strings
+libpatricia/patricia.o: libpatricia/patricia.c
+	gcc -c libpatricia/patricia.c -o libpatricia/patricia.o -Wno-write-strings -fpermissive -lstdc++ 
 fastnetmon.o: fastnetmon.cpp
 	g++ $(STATIC) $(DEFINES) $(HEADERS) -c fastnetmon.cpp -o fastnetmon.o -std=c++11 $(BUILD_FLAGS)
 clean:
-	rm -f libipulog.o fastnetmon.o fastnetmon
+	rm -f libipulog.o fastnetmon.o fastnetmon libpatricia/patricia.o
