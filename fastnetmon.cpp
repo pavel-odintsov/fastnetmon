@@ -174,14 +174,6 @@ struct simple_packet {
     int      length;
 };
 
-
-// Struct for Long Prefix Match Tree
-typedef struct leaf {
-    bool bit;
-    bool end_of_path;
-    struct leaf *right, *left;
-} tree_leaf;
-
 typedef pair<int, direction> banlist_item;
 typedef pair<uint32_t, uint32_t> subnet;
 
@@ -255,8 +247,6 @@ int MAP_INITIAL_SIZE = 2048;
 
 vector<subnet> our_networks;
 vector<subnet> whitelist_networks;
-//tree_leaf* our_networks;
-//tree_leaf* whitelist_networks;
 
 /* 
  Тут кроется огромный баго-фич:
@@ -279,9 +269,6 @@ void recalculate_speed();
 std::string print_channel_speed(string traffic_type, int total_number_of_packets, int total_number_of_bytes, int check_period);
 void process_packet(simple_packet& current_packet);
 void copy_networks_from_string_form_to_binary(vector<string> networks_list_as_string, vector<subnet>& our_networks);
-void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask); 
-//bool belongs_to_networks(tree_leaf* root, uint32_t ip);
-bool belongs_to_networks(vector<subnet>& networks_list, uint32_t ip);
 
 bool file_exists(string path);
 void calculation_programm();
@@ -506,9 +493,10 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
             int mbps = int((double)bps / 1024 / 1024 * 8);
 
             if (pps > ban_threshold) {
-                if (belongs_to_networks(whitelist_networks, client_ip)) {
-                    // IP в белом списке 
-                } else {
+                prefix_t* prefix_for_check_client_ip = ascii2prefix(AF_INET, const_cast<char*>(convert_ip_as_uint_to_string(client_ip).c_str()));
+                bool in_white_list = (patricia_search_best(whitelist_tree, prefix_for_check_client_ip) != NULL);
+    
+                if (!in_white_list) {
                     // если клиента еще нету в бан листе
                     if (ban_list.count(client_ip) == 0) {
                         string data_direction_as_string = get_direction_name(data_direction);
@@ -654,24 +642,12 @@ void enable_core_dumps() {
 }
 
 bool load_our_networks_list() {
-    // вносим в белый список, IP из этой сети мы не баним
-    //whitelist_networks = new tree_leaf;    
-    //whitelist_networks->left = whitelist_networks->right = NULL;
-    // whitelist_networks.end_of_path = false;
-
-    //insert_prefix_bitwise_tree(whitelist_networks, "159.253.17.0", 24);
-    
-    //subnet white_subnet = std::make_pair(convert_ip_as_string_to_uint("159.253.17.0"), convert_cidr_to_binary_netmask(24));
-    //whitelist_networks.push_back(white_subnet);
-   
     if (file_exists("/etc/networks_whitelist")) {
         vector<string> network_list_from_config = read_file_to_vector("/etc/networks_whitelist");
 
         for( auto ii=network_list_from_config.begin(); ii!=network_list_from_config.end(); ++ii) { 
             make_and_lookup(whitelist_tree, const_cast<char*>(ii->c_str())); 
         }
-
-        //copy_networks_from_string_form_to_binary(network_list_from_config, whitelist_networks);
 
         logger<<log4cpp::Priority::INFO<<"We loaded "<<network_list_from_config.size()<< " networks from whitelist file";
     }
@@ -715,15 +691,8 @@ bool load_our_networks_list() {
     assert( convert_ip_as_string_to_uint("255.255.255.0")   == convert_cidr_to_binary_netmask(24) );
     assert( convert_ip_as_string_to_uint("255.255.255.255") == convert_cidr_to_binary_netmask(32) );
 
-    //our_networks.push_back(current_subnet); 
-
-    //our_networks = new tree_leaf;
-    //our_networks->left = our_networks->right = NULL;
-
-    //copy_networks_from_string_form_to_binary(networks_list_as_string, our_networks);
- 
     for( auto ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) { 
-        make_and_lookup(whitelist_tree, const_cast<char*>(ii->c_str())); 
+        make_and_lookup(lookup_tree, const_cast<char*>(ii->c_str())); 
     }    
 
     return true;
@@ -753,17 +722,6 @@ uint32_t convert_cidr_to_binary_netmask(int cidr) {
 
     // поидее, на выходе тут нужен network byte order 
     return htonl(binary_netmask);
-}
-
-bool belongs_to_networks(vector<subnet>& networks_list, uint32_t ip) {
-    for( auto ii=networks_list.begin(); ii!=networks_list.end(); ++ii) {
-
-        if ( (ip & (*ii).second) == ((*ii).first & (*ii).second) ) {
-            return true; 
-        }
-    }
-
-    return false;
 }
 
 string print_simple_packet(struct simple_packet packet) {
@@ -883,6 +841,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     process_packet(current_packet);
 }
 
+
 /* Производим обработку уже переданного нам пакета в простом формате */
 void process_packet(simple_packet& current_packet) { 
     // Packets dump is very useful for bug hunting
@@ -893,18 +852,25 @@ void process_packet(simple_packet& current_packet) {
     // определение направления пакета тоже нужно вынести в функцию!!!
     direction packet_direction;
 
-    // try to cache succesful lookups
-    // TODO: REMOVE THIS CODE!!!!
-    //bool our_ip_is_destination = SpeedCounter.count(current_packet.dst_ip) > 0;
-    //bool our_ip_is_source      = SpeedCounter.count(current_packet.src_ip) > 0;
+    bool our_ip_is_destination = false;
 
-    //if (! our_ip_is_destination) {
-    bool our_ip_is_destination = belongs_to_networks(our_networks, current_packet.dst_ip);
-    //}
+    prefix_t* prefix_for_check_dst = ascii2prefix(AF_INET, const_cast<char*>(convert_ip_as_uint_to_string(current_packet.dst_ip).c_str()));
 
-    //if (!our_ip_is_source) {
-    bool our_ip_is_source      = belongs_to_networks(our_networks, current_packet.src_ip);
-    //}
+    if (patricia_search_best(lookup_tree, prefix_for_check_dst) != NULL) {
+        our_ip_is_destination = true;
+    }
+
+    free(prefix_for_check_dst);
+
+    bool our_ip_is_source      = false;
+
+    prefix_t* prefix_for_check_src = ascii2prefix(AF_INET, const_cast<char*>(convert_ip_as_uint_to_string(current_packet.src_ip).c_str()));
+
+    if (patricia_search_best(lookup_tree, prefix_for_check_src) != NULL) {
+        our_ip_is_source = true;
+    }
+
+    free(prefix_for_check_src);
 
     if (our_ip_is_source && our_ip_is_destination) {
         packet_direction = INTERNAL;
