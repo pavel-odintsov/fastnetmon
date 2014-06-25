@@ -62,7 +62,7 @@ LIBS += -lgpm
 LIBS += -llog4cpp
 
 # If you need dynamic compile, please comment this line
-#STATIC = -static
+STATIC = -static
 
 cppcheck:
 	cppcheck --enable=all -DPF_RING -DREDIS $(HEADERS) fastnetmon.cpp
