@@ -1,3 +1,7 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * $Id: patricia.h,v 1.6 2005/12/07 20:53:01 dplonka Exp $
  * Dave Plonka <plonka@doit.wisc.edu>
@@ -150,3 +154,7 @@ do { \
     } while (0)
 
 #endif /* _PATRICIA_H */
+
+#ifdef __cplusplus
+}
+#endif
