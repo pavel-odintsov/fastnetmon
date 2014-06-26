@@ -171,7 +171,21 @@ string log_file_path = "/var/log/fastnetmon.log";
 // Enum with availible sort by field
 enum sort_type { PACKETS, BYTES };
 
-enum direction { INCOMING, OUTGOING, INTERNAL, OTHER };
+enum direction {
+    INCOMING = 0,
+    OUTGOING,
+    INTERNAL,
+    OTHER
+};
+
+typedef struct {
+    int bytes;
+    int packets;
+} total_counter_element;
+
+// We count total number of incoming/outgoing/internal and other traffic type packets/bytes
+// And initilize by 0 all fields
+total_counter_element total_counters[4]{};
 
 // simplified packet struct for lightweight save into memory
 struct simple_packet {
@@ -234,16 +248,6 @@ map_for_counters SpeedCounter;
 map_for_counters GeoIpCounter;
 #endif
 
-int total_count_of_incoming_packets = 0;
-int total_count_of_outgoing_packets = 0;
-int total_count_of_other_packets = 0;
-int total_count_of_internal_packets = 0;
-
-int total_count_of_incoming_bytes = 0;
-int total_count_of_outgoing_bytes = 0;
-int total_count_of_other_bytes = 0;
-int total_count_of_internal_bytes = 0;
-
 // В информации о ддосе мы храним силу атаки и ее направление
 map<uint32_t, banlist_item> ban_list;
 map<uint32_t, vector<simple_packet> > ban_list_details;
@@ -278,7 +282,7 @@ string send_ddos_attack_details();
 void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int out_bps);
 direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip);
 void recalculate_speed();
-std::string print_channel_speed(string traffic_type, int total_number_of_packets, int total_number_of_bytes, int check_period);
+std::string print_channel_speed(string traffic_type, direction packet_direction, int check_period);
 void process_packet(simple_packet& current_packet);
 void copy_networks_from_string_form_to_binary(vector<string> networks_list_as_string, vector<subnet>& our_networks);
 
@@ -838,11 +842,13 @@ void process_packet(simple_packet& current_packet) {
 
     direction packet_direction = get_packet_direction(current_packet.src_ip, current_packet.dst_ip);
 
+    counters_mutex.lock();
+    total_counters[packet_direction].packets++;
+    total_counters[packet_direction].bytes += current_packet.length;
+    counters_mutex.unlock();
+
     if (packet_direction == INTERNAL) {
-        counters_mutex.lock();
-        total_count_of_internal_packets ++;
-        total_count_of_internal_bytes += current_packet.length;
-        counters_mutex.unlock();
+    
     } else if (packet_direction == OUTGOING) {
         // собираем данные для деталей при бане клиента
         if  (ban_list_details.count(current_packet.src_ip) > 0 && ban_list_details[current_packet.src_ip].size() < ban_details_records_count) {
@@ -850,9 +856,7 @@ void process_packet(simple_packet& current_packet) {
         }
 
         counters_mutex.lock();
-        
-        total_count_of_outgoing_packets ++;
-        total_count_of_outgoing_bytes += current_packet.length;
+       
         DataCounter[ current_packet.src_ip ].out_packets++; 
         DataCounter[ current_packet.src_ip ].out_bytes += current_packet.length;
 
@@ -866,8 +870,6 @@ void process_packet(simple_packet& current_packet) {
 
         counters_mutex.lock();
 
-        total_count_of_incoming_packets++;
-        total_count_of_incoming_bytes += current_packet.length;
         DataCounter[ current_packet.dst_ip ].in_packets ++;
         DataCounter[ current_packet.dst_ip ].in_bytes += current_packet.length;
 
@@ -875,8 +877,6 @@ void process_packet(simple_packet& current_packet) {
     } else {
         // Other traffic
         counters_mutex.lock();
-        total_count_of_other_packets ++;
-        total_count_of_other_bytes += current_packet.length;
         counters_mutex.unlock();
     }
 }
@@ -973,21 +973,21 @@ void calculation_programm() {
 
     output_buffer<<"FastNetMon v1.0 "<<"IPs ordered by: "<<sort_parameter<<" "<<"threshold is: "<<ban_threshold<<endl<<endl;
 
-    output_buffer<<print_channel_speed("Incoming Traffic", total_count_of_incoming_packets, total_count_of_incoming_bytes, check_period)<<endl;
+    output_buffer<<print_channel_speed("Incoming Traffic", INCOMING, check_period)<<endl;
     output_buffer<<draw_table(SpeedCounter, INCOMING, true, sorter);
     
     output_buffer<<endl; 
     
-    output_buffer<<print_channel_speed("Outgoing traffic", total_count_of_outgoing_packets, total_count_of_outgoing_bytes, check_period)<<endl;
+    output_buffer<<print_channel_speed("Outgoing traffic", OUTGOING, check_period)<<endl;
     output_buffer<<draw_table(SpeedCounter, OUTGOING, false, sorter);
 
     output_buffer<<endl;
 
-    output_buffer<<print_channel_speed("Internal traffic", total_count_of_internal_packets, total_count_of_internal_bytes, check_period)<<endl;
+    output_buffer<<print_channel_speed("Internal traffic", INTERNAL, check_period)<<endl;
 
     output_buffer<<endl;
 
-    output_buffer<<print_channel_speed("Other traffic", total_count_of_other_packets, total_count_of_other_bytes, check_period)<<endl;
+    output_buffer<<print_channel_speed("Other traffic", OTHER, check_period)<<endl;
 
     output_buffer<<endl;
 
@@ -1037,23 +1037,19 @@ void calculation_programm() {
 
     counters_mutex.lock();
 
-    total_count_of_incoming_bytes = 0; 
-    total_count_of_outgoing_bytes = 0; 
+    for (int index = 0; index < 4; index++) {
+        total_counters[index].bytes = 0;
+        total_counters[index].packets = 0;
+    }
 
-    total_count_of_other_packets = 0; 
-    total_count_of_other_bytes   = 0; 
-
-    total_count_of_internal_packets = 0; 
-    total_count_of_internal_bytes = 0; 
- 
-    total_count_of_incoming_packets = 0; 
-    total_count_of_outgoing_packets = 0; 
     counters_mutex.unlock();
 }
 
 // pretty print channel speed in pps and MBit
-std::string print_channel_speed(string traffic_type, int total_number_of_packets,
-    int total_number_of_bytes, int check_period) {
+std::string print_channel_speed(string traffic_type, direction packet_direction, int check_period) {
+
+    int total_number_of_packets = total_counters[packet_direction].packets;
+    int total_number_of_bytes   = total_counters[packet_direction].bytes;
 
     // Потому что к нам скорость приходит в чистом виде 
     int number_of_tabs = 1; 
