@@ -267,6 +267,7 @@ vector<subnet> whitelist_networks;
 */
 
 // prototypes
+string send_ddos_attack_details();
 void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int out_bps);
 direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip);
 void recalculate_speed();
@@ -1019,35 +1020,9 @@ void calculation_programm() {
  
         if (!ban_list.empty()) {
             output_buffer<<endl<<"Ban list:"<<endl;  
- 
-            for( auto ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
-                string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
-                string pps_as_string = convert_int_to_string(((*ii).second).first);
-
-                string attack_direction = get_direction_name(((*ii).second).second);
-
-                output_buffer<<client_ip_as_string<<"/"<<pps_as_string<<" pps "<<attack_direction<<endl;
-
-                // странная проверка, но при мощной атаке набить ban_details_records_count пакетов - очень легко
-                if (ban_list_details.count( (*ii).first  ) > 0 && ban_list_details[ (*ii).first ].size() == ban_details_records_count) {
-                    stringstream attack_details;
-                    for( auto iii=ban_list_details[ (*ii).first ].begin(); iii!=ban_list_details[ (*ii).first ].end(); ++iii) {
-                        attack_details<<print_simple_packet( *iii );
-                    }
-
-                    // отсылаем детали атаки (отпечаток пакетов) по почте
-                    if (file_exists(notify_script_path)) {
-                        exec_with_stdin_params(notify_script_path + " " + client_ip_as_string + " " + attack_direction  + " " + pps_as_string, attack_details.str() );
-                        logger<<log4cpp::Priority::INFO<<"Attack with direction: "<<attack_direction<<" IP: "<<client_ip_as_string<<" Power: "<<pps_as_string;
-                        logger<<log4cpp::Priority::INFO<<attack_details.str();
-                    }
-                    // удаляем ключ из деталей атаки, чтобы он не выводился снова и в него не собирался трафик
-                    ban_list_details.erase((*ii).first); 
-                }
-
-            }
+            output_buffer<<send_ddos_attack_details();
         }
-        
+ 
         printw( (output_buffer.str()).c_str());
         // update screen
         refresh();
@@ -1513,7 +1488,6 @@ void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int
         string data_direction_as_string = get_direction_name(data_direction);
         string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
         ban_list[client_ip] = make_pair(pps, data_direction);
-
         ban_list_details[client_ip] = vector<simple_packet>();
                          
         string pps_as_string = convert_int_to_string(pps);
@@ -1523,4 +1497,36 @@ void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int
             exec(notify_script_path + " " + client_ip_as_string + " " + data_direction_as_string + " " + pps_as_string);
         }    
     }    
+}
+
+string send_ddos_attack_details() {
+        stringstream output_buffer;
+            for( auto ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
+                string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
+                string pps_as_string = convert_int_to_string(((*ii).second).first);
+
+                string attack_direction = get_direction_name(((*ii).second).second);
+
+                stringstream output_buffer;
+                output_buffer<<client_ip_as_string<<"/"<<pps_as_string<<" pps "<<attack_direction<<endl;
+
+                // странная проверка, но при мощной атаке набить ban_details_records_count пакетов - очень легко
+                if (ban_list_details.count( (*ii).first  ) > 0 && ban_list_details[ (*ii).first ].size() == ban_details_records_count) {
+                    stringstream attack_details;
+                    for( auto iii=ban_list_details[ (*ii).first ].begin(); iii!=ban_list_details[ (*ii).first ].end(); ++iii) {
+                        attack_details<<print_simple_packet( *iii );
+                    }
+
+                    // отсылаем детали атаки (отпечаток пакетов) по почте
+                    if (file_exists(notify_script_path)) {
+                        exec_with_stdin_params(notify_script_path + " " + client_ip_as_string + " " + attack_direction  + " " + pps_as_string, attack_details.str() );
+                        logger<<log4cpp::Priority::INFO<<"Attack with direction: "<<attack_direction<<" IP: "<<client_ip_as_string<<" Power: "<<pps_as_string;
+                        logger<<log4cpp::Priority::INFO<<attack_details.str();
+                    }
+                    // удаляем ключ из деталей атаки, чтобы он не выводился снова и в него не собирался трафик
+                    ban_list_details.erase((*ii).first);
+                }
+
+            }
+    return output_buffer.str();
 }
