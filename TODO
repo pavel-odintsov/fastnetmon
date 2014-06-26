@@ -6,3 +6,4 @@
 - Migrate ban list to blacklist struct
 - http://hg.python.org/cpython/file/3fa1414ce505/Lib/heapq.py#l183 - поиск топ 10
 - Try libsparsehash-dev
+- Introduce MRU: http://www.boost.org/doc/libs/1_38_0/libs/multi_index/example/serialization.cpp
