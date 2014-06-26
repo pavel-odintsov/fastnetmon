@@ -188,7 +188,7 @@ typedef struct {
 
 // TODO: please put back boost::unordered_map
 // switched off because segfaults
-typedef map <uint32_t, map_element> map_for_counters;
+typedef  map <uint32_t, map_element> map_for_counters;
 // data structure for storing data in Vector
 typedef pair<uint32_t, map_element> pair_of_map_elements;
 
@@ -265,6 +265,7 @@ vector<subnet> whitelist_networks;
 */
 
 // prototypes
+direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip);
 void recalculate_speed();
 std::string print_channel_speed(string traffic_type, int total_number_of_packets, int total_number_of_bytes, int check_period);
 void process_packet(simple_packet& current_packet);
@@ -767,8 +768,8 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
     /* We handle only IPv4 */
     if (h->extended_hdr.parsed_pkt.ip_version == 4) {
         /* PF_RING хранит данные в host byte order, а мы использум только network byte order */
-        packet.src_ip = htonl(h->extended_hdr.parsed_pkt.ip_src.v4); 
-        packet.dst_ip = htonl( h->extended_hdr.parsed_pkt.ip_dst.v4);
+        packet.src_ip = htonl( h->extended_hdr.parsed_pkt.ip_src.v4 ); 
+        packet.dst_ip = htonl( h->extended_hdr.parsed_pkt.ip_dst.v4 );
 
         packet.source_port = h->extended_hdr.parsed_pkt.l4_src_port;
         packet.destination_port = h->extended_hdr.parsed_pkt.l4_dst_port;
@@ -853,74 +854,44 @@ void process_packet(simple_packet& current_packet) {
         logger<< log4cpp::Priority::INFO<<"Dump: "<<print_simple_packet(current_packet);
     }
 
-    // определение направления пакета тоже нужно вынести в функцию!!!
-    direction packet_direction;
+    direction packet_direction = get_packet_direction(current_packet.src_ip, current_packet.dst_ip);
 
-    bool our_ip_is_destination = false;
-
-    prefix_t prefix_for_check_adreess;
-    prefix_for_check_adreess.add.sin.s_addr = current_packet.dst_ip;
-    prefix_for_check_adreess.family = AF_INET;
-    prefix_for_check_adreess.bitlen = 32;
-
-    if (patricia_search_best(lookup_tree, &prefix_for_check_adreess) != NULL) {
-        our_ip_is_destination = true;
-    }
-
-    bool our_ip_is_source      = false;
-
-    prefix_for_check_adreess.add.sin.s_addr = current_packet.src_ip;
-
-    if (patricia_search_best(lookup_tree, &prefix_for_check_adreess) != NULL) {
-        our_ip_is_source = true;
-    }
-
-    if (our_ip_is_source && our_ip_is_destination) {
-        packet_direction = INTERNAL;
-
+    if (packet_direction == INTERNAL) {
         counters_mutex.lock();
         total_count_of_internal_packets ++;
         total_count_of_internal_bytes += current_packet.length;
         counters_mutex.unlock();
-
-    } else if (our_ip_is_source) {
-        packet_direction = OUTGOING;
-
-        counters_mutex.lock();
-        total_count_of_outgoing_packets ++;
-        total_count_of_outgoing_bytes += current_packet.length;
-        counters_mutex.unlock();
-
+    } else if (packet_direction == OUTGOING) {
         // собираем данные для деталей при бане клиента
         if  (ban_list_details.count(current_packet.src_ip) > 0 && ban_list_details[current_packet.src_ip].size() < ban_details_records_count) {
             ban_list_details[current_packet.src_ip].push_back(current_packet);
         }
 
         counters_mutex.lock();
+
+        total_count_of_outgoing_packets ++;
+        total_count_of_outgoing_bytes += current_packet.length;
         DataCounter[ current_packet.src_ip ].out_packets++; 
         DataCounter[ current_packet.src_ip ].out_bytes += current_packet.length;
+
         counters_mutex.unlock();
  
-    } else if (our_ip_is_destination) {
-        packet_direction = INCOMING;
-    
-        counters_mutex.lock();
-        total_count_of_incoming_packets++;
-        total_count_of_incoming_bytes += current_packet.length;
-        counters_mutex.unlock();
-
+    } else if (packet_direction == INCOMING) {
         // собираемы данные для деталей при бане клиента
         if  (ban_list_details.count(current_packet.dst_ip) > 0 && ban_list_details[current_packet.dst_ip].size() < ban_details_records_count) {
             ban_list_details[current_packet.dst_ip].push_back(current_packet);
         }
 
         counters_mutex.lock();
+
+        total_count_of_incoming_packets++;
+        total_count_of_incoming_bytes += current_packet.length;
         DataCounter[ current_packet.dst_ip ].in_packets ++;
         DataCounter[ current_packet.dst_ip ].in_bytes += current_packet.length;
+
         counters_mutex.unlock();
     } else {
-        packet_direction = OTHER;
-
+        // Other traffic
         counters_mutex.lock();
         total_count_of_other_packets ++;
         total_count_of_other_bytes += current_packet.length;
@@ -995,10 +966,6 @@ void recalculate_speed() {
     }
 
     counters_mutex.lock();
-#ifdef GEOIP
-    GeoIpCounter.clear();
-#endif 
-    //DataCounter.clear();
 
     counters_mutex.unlock();
 }
@@ -1504,3 +1471,37 @@ void signal_handler(int signal_number) {
     exit(1); 
 }
 
+/* Get traffic type: check it belongs to our IPs */
+direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip) {
+    direction packet_direction;
+
+    bool our_ip_is_destination = false;
+    bool our_ip_is_source = false;
+
+    prefix_t prefix_for_check_adreess;
+    prefix_for_check_adreess.add.sin.s_addr = dst_ip;
+    prefix_for_check_adreess.family = AF_INET;
+    prefix_for_check_adreess.bitlen = 32;
+
+    if (patricia_search_best(lookup_tree, &prefix_for_check_adreess) != NULL) {
+        our_ip_is_destination = true;
+    }    
+
+    prefix_for_check_adreess.add.sin.s_addr = src_ip;
+
+    if (patricia_search_best(lookup_tree, &prefix_for_check_adreess) != NULL) {
+        our_ip_is_source = true;
+    }    
+
+    if (our_ip_is_source && our_ip_is_destination) {
+        packet_direction = INTERNAL;
+    } else if (our_ip_is_source) {
+        packet_direction = OUTGOING;
+    } else if (our_ip_is_destination) {
+        packet_direction = INCOMING;
+    } else {
+        packet_direction = OTHER;
+    }
+
+    return packet_direction;
+}
