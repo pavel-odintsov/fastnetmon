@@ -57,6 +57,8 @@
 
 // It's buggy, http://www.stableit.ru/2013/11/unorderedmap-c11-debian-wheezy.html
 // #include <unordered_map>
+// When we used unordered_map it will increase it perfomance
+// DataCounter.reserve(MAP_INITIAL_SIZE);
 
 #ifdef ULOG2
 #include "libipulog.h"
@@ -188,7 +190,7 @@ typedef struct {
 
 // TODO: please put back boost::unordered_map
 // switched off because segfaults
-typedef  map <uint32_t, map_element> map_for_counters;
+typedef boost::unordered_map <uint32_t, map_element> map_for_counters;
 // data structure for storing data in Vector
 typedef pair<uint32_t, map_element> pair_of_map_elements;
 
@@ -265,6 +267,7 @@ vector<subnet> whitelist_networks;
 */
 
 // prototypes
+void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int out_bps);
 direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip);
 void recalculate_speed();
 std::string print_channel_speed(string traffic_type, int total_number_of_packets, int total_number_of_bytes, int check_period);
@@ -479,44 +482,20 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
             uint32_t client_ip = (*ii).first;
             string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
 
-            int pps = 0;
-            int bps = 0;
+
+           int pps = 0; 
+            int bps = 0; 
 
             // делаем "полиморфную" полосу и ппс
             if (data_direction == INCOMING) {
-                pps = SpeedCounter[client_ip].in_packets; 
+                pps = SpeedCounter[client_ip].in_packets;
                 bps = SpeedCounter[client_ip].in_bytes;
             } else if (data_direction == OUTGOING) {
                 pps = SpeedCounter[client_ip].out_packets;
                 bps = SpeedCounter[client_ip].out_bytes;
-            }
+            }    
 
             int mbps = int((double)bps / 1024 / 1024 * 8);
-
-            if (pps > ban_threshold) {
-                prefix_t prefix_for_check_adreess;
-                prefix_for_check_adreess.add.sin.s_addr = client_ip;
-                prefix_for_check_adreess.family = AF_INET;
-                prefix_for_check_adreess.bitlen = 32;
-
-                bool in_white_list = (patricia_search_best(whitelist_tree, &prefix_for_check_adreess) != NULL);
-    
-                if (!in_white_list) {
-                    // если клиента еще нету в бан листе
-                    if (ban_list.count(client_ip) == 0) {
-                        string data_direction_as_string = get_direction_name(data_direction);
-                        ban_list[client_ip] = make_pair(pps, data_direction);
-
-                        ban_list_details[client_ip] = vector<simple_packet>();
-               
-                        string pps_as_string = convert_int_to_string(pps);
-                        if (file_exists(notify_script_path)) { 
-                            logger<<log4cpp::Priority::INFO<<"Attack with direction: " << data_direction_as_string << " IP: " << client_ip_as_string << " Power: "<<pps_as_string;
-                            exec(notify_script_path + " " + client_ip_as_string + " " + data_direction_as_string + " " + pps_as_string);
-                        }
-                    }
-                } 
-            } 
 
             // Выводим первые max_ips_in_list элементов в списке, при нашей сортировке, будут выданы топ 10 самых грузящих клиентов
             if (element_number < max_ips_in_list) {
@@ -568,7 +547,6 @@ vector<string> read_file_to_vector(string file_name) {
 
 // Load configuration
 bool load_configuration_file() {
-
     ifstream config_file ("/etc/fastnetmon.conf");
     string line;
 
@@ -657,9 +635,6 @@ bool load_our_networks_list() {
         logger<<log4cpp::Priority::INFO<<"We loaded "<<network_list_from_config.size()<< " networks from whitelist file";
     }
  
-    // When we used unordered_map it will increase it perfomance
-    // DataCounter.reserve(MAP_INITIAL_SIZE);
-
     vector<string> networks_list_as_string;
     // если мы на openvz ноде, то "свои" IP мы можем получить из спец-файла в /proc
     if (file_exists("/proc/vz/version")) {
@@ -715,7 +690,6 @@ void copy_networks_from_string_form_to_binary(vector<string> networks_list_as_st
         subnet current_subnet = std::make_pair(subnet_as_int, netmask_as_int);
 
         our_networks.push_back(current_subnet);
-        //insert_prefix_bitwise_tree(our_networks, subnet_as_string[0], cidr);
     }  
 } 
 
@@ -868,7 +842,7 @@ void process_packet(simple_packet& current_packet) {
         }
 
         counters_mutex.lock();
-
+        
         total_count_of_outgoing_packets ++;
         total_count_of_outgoing_bytes += current_packet.length;
         DataCounter[ current_packet.src_ip ].out_packets++; 
@@ -952,6 +926,11 @@ void recalculate_speed() {
         int in_bps  = int((double)(*ii).second.in_bytes  / (double)speed_calc_period);
         int out_bps = int((double)(*ii).second.out_bytes / (double)speed_calc_period);     
 
+        // we detect overspeed
+        if (in_pps > ban_threshold or out_pps > ban_threshold)  {
+            execute_ip_ban(client_ip, in_pps, out_pps, in_bps, out_bps);
+        }
+
         // add speed values to speed struct
         SpeedCounter[client_ip].in_bytes    = in_bps;
         SpeedCounter[client_ip].out_bytes   = out_bps;
@@ -959,15 +938,13 @@ void recalculate_speed() {
         SpeedCounter[client_ip].in_packets  = in_pps;
         SpeedCounter[client_ip].out_packets = out_pps;
 
+        counters_mutex.lock();
         DataCounter[client_ip].in_bytes = 0;
         DataCounter[client_ip].out_bytes = 0;
         DataCounter[client_ip].in_packets = 0;
         DataCounter[client_ip].out_packets = 0;
+        counters_mutex.unlock();
     }
-
-    counters_mutex.lock();
-
-    counters_mutex.unlock();
 }
 
 void calculation_programm() {
@@ -1224,6 +1201,7 @@ int main(int argc,char **argv) {
 
     // запускаем поток-обсчета данных
     thread calc_thread(calculation_thread);
+    // start thread for recalculating speed in realtime
     thread recalculate_speed_thread(recalculate_speed_thread_handler);
 
 #ifdef PCAP
@@ -1504,4 +1482,45 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip) {
     }
 
     return packet_direction;
+}
+
+void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int out_bps) {
+    direction data_direction;
+
+    int pps;
+    // Check attacj direction
+    if (in_pps > out_pps) {
+        data_direction = INCOMING;
+        pps = in_pps; 
+    } else {
+        data_direction = OUTGOING;
+        pps = out_pps;
+    }
+
+    prefix_t prefix_for_check_adreess;
+    prefix_for_check_adreess.add.sin.s_addr = client_ip;
+    prefix_for_check_adreess.family = AF_INET;
+    prefix_for_check_adreess.bitlen = 32;
+
+    bool in_white_list = (patricia_search_best(whitelist_tree, &prefix_for_check_adreess) != NULL);
+    
+    if (in_white_list) {
+        return;
+    }    
+
+    // если клиента еще нету в бан листе
+    if (ban_list.count(client_ip) == 0) { 
+        string data_direction_as_string = get_direction_name(data_direction);
+        string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+        ban_list[client_ip] = make_pair(pps, data_direction);
+
+        ban_list_details[client_ip] = vector<simple_packet>();
+                         
+        string pps_as_string = convert_int_to_string(pps);
+        logger<<log4cpp::Priority::INFO<<"Attack with direction: " << data_direction_as_string << " IP: " << client_ip_as_string << "Power: "<<pps_as_string;
+             
+        if (file_exists(notify_script_path)) {
+            exec(notify_script_path + " " + client_ip_as_string + " " + data_direction_as_string + " " + pps_as_string);
+        }    
+    }    
 }
