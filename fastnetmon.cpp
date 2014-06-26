@@ -20,6 +20,8 @@
 #include <netinet/in.h>
 
 #include "libpatricia/patricia.h"
+#include "lru_cache/lru_cache.h"
+
 #include <ncurses.h>
 
 #include <algorithm>
@@ -1424,6 +1426,27 @@ void signal_handler(int signal_number) {
     exit(1); 
 }
 
+bool fast_patricia_lookup(patricia_tree_t *patricia_tree, prefix_t* prefix) {
+    return patricia_search_best(patricia_tree, prefix) != NULL;
+}
+
+typedef LRUCache<uint32_t, bool> lpm_cache_t;
+
+// Fix memleaks
+bool cached_patricia_lookup(patricia_tree_t *patricia_tree, prefix_t* prefix, lpm_cache_t* lpm_cache) {
+    bool* lpm_status;
+
+    lpm_status = lpm_cache->fetch_ptr((prefix->add.sin.s_addr));
+
+    if (lpm_status == NULL) {
+         bool resolved_status = fast_patricia_lookup(patricia_tree, prefix);
+         lpm_cache->insert(prefix->add.sin.s_addr, resolved_status);
+        return resolved_status;
+    } else {
+        return lpm_status;
+    }
+}
+
 /* Get traffic type: check it belongs to our IPs */
 direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip) {
     direction packet_direction;
@@ -1436,13 +1459,15 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip) {
     prefix_for_check_adreess.family = AF_INET;
     prefix_for_check_adreess.bitlen = 32;
 
-    if (patricia_search_best(lookup_tree, &prefix_for_check_adreess) != NULL) {
+    lpm_cache_t *cache = new lpm_cache_t(64);
+
+    if (cached_patricia_lookup(lookup_tree, &prefix_for_check_adreess, cache)) {
         our_ip_is_destination = true;
     }    
 
     prefix_for_check_adreess.add.sin.s_addr = src_ip;
 
-    if (patricia_search_best(lookup_tree, &prefix_for_check_adreess) != NULL) {
+    if (fast_patricia_lookup(lookup_tree, &prefix_for_check_adreess)) { 
         our_ip_is_source = true;
     }    
 
