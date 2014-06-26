@@ -66,12 +66,14 @@ STATIC = -static
 
 cppcheck:
 	cppcheck --enable=all -DPF_RING -DREDIS $(HEADERS) fastnetmon.cpp
-fastnetmon: libipulog.o fastnetmon.o libpatricia/patricia.o
-	g++ $(STATIC) libipulog.o libpatricia/patricia.o fastnetmon.o -o fastnetmon $(LIBS_PATH) $(LIBS) $(BUILD_FLAGS) -pthread 
+fastnetmon: libipulog.o fastnetmon.o libpatricia/patricia.o lru_cache/lru_cache.o
+	g++ $(STATIC) libipulog.o libpatricia/patricia.o lru_cache/lru_cache.o fastnetmon.o -o fastnetmon $(LIBS_PATH) $(LIBS) $(BUILD_FLAGS) -pthread 
 libipulog.o: libipulog.c
 	g++ $(STATIC) -c libipulog.c -o libipulog.o -Wno-write-strings
 libpatricia/patricia.o: libpatricia/patricia.c
-	gcc -c libpatricia/patricia.c -o libpatricia/patricia.o -Wno-write-strings -fpermissive -lstdc++ 
+	gcc -c libpatricia/patricia.c -o libpatricia/patricia.o -Wno-write-strings -lstdc++ 
+lru_cache/lru_cache.o: lru_cache/lru_cache.cpp
+	g++ -c -D_REENTRANT lru_cache/lru_cache.cpp -o lru_cache/lru_cache.o
 fastnetmon.o: fastnetmon.cpp
 	g++ $(STATIC) $(DEFINES) $(HEADERS) -c fastnetmon.cpp -o fastnetmon.o -std=c++11 $(BUILD_FLAGS)
 clean:
