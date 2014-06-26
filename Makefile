@@ -77,4 +77,4 @@ lru_cache/lru_cache.o: lru_cache/lru_cache.cpp
 fastnetmon.o: fastnetmon.cpp
 	g++ $(STATIC) $(DEFINES) $(HEADERS) -c fastnetmon.cpp -o fastnetmon.o -std=c++11 $(BUILD_FLAGS)
 clean:
-	rm -f libipulog.o fastnetmon.o fastnetmon libpatricia/patricia.o
+	rm -f libipulog.o fastnetmon.o libpatricia/patricia.o lru_cache/lru_cache.o
