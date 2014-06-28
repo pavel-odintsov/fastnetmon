@@ -97,6 +97,8 @@ using namespace std;
 // Interface name or interface list (delimitered by comma)
 string work_on_interfaces = "";
 
+time_t last_call_of_traffic_recalculation;
+
 /* Configuration block, we must move it to configuration file  */
 #ifdef REDIS
 int redis_port = 6379;
@@ -136,9 +138,6 @@ bool DEBUG_DUMP_ALL_PACKETS = false;
 
 // Period for recounting pps/traffic
 int check_period = 3;
-
-// Time for rechecking traffic, at now we recalc traffic every 1 second
-int speed_calc_period = 1;
 
 #ifdef PCAP
 // Enlarge receive buffer for PCAP for minimize packet drops
@@ -927,9 +926,11 @@ void calculation_thread() {
 }
 
 void recalculate_speed_thread_handler() {
+
+
     while (1) {
         // recalculate data every one second
-        std::this_thread::sleep_for(std::chrono::seconds( speed_calc_period ));
+        std::this_thread::sleep_for(std::chrono::seconds( 1 ));
         recalculate_speed();
     }
 }
@@ -937,6 +938,27 @@ void recalculate_speed_thread_handler() {
 /* Пересчитать мгновенную скорость для всех известных соединений  */
 void recalculate_speed() {
     // TODO: WE SHOULD ZEROFY ALL ELEMETS IN TABLE SpeedCounter
+
+    double speed_calc_period = 1;
+    time_t current_time;
+    time(&current_time);
+
+    // В случае, если наш поток обсчета скорости завис на чем-то эдак на 1+ секунд, то мы должны либо пропустить шаг либо попробовать поделить его на новую разницу
+
+    double time_difference = difftime(current_time, last_call_of_traffic_recalculation);
+
+    if (time_difference < 1) {
+        // It could occur on programm start
+         logger<< log4cpp::Priority::INFO<<"We skip one iteration of speed_calc because it runs so early!";        
+        return;
+    } else if (int(time_difference) == 1) {
+        // все отлично! Запуск произошел ровно через +- секунду после прошлого
+    } else {
+        logger<< log4cpp::Priority::INFO<<"Time from last run of speed_recalc is soooo big, we got ugly lags: "<<time_difference;
+        speed_calc_period = time_difference;
+    }
+
+    //logger<< log4cpp::Priority::INFO<<"Difference: "<<time_difference;
 
     // calculate speed for all our IPs
     for( auto ii = DataCounter.begin(); ii != DataCounter.end(); ++ii) {
@@ -949,8 +971,7 @@ void recalculate_speed() {
         int out_bps = int((double)(*ii).second.out_bytes / (double)speed_calc_period);     
 
         // we detect overspeed
-        if (in_pps > ban_threshold or out_pps > ban_threshold)  {   
-            // ADD LOGGING
+        if (in_pps > ban_threshold or out_pps > ban_threshold) {
             execute_ip_ban(client_ip, in_pps, out_pps, in_bps, out_bps);
         }
 
@@ -970,6 +991,9 @@ void recalculate_speed() {
         DataCounter[client_ip].out_packets = 0;
         data_counters_mutex.unlock();
     }
+
+    // устанавливаем время прошлого запуска данного скрипта
+    time(&last_call_of_traffic_recalculation);
 }
 
 void calculation_programm() {
@@ -1200,6 +1224,9 @@ int main(int argc,char **argv) {
     thread calc_thread(calculation_thread);
     // start thread for recalculating speed in realtime
     thread recalculate_speed_thread(recalculate_speed_thread_handler);
+
+    // инициализируем псевдо дату последнего запуска
+    time(&last_call_of_traffic_recalculation);
 
 #ifdef PCAP
     pcap_main_loop(dev);
@@ -1529,8 +1556,10 @@ void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int
     bool in_white_list = (patricia_search_best(whitelist_tree, &prefix_for_check_adreess) != NULL);
     
     if (in_white_list) {
+        /*
         logger<<log4cpp::Priority::INFO<<"Attack with direction: " << data_direction_as_string
             << " IP: " << client_ip_as_string << " This IP is whitelisted, we IGNORE it and do not do anything" << " Power: "<<pps_as_string;
+        */
         return;
     }    
 
@@ -1543,7 +1572,18 @@ void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int
             << " IP: " << client_ip_as_string << " Power: "<<pps_as_string;
              
         if (file_exists(notify_script_path)) {
-            exec(notify_script_path + " " + client_ip_as_string + " " + data_direction_as_string + " " + pps_as_string);
+            string script_call_params = notify_script_path + " " + client_ip_as_string + " " +
+                data_direction_as_string + " " + pps_as_string;
+       
+            logger<<log4cpp::Priority::INFO<<"Call script for ban client: "<<client_ip_as_string; 
+
+            // We should execute external script in separate thread because 
+            //std::thread exec_thread(exec, script_call_params);
+            // detach thread explicitly from main thread
+            // exec_thread.detach();
+            exec(script_call_params);
+
+            logger<<log4cpp::Priority::INFO<<"Script for ban client is finished: "<<client_ip_as_string;
         }    
     } else {
         // already banned
@@ -1552,34 +1592,38 @@ void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int
 
 string send_ddos_attack_details() {
     stringstream output_buffer;
-        for( auto ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
-            string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
-            string pps_as_string = convert_int_to_string(((*ii).second).first);
 
-            string attack_direction = get_direction_name(((*ii).second).second);
+    for( auto ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
+        string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
+        string pps_as_string = convert_int_to_string(((*ii).second).first);
 
-            stringstream output_buffer;
-            output_buffer<<client_ip_as_string<<"/"<<pps_as_string<<" pps "<<attack_direction<<endl;
+        string attack_direction = get_direction_name(((*ii).second).second);
 
-            // странная проверка, но при мощной атаке набить ban_details_records_count пакетов - очень легко
-            if (ban_list_details.count( (*ii).first  ) > 0 && ban_list_details[ (*ii).first ].size() == ban_details_records_count) {
-                stringstream attack_details;
-                for( auto iii=ban_list_details[ (*ii).first ].begin(); iii!=ban_list_details[ (*ii).first ].end(); ++iii) {
-                    attack_details<<print_simple_packet( *iii );
-                }
+        output_buffer<<client_ip_as_string<<"/"<<pps_as_string<<" pps "<<attack_direction<<endl;
 
-                // отсылаем детали атаки (отпечаток пакетов) по почте
-                if (file_exists(notify_script_path)) {
-                    exec_with_stdin_params(notify_script_path + " " + client_ip_as_string + " " +
-                        attack_direction  + " " + pps_as_string, attack_details.str() );
-
-                    logger<<log4cpp::Priority::INFO<<"Attack with direction: "<<attack_direction<<
-                        " IP: "<<client_ip_as_string<<" Power: "<<pps_as_string;
-                    logger<<log4cpp::Priority::INFO<<attack_details.str();
-                }
-                // удаляем ключ из деталей атаки, чтобы он не выводился снова и в него не собирался трафик
-                ban_list_details.erase((*ii).first);
+        // странная проверка, но при мощной атаке набить ban_details_records_count пакетов - очень легко
+        if (ban_list_details.count( (*ii).first  ) > 0 && ban_list_details[ (*ii).first ].size() == ban_details_records_count) {
+            stringstream attack_details;
+            for( auto iii=ban_list_details[ (*ii).first ].begin(); iii!=ban_list_details[ (*ii).first ].end(); ++iii) {
+                attack_details<<print_simple_packet( *iii );
             }
+
+            logger<<log4cpp::Priority::INFO<<"Attack with direction: "<<attack_direction<<
+                " IP: "<<client_ip_as_string<<" Power: "<<pps_as_string;
+            logger<<log4cpp::Priority::INFO<<attack_details.str();
+
+            // отсылаем детали атаки (отпечаток пакетов) по почте
+            if (file_exists(notify_script_path)) {
+                logger<<log4cpp::Priority::INFO<<"Call script for notify about attack details for: "<<client_ip_as_string;
+
+                exec_with_stdin_params(notify_script_path + " " + client_ip_as_string + " " +
+                    attack_direction  + " " + pps_as_string, attack_details.str() );
+
+                logger<<log4cpp::Priority::INFO<<"Script for notify about attack details is finished: "<<client_ip_as_string;
+            }
+            // удаляем ключ из деталей атаки, чтобы он не выводился снова и в него не собирался трафик
+            ban_list_details.erase((*ii).first);
+        }
     }
 
     return output_buffer.str();
