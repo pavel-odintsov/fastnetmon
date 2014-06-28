@@ -196,6 +196,7 @@ struct simple_packet {
     uint16_t destination_port;
     int      protocol;
     int      length;
+    struct   timeval ts;
 };
 
 typedef pair<int, direction> banlist_item;
@@ -771,6 +772,10 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
 
         packet.length = h->len;
         packet.protocol = h->extended_hdr.parsed_pkt.l3_proto;
+
+        // We must put TS into to packet
+        //logger<< log4cpp::Priority::INFO<<"sec: "<<h->ts.tv_sec<<" nanosec:"<<h->ts.tv_usec;
+        packet.ts = h->ts;
  
         process_packet(packet);
         //std::cout<<print_simple_packet(packet)<<std::endl;
@@ -924,7 +929,7 @@ void calculation_thread() {
 void recalculate_speed_thread_handler() {
     while (1) {
         // recalculate data every one second
-        std::this_thread::sleep_for(std::chrono::seconds( 1 ));
+        std::this_thread::sleep_for(std::chrono::seconds( speed_calc_period ));
         recalculate_speed();
     }
 }
@@ -1501,8 +1506,8 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip) {
 
 void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int out_bps) {
     direction data_direction;
+    int pps = 0;
 
-    int pps;
     // Check attack direction
     if (in_pps > out_pps) {
         data_direction = INCOMING;
