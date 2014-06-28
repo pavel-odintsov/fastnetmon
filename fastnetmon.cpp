@@ -119,7 +119,8 @@ patricia_tree_t *lookup_tree, *whitelist_tree;
 #ifdef ULOG2
 // netlink group number for listening for traffic
 int ULOGD_NLGROUP_DEFAULT = 1;
-/* Size of the socket receive memory.  Should be at least the same size as the 'nlbufsiz' module loadtime parameter of ipt_ULOG.o If you have _big_ in-kernel queues, you may have to increase this number.  (
+/* Size of the socket receive memory.  Should be at least the same size as the 'nlbufsiz' module loadtime
+   parameter of ipt_ULOG.o If you have _big_ in-kernel queues, you may have to increase this number.  (
  * --qthreshold 100 * 1500 bytes/packet = 150kB  */
 
 int ULOGD_RMEM_DEFAULT = 131071;
@@ -208,6 +209,12 @@ typedef struct {
     int out_packets;
 } map_element;
 
+typedef struct {
+    uint16_t source_port;
+    uint16_t destination_port;
+    uint32_t src_ip;
+    uint32_t dst_ip; 
+} conntrack_key;
 
 // TODO: please put back boost::unordered_map
 // switched off because segfaults
@@ -263,7 +270,8 @@ vector<subnet> whitelist_networks;
 
 /* 
  Тут кроется огромный баго-фич:
-  В случае прослушивания any интерфейсов мы ловим фичу-баг, вместо эзернет хидера у нас тип 113, который LINUX SLL, а следовательно размер хидера не 14, а 16 байт! 
+  В случае прослушивания any интерфейсов мы ловим фичу-баг, вместо эзернет хидера у нас тип 113, который LINUX SLL,
+  а следовательно размер хидера не 14, а 16 байт! 
   Если мы сниффим один интерфейсе - у нас хидер эзернет, 14 байт, а если ANY, то хидер у нас 16 !!!
 
  packetptr += 14; // Ethernet
@@ -494,8 +502,7 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
             uint32_t client_ip = (*ii).first;
             string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
 
-
-           int pps = 0; 
+            int pps = 0; 
             int bps = 0; 
 
             // делаем "полиморфную" полосу и ппс
@@ -851,7 +858,9 @@ void process_packet(simple_packet& current_packet) {
     
     } else if (packet_direction == OUTGOING) {
         // собираем данные для деталей при бане клиента
-        if  (ban_list_details.count(current_packet.src_ip) > 0 && ban_list_details[current_packet.src_ip].size() < ban_details_records_count) {
+        if  (ban_list_details.count(current_packet.src_ip) > 0 &&
+            ban_list_details[current_packet.src_ip].size() < ban_details_records_count) {
+
             ban_list_details[current_packet.src_ip].push_back(current_packet);
         }
 
@@ -864,7 +873,9 @@ void process_packet(simple_packet& current_packet) {
  
     } else if (packet_direction == INCOMING) {
         // собираемы данные для деталей при бане клиента
-        if  (ban_list_details.count(current_packet.dst_ip) > 0 && ban_list_details[current_packet.dst_ip].size() < ban_details_records_count) {
+        if  (ban_list_details.count(current_packet.dst_ip) > 0 &&
+            ban_list_details[current_packet.dst_ip].size() < ban_details_records_count) {
+
             ban_list_details[current_packet.dst_ip].push_back(current_packet);
         }
 
@@ -971,7 +982,7 @@ void calculation_programm() {
         sorter = PACKETS;
     }
 
-    output_buffer<<"FastNetMon v1.0 "<<"IPs ordered by: "<<sort_parameter<<" "<<"threshold is: "<<ban_threshold<<endl<<endl;
+    output_buffer<<"FastNetMon v1.0 "<<"IPs ordered by: "<<sort_parameter<<" "<<"threshold is: "<<ban_threshold<<" number of our hosts: "<<DataCounter.size()<<endl<<endl;
 
     output_buffer<<print_channel_speed("Incoming Traffic", INCOMING, check_period)<<endl;
     output_buffer<<draw_table(SpeedCounter, INCOMING, true, sorter);
@@ -1155,6 +1166,12 @@ int main(int argc,char **argv) {
     }
 #endif
 
+    // загружаем наши сети и whitelist 
+    load_our_networks_list();
+
+    // устанавливаем обработчик CTRL+C
+    signal(SIGINT, signal_handler);
+
     // иницилизируем соединение с Redis
 #ifdef REDIS
     if (redis_enabled) {
@@ -1172,12 +1189,6 @@ int main(int argc,char **argv) {
         exit(1);
     } 
 #endif
-
-    // загружаем наши сети и whitelist 
-    load_our_networks_list();
-
-    // устанавливаем обработчик CTRL+C
-    signal(SIGINT, signal_handler);
 
     // запускаем поток-обсчета данных
     thread calc_thread(calculation_thread);
@@ -1234,7 +1245,8 @@ void pf_ring_main_loop(char* dev) {
     pf_ring_descr = pfring_open(dev, snaplen, flags); 
 
     if(pf_ring_descr == NULL) {
-        logger<< log4cpp::Priority::INFO<<"pfring_open error: "<<strerror(errno)<< " (pf_ring not loaded or perhaps you use quick mode and have already a socket bound to: "<<dev<< ")";
+        logger<< log4cpp::Priority::INFO<<"pfring_open error: "<<strerror(errno)
+            << " (pf_ring not loaded or perhaps you use quick mode and have already a socket bound to: "<<dev<< ")";
         exit(1);
     } else {
         logger<< log4cpp::Priority::INFO<<"Successully binded to: "<<dev;
@@ -1246,10 +1258,10 @@ void pf_ring_main_loop(char* dev) {
         pfring_set_application_name(pf_ring_descr, (char*)"fastnetmon");
         pfring_version(pf_ring_descr, &version);
 
-        logger.info("Using PF_RING v.%d.%d.%d",
-           (version & 0xFFFF0000) >> 16, 
-           (version & 0x0000FF00) >> 8,
-           version & 0x000000FF);
+        logger.info(
+            "Using PF_RING v.%d.%d.%d",
+           (version & 0xFFFF0000) >> 16, (version & 0x0000FF00) >> 8, version & 0x000000FF
+        );
     }
     
     int rc;
@@ -1308,7 +1320,8 @@ void pcap_main_loop(char* dev) {
 
     /*
     Вот через этот спец механизм можно собирать лишь хидеры!
-    If you don't need the entire contents of the packet - for example, if you are only interested in the TCP headers of packets - you can set the "snapshot length" for the capture to an appropriate value.
+    If you don't need the entire contents of the packet - for example, if you are only interested in the TCP headers of packets 
+     you can set the "snapshot length" for the capture to an appropriate value.
     */
     /*
     if (pcap_set_snaplen(descr, 32 ) != 0 ) {
@@ -1489,7 +1502,7 @@ void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int
     direction data_direction;
 
     int pps;
-    // Check attacj direction
+    // Check attack direction
     if (in_pps > out_pps) {
         data_direction = INCOMING;
         pps = in_pps; 
@@ -1517,7 +1530,8 @@ void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int
         ban_list_details[client_ip] = vector<simple_packet>();
                          
         string pps_as_string = convert_int_to_string(pps);
-        logger<<log4cpp::Priority::INFO<<"Attack with direction: " << data_direction_as_string << " IP: " << client_ip_as_string << "Power: "<<pps_as_string;
+        logger<<log4cpp::Priority::INFO<<"Attack with direction: " << data_direction_as_string
+            << " IP: " << client_ip_as_string << " Power: "<<pps_as_string;
              
         if (file_exists(notify_script_path)) {
             exec(notify_script_path + " " + client_ip_as_string + " " + data_direction_as_string + " " + pps_as_string);
@@ -1526,33 +1540,36 @@ void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int
 }
 
 string send_ddos_attack_details() {
-        stringstream output_buffer;
-            for( auto ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
-                string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
-                string pps_as_string = convert_int_to_string(((*ii).second).first);
+    stringstream output_buffer;
+        for( auto ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
+            string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
+            string pps_as_string = convert_int_to_string(((*ii).second).first);
 
-                string attack_direction = get_direction_name(((*ii).second).second);
+            string attack_direction = get_direction_name(((*ii).second).second);
 
-                stringstream output_buffer;
-                output_buffer<<client_ip_as_string<<"/"<<pps_as_string<<" pps "<<attack_direction<<endl;
+            stringstream output_buffer;
+            output_buffer<<client_ip_as_string<<"/"<<pps_as_string<<" pps "<<attack_direction<<endl;
 
-                // странная проверка, но при мощной атаке набить ban_details_records_count пакетов - очень легко
-                if (ban_list_details.count( (*ii).first  ) > 0 && ban_list_details[ (*ii).first ].size() == ban_details_records_count) {
-                    stringstream attack_details;
-                    for( auto iii=ban_list_details[ (*ii).first ].begin(); iii!=ban_list_details[ (*ii).first ].end(); ++iii) {
-                        attack_details<<print_simple_packet( *iii );
-                    }
-
-                    // отсылаем детали атаки (отпечаток пакетов) по почте
-                    if (file_exists(notify_script_path)) {
-                        exec_with_stdin_params(notify_script_path + " " + client_ip_as_string + " " + attack_direction  + " " + pps_as_string, attack_details.str() );
-                        logger<<log4cpp::Priority::INFO<<"Attack with direction: "<<attack_direction<<" IP: "<<client_ip_as_string<<" Power: "<<pps_as_string;
-                        logger<<log4cpp::Priority::INFO<<attack_details.str();
-                    }
-                    // удаляем ключ из деталей атаки, чтобы он не выводился снова и в него не собирался трафик
-                    ban_list_details.erase((*ii).first);
+            // странная проверка, но при мощной атаке набить ban_details_records_count пакетов - очень легко
+            if (ban_list_details.count( (*ii).first  ) > 0 && ban_list_details[ (*ii).first ].size() == ban_details_records_count) {
+                stringstream attack_details;
+                for( auto iii=ban_list_details[ (*ii).first ].begin(); iii!=ban_list_details[ (*ii).first ].end(); ++iii) {
+                    attack_details<<print_simple_packet( *iii );
                 }
 
+                // отсылаем детали атаки (отпечаток пакетов) по почте
+                if (file_exists(notify_script_path)) {
+                    exec_with_stdin_params(notify_script_path + " " + client_ip_as_string + " " +
+                        attack_direction  + " " + pps_as_string, attack_details.str() );
+
+                    logger<<log4cpp::Priority::INFO<<"Attack with direction: "<<attack_direction<<
+                        " IP: "<<client_ip_as_string<<" Power: "<<pps_as_string;
+                    logger<<log4cpp::Priority::INFO<<attack_details.str();
+                }
+                // удаляем ключ из деталей атаки, чтобы он не выводился снова и в него не собирался трафик
+                ban_list_details.erase((*ii).first);
             }
+    }
+
     return output_buffer.str();
 }
