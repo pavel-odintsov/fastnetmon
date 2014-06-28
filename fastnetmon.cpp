@@ -224,7 +224,9 @@ typedef pair<uint32_t, map_element> pair_of_map_elements;
 
 /* End of our data structs */
 
-std::mutex counters_mutex;
+std::mutex data_counters_mutex;
+std::mutex speed_counters_mutex;
+std::mutex total_counters_mutex;
 
 #ifdef REDIS
 redisContext *redis_context = NULL;
@@ -849,10 +851,10 @@ void process_packet(simple_packet& current_packet) {
 
     direction packet_direction = get_packet_direction(current_packet.src_ip, current_packet.dst_ip);
 
-    counters_mutex.lock();
+    total_counters_mutex.lock();
     total_counters[packet_direction].packets++;
     total_counters[packet_direction].bytes += current_packet.length;
-    counters_mutex.unlock();
+    total_counters_mutex.unlock();
 
     if (packet_direction == INTERNAL) {
     
@@ -864,12 +866,10 @@ void process_packet(simple_packet& current_packet) {
             ban_list_details[current_packet.src_ip].push_back(current_packet);
         }
 
-        counters_mutex.lock();
-       
+        data_counters_mutex.lock();
         DataCounter[ current_packet.src_ip ].out_packets++; 
         DataCounter[ current_packet.src_ip ].out_bytes += current_packet.length;
-
-        counters_mutex.unlock();
+        data_counters_mutex.unlock();
  
     } else if (packet_direction == INCOMING) {
         // собираемы данные для деталей при бане клиента
@@ -879,16 +879,12 @@ void process_packet(simple_packet& current_packet) {
             ban_list_details[current_packet.dst_ip].push_back(current_packet);
         }
 
-        counters_mutex.lock();
-
+        data_counters_mutex.lock();
         DataCounter[ current_packet.dst_ip ].in_packets ++;
         DataCounter[ current_packet.dst_ip ].in_bytes += current_packet.length;
-
-        counters_mutex.unlock();
+        data_counters_mutex.unlock();
     } else {
         // Other traffic
-        counters_mutex.lock();
-        counters_mutex.unlock();
     }
 }
 
@@ -935,6 +931,8 @@ void recalculate_speed_thread_handler() {
 
 /* Пересчитать мгновенную скорость для всех известных соединений  */
 void recalculate_speed() {
+    // TODO: WE SHOULD ZEROFY ALL ELEMETS IN TABLE SpeedCounter
+
     // calculate speed for all our IPs
     for( auto ii = DataCounter.begin(); ii != DataCounter.end(); ++ii) {
         uint32_t client_ip = (*ii).first;
@@ -946,23 +944,26 @@ void recalculate_speed() {
         int out_bps = int((double)(*ii).second.out_bytes / (double)speed_calc_period);     
 
         // we detect overspeed
-        if (in_pps > ban_threshold or out_pps > ban_threshold)  {
+        if (in_pps > ban_threshold or out_pps > ban_threshold)  {   
+            // ADD LOGGING
             execute_ip_ban(client_ip, in_pps, out_pps, in_bps, out_bps);
         }
 
+        speed_counters_mutex.lock();
         // add speed values to speed struct
         SpeedCounter[client_ip].in_bytes    = in_bps;
         SpeedCounter[client_ip].out_bytes   = out_bps;
 
         SpeedCounter[client_ip].in_packets  = in_pps;
         SpeedCounter[client_ip].out_packets = out_pps;
+        speed_counters_mutex.unlock();
 
-        counters_mutex.lock();
+        data_counters_mutex.lock();
         DataCounter[client_ip].in_bytes = 0;
         DataCounter[client_ip].out_bytes = 0;
         DataCounter[client_ip].in_packets = 0;
         DataCounter[client_ip].out_packets = 0;
-        counters_mutex.unlock();
+        data_counters_mutex.unlock();
     }
 }
 
@@ -1046,14 +1047,14 @@ void calculation_programm() {
         refresh();
         // зануляем счетчик пакетов
 
-    counters_mutex.lock();
+    total_counters_mutex.lock();
 
     for (int index = 0; index < 4; index++) {
         total_counters[index].bytes = 0;
         total_counters[index].packets = 0;
     }
 
-    counters_mutex.unlock();
+    total_counters_mutex.unlock();
 }
 
 // pretty print channel speed in pps and MBit
@@ -1511,6 +1512,10 @@ void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int
         pps = out_pps;
     }
 
+    string data_direction_as_string = get_direction_name(data_direction);
+    string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+    string pps_as_string = convert_int_to_string(pps);
+
     prefix_t prefix_for_check_adreess;
     prefix_for_check_adreess.add.sin.s_addr = client_ip;
     prefix_for_check_adreess.family = AF_INET;
@@ -1519,23 +1524,24 @@ void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int
     bool in_white_list = (patricia_search_best(whitelist_tree, &prefix_for_check_adreess) != NULL);
     
     if (in_white_list) {
+        logger<<log4cpp::Priority::INFO<<"Attack with direction: " << data_direction_as_string
+            << " IP: " << client_ip_as_string << " This IP is whitelisted, we IGNORE it and do not do anything" << " Power: "<<pps_as_string;
         return;
     }    
 
     // если клиента еще нету в бан листе
     if (ban_list.count(client_ip) == 0) { 
-        string data_direction_as_string = get_direction_name(data_direction);
-        string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
         ban_list[client_ip] = make_pair(pps, data_direction);
         ban_list_details[client_ip] = vector<simple_packet>();
                          
-        string pps_as_string = convert_int_to_string(pps);
         logger<<log4cpp::Priority::INFO<<"Attack with direction: " << data_direction_as_string
             << " IP: " << client_ip_as_string << " Power: "<<pps_as_string;
              
         if (file_exists(notify_script_path)) {
             exec(notify_script_path + " " + client_ip_as_string + " " + data_direction_as_string + " " + pps_as_string);
         }    
+    } else {
+        // already banned
     }    
 }
 
