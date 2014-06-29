@@ -1,3 +1,4 @@
+- Check http://www.boost.org/doc/libs/1_47_0/doc/html/foreach.html
 - Coolect all information about DDoS packets (all pf_ring headers)
 - http://habrahabr.ru/post/136237/
 - Introduce ability for pretty print different type of packets
