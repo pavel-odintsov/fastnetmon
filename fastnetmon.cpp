@@ -926,8 +926,6 @@ void calculation_thread() {
 }
 
 void recalculate_speed_thread_handler() {
-
-
     while (1) {
         // recalculate data every one second
         std::this_thread::sleep_for(std::chrono::seconds( 1 ));
@@ -1281,29 +1279,39 @@ void pf_ring_main_loop(char* dev) {
         logger<< log4cpp::Priority::INFO<<"pfring_open error: "<<strerror(errno)
             << " (pf_ring not loaded or perhaps you use quick mode and have already a socket bound to: "<<dev<< ")";
         exit(1);
-    } else {
-        logger<< log4cpp::Priority::INFO<<"Successully binded to: "<<dev;
-
-        logger<< log4cpp::Priority::INFO<<"Device RX channels number: "<< pfring_get_num_rx_channels(pf_ring_descr); 
-
-        u_int32_t version;
-        // задаемт имя приложения для его указания в переменной PCAP_PF_RING_APPNAME в статистике в /proc 
-        pfring_set_application_name(pf_ring_descr, (char*)"fastnetmon");
-        pfring_version(pf_ring_descr, &version);
-
-        logger.info(
-            "Using PF_RING v.%d.%d.%d",
-           (version & 0xFFFF0000) >> 16, (version & 0x0000FF00) >> 8, version & 0x000000FF
-        );
     }
+
+
+    logger<< log4cpp::Priority::INFO<<"Successully binded to: "<<dev;
+    logger<< log4cpp::Priority::INFO<<"Device RX channels number: "<< pfring_get_num_rx_channels(pf_ring_descr); 
+
+    u_int32_t version;
+    // задаемт имя приложения для его указания в переменной PCAP_PF_RING_APPNAME в статистике в /proc 
+    int pfring_set_application_name_result =
+        pfring_set_application_name(pf_ring_descr, (char*)"fastnetmon");
+
+    if (pfring_set_application_name_result != 0) {
+        logger<< log4cpp::Priority::INFO<<"Can't set programm name for PF_RING: pfring_set_application_name";
+    }
+
+    pfring_version(pf_ring_descr, &version);
+
+    logger.info(
+        "Using PF_RING v.%d.%d.%d",
+       (version & 0xFFFF0000) >> 16, (version & 0x0000FF00) >> 8, version & 0x000000FF
+    );
     
     int rc;
     if((rc = pfring_set_socket_mode(pf_ring_descr, recv_only_mode)) != 0)
         logger.info("pfring_set_socket_mode returned [rc=%d]\n", rc);
-
+   
+    /*
+    Этот код требуется, когда мы сами пишем какую-либо свою статистику в ядерный модуль PF_RING 
     char path[256] = { 0 };
-    if(pfring_get_appl_stats_file_name(pf_ring_descr, path, sizeof(path)) != NULL)
+    if (pfring_get_appl_stats_file_name(pf_ring_descr, path, sizeof(path)) != NULL) {
         logger.info("Dumping statistics on %s\n", path);
+    }
+    */
 
     // enable ring
     if (pfring_enable_ring(pf_ring_descr) != 0) {
