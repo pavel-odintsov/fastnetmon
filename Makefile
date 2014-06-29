@@ -61,6 +61,9 @@ LIBS += -lgpm
 # Logger
 LIBS += -llog4cpp
 
+# Boost threads
+LIBS += -lboost_thread
+
 # If you need dynamic compile, please comment this line
 STATIC = -static
 
@@ -75,6 +78,6 @@ libpatricia/patricia.o: libpatricia/patricia.c
 lru_cache/lru_cache.o: lru_cache/lru_cache.cpp
 	g++ -c -D_REENTRANT lru_cache/lru_cache.cpp -o lru_cache/lru_cache.o
 fastnetmon.o: fastnetmon.cpp
-	g++ $(STATIC) $(DEFINES) $(HEADERS) -c fastnetmon.cpp -o fastnetmon.o -std=c++11 $(BUILD_FLAGS)
+	g++ $(STATIC) $(DEFINES) $(HEADERS) -c fastnetmon.cpp -o fastnetmon.o $(BUILD_FLAGS) -std=c++11
 clean:
 	rm -f libipulog.o fastnetmon.o libpatricia/patricia.o lru_cache/lru_cache.o

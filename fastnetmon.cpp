@@ -33,10 +33,14 @@
 #include <utility>
 #include <sstream>
 
+#include <boost/thread.hpp>
+#include <boost/thread/mutex.hpp>
+//#include <boost/chrono.hpp>
+
 // C++ 11
-#include <thread>
-#include <chrono>
-#include <mutex>
+//#include <thread>
+//#include <chrono>
+//#include <mutex>
 
 // log4cpp logging facility
 #include "log4cpp/Category.hh"
@@ -224,9 +228,9 @@ typedef pair<uint32_t, map_element> pair_of_map_elements;
 
 /* End of our data structs */
 
-std::mutex data_counters_mutex;
-std::mutex speed_counters_mutex;
-std::mutex total_counters_mutex;
+boost::mutex data_counters_mutex;
+boost::mutex speed_counters_mutex;
+boost::mutex total_counters_mutex;
 
 #ifdef REDIS
 redisContext *redis_context = NULL;
@@ -920,7 +924,8 @@ void calculation_thread() {
     // we need wait one second for calculating speed by recalculate_speed
 
     while (1) {
-        std::this_thread::sleep_for(std::chrono::seconds( check_period ));
+        // Availible only from boost 1.54: boost::this_thread::sleep_for( boost::chrono::seconds(check_period) );
+        boost::this_thread::sleep(boost::posix_time::seconds(check_period));
         calculation_programm();
     }
 }
@@ -928,7 +933,8 @@ void calculation_thread() {
 void recalculate_speed_thread_handler() {
     while (1) {
         // recalculate data every one second
-        std::this_thread::sleep_for(std::chrono::seconds( 1 ));
+        // Availible only from boost 1.54: boost::this_thread::sleep_for( boost::chrono::seconds(1) );
+        boost::this_thread::sleep(boost::posix_time::seconds(1));
         recalculate_speed();
     }
 }
@@ -1219,9 +1225,9 @@ int main(int argc,char **argv) {
 #endif
 
     // запускаем поток-обсчета данных
-    thread calc_thread(calculation_thread);
+    boost::thread calc_thread(calculation_thread);
     // start thread for recalculating speed in realtime
-    thread recalculate_speed_thread(recalculate_speed_thread_handler);
+    boost::thread recalculate_speed_thread(recalculate_speed_thread_handler);
 
     // инициализируем псевдо дату последнего запуска
     time(&last_call_of_traffic_recalculation);
@@ -1235,7 +1241,7 @@ int main(int argc,char **argv) {
 #endif
 
 #ifdef ULOG2 
-    thread ulog_thread(ulog_main_loop);
+    boost::thread ulog_thread(ulog_main_loop);
     ulog_thread.join();
 #endif
 
