@@ -292,6 +292,9 @@ vector<subnet> whitelist_networks;
 */
 
 // prototypes
+string convert_tiemval_to_date(struct timeval tv);
+void free_up_all_resources();
+void main_packet_process_task();
 int get_cidr_mask_from_network_as_string(string network_cidr_format);
 string send_ddos_attack_details();
 void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int out_bps);
@@ -303,8 +306,8 @@ void copy_networks_from_string_form_to_binary(vector<string> networks_list_as_st
 
 bool file_exists(string path);
 void calculation_programm();
-void pcap_main_loop(char* dev);
-void pf_ring_main_loop(char* dev);
+void pcap_main_loop(const char* dev);
+void pf_ring_main_loop(const char* dev);
 void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *packetptr);
 void ulog_main_loop();
 void signal_handler(int signal_number);
@@ -656,7 +659,7 @@ bool load_our_networks_list() {
     if (file_exists("/etc/networks_whitelist")) {
         vector<string> network_list_from_config = read_file_to_vector("/etc/networks_whitelist");
 
-        for( vector<string>::iterator ii=network_list_from_config.begin(); ii!=network_list_from_config.end(); ++ii) { 
+        for( vector<string>::iterator ii=network_list_from_config.begin(); ii!=network_list_from_config.end(); ++ii) {
             make_and_lookup(whitelist_tree, const_cast<char*>(ii->c_str())); 
         }
 
@@ -704,7 +707,7 @@ bool load_our_networks_list() {
     for( vector<string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) { 
         int cidr_mask = get_cidr_mask_from_network_as_string(*ii);
         total_number_of_hosts_in_our_networks += pow(2, 32-cidr_mask);
-
+        
         make_and_lookup(lookup_tree, const_cast<char*>(ii->c_str())); 
     }    
 
@@ -766,7 +769,8 @@ string print_simple_packet(struct simple_packet packet) {
             proto_name = "unknown";
             break;
     }
-     
+    
+    buffer<<convert_tiemval_to_date(packet.ts)<<" ";
 
     buffer
         <<convert_ip_as_uint_to_string(packet.src_ip)<<":"<<packet.source_port
@@ -795,9 +799,6 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
 
         packet.length = h->len;
         packet.protocol = h->extended_hdr.parsed_pkt.l3_proto;
-
-        // We must put TS into to packet
-        //logger<< log4cpp::Priority::INFO<<"sec: "<<h->ts.tv_sec<<" nanosec:"<<h->ts.tv_usec;
         packet.ts = h->ts;
  
         process_packet(packet);
@@ -1154,9 +1155,6 @@ void init_logging() {
 }
 
 int main(int argc,char **argv) {
-    // listened device
-    char* dev; 
-
     lpm_cache = new lpm_cache_t(16);
 
     lookup_tree = New_Patricia(32);
@@ -1194,42 +1192,17 @@ int main(int argc,char **argv) {
 
     logger<< log4cpp::Priority::INFO<<"I need few seconds for collecting data, please wait. Thank you!";
 
-#ifdef PF_RING
-    
     if (work_on_interfaces == "" && argc != 2) {
         fprintf(stdout, "Usage: %s \"eth0\" or \"eth0,eth1\" or specify interfaces param in config file\n", argv[0]);
         exit(1);
     }
-   
-    if (work_on_interfaces != "") {
-        dev = const_cast<char*>(work_on_interfaces.c_str());
-    } else {
-        dev = argv[1];
-    }    
-
-    logger<< log4cpp::Priority::INFO<<"We selected interface:"<<dev;
-
-#endif
  
-#ifdef PCAP 
-    if (argc != 2) {
-        fprintf(stdout, "Usage: %s \"eth0\" or \"any\"\n", argv[0]);
+    // If we found params on command line we sue it 
+    if (argc >= 2 && strlen(argv[1]) > 0) {
+        work_on_interfaces = argv[1];
+    } 
 
-        logger<< log4cpp::Priority::INFO<< "We must automatically select interface";
-        /* Now get a device */
-        dev = pcap_lookupdev(errbuf);
-        
-        if(dev == NULL) {
-            logger<< log4cpp::Priority::INFO<<"Can't lookup device for pcap:" << errbuf;
-            exit (1);    
-        }
-
-        logger << log4cpp::Priority::INFO<< "Automatically selected device: " << dev;
-
-    } else { 
-        dev = argv[1];
-    }
-#endif
+    logger<< log4cpp::Priority::INFO<<"We selected interface:"<<work_on_interfaces;
 
     // загружаем наши сети и whitelist 
     load_our_networks_list();
@@ -1255,29 +1228,44 @@ int main(int argc,char **argv) {
     } 
 #endif
 
+    // инициализируем псевдо дату последнего запуска
+    time(&last_call_of_traffic_recalculation);
+
     // запускаем поток-обсчета данных
     boost::thread calc_thread(calculation_thread);
     // start thread for recalculating speed in realtime
     boost::thread recalculate_speed_thread(recalculate_speed_thread_handler);
 
-    // инициализируем псевдо дату последнего запуска
-    time(&last_call_of_traffic_recalculation);
+    boost::thread main_packet_process_thread(main_packet_process_task);
+
+    // wait threads
+    main_packet_process_thread.join();
+    recalculate_speed_thread.join();
+    calc_thread.join();
+
+    free_up_all_resources();
+ 
+    return 0;
+}
+
+// Main worker thread for packet handling
+void main_packet_process_task() {
+    const char* device_name = work_on_interfaces.c_str();
 
 #ifdef PCAP
-    pcap_main_loop(dev);
+    pcap_main_loop(device_name);
 #endif
 
 #ifdef PF_RING
-    pf_ring_main_loop(dev);
+    pf_ring_main_loop(device_name);
 #endif
 
 #ifdef ULOG2 
-    boost::thread ulog_thread(ulog_main_loop);
-    ulog_thread.join();
+    ulog_main_loop();
 #endif
-
-    recalculate_speed_thread.join();
-    calc_thread.join();
+}
+ 
+void free_up_all_resources() {
 #ifdef GEOIP
     // Free up geoip handle 
     GeoIP_delete(geo_ip);
@@ -1285,12 +1273,9 @@ int main(int argc,char **argv) {
 
     Destroy_Patricia(lookup_tree,    (void_fn_t)0);
     Destroy_Patricia(whitelist_tree, (void_fn_t)0);
- 
-    return 0;
-}
-  
+} 
 #ifdef PF_RING 
-void pf_ring_main_loop(char* dev) {
+void pf_ring_main_loop(const char* dev) {
     // We could pool device in multiple threads
     int num_threads = 1;
 
@@ -1365,7 +1350,7 @@ void pf_ring_main_loop(char* dev) {
 #endif
  
 #ifdef PCAP 
-void pcap_main_loop(char* dev) {
+void pcap_main_loop(const char* dev) {
     char errbuf[PCAP_ERRBUF_SIZE];
     /* open device for reading in promiscuous mode */
     int promisc = 1;
@@ -1674,4 +1659,19 @@ string send_ddos_attack_details() {
     }
 
     return output_buffer.str();
+}
+
+
+string convert_tiemval_to_date(struct timeval tv) {
+    time_t nowtime = tv.tv_sec;
+    struct tm *nowtm = localtime(&nowtime);
+    
+    char tmbuf[64];
+    char buf[64];
+
+    strftime(tmbuf, sizeof(tmbuf), "%Y-%m-%d %H:%M:%S", nowtm);
+
+    snprintf(buf, sizeof(buf), "%s.%06d", tmbuf, tv.tv_usec); 
+
+    return string(buf);
 }
