@@ -189,6 +189,7 @@ typedef struct {
 // We count total number of incoming/outgoing/internal and other traffic type packets/bytes
 // And initilize by 0 all fields
 total_counter_element total_counters[4];
+total_counter_element total_speed_counters[4];
 
 // simplified packet struct for lightweight save into memory
 struct simple_packet {
@@ -296,7 +297,7 @@ string send_ddos_attack_details();
 void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int out_bps);
 direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip);
 void recalculate_speed();
-std::string print_channel_speed(string traffic_type, direction packet_direction, int check_period);
+std::string print_channel_speed(string traffic_type, direction packet_direction);
 void process_packet(simple_packet& current_packet);
 void copy_networks_from_string_form_to_binary(vector<string> networks_list_as_string, vector<subnet>& our_networks);
 
@@ -1015,6 +1016,19 @@ void recalculate_speed() {
         data_counters_mutex.unlock();
     }
 
+    total_counters_mutex.lock();
+    
+    for (int index = 0; index < 4; index++) {
+        total_speed_counters[index].bytes   = int((double)total_counters[index].bytes   / (double)speed_calc_period);
+        total_speed_counters[index].packets = int((double)total_counters[index].packets / (double)speed_calc_period);
+
+        // nullify data counters after speed calculation
+        total_counters[index].bytes = 0; 
+        total_counters[index].packets = 0; 
+    }    
+
+    total_counters_mutex.unlock();
+
     // устанавливаем время прошлого запуска данного скрипта
     time(&last_call_of_traffic_recalculation);
 }
@@ -1037,21 +1051,21 @@ void calculation_programm() {
 
     output_buffer<<"FastNetMon v1.0 "<<"IPs ordered by: "<<sort_parameter<<" "<<"threshold is: "<<ban_threshold<<" number of active hosts: "<<DataCounter.size()<<" from total hosts: "<<total_number_of_hosts_in_our_networks<<endl<<endl;
 
-    output_buffer<<print_channel_speed("Incoming Traffic", INCOMING, check_period)<<endl;
+    output_buffer<<print_channel_speed("Incoming Traffic", INCOMING)<<endl;
     output_buffer<<draw_table(SpeedCounter, INCOMING, true, sorter);
     
     output_buffer<<endl; 
     
-    output_buffer<<print_channel_speed("Outgoing traffic", OUTGOING, check_period)<<endl;
+    output_buffer<<print_channel_speed("Outgoing traffic", OUTGOING)<<endl;
     output_buffer<<draw_table(SpeedCounter, OUTGOING, false, sorter);
 
     output_buffer<<endl;
 
-    output_buffer<<print_channel_speed("Internal traffic", INTERNAL, check_period)<<endl;
+    output_buffer<<print_channel_speed("Internal traffic", INTERNAL)<<endl;
 
     output_buffer<<endl;
 
-    output_buffer<<print_channel_speed("Other traffic", OTHER, check_period)<<endl;
+    output_buffer<<print_channel_speed("Other traffic", OTHER)<<endl;
 
     output_buffer<<endl;
 
@@ -1098,22 +1112,13 @@ void calculation_programm() {
         // update screen
         refresh();
         // зануляем счетчик пакетов
-
-    total_counters_mutex.lock();
-
-    for (int index = 0; index < 4; index++) {
-        total_counters[index].bytes = 0;
-        total_counters[index].packets = 0;
-    }
-
-    total_counters_mutex.unlock();
 }
 
 // pretty print channel speed in pps and MBit
-std::string print_channel_speed(string traffic_type, direction packet_direction, int check_period) {
+std::string print_channel_speed(string traffic_type, direction packet_direction) {
 
-    int total_number_of_packets = total_counters[packet_direction].packets;
-    int total_number_of_bytes   = total_counters[packet_direction].bytes;
+    int speed_in_pps = total_speed_counters[packet_direction].packets;
+    int speed_in_bps = total_speed_counters[packet_direction].bytes;
 
     // Потому что к нам скорость приходит в чистом виде 
     int number_of_tabs = 1; 
@@ -1129,9 +1134,7 @@ std::string print_channel_speed(string traffic_type, direction packet_direction,
         stream<<"\t";
     }
 
-    int speed_in_pps    = int( (double)total_number_of_packets/(double)check_period );
-    double speed_in_bps = (double)total_number_of_bytes/(double)check_period;
-    int speed_in_mbps   = int(speed_in_bps/1024/1024*8);
+    int speed_in_mbps   = int((double)speed_in_bps/1024/1024*8);
 
     stream<<speed_in_pps<<" pps "<< speed_in_mbps<<" mbps"; 
     return stream.str();
@@ -1162,7 +1165,10 @@ int main(int argc,char **argv) {
     // nullify total counters
     for (int index = 0; index < 4; index++) {
         total_counters[index].bytes = 0; 
-        total_counters[index].packets = 0; 
+        total_counters[index].packets = 0;
+
+        total_speed_counters[index].bytes = 0;
+        total_speed_counters[index].packets = 0; 
     } 
 
     // enable core dumps
