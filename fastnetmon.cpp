@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <time.h>
+#include <math.h> 
 
 #include <sys/socket.h>
 #include <sys/resource.h>
@@ -35,12 +36,6 @@
 
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
-//#include <boost/chrono.hpp>
-
-// C++ 11
-//#include <thread>
-//#include <chrono>
-//#include <mutex>
 
 // log4cpp logging facility
 #include "log4cpp/Category.hh"
@@ -292,6 +287,7 @@ vector<subnet> whitelist_networks;
 */
 
 // prototypes
+int get_cidr_mask_from_network_as_string(string network_cidr_format);
 string send_ddos_attack_details();
 void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int out_bps);
 direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip);
@@ -685,6 +681,8 @@ bool load_our_networks_list() {
             string openvz_subnet = subnet_as_string[1] + "/32";
             networks_list_as_string.push_back(openvz_subnet);
         }
+
+        logger<<log4cpp::Priority::INFO<<"We loaded "<<networks_list_as_string.size()<< " networks from /proc/vz/version";
     } 
 
     if (file_exists("/etc/networks_list")) { 
@@ -698,11 +696,29 @@ bool load_our_networks_list() {
     assert( convert_ip_as_string_to_uint("255.255.255.0")   == convert_cidr_to_binary_netmask(24) );
     assert( convert_ip_as_string_to_uint("255.255.255.255") == convert_cidr_to_binary_netmask(32) );
 
+    // Total number of hosts in our networks
+    int total_number_of_hosts_in_our_networks = 0;
+    
     for( vector<string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) { 
+        int cidr_mask = get_cidr_mask_from_network_as_string(*ii);
+        total_number_of_hosts_in_our_networks += pow(2, 32-cidr_mask);
+
         make_and_lookup(lookup_tree, const_cast<char*>(ii->c_str())); 
     }    
 
+    logger<<log4cpp::Priority::INFO<<"We loaded "<<networks_list_as_string.size()<<" subnets to our in-memory list of networks";
+    logger<<log4cpp::Priority::INFO<<"Total number of monitored hosts (total size of all networks): "
+        <<total_number_of_hosts_in_our_networks;
+
     return true;
+}
+
+// extract 24 from 192.168.1.1/24
+int get_cidr_mask_from_network_as_string(string network_cidr_format) {
+   vector<string> subnet_as_string; 
+   split( subnet_as_string, network_cidr_format, boost::is_any_of("/"), boost::token_compress_on );
+
+   return convert_string_to_integer(subnet_as_string[1]);
 }
 
 void copy_networks_from_string_form_to_binary(vector<string> networks_list_as_string, vector<subnet>& our_networks ) {
@@ -1599,6 +1615,7 @@ void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int
        
             logger<<log4cpp::Priority::INFO<<"Call script for ban client: "<<client_ip_as_string; 
 
+            // TODO: !!!
             // We should execute external script in separate thread because 
             //std::thread exec_thread(exec, script_call_params);
             // detach thread explicitly from main thread
