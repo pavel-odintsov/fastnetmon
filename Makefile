@@ -54,6 +54,7 @@ LIBS +=  -lpthread
 
 # We need ncurses
 LIBS += -lncurses
+
 # It's support libs for ncurses
 LIBS += -ltermcap
 LIBS += -lgpm
