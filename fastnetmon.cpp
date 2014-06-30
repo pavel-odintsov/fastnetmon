@@ -108,6 +108,10 @@ bool redis_enabled = false;
 
 typedef LRUCache<uint32_t, bool> lpm_cache_t;
 
+// Total number of hosts in our networks
+// We need this as global variable because it's very important value for configuring data structures
+int total_number_of_hosts_in_our_networks = 0;
+
 // LPM cache
 lpm_cache_t *lpm_cache = NULL;
 
@@ -696,9 +700,6 @@ bool load_our_networks_list() {
     assert( convert_ip_as_string_to_uint("255.255.255.0")   == convert_cidr_to_binary_netmask(24) );
     assert( convert_ip_as_string_to_uint("255.255.255.255") == convert_cidr_to_binary_netmask(32) );
 
-    // Total number of hosts in our networks
-    int total_number_of_hosts_in_our_networks = 0;
-    
     for( vector<string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) { 
         int cidr_mask = get_cidr_mask_from_network_as_string(*ii);
         total_number_of_hosts_in_our_networks += pow(2, 32-cidr_mask);
@@ -1034,7 +1035,7 @@ void calculation_programm() {
         sorter = PACKETS;
     }
 
-    output_buffer<<"FastNetMon v1.0 "<<"IPs ordered by: "<<sort_parameter<<" "<<"threshold is: "<<ban_threshold<<" number of our hosts: "<<DataCounter.size()<<endl<<endl;
+    output_buffer<<"FastNetMon v1.0 "<<"IPs ordered by: "<<sort_parameter<<" "<<"threshold is: "<<ban_threshold<<" number of active hosts: "<<DataCounter.size()<<" from total hosts: "<<total_number_of_hosts_in_our_networks<<endl<<endl;
 
     output_buffer<<print_channel_speed("Incoming Traffic", INCOMING, check_period)<<endl;
     output_buffer<<draw_table(SpeedCounter, INCOMING, true, sorter);
@@ -1514,7 +1515,8 @@ void signal_handler(int signal_number) {
 }
 
 bool fast_patricia_lookup(patricia_tree_t *patricia_tree, prefix_t* prefix) {
-    return patricia_search_best(patricia_tree, prefix) != NULL;
+    bool result = patricia_search_best(patricia_tree, prefix) != NULL;
+    return result;
 }
 
 // DONT USE THIS VERSION!!! USE fast_patricia_lookup instead because this version os so slow!
@@ -1615,12 +1617,9 @@ void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int
        
             logger<<log4cpp::Priority::INFO<<"Call script for ban client: "<<client_ip_as_string; 
 
-            // TODO: !!!
-            // We should execute external script in separate thread because 
-            //std::thread exec_thread(exec, script_call_params);
-            // detach thread explicitly from main thread
-            // exec_thread.detach();
-            exec(script_call_params);
+            // We should execute external script in separate thread because any lag in this code will be very distructive 
+            boost::thread exec_thread(exec, script_call_params);
+            exec_thread.detach();
 
             logger<<log4cpp::Priority::INFO<<"Script for ban client is finished: "<<client_ip_as_string;
         }    
@@ -1655,8 +1654,11 @@ string send_ddos_attack_details() {
             if (file_exists(notify_script_path)) {
                 logger<<log4cpp::Priority::INFO<<"Call script for notify about attack details for: "<<client_ip_as_string;
 
-                exec_with_stdin_params(notify_script_path + " " + client_ip_as_string + " " +
-                    attack_direction  + " " + pps_as_string, attack_details.str() );
+                string script_params = notify_script_path + " " + client_ip_as_string + " " + attack_direction  + " " + pps_as_string;
+
+                // We should execute external script in separate thread because any lag in this code will be very distructive 
+                boost::thread exec_with_params_thread(exec_with_stdin_params, script_params, attack_details.str());
+                exec_with_params_thread.detach();
 
                 logger<<log4cpp::Priority::INFO<<"Script for notify about attack details is finished: "<<client_ip_as_string;
             }
