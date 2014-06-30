@@ -9,8 +9,6 @@ What we do? We can detect hosts in OUR network with big amount of packets per se
 
 Why you write it? Because we can't find any software for solving this problem not in proprietary world not in open sourcу. NetFlow based solutions is so slow and can't react on atatck with acceptable speed.
 
-At now we start usage of C++11 and you can build this programm only on Debian 7 Wheezy, CentOS 6 has so old g++ compiler and can't compile it (but with CentOS 7 everything will be fine but it's not released yet). But you can use precompiled version on Debian 6, 7 and CentOS 6 without any problems.
-
 Main programm screen image:
 
 ![Main screen image](fastnetmon_screen.png)
