@@ -564,7 +564,7 @@ vector<string> read_file_to_vector(string file_name) {
 }
 
 // Load configuration
-bool load_configuration_file() {
+void load_configuration_file() {
     ifstream config_file ("/etc/fastnetmon.conf");
     string line;
 
@@ -857,6 +857,17 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     process_packet(current_packet);
 }
 
+uint32_t get_packet_hash(simple_packet& packet) {
+/*
+    packet.protocol
+    packet.src_ip
+    packet.dst_ip
+    packet.lenght
+    packet.source_port
+    packet.destination_port
+*/
+    return 0;
+}
 
 /* Производим обработку уже переданного нам пакета в простом формате */
 void process_packet(simple_packet& current_packet) { 
@@ -864,6 +875,8 @@ void process_packet(simple_packet& current_packet) {
     if (DEBUG_DUMP_ALL_PACKETS) {
         logger<< log4cpp::Priority::INFO<<"Dump: "<<print_simple_packet(current_packet);
     }
+
+    
 
     direction packet_direction = get_packet_direction(current_packet.src_ip, current_packet.dst_ip);
 
@@ -1657,7 +1670,7 @@ string convert_tiemval_to_date(struct timeval tv) {
 
     strftime(tmbuf, sizeof(tmbuf), "%Y-%m-%d %H:%M:%S", nowtm);
 
-    snprintf(buf, sizeof(buf), "%s.%06d", tmbuf, tv.tv_usec); 
+    snprintf(buf, sizeof(buf), "%s.%06ld", tmbuf, tv.tv_usec); 
 
     return string(buf);
 }
