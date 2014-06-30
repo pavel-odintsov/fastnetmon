@@ -1563,6 +1563,21 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip) {
 }
 
 void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int out_bps) {
+    if (ban_list.count(client_ip) > 0) { 
+        return;
+    }
+
+    prefix_t prefix_for_check_adreess;
+    prefix_for_check_adreess.add.sin.s_addr = client_ip;
+    prefix_for_check_adreess.family = AF_INET;
+    prefix_for_check_adreess.bitlen = 32;
+
+    bool in_white_list = (patricia_search_best(whitelist_tree, &prefix_for_check_adreess) != NULL);
+    
+    if (in_white_list) {
+        return;
+    }  
+
     direction data_direction;
     int pps = 0;
 
@@ -1576,46 +1591,30 @@ void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int
     }
 
     string data_direction_as_string = get_direction_name(data_direction);
+
+    logger.info("We run execute_ip_ban code with following params in_pps: %d out_pps: %d in_bps: %d out_bps: %d and we decide it's %s attack",
+        in_pps, out_pps, in_bps, out_bps, data_direction_as_string.c_str());
+
     string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
     string pps_as_string = convert_int_to_string(pps);
 
-    prefix_t prefix_for_check_adreess;
-    prefix_for_check_adreess.add.sin.s_addr = client_ip;
-    prefix_for_check_adreess.family = AF_INET;
-    prefix_for_check_adreess.bitlen = 32;
-
-    bool in_white_list = (patricia_search_best(whitelist_tree, &prefix_for_check_adreess) != NULL);
-    
-    if (in_white_list) {
-        /*
-        logger<<log4cpp::Priority::INFO<<"Attack with direction: " << data_direction_as_string
-            << " IP: " << client_ip_as_string << " This IP is whitelisted, we IGNORE it and do not do anything" << " Power: "<<pps_as_string;
-        */
-        return;
-    }    
-
-    // если клиента еще нету в бан листе
-    if (ban_list.count(client_ip) == 0) { 
-        ban_list[client_ip] = make_pair(pps, data_direction);
-        ban_list_details[client_ip] = vector<simple_packet>();
+    ban_list[client_ip] = make_pair(pps, data_direction);
+    ban_list_details[client_ip] = vector<simple_packet>();
                          
-        logger<<log4cpp::Priority::INFO<<"Attack with direction: " << data_direction_as_string
-            << " IP: " << client_ip_as_string << " Power: "<<pps_as_string;
+    logger<<log4cpp::Priority::INFO<<"Attack with direction: " << data_direction_as_string
+        << " IP: " << client_ip_as_string << " Power: "<<pps_as_string;
              
-        if (file_exists(notify_script_path)) {
-            string script_call_params = notify_script_path + " " + client_ip_as_string + " " +
-                data_direction_as_string + " " + pps_as_string;
+    if (file_exists(notify_script_path)) {
+        string script_call_params = notify_script_path + " " + client_ip_as_string + " " +
+            data_direction_as_string + " " + pps_as_string;
        
-            logger<<log4cpp::Priority::INFO<<"Call script for ban client: "<<client_ip_as_string; 
+        logger<<log4cpp::Priority::INFO<<"Call script for ban client: "<<client_ip_as_string; 
 
-            // We should execute external script in separate thread because any lag in this code will be very distructive 
-            boost::thread exec_thread(exec, script_call_params);
-            exec_thread.detach();
+        // We should execute external script in separate thread because any lag in this code will be very distructive 
+        boost::thread exec_thread(exec, script_call_params);
+        exec_thread.detach();
 
-            logger<<log4cpp::Priority::INFO<<"Script for ban client is finished: "<<client_ip_as_string;
-        }    
-    } else {
-        // already banned
+        logger<<log4cpp::Priority::INFO<<"Script for ban client is finished: "<<client_ip_as_string;
     }    
 }
 
