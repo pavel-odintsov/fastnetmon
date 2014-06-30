@@ -9,3 +9,4 @@
 - Try libsparsehash-dev
 - Introduce MRU: http://www.boost.org/doc/libs/1_38_0/libs/multi_index/example/serialization.cpp
 - Hash for conntracking: http://www.kfki.hu/~kadlec/sw/netfilter/ct3/
+- Sourcec you can find here: http://www.kfki.hu/~kadlec/sw/netfilter/ct3/cttest-0.91.tar.gz see murmur2
