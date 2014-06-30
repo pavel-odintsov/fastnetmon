@@ -7,7 +7,7 @@ FastNetMon - High Performance Network DDoS and Load Analyzer with PCAP/ULOG2/PF_
 
 What we do? We can detect hosts in OUR network with big amount of packets per second (30 000 pps in standard configuration) incoming or outgoing from certain host. And we can call external bash script which can send notify, switch off server or blackhole this client.
 
-Why you write it? Because we can't find any software for solving this problem not in proprietary world not in open sourcу. NetFlow based solutions is so slow and can't react on atatck with acceptable speed.
+Why we write it? Because we can't find any software for solving this problem not in proprietary world not in open sourcу. NetFlow based solutions is so slow and can't react on atatck with acceptable speed.
 
 Main programm screen image:
 
