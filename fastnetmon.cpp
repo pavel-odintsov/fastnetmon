@@ -189,7 +189,7 @@ typedef struct {
 
 // We count total number of incoming/outgoing/internal and other traffic type packets/bytes
 // And initilize by 0 all fields
-total_counter_element total_counters[4]{};
+total_counter_element total_counters[4];
 
 // simplified packet struct for lightweight save into memory
 struct simple_packet {
@@ -476,7 +476,7 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
         vector_for_sort.reserve(my_map_packets.size());
 
         /* Вобщем-то весь код ниже зависит лишь от входных векторов и порядка сортировки данных */
-        for( auto ii = my_map_packets.begin(); ii != my_map_packets.end(); ++ii) {
+        for( map_for_counters::iterator ii = my_map_packets.begin(); ii != my_map_packets.end(); ++ii) {
             // кладем все наши элементы в массив для последующей сортировки при отображении
             //pair_of_map_elements current_pair = make_pair((*ii).first, (*ii).second);
             vector_for_sort.push_back( make_pair((*ii).first, (*ii).second) );
@@ -504,7 +504,7 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
         }
 
         int element_number = 0;
-        for( auto ii=vector_for_sort.begin(); ii!=vector_for_sort.end(); ++ii) {
+        for( vector<pair_of_map_elements>::iterator ii=vector_for_sort.begin(); ii!=vector_for_sort.end(); ++ii) {
             uint32_t client_ip = (*ii).first;
             string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
 
@@ -558,7 +558,9 @@ vector<string> read_file_to_vector(string file_name) {
     vector<string> data;
     string line;
 
-    ifstream reading_file (file_name);
+    ifstream reading_file;
+
+    reading_file.open(file_name.c_str(), std::ifstream::in);
     if (reading_file.is_open()) {
         while ( getline(reading_file, line) ) {
             data.push_back(line); 
@@ -653,7 +655,7 @@ bool load_our_networks_list() {
     if (file_exists("/etc/networks_whitelist")) {
         vector<string> network_list_from_config = read_file_to_vector("/etc/networks_whitelist");
 
-        for( auto ii=network_list_from_config.begin(); ii!=network_list_from_config.end(); ++ii) { 
+        for( vector<string>::iterator ii=network_list_from_config.begin(); ii!=network_list_from_config.end(); ++ii) { 
             make_and_lookup(whitelist_tree, const_cast<char*>(ii->c_str())); 
         }
 
@@ -666,7 +668,7 @@ bool load_our_networks_list() {
         logger<< log4cpp::Priority::INFO<<"We found OpenVZ";
         // тут искусствено добавляем суффикс 32
         vector<string> openvz_ips = read_file_to_vector("/proc/vz/veip");
-        for( auto ii=openvz_ips.begin(); ii!=openvz_ips.end(); ++ii) {
+        for( vector<string>::iterator ii=openvz_ips.begin(); ii!=openvz_ips.end(); ++ii) {
             // skip IPv6 addresses
             if (strstr(ii->c_str(), ":") != NULL) {
                 continue;
@@ -696,7 +698,7 @@ bool load_our_networks_list() {
     assert( convert_ip_as_string_to_uint("255.255.255.0")   == convert_cidr_to_binary_netmask(24) );
     assert( convert_ip_as_string_to_uint("255.255.255.255") == convert_cidr_to_binary_netmask(32) );
 
-    for( auto ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) { 
+    for( vector<string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) { 
         make_and_lookup(lookup_tree, const_cast<char*>(ii->c_str())); 
     }    
 
@@ -704,7 +706,7 @@ bool load_our_networks_list() {
 }
 
 void copy_networks_from_string_form_to_binary(vector<string> networks_list_as_string, vector<subnet>& our_networks ) {
-    for( auto ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) {
+    for( vector<string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) {
         vector<string> subnet_as_string; 
         split( subnet_as_string, *ii, boost::is_any_of("/"), boost::token_compress_on );
         int cidr = convert_string_to_integer(subnet_as_string[1]);
@@ -965,7 +967,7 @@ void recalculate_speed() {
     //logger<< log4cpp::Priority::INFO<<"Difference: "<<time_difference;
 
     // calculate speed for all our IPs
-    for( auto ii = DataCounter.begin(); ii != DataCounter.end(); ++ii) {
+    for( map_for_counters::iterator ii = DataCounter.begin(); ii != DataCounter.end(); ++ii) {
         uint32_t client_ip = (*ii).first;
             
         int in_pps  = int((double)(*ii).second.in_packets   / (double)speed_calc_period);
@@ -1139,6 +1141,12 @@ int main(int argc,char **argv) {
 
     lookup_tree = New_Patricia(32);
     whitelist_tree = New_Patricia(32);
+
+    // nullify total counters
+    for (int index = 0; index < 4; index++) {
+        total_counters[index].bytes = 0; 
+        total_counters[index].packets = 0; 
+    } 
 
     // enable core dumps
     enable_core_dumps();
@@ -1607,7 +1615,7 @@ void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int
 string send_ddos_attack_details() {
     stringstream output_buffer;
 
-    for( auto ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
+    for( map<uint32_t,banlist_item>::iterator ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
         string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
         string pps_as_string = convert_int_to_string(((*ii).second).first);
 
@@ -1618,7 +1626,7 @@ string send_ddos_attack_details() {
         // странная проверка, но при мощной атаке набить ban_details_records_count пакетов - очень легко
         if (ban_list_details.count( (*ii).first  ) > 0 && ban_list_details[ (*ii).first ].size() == ban_details_records_count) {
             stringstream attack_details;
-            for( auto iii=ban_list_details[ (*ii).first ].begin(); iii!=ban_list_details[ (*ii).first ].end(); ++iii) {
+            for( vector<simple_packet>::iterator iii=ban_list_details[ (*ii).first ].begin(); iii!=ban_list_details[ (*ii).first ].end(); ++iii) {
                 attack_details<<print_simple_packet( *iii );
             }
 

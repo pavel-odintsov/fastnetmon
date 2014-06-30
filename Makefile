@@ -67,6 +67,8 @@ LIBS += -lboost_thread
 # If you need dynamic compile, please comment this line
 STATIC = -static
 
+# removed -std=c++11 for fastnetmon.o
+
 cppcheck:
 	cppcheck --enable=all -DPF_RING -DREDIS $(HEADERS) fastnetmon.cpp
 fastnetmon: libipulog.o fastnetmon.o libpatricia/patricia.o lru_cache/lru_cache.o
@@ -78,6 +80,6 @@ libpatricia/patricia.o: libpatricia/patricia.c
 lru_cache/lru_cache.o: lru_cache/lru_cache.cpp
 	g++ -c -D_REENTRANT lru_cache/lru_cache.cpp -o lru_cache/lru_cache.o
 fastnetmon.o: fastnetmon.cpp
-	g++ $(STATIC) $(DEFINES) $(HEADERS) -c fastnetmon.cpp -o fastnetmon.o $(BUILD_FLAGS) -std=c++11
+	g++ $(STATIC) $(DEFINES) $(HEADERS) -c fastnetmon.cpp -o fastnetmon.o $(BUILD_FLAGS)
 clean:
 	rm -f libipulog.o fastnetmon.o libpatricia/patricia.o lru_cache/lru_cache.o
