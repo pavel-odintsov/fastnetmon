@@ -49,17 +49,6 @@
 
 // Boost libs
 #include <boost/algorithm/string.hpp>
-#include <boost/unordered_map.hpp>
-
-// We use boost unordered map instead standard map because it faster:
-// http://tinodidriksen.com/2009/07/09/cpp-map-speeds/
-// standard map:         41% cpu in top
-// boost::unordered_map: 25% cpu in top
-
-// It's buggy, http://www.stableit.ru/2013/11/unorderedmap-c11-debian-wheezy.html
-// #include <unordered_map>
-// When we used unordered_map it will increase it perfomance
-// DataCounter.reserve(MAP_INITIAL_SIZE);
 
 #ifdef ULOG2
 #include "libipulog.h"
@@ -220,9 +209,7 @@ typedef struct {
     uint32_t dst_ip; 
 } conntrack_key;
 
-// TODO: please put back boost::unordered_map
-// switched off because segfaults
-typedef boost::unordered_map <uint32_t, map_element> map_for_counters;
+typedef std::map <uint32_t, map_element> map_for_counters;
 // data structure for storing data in Vector
 typedef pair<uint32_t, map_element> pair_of_map_elements;
 
