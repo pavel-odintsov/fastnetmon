@@ -69,18 +69,19 @@ LIBS += -lboost_thread
 STATIC = -static
 
 # removed -std=c++11 for fastnetmon.o
-
+COMPILER = g++
+# COMPILER = clang
 cppcheck:
 	cppcheck --enable=all -DPF_RING -DREDIS $(HEADERS) fastnetmon.cpp
 fastnetmon: libipulog.o fastnetmon.o libpatricia/patricia.o lru_cache/lru_cache.o
-	g++ $(STATIC) libipulog.o libpatricia/patricia.o lru_cache/lru_cache.o fastnetmon.o -o fastnetmon $(LIBS_PATH) $(LIBS) $(BUILD_FLAGS) -pthread 
+	$(COMPILER) $(STATIC) libipulog.o libpatricia/patricia.o lru_cache/lru_cache.o fastnetmon.o -o fastnetmon $(LIBS_PATH) $(LIBS) $(BUILD_FLAGS) -pthread 
 libipulog.o: libipulog.c
-	g++ $(STATIC) -c libipulog.c -o libipulog.o -Wno-write-strings
+	$(COMPILER) $(STATIC) -c libipulog.c -o libipulog.o -Wno-write-strings
 libpatricia/patricia.o: libpatricia/patricia.c
 	gcc -c libpatricia/patricia.c -o libpatricia/patricia.o -Wno-write-strings -lstdc++ 
 lru_cache/lru_cache.o: lru_cache/lru_cache.cpp
-	g++ -c -D_REENTRANT lru_cache/lru_cache.cpp -o lru_cache/lru_cache.o
+	$(COMPILER) -c -D_REENTRANT lru_cache/lru_cache.cpp -o lru_cache/lru_cache.o
 fastnetmon.o: fastnetmon.cpp
-	g++ $(STATIC) $(DEFINES) $(HEADERS) -c fastnetmon.cpp -o fastnetmon.o $(BUILD_FLAGS)
+	$(COMPILER) $(STATIC) $(DEFINES) $(HEADERS) -c fastnetmon.cpp -o fastnetmon.o $(BUILD_FLAGS)
 clean:
 	rm -f libipulog.o fastnetmon.o libpatricia/patricia.o lru_cache/lru_cache.o
