@@ -292,6 +292,9 @@ vector<subnet> whitelist_networks;
 */
 
 // prototypes
+string get_attack_description(uint32_t client_ip, attack_details& current_attack);
+unsigned int convert_speed_to_mbps(unsigned int speed_in_bps);
+void send_attack_details(uint32_t client_ip, attack_details current_attack_details);
 string convert_tiemval_to_date(struct timeval tv);
 void free_up_all_resources();
 void main_packet_process_task();
@@ -524,7 +527,7 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
                 bps = SpeedCounter[client_ip].out_bytes;
             }    
 
-            unsigned int mbps = int((double)bps / 1024 / 1024 * 8);
+            unsigned int mbps = convert_speed_to_mbps(bps);
 
             // Выводим первые max_ips_in_list элементов в списке, при нашей сортировке, будут выданы топ 10 самых грузящих клиентов
             if (element_number < max_ips_in_list) {
@@ -1148,11 +1151,15 @@ std::string print_channel_speed(string traffic_type, direction packet_direction)
         stream<<"\t";
     }
 
-    unsigned int speed_in_mbps   = int((double)speed_in_bps/1024/1024*8);
+    unsigned int speed_in_mbps = convert_speed_to_mbps(speed_in_bps);
 
     stream<<speed_in_pps<<" pps "<< speed_in_mbps<<" mbps"; 
     return stream.str();
 }    
+
+unsigned int convert_speed_to_mbps(unsigned int speed_in_bps) {
+    return int((double)speed_in_bps/1024/1024*8);
+}
 
 void init_logging() {
     log4cpp::PatternLayout* layout = new log4cpp::PatternLayout(); 
@@ -1295,7 +1302,6 @@ void pf_ring_main_loop(const char* dev) {
     bool promisc = true;
     /* This flag manages packet parser for extended_hdr */
     bool use_extended_pkt_header = true;
-    bool touch_payload = false;
     bool enable_hw_timestamp = false;
     bool dont_strip_timestamps = false; 
 
@@ -1632,6 +1638,7 @@ void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pp
     // передаем основную информацию об атаке
     current_attack.attack_direction = data_direction;
     current_attack.attack_power = pps;
+    current_attack.max_attack_power = pps;
 
     // передаем вторичные параметры, чтобы иметь более точное представление об атаке
     current_attack.in_packets  = in_pps;
@@ -1664,45 +1671,73 @@ string send_ddos_attack_details() {
     stringstream output_buffer;
 
     for( map<uint32_t,banlist_item>::iterator ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
-        string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
+        uint32_t client_ip = (*ii).first; 
+
+        string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
         string pps_as_string = convert_int_to_string(((*ii).second).attack_power);
         string max_pps_as_string = convert_int_to_string(((*ii).second).max_attack_power);
-
         string attack_direction = get_direction_name(((*ii).second).attack_direction);
 
         output_buffer<<client_ip_as_string<<"/"<<max_pps_as_string<<" pps "<<attack_direction<<endl;
 
-        // TODO: вынести код высылки писем в ОТДЕЛЬНЫЙ THREAD/функцию
-
-        // странная проверка, но при мощной атаке набить ban_details_records_count пакетов - очень легко
-        if (ban_list_details.count( (*ii).first  ) > 0 && ban_list_details[ (*ii).first ].size() == ban_details_records_count) {
-            stringstream attack_details;
-            for( vector<simple_packet>::iterator iii=ban_list_details[ (*ii).first ].begin(); iii!=ban_list_details[ (*ii).first ].end(); ++iii) {
-                attack_details<<print_simple_packet( *iii );
-            }
-
-            logger<<log4cpp::Priority::INFO<<"Attack with direction: "<<attack_direction<<
-                " IP: "<<client_ip_as_string<<" Power: "<<pps_as_string;
-            logger<<log4cpp::Priority::INFO<<attack_details.str();
-
-            // отсылаем детали атаки (отпечаток пакетов) по почте
-            if (file_exists(notify_script_path)) {
-                logger<<log4cpp::Priority::INFO<<"Call script for notify about attack details for: "<<client_ip_as_string;
-
-                string script_params = notify_script_path + " " + client_ip_as_string + " " + attack_direction  + " " + pps_as_string;
-
-                // We should execute external script in separate thread because any lag in this code will be very distructive 
-                boost::thread exec_with_params_thread(exec_with_stdin_params, script_params, attack_details.str());
-                exec_with_params_thread.detach();
-
-                logger<<log4cpp::Priority::INFO<<"Script for notify about attack details is finished: "<<client_ip_as_string;
-            }
-            // удаляем ключ из деталей атаки, чтобы он не выводился снова и в него не собирался трафик
-            ban_list_details.erase((*ii).first);
-        }
+        send_attack_details(client_ip, (*ii).second);
     }
 
+
     return output_buffer.str();
+}
+
+string get_attack_description(uint32_t client_ip, attack_details& current_attack) {
+    stringstream attack_description;
+
+    attack_description
+        <<"IP: "<<convert_ip_as_uint_to_string(client_ip)<<"\n"
+        <<"Initial attack power: "<<current_attack.attack_power<<" packets per second\n"
+        <<"Peak attack power: "<<current_attack.max_attack_power<< " packets per second\n"
+        <<"Attack direction: "<<get_direction_name(current_attack.attack_direction)<<"\n"
+        <<"Incoming traffic: "<<convert_speed_to_mbps(current_attack.in_bytes)<<" mbps\n"
+        <<"Outgoing traffic: "<<convert_speed_to_mbps(current_attack.out_bytes)<<" mbps\n"
+        <<"Incoming pps: "<<current_attack.in_packets<<" packets per second\n"
+        <<"Outgoing pps: "<<current_attack.out_packets<<" packets per second\n"; 
+
+        return attack_description.str();
+}    
+
+
+void send_attack_details(uint32_t client_ip, attack_details current_attack_details) {
+    string pps_as_string = convert_int_to_string(current_attack_details.attack_power);
+    string attack_direction = get_direction_name(current_attack_details.attack_direction);
+    string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+
+    // странная проверка, но при мощной атаке набить ban_details_records_count пакетов - очень легко
+    if (ban_list_details.count( client_ip ) > 0 && ban_list_details[ client_ip ].size() == ban_details_records_count) {
+        stringstream attack_details;
+
+        attack_details<<get_attack_description(client_ip, current_attack_details)<<"\n\n";
+
+        for( vector<simple_packet>::iterator iii=ban_list_details[ client_ip ].begin(); iii!=ban_list_details[ client_ip ].end(); ++iii) {
+            attack_details<<print_simple_packet( *iii );
+        }    
+
+        logger<<log4cpp::Priority::INFO<<"Attack with direction: "<<attack_direction<<
+            " IP: "<<client_ip_as_string<<" Power: "<<pps_as_string;
+        logger<<log4cpp::Priority::INFO<<attack_details.str();
+
+        // отсылаем детали атаки (отпечаток пакетов) по почте
+        if (file_exists(notify_script_path)) {
+            logger<<log4cpp::Priority::INFO<<"Call script for notify about attack details for: "<<client_ip_as_string;
+
+            string script_params = notify_script_path + " " + client_ip_as_string + " " + attack_direction  + " " + pps_as_string;
+
+            // We should execute external script in separate thread because any lag in this code will be very distructive 
+            boost::thread exec_with_params_thread(exec_with_stdin_params, script_params, attack_details.str());
+            exec_with_params_thread.detach();
+
+            logger<<log4cpp::Priority::INFO<<"Script for notify about attack details is finished: "<<client_ip_as_string;
+        }    
+        // удаляем ключ из деталей атаки, чтобы он не выводился снова и в него не собирался трафик
+        ban_list_details.erase(client_ip);
+    }    
 }
 
 
