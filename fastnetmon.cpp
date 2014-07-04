@@ -19,6 +19,7 @@
 #include <netinet/ip_icmp.h>
 #include <netinet/if_ether.h>
 #include <netinet/in.h>
+#include <netdb.h>
 
 #include "libpatricia/patricia.h"
 #include "lru_cache/lru_cache.h"
@@ -1729,6 +1730,11 @@ string get_attack_description(uint32_t client_ip, attack_details& current_attack
         return attack_description.str();
 }    
 
+string get_protocol_name_by_number(unsigned int proto_number) {
+    struct protoent* proto_ent = getprotobynumber( proto_number );
+    string proto_name = proto_ent->p_name;
+    return proto_name;
+}       
 
 void send_attack_details(uint32_t client_ip, attack_details current_attack_details) {
     string pps_as_string = convert_int_to_string(current_attack_details.attack_power);
@@ -1741,10 +1747,20 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
 
         attack_details<<get_attack_description(client_ip, current_attack_details)<<"\n\n";
 
+        std::map<unsigned int, unsigned int> protocol_counter;
         for( vector<simple_packet>::iterator iii=ban_list_details[ client_ip ].begin(); iii!=ban_list_details[ client_ip ].end(); ++iii) {
             attack_details<<print_simple_packet( *iii );
-        }    
 
+            protocol_counter[ iii->protocol ]++;
+        }
+
+        std::map<unsigned int, unsigned int>::iterator max_proto = std::max_element(protocol_counter.begin(), protocol_counter.end(), protocol_counter.value_comp());
+        attack_details<<"\n"<<"We got more packets ("
+            <<max_proto->second
+            <<" from "
+            << ban_details_records_count
+            <<") for protocol: "<< get_protocol_name_by_number(max_proto->first)<<"\n";
+        
         logger<<log4cpp::Priority::INFO<<"Attack with direction: "<<attack_direction<<
             " IP: "<<client_ip_as_string<<" Power: "<<pps_as_string;
         logger<<log4cpp::Priority::INFO<<attack_details.str();
