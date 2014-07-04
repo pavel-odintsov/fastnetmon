@@ -1066,7 +1066,10 @@ void calculation_programm() {
         sorter = PACKETS;
     }
 
-    output_buffer<<"FastNetMon v1.0 "<<"IPs ordered by: "<<sort_parameter<<" "<<"threshold is: "<<ban_threshold<<" number of active hosts: "<<DataCounter.size()<<" from total hosts: "<<total_number_of_hosts_in_our_networks<<endl<<endl;
+    output_buffer<<"FastNetMon v1.0 "<<"IPs ordered by: "<<sort_parameter<<" (use keys 'b'/'p' for change) and use 'q' for quit"<<"\n"
+        <<"Threshold is: "<<ban_threshold
+        <<" number of active hosts: "<<DataCounter.size()
+        <<" from total hosts: "<<total_number_of_hosts_in_our_networks<<endl<<endl;
 
     output_buffer<<print_channel_speed("Incoming Traffic", INCOMING)<<endl;
     output_buffer<<draw_table(SpeedCounter, INCOMING, true, sorter);
@@ -1257,6 +1260,29 @@ int main(int argc,char **argv) {
     boost::thread recalculate_speed_thread(recalculate_speed_thread_handler);
 
     boost::thread main_packet_process_thread(main_packet_process_task);
+
+    // disable any character output 
+    noecho();
+    // hide cursor
+    curs_set(0);
+
+    while(1) { 
+        int c = getch(); 
+
+        switch(c) {
+            case 'b':
+                sort_parameter = "bytes";
+                break;
+            case 'p':
+                sort_parameter = "packets";
+                break;
+            case 'q':
+                signal_handler(0);
+                break;
+            default:
+                break;
+        }
+    }
 
     // wait threads
     main_packet_process_thread.join();
