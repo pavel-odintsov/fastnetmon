@@ -89,7 +89,7 @@ time_t last_call_of_traffic_recalculation;
 
 /* Configuration block, we must move it to configuration file  */
 #ifdef REDIS
-int redis_port = 6379;
+unsigned int redis_port = 6379;
 string redis_host = "127.0.0.1";
 // because it's additional and very specific feature we should disable it by default
 bool redis_enabled = false;
@@ -99,7 +99,7 @@ typedef LRUCache<uint32_t, bool> lpm_cache_t;
 
 // Total number of hosts in our networks
 // We need this as global variable because it's very important value for configuring data structures
-int total_number_of_hosts_in_our_networks = 0;
+unsigned int total_number_of_hosts_in_our_networks = 0;
 
 // LPM cache
 lpm_cache_t *lpm_cache = NULL;
@@ -123,17 +123,17 @@ int ULOGD_RMEM_DEFAULT = 131071;
 int ULOGD_BUFSIZE_DEFAULT = 150000;
 #endif
 
-int DEBUG = 0;
+bool DEBUG = 0;
 
 // flag about dumping all packets to console
 bool DEBUG_DUMP_ALL_PACKETS = false;
 
 // Period for recounting pps/traffic
-int check_period = 3;
+unsigned int check_period = 3;
 
 #ifdef PCAP
 // Enlarge receive buffer for PCAP for minimize packet drops
-int pcap_buffer_size_mbytes = 10;
+unsigned int pcap_buffer_size_mbytes = 10;
 #endif
 
 // Key used for sorting clients in output.  Allowed sort params: packets/bytes
@@ -143,13 +143,13 @@ string sort_parameter = "packets";
 string notify_script_path = "/usr/local/bin/notify_about_attack.sh";
 
 // Number of lines in programm output
-int max_ips_in_list = 7;
+unsigned int max_ips_in_list = 7;
 
 // We must ban IP if it exceeed this limit in PPS
-int ban_threshold = 20000;
+unsigned int ban_threshold = 20000;
 
 // Number of lines for sending ben attack details to email
-int ban_details_records_count = 500;
+unsigned int ban_details_records_count = 500;
 
 
 // log file
@@ -171,8 +171,8 @@ enum direction {
 };
 
 typedef struct {
-    int bytes;
-    int packets;
+    unsigned int bytes;
+    unsigned int packets;
 } total_counter_element;
 
 // We count total number of incoming/outgoing/internal and other traffic type packets/bytes
@@ -182,12 +182,12 @@ total_counter_element total_speed_counters[4];
 
 // simplified packet struct for lightweight save into memory
 struct simple_packet {
-    uint32_t src_ip;
-    uint32_t dst_ip;
-    uint16_t source_port;
-    uint16_t destination_port;
-    int      protocol;
-    int      length;
+    uint32_t     src_ip;
+    uint32_t     dst_ip;
+    uint16_t     source_port;
+    uint16_t     destination_port;
+    unsigned int protocol;
+    unsigned int length;
     struct   timeval ts;
 };
 
@@ -195,13 +195,13 @@ struct simple_packet {
 struct attack_details {
     direction attack_direction;
     // first attackpower detected
-    int attack_power;
+    unsigned int attack_power;
     // max attack power
-    int max_attack_power;
-    int in_bytes;
-    int out_bytes;
-    int in_packets;
-    int out_packets;
+    unsigned int max_attack_power;
+    unsigned int in_bytes;
+    unsigned int out_bytes;
+    unsigned int in_packets;
+    unsigned int out_packets;
 };
 
 typedef attack_details banlist_item;
@@ -209,10 +209,10 @@ typedef pair<uint32_t, uint32_t> subnet;
 
 // main data structure for storing traffic data for all our IPs
 typedef struct {
-    int in_bytes;
-    int out_bytes;
-    int in_packets;
-    int out_packets;
+    unsigned int in_bytes;
+    unsigned int out_bytes;
+    unsigned int in_packets;
+    unsigned int out_packets;
 } map_element;
 
 typedef struct {
@@ -238,8 +238,8 @@ redisContext *redis_context = NULL;
 
 #ifdef ULOG2
 // For counting number of communication errors via netlink
-int netlink_error_counter = 0;
-int netlink_packets_counter = 0;
+unsigned int netlink_error_counter = 0;
+unsigned int netlink_packets_counter = 0;
 #endif
 
 #ifdef PCAP
@@ -266,10 +266,10 @@ map<uint32_t, banlist_item> ban_list;
 map<uint32_t, vector<simple_packet> > ban_list_details;
 
 // стандартно у нас смещение для типа DLT_EN10MB, Ethernet
-int DATA_SHIFT_VALUE = 14;
+unsigned int DATA_SHIFT_VALUE = 14;
 
 // начальный размер unordered_map для хранения данных
-int MAP_INITIAL_SIZE = 2048;
+unsigned int MAP_INITIAL_SIZE = 2048;
 
 vector<subnet> our_networks;
 vector<subnet> whitelist_networks;
@@ -295,9 +295,9 @@ vector<subnet> whitelist_networks;
 string convert_tiemval_to_date(struct timeval tv);
 void free_up_all_resources();
 void main_packet_process_task();
-int get_cidr_mask_from_network_as_string(string network_cidr_format);
+unsigned int get_cidr_mask_from_network_as_string(string network_cidr_format);
 string send_ddos_attack_details();
-void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int out_bps);
+void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pps, unsigned int in_bps, unsigned int out_bps);
 direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip);
 void recalculate_speed();
 std::string print_channel_speed(string traffic_type, direction packet_direction);
@@ -311,7 +311,7 @@ void pf_ring_main_loop(const char* dev);
 void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *packetptr);
 void ulog_main_loop();
 void signal_handler(int signal_number);
-uint32_t convert_cidr_to_binary_netmask(int cidr);
+uint32_t convert_cidr_to_binary_netmask(unsigned int cidr);
 
 // Function for sorting Vector of pairs
 bool compare_function_by_in_packets (pair_of_map_elements a, pair_of_map_elements b) {
@@ -444,7 +444,7 @@ bool redis_init_connection() {
     return true;
 }
 
-void update_traffic_in_redis(uint32_t ip, int traffic_bytes, direction my_direction) {
+void update_traffic_in_redis(uint32_t ip, unsigned int traffic_bytes, direction my_direction) {
     string ip_as_string = convert_ip_as_uint_to_string(ip);
     redisReply *reply;
 
@@ -507,13 +507,13 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
             logger<< log4cpp::Priority::INFO<<"Unexpected bahaviour on sort function";
         }
 
-        int element_number = 0;
+        unsigned int element_number = 0;
         for( vector<pair_of_map_elements>::iterator ii=vector_for_sort.begin(); ii!=vector_for_sort.end(); ++ii) {
             uint32_t client_ip = (*ii).first;
             string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
 
-            int pps = 0; 
-            int bps = 0; 
+            unsigned int pps = 0; 
+            unsigned int bps = 0; 
 
             // делаем "полиморфную" полосу и ппс
             if (data_direction == INCOMING) {
@@ -524,7 +524,7 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
                 bps = SpeedCounter[client_ip].out_bytes;
             }    
 
-            int mbps = int((double)bps / 1024 / 1024 * 8);
+            unsigned int mbps = int((double)bps / 1024 / 1024 * 8);
 
             // Выводим первые max_ips_in_list элементов в списке, при нашей сортировке, будут выданы топ 10 самых грузящих клиентов
             if (element_number < max_ips_in_list) {
@@ -705,7 +705,7 @@ bool load_our_networks_list() {
     assert( convert_ip_as_string_to_uint("255.255.255.255") == convert_cidr_to_binary_netmask(32) );
 
     for( vector<string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) { 
-        int cidr_mask = get_cidr_mask_from_network_as_string(*ii);
+        unsigned int cidr_mask = get_cidr_mask_from_network_as_string(*ii);
         total_number_of_hosts_in_our_networks += pow(2, 32-cidr_mask);
         
         make_and_lookup(lookup_tree, const_cast<char*>(ii->c_str())); 
@@ -719,7 +719,7 @@ bool load_our_networks_list() {
 }
 
 // extract 24 from 192.168.1.1/24
-int get_cidr_mask_from_network_as_string(string network_cidr_format) {
+unsigned int get_cidr_mask_from_network_as_string(string network_cidr_format) {
    vector<string> subnet_as_string; 
    split( subnet_as_string, network_cidr_format, boost::is_any_of("/"), boost::token_compress_on );
 
@@ -730,7 +730,7 @@ void copy_networks_from_string_form_to_binary(vector<string> networks_list_as_st
     for( vector<string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) {
         vector<string> subnet_as_string; 
         split( subnet_as_string, *ii, boost::is_any_of("/"), boost::token_compress_on );
-        int cidr = convert_string_to_integer(subnet_as_string[1]);
+        unsigned int cidr = convert_string_to_integer(subnet_as_string[1]);
 
         uint32_t subnet_as_int  = convert_ip_as_string_to_uint(subnet_as_string[0]);
         uint32_t netmask_as_int = convert_cidr_to_binary_netmask(cidr);
@@ -741,7 +741,7 @@ void copy_networks_from_string_form_to_binary(vector<string> networks_list_as_st
     }  
 } 
 
-uint32_t convert_cidr_to_binary_netmask(int cidr) {
+uint32_t convert_cidr_to_binary_netmask(unsigned int cidr) {
     uint32_t binary_netmask = 0xFFFFFFFF; 
     binary_netmask = binary_netmask << ( 32 - cidr );
     // htonl from host byte order to network
@@ -836,7 +836,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     uint32_t dst_ip = iphdr->ip_dst.s_addr;
 
     // The ntohs() function converts the unsigned short integer netshort from network byte order to host byte order
-    int packet_length = ntohs(iphdr->ip_len); 
+    unsigned int packet_length = ntohs(iphdr->ip_len); 
 
     simple_packet current_packet;
 
@@ -931,7 +931,7 @@ void process_packet(simple_packet& current_packet) {
 }
 
 #ifdef GEOIP
-int get_asn_for_ip(uint32_t ip) { 
+unsigned int get_asn_for_ip(uint32_t ip) { 
     char* asn_raw = GeoIP_org_by_name(geo_ip, convert_ip_as_uint_to_string(remote_ip).c_str());
     uint32_t asn_number = 0;
    
@@ -1002,11 +1002,11 @@ void recalculate_speed() {
     for( map_for_counters::iterator ii = DataCounter.begin(); ii != DataCounter.end(); ++ii) {
         uint32_t client_ip = (*ii).first;
             
-        int in_pps  = int((double)(*ii).second.in_packets   / (double)speed_calc_period);
-        int out_pps = int((double)(*ii).second.out_packets / (double)speed_calc_period);
+        unsigned int in_pps  = int((double)(*ii).second.in_packets   / (double)speed_calc_period);
+        unsigned int out_pps = int((double)(*ii).second.out_packets / (double)speed_calc_period);
 
-        int in_bps  = int((double)(*ii).second.in_bytes  / (double)speed_calc_period);
-        int out_bps = int((double)(*ii).second.out_bytes / (double)speed_calc_period);     
+        unsigned int in_bps  = int((double)(*ii).second.in_bytes  / (double)speed_calc_period);
+        unsigned int out_bps = int((double)(*ii).second.out_bytes / (double)speed_calc_period);     
 
         // we detect overspeed
         if (in_pps > ban_threshold or out_pps > ban_threshold) {
@@ -1032,7 +1032,7 @@ void recalculate_speed() {
 
     total_counters_mutex.lock();
     
-    for (int index = 0; index < 4; index++) {
+    for (unsigned int index = 0; index < 4; index++) {
         total_speed_counters[index].bytes   = int((double)total_counters[index].bytes   / (double)speed_calc_period);
         total_speed_counters[index].packets = int((double)total_counters[index].packets / (double)speed_calc_period);
 
@@ -1131,11 +1131,11 @@ void calculation_programm() {
 // pretty print channel speed in pps and MBit
 std::string print_channel_speed(string traffic_type, direction packet_direction) {
 
-    int speed_in_pps = total_speed_counters[packet_direction].packets;
-    int speed_in_bps = total_speed_counters[packet_direction].bytes;
+    unsigned int speed_in_pps = total_speed_counters[packet_direction].packets;
+    unsigned int speed_in_bps = total_speed_counters[packet_direction].bytes;
 
     // Потому что к нам скорость приходит в чистом виде 
-    int number_of_tabs = 1; 
+    unsigned int number_of_tabs = 1; 
     // We need this for correct alignment of blocks
     if (traffic_type == "Other traffic") {
         number_of_tabs = 2;
@@ -1144,11 +1144,11 @@ std::string print_channel_speed(string traffic_type, direction packet_direction)
     std::stringstream stream;
     stream<<traffic_type;
 
-    for (int i = 0; i < number_of_tabs; i ++ ) {
+    for (unsigned int i = 0; i < number_of_tabs; i ++ ) {
         stream<<"\t";
     }
 
-    int speed_in_mbps   = int((double)speed_in_bps/1024/1024*8);
+    unsigned int speed_in_mbps   = int((double)speed_in_bps/1024/1024*8);
 
     stream<<speed_in_pps<<" pps "<< speed_in_mbps<<" mbps"; 
     return stream.str();
@@ -1290,12 +1290,14 @@ void free_up_all_resources() {
 #ifdef PF_RING 
 void pf_ring_main_loop(const char* dev) {
     // We could pool device in multiple threads
-    int num_threads = 1;
+    unsigned int num_threads = 1;
 
-    int promisc = 1;
+    bool promisc = true;
     /* This flag manages packet parser for extended_hdr */
-    u_int8_t use_extended_pkt_header = 1;
-    u_int8_t touch_payload = 0, enable_hw_timestamp = 0, dont_strip_timestamps = 0;    
+    bool use_extended_pkt_header = true;
+    bool touch_payload = false;
+    bool enable_hw_timestamp = false;
+    bool dont_strip_timestamps = false; 
 
     u_int32_t flags = 0;
     if (num_threads > 1)         flags |= PF_RING_REENTRANT;
@@ -1306,7 +1308,7 @@ void pf_ring_main_loop(const char* dev) {
     flags |= PF_RING_DNA_SYMMETRIC_RSS;  /* Note that symmetric RSS is ignored by non-DNA drivers */ 
 
     // use default value from pfcount.c
-    int snaplen = 128;
+    unsigned int snaplen = 128;
 
     pf_ring_descr = pfring_open(dev, snaplen, flags); 
 
@@ -1336,10 +1338,12 @@ void pf_ring_main_loop(const char* dev) {
        (version & 0xFFFF0000) >> 16, (version & 0x0000FF00) >> 8, version & 0x000000FF
     );
     
-    int rc;
-    if((rc = pfring_set_socket_mode(pf_ring_descr, recv_only_mode)) != 0)
-        logger.info("pfring_set_socket_mode returned [rc=%d]\n", rc);
-   
+    int pfring_set_socket_mode_result =  pfring_set_socket_mode(pf_ring_descr, recv_only_mode);
+
+    if (pfring_set_socket_mode_result != 0) {
+        logger.info("pfring_set_socket_mode returned [rc=%d]\n", pfring_set_socket_mode_result);
+    }  
+ 
     /*
     Этот код требуется, когда мы сами пишем какую-либо свою статистику в ядерный модуль PF_RING 
     char path[256] = { 0 };
@@ -1456,7 +1460,7 @@ void ulog_main_loop() {
         exit(0);
     }
     
-    int len;
+    int len = 0;
     while ( len = ipulog_read(libulog_h, libulog_buf, ULOGD_BUFSIZE_DEFAULT) ) {
         if (len <= 0) {
             if (errno == EAGAIN) {
@@ -1575,9 +1579,9 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip) {
     return packet_direction;
 }
 
-void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int out_bps) {
+void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pps, unsigned int in_bps, unsigned int out_bps) {
     direction data_direction;
-    int pps = 0;
+    unsigned int pps = 0;
 
     // Check attack direction
     if (in_pps > out_pps) {
