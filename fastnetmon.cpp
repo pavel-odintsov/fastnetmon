@@ -191,7 +191,20 @@ struct simple_packet {
     struct   timeval ts;
 };
 
-typedef pair<int, direction> banlist_item;
+// structure with atatck details
+struct attack_details {
+    direction attack_direction;
+    // first attackpower detected
+    int attack_power;
+    // max attack power
+    int max_attack_power;
+    int in_bytes;
+    int out_bytes;
+    int in_packets;
+    int out_packets;
+};
+
+typedef attack_details banlist_item;
 typedef pair<uint32_t, uint32_t> subnet;
 
 // main data structure for storing traffic data for all our IPs
@@ -1563,7 +1576,31 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip) {
 }
 
 void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int out_bps) {
-    if (ban_list.count(client_ip) > 0) { 
+    direction data_direction;
+    int pps = 0;
+
+    // Check attack direction
+    if (in_pps > out_pps) {
+        data_direction = INCOMING;
+        pps = in_pps;
+    } else {
+        data_direction = OUTGOING;
+        pps = out_pps;
+    }
+
+    if (ban_list.count(client_ip) > 0) {
+        if ( ban_list[client_ip].attack_direction != data_direction ) {
+            logger<<log4cpp::Priority::INFO<<"We expected very strange situation: attack direction for "
+                <<convert_ip_as_uint_to_string(client_ip)<<" was changed";
+
+            return;
+        } 
+
+        // update attack power
+        if (pps > ban_list[client_ip].max_attack_power) {
+            ban_list[client_ip].max_attack_power = pps;
+        }
+
         return;
     }
 
@@ -1578,18 +1615,6 @@ void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int
         return;
     }  
 
-    direction data_direction;
-    int pps = 0;
-
-    // Check attack direction
-    if (in_pps > out_pps) {
-        data_direction = INCOMING;
-        pps = in_pps; 
-    } else {
-        data_direction = OUTGOING;
-        pps = out_pps;
-    }
-
     string data_direction_as_string = get_direction_name(data_direction);
 
     logger.info("We run execute_ip_ban code with following params in_pps: %d out_pps: %d in_bps: %d out_bps: %d and we decide it's %s attack",
@@ -1598,7 +1623,20 @@ void execute_ip_ban(uint32_t client_ip, int in_pps, int out_pps, int in_bps, int
     string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
     string pps_as_string = convert_int_to_string(pps);
 
-    ban_list[client_ip] = make_pair(pps, data_direction);
+    struct attack_details current_attack;
+
+    // передаем основную информацию об атаке
+    current_attack.attack_direction = data_direction;
+    current_attack.attack_power = pps;
+
+    // передаем вторичные параметры, чтобы иметь более точное представление об атаке
+    current_attack.in_packets  = in_pps;
+    current_attack.out_packets = out_pps;
+
+    current_attack.in_bytes = in_bps;
+    current_attack.out_bytes = out_bps;
+
+    ban_list[client_ip] = current_attack;
     ban_list_details[client_ip] = vector<simple_packet>();
                          
     logger<<log4cpp::Priority::INFO<<"Attack with direction: " << data_direction_as_string
@@ -1623,11 +1661,14 @@ string send_ddos_attack_details() {
 
     for( map<uint32_t,banlist_item>::iterator ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
         string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
-        string pps_as_string = convert_int_to_string(((*ii).second).first);
+        string pps_as_string = convert_int_to_string(((*ii).second).attack_power);
+        string max_pps_as_string = convert_int_to_string(((*ii).second).max_attack_power);
 
-        string attack_direction = get_direction_name(((*ii).second).second);
+        string attack_direction = get_direction_name(((*ii).second).attack_direction);
 
-        output_buffer<<client_ip_as_string<<"/"<<pps_as_string<<" pps "<<attack_direction<<endl;
+        output_buffer<<client_ip_as_string<<"/"<<max_pps_as_string<<" pps "<<attack_direction<<endl;
+
+        // TODO: вынести код высылки писем в ОТДЕЛЬНЫЙ THREAD/функцию
 
         // странная проверка, но при мощной атаке набить ban_details_records_count пакетов - очень легко
         if (ban_list_details.count( (*ii).first  ) > 0 && ban_list_details[ (*ii).first ].size() == ban_details_records_count) {
