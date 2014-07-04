@@ -5,7 +5,8 @@ ENGINE = PF_RING
 #ENGINE = ULOG2
 #ENGINE = PCAP
 #ENGINE = PF_RING
-REDIS_SUPPORT = yes
+# Redis support broken now, sorry :(
+REDIS_SUPPORT = no
 
 GEOIP_SUPPORT = no
 
