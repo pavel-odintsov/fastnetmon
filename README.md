@@ -26,9 +26,9 @@ cd PF_RING-6.0.1
 # Debian way
 apt-get install build-essential bison flex linux-headers-$(uname -r) libnuma-dev
 # CentOS
-yum install -y make bison flex kernel-devel 
+yum install -y make bison flex kernel-devel gcc gcc-c++
 # CentOS openvz case 
-yum install -y make bison flex vzkernel-devel
+yum install -y make bison flex vzkernel-devel gcc gcc-c++
 ```
 
 Build PF_RING kernel module:
