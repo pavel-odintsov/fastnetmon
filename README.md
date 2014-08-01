@@ -52,7 +52,11 @@ If you want to use static version you can skip this guide to part about "network
 
 Build lib (We disabled bpf because it requires linking to PCAP):
 ```bash
-cd /usr/src/PF_RING-5.6.2/userland/lib
+# Debian
+apt-get install -y libnuma-dev
+# CentOS
+yum install -y numactl-devel
+cd /usr/src/PF_RING-6.0.1/userland/lib
 ./configure  --disable-bpf --prefix=/opt/pf_ring
 make
 make install
@@ -62,23 +66,20 @@ Install FastNetMon:
 
 ```bash
    # Debian 7 Wheezy
-   apt-get install -y git libpcap-dev g++ gcc libboost-all-dev make
-
-   # If you need traffic counting
-   apt-get install -y libhiredis-dev
-
-   # Support libs
-   apt-get install -y libgpm-dev libncurses5-dev liblog4cpp5-dev
-
-   # If you need PF_RING abilities 
-   apt-get install -y libnuma-dev
-
-   # If you need ASN/geoip stats
-   apt-get install -y libgeoip-dev 
+   apt-get install -y git  g++ gcc libboost-all-dev make libgpm-dev libncurses5-dev liblog4cpp5-dev libnuma-dev libgeoip-dev libhiredis-dev libpcap-dev
+   # CentOS 
+   yum install -y git make gcc gcc-c++ boost-devel GeoIP-devel log4cpp-devel ncurses-devel glibc-static ncurses-static
 
    cd /usr/src
    git clone https://github.com/FastVPSEestiOu/fastnetmon.git
    cd fastnetmon
+```
+
+Select backend, we use PF_RING as default, if you need PCAP/ULOG2 you must change variable ENGINE in Makefile.
+
+Compile it:
+```bash
+make
 ```
 
 You should start fastnetmon using this options:
@@ -90,13 +91,6 @@ If you want to avoid LD_LIBRARY_PATH on every call you should add pf_ring path t
 ```bash
 echo "/opt/pf_ring/lib" > /etc/ld.so.conf.d/pf_ring.conf
 ldconfig -v
-```
-
-Select backend, we use PF_RING as default, if you need PCAP/ULOG2 you must change variable ENGINE in Makefile.
-
-Compile it:
-```bash
-make
 ```
 
 Download GeoIP database to current folder:
