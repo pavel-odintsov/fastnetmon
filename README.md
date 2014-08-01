@@ -68,12 +68,15 @@ Install FastNetMon:
    # Debian 7 Wheezy
    apt-get install -y git  g++ gcc libboost-all-dev make libgpm-dev libncurses5-dev liblog4cpp5-dev libnuma-dev libgeoip-dev libhiredis-dev libpcap-dev
    # CentOS 
-   yum install -y git make gcc gcc-c++ boost-devel GeoIP-devel log4cpp-devel ncurses-devel glibc-static ncurses-static
+   yum install -y git make gcc gcc-c++ boost-devel GeoIP-devel log4cpp-devel ncurses-devel glibc-static ncurses-static gpm-static gpm-devel 
+
+   # For compiling on CentOS please remove line "STATIC = -static" from file Makefile and replace line "LIBS += -lboost_thread" by line "LIBS += -lboost_thread-mt"
 
    cd /usr/src
    git clone https://github.com/FastVPSEestiOu/fastnetmon.git
    cd fastnetmon
 ```
+
 
 Select backend, we use PF_RING as default, if you need PCAP/ULOG2 you must change variable ENGINE in Makefile.
 
