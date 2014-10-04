@@ -16,6 +16,12 @@ Main programm screen image:
 Example for cpu load for Intel i7 2600 with Intel X540 NIC on 250 kpps load:
 ![Cpu consumption](fastnetmon_stats.png)
 
+Features:
+- VLAN untagging
+- MPLS traffic processing
+- Ability to work on mirror ports
+- Ability to work on router
+
 At first you should install PF_RING (you can install any latest version):
 
 ```bash
