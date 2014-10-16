@@ -1692,7 +1692,7 @@ void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pp
     int rule_number = 10;
 
     // Iterate over incoming and outgoing direction
-    for (int rule_direction = 0; rule_direction++; rule_direction < 2) {
+    for (int rule_direction = 0; rule_direction < 2; rule_direction++) {
         for (std::vector<int>::iterator banned_protocol = banned_protocols.begin() ;
             banned_protocol != banned_protocols.end(); ++banned_protocol) {
 
