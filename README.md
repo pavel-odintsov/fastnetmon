@@ -250,7 +250,7 @@ cat /etc/modprobe.d/ixgbe.conf
 options ixgbe IntMode=2,2 MQ=1,1 DCA=2,2 RSS=8,8 VMDQ=0,0 max_vfs=0,0 L2LBen=0,0 InterruptThrottleRate=1,1 FCoE=0,0 LRO=1,1 allow_unsupported_sfp=0,0
 ```
 
-How I can enable hardware filtration for Intel 82599 NIC? Apply this patch and recompile tool:
+How I can enable hardware filtration for Intel 82599 NIC? Install patched ixgbe driver from PF_RING distro and apply this patch to Makefile and recompile tool:
 ```bash
 fastnetmon.o: fastnetmon.cpp
 -       $(COMPILER) $(STATIC) $(DEFINES) $(HEADERS) -c fastnetmon.cpp -o fastnetmon.o $(BUILD_FLAGS)
