@@ -250,6 +250,13 @@ cat /etc/modprobe.d/ixgbe.conf
 options ixgbe IntMode=2,2 MQ=1,1 DCA=2,2 RSS=8,8 VMDQ=0,0 max_vfs=0,0 L2LBen=0,0 InterruptThrottleRate=1,1 FCoE=0,0 LRO=1,1 allow_unsupported_sfp=0,0
 ```
 
+How I can enable hardware filtration for Intel 82599 NIC? Apply this patch and recompile tool:
+```bash
+fastnetmon.o: fastnetmon.cpp
+-       $(COMPILER) $(STATIC) $(DEFINES) $(HEADERS) -c fastnetmon.cpp -o fastnetmon.o $(BUILD_FLAGS)
++       $(COMPILER) $(STATIC) $(DEFINES) $(HEADERS) -c fastnetmon.cpp -o fastnetmon.o $(BUILD_FLAGS) -DHWFILTER_LOCKING
+```
+
 If you saw intel_idle in perf top with red higlihting you can disable it with following kernel params (more details you can find Performance_Tuning_Guide_for_Mellanox_Network_Adapters.pdf):
 ```bash
 intel_idle.max_cstate=0 processor.max_cstate=1
