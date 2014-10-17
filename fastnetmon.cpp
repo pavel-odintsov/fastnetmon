@@ -293,6 +293,7 @@ vector<subnet> whitelist_networks;
 */
 
 // prototypes
+void print_pfring_packet(const struct pfring_pkthdr *h);
 string get_attack_description(uint32_t client_ip, attack_details& current_attack);
 unsigned int convert_speed_to_mbps(unsigned int speed_in_bps);
 void send_attack_details(uint32_t client_ip, attack_details current_attack_details);
@@ -808,6 +809,9 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
         process_packet(packet);
         //std::cout<<print_simple_packet(packet)<<std::endl;
         //printf("hash%d\n",h->extended_hdr.pkt_hash);
+    } else {
+        // Uncomment this line for deep debug
+        //print_pfring_packet(h);
     }
 }
 
@@ -1847,3 +1851,126 @@ string convert_tiemval_to_date(struct timeval tv) {
 
     return string(buf);
 }
+
+
+char* etheraddr_string(const u_char *ep, char *buf) {
+char hex[] = "0123456789ABCDEF";
+  u_int i, j;
+  char *cp;
+
+  cp = buf;
+  if ((j = *ep >> 4) != 0)
+    *cp++ = hex[j];
+  else
+    *cp++ = '0';
+
+  *cp++ = hex[*ep++ & 0xf];
+
+  for(i = 5; (int)--i >= 0;) {
+    *cp++ = ':';
+    if ((j = *ep >> 4) != 0)
+      *cp++ = hex[j];
+    else
+      *cp++ = '0';
+
+    *cp++ = hex[*ep++ & 0xf];
+  }
+
+  *cp = '\0';
+  return (buf);
+}
+
+// pfring, examples, userspace pfmap.c, GPLv2
+// A faster replacement for inet_ntoa().
+char* _intoa(unsigned int addr, char* buf, u_short bufLen) {
+  char *cp, *retStr;
+  u_int byte;
+  int n;
+
+  cp = &buf[bufLen];
+  *--cp = '\0';
+
+  n = 4;
+  do {
+    byte = addr & 0xff;
+    *--cp = byte % 10 + '0';
+    byte /= 10;
+    if (byte > 0) {
+      *--cp = byte % 10 + '0';
+      byte /= 10;
+      if (byte > 0)
+    *--cp = byte + '0';
+    }
+    *--cp = '.';
+    addr >>= 8;
+  } while (--n > 0);
+
+  /* Convert the string to lowercase */
+  retStr = (char*)(cp+1);
+
+  return(retStr);
+}
+
+// pfring, examples, userspace pfmap.c, GPLv2
+char* intoa(unsigned int addr) {
+  static char buf[sizeof "ff:ff:ff:ff:ff:ff:255.255.255.255"];
+
+  return(_intoa(addr, buf, sizeof(buf)));
+}
+
+// pfring, examples, userspace pfmap.c, GPLv2 
+void print_pfring_packet(const struct pfring_pkthdr *h) {
+    char buffer[256];
+
+    const u_char *p = NULL; 
+    static int32_t thiszone;
+
+    struct ether_header ehdr;
+    u_short eth_type, vlan_id;
+    char buf1[32], buf2[32];
+    struct ip ip;
+    int s = (h->ts.tv_sec + thiszone) % 86400;
+
+    sprintf(buffer, "[eth_type=0x%04X]", h->extended_hdr.parsed_pkt.eth_type);
+    sprintf(buffer + strlen(buffer), "[l3_proto=%u]", (unsigned int)h->extended_hdr.parsed_pkt.l3_proto);   
+    sprintf(buffer + strlen(buffer), "[l3_proto_name=%s]", get_protocol_name_by_number(h->extended_hdr.parsed_pkt.l3_proto).c_str());
+    sprintf(buffer + strlen(buffer),"[%s:%d -> ", intoa(h->extended_hdr.parsed_pkt.ipv4_src), 
+       h->extended_hdr.parsed_pkt.l4_src_port);
+    sprintf(buffer + strlen(buffer),"%s:%d] ", intoa(h->extended_hdr.parsed_pkt.ipv4_dst), 
+       h->extended_hdr.parsed_pkt.l4_dst_port);
+    sprintf(buffer + strlen(buffer),"%02d:%02d:%02d.%06u ",
+       s / 3600, (s % 3600) / 60, s % 60,
+       (unsigned)h->ts.tv_usec);
+
+    eth_type = ntohs(ehdr.ether_type);
+    sprintf(buffer + strlen(buffer),"[%s -> %s] ",
+       etheraddr_string(ehdr.ether_shost, buf1),
+       etheraddr_string(ehdr.ether_dhost, buf2));
+
+    if (eth_type == 0x8100) {
+      vlan_id = (p[14] & 15)*256 + p[15];
+      eth_type = (p[16])*256 + p[17];
+      sprintf(buffer + strlen(buffer),"[vlan %u] ", vlan_id);
+      p+=4;
+    }
+
+    if (eth_type == 0x0800) {
+      memcpy(&ip, p+h->extended_hdr.parsed_header_len+sizeof(ehdr), sizeof(struct ip));
+      sprintf(buffer + strlen(buffer),"[%s:%d ", intoa(ntohl(ip.ip_src.s_addr)), 
+         h->extended_hdr.parsed_pkt.l4_src_port);
+      sprintf(buffer + strlen(buffer),"-> %s:%d] ", intoa(ntohl(ip.ip_dst.s_addr)), 
+         h->extended_hdr.parsed_pkt.l4_dst_port);
+    } else if (eth_type == 0x0806) {
+      sprintf(buffer + strlen(buffer),"[ARP]");
+    } else {
+      sprintf(buffer + strlen(buffer), "[eth_type=0x%04X]", eth_type);
+    }
+
+    sprintf(buffer + strlen(buffer),"[tos=%d][tcp_flags=%d][caplen=%d][len=%d][parsed_header_len=%d]\n",
+       h->extended_hdr.parsed_pkt.ipv4_tos, h->extended_hdr.parsed_pkt.tcp.flags,
+       h->caplen, h->len, h->extended_hdr.parsed_header_len);
+
+    logger<<log4cpp::Priority::INFO<<buffer;    
+}
+
+
