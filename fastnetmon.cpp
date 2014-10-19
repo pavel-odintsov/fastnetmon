@@ -187,9 +187,10 @@ struct simple_packet {
     uint32_t     dst_ip;
     uint16_t     source_port;
     uint16_t     destination_port;
-    unsigned int protocol;
-    unsigned int length;
-    struct   timeval ts;
+    unsigned     int protocol;
+    unsigned     int length;
+    uint8_t      flags; /* tcp flags */
+    struct       timeval ts;
 };
 
 // structure with atatck details
@@ -821,7 +822,13 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
         packet.length = h->len;
         packet.protocol = h->extended_hdr.parsed_pkt.l3_proto;
         packet.ts = h->ts;
- 
+
+        if (packet.protocol == IPPROTO_TCP) {
+            packet.flags = h->extended_hdr.parsed_pkt.tcp.flags;
+        } else {
+            packet.flags = 0;
+        } 
+
         process_packet(packet);
         //std::cout<<print_simple_packet(packet)<<std::endl;
         //printf("hash%d\n",h->extended_hdr.pkt_hash);
@@ -1871,10 +1878,10 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
             exec_with_params_thread.detach();
 
             logger<<log4cpp::Priority::INFO<<"Script for notify about attack details is finished: "<<client_ip_as_string;
-        }    
+        } 
         // удаляем ключ из деталей атаки, чтобы он не выводился снова и в него не собирался трафик
         ban_list_details.erase(client_ip);
-    }    
+    } 
 }
 
 
