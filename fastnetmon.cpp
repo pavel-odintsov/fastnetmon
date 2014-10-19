@@ -794,6 +794,7 @@ string print_simple_packet(struct simple_packet packet) {
         <<" > "
         <<convert_ip_as_uint_to_string(packet.dst_ip)<<":"<<packet.destination_port
         <<" protocol: "<<proto_name
+        <<" flags: "<<packet.flags
         <<" size: "<<packet.length<<" bytes"<<"\n";
     // используется \n вместо endl, ибо иначе начинается хрень всякая при передаче данной строки команде на stdin
 
