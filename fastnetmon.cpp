@@ -198,11 +198,11 @@ struct attack_details {
     // first attackpower detected
     unsigned int attack_power;
     // max attack power
-    unsigned int max_attack_power;
-    unsigned int in_bytes;
-    unsigned int out_bytes;
-    unsigned int in_packets;
-    unsigned int out_packets;
+    unsigned long int max_attack_power;
+    unsigned long int in_bytes;
+    unsigned long int out_bytes;
+    unsigned long int in_packets;
+    unsigned long int out_packets;
 };
 
 typedef attack_details banlist_item;
@@ -210,10 +210,22 @@ typedef pair<uint32_t, uint32_t> subnet;
 
 // main data structure for storing traffic data for all our IPs
 typedef struct {
-    unsigned int in_bytes;
-    unsigned int out_bytes;
-    unsigned int in_packets;
-    unsigned int out_packets;
+    unsigned long int in_bytes;
+    unsigned long int out_bytes;
+    unsigned long int in_packets;
+    unsigned long int out_packets;
+    
+    // Additional data for correct attack protocol detection
+    unsigned long int tcp_in_packets;
+    unsigned long int tcp_out_packets;
+    unsigned long int tcp_in_bytes;
+    unsigned long int tcp_out_bytes;
+
+    unsigned long int udp_in_packets;
+    unsigned long int udp_out_packets;
+
+    unsigned long int udp_in_bytes;
+    unsigned long int udp_out_bytes;
 } map_element;
 
 typedef struct {
@@ -905,8 +917,6 @@ void process_packet(simple_packet& current_packet) {
         logger<< log4cpp::Priority::INFO<<"Dump: "<<print_simple_packet(current_packet);
     }
 
-    
-
     direction packet_direction = get_packet_direction(current_packet.src_ip, current_packet.dst_ip);
 
     total_counters_mutex.lock();
@@ -925,6 +935,17 @@ void process_packet(simple_packet& current_packet) {
         }
 
         data_counters_mutex.lock();
+
+        if (current_packet.protocol == IPPROTO_TCP) {
+            DataCounter[ current_packet.dst_ip ].tcp_out_packets++;
+            DataCounter[ current_packet.dst_ip ].tcp_out_bytes += current_packet.length;
+        } else if (current_packet.protocol == IPPROTO_UDP) {
+            DataCounter[ current_packet.dst_ip ].udp_out_packets++;
+            DataCounter[ current_packet.dst_ip ].udp_out_bytes += current_packet.length; 
+        } else {
+            // TBD
+        }
+
         DataCounter[ current_packet.src_ip ].out_packets++; 
         DataCounter[ current_packet.src_ip ].out_bytes += current_packet.length;
         data_counters_mutex.unlock();
@@ -939,6 +960,17 @@ void process_packet(simple_packet& current_packet) {
 
         data_counters_mutex.lock();
         DataCounter[ current_packet.dst_ip ].in_packets ++;
+    
+        if (current_packet.protocol == IPPROTO_TCP) {
+            DataCounter[ current_packet.dst_ip ].tcp_in_packets++;
+            DataCounter[ current_packet.dst_ip ].tcp_in_bytes += current_packet.length;
+        } else if (current_packet.protocol == IPPROTO_UDP) {
+            DataCounter[ current_packet.dst_ip ].udp_in_packets++;
+            DataCounter[ current_packet.dst_ip ].udp_in_bytes += current_packet.length; 
+        } else {
+            // TBD
+        }
+
         DataCounter[ current_packet.dst_ip ].in_bytes += current_packet.length;
         data_counters_mutex.unlock();
     } else {
