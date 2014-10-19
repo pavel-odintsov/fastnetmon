@@ -8,14 +8,6 @@
 
 using namespace std;
 
-/* Required for decoding tcp flags */
-#define TH_FIN_MULTIPLIER   0x01
-#define TH_SYN_MULTIPLIER   0x02
-#define TH_RST_MULTIPLIER   0x04
-#define TH_PUSH_MULTIPLIER  0x08
-#define TH_ACK_MULTIPLIER   0x10
-#define TH_URG_MULTIPLIER   0x20
-
 string print_flags(uint8_t flag_value);
 
 // http://stackoverflow.com/questions/14528233/bit-masking-in-c-how-to-get-first-bit-of-a-byte
@@ -31,6 +23,16 @@ string print_flags(uint8_t flag_value) {
     // (tcp->fin * TH_FIN_MULTIPLIER) + (tcp->syn * TH_SYN_MULTIPLIER) +
     //  (tcp->rst * TH_RST_MULTIPLIER) + (tcp->psh * TH_PUSH_MULTIPLIER) +
     //  (tcp->ack * TH_ACK_MULTIPLIER) + (tcp->urg * TH_URG_MULTIPLIER);
+
+    /*
+        // Required for decoding tcp flags
+        #define TH_FIN_MULTIPLIER   0x01
+        #define TH_SYN_MULTIPLIER   0x02
+        #define TH_RST_MULTIPLIER   0x04
+        #define TH_PUSH_MULTIPLIER  0x08
+        #define TH_ACK_MULTIPLIER   0x10
+        #define TH_URG_MULTIPLIER   0x20
+    */
 
     stringstream flags_as_string;
 
