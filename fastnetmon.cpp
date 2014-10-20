@@ -204,6 +204,8 @@ struct attack_details {
     unsigned int out_bytes;
     unsigned int in_packets;
     unsigned int out_packets;
+    // time when we but this user
+    time_t   ban_time;
 };
 
 typedef attack_details banlist_item;
@@ -1726,6 +1728,9 @@ void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pp
 
     struct attack_details current_attack;
 
+    // фиксируем время бана
+    time(&current_attack.ban_time); 
+
     // передаем основную информацию об атаке
     current_attack.attack_direction = data_direction;
     current_attack.attack_power = pps;
@@ -1807,6 +1812,34 @@ void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pp
 
         logger<<log4cpp::Priority::INFO<<"Script for ban client is finished: "<<client_ip_as_string;
     }    
+}
+
+/* Thread for cleaning up ban list */
+void cleanup_ban_list() {
+    /* Время через которое просыпается поток чистки */
+    int iteration_sleep_time = 600;
+
+    /* Время через которое разбанивается IP */
+    int unban_timeout = 3600/2;
+
+    while (true) {
+        // Sleep for ten minutes
+        sleep(iteration_sleep_time);
+
+        time_t current_time;
+        time(&current_time);
+
+        for( map<uint32_t,banlist_item>::iterator ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
+            uint32_t client_ip = (*ii).first;
+
+            double time_difference = difftime(current_time, ((*ii).second).ban_time);
+
+            if (time_difference > unban_timeout) {
+                // Вычищаем все останки данного забаненого товарища
+                ban_list.erase(client_ip);
+            } 
+        }
+    }
 }
 
 string send_ddos_attack_details() {
