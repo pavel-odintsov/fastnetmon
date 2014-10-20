@@ -1095,7 +1095,6 @@ void recalculate_speed() {
         DataCounter[client_ip].udp_out_packets = 0; 
         DataCounter[client_ip].udp_in_bytes = 0; 
         DataCounter[client_ip].udp_out_bytes = 0; 
-
         data_counters_mutex.unlock();
     }
 
@@ -1923,6 +1922,10 @@ int extract_bit_value(uint8_t num, int bit) {
 }
 
 string print_tcp_flags(uint8_t flag_value) {
+    if (flag_value) {
+        return "";
+    }
+
     // cod from pfring.h
     // (tcp->fin * TH_FIN_MULTIPLIER) + (tcp->syn * TH_SYN_MULTIPLIER) +
     // (tcp->rst * TH_RST_MULTIPLIER) + (tcp->psh * TH_PUSH_MULTIPLIER) +
