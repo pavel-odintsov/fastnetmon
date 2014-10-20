@@ -5,6 +5,7 @@
 #include <sstream> 
 #include <iostream>
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -19,10 +20,11 @@ int extract_bit_value(uint8_t num, int bit) {
     }
 }
 
-string print_flags(uint8_t flag_value) {
+string print_tcp_flags(uint8_t flag_value) {
+    // cod from pfring.h
     // (tcp->fin * TH_FIN_MULTIPLIER) + (tcp->syn * TH_SYN_MULTIPLIER) +
-    //  (tcp->rst * TH_RST_MULTIPLIER) + (tcp->psh * TH_PUSH_MULTIPLIER) +
-    //  (tcp->ack * TH_ACK_MULTIPLIER) + (tcp->urg * TH_URG_MULTIPLIER);
+    // (tcp->rst * TH_RST_MULTIPLIER) + (tcp->psh * TH_PUSH_MULTIPLIER) +
+    // (tcp->ack * TH_ACK_MULTIPLIER) + (tcp->urg * TH_URG_MULTIPLIER);
 
     /*
         // Required for decoding tcp flags
@@ -34,31 +36,38 @@ string print_flags(uint8_t flag_value) {
         #define TH_URG_MULTIPLIER   0x20
     */
 
-    stringstream flags_as_string;
+    vector<string> all_flags;
 
     if (extract_bit_value(flag_value, 1)) {
-        flags_as_string<<"fin ";
+        all_flags.push_back("fin");
     }
     
     if (extract_bit_value(flag_value, 2)) {
-        flags_as_string<<"syn ";
+        all_flags.push_back("syn");
     }   
 
     if (extract_bit_value(flag_value, 3)) {
-        flags_as_string<<"rst ";
+        all_flags.push_back("rst");
     }   
 
     if (extract_bit_value(flag_value, 4)) {
-        flags_as_string<<"psh ";
+        all_flags.push_back("psh");
     }   
 
     if (extract_bit_value(flag_value, 5)) {
-        flags_as_string<<"ack ";
+        all_flags.push_back("ack");
     }    
 
     if (extract_bit_value(flag_value, 6)) {
-        flags_as_string<<"urg ";
+        all_flags.push_back("urg");
     }   
+
+    
+    stringstream flags_as_string;
+
+    for(std::vector<string>::iterator it = all_flags.begin(); it != all_flags.end(); ++it) {
+        flags_as_string<<*it;
+    }
 
     return flags_as_string.str();
 }

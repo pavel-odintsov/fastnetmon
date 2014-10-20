@@ -306,6 +306,8 @@ vector<subnet> whitelist_networks;
 */
 
 // prototypes
+string print_tcp_flags(uint8_t flag_value);
+int extract_bit_value(uint8_t num, int bit);
 string get_attack_description(uint32_t client_ip, attack_details& current_attack);
 unsigned int convert_speed_to_mbps(unsigned int speed_in_bps);
 void send_attack_details(uint32_t client_ip, attack_details current_attack_details);
@@ -794,7 +796,7 @@ string print_simple_packet(struct simple_packet packet) {
         <<" > "
         <<convert_ip_as_uint_to_string(packet.dst_ip)<<":"<<packet.destination_port
         <<" protocol: "<<proto_name
-        <<" flags: "<<packet.flags
+        <<" flags: "<<print_tcp_flags(packet.flags)
         <<" size: "<<packet.length<<" bytes"<<"\n";
     // используется \n вместо endl, ибо иначе начинается хрень всякая при передаче данной строки команде на stdin
 
@@ -1083,6 +1085,17 @@ void recalculate_speed() {
         DataCounter[client_ip].out_bytes = 0;
         DataCounter[client_ip].in_packets = 0;
         DataCounter[client_ip].out_packets = 0;
+
+        DataCounter[client_ip].tcp_in_packets = 0;
+        DataCounter[client_ip].tcp_out_packets = 0;
+        DataCounter[client_ip].tcp_in_bytes = 0;
+        DataCounter[client_ip].tcp_out_bytes = 0;
+
+        DataCounter[client_ip].udp_in_packets = 0; 
+        DataCounter[client_ip].udp_out_packets = 0; 
+        DataCounter[client_ip].udp_in_bytes = 0; 
+        DataCounter[client_ip].udp_out_bytes = 0; 
+
         data_counters_mutex.unlock();
     }
 
@@ -1898,5 +1911,66 @@ string convert_tiemval_to_date(struct timeval tv) {
     snprintf(buf, sizeof(buf), "%s.%06ld", tmbuf, tv.tv_usec); 
 
     return string(buf);
+}
+
+// http://stackoverflow.com/questions/14528233/bit-masking-in-c-how-to-get-first-bit-of-a-byte
+int extract_bit_value(uint8_t num, int bit) {
+    if (bit > 0 && bit <= 8) {
+        return ( (num >> (bit-1)) & 1 );
+    } else {
+        return 0;
+    }
+}
+
+string print_tcp_flags(uint8_t flag_value) {
+    // cod from pfring.h
+    // (tcp->fin * TH_FIN_MULTIPLIER) + (tcp->syn * TH_SYN_MULTIPLIER) +
+    // (tcp->rst * TH_RST_MULTIPLIER) + (tcp->psh * TH_PUSH_MULTIPLIER) +
+    // (tcp->ack * TH_ACK_MULTIPLIER) + (tcp->urg * TH_URG_MULTIPLIER);
+
+    /*
+        // Required for decoding tcp flags
+        #define TH_FIN_MULTIPLIER   0x01
+        #define TH_SYN_MULTIPLIER   0x02
+        #define TH_RST_MULTIPLIER   0x04
+        #define TH_PUSH_MULTIPLIER  0x08
+        #define TH_ACK_MULTIPLIER   0x10
+        #define TH_URG_MULTIPLIER   0x20
+    */
+
+    vector<string> all_flags;
+
+    if (extract_bit_value(flag_value, 1)) {
+        all_flags.push_back("fin");
+    }
+    
+    if (extract_bit_value(flag_value, 2)) {
+        all_flags.push_back("syn");
+    }   
+
+    if (extract_bit_value(flag_value, 3)) {
+        all_flags.push_back("rst");
+    }   
+
+    if (extract_bit_value(flag_value, 4)) {
+        all_flags.push_back("psh");
+    }   
+
+    if (extract_bit_value(flag_value, 5)) {
+        all_flags.push_back("ack");
+    }    
+
+    if (extract_bit_value(flag_value, 6)) {
+        all_flags.push_back("urg");
+    }   
+
+    
+    stringstream flags_as_string;
+
+    for(std::vector<string>::iterator it = all_flags.begin(); it != all_flags.end(); ++it) {
+        flags_as_string<<*it;
+    }
+
+    return flags_as_string.str();
 }
 
