@@ -132,6 +132,9 @@ bool DEBUG_DUMP_ALL_PACKETS = false;
 // Period for recounting pps/traffic
 unsigned int check_period = 3;
 
+// Standard ban time in seconds for all attacks but you can tune this value
+int standard_ban_time = 1800; 
+
 #ifdef PCAP
 // Enlarge receive buffer for PCAP for minimize packet drops
 unsigned int pcap_buffer_size_mbytes = 10;
@@ -205,7 +208,8 @@ struct attack_details {
     unsigned int in_packets;
     unsigned int out_packets;
     // time when we but this user
-    time_t   ban_time;
+    time_t   ban_timestamp;
+    int      ban_time; // seconds of the ban
 };
 
 typedef attack_details banlist_item;
@@ -247,6 +251,7 @@ typedef pair<uint32_t, map_element> pair_of_map_elements;
 boost::mutex data_counters_mutex;
 boost::mutex speed_counters_mutex;
 boost::mutex total_counters_mutex;
+boost::mutex ban_list_mutex;
 
 #ifdef REDIS
 redisContext *redis_context = NULL;
@@ -308,6 +313,7 @@ vector<subnet> whitelist_networks;
 */
 
 // prototypes
+void cleanup_ban_list();
 string print_tcp_flags(uint8_t flag_value);
 int extract_bit_value(uint8_t num, int bit);
 string get_attack_description(uint32_t client_ip, attack_details& current_attack);
@@ -1325,6 +1331,8 @@ int main(int argc,char **argv) {
     boost::thread calc_thread(calculation_thread);
     // start thread for recalculating speed in realtime
     boost::thread recalculate_speed_thread(recalculate_speed_thread_handler);
+    // запускаем поток, который занимается очисткой банлиста 
+    boost::thread cleanup_ban_list_thread(cleanup_ban_list);
 
     boost::thread main_packet_process_thread(main_packet_process_task);
 
@@ -1729,7 +1737,9 @@ void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pp
     struct attack_details current_attack;
 
     // фиксируем время бана
-    time(&current_attack.ban_time); 
+    time(&current_attack.ban_timestamp); 
+    // set ban time in seconds
+    current_attack.ban_time = standard_ban_time;
 
     // передаем основную информацию об атаке
     current_attack.attack_direction = data_direction;
@@ -1743,7 +1753,10 @@ void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pp
     current_attack.in_bytes = in_bps;
     current_attack.out_bytes = out_bps;
 
+    ban_list_mutex.lock();
     ban_list[client_ip] = current_attack;
+    ban_list_mutex.unlock();
+
     ban_list_details[client_ip] = vector<simple_packet>();
                          
     logger<<log4cpp::Priority::INFO<<"Attack with direction: " << data_direction_as_string
@@ -1802,7 +1815,7 @@ void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pp
          
     if (file_exists(notify_script_path)) {
         string script_call_params = notify_script_path + " " + client_ip_as_string + " " +
-            data_direction_as_string + " " + pps_as_string;
+            data_direction_as_string + " " + pps_as_string + " ban";
        
         logger<<log4cpp::Priority::INFO<<"Call script for ban client: "<<client_ip_as_string; 
 
@@ -1819,9 +1832,6 @@ void cleanup_ban_list() {
     /* Время через которое просыпается поток чистки */
     int iteration_sleep_time = 600;
 
-    /* Время через которое разбанивается IP */
-    int unban_timeout = 3600/2;
-
     while (true) {
         // Sleep for ten minutes
         sleep(iteration_sleep_time);
@@ -1829,14 +1839,39 @@ void cleanup_ban_list() {
         time_t current_time;
         time(&current_time);
 
+        logger<<log4cpp::Priority::INFO<<"Run banlist cleanup function";
+
         for( map<uint32_t,banlist_item>::iterator ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
             uint32_t client_ip = (*ii).first;
 
-            double time_difference = difftime(current_time, ((*ii).second).ban_time);
+            double time_difference = difftime(current_time, ((*ii).second).ban_timestamp);
+            int ban_time = ((*ii).second).ban_time;
 
-            if (time_difference > unban_timeout) {
+            if (time_difference > ban_time) {
                 // Вычищаем все останки данного забаненого товарища
+                string data_direction_as_string = get_direction_name((*ii).second.attack_direction);
+                string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+                string pps_as_string = convert_int_to_string((*ii).second.attack_power);
+
+                logger<<log4cpp::Priority::INFO<<"We will unban banned IP: "<<client_ip_as_string<<
+                    " because it ban time "<<ban_time<<" seconds is ended";
+
+                ban_list_mutex.lock();
                 ban_list.erase(client_ip);
+                ban_list_mutex.unlock();
+
+                if (file_exists(notify_script_path)) {
+                    string script_call_params = notify_script_path + " " + client_ip_as_string + " " +
+                        data_direction_as_string + " " + pps_as_string + " unban";
+     
+                    logger<<log4cpp::Priority::INFO<<"Call script for unban client: "<<client_ip_as_string; 
+
+                    // We should execute external script in separate thread because any lag in this code will be very distructive 
+                    boost::thread exec_thread(exec, script_call_params);
+                    exec_thread.detach();
+
+                    logger<<log4cpp::Priority::INFO<<"Script for unban client is finished: "<<client_ip_as_string;
+                }
             } 
         }
     }
