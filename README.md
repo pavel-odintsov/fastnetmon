@@ -250,6 +250,11 @@ cat /etc/modprobe.d/ixgbe.conf
 options ixgbe IntMode=2,2 MQ=1,1 DCA=2,2 RSS=8,8 VMDQ=0,0 max_vfs=0,0 L2LBen=0,0 InterruptThrottleRate=1,1 FCoE=0,0 LRO=1,1 allow_unsupported_sfp=0,0
 ```
 
+I got very big packet size (more than mtu) in attack log? This issue will be related with offload features of NIC. For INtel 82599 I recommend disable all offload:
+```bash
+ethtool -K eth0 gro off gso off tso off
+```
+
 How I can enable hardware filtration for Intel 82599 NIC? Install patched ixgbe driver from PF_RING distro and apply this patch to Makefile and recompile tool:
 ```bash
 fastnetmon.o: fastnetmon.cpp
