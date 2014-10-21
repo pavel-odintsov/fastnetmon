@@ -1840,7 +1840,7 @@ void cleanup_ban_list() {
 
     while (true) {
         // Sleep for ten minutes
-        sleep(iteration_sleep_time);
+        boost::this_thread::sleep(boost::posix_time::seconds(iteration_sleep_time));
 
         time_t current_time;
         time(&current_time);
