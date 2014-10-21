@@ -1836,6 +1836,8 @@ void cleanup_ban_list() {
     /* Время через которое просыпается поток чистки */
     int iteration_sleep_time = 600;
 
+    logger<<log4cpp::Priority::INFO<<"Run banlist cleanup thread";
+
     while (true) {
         // Sleep for ten minutes
         sleep(iteration_sleep_time);
@@ -1843,7 +1845,7 @@ void cleanup_ban_list() {
         time_t current_time;
         time(&current_time);
 
-        logger<<log4cpp::Priority::INFO<<"Run banlist cleanup function";
+        logger<<log4cpp::Priority::INFO<<"Wake up banlist cleanup function";
 
         for( map<uint32_t,banlist_item>::iterator ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
             uint32_t client_ip = (*ii).first;
@@ -1994,7 +1996,7 @@ int extract_bit_value(uint8_t num, int bit) {
 }
 
 string print_tcp_flags(uint8_t flag_value) {
-    if (flag_value) {
+    if (flag_value == 0) {
         return "";
     }
 
