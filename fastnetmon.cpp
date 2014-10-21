@@ -1847,23 +1847,27 @@ void cleanup_ban_list() {
 
         logger<<log4cpp::Priority::INFO<<"Wake up banlist cleanup function";
 
-        for( map<uint32_t,banlist_item>::iterator ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
-            uint32_t client_ip = (*ii).first;
+        map<uint32_t,banlist_item>::iterator itr = ban_list.begin();
+        while (itr != ban_list.end()) {
+            uint32_t client_ip = (*itr).first;
 
-            double time_difference = difftime(current_time, ((*ii).second).ban_timestamp);
-            int ban_time = ((*ii).second).ban_time;
+            double time_difference = difftime(current_time, ((*itr).second).ban_timestamp);
+            int ban_time = ((*itr).second).ban_time;
 
-            if (time_difference > ban_time) {
+            if (time_difference > ban_time) v
                 // Вычищаем все останки данного забаненого товарища
-                string data_direction_as_string = get_direction_name((*ii).second.attack_direction);
+                string data_direction_as_string = get_direction_name((*itr).second.attack_direction);
                 string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
-                string pps_as_string = convert_int_to_string((*ii).second.attack_power);
+                string pps_as_string = convert_int_to_string((*itr).second.attack_power);
 
                 logger<<log4cpp::Priority::INFO<<"We will unban banned IP: "<<client_ip_as_string<<
                     " because it ban time "<<ban_time<<" seconds is ended";
 
                 ban_list_mutex.lock();
-                ban_list.erase(client_ip);
+                map<uint32_t,banlist_item>::iterator itr_to_erase = itr;
+                itr++;
+
+                ban_list.erase(itr_to_erase);
                 ban_list_mutex.unlock();
 
                 if (file_exists(notify_script_path)) {
@@ -1878,6 +1882,8 @@ void cleanup_ban_list() {
 
                     logger<<log4cpp::Priority::INFO<<"Script for unban client is finished: "<<client_ip_as_string;
                 }
+            } else {
+               itr++; 
             } 
         }
     }
