@@ -687,7 +687,9 @@ bool load_our_networks_list() {
         vector<string> network_list_from_config = read_file_to_vector("/etc/networks_whitelist");
 
         for( vector<string>::iterator ii=network_list_from_config.begin(); ii!=network_list_from_config.end(); ++ii) {
-            make_and_lookup(whitelist_tree, const_cast<char*>(ii->c_str())); 
+            if (ii->length() > 0) {
+                make_and_lookup(whitelist_tree, const_cast<char*>(ii->c_str()));
+            }
         }
 
         logger<<log4cpp::Priority::INFO<<"We loaded "<<network_list_from_config.size()<< " networks from whitelist file";
@@ -734,8 +736,10 @@ bool load_our_networks_list() {
     for( vector<string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) { 
         unsigned int cidr_mask = get_cidr_mask_from_network_as_string(*ii);
         total_number_of_hosts_in_our_networks += pow(2, 32-cidr_mask);
-        
-        make_and_lookup(lookup_tree, const_cast<char*>(ii->c_str())); 
+       
+        if (ii->length() > 0) { 
+            make_and_lookup(lookup_tree, const_cast<char*>(ii->c_str())); 
+        }
     }    
 
     logger<<log4cpp::Priority::INFO<<"We loaded "<<networks_list_as_string.size()<<" subnets to our in-memory list of networks";
