@@ -1952,7 +1952,7 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
         if (file_exists(notify_script_path)) {
             logger<<log4cpp::Priority::INFO<<"Call script for notify about attack details for: "<<client_ip_as_string;
 
-            string script_params = notify_script_path + " " + client_ip_as_string + " " + attack_direction  + " " + pps_as_string;
+            string script_params = notify_script_path + " " + client_ip_as_string + " " + attack_direction  + " " + pps_as_string + " ban";
 
             // We should execute external script in separate thread because any lag in this code will be very distructive 
             boost::thread exec_with_params_thread(exec_with_stdin_params, script_params, attack_details.str());
