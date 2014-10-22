@@ -77,10 +77,8 @@ COMPILER = g++
 # COMPILER = clang
 cppcheck:
 	cppcheck --enable=all -DPF_RING -DREDIS $(HEADERS) fastnetmon.cpp
-fastnetmon: libipulog.o fastnetmon.o libpatricia/patricia.o lru_cache/lru_cache.o
-	$(COMPILER) $(STATIC) libipulog.o libpatricia/patricia.o lru_cache/lru_cache.o fastnetmon.o -o fastnetmon $(LIBS_PATH) $(LIBS) $(BUILD_FLAGS) -pthread 
-libipulog.o: libipulog.c
-	$(COMPILER) $(STATIC) -c libipulog.c -o libipulog.o -Wno-write-strings
+fastnetmon: fastnetmon.o libpatricia/patricia.o lru_cache/lru_cache.o
+	$(COMPILER) $(STATIC) libpatricia/patricia.o lru_cache/lru_cache.o fastnetmon.o -o fastnetmon $(LIBS_PATH) $(LIBS) $(BUILD_FLAGS) -pthread 
 libpatricia/patricia.o: libpatricia/patricia.c
 	gcc -c libpatricia/patricia.c -o libpatricia/patricia.o -Wno-write-strings -lstdc++ 
 lru_cache/lru_cache.o: lru_cache/lru_cache.cpp
@@ -88,4 +86,4 @@ lru_cache/lru_cache.o: lru_cache/lru_cache.cpp
 fastnetmon.o: fastnetmon.cpp
 	$(COMPILER) $(STATIC) $(DEFINES) $(HEADERS) -c fastnetmon.cpp -o fastnetmon.o $(BUILD_FLAGS)
 clean:
-	rm -f libipulog.o fastnetmon.o libpatricia/patricia.o lru_cache/lru_cache.o
+	rm -f fastnetmon.o libpatricia/patricia.o lru_cache/lru_cache.o
