@@ -252,6 +252,7 @@ boost::mutex data_counters_mutex;
 boost::mutex speed_counters_mutex;
 boost::mutex total_counters_mutex;
 boost::mutex ban_list_mutex;
+boost::mutex flow_counter;
 
 #ifdef REDIS
 redisContext *redis_context = NULL;
@@ -274,6 +275,9 @@ pfring* pf_ring_descr = NULL;
 
 // main map for storing traffic data
 map_for_counters DataCounter;
+
+// map for flows
+map<uint64_t, int> FlowCounter;
 
 // структура для сохранения мгновенных скоростей
 map_for_counters SpeedCounter;
@@ -313,6 +317,7 @@ vector<subnet> whitelist_networks;
 */
 
 // prototypes
+uint64_t MurmurHash64A (const void * key, int len, uint64_t seed);
 void cleanup_ban_list();
 string print_tcp_flags(uint8_t flag_value);
 int extract_bit_value(uint8_t num, int bit);
@@ -932,6 +937,8 @@ uint32_t get_packet_hash(simple_packet& packet) {
     return 0;
 }
 
+
+
 /* Производим обработку уже переданного нам пакета в простом формате */
 void process_packet(simple_packet& current_packet) { 
     // Packets dump is very useful for bug hunting
@@ -998,6 +1005,25 @@ void process_packet(simple_packet& current_packet) {
     } else {
         // Other traffic
     }
+
+#ifdef ENABLE_CONNTRACKING
+    // Connection трекинг нам интересен лишь для наших узлов
+    if (packet_direction == INCOMING or packet_direction == OUTGOING) {
+        // Зануляем поля, которые не являются постоянными для 5 tuple
+        // TODO я правлю переменную переданную по ссылке, ТАК НЕЛЬЗЯ!!!
+        current_packet.flags = 0;
+        current_packet.ts.tv_sec = 0;
+        current_packet.ts.tv_usec = 0;
+        current_packet.length = 0;
+
+        // calculate hash
+        uint64_t hash = MurmurHash64A(&current_packet, sizeof(current_packet), 11);
+
+        flow_counter.lock();
+        FlowCounter[hash]++;
+        flow_counter.unlock();
+    }
+#endif
 }
 
 #ifdef GEOIP
@@ -1110,6 +1136,11 @@ void recalculate_speed() {
         data_counters_mutex.unlock();
     }
 
+    // Clean Flow Counter
+    flow_counter.lock();
+    FlowCounter.clear();
+    flow_counter.unlock();
+
     total_counters_mutex.lock();
     
     for (unsigned int index = 0; index < 4; index++) {
@@ -1146,6 +1177,7 @@ void calculation_programm() {
     output_buffer<<"FastNetMon v1.0 "<<"IPs ordered by: "<<sort_parameter<<" (use keys 'b'/'p' for change) and use 'q' for quit"<<"\n"
         <<"Threshold is: "<<ban_threshold
         <<" number of active hosts: "<<DataCounter.size()
+        <<" number of flows: "<<FlowCounter.size()
         <<" from total hosts: "<<total_number_of_hosts_in_our_networks<<endl<<endl;
 
     output_buffer<<print_channel_speed("Incoming Traffic", INCOMING)<<endl;
@@ -2056,4 +2088,48 @@ string print_tcp_flags(uint8_t flag_value) {
 
     return flags_as_string.str();
 }
+
+#define BIG_CONSTANT(x) (x##LLU)
+
+// https://code.google.com/p/smhasher/source/browse/trunk/MurmurHash2.cpp
+// 64-bit hash for 64-bit platforms
+uint64_t MurmurHash64A ( const void * key, int len, uint64_t seed ) {
+    const uint64_t m = BIG_CONSTANT(0xc6a4a7935bd1e995);
+    const int r = 47;
+
+    uint64_t h = seed ^ (len * m);
+
+    const uint64_t * data = (const uint64_t *)key;
+    const uint64_t * end = data + (len/8);
+
+    while(data != end) {
+        uint64_t k = *data++;
+
+        k *= m; 
+        k ^= k >> r; 
+        k *= m; 
+    
+        h ^= k;
+        h *= m; 
+    }
+
+    const unsigned char * data2 = (const unsigned char*)data;
+
+    switch(len & 7) {
+        case 7: h ^= uint64_t(data2[6]) << 48;
+        case 6: h ^= uint64_t(data2[5]) << 40;
+        case 5: h ^= uint64_t(data2[4]) << 32;
+        case 4: h ^= uint64_t(data2[3]) << 24;
+        case 3: h ^= uint64_t(data2[2]) << 16;
+        case 2: h ^= uint64_t(data2[1]) << 8;
+        case 1: h ^= uint64_t(data2[0]);
+            h *= m;
+    };
+ 
+    h ^= h >> r;
+    h *= m;
+    h ^= h >> r;
+
+    return h;
+} 
 
