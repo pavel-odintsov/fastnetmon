@@ -1472,7 +1472,7 @@ void pf_ring_main_loop(const char* dev) {
 
     // Active wait wor packets. But I did not know what is mean..
     u_int8_t wait_for_packet = 1;
- 
+
     pfring_loop(pf_ring_descr, parse_packet_pf_ring, (u_char*)NULL, wait_for_packet);
 }
 #endif
@@ -1854,7 +1854,7 @@ void cleanup_ban_list() {
             double time_difference = difftime(current_time, ((*itr).second).ban_timestamp);
             int ban_time = ((*itr).second).ban_time;
 
-            if (time_difference > ban_time) v
+            if (time_difference > ban_time) {
                 // Вычищаем все останки данного забаненого товарища
                 string data_direction_as_string = get_direction_name((*itr).second.attack_direction);
                 string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
