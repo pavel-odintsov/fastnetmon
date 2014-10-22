@@ -250,6 +250,23 @@ pcap_t* descr = NULL;
 #endif
 
 #ifdef PF_RING
+struct thread_stats {
+    u_int64_t __padding_0[8];
+
+    u_int64_t numPkts;
+    u_int64_t numBytes;
+
+    pfring *ring;
+    pthread_t pd_thread;
+    int core_affinity;
+
+    volatile u_int64_t do_shutdown;
+
+    u_int64_t __padding_1[3];
+};
+
+struct thread_stats *threads;
+
 pfring* pf_ring_descr = NULL;
 #endif
 
@@ -297,6 +314,8 @@ vector<subnet> whitelist_networks;
 */
 
 // prototypes
+void pf_ring_main_loop_multy_channel(const char* dev);
+void* pf_ring_packet_consumer_thread(void* _id);
 bool is_cidr_subnet(string subnet);
 uint64_t MurmurHash64A (const void * key, int len, uint64_t seed);
 void cleanup_ban_list();
@@ -1395,7 +1414,10 @@ void main_packet_process_task() {
 
 #ifdef PF_RING
     pf_ring_main_loop(device_name);
+    // Uncomment this line if you want multichannel PF_RING pooler 
+    //pf_ring_main_loop_multy_channel(device_name);
 #endif
+
 }
  
 void free_up_all_resources() {
@@ -1406,7 +1428,100 @@ void free_up_all_resources() {
 
     Destroy_Patricia(lookup_tree,    (void_fn_t)0);
     Destroy_Patricia(whitelist_tree, (void_fn_t)0);
-} 
+}
+
+#ifdef PF_RING 
+void pf_ring_main_loop_multy_channel(const char* dev) {
+    int MAX_NUM_THREADS = 64;
+    // TODO: enable tuning for number of threads
+    unsigned int num_threads = 8;
+
+    if ((threads = (struct thread_stats*)calloc(MAX_NUM_THREADS, sizeof(struct thread_stats))) == NULL) {
+        logger<< log4cpp::Priority::INFO<<"Can't allocate memory for threads structure";
+        return;
+    }
+
+    u_int32_t flags = 0;
+
+    flags |= PF_RING_PROMISC; /* hardcode: promisc=1 */
+    flags |= PF_RING_DNA_SYMMETRIC_RSS;  /* Note that symmetric RSS is ignored by non-DNA drivers */
+    flags |= PF_RING_LONG_HEADER;
+
+    packet_direction direction = rx_only_direction;
+
+    pfring* ring[MAX_NUM_RX_CHANNELS];
+    
+    unsigned int snaplen = 128;
+    int num_channels = pfring_open_multichannel(dev, snaplen, flags, ring);
+
+    if (num_channels <= 0) {
+        logger<< log4cpp::Priority::INFO<<"pfring_open_multichannel returned: "<<num_channels<<" and error:"<<strerror(errno);
+        return;
+    }
+
+    logger<< log4cpp::Priority::INFO<<"We open "<<num_channels<<" channels from pf_ring NIC";
+
+    for (int i = 0; i<num_channels; i++) {
+        char buf[32];
+  
+        threads[i].ring = ring[i];
+        // threads[i].core_affinity = threads_core_affinity[i];
+
+        int rc = 0;
+
+        if  ((rc = pfring_set_direction(threads[i].ring, direction)) != 0) {
+            logger<< log4cpp::Priority::INFO<<"pfring_set_direction returned: "<<rc;
+        }
+   
+        if ((rc = pfring_set_socket_mode(threads[i].ring, recv_only_mode)) != 0) {
+            logger<< log4cpp::Priority::INFO<<"pfring_set_socket_mode returned: "<<rc;
+        }
+
+        int rehash_rss = 0;
+
+        if (rehash_rss)
+            pfring_enable_rss_rehash(threads[i].ring);
+  
+        int poll_duration = 0; 
+        if (poll_duration > 0)
+            pfring_set_poll_duration(threads[i].ring, poll_duration);
+
+        pfring_enable_ring(threads[i].ring);
+
+        pthread_create(&threads[i].pd_thread, NULL, pf_ring_packet_consumer_thread, (void*)i);
+    }
+
+    for(int i = 0; i < num_channels; i++) {
+        pthread_join(threads[i].pd_thread, NULL);
+        pfring_close(threads[i].ring);
+    }
+}
+
+void* pf_ring_packet_consumer_thread(void* _id) {
+    long thread_id = (long)_id;
+    int wait_for_packet = 1;
+
+    // TODO: fix it
+    bool do_shutdown = false;
+
+    while (!do_shutdown) {
+        u_char *buffer = NULL;
+        struct pfring_pkthdr hdr;
+
+        if (pfring_recv(threads[thread_id].ring, &buffer, 0, &hdr, wait_for_packet) > 0) {
+            // TODO: pass (u_char*)thread_id)
+            parse_packet_pf_ring(&hdr, buffer, 0);
+        } else {
+            if (wait_for_packet == 0) {
+                usleep(1); //sched_yield();
+            }
+        }
+   }
+
+   return(NULL);
+}
+#endif
+ 
 #ifdef PF_RING 
 void pf_ring_main_loop(const char* dev) {
     // We could pool device in multiple threads
@@ -1463,14 +1578,6 @@ void pf_ring_main_loop(const char* dev) {
         logger.info("pfring_set_socket_mode returned [rc=%d]\n", pfring_set_socket_mode_result);
     }  
  
-    /*
-    Этот код требуется, когда мы сами пишем какую-либо свою статистику в ядерный модуль PF_RING 
-    char path[256] = { 0 };
-    if (pfring_get_appl_stats_file_name(pf_ring_descr, path, sizeof(path)) != NULL) {
-        logger.info("Dumping statistics on %s\n", path);
-    }
-    */
-
     // enable ring
     if (pfring_enable_ring(pf_ring_descr) != 0) {
         logger<< log4cpp::Priority::INFO<<"Unable to enable ring :-(";
