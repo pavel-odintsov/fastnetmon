@@ -37,6 +37,7 @@
 
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/regex.hpp>
 
 // log4cpp logging facility
 #include "log4cpp/Category.hh"
@@ -85,6 +86,8 @@ using namespace std;
 
 // Interface name or interface list (delimitered by comma)
 string work_on_interfaces = "";
+
+boost::regex regular_expression_cidr_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+\\/\\d+$");
 
 time_t last_call_of_traffic_recalculation;
 
@@ -317,6 +320,7 @@ vector<subnet> whitelist_networks;
 */
 
 // prototypes
+bool is_cidr_subnet(string subnet);
 uint64_t MurmurHash64A (const void * key, int len, uint64_t seed);
 void cleanup_ban_list();
 string print_tcp_flags(uint8_t flag_value);
@@ -692,8 +696,10 @@ bool load_our_networks_list() {
         vector<string> network_list_from_config = read_file_to_vector("/etc/networks_whitelist");
 
         for( vector<string>::iterator ii=network_list_from_config.begin(); ii!=network_list_from_config.end(); ++ii) {
-            if (ii->length() > 0) {
+            if (ii->length() > 0 && is_cidr_subnet(*ii)) {
                 make_and_lookup(whitelist_tree, const_cast<char*>(ii->c_str()));
+            } else {
+                logger<<log4cpp::Priority::INFO<<"Can't parse line from whitelist: "<<*ii;
             }
         }
 
@@ -742,8 +748,10 @@ bool load_our_networks_list() {
         unsigned int cidr_mask = get_cidr_mask_from_network_as_string(*ii);
         total_number_of_hosts_in_our_networks += pow(2, 32-cidr_mask);
        
-        if (ii->length() > 0) { 
+        if (ii->length() > 0 && is_cidr_subnet(*ii)) { 
             make_and_lookup(lookup_tree, const_cast<char*>(ii->c_str())); 
+        } else {
+            logger<<log4cpp::Priority::INFO<<"Can't parse line from subnet list: "<<*ii;
         }
     }    
 
@@ -2133,3 +2141,11 @@ uint64_t MurmurHash64A ( const void * key, int len, uint64_t seed ) {
     return h;
 } 
 
+bool is_cidr_subnet(string subnet) {
+    boost::cmatch what;
+    if (regex_match(subnet.c_str(), what, regular_expression_cidr_pattern)) {
+        return true;
+    } else {
+        return false;
+    }
+}
