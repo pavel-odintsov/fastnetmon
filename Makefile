@@ -64,7 +64,10 @@ LIBS += -lgpm
 LIBS += -llog4cpp
 
 # Boost threads
-LIBS += -lboost_thread
+LIBS += -lboost_thread 
+
+# Boost regular expressions
+LIBS += -lboost_regex
 
 # If you need dynamic compile, please comment this line
 STATIC = -static
