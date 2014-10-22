@@ -3,7 +3,7 @@ FastNetMon
 Author: Pavel Odintsov pavel.odintsov at gmail.com
 License: GPLv2
 
-FastNetMon - High Performance Network DDoS and Load Analyzer with PCAP/ULOG2/PF_RING support. But I recommends only PF_RING variant because other variants is so slow and use big amount of CPU and expected big packetloss.
+FastNetMon - High Performance Network DDoS and Load Analyzer with PCAP/PF_RING support. But I recommends only PF_RING variant because other variants is so slow and use big amount of CPU and expected big packetloss.
 
 What we do? We can detect hosts in OUR network with big amount of packets per second (30 000 pps in standard configuration) incoming or outgoing from certain host. And we can call external bash script which can send notify, switch off server or blackhole this client.
 
@@ -84,7 +84,7 @@ Install FastNetMon:
 ```
 
 
-Select backend, we use PF_RING as default, if you need PCAP/ULOG2 you must change variable ENGINE in Makefile.
+Select backend, we use PF_RING as default, if you need PCAP you must change variable ENGINE in Makefile.
 
 Compile it:
 ```bash

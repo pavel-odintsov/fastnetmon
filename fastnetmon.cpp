@@ -52,10 +52,6 @@
 // Boost libs
 #include <boost/algorithm/string.hpp>
 
-#ifdef ULOG2
-#include "libipulog.h"
-#endif
-
 #ifdef GEOIP
 #include "GeoIP.h"
 #endif
@@ -113,19 +109,6 @@ GeoIP * geo_ip = NULL;
 #endif
 
 patricia_tree_t *lookup_tree, *whitelist_tree;
-
-#ifdef ULOG2
-// netlink group number for listening for traffic
-int ULOGD_NLGROUP_DEFAULT = 1;
-/* Size of the socket receive memory.  Should be at least the same size as the 'nlbufsiz' module loadtime
-   parameter of ipt_ULOG.o If you have _big_ in-kernel queues, you may have to increase this number.  (
- * --qthreshold 100 * 1500 bytes/packet = 150kB  */
-
-int ULOGD_RMEM_DEFAULT = 131071;
-
-/* Size of the receive buffer for the netlink socket.  Should be at least of RMEM_DEFAULT size.  */
-int ULOGD_BUFSIZE_DEFAULT = 150000;
-#endif
 
 bool DEBUG = 0;
 
@@ -259,12 +242,6 @@ boost::mutex flow_counter;
 
 #ifdef REDIS
 redisContext *redis_context = NULL;
-#endif
-
-#ifdef ULOG2
-// For counting number of communication errors via netlink
-unsigned int netlink_error_counter = 0;
-unsigned int netlink_packets_counter = 0;
 #endif
 
 #ifdef PCAP
@@ -1216,11 +1193,6 @@ void calculation_programm() {
     }
 #endif
 
-#ifdef ULOG2
-       output_buffer<<"ULOG buffer errors: "   << netlink_error_counter<<" ("<<int((double)netlink_error_counter/netlink_packets_counter)<<"%)"<<endl; 
-       output_buffer<<"ULOG packets received: "<< netlink_packets_counter<<endl;
-#endif
-
 #ifdef PF_RING
         pfring_stat pfring_status_data;
         if(pfring_stats(pf_ring_descr, &pfring_status_data) >= 0) {
@@ -1424,10 +1396,6 @@ void main_packet_process_task() {
 #ifdef PF_RING
     pf_ring_main_loop(device_name);
 #endif
-
-#ifdef ULOG2 
-    ulog_main_loop();
-#endif
 }
  
 void free_up_all_resources() {
@@ -1587,69 +1555,6 @@ void pcap_main_loop(const char* dev) {
     pcap_loop(descr, -1, (pcap_handler)parse_packet, NULL);
 }
 #endif
-
-#ifdef ULOG2
-void ulog_main_loop() {
-    // В загрузке модуля есть параметры: modprobe ipt_ULOG nlbufsiz=131072
-    // Увеличиваем размер буфера в ядре, так как стандартно он всего-то 3712    
-    // Текущий размер буфера смотреть:  /sys/module/ipt_ULOG/parameters/nlbufsiz
-    // В рантайме его указать нельзя, только при загрузке модуля ipt_ULOG
-
-    struct ipulog_handle *libulog_h;
-    unsigned char *libulog_buf;
-
-    libulog_buf = (unsigned char*)malloc(ULOGD_BUFSIZE_DEFAULT);
-    if (!libulog_buf) {
-        logger<< log4cpp::Priority::INFO<<"Can't allocate buffer";
-        exit(1);
-    }
-
-    libulog_h = ipulog_create_handle(ipulog_group2gmask(ULOGD_NLGROUP_DEFAULT), ULOGD_RMEM_DEFAULT);
-
-    if (!libulog_h) {
-        logger<< log4cpp::Priority::INFO<<"Can't create ipulog handle";
-        exit(0);
-    }
-    
-    int len = 0;
-    while ( len = ipulog_read(libulog_h, libulog_buf, ULOGD_BUFSIZE_DEFAULT) ) {
-        if (len <= 0) {
-            if (errno == EAGAIN) {
-                break;
-            }
-
-            if (errno == 105) {
-                // Наш уютный бажик: errno = '105' ('No buffer space available'
-                netlink_error_counter++;
-                continue;
-            }
-
-            // поймали ошибку - зафиксируем ее при расчетах
-            logger.info("ipulog_read = '%d'! "
-                "ipulog_errno = '%d' ('%s'), "
-                "errno = '%d' ('%s')\n",
-                len, ipulog_errno,
-                ipulog_strerror(ipulog_errno),
-                errno, strerror(errno));
-
-            continue;
-        } 
-
-        // успешний прием пакета
-        netlink_packets_counter++;
-
-        ulog_packet_msg_t *upkt;
-        while ((upkt = ipulog_get_packet(libulog_h, libulog_buf, len))) {
-            // вот такой хитрый хак, так как данные начинаются без ethernet хидера и нам не нужно выполнять никакого смещения
-            DATA_SHIFT_VALUE = 0;
-            parse_packet(NULL, NULL, upkt->payload);
-        }
-    }
-
-    free(libulog_buf);
-}
-#endif
- 
 
 // For correct programm shutdown by CTRL+C
 void signal_handler(int signal_number) {
