@@ -70,7 +70,7 @@ LIBS += -lboost_thread
 LIBS += -lboost_regex
 
 # If you need dynamic compile, please comment this line
-STATIC = -static
+# STATIC = -static
 
 # incompatible with static linkage
 # LIBS += -ltbb
