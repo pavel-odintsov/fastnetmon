@@ -97,6 +97,9 @@ bool redis_enabled = false;
 
 typedef LRUCache<uint32_t, bool> lpm_cache_t;
 
+// Time consumed by reaclculation for all IPs
+struct timeval calculation_thread_execution_time;
+
 // Total number of hosts in our networks
 // We need this as global variable because it's very important value for configuring data structures
 unsigned int total_number_of_hosts_in_our_networks = 0;
@@ -228,7 +231,16 @@ typedef struct {
     uint32_t dst_ip; 
 } conntrack_key;
 
+#define ENABLE_TBB
+
+#ifdef ENABLE_TBB
+//apt-get install -y libtbb-dev 
+#include "tbb/concurrent_unordered_map.h"
+typedef tbb::concurrent_unordered_map <uint32_t, map_element> map_for_counters;
+#else
 typedef std::map <uint32_t, map_element> map_for_counters;
+#endif
+
 // data structure for storing data in Vector
 typedef pair<uint32_t, map_element> pair_of_map_elements;
 
@@ -314,6 +326,7 @@ vector<subnet> whitelist_networks;
 */
 
 // prototypes
+int timeval_subtract (struct timeval * result, struct timeval * x,  struct timeval * y);
 void pf_ring_main_loop_multy_channel(const char* dev);
 void* pf_ring_packet_consumer_thread(void* _id);
 bool is_cidr_subnet(string subnet);
@@ -324,7 +337,7 @@ int extract_bit_value(uint8_t num, int bit);
 string get_attack_description(uint32_t client_ip, attack_details& current_attack);
 unsigned int convert_speed_to_mbps(unsigned int speed_in_bps);
 void send_attack_details(uint32_t client_ip, attack_details current_attack_details);
-string convert_tiemval_to_date(struct timeval tv);
+string convert_timeval_to_date(struct timeval tv);
 void free_up_all_resources();
 void main_packet_process_task();
 unsigned int get_cidr_mask_from_network_as_string(string network_cidr_format);
@@ -810,7 +823,7 @@ string print_simple_packet(struct simple_packet packet) {
             break;
     }
     
-    buffer<<convert_tiemval_to_date(packet.ts)<<" ";
+    buffer<<convert_timeval_to_date(packet.ts)<<" ";
 
     buffer
         <<convert_ip_as_uint_to_string(packet.src_ip)<<":"<<packet.source_port
@@ -967,7 +980,9 @@ void process_packet(simple_packet& current_packet) {
             ban_list_details[current_packet.src_ip].push_back(current_packet);
         }
 
+#ifndef ENABLE_TBB
         data_counters_mutex.lock();
+#endif
 
         if (current_packet.protocol == IPPROTO_TCP) {
             DataCounter[ current_packet.src_ip ].tcp_out_packets++;
@@ -981,8 +996,11 @@ void process_packet(simple_packet& current_packet) {
 
         DataCounter[ current_packet.src_ip ].out_packets++; 
         DataCounter[ current_packet.src_ip ].out_bytes += current_packet.length;
+
+#ifndef ENABLE_TBB
         data_counters_mutex.unlock();
- 
+#endif 
+
     } else if (packet_direction == INCOMING) {
         // собираемы данные для деталей при бане клиента
         if  (ban_list_details.count(current_packet.dst_ip) > 0 &&
@@ -991,7 +1009,9 @@ void process_packet(simple_packet& current_packet) {
             ban_list_details[current_packet.dst_ip].push_back(current_packet);
         }
 
+#ifndef ENABLE_TBB
         data_counters_mutex.lock();
+#endif
         DataCounter[ current_packet.dst_ip ].in_packets ++;
     
         if (current_packet.protocol == IPPROTO_TCP) {
@@ -1005,7 +1025,9 @@ void process_packet(simple_packet& current_packet) {
         }
 
         DataCounter[ current_packet.dst_ip ].in_bytes += current_packet.length;
+#ifndef ENABLE_TBB
         data_counters_mutex.unlock();
+#endif
     } else {
         // Other traffic
     }
@@ -1056,6 +1078,9 @@ unsigned int get_asn_for_ip(uint32_t ip) {
 // void* void* data
 void calculation_thread() {
     // we need wait one second for calculating speed by recalculate_speed
+
+    // #include <sys/prctl.h>
+    //prctl(PR_SET_NAME , "fastnetmon calc thread", 0, 0, 0);
 
     while (1) {
         // Availible only from boost 1.54: boost::this_thread::sleep_for( boost::chrono::seconds(check_period) );
@@ -1122,7 +1147,9 @@ void recalculate_speed() {
         SpeedCounter[client_ip].out_packets = out_pps;
         speed_counters_mutex.unlock();
 
+#ifndef ENABLE_TBB
         data_counters_mutex.lock();
+#endif
         DataCounter[client_ip].in_bytes = 0;
         DataCounter[client_ip].out_bytes = 0;
         DataCounter[client_ip].in_packets = 0;
@@ -1136,8 +1163,10 @@ void recalculate_speed() {
         DataCounter[client_ip].udp_in_packets = 0; 
         DataCounter[client_ip].udp_out_packets = 0; 
         DataCounter[client_ip].udp_in_bytes = 0; 
-        DataCounter[client_ip].udp_out_bytes = 0; 
+        DataCounter[client_ip].udp_out_bytes = 0;
+#ifndef ENABLE_TBB 
         data_counters_mutex.unlock();
+#endif
     }
 
     // Clean Flow Counter
@@ -1164,6 +1193,9 @@ void recalculate_speed() {
 
 void calculation_programm() {
     stringstream output_buffer;
+    
+    struct timeval start_calc_time;
+    gettimeofday(&start_calc_time, NULL);
 
     // clean up screen
     clear();
@@ -1181,6 +1213,7 @@ void calculation_programm() {
     output_buffer<<"FastNetMon v1.0 "<<"IPs ordered by: "<<sort_parameter<<" (use keys 'b'/'p' for change) and use 'q' for quit"<<"\n"
         <<"Threshold is: "<<ban_threshold
         <<" number of active hosts: "<<DataCounter.size()
+        <<" traffic recaculation time is: "<< calculation_thread_execution_time.tv_sec<<" sec "<<calculation_thread_execution_time.tv_usec<<" microseconds"
         <<" number of flows: "<<FlowCounter.size()
         <<" from total hosts: "<<total_number_of_hosts_in_our_networks<<endl<<endl;
 
@@ -1240,6 +1273,11 @@ void calculation_programm() {
         // update screen
         refresh();
         // зануляем счетчик пакетов
+
+    struct timeval end_calc_time;
+    gettimeofday(&end_calc_time, NULL);
+
+    timeval_subtract(&calculation_thread_execution_time, &end_calc_time, &start_calc_time);
 }
 
 // pretty print channel speed in pps and MBit
@@ -1364,6 +1402,7 @@ int main(int argc,char **argv) {
 
     // запускаем поток-обсчета данных
     boost::thread calc_thread(calculation_thread);
+
     // start thread for recalculating speed in realtime
     boost::thread recalculate_speed_thread(recalculate_speed_thread_handler);
     // запускаем поток, который занимается очисткой банлиста 
@@ -2031,7 +2070,7 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
 }
 
 
-string convert_tiemval_to_date(struct timeval tv) {
+string convert_timeval_to_date(struct timeval tv) {
     time_t nowtime = tv.tv_sec;
     struct tm *nowtm = localtime(&nowtime);
     
@@ -2167,4 +2206,28 @@ bool is_cidr_subnet(string subnet) {
     } else {
         return false;
     }
+}
+
+
+// http://www.gnu.org/software/libc/manual/html_node/Elapsed-Time.html
+int timeval_subtract (struct timeval * result, struct timeval * x,  struct timeval * y) {
+    /* Perform the carry for the later subtraction by updating y. */
+    if (x->tv_usec < y->tv_usec) {
+        int nsec = (y->tv_usec - x->tv_usec) / 1000000 + 1;
+        y->tv_usec -= 1000000 * nsec;
+        y->tv_sec += nsec;
+    }
+
+    if (x->tv_usec - y->tv_usec > 1000000) {
+        int nsec = (x->tv_usec - y->tv_usec) / 1000000;
+        y->tv_usec += 1000000 * nsec;
+        y->tv_sec -= nsec;
+    }
+
+    /* Compute the time remaining to wait. tv_usec is certainly positive. */
+    result->tv_sec = x->tv_sec - y->tv_sec;
+    result->tv_usec = x->tv_usec - y->tv_usec;
+
+    /* Return 1 if result is negative. */
+    return x->tv_sec < y->tv_sec;
 }

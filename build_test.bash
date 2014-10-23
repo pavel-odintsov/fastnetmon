@@ -1,3 +1,2 @@
 #!/bin/bash
-
-g++ performance_tests.cpp -lrt -lpthread -lboost_thread  -std=c++11 -ltbb
+g++ performance_tests.cpp -lrt -lpthread -lboost_thread -ltbb  -std=c++11

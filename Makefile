@@ -72,6 +72,9 @@ LIBS += -lboost_regex
 # If you need dynamic compile, please comment this line
 STATIC = -static
 
+# incompatible with static linkage
+# LIBS += -ltbb
+
 # removed -std=c++11 for fastnetmon.o
 COMPILER = g++
 # COMPILER = clang
