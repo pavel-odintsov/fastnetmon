@@ -565,7 +565,10 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
                 bps = SpeedCounter[client_ip].out_bytes;
             }    
 
-            unsigned int mbps = convert_speed_to_mbps(bps);
+            double mbps = (double)bps/1024/1024*8;
+
+            // Set one number after comma for double
+            output_buffer<<fixed<<setprecision(1);
 
             // Выводим первые max_ips_in_list элементов в списке, при нашей сортировке, будут выданы топ 10 самых грузящих клиентов
             if (element_number < max_ips_in_list) {
