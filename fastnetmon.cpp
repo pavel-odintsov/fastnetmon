@@ -1461,8 +1461,8 @@ void pf_ring_main_loop_multy_channel(const char* dev) {
 
     logger<< log4cpp::Priority::INFO<<"We open "<<num_channels<<" channels from pf_ring NIC";
 
-    for (int i = 0; i<num_channels; i++) {
-        char buf[32];
+    for (int i = 0; i < num_channels; i++) {
+        // char buf[32];
   
         threads[i].ring = ring[i];
         // threads[i].core_affinity = threads_core_affinity[i];
@@ -1488,7 +1488,8 @@ void pf_ring_main_loop_multy_channel(const char* dev) {
 
         pfring_enable_ring(threads[i].ring);
 
-        pthread_create(&threads[i].pd_thread, NULL, pf_ring_packet_consumer_thread, (void*)i);
+        unsigned long thread_id = i;
+        pthread_create(&threads[i].pd_thread, NULL, pf_ring_packet_consumer_thread, (void*)thread_id);
     }
 
     for(int i = 0; i < num_channels; i++) {
@@ -2100,12 +2101,18 @@ string print_tcp_flags(uint8_t flag_value) {
     }   
 
     
-    stringstream flags_as_string;
+    ostringstream flags_as_string;
 
-    for(std::vector<string>::iterator it = all_flags.begin(); it != all_flags.end(); ++it) {
-        flags_as_string<<*it;
+    if (all_flags.empty()) {
+        return "-";
     }
 
+    // concatenate all vector elements with comma
+    std::copy(all_flags.begin(), all_flags.end() - 1, std::ostream_iterator<string>(flags_as_string, ","));
+
+    // add last element
+    flags_as_string << all_flags.back();
+    
     return flags_as_string.str();
 }
 
