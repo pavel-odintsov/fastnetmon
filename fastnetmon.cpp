@@ -231,8 +231,6 @@ typedef struct {
     uint32_t dst_ip; 
 } conntrack_key;
 
-#define ENABLE_TBB
-
 #ifdef ENABLE_TBB
 //apt-get install -y libtbb-dev 
 #include "tbb/concurrent_unordered_map.h"
