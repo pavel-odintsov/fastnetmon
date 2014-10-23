@@ -66,6 +66,9 @@ LIBS += -llog4cpp
 # Boost threads
 LIBS += -lboost_thread 
 
+# Boost System
+LIBS += -lboost_system
+
 # Boost regular expressions
 LIBS += -lboost_regex
 
