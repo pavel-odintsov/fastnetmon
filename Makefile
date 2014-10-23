@@ -76,7 +76,8 @@ LIBS += -lboost_regex
 # STATIC = -static
 
 # incompatible with static linkage
-# LIBS += -ltbb
+#DEFINES += -DENABLE_TBB
+#LIBS += -ltbb
 
 # removed -std=c++11 for fastnetmon.o
 COMPILER = g++
