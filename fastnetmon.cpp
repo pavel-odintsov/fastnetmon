@@ -1331,7 +1331,8 @@ void calculation_programm() {
         sorter = PACKETS;
     }
 
-    output_buffer<<"FastNetMon v1.0 "<<"IPs ordered by: "<<sort_parameter<<" (use keys 'b'/'p' for change) and use 'q' for quit"<<"\n"
+    output_buffer<<"FastNetMon v1.0 FastVPS Eesti OU (c) VPS and dedicated: vps2fast.com"<<"\n"
+        <<"IPs ordered by: "<<sort_parameter<<" (use keys 'b'/'p' for change) and use 'q' for quit"<<"\n"
         <<"Threshold is: "<<ban_threshold
         //<<" number of active hosts: "<<DataCounter.size()
         <<" traffic recaculation time is: "<< calculation_thread_execution_time.tv_sec<<" sec "<<calculation_thread_execution_time.tv_usec<<" microseconds"
@@ -1714,7 +1715,7 @@ bool pf_ring_main_loop(const char* dev) {
 
     pf_ring_descr = pfring_open(dev, snaplen, flags); 
 
-    if(pf_ring_descr == NULL) {
+    if (pf_ring_descr == NULL) {
         logger<< log4cpp::Priority::INFO<<"pfring_open error: "<<strerror(errno)
             << " (pf_ring not loaded or perhaps you use quick mode and have already a socket bound to: "<<dev<< ")";
         return false;
