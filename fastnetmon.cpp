@@ -1331,7 +1331,7 @@ void calculation_programm() {
         sorter = PACKETS;
     }
 
-    output_buffer<<"FastNetMon v1.0 FastVPS Eesti OU (c) VPS and dedicated: vps2fast.com"<<"\n"
+    output_buffer<<"FastNetMon v1.0 FastVPS Eesti OU (c) VPS and dedicated: FastVPS.host"<<"\n"
         <<"IPs ordered by: "<<sort_parameter<<" (use keys 'b'/'p' for change) and use 'q' for quit"<<"\n"
         <<"Threshold is: "<<ban_threshold
         //<<" number of active hosts: "<<DataCounter.size()
