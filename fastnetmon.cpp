@@ -323,7 +323,7 @@ vector<subnet> whitelist_networks;
 
 // prototypes
 int timeval_subtract (struct timeval * result, struct timeval * x,  struct timeval * y);
-void pf_ring_main_loop_multy_channel(const char* dev);
+bool pf_ring_main_loop_multy_channel(const char* dev);
 void* pf_ring_packet_consumer_thread(void* _id);
 bool is_cidr_subnet(string subnet);
 uint64_t MurmurHash64A (const void * key, int len, uint64_t seed);
@@ -348,7 +348,7 @@ void copy_networks_from_string_form_to_binary(vector<string> networks_list_as_st
 bool file_exists(string path);
 void calculation_programm();
 void pcap_main_loop(const char* dev);
-void pf_ring_main_loop(const char* dev);
+bool pf_ring_main_loop(const char* dev);
 void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *packetptr);
 void ulog_main_loop();
 void signal_handler(int signal_number);
@@ -1464,9 +1464,6 @@ int main(int argc,char **argv) {
 
     init_logging();
 
-    /* Init ncurses screen */
-    initscr();
-   
     if (getenv("DUMP_ALL_PACKETS") != NULL) {
         DEBUG_DUMP_ALL_PACKETS = true;
     }
@@ -1531,6 +1528,9 @@ int main(int argc,char **argv) {
 
     boost::thread main_packet_process_thread(main_packet_process_task);
 
+    // Init ncurses screen 
+    initscr();
+
     // disable any character output 
     noecho();
     // hide cursor
@@ -1573,9 +1573,14 @@ void main_packet_process_task() {
 #endif
 
 #ifdef PF_RING
-    pf_ring_main_loop(device_name);
-    // Uncomment this line if you want multichannel PF_RING pooler 
-    //pf_ring_main_loop_multy_channel(device_name);
+    bool pf_ring_init_result = pf_ring_main_loop(device_name);
+    // Uncomment this line if you want multichannel PF_RING pooler
+    // bool pf_ring_init_result = pf_ring_main_loop_multy_channel(device_name);
+    if (!pf_ring_init_result) {
+        // Internal error in PF_RING
+        logger<< log4cpp::Priority::INFO<<"PF_RING initilization failed, exit from programm"; 
+        exit(1);
+    }
 #endif
 
 }
@@ -1591,14 +1596,14 @@ void free_up_all_resources() {
 }
 
 #ifdef PF_RING 
-void pf_ring_main_loop_multy_channel(const char* dev) {
+bool pf_ring_main_loop_multy_channel(const char* dev) {
     int MAX_NUM_THREADS = 64;
     // TODO: enable tuning for number of threads
     unsigned int num_threads = 8;
 
     if ((threads = (struct thread_stats*)calloc(MAX_NUM_THREADS, sizeof(struct thread_stats))) == NULL) {
         logger<< log4cpp::Priority::INFO<<"Can't allocate memory for threads structure";
-        return;
+        return false;
     }
 
     u_int32_t flags = 0;
@@ -1616,7 +1621,7 @@ void pf_ring_main_loop_multy_channel(const char* dev) {
 
     if (num_channels <= 0) {
         logger<< log4cpp::Priority::INFO<<"pfring_open_multichannel returned: "<<num_channels<<" and error:"<<strerror(errno);
-        return;
+        return false;
     }
 
     logger<< log4cpp::Priority::INFO<<"We open "<<num_channels<<" channels from pf_ring NIC";
@@ -1656,6 +1661,8 @@ void pf_ring_main_loop_multy_channel(const char* dev) {
         pthread_join(threads[i].pd_thread, NULL);
         pfring_close(threads[i].ring);
     }
+
+    return true;
 }
 
 void* pf_ring_packet_consumer_thread(void* _id) {
@@ -1684,7 +1691,7 @@ void* pf_ring_packet_consumer_thread(void* _id) {
 #endif
  
 #ifdef PF_RING 
-void pf_ring_main_loop(const char* dev) {
+bool pf_ring_main_loop(const char* dev) {
     // We could pool device in multiple threads
     unsigned int num_threads = 1;
 
@@ -1710,7 +1717,7 @@ void pf_ring_main_loop(const char* dev) {
     if(pf_ring_descr == NULL) {
         logger<< log4cpp::Priority::INFO<<"pfring_open error: "<<strerror(errno)
             << " (pf_ring not loaded or perhaps you use quick mode and have already a socket bound to: "<<dev<< ")";
-        exit(1);
+        return false;
     }
 
 
@@ -1743,13 +1750,15 @@ void pf_ring_main_loop(const char* dev) {
     if (pfring_enable_ring(pf_ring_descr) != 0) {
         logger<< log4cpp::Priority::INFO<<"Unable to enable ring :-(";
         pfring_close(pf_ring_descr);
-        exit(-1);
+        return false;
     }
 
     // Active wait wor packets. But I did not know what is mean..
     u_int8_t wait_for_packet = 1;
 
     pfring_loop(pf_ring_descr, parse_packet_pf_ring, (u_char*)NULL, wait_for_packet);
+
+    return true;
 }
 #endif
  
