@@ -950,7 +950,7 @@ make_and_lookup (patricia_tree_t *tree, char *string)
     patricia_node_t *node;
 
     prefix = ascii2prefix (AF_INET, string);
-    printf ("make_and_lookup: %s/%d\n", prefix_toa (prefix), prefix->bitlen);
+    // printf ("make_and_lookup: %s/%d\n", prefix_toa (prefix), prefix->bitlen);
     node = patricia_lookup (tree, prefix);
     Deref_Prefix (prefix);
     return (node);
@@ -963,13 +963,13 @@ try_search_exact (patricia_tree_t *tree, char *string)
     patricia_node_t *node;
 
     prefix = ascii2prefix (AF_INET, string);
-    printf ("try_search_exact: %s/%d\n", prefix_toa (prefix), prefix->bitlen);
+    //printf ("try_search_exact: %s/%d\n", prefix_toa (prefix), prefix->bitlen);
     if ((node = patricia_search_exact (tree, prefix)) == NULL) {
-        printf ("try_search_exact: not found\n");
+        //printf ("try_search_exact: not found\n");
     }
     else {
-        printf ("try_search_exact: %s/%d found\n", 
-	        prefix_toa (node->prefix), node->prefix->bitlen);
+        //printf ("try_search_exact: %s/%d found\n", 
+	//prefix_toa (node->prefix), node->prefix->bitlen);
     }
     Deref_Prefix (prefix);
     return (node);
@@ -991,12 +991,13 @@ try_search_best (patricia_tree_t *tree, char *string)
     patricia_node_t *node;
 
     prefix = ascii2prefix (AF_INET, string);
-    printf ("try_search_best: %s/%d\n", prefix_toa (prefix), prefix->bitlen);
-    if ((node = patricia_search_best (tree, prefix)) == NULL)
-        printf ("try_search_best: not found\n");
-    else
-        printf ("try_search_best: %s/%d found\n", 
-	        prefix_toa (node->prefix), node->prefix->bitlen);
+    //printf ("try_search_best: %s/%d\n", prefix_toa (prefix), prefix->bitlen);
+    if ((node = patricia_search_best (tree, prefix)) == NULL) {
+        //printf ("try_search_best: not found\n");
+    } else {
+        //printf ("try_search_best: %s/%d found\n",
+	//prefix_toa (node->prefix), node->prefix->bitlen);
+    }
     Deref_Prefix (prefix);
     return (node);
 }
