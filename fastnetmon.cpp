@@ -880,7 +880,8 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
     // In ZC (zc:eth0) mode you should manually add packet parsing here
     // Because it disabled by default: "parsing already disabled in zero-copy"
     // http://www.ntop.org/pfring_api/pfring_8h.html 
-    // pfring_parse_pkt((u_char*)p, (struct pfring_pkthdr*)h, 5, 0, 0);
+    // Parse up to L3, no timestamp, no hashing
+    //pfring_parse_pkt((u_char*)p, (struct pfring_pkthdr*)h, 3, 0, 0);
 
     /* We handle only IPv4 */
     if (h->extended_hdr.parsed_pkt.ip_version == 4) {
