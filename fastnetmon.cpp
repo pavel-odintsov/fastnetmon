@@ -1228,9 +1228,16 @@ void recalculate_speed() {
             unsigned int in_bps  = int((double)vector_itr->in_bytes  / (double)speed_calc_period);
             unsigned int out_bps = int((double)vector_itr->out_bytes / (double)speed_calc_period);     
 
-            // we detect overspeed
+            // we detect overspeed by packets
             if (in_pps > ban_threshold_pps or out_pps > ban_threshold_pps) {
                 execute_ip_ban(client_ip, in_pps, out_pps, in_bps, out_bps);
+            }
+
+            // we detect overspeed by bandwidth
+            if (convert_speed_to_mbps(in_bps) > ban_threshold_mbps or convert_speed_to_mbps(out_bps) > ban_threshold_mbps) {
+                /* TODO: it's stub for debug bandwidth overspeed */
+                logger<<log4cpp::Priority::INFO<<"We detect bandwidth_overuse from ip: "<<convert_ip_as_uint_to_string(client_ip)
+                    <<"incoming: "<<convert_speed_to_mbps(in_bps)<<" mbps outgoing: "<<convert_speed_to_mbps(out_bps)<<" mbps";
             }
 
             speed_counters_mutex.lock();
