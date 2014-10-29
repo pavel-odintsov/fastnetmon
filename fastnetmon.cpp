@@ -139,7 +139,10 @@ string notify_script_path = "/usr/local/bin/notify_about_attack.sh";
 unsigned int max_ips_in_list = 7;
 
 // We must ban IP if it exceeed this limit in PPS
-unsigned int ban_threshold = 20000;
+unsigned int ban_threshold_pps = 20000;
+
+// We must ban client if it exceed 1GBps
+unsigned int ban_threshold_mbps = 1000;
 
 // Number of lines for sending ben attack details to email
 unsigned int ban_details_records_count = 500;
@@ -635,7 +638,11 @@ void load_configuration_file() {
         }
 
         if (configuration_map.count("threshold_pps") != 0) {
-            ban_threshold = convert_string_to_integer( configuration_map[ "threshold_pps" ] );
+            ban_threshold_pps = convert_string_to_integer( configuration_map[ "threshold_pps" ] );
+        }
+
+        if (configuration_map.count("threshold_mbps") != 0) {
+            ban_threshold_mbps = convert_string_to_integer(  configuration_map[ "threshold_mbps" ] );
         }
 
 #ifdef REDIS
@@ -881,7 +888,7 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
     // Because it disabled by default: "parsing already disabled in zero-copy"
     // http://www.ntop.org/pfring_api/pfring_8h.html 
     // Parse up to L3, no timestamp, no hashing
-    //pfring_parse_pkt((u_char*)p, (struct pfring_pkthdr*)h, 3, 0, 0);
+    // pfring_parse_pkt((u_char*)p, (struct pfring_pkthdr*)h, 3, 0, 0);
 
     /* We handle only IPv4 */
     if (h->extended_hdr.parsed_pkt.ip_version == 4) {
@@ -1222,7 +1229,7 @@ void recalculate_speed() {
             unsigned int out_bps = int((double)vector_itr->out_bytes / (double)speed_calc_period);     
 
             // we detect overspeed
-            if (in_pps > ban_threshold or out_pps > ban_threshold) {
+            if (in_pps > ban_threshold_pps or out_pps > ban_threshold_pps) {
                 execute_ip_ban(client_ip, in_pps, out_pps, in_bps, out_bps);
             }
 
@@ -1240,56 +1247,6 @@ void recalculate_speed() {
             data_counters_mutex.unlock();
         } 
     }
-
-/*
-    // calculate speed for all our IPs
-    for( map_for_counters::iterator ii = DataCounter.begin(); ii != DataCounter.end(); ++ii) {
-        uint32_t client_ip = (*ii).first;
-            
-        unsigned int in_pps  = int((double)(*ii).second.in_packets   / (double)speed_calc_period);
-        unsigned int out_pps = int((double)(*ii).second.out_packets / (double)speed_calc_period);
-
-        unsigned int in_bps  = int((double)(*ii).second.in_bytes  / (double)speed_calc_period);
-        unsigned int out_bps = int((double)(*ii).second.out_bytes / (double)speed_calc_period);     
-
-        // we detect overspeed
-        if (in_pps > ban_threshold or out_pps > ban_threshold) {
-            execute_ip_ban(client_ip, in_pps, out_pps, in_bps, out_bps);
-        }
-
-        speed_counters_mutex.lock();
-        // add speed values to speed struct
-        SpeedCounter[client_ip].in_bytes    = in_bps;
-        SpeedCounter[client_ip].out_bytes   = out_bps;
-
-        SpeedCounter[client_ip].in_packets  = in_pps;
-        SpeedCounter[client_ip].out_packets = out_pps;
-        speed_counters_mutex.unlock();
-
-        data_counters_mutex.lock();
-    
-        DataCounter[client_ip].in_bytes = 0;
-        DataCounter[client_ip].out_bytes = 0;
-        DataCounter[client_ip].in_packets = 0;
-        DataCounter[client_ip].out_packets = 0;
-
-        DataCounter[client_ip].tcp_in_packets = 0;
-        DataCounter[client_ip].tcp_out_packets = 0;
-        DataCounter[client_ip].tcp_in_bytes = 0;
-        DataCounter[client_ip].tcp_out_bytes = 0;
-
-        DataCounter[client_ip].udp_in_packets = 0; 
-        DataCounter[client_ip].udp_out_packets = 0; 
-        DataCounter[client_ip].udp_in_bytes = 0; 
-        DataCounter[client_ip].udp_out_bytes = 0;
-        data_counters_mutex.unlock();
-    }
-*/
-
-    // We use per elemen zerofication now
-    //data_counters_mutex.lock();
-    //zeroify_all_counters();
-    //data_counters_mutex.unlock();
 
     // Clean Flow Counter
     flow_counter.lock();
@@ -1332,9 +1289,9 @@ void calculation_programm() {
         sorter = PACKETS;
     }
 
-    output_buffer<<"FastNetMon v1.0 FastVPS Eesti OU (c) VPS and dedicated: FastVPS.host"<<"\n"
+    output_buffer<<"FastNetMon v1.0 FastVPS Eesti OU (c) VPS and dedicated: http://FastVPS.host"<<"\n"
         <<"IPs ordered by: "<<sort_parameter<<" (use keys 'b'/'p' for change) and use 'q' for quit"<<"\n"
-        <<"Threshold is: "<<ban_threshold
+        <<"Threshold is: "<<ban_threshold_pps<<" pps and "<<ban_threshold_mbps<<" mbps"
         //<<" number of active hosts: "<<DataCounter.size()
         <<" traffic recaculation time is: "<< calculation_thread_execution_time.tv_sec<<" sec "<<calculation_thread_execution_time.tv_usec<<" microseconds"
         <<" number of flows: "<<FlowCounter.size()
