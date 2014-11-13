@@ -1049,31 +1049,18 @@ void process_packet(simple_packet& current_packet) {
             ban_list_details[current_packet.src_ip].push_back(current_packet);
         }
 
-        //data_counters_mutex.lock();
         if (current_packet.protocol == IPPROTO_TCP) {
             current_element.tcp_out_packets++;
             current_element.tcp_out_bytes += current_packet.length;
-
-            //DataCounter[ current_packet.src_ip ].tcp_out_packets++;
-            //DataCounter[ current_packet.src_ip ].tcp_out_bytes += current_packet.length;
         } else if (current_packet.protocol == IPPROTO_UDP) {
             current_element.udp_out_packets++;
             current_element.udp_out_bytes += current_packet.length;        
-    
-            //DataCounter[ current_packet.src_ip ].udp_out_packets++;
-            //DataCounter[ current_packet.src_ip ].udp_out_bytes += current_packet.length; 
         } else {
             // TBD
         }
 
         current_element.out_packets++;
         current_element.out_bytes += current_packet.length; 
-
-        //DataCounter[ current_packet.src_ip ].out_packets++; 
-        //DataCounter[ current_packet.src_ip ].out_bytes += current_packet.length;
-
-        //data_counters_mutex.unlock();
-
     } else if (packet_direction == INCOMING) {
         uint32_t shift_in_vector = ntohl(current_packet.dst_ip) - subnet_in_host_byte_order;
         #define current_element itr->second[shift_in_vector]
@@ -1087,30 +1074,18 @@ void process_packet(simple_packet& current_packet) {
             ban_list_details[current_packet.dst_ip].push_back(current_packet);
         }
 
-        //data_counters_mutex.lock();
-    
         if (current_packet.protocol == IPPROTO_TCP) {
             current_element.tcp_in_packets++;
             current_element.tcp_in_bytes += current_packet.length;
-
-            //DataCounter[ current_packet.dst_ip ].tcp_in_packets++;
-            //DataCounter[ current_packet.dst_ip ].tcp_in_bytes += current_packet.length;
         } else if (current_packet.protocol == IPPROTO_UDP) {
             current_element.udp_in_packets++;
             current_element.udp_in_bytes += current_packet.length;
-
-            //DataCounter[ current_packet.dst_ip ].udp_in_packets++;
-            //DataCounter[ current_packet.dst_ip ].udp_in_bytes += current_packet.length; 
         } else {
             // TBD
         }
 
         current_element.in_packets ++;
         current_element.in_bytes += current_packet.length;
-
-        //DataCounter[ current_packet.dst_ip ].in_packets ++;
-        //DataCounter[ current_packet.dst_ip ].in_bytes += current_packet.length;
-        //data_counters_mutex.unlock();
     } else {
         // Other traffic
     }
