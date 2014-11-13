@@ -244,6 +244,11 @@ DUMP_ALL_PACKETS will enable all packets dumping to console. It's very useful fo
 DUMP_ALL_PACKETS=yes ./fastnetmon eth3,eth4
 ```
 
+How I can disable ban for testing purposes?
+```bash
+DISABLE_BAN=1 ./fastnetmon eth3,eth4
+```
+
 Recommended configuration options for ixgbe Intel X540 driver:
 ```bash
 cat /etc/modprobe.d/ixgbe.conf 
