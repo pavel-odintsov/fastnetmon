@@ -68,6 +68,9 @@
 #include "pfring.h"
 #endif
 
+// Enable connection tracking
+// #define ENABLE_CONNTRACKING
+
 using namespace std;
 
 /* 802.1Q VLAN tags are 4 bytes long. */
@@ -234,11 +237,38 @@ typedef struct {
     uint32_t dst_ip; 
 } conntrack_key;
 
+// struct for save per direction and per protocol details for flow
+typedef struct {
+    unsigned int bytes;
+    unsigned int packets;
+    // will be used for Garbage Collection
+    time_t   last_update_time;
+} conntrack_key_struct;
+
+typedef uint64_t packed_session;
+// Main meegaaa struct for saving conntracks
+typedef struct {
+    std::map<packed_session, conntrack_key_struct> in_tcp;
+    std::map<packed_session, conntrack_key_struct> in_udp;
+    std::map<packed_session, conntrack_key_struct> in_icmp;
+    std::map<packed_session, conntrack_key_struct> in_other;
+
+    std::map<packed_session, conntrack_key_struct> out_tcp;
+    std::map<packed_session, conntrack_key_struct> out_udp;
+    std::map<packed_session, conntrack_key_struct> out_icmp;
+    std::map<packed_session, conntrack_key_struct> out_other;
+} conntrack_main_struct;
+
 typedef std::map <uint32_t, map_element> map_for_counters;
 typedef vector<map_element> vector_of_counters;
 typedef std::map <unsigned long int, vector_of_counters> map_of_vector_counters;
 
 map_of_vector_counters SubnetVectorMap;
+
+// Flow tracking structures
+typedef vector<conntrack_main_struct> vector_of_flow_counters;
+typedef std::map <unsigned long int, vector_of_flow_counters> map_of_vector_counters_for_flow;
+map_of_vector_counters_for_flow SubnetVectorMapFlow;
 
 // data structure for storing data in Vector
 typedef pair<uint32_t, map_element> pair_of_map_elements;
@@ -725,6 +755,12 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
     map_element zero_map_element;
     memset(&zero_map_element, 0, sizeof(zero_map_element));
     std::fill(SubnetVectorMap[subnet_as_integer].begin(), SubnetVectorMap[subnet_as_integer].end(), zero_map_element);
+
+#ifdef ENABLE_CONNTRACKING
+    conntrack_main_struct zero_conntrack_main_struct;
+    memset(&zero_conntrack_main_struct, 0, sizeof(conntrack_main_struct));
+    std::fill(SubnetVectorMapFlow[subnet_as_integer].begin(), SubnetVectorMapFlow[subnet_as_integer].end(), zero_conntrack_main_struct);
+#endif
 }
 
 void zeroify_all_counters() {
@@ -732,8 +768,17 @@ void zeroify_all_counters() {
     memset(&zero_map_element, 0, sizeof(zero_map_element));
 
     for (map_of_vector_counters::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); itr++) {
-        logger<< log4cpp::Priority::INFO<<"Zeroify "<<itr->first;
+        //logger<< log4cpp::Priority::INFO<<"Zeroify "<<itr->first;
         std::fill(itr->second.begin(), itr->second.end(), zero_map_element); 
+    }
+}
+
+void zeroify_all_flow_counters() {
+    conntrack_main_struct zero_conntrack_main_struct;
+    memset(&zero_conntrack_main_struct, 0, sizeof(conntrack_main_struct));
+
+    for (map_of_vector_counters_for_flow::iterator itr = SubnetVectorMapFlow.begin(); itr != SubnetVectorMapFlow.end(); itr++) {
+        std::fill(itr->second.begin(), itr->second.end(), zero_conntrack_main_struct);   
     }
 }
 
@@ -1031,6 +1076,19 @@ void process_packet(simple_packet& current_packet) {
         }
     }
 
+#ifdef ENABLE_CONNTRACKING
+    map_of_vector_counters_for_flow::iterator itr_flow;
+
+    if (packet_direction == OUTGOING or packet_direction == INCOMING) {
+        itr_flow = SubnetVectorMapFlow.find(subnet);
+
+        if (itr_flow == SubnetVectorMapFlow.end()) {
+            logger<< log4cpp::Priority::INFO<<"Can't find vector address in subnet flow map";
+            return;
+        }
+    }
+#endif
+
     total_counters_mutex.lock();
     total_counters[packet_direction].packets++;
     total_counters[packet_direction].bytes += current_packet.length;
@@ -1100,6 +1158,7 @@ void process_packet(simple_packet& current_packet) {
         current_packet.ts.tv_usec = 0;
         current_packet.length = 0;
 
+/*
         // calculate hash
         unsigned int seed = 11;
         uint64_t hash = MurmurHash64A(&current_packet, sizeof(current_packet), seed);
@@ -1107,6 +1166,8 @@ void process_packet(simple_packet& current_packet) {
         flow_counter.lock();
         FlowCounter[hash]++;
         flow_counter.unlock();
+*/
+
     }
 #endif
 }
@@ -1250,10 +1311,12 @@ void recalculate_speed() {
         } 
     }
 
+#ifdef ENABLE_CONNTRACKING
     // Clean Flow Counter
     flow_counter.lock();
-    FlowCounter.clear();
+    zeroify_all_flow_counters();
     flow_counter.unlock();
+#endif
 
     total_counters_mutex.lock();
     
@@ -1296,7 +1359,7 @@ void calculation_programm() {
         <<"Threshold is: "<<ban_threshold_pps<<" pps and "<<ban_threshold_mbps<<" mbps"
         //<<" number of active hosts: "<<DataCounter.size()
         <<" traffic recaculation time is: "<< calculation_thread_execution_time.tv_sec<<" sec "<<calculation_thread_execution_time.tv_usec<<" microseconds"
-        <<" number of flows: "<<FlowCounter.size()
+        // <<" number of flows: "<<FlowCounter.size()
         <<" from total hosts: "<<total_number_of_hosts_in_our_networks<<endl<<endl;
 
     output_buffer<<print_channel_speed("Incoming Traffic", INCOMING)<<endl;
