@@ -69,7 +69,7 @@
 #endif
 
 // Enable connection tracking
-// #define ENABLE_CONNTRACKING
+//#define ENABLE_CONNTRACKING
 
 using namespace std;
 
@@ -247,7 +247,9 @@ typedef struct {
 
 typedef uint64_t packed_session;
 // Main meegaaa struct for saving conntracks
-typedef struct {
+// We should use class instead struct for correct std::map allocation
+class conntrack_main_struct {
+public:
     std::map<packed_session, conntrack_key_struct> in_tcp;
     std::map<packed_session, conntrack_key_struct> in_udp;
     std::map<packed_session, conntrack_key_struct> in_icmp;
@@ -257,7 +259,7 @@ typedef struct {
     std::map<packed_session, conntrack_key_struct> out_udp;
     std::map<packed_session, conntrack_key_struct> out_icmp;
     std::map<packed_session, conntrack_key_struct> out_other;
-} conntrack_main_struct;
+};
 
 typedef std::map <uint32_t, map_element> map_for_counters;
 typedef vector<map_element> vector_of_counters;
@@ -269,6 +271,16 @@ map_of_vector_counters SubnetVectorMap;
 typedef vector<conntrack_main_struct> vector_of_flow_counters;
 typedef std::map <unsigned long int, vector_of_flow_counters> map_of_vector_counters_for_flow;
 map_of_vector_counters_for_flow SubnetVectorMapFlow;
+
+class packed_conntrack_hash {
+public:
+    packed_conntrack_hash() : opposite_ip(0), src_port(0), dst_port(0) { } 
+    // src or dst IP 
+    uint32_t opposite_ip;
+    uint16_t src_port;
+    uint16_t dst_port;
+};
+
 
 // data structure for storing data in Vector
 typedef pair<uint32_t, map_element> pair_of_map_elements;
@@ -307,7 +319,6 @@ struct thread_stats {
 };
 
 struct thread_stats *threads;
-
 pfring* pf_ring_descr = NULL;
 #endif
 
@@ -358,6 +369,7 @@ bool we_do_real_ban = true;
 */
 
 // prototypes
+uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash* struct_value);
 int timeval_subtract (struct timeval * result, struct timeval * x,  struct timeval * y);
 bool pf_ring_main_loop_multy_channel(const char* dev);
 void* pf_ring_packet_consumer_thread(void* _id);
@@ -757,8 +769,11 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
     std::fill(SubnetVectorMap[subnet_as_integer].begin(), SubnetVectorMap[subnet_as_integer].end(), zero_map_element);
 
 #ifdef ENABLE_CONNTRACKING
+    // Initilize map element
+    SubnetVectorMapFlow[subnet_as_integer] = vector_of_flow_counters(network_size_in_ips); 
+
     conntrack_main_struct zero_conntrack_main_struct;
-    memset(&zero_conntrack_main_struct, 0, sizeof(conntrack_main_struct));
+    //memset(&zero_conntrack_main_struct, 0, sizeof(conntrack_main_struct));
     std::fill(SubnetVectorMapFlow[subnet_as_integer].begin(), SubnetVectorMapFlow[subnet_as_integer].end(), zero_conntrack_main_struct);
 #endif
 }
@@ -773,14 +788,28 @@ void zeroify_all_counters() {
     }
 }
 
+#ifdef ENABLE_CONNTRACKING
 void zeroify_all_flow_counters() {
     conntrack_main_struct zero_conntrack_main_struct;
-    memset(&zero_conntrack_main_struct, 0, sizeof(conntrack_main_struct));
 
+    // Iterate over map
     for (map_of_vector_counters_for_flow::iterator itr = SubnetVectorMapFlow.begin(); itr != SubnetVectorMapFlow.end(); itr++) {
-        std::fill(itr->second.begin(), itr->second.end(), zero_conntrack_main_struct);   
+        // Iterate over vector
+        for (vector_of_flow_counters::iterator vector_iterator = itr->second.begin(); vector_iterator != itr->second.end(); vector_iterator++) {
+            // TODO: rewrite this monkey code
+            vector_iterator->in_tcp.clear();
+            vector_iterator->in_udp.clear();
+            vector_iterator->in_icmp.clear();
+            vector_iterator->in_other.clear();
+
+            vector_iterator->out_tcp.clear();
+            vector_iterator->out_udp.clear();
+            vector_iterator->out_icmp.clear();
+            vector_iterator->out_other.clear();
+        }
     }
 }
+#endif
 
 bool load_our_networks_list() {
     if (file_exists("/etc/networks_whitelist")) {
@@ -1099,6 +1128,7 @@ void process_packet(simple_packet& current_packet) {
     } else if (packet_direction == OUTGOING) {
         uint32_t shift_in_vector = ntohl(current_packet.src_ip) - subnet_in_host_byte_order;
         #define current_element itr->second[shift_in_vector]
+        #define current_element_flow itr_flow->second[shift_in_vector]
 
         // собираем данные для деталей при бане клиента
         if  (ban_list_details.count(current_packet.src_ip) > 0 &&
@@ -1107,12 +1137,34 @@ void process_packet(simple_packet& current_packet) {
             ban_list_details[current_packet.src_ip].push_back(current_packet);
         }
 
+        packed_conntrack_hash flow_tracking_structure;
+        flow_tracking_structure.opposite_ip = current_packet.src_ip;
+        flow_tracking_structure.src_port = current_packet.source_port;
+        flow_tracking_structure.src_port = current_packet.destination_port;
+
+        // convert this struct to 64 bit integer
+        uint64_t connection_tracking_hash = convert_conntrack_hash_struct_to_integer(&flow_tracking_structure);
+
         if (current_packet.protocol == IPPROTO_TCP) {
             current_element.tcp_out_packets++;
             current_element.tcp_out_bytes += current_packet.length;
+      
+#ifdef ENABLE_CONNTRACKING 
+            flow_counter.lock(); 
+            current_element_flow.out_tcp[connection_tracking_hash].packets++;
+            current_element_flow.out_tcp[connection_tracking_hash].bytes += current_packet.length;
+            flow_counter.unlock();
+#endif
         } else if (current_packet.protocol == IPPROTO_UDP) {
             current_element.udp_out_packets++;
-            current_element.udp_out_bytes += current_packet.length;        
+            current_element.udp_out_bytes += current_packet.length;
+
+#ifdef ENABLE_CONNTRACKING 
+            flow_counter.lock(); 
+            current_element_flow.out_udp[connection_tracking_hash].packets++;
+            current_element_flow.out_udp[connection_tracking_hash].bytes += current_packet.length;
+            flow_counter.unlock();
+#endif
         } else {
             // TBD
         }
@@ -1122,6 +1174,7 @@ void process_packet(simple_packet& current_packet) {
     } else if (packet_direction == INCOMING) {
         uint32_t shift_in_vector = ntohl(current_packet.dst_ip) - subnet_in_host_byte_order;
         #define current_element itr->second[shift_in_vector]
+        #define current_element_flow itr_flow->second[shift_in_vector]
 
         // logger<< log4cpp::Priority::INFO<<"Shift is: "<<shift_in_vector;
 
@@ -1147,29 +1200,6 @@ void process_packet(simple_packet& current_packet) {
     } else {
         // Other traffic
     }
-
-#ifdef ENABLE_CONNTRACKING
-    // Connection трекинг нам интересен лишь для наших узлов
-    if (packet_direction == INCOMING or packet_direction == OUTGOING) {
-        // Зануляем поля, которые не являются постоянными для 5 tuple
-        // TODO я правлю переменную переданную по ссылке, ТАК НЕЛЬЗЯ!!!
-        current_packet.flags = 0;
-        current_packet.ts.tv_sec = 0;
-        current_packet.ts.tv_usec = 0;
-        current_packet.length = 0;
-
-/*
-        // calculate hash
-        unsigned int seed = 11;
-        uint64_t hash = MurmurHash64A(&current_packet, sizeof(current_packet), seed);
-
-        flow_counter.lock();
-        FlowCounter[hash]++;
-        flow_counter.unlock();
-*/
-
-    }
-#endif
 }
 
 #ifdef GEOIP
@@ -1496,6 +1526,11 @@ int main(int argc,char **argv) {
     if (getenv("DISABLE_BAN") != NULL) {
         logger<< log4cpp::Priority::INFO<<"User wants disable ban feature competely, do it!";
         we_do_real_ban = false;
+    }
+
+    if (sizeof(packed_conntrack_hash) != sizeof(uint64_t) or sizeof(packed_conntrack_hash) != 8) {
+        logger<< log4cpp::Priority::INFO<<"Asserion about size of packed_conntrack_hash, it's "<<sizeof(packed_conntrack_hash)<<" instead 8";
+        exit(1);
     }
  
 #ifdef PCAP
@@ -2331,6 +2366,14 @@ string print_tcp_flags(uint8_t flag_value) {
 
 #define BIG_CONSTANT(x) (x##LLU)
 
+/*
+
+    // calculate hash
+    unsigned int seed = 11;
+    uint64_t hash = MurmurHash64A(&current_packet, sizeof(current_packet), seed);
+
+*/
+
 // https://code.google.com/p/smhasher/source/browse/trunk/MurmurHash2.cpp
 // 64-bit hash for 64-bit platforms
 uint64_t MurmurHash64A ( const void * key, int len, uint64_t seed ) {
@@ -2404,4 +2447,10 @@ int timeval_subtract (struct timeval * result, struct timeval * x,  struct timev
 
     /* Return 1 if result is negative. */
     return x->tv_sec < y->tv_sec;
+}
+
+uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash* struct_value) {
+    uint64_t unpacked_data = 0;
+    memcpy(&unpacked_data, struct_value, sizeof(uint64_t));
+    return unpacked_data;
 }
