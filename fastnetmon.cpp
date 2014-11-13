@@ -307,6 +307,9 @@ unsigned int MAP_INITIAL_SIZE = 2048;
 vector<subnet> our_networks;
 vector<subnet> whitelist_networks;
 
+// Флаг управляющий поведением работы бана
+bool we_do_real_ban = true;
+
 /* 
  Тут кроется огромный баго-фич:
   В случае прослушивания any интерфейсов мы ловим фичу-баг, вместо эзернет хидера у нас тип 113, который LINUX SLL,
@@ -1123,7 +1126,8 @@ void process_packet(simple_packet& current_packet) {
         current_packet.length = 0;
 
         // calculate hash
-        uint64_t hash = MurmurHash64A(&current_packet, sizeof(current_packet), 11);
+        unsigned int seed = 11;
+        uint64_t hash = MurmurHash64A(&current_packet, sizeof(current_packet), seed);
 
         flow_counter.lock();
         FlowCounter[hash]++;
@@ -1448,6 +1452,12 @@ int main(int argc,char **argv) {
 
     if (getenv("DUMP_ALL_PACKETS") != NULL) {
         DEBUG_DUMP_ALL_PACKETS = true;
+    }
+
+    // We can disable ban with this flag
+    if (getenv("DISABLE_BAN") != NULL) {
+        logger<< log4cpp::Priority::INFO<<"User wants disable ban feature competely, do it!";
+        we_do_real_ban = false;
     }
  
 #ifdef PCAP
@@ -1906,6 +1916,11 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& 
 void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pps, unsigned int in_bps, unsigned int out_bps) {
     direction data_direction;
     unsigned int pps = 0;
+
+    if (!we_do_real_ban) {
+        logger<<log4cpp::Priority::INFO<<"We do not ban: "<<convert_ip_as_uint_to_string(client_ip)<<" because ban disabled completely";
+        return;
+    }
 
     // Check attack direction
     if (in_pps > out_pps) {
