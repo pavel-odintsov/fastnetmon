@@ -1229,15 +1229,31 @@ void recalculate_speed() {
             unsigned int out_bps = int((double)vector_itr->out_bytes / (double)speed_calc_period);     
 
             // we detect overspeed by packets
+            bool attack_detected_by_pps = false;
+            bool attack_detected_by_bandwidth = false;
+
             if (in_pps > ban_threshold_pps or out_pps > ban_threshold_pps) {
-                execute_ip_ban(client_ip, in_pps, out_pps, in_bps, out_bps);
+                attack_detected_by_pps = true;
             }
 
             // we detect overspeed by bandwidth
             if (convert_speed_to_mbps(in_bps) > ban_threshold_mbps or convert_speed_to_mbps(out_bps) > ban_threshold_mbps) {
+                attack_detected_by_bandwidth = true;
+            }
+
+            /* Когда код бана по полосе пойдет в продакшен нужно обязательно убедиться, что бан не сработает дважды для одной атаки! */
+
+            if (attack_detected_by_pps) {
+                execute_ip_ban(client_ip, in_pps, out_pps, in_bps, out_bps);
+            }
+    
+            if (attack_detected_by_bandwidth && !attack_detected_by_pps) {
+                // Атака по полосе, но превышения лимита по pps не было зафиксировано
+
                 /* TODO: it's stub for debug bandwidth overspeed */
-                logger<<log4cpp::Priority::INFO<<"We detect bandwidth_overuse from ip: "<<convert_ip_as_uint_to_string(client_ip)
-                    <<"incoming: "<<convert_speed_to_mbps(in_bps)<<" mbps outgoing: "<<convert_speed_to_mbps(out_bps)<<" mbps";
+
+                logger<<log4cpp::Priority::INFO<<"We detect bandwidth_overuse (and do not detect pps overuse) from ip: "<<convert_ip_as_uint_to_string(client_ip)
+                    <<" incoming: "<<convert_speed_to_mbps(in_bps)<<" mbps outgoing: "<<convert_speed_to_mbps(out_bps)<<" mbps";
             }
 
             speed_counters_mutex.lock();
