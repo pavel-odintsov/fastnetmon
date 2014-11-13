@@ -69,7 +69,7 @@
 #endif
 
 // Enable connection tracking
-//#define ENABLE_CONNTRACKING
+// #define ENABLE_CONNTRACKING
 
 using namespace std;
 
@@ -228,6 +228,9 @@ typedef struct {
 
     unsigned  int udp_in_bytes;
     unsigned  int udp_out_bytes;
+
+    unsigned int in_flows;
+    unsigned int out_flows;
 } map_element;
 
 typedef struct {
@@ -796,6 +799,10 @@ void zeroify_all_flow_counters() {
     for (map_of_vector_counters_for_flow::iterator itr = SubnetVectorMapFlow.begin(); itr != SubnetVectorMapFlow.end(); itr++) {
         // Iterate over vector
         for (vector_of_flow_counters::iterator vector_iterator = itr->second.begin(); vector_iterator != itr->second.end(); vector_iterator++) {
+            // Its works!!!
+            //logger<< log4cpp::Priority::INFO<<"Flows collected per second incoming:"<<vector_iterator->in_tcp.size() + vector_iterator->in_udp.size();
+            //logger<< log4cpp::Priority::INFO<<"Flows collected per second outgoing:"<<vector_iterator->out_tcp.size() + vector_iterator->out_udp.size();
+
             // TODO: rewrite this monkey code
             vector_iterator->in_tcp.clear();
             vector_iterator->in_udp.clear();
@@ -1138,7 +1145,7 @@ void process_packet(simple_packet& current_packet) {
         }
 
         packed_conntrack_hash flow_tracking_structure;
-        flow_tracking_structure.opposite_ip = current_packet.src_ip;
+        flow_tracking_structure.opposite_ip = current_packet.dst_ip;
         flow_tracking_structure.src_port = current_packet.source_port;
         flow_tracking_structure.src_port = current_packet.destination_port;
 
@@ -1176,6 +1183,14 @@ void process_packet(simple_packet& current_packet) {
         #define current_element itr->second[shift_in_vector]
         #define current_element_flow itr_flow->second[shift_in_vector]
 
+        packed_conntrack_hash flow_tracking_structure;
+        flow_tracking_structure.opposite_ip = current_packet.src_ip;
+        flow_tracking_structure.src_port = current_packet.source_port;
+        flow_tracking_structure.src_port = current_packet.destination_port;
+
+        // convert this struct to 64 bit integer
+        uint64_t connection_tracking_hash = convert_conntrack_hash_struct_to_integer(&flow_tracking_structure);
+
         // logger<< log4cpp::Priority::INFO<<"Shift is: "<<shift_in_vector;
 
         // собираемы данные для деталей при бане клиента
@@ -1188,9 +1203,24 @@ void process_packet(simple_packet& current_packet) {
         if (current_packet.protocol == IPPROTO_TCP) {
             current_element.tcp_in_packets++;
             current_element.tcp_in_bytes += current_packet.length;
+
+#ifdef ENABLE_CONNTRACKING 
+            flow_counter.lock();
+            current_element_flow.in_tcp[connection_tracking_hash].packets++;
+            current_element_flow.in_tcp[connection_tracking_hash].bytes += current_packet.length;
+            flow_counter.unlock();
+#endif
+
         } else if (current_packet.protocol == IPPROTO_UDP) {
             current_element.udp_in_packets++;
             current_element.udp_in_bytes += current_packet.length;
+
+#ifdef ENABLE_CONNTRACKING 
+            flow_counter.lock();
+            current_element_flow.in_udp[connection_tracking_hash].packets++;
+            current_element_flow.in_udp[connection_tracking_hash].bytes += current_packet.length;
+            flow_counter.unlock();
+#endif
         } else {
             // TBD
         }
