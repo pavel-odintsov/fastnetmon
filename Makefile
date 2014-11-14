@@ -23,6 +23,8 @@ ifeq ($(ENABLE_PROFILER), yes)
  BUILD_FLAGS += -pg
 endif
 
+# Enable flow tracking by default
+DEFINES += -DENABLE_CONNTRACKING
 DEFINES += -D$(ENGINE)
 
 ifeq ($(GEOIP_SUPPORT), yes)
