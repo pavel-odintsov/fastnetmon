@@ -160,7 +160,7 @@ string log_file_path = "/var/log/fastnetmon.log";
 /* Our data structs */
 
 // Enum with availible sort by field
-enum sort_type { PACKETS, BYTES };
+enum sort_type { PACKETS, BYTES, FLOWS };
 
 enum direction {
     INCOMING = 0,
@@ -210,7 +210,7 @@ struct attack_details {
 typedef attack_details banlist_item;
 typedef pair<uint32_t, uint32_t> subnet;
 
-// main data structure for storing traffic data for all our IPs
+// main data structure for storing traffic and speed data for all our IPs
 typedef struct {
     unsigned  int in_bytes;
     unsigned  int out_bytes;
@@ -422,6 +422,14 @@ bool compare_function_by_in_bytes(pair_of_map_elements a, pair_of_map_elements b
     return a.second.in_bytes > b.second.in_bytes;
 }
 
+bool compare_function_by_in_flows(pair_of_map_elements a, pair_of_map_elements b) {
+    return a.second.in_flows > b.second.in_flows;
+}
+
+bool compare_function_by_out_flows(pair_of_map_elements a, pair_of_map_elements b) {
+    return a.second.out_flows > b.second.out_flows;
+}
+
 string get_direction_name(direction direction_value) {
     string direction_name; 
 
@@ -595,6 +603,12 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
             } else if (data_direction == OUTGOING) {
                 std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_out_bytes);
             }
+        } else if (sort_item == FLOWS) {
+            if (data_direction == INCOMING) {
+                std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_in_flows);
+            } else if (data_direction == OUTGOING) {
+                std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_out_flows);
+            }
         } else {
             logger<< log4cpp::Priority::INFO<<"Unexpected bahaviour on sort function";
         }
@@ -605,15 +619,19 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
             string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
 
             unsigned int pps = 0; 
-            unsigned int bps = 0; 
+            unsigned int bps = 0;
+            // flow per second 
+            unsigned int flows = 0;
 
             // делаем "полиморфную" полосу и ппс
             if (data_direction == INCOMING) {
                 pps = SpeedCounter[client_ip].in_packets;
                 bps = SpeedCounter[client_ip].in_bytes;
+                flows = SpeedCounter[client_ip].in_flows;
             } else if (data_direction == OUTGOING) {
                 pps = SpeedCounter[client_ip].out_packets;
                 bps = SpeedCounter[client_ip].out_bytes;
+                flows = SpeedCounter[client_ip].out_flows;
             }    
 
             double mbps = (double)bps/1024/1024*8;
@@ -624,7 +642,13 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
             // Выводим первые max_ips_in_list элементов в списке, при нашей сортировке, будут выданы топ 10 самых грузящих клиентов
             if (element_number < max_ips_in_list) {
                 string is_banned = ban_list.count(client_ip) > 0 ? " *banned* " : "";
-                output_buffer << client_ip_as_string << "\t\t" << pps << " pps " << mbps << " mbps" << is_banned << endl;
+                // We use setw for alignment
+                output_buffer
+                    <<client_ip_as_string << "\t\t"
+                    <<setw(6)<<pps   << " pps "
+                    <<setw(6)<<mbps  << " mbps "
+                    <<setw(4)<<flows << " flows "
+                    << is_banned << endl;
             }  
    
 #ifdef REDIS 
@@ -771,14 +795,12 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
     memset(&zero_map_element, 0, sizeof(zero_map_element));
     std::fill(SubnetVectorMap[subnet_as_integer].begin(), SubnetVectorMap[subnet_as_integer].end(), zero_map_element);
 
-#ifdef ENABLE_CONNTRACKING
     // Initilize map element
     SubnetVectorMapFlow[subnet_as_integer] = vector_of_flow_counters(network_size_in_ips); 
 
     conntrack_main_struct zero_conntrack_main_struct;
     //memset(&zero_conntrack_main_struct, 0, sizeof(conntrack_main_struct));
     std::fill(SubnetVectorMapFlow[subnet_as_integer].begin(), SubnetVectorMapFlow[subnet_as_integer].end(), zero_conntrack_main_struct);
-#endif
 }
 
 void zeroify_all_counters() {
@@ -799,10 +821,6 @@ void zeroify_all_flow_counters() {
     for (map_of_vector_counters_for_flow::iterator itr = SubnetVectorMapFlow.begin(); itr != SubnetVectorMapFlow.end(); itr++) {
         // Iterate over vector
         for (vector_of_flow_counters::iterator vector_iterator = itr->second.begin(); vector_iterator != itr->second.end(); vector_iterator++) {
-            // Its works!!!
-            //logger<< log4cpp::Priority::INFO<<"Flows collected per second incoming:"<<vector_iterator->in_tcp.size() + vector_iterator->in_udp.size();
-            //logger<< log4cpp::Priority::INFO<<"Flows collected per second outgoing:"<<vector_iterator->out_tcp.size() + vector_iterator->out_udp.size();
-
             // TODO: rewrite this monkey code
             vector_iterator->in_tcp.clear();
             vector_iterator->in_udp.clear();
@@ -1157,9 +1175,12 @@ void process_packet(simple_packet& current_packet) {
             current_element.tcp_out_bytes += current_packet.length;
       
 #ifdef ENABLE_CONNTRACKING 
-            flow_counter.lock(); 
-            current_element_flow.out_tcp[connection_tracking_hash].packets++;
-            current_element_flow.out_tcp[connection_tracking_hash].bytes += current_packet.length;
+            flow_counter.lock();
+            conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow.out_tcp[connection_tracking_hash];
+ 
+            conntrack_key_struct_ptr->packets++;
+            conntrack_key_struct_ptr->bytes += current_packet.length;
+
             flow_counter.unlock();
 #endif
         } else if (current_packet.protocol == IPPROTO_UDP) {
@@ -1167,9 +1188,12 @@ void process_packet(simple_packet& current_packet) {
             current_element.udp_out_bytes += current_packet.length;
 
 #ifdef ENABLE_CONNTRACKING 
-            flow_counter.lock(); 
-            current_element_flow.out_udp[connection_tracking_hash].packets++;
-            current_element_flow.out_udp[connection_tracking_hash].bytes += current_packet.length;
+            flow_counter.lock();
+            conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow.out_udp[connection_tracking_hash];
+
+            conntrack_key_struct_ptr->packets++;
+            conntrack_key_struct_ptr->bytes += current_packet.length;
+ 
             flow_counter.unlock();
 #endif
         } else {
@@ -1206,8 +1230,11 @@ void process_packet(simple_packet& current_packet) {
 
 #ifdef ENABLE_CONNTRACKING 
             flow_counter.lock();
-            current_element_flow.in_tcp[connection_tracking_hash].packets++;
-            current_element_flow.in_tcp[connection_tracking_hash].bytes += current_packet.length;
+            conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow.in_tcp[connection_tracking_hash];
+
+            conntrack_key_struct_ptr->packets++;
+            conntrack_key_struct_ptr->bytes += current_packet.length;
+
             flow_counter.unlock();
 #endif
 
@@ -1217,8 +1244,10 @@ void process_packet(simple_packet& current_packet) {
 
 #ifdef ENABLE_CONNTRACKING 
             flow_counter.lock();
-            current_element_flow.in_udp[connection_tracking_hash].packets++;
-            current_element_flow.in_udp[connection_tracking_hash].bytes += current_packet.length;
+            conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow.in_tcp[connection_tracking_hash];
+
+            conntrack_key_struct_ptr->packets++;
+            conntrack_key_struct_ptr->bytes += current_packet.length;
             flow_counter.unlock();
 #endif
         } else {
@@ -1328,6 +1357,24 @@ void recalculate_speed() {
             unsigned int in_bps  = int((double)vector_itr->in_bytes  / (double)speed_calc_period);
             unsigned int out_bps = int((double)vector_itr->out_bytes / (double)speed_calc_period);     
 
+            conntrack_main_struct* flow_counter_ptr = &SubnetVectorMapFlow[itr->first][current_index]; 
+
+            // todo: optimize this operations!
+            unsigned int total_out_flows =
+                flow_counter_ptr->out_tcp.size()  +
+                flow_counter_ptr->out_udp.size()  +
+                flow_counter_ptr->out_icmp.size() +
+                flow_counter_ptr->out_other.size();
+
+            unsigned int total_in_flows =
+                flow_counter_ptr->in_tcp.size()  +
+                flow_counter_ptr->in_udp.size()  +
+                flow_counter_ptr->in_icmp.size() +
+                flow_counter_ptr->in_other.size();
+
+            unsigned int out_flows = int((double)total_out_flows  / (double)speed_calc_period);
+            unsigned int in_flows  = int((double)total_in_flows   / (double)speed_calc_period);
+
             // we detect overspeed by packets
             bool attack_detected_by_pps = false;
             bool attack_detected_by_bandwidth = false;
@@ -1363,6 +1410,10 @@ void recalculate_speed() {
 
             SpeedCounter[client_ip].in_packets  = in_pps;
             SpeedCounter[client_ip].out_packets = out_pps;
+
+            SpeedCounter[client_ip].in_flows = in_flows;
+            SpeedCounter[client_ip].out_flows = out_flows;
+
             speed_counters_mutex.unlock();
 
             data_counters_mutex.lock();
@@ -1409,18 +1460,17 @@ void calculation_programm() {
         sorter = PACKETS;
     } else if (sort_parameter == "bytes") {
         sorter = BYTES;
+    } else if (sort_parameter == "flows") {
+        sorter = FLOWS;
     } else {
         logger<< log4cpp::Priority::INFO<<"Unexpected sorter type: "<<sort_parameter;
         sorter = PACKETS;
     }
 
     output_buffer<<"FastNetMon v1.0 FastVPS Eesti OU (c) VPS and dedicated: http://FastVPS.host"<<"\n"
-        <<"IPs ordered by: "<<sort_parameter<<" (use keys 'b'/'p' for change) and use 'q' for quit"<<"\n"
+        <<"IPs ordered by: "<<sort_parameter<<" (use keys 'b'/'p'/'f' for change) and use 'q' for quit"<<"\n"
         <<"Threshold is: "<<ban_threshold_pps<<" pps and "<<ban_threshold_mbps<<" mbps"
-        //<<" number of active hosts: "<<DataCounter.size()
-        <<" traffic recaculation time is: "<< calculation_thread_execution_time.tv_sec<<" sec "<<calculation_thread_execution_time.tv_usec<<" microseconds"
-        // <<" number of flows: "<<FlowCounter.size()
-        <<" from total hosts: "<<total_number_of_hosts_in_our_networks<<endl<<endl;
+        <<" total hosts: "<<total_number_of_hosts_in_our_networks<<endl<<endl;
 
     output_buffer<<print_channel_speed("Incoming Traffic", INCOMING)<<endl;
     output_buffer<<draw_table(SpeedCounter, INCOMING, true, sorter);
@@ -1450,6 +1500,8 @@ void calculation_programm() {
     }
 #endif
 
+    // Application statistics
+    output_buffer<<"Traffic calculated in:  "<< calculation_thread_execution_time.tv_sec<<" sec "<<calculation_thread_execution_time.tv_usec<<" microseconds\n";
 #ifdef PF_RING
         pfring_stat pfring_status_data;
         if(pfring_stats(pf_ring_descr, &pfring_status_data) >= 0) {
@@ -1507,7 +1559,7 @@ std::string print_channel_speed(string traffic_type, direction packet_direction)
 
     unsigned int speed_in_mbps = convert_speed_to_mbps(speed_in_bps);
 
-    stream<<speed_in_pps<<" pps "<< speed_in_mbps<<" mbps"; 
+    stream<<setw(6)<<speed_in_pps<<" pps "<<setw(6)<<speed_in_mbps<<" mbps"; 
     return stream.str();
 }    
 
@@ -1640,6 +1692,9 @@ int main(int argc,char **argv) {
                 break;
             case 'p':
                 sort_parameter = "packets";
+                break;
+            case 'f':
+                sort_parameter = "flows";
                 break;
             case 'q':
                 signal_handler(0);
