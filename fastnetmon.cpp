@@ -206,6 +206,8 @@ struct attack_details {
     // time when we but this user
     time_t   ban_timestamp;
     int      ban_time; // seconds of the ban
+    unsigned int in_flows;
+    unsigned int out_flows;
 };
 
 typedef attack_details banlist_item;
@@ -390,7 +392,7 @@ void free_up_all_resources();
 void main_packet_process_task();
 unsigned int get_cidr_mask_from_network_as_string(string network_cidr_format);
 string send_ddos_attack_details();
-void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pps, unsigned int in_bps, unsigned int out_bps);
+void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pps, unsigned int in_bps, unsigned int out_bps, unsigned int in_flows, unsigned int out_flows);
 direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet);
 void recalculate_speed();
 std::string print_channel_speed(string traffic_type, direction packet_direction);
@@ -1399,7 +1401,7 @@ void recalculate_speed() {
             /* Когда код бана по полосе пойдет в продакшен нужно обязательно убедиться, что бан не сработает дважды для одной атаки! */
 
             if (attack_detected_by_pps) {
-                execute_ip_ban(client_ip, in_pps, out_pps, in_bps, out_bps);
+                execute_ip_ban(client_ip, in_pps, out_pps, in_bps, out_bps, in_flows, out_flows);
             }
     
             if (attack_detected_by_bandwidth && !attack_detected_by_pps) {
@@ -2092,7 +2094,7 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& 
     return packet_direction;
 }
 
-void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pps, unsigned int in_bps, unsigned int out_bps) {
+void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pps, unsigned int in_bps, unsigned int out_bps, unsigned int in_flows, unsigned int out_flows) {
     direction data_direction;
     unsigned int pps = 0;
 
@@ -2163,6 +2165,10 @@ void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pp
 
     current_attack.in_bytes = in_bps;
     current_attack.out_bytes = out_bps;
+
+    // pass flow information
+    current_attack.in_flows = in_flows;
+    current_attack.out_flows = out_flows;
 
     ban_list_mutex.lock();
     ban_list[client_ip] = current_attack;
@@ -2327,7 +2333,9 @@ string get_attack_description(uint32_t client_ip, attack_details& current_attack
         <<"Incoming traffic: "<<convert_speed_to_mbps(current_attack.in_bytes)<<" mbps\n"
         <<"Outgoing traffic: "<<convert_speed_to_mbps(current_attack.out_bytes)<<" mbps\n"
         <<"Incoming pps: "<<current_attack.in_packets<<" packets per second\n"
-        <<"Outgoing pps: "<<current_attack.out_packets<<" packets per second\n"; 
+        <<"Outgoing pps: "<<current_attack.out_packets<<" packets per second\n"
+        <<"Incoming flows:<<current_attack.in_flows<<\n"
+        <<"Outgoing flows:<<current_attack.out_flows<<\n";
 
         return attack_description.str();
 }    
