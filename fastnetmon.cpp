@@ -141,6 +141,9 @@ unsigned int max_ips_in_list = 7;
 // We must ban IP if it exceeed this limit in PPS
 unsigned int ban_threshold_pps = 20000;
 
+// We must ban IP of it exceed this limit for number of flows in any direction
+unsigned int ban_threshold_flows = 3500;
+
 // We must ban client if it exceed 1GBps
 unsigned int ban_threshold_mbps = 1000;
 
@@ -1090,20 +1093,6 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     process_packet(current_packet);
 }
 
-uint32_t get_packet_hash(simple_packet& packet) {
-/*
-    packet.protocol
-    packet.src_ip
-    packet.dst_ip
-    packet.lenght
-    packet.source_port
-    packet.destination_port
-*/
-    return 0;
-}
-
-
-
 /* Производим обработку уже переданного нам пакета в простом формате */
 void process_packet(simple_packet& current_packet) { 
     // Packets dump is very useful for bug hunting
@@ -1388,6 +1377,7 @@ void recalculate_speed() {
             // we detect overspeed by packets
             bool attack_detected_by_pps = false;
             bool attack_detected_by_bandwidth = false;
+            bool attack_detected_by_flow = false;
 
             if (in_pps > ban_threshold_pps or out_pps > ban_threshold_pps) {
                 attack_detected_by_pps = true;
@@ -1397,6 +1387,10 @@ void recalculate_speed() {
             if (convert_speed_to_mbps(in_bps) > ban_threshold_mbps or convert_speed_to_mbps(out_bps) > ban_threshold_mbps) {
                 attack_detected_by_bandwidth = true;
             }
+
+            if (in_flows > ban_threshold_flows or out_flows > ban_threshold_flows) {
+               attack_detected_by_flow = true; 
+            } 
 
             /* Когда код бана по полосе пойдет в продакшен нужно обязательно убедиться, что бан не сработает дважды для одной атаки! */
 
@@ -1411,6 +1405,10 @@ void recalculate_speed() {
 
                 logger<<log4cpp::Priority::INFO<<"We detect bandwidth_overuse (and do not detect pps overuse) from ip: "<<convert_ip_as_uint_to_string(client_ip)
                     <<" incoming: "<<convert_speed_to_mbps(in_bps)<<" mbps outgoing: "<<convert_speed_to_mbps(out_bps)<<" mbps";
+            }
+
+            if (attack_detected_by_flow) {
+                 logger<<log4cpp::Priority::INFO<<"We detect flow overuse for IP:"<<convert_ip_as_uint_to_string(client_ip)<<" incoming: "<<in_flows<<" outgoing: "<<out_flows;
             }
 
             speed_counters_mutex.lock();
