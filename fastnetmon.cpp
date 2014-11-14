@@ -2334,8 +2334,8 @@ string get_attack_description(uint32_t client_ip, attack_details& current_attack
         <<"Outgoing traffic: "<<convert_speed_to_mbps(current_attack.out_bytes)<<" mbps\n"
         <<"Incoming pps: "<<current_attack.in_packets<<" packets per second\n"
         <<"Outgoing pps: "<<current_attack.out_packets<<" packets per second\n"
-        <<"Incoming flows:<<current_attack.in_flows<<\n"
-        <<"Outgoing flows:<<current_attack.out_flows<<\n";
+        <<"Incoming flows: "<<current_attack.in_flows<<"\n"
+        <<"Outgoing flows: "<<current_attack.out_flows<<"\n";
 
         return attack_description.str();
 }    
