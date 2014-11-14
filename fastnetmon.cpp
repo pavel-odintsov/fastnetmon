@@ -239,13 +239,6 @@ typedef struct {
     unsigned int out_flows;
 } map_element;
 
-typedef struct {
-    uint16_t source_port;
-    uint16_t destination_port;
-    uint32_t src_ip;
-    uint32_t dst_ip; 
-} conntrack_key;
-
 // struct for save per direction and per protocol details for flow
 typedef struct {
     unsigned int bytes;
@@ -257,17 +250,19 @@ typedef struct {
 typedef uint64_t packed_session;
 // Main meegaaa struct for saving conntracks
 // We should use class instead struct for correct std::map allocation
+typedef std::map<packed_session, conntrack_key_struct> contrack_map_type;
+
 class conntrack_main_struct {
 public:
-    std::map<packed_session, conntrack_key_struct> in_tcp;
-    std::map<packed_session, conntrack_key_struct> in_udp;
-    std::map<packed_session, conntrack_key_struct> in_icmp;
-    std::map<packed_session, conntrack_key_struct> in_other;
+    contrack_map_type in_tcp;
+    contrack_map_type in_udp;
+    contrack_map_type in_icmp;
+    contrack_map_type in_other;
 
-    std::map<packed_session, conntrack_key_struct> out_tcp;
-    std::map<packed_session, conntrack_key_struct> out_udp;
-    std::map<packed_session, conntrack_key_struct> out_icmp;
-    std::map<packed_session, conntrack_key_struct> out_other;
+    contrack_map_type out_tcp;
+    contrack_map_type out_udp;
+    contrack_map_type out_icmp;
+    contrack_map_type out_other;
 };
 
 typedef std::map <uint32_t, map_element> map_for_counters;
@@ -378,6 +373,8 @@ bool we_do_real_ban = true;
 */
 
 // prototypes
+std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, string client_ip);
+void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_data, packed_conntrack_hash* unpacked_data);
 uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash* struct_value);
 int timeval_subtract (struct timeval * result, struct timeval * x,  struct timeval * y);
 bool pf_ring_main_loop_multy_channel(const char* dev);
@@ -1030,6 +1027,7 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
     }
 }
 
+// We do not use this function now! It's buggy!
 // в случае прямого вызова скрипта колбэка - нужно конст, напрямую в хендлере - конст не нужно
 void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *packetptr) {
     struct ip* iphdr;
@@ -1202,7 +1200,7 @@ void process_packet(simple_packet& current_packet) {
         packed_conntrack_hash flow_tracking_structure;
         flow_tracking_structure.opposite_ip = current_packet.src_ip;
         flow_tracking_structure.src_port = current_packet.source_port;
-        flow_tracking_structure.src_port = current_packet.destination_port;
+        flow_tracking_structure.dst_port = current_packet.destination_port;
 
         // convert this struct to 64 bit integer
         uint64_t connection_tracking_hash = convert_conntrack_hash_struct_to_integer(&flow_tracking_structure);
@@ -1391,6 +1389,11 @@ void recalculate_speed() {
             if (in_flows > ban_threshold_flows or out_flows > ban_threshold_flows) {
                attack_detected_by_flow = true; 
             } 
+
+            // Dump it every iteration
+            //if (convert_ip_as_uint_to_string(client_ip) == "159.253.18.99") {
+            //    logger<<log4cpp::Priority::INFO<<"\n"<<print_flow_tracking_for_ip(*flow_counter_ptr, convert_ip_as_uint_to_string(client_ip));
+            //}
 
             /* Когда код бана по полосе пойдет в продакшен нужно обязательно убедиться, что бан не сработает дважды для одной атаки! */
 
@@ -2565,4 +2568,75 @@ uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash* struct_
     return unpacked_data;
 }
 
+void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_data, packed_conntrack_hash* unpacked_data) {
+    memcpy(unpacked_data, packed_connection_data, sizeof(uint64_t)); 
+}
+
+string print_flow_tracking_for_specified_protocol(contrack_map_type& protocol_map, string client_ip, direction flow_direction) {
+    stringstream buffer;
+    // We shoud iterate over all fields
+    for (contrack_map_type::iterator itr = protocol_map.begin(); itr != protocol_map.end(); ++itr) {
+        uint64_t packed_connection_data = itr->first;
+        packed_conntrack_hash unpacked_key_struct;
+        convert_integer_to_conntrack_hash_struct(&packed_connection_data, &unpacked_key_struct);
+      
+        string opposite_ip_as_string = convert_ip_as_uint_to_string(unpacked_key_struct.opposite_ip);  
+        if (flow_direction == INCOMING) {
+            buffer<<client_ip<<":"<<unpacked_key_struct.dst_port<<" < "<<opposite_ip_as_string<<":"<<unpacked_key_struct.src_port<<" "; 
+        } else if (flow_direction == OUTGOING) {
+            buffer<<client_ip<<":"<<unpacked_key_struct.src_port<<" > "<<opposite_ip_as_string<<":"<<unpacked_key_struct.dst_port<<" ";
+        } 
+        
+        buffer<<itr->second.bytes<<" bytes "<<itr->second.packets<<" packets";
+        buffer<<"\n";
+    } 
+
+    return buffer.str();
+}
+
+std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, string client_ip) {
+    // Тут нам нужно обойти все протоколы
+    stringstream buffer;
+
+    string in_tcp = print_flow_tracking_for_specified_protocol(conntrack_element.in_tcp, client_ip, INCOMING);
+    string in_udp = print_flow_tracking_for_specified_protocol(conntrack_element.in_udp, client_ip, INCOMING);
+
+    bool we_have_incoming_flows = in_tcp.length() > 0 or in_udp.length() > 0;
+    if (we_have_incoming_flows) {
+        buffer<<"Incoming\n\n";
+        
+        if (in_tcp.length() > 0) {
+            buffer<<"TCP\n"<<in_tcp<<"\n";
+        }
+
+        if (in_udp.length() > 0) {
+            buffer<<"UDP\n"<<in_udp<<"\n";
+        }
+
+    }
+
+    string out_tcp = print_flow_tracking_for_specified_protocol(conntrack_element.out_tcp, client_ip, OUTGOING);
+    string out_udp = print_flow_tracking_for_specified_protocol(conntrack_element.out_udp, client_ip, OUTGOING);
+
+    bool we_have_outgoing_flows = out_tcp.length() > 0 or out_udp.length() > 0;
+
+    // print delimiter if we have flows in both directions
+    if (we_have_incoming_flows && we_have_outgoing_flows) {
+        buffer<<"\n";
+    }
+
+    if (we_have_outgoing_flows) {
+        buffer<<"Outgoing\n\n";
+
+        if (out_tcp.length() > 0 ) {
+            buffer<<"TCP\n"<<out_tcp<<"\n";
+        }
+
+        if (out_udp.length() > 0) {
+            buffer<<"UDP\n"<<out_udp<<"\n";
+        }
+    }
+
+    return buffer.str();
+}
 
