@@ -1168,7 +1168,7 @@ void process_packet(simple_packet& current_packet) {
         packed_conntrack_hash flow_tracking_structure;
         flow_tracking_structure.opposite_ip = current_packet.dst_ip;
         flow_tracking_structure.src_port = current_packet.source_port;
-        flow_tracking_structure.src_port = current_packet.destination_port;
+        flow_tracking_structure.dst_port = current_packet.destination_port;
 
         // convert this struct to 64 bit integer
         uint64_t connection_tracking_hash = convert_conntrack_hash_struct_to_integer(&flow_tracking_structure);
