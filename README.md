@@ -271,3 +271,5 @@ If you saw intel_idle in perf top with red higlihting you can disable it with fo
 ```bash
 intel_idle.max_cstate=0 processor.max_cstate=1
 ```
+
+What is "flow" in FastNetMon terms? It's one or multiple connection (udp, tcp, icmp) with unique src IP, dst IP, src port, dst port and protocol. 
