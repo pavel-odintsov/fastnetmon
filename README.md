@@ -16,6 +16,9 @@ Main programm screen image:
 Example for cpu load for Intel i7 2600 with Intel X540 NIC on 250 kpps load:
 ![Cpu consumption](fastnetmon_stats.png)
 
+Network map:
+![Network diagramm](network_map.png)
+
 Features:
 - VLAN untagging
 - MPLS traffic processing
