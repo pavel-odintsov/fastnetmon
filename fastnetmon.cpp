@@ -2256,8 +2256,6 @@ void cleanup_ban_list() {
         time_t current_time;
         time(&current_time);
 
-        logger<<log4cpp::Priority::INFO<<"Wake up banlist cleanup function";
-
         map<uint32_t,banlist_item>::iterator itr = ban_list.begin();
         while (itr != ban_list.end()) {
             uint32_t client_ip = (*itr).first;
@@ -2566,3 +2564,5 @@ uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash* struct_
     memcpy(&unpacked_data, struct_value, sizeof(uint64_t));
     return unpacked_data;
 }
+
+
