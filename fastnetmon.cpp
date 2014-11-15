@@ -195,7 +195,7 @@ struct simple_packet {
     struct       timeval ts;
 };
 
-// structure with atatck details
+// structure with attack details
 struct attack_details {
     direction attack_direction;
     // first attackpower detected
@@ -248,7 +248,7 @@ typedef struct {
 } conntrack_key_struct;
 
 typedef uint64_t packed_session;
-// Main meegaaa struct for saving conntracks
+// Main mega structure for storing conntracks
 // We should use class instead struct for correct std::map allocation
 typedef std::map<packed_session, conntrack_key_struct> contrack_map_type;
 
@@ -326,53 +326,30 @@ struct thread_stats *threads;
 pfring* pf_ring_descr = NULL;
 #endif
 
-// main map for storing traffic data
-// map_for_counters DataCounter;
-
 // map for flows
 map<uint64_t, int> FlowCounter;
 
-// структура для сохранения мгновенных скоростей
+// Struct for string speed per IP
 map_for_counters SpeedCounter;
 
 #ifdef GEOIP
 map_for_counters GeoIpCounter;
 #endif
 
-// В информации о ддосе мы храним силу атаки и ее направление
+// In ddos info we store attack power and direction
 map<uint32_t, banlist_item> ban_list;
 map<uint32_t, vector<simple_packet> > ban_list_details;
 
-// стандартно у нас смещение для типа DLT_EN10MB, Ethernet
+// Standard shift for type DLT_EN10MB, Ethernet
 unsigned int DATA_SHIFT_VALUE = 14;
-
-// начальный размер unordered_map для хранения данных
-unsigned int MAP_INITIAL_SIZE = 2048;
 
 vector<subnet> our_networks;
 vector<subnet> whitelist_networks;
 
-// Флаг управляющий поведением работы бана
+// Ban enable/disable flag
 bool we_do_real_ban = true;
 
-/* 
- Тут кроется огромный баго-фич:
-  В случае прослушивания any интерфейсов мы ловим фичу-баг, вместо эзернет хидера у нас тип 113, который LINUX SLL,
-  а следовательно размер хидера не 14, а 16 байт! 
-  Если мы сниффим один интерфейсе - у нас хидер эзернет, 14 байт, а если ANY, то хидер у нас 16 !!!
-
- packetptr += 14; // Ethernet
- packetptr += 16; // LINUX SLL, только в случае указания any интерфейса 
-
- Подробнее:
-  https://github.com/the-tcpdump-group/libpcap/issues/324
-  http://comments.gmane.org/gmane.network.tcpdump.devel/5043
-  http://www.tcpdump.org/linktypes/LINKTYPE_LINUX_SLL.html 
-  https://github.com/the-tcpdump-group/libpcap/issues/163
-
-*/
-
-// prototypes
+// Prototypes
 std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, string client_ip);
 void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_data, packed_conntrack_hash* unpacked_data);
 uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash* struct_value);
@@ -536,7 +513,7 @@ bool redis_init_connection() {
         return false;
     }
 
-    // Нужно проверить соединение пингом, так как, по-моему, оно не првоеряет само подключение при коннекте
+    // We should check connection with ping because redis do not check connection
     redisReply* reply = (redisReply*)redisCommand(redis_context, "PING");
     if (reply) {
         freeReplyObject(reply);
@@ -559,11 +536,11 @@ void update_traffic_in_redis(uint32_t ip, unsigned int traffic_bytes, direction 
     string key_name = ip_as_string + "_" + get_direction_name(my_direction);
     reply = (redisReply *)redisCommand(redis_context, "INCRBY %s %s", key_name.c_str(), convert_int_to_string(traffic_bytes).c_str());
 
-    // Только в случае, если мы обновили без ошибки
+    // If we store data correctly ...
     if (!reply) {
         logger.info("Can't increment traffic in redis error_code: %d error_string: %s", redis_context->err, redis_context->errstr);
    
-        // Такое может быть в случае перезапуска redis, нам надо попробовать решить это без падения программы 
+        // Handle redis server restart corectly
         if (redis_context->err == 1 or redis_context->err == 3) {
             // Connection refused            
             redis_init_connection();
@@ -582,16 +559,14 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
     // Preallocate memory for sort vector
     vector_for_sort.reserve(my_map_packets.size());
 
-    /* Вобщем-то весь код ниже зависит лишь от входных векторов и порядка сортировки данных */
     for( map_for_counters::iterator ii = my_map_packets.begin(); ii != my_map_packets.end(); ++ii) {
-        // кладем все наши элементы в массив для последующей сортировки при отображении
-        //pair_of_map_elements current_pair = make_pair((*ii).first, (*ii).second);
+        // store all elements into vector for sorting
         vector_for_sort.push_back( make_pair((*ii).first, (*ii).second) );
     } 
   
     if (sort_item == PACKETS) {
 
-        // используем разные сортировочные функции 
+        // We use different sorter functions below 
         if (data_direction == INCOMING) {
             std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_in_packets);
         } else if (data_direction == OUTGOING) {
@@ -626,7 +601,7 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
         // flow per second 
         unsigned int flows = 0;
 
-        // делаем "полиморфную" полосу и ппс
+        // Create polymorphic pps, byte and flow counters
         if (data_direction == INCOMING) {
             pps = SpeedCounter[client_ip].in_packets;
             bps = SpeedCounter[client_ip].in_bytes;
@@ -642,7 +617,7 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
         // Set one number after comma for double
         output_buffer<<fixed<<setprecision(1);
 
-        // Выводим первые max_ips_in_list элементов в списке, при нашей сортировке, будут выданы топ 10 самых грузящих клиентов
+        // Print first max_ips_in_list elements in list, we will show top 20 "huge" channel loaders
         if (element_number < max_ips_in_list) {
             string is_banned = ban_list.count(client_ip) > 0 ? " *banned* " : "";
             // We use setw for alignment
@@ -656,7 +631,6 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
    
 #ifdef REDIS 
         if (redis_enabled && do_redis_update) {
-            //cout<<"Start updating traffic in redis"<<endl;
             update_traffic_in_redis( (*ii).first, (*ii).second.in_packets, INCOMING);
             update_traffic_in_redis( (*ii).first, (*ii).second.out_packets, OUTGOING);
         }
@@ -855,10 +829,10 @@ bool load_our_networks_list() {
     }
  
     vector<string> networks_list_as_string;
-    // если мы на openvz ноде, то "свои" IP мы можем получить из спец-файла в /proc
+    // We can bould "our subnets" automatically here 
     if (file_exists("/proc/vz/version")) {
         logger<< log4cpp::Priority::INFO<<"We found OpenVZ";
-        // тут искусствено добавляем суффикс 32
+        // Add /32 CIDR mask for every IP here
         vector<string> openvz_ips = read_file_to_vector("/proc/vz/veip");
         for( vector<string>::iterator ii=openvz_ips.begin(); ii!=openvz_ips.end(); ++ii) {
             // skip IPv6 addresses
@@ -888,7 +862,7 @@ bool load_our_networks_list() {
         logger<<log4cpp::Priority::INFO<<"We loaded "<<network_list_from_config.size()<< " networks from networks file";
     }
 
-    // если это ложь, то в моих функциях косяк
+    // Some consistency checks
     assert( convert_ip_as_string_to_uint("255.255.255.0")   == convert_cidr_to_binary_netmask(24) );
     assert( convert_ip_as_string_to_uint("255.255.255.255") == convert_cidr_to_binary_netmask(32) );
 
@@ -947,7 +921,7 @@ uint32_t convert_cidr_to_binary_netmask(unsigned int cidr) {
     // htonl from host byte order to network
     // ntohl from network byte order to host
 
-    // поидее, на выходе тут нужен network byte order 
+    // We need network byte order at output 
     return htonl(binary_netmask);
 }
 
@@ -979,12 +953,10 @@ string print_simple_packet(struct simple_packet packet) {
         <<" protocol: "<<proto_name
         <<" flags: "<<print_tcp_flags(packet.flags)
         <<" size: "<<packet.length<<" bytes"<<"\n";
-    // используется \n вместо endl, ибо иначе начинается хрень всякая при передаче данной строки команде на stdin
-
+    
     return buffer.str();
 }
 
-// Обработчик для pf_ring, так как у него иной формат входных параметров
 void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const u_char *user_bytes) {
     // Описание всех полей: http://www.ntop.org/pfring_api/structpkt__parsing__info.html
     simple_packet packet;
@@ -997,7 +969,7 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
 
     /* We handle only IPv4 */
     if (h->extended_hdr.parsed_pkt.ip_version == 4) {
-        /* PF_RING хранит данные в host byte order, а мы использум только network byte order */
+        /* PF_RING stores data in host byte order bu we use network byte order */
         packet.src_ip = htonl( h->extended_hdr.parsed_pkt.ip_src.v4 ); 
         packet.dst_ip = htonl( h->extended_hdr.parsed_pkt.ip_dst.v4 );
 
@@ -1028,7 +1000,6 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
 }
 
 // We do not use this function now! It's buggy!
-// в случае прямого вызова скрипта колбэка - нужно конст, напрямую в хендлере - конст не нужно
 void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *packetptr) {
     struct ip* iphdr;
     struct tcphdr* tcphdr;
@@ -1037,9 +1008,8 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     struct ether_header *eptr;    /* net/ethernet.h */
     eptr = (struct ether_header* )packetptr;
 
-    // проверяем тип эзернет фрейма и его принадлежность к типу "фрейм с VLAN" 
     if ( ntohs(eptr->ether_type) ==  VLAN_ETHERTYPE ) {
-        // это тегированный трафик, поэтому нужно отступить еще 4 байта, чтобы добраться до данных
+        // It's tagged traffic we should sjoft for 4 bytes for getting the data
         packetptr += DATA_SHIFT_VALUE + VLAN_HDRLEN;
     } else if (ntohs(eptr->ether_type) == IP_ETHERTYPE) {
         // Skip the datalink layer header and get the IP header fields.
@@ -1052,7 +1022,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
 
     iphdr = (struct ip*)packetptr;
 
-    // исходящий/входящий айпи это in_addr, http://man7.org/linux/man-pages/man7/ip.7.html
+    // src/dst UO is an in_addr, http://man7.org/linux/man-pages/man7/ip.7.html
     uint32_t src_ip = iphdr->ip_src.s_addr;
     uint32_t dst_ip = iphdr->ip_dst.s_addr;
 
@@ -1087,11 +1057,11 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     current_packet.dst_ip = dst_ip;
     current_packet.length = packet_length;
     
-    /* Передаем пакет в обработку */ 
+    // Do packet processing
     process_packet(current_packet);
 }
 
-/* Производим обработку уже переданного нам пакета в простом формате */
+/* Process simple unified packet */
 void process_packet(simple_packet& current_packet) { 
     // Packets dump is very useful for bug hunting
     if (DEBUG_DUMP_ALL_PACKETS) {
@@ -1145,7 +1115,7 @@ void process_packet(simple_packet& current_packet) {
         #define current_element itr->second[shift_in_vector]
         #define current_element_flow itr_flow->second[shift_in_vector]
 
-        // собираем данные для деталей при бане клиента
+        // Collect data when ban client
         if  (ban_list_details.count(current_packet.src_ip) > 0 &&
             ban_list_details[current_packet.src_ip].size() < ban_details_records_count) {
 
@@ -1207,7 +1177,7 @@ void process_packet(simple_packet& current_packet) {
 
         // logger<< log4cpp::Priority::INFO<<"Shift is: "<<shift_in_vector;
 
-        // собираемы данные для деталей при бане клиента
+        // Collect attack details
         if  (ban_list_details.count(current_packet.dst_ip) > 0 &&
             ban_list_details[current_packet.dst_ip].size() < ban_details_records_count) {
 
@@ -1297,7 +1267,7 @@ void recalculate_speed_thread_handler() {
     }
 }
 
-/* Пересчитать мгновенную скорость для всех известных соединений  */
+/* Calculate speed for all connnections */
 void recalculate_speed() {
     // TODO: WE SHOULD ZEROFY ALL ELEMETS IN TABLE SpeedCounter
 
@@ -1305,8 +1275,7 @@ void recalculate_speed() {
     time_t current_time;
     time(&current_time);
 
-    // В случае, если наш поток обсчета скорости завис на чем-то эдак на 1+ секунд, то мы должны либо пропустить шаг либо попробовать поделить его на новую разницу
-
+    // IF we got 1+ seconds lag we should use new "delta" or skip this step
     double time_difference = difftime(current_time, last_call_of_traffic_recalculation);
 
     if (time_difference < 1) {
@@ -1314,7 +1283,7 @@ void recalculate_speed() {
          logger<< log4cpp::Priority::INFO<<"We skip one iteration of speed_calc because it runs so early!";        
         return;
     } else if (int(time_difference) == 1) {
-        // все отлично! Запуск произошел ровно через +- секунду после прошлого
+        // All fine, we run on time
     } else {
         logger<< log4cpp::Priority::INFO<<"Time from last run of speed_recalc is soooo big, we got ugly lags: "<<time_difference;
         speed_calc_period = time_difference;
@@ -1391,18 +1360,18 @@ void recalculate_speed() {
             } 
 
             // Dump it every iteration
-            //if (convert_ip_as_uint_to_string(client_ip) == "159.253.18.99") {
-            //    logger<<log4cpp::Priority::INFO<<"\n"<<print_flow_tracking_for_ip(*flow_counter_ptr, convert_ip_as_uint_to_string(client_ip));
-            //}
+            if (convert_ip_as_uint_to_string(client_ip) == "159.253.18.99") {
+                logger<<log4cpp::Priority::INFO<<"\n"<<print_flow_tracking_for_ip(*flow_counter_ptr, convert_ip_as_uint_to_string(client_ip));
+            }
 
-            /* Когда код бана по полосе пойдет в продакшен нужно обязательно убедиться, что бан не сработает дважды для одной атаки! */
+            // TODO: please check! We should do only __one__ ban for all sensor types!!!
 
             if (attack_detected_by_pps) {
                 execute_ip_ban(client_ip, in_pps, out_pps, in_bps, out_bps, in_flows, out_flows);
             }
     
             if (attack_detected_by_bandwidth && !attack_detected_by_pps) {
-                // Атака по полосе, но превышения лимита по pps не было зафиксировано
+                // Bandwidth overuse without pps overuse
 
                 /* TODO: it's stub for debug bandwidth overspeed */
 
@@ -1457,7 +1426,7 @@ void recalculate_speed() {
 
     total_counters_mutex.unlock();
 
-    // устанавливаем время прошлого запуска данного скрипта
+    // Set time of previous startup 
     time(&last_call_of_traffic_recalculation);
 }
 
@@ -1536,15 +1505,14 @@ void calculation_programm() {
         }
 #endif 
  
-        if (!ban_list.empty()) {
-            output_buffer<<endl<<"Ban list:"<<endl;  
-            output_buffer<<send_ddos_attack_details();
-        }
+    if (!ban_list.empty()) {
+        output_buffer<<endl<<"Ban list:"<<endl;  
+        output_buffer<<send_ddos_attack_details();
+    }
  
-        printw( (output_buffer.str()).c_str());
-        // update screen
-        refresh();
-        // зануляем счетчик пакетов
+    printw( (output_buffer.str()).c_str());
+    // update screen
+    refresh();
 
     struct timeval end_calc_time;
     gettimeofday(&end_calc_time, NULL);
@@ -1558,7 +1526,6 @@ std::string print_channel_speed(string traffic_type, direction packet_direction)
     unsigned int speed_in_pps = total_speed_counters[packet_direction].packets;
     unsigned int speed_in_bps = total_speed_counters[packet_direction].bytes;
 
-    // Потому что к нам скорость приходит в чистом виде 
     unsigned int number_of_tabs = 1; 
     // We need this for correct alignment of blocks
     if (traffic_type == "Other traffic") {
@@ -1596,7 +1563,6 @@ void init_logging() {
     layout->setConversionPattern ("%d [%p] %m%n"); 
 
     log4cpp::Appender *appender = new log4cpp::FileAppender("default", log_file_path);
-    //appender->setLayout(new log4cpp::BasicLayout());
     appender->setLayout(layout);
 
     logger.setPriority(log4cpp::Priority::INFO);
@@ -1662,14 +1628,13 @@ int main(int argc,char **argv) {
 
     logger<< log4cpp::Priority::INFO<<"We selected interface:"<<work_on_interfaces;
 
-    // загружаем наши сети и whitelist 
     load_our_networks_list();
 
-    // устанавливаем обработчик CTRL+C
+    // Setup CTRL+C handler
     signal(SIGINT, signal_handler);
 
-    // иницилизируем соединение с Redis
 #ifdef REDIS
+    // Init redis connection
     if (redis_enabled) {
         if (!redis_init_connection()) {
             logger<< log4cpp::Priority::INFO<<"Can't establish connection to the redis";
@@ -1678,23 +1643,22 @@ int main(int argc,char **argv) {
     }
 #endif
 
-    // иницилизируем GeoIP
 #ifdef GEOIP
+    // Init GeoIP
     if(!geoip_init()) {
         logger<< log4cpp::Priority::INFO<<"Can't load geoip tables";
         exit(1);
     } 
 #endif
-
-    // инициализируем псевдо дату последнего запуска
+    // Init previous run date
     time(&last_call_of_traffic_recalculation);
 
-    // запускаем поток-обсчета данных
+    // Run calculation thread
     boost::thread calc_thread(calculation_thread);
 
     // start thread for recalculating speed in realtime
     boost::thread recalculate_speed_thread(recalculate_speed_thread_handler);
-    // запускаем поток, который занимается очисткой банлиста 
+    // Run banlist cleaner thread 
     boost::thread cleanup_ban_list_thread(cleanup_ban_list);
 
     boost::thread main_packet_process_thread(main_packet_process_task);
@@ -1899,7 +1863,7 @@ bool pf_ring_main_loop(const char* dev) {
     logger<< log4cpp::Priority::INFO<<"Device RX channels number: "<< pfring_get_num_rx_channels(pf_ring_descr); 
 
     u_int32_t version;
-    // задаемт имя приложения для его указания в переменной PCAP_PF_RING_APPNAME в статистике в /proc 
+    // Set spplication name in /proc
     int pfring_set_application_name_result =
         pfring_set_application_name(pf_ring_descr, (char*)"fastnetmon");
 
@@ -1957,8 +1921,9 @@ void pcap_main_loop(const char* dev) {
         exit(0);
     }
 
+    // Setting up 1MB buffer
     int set_buffer_size_res = pcap_set_buffer_size(descr, pcap_buffer_size_mbytes * 1024 * 1024);
-    if (set_buffer_size_res != 0 ) { // выставляем буфер в 1 мегабайт
+    if (set_buffer_size_res != 0 ) {
         if (set_buffer_size_res == PCAP_ERROR_ACTIVATED) {
             logger<< log4cpp::Priority::INFO<<"Can't set buffer size because pcap already activated\n";
             exit(1);
@@ -1967,18 +1932,6 @@ void pcap_main_loop(const char* dev) {
             exit(1);
         }   
     } 
-
-    /*
-    Вот через этот спец механизм можно собирать лишь хидеры!
-    If you don't need the entire contents of the packet - for example, if you are only interested in the TCP headers of packets 
-     you can set the "snapshot length" for the capture to an appropriate value.
-    */
-    /*
-    if (pcap_set_snaplen(descr, 32 ) != 0 ) {
-        logger<< log4cpp::Priority::INFO<<"Can't set snap len";
-        exit(1);
-    }
-    */
 
     if (pcap_set_promisc(descr, promisc) != 0) {
         logger<< log4cpp::Priority::INFO<<"Can't activate promisc mode for interface: "<<dev;
@@ -2002,7 +1955,6 @@ void pcap_main_loop(const char* dev) {
         exit(0);
     }
    
-    // пока деактивируем pcap, начинаем интегрировать ULOG
     pcap_loop(descr, -1, (pcap_handler)parse_packet, NULL);
 }
 #endif
@@ -2064,7 +2016,6 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& 
     patricia_node_t* found_patrica_node = NULL;
 
     unsigned long destination_subnet = 0;
-    //if (cached_patricia_lookup(lookup_tree, &prefix_for_check_adreess, lpm_cache)) {
     if (found_patrica_node = patricia_search_best(lookup_tree, &prefix_for_check_adreess)) {
         our_ip_is_destination = true;
         destination_subnet = found_patrica_node->prefix->add.sin.s_addr;
@@ -2073,7 +2024,6 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& 
     prefix_for_check_adreess.add.sin.s_addr = src_ip;
 
     unsigned long source_subnet = 0;
-    //if (cached_patricia_lookup(lookup_tree, &prefix_for_check_adreess, lpm_cache)) {
     if (found_patrica_node = patricia_search_best(lookup_tree, &prefix_for_check_adreess)) { 
         our_ip_is_source = true;
         source_subnet = found_patrica_node->prefix->add.sin.s_addr;
@@ -2150,17 +2100,16 @@ void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pp
 
     struct attack_details current_attack;
 
-    // фиксируем время бана
+    // Store ban time
     time(&current_attack.ban_timestamp); 
     // set ban time in seconds
     current_attack.ban_time = standard_ban_time;
 
-    // передаем основную информацию об атаке
+    // Pass main information about attack
     current_attack.attack_direction = data_direction;
     current_attack.attack_power = pps;
     current_attack.max_attack_power = pps;
 
-    // передаем вторичные параметры, чтобы иметь более точное представление об атаке
     current_attack.in_packets  = in_pps;
     current_attack.out_packets = out_pps;
 
@@ -2247,7 +2196,7 @@ void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pp
 
 /* Thread for cleaning up ban list */
 void cleanup_ban_list() {
-    /* Время через которое просыпается поток чистки */
+    // Every X seconds we will run ban list cleaner thread
     int iteration_sleep_time = 600;
 
     logger<<log4cpp::Priority::INFO<<"Run banlist cleanup thread";
@@ -2267,7 +2216,7 @@ void cleanup_ban_list() {
             int ban_time = ((*itr).second).ban_time;
 
             if (time_difference > ban_time) {
-                // Вычищаем все останки данного забаненого товарища
+                // Cleanup all data related with this attack
                 string data_direction_as_string = get_direction_name((*itr).second.attack_direction);
                 string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
                 string pps_as_string = convert_int_to_string((*itr).second.attack_power);
@@ -2350,7 +2299,7 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
     string attack_direction = get_direction_name(current_attack_details.attack_direction);
     string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
 
-    // странная проверка, но при мощной атаке набить ban_details_records_count пакетов - очень легко
+    // Very strange code but it work in 95% cases 
     if (ban_list_details.count( client_ip ) > 0 && ban_list_details[ client_ip ].size() == ban_details_records_count) {
         stringstream attack_details;
 
@@ -2374,7 +2323,7 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
             " IP: "<<client_ip_as_string<<" Power: "<<pps_as_string;
         logger<<log4cpp::Priority::INFO<<attack_details.str();
 
-        // отсылаем детали атаки (отпечаток пакетов) по почте
+        // Pass attack details to script
         if (file_exists(notify_script_path)) {
             logger<<log4cpp::Priority::INFO<<"Call script for notify about attack details for: "<<client_ip_as_string;
 
@@ -2386,7 +2335,7 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
 
             logger<<log4cpp::Priority::INFO<<"Script for notify about attack details is finished: "<<client_ip_as_string;
         } 
-        // удаляем ключ из деталей атаки, чтобы он не выводился снова и в него не собирался трафик
+        // Remove key and prevent collection new data about this attack
         ban_list_details.erase(client_ip);
     } 
 }
@@ -2595,7 +2544,6 @@ string print_flow_tracking_for_specified_protocol(contrack_map_type& protocol_ma
 }
 
 std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, string client_ip) {
-    // Тут нам нужно обойти все протоколы
     stringstream buffer;
 
     string in_tcp = print_flow_tracking_for_specified_protocol(conntrack_element.in_tcp, client_ip, INCOMING);
