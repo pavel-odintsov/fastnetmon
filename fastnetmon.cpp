@@ -369,7 +369,7 @@ void free_up_all_resources();
 void main_packet_process_task();
 unsigned int get_cidr_mask_from_network_as_string(string network_cidr_format);
 string send_ddos_attack_details();
-void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pps, unsigned int in_bps, unsigned int out_bps, unsigned int in_flows, unsigned int out_flows);
+void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pps, unsigned int in_bps, unsigned int out_bps, unsigned int in_flows, unsigned int out_flows, string flow_attack_details);
 direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet);
 void recalculate_speed();
 std::string print_channel_speed(string traffic_type, direction packet_direction);
@@ -1359,15 +1359,11 @@ void recalculate_speed() {
                attack_detected_by_flow = true; 
             } 
 
-            // Dump it every iteration
-            if (convert_ip_as_uint_to_string(client_ip) == "159.253.18.99") {
-                logger<<log4cpp::Priority::INFO<<"\n"<<print_flow_tracking_for_ip(*flow_counter_ptr, convert_ip_as_uint_to_string(client_ip));
-            }
-
             // TODO: please check! We should do only __one__ ban for all sensor types!!!
 
             if (attack_detected_by_pps) {
-                execute_ip_ban(client_ip, in_pps, out_pps, in_bps, out_bps, in_flows, out_flows);
+                string flow_attack_details = print_flow_tracking_for_ip(*flow_counter_ptr, convert_ip_as_uint_to_string(client_ip));
+                execute_ip_ban(client_ip, in_pps, out_pps, in_bps, out_bps, in_flows, out_flows, flow_attack_details);
             }
     
             if (attack_detected_by_bandwidth && !attack_detected_by_pps) {
@@ -2045,7 +2041,7 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& 
     return packet_direction;
 }
 
-void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pps, unsigned int in_bps, unsigned int out_bps, unsigned int in_flows, unsigned int out_flows) {
+void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pps, unsigned int in_bps, unsigned int out_bps, unsigned int in_flows, unsigned int out_flows, string flow_attack_details) {
     direction data_direction;
     unsigned int pps = 0;
 
@@ -2187,7 +2183,8 @@ void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pp
         logger<<log4cpp::Priority::INFO<<"Call script for ban client: "<<client_ip_as_string; 
 
         // We should execute external script in separate thread because any lag in this code will be very distructive 
-        boost::thread exec_thread(exec, script_call_params);
+        boost::thread exec_thread(exec_with_stdin_params, script_call_params,
+            get_attack_description(client_ip, current_attack) + flow_attack_details);
         exec_thread.detach();
 
         logger<<log4cpp::Priority::INFO<<"Script for ban client is finished: "<<client_ip_as_string;

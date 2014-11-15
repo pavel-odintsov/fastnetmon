@@ -16,12 +16,7 @@ if [ "$4" = "unban" ]; then
     exit 0
 fi
 
-# check stdin type
-if [ -t 0 ]; then
-    echo "Subject, please execute all related tasks :) You may (not always) got atack details in next letter" | mail -s "Myflower Guard: IP $1 blocked because $2 attack with power $3 pps" $email_notify;
-    # You can add ban code here!
-    # iptables -A INPUT -s $1 -j DROP
-    # iptables -A INPUT -d $1 -j DROP
-else
-    cat | mail -s "FastNetMon Guard: IP $1 blocked because $2 attack with power $3 pps" $email_notify;
-fi
+cat | mail -s "FastNetMon Guard: IP $1 blocked because $2 attack with power $3 pps" $email_notify;
+# You can add ban code here!
+# iptables -A INPUT -s $1 -j DROP
+# iptables -A INPUT -d $1 -j DROP
