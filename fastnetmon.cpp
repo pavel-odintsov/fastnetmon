@@ -973,17 +973,18 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
 
     /* We handle only IPv4 */
     if (h->extended_hdr.parsed_pkt.ip_version == 4) {
-        /* PF_RING stores data in host byte order bu we use network byte order */
+        /* PF_RING stores data in host byte order but we use network byte order */
         packet.src_ip = htonl( h->extended_hdr.parsed_pkt.ip_src.v4 ); 
         packet.dst_ip = htonl( h->extended_hdr.parsed_pkt.ip_dst.v4 );
 
-        packet.source_port = h->extended_hdr.parsed_pkt.l4_src_port;
+        packet.source_port      = h->extended_hdr.parsed_pkt.l4_src_port;
         packet.destination_port = h->extended_hdr.parsed_pkt.l4_dst_port;
 
-        packet.length = h->len;
+        packet.length   = h->len;
         packet.protocol = h->extended_hdr.parsed_pkt.l3_proto;
-        packet.ts = h->ts;
+        packet.ts       = h->ts;
 
+        // Copy flags from PF_RING header to our pseudo header
         if (packet.protocol == IPPROTO_TCP) {
             packet.flags = h->extended_hdr.parsed_pkt.tcp.flags;
         } else {
@@ -1116,8 +1117,8 @@ void process_packet(simple_packet& current_packet) {
     
     } else if (packet_direction == OUTGOING) {
         uint32_t shift_in_vector = ntohl(current_packet.src_ip) - subnet_in_host_byte_order;
-        #define current_element itr->second[shift_in_vector]
-        #define current_element_flow itr_flow->second[shift_in_vector]
+        map_element* current_element = &itr->second[shift_in_vector];
+        conntrack_main_struct* current_element_flow = &itr_flow->second[shift_in_vector]; 
 
         // Collect data when ban client
         if  (ban_list_details.count(current_packet.src_ip) > 0 &&
@@ -1135,12 +1136,12 @@ void process_packet(simple_packet& current_packet) {
         uint64_t connection_tracking_hash = convert_conntrack_hash_struct_to_integer(&flow_tracking_structure);
 
         if (current_packet.protocol == IPPROTO_TCP) {
-            current_element.tcp_out_packets++;
-            current_element.tcp_out_bytes += current_packet.length;
+            current_element->tcp_out_packets++;
+            current_element->tcp_out_bytes += current_packet.length;
       
 #ifdef ENABLE_CONNTRACKING 
             flow_counter.lock();
-            conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow.out_tcp[connection_tracking_hash];
+            conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow->out_tcp[connection_tracking_hash];
  
             conntrack_key_struct_ptr->packets++;
             conntrack_key_struct_ptr->bytes += current_packet.length;
@@ -1148,12 +1149,12 @@ void process_packet(simple_packet& current_packet) {
             flow_counter.unlock();
 #endif
         } else if (current_packet.protocol == IPPROTO_UDP) {
-            current_element.udp_out_packets++;
-            current_element.udp_out_bytes += current_packet.length;
+            current_element->udp_out_packets++;
+            current_element->udp_out_bytes += current_packet.length;
 
 #ifdef ENABLE_CONNTRACKING 
             flow_counter.lock();
-            conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow.out_udp[connection_tracking_hash];
+            conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow->out_udp[connection_tracking_hash];
 
             conntrack_key_struct_ptr->packets++;
             conntrack_key_struct_ptr->bytes += current_packet.length;
@@ -1164,13 +1165,13 @@ void process_packet(simple_packet& current_packet) {
             // TBD
         }
 
-        current_element.out_packets++;
-        current_element.out_bytes += current_packet.length; 
+        current_element->out_packets++;
+        current_element->out_bytes += current_packet.length; 
     } else if (packet_direction == INCOMING) {
         uint32_t shift_in_vector = ntohl(current_packet.dst_ip) - subnet_in_host_byte_order;
-        #define current_element itr->second[shift_in_vector]
-        #define current_element_flow itr_flow->second[shift_in_vector]
-
+        map_element* current_element = &itr->second[shift_in_vector];
+        conntrack_main_struct* current_element_flow = &itr_flow->second[shift_in_vector];
+    
         packed_conntrack_hash flow_tracking_structure;
         flow_tracking_structure.opposite_ip = current_packet.src_ip;
         flow_tracking_structure.src_port = current_packet.source_port;
@@ -1189,12 +1190,12 @@ void process_packet(simple_packet& current_packet) {
         }
 
         if (current_packet.protocol == IPPROTO_TCP) {
-            current_element.tcp_in_packets++;
-            current_element.tcp_in_bytes += current_packet.length;
+            current_element->tcp_in_packets++;
+            current_element->tcp_in_bytes += current_packet.length;
 
 #ifdef ENABLE_CONNTRACKING 
             flow_counter.lock();
-            conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow.in_tcp[connection_tracking_hash];
+            conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow->in_tcp[connection_tracking_hash];
 
             conntrack_key_struct_ptr->packets++;
             conntrack_key_struct_ptr->bytes += current_packet.length;
@@ -1203,12 +1204,12 @@ void process_packet(simple_packet& current_packet) {
 #endif
 
         } else if (current_packet.protocol == IPPROTO_UDP) {
-            current_element.udp_in_packets++;
-            current_element.udp_in_bytes += current_packet.length;
+            current_element->udp_in_packets++;
+            current_element->udp_in_bytes += current_packet.length;
 
 #ifdef ENABLE_CONNTRACKING 
             flow_counter.lock();
-            conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow.in_udp[connection_tracking_hash];
+            conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow->in_udp[connection_tracking_hash];
 
             conntrack_key_struct_ptr->packets++;
             conntrack_key_struct_ptr->bytes += current_packet.length;
@@ -1218,8 +1219,8 @@ void process_packet(simple_packet& current_packet) {
             // TBD
         }
 
-        current_element.in_packets ++;
-        current_element.in_bytes += current_packet.length;
+        current_element->in_packets ++;
+        current_element->in_bytes += current_packet.length;
     } else {
         // Other traffic
     }
@@ -2009,11 +2010,11 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& 
     bool our_ip_is_source = false;
 
     prefix_t prefix_for_check_adreess;
-    prefix_for_check_adreess.add.sin.s_addr = dst_ip;
     prefix_for_check_adreess.family = AF_INET;
     prefix_for_check_adreess.bitlen = 32;
 
     patricia_node_t* found_patrica_node = NULL;
+    prefix_for_check_adreess.add.sin.s_addr = dst_ip;
 
     unsigned long destination_subnet = 0;
     if (found_patrica_node = patricia_search_best(lookup_tree, &prefix_for_check_adreess)) {
@@ -2021,13 +2022,14 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& 
         destination_subnet = found_patrica_node->prefix->add.sin.s_addr;
     }    
 
+    found_patrica_node = NULL;
     prefix_for_check_adreess.add.sin.s_addr = src_ip;
 
     unsigned long source_subnet = 0;
     if (found_patrica_node = patricia_search_best(lookup_tree, &prefix_for_check_adreess)) { 
         our_ip_is_source = true;
         source_subnet = found_patrica_node->prefix->add.sin.s_addr;
-    }    
+    } 
 
     subnet = 0;
     if (our_ip_is_source && our_ip_is_destination) {
