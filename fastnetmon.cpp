@@ -694,6 +694,10 @@ void load_configuration_file() {
             ban_threshold_mbps = convert_string_to_integer(  configuration_map[ "threshold_mbps" ] );
         }
 
+        if (configuration_map.count("ban_threshold_flows") != 0) {
+            ban_threshold_flows = convert_string_to_integer(  configuration_map[ "threshold_flows" ] );
+        }
+
 #ifdef REDIS
         if (configuration_map.count("redis_port") != 0) { 
             redis_port = convert_string_to_integer(configuration_map[ "redis_port" ] );
@@ -1449,7 +1453,7 @@ void calculation_programm() {
 
     output_buffer<<"FastNetMon v1.0 FastVPS Eesti OU (c) VPS and dedicated: http://FastVPS.host"<<"\n"
         <<"IPs ordered by: "<<sort_parameter<<" (use keys 'b'/'p'/'f' for change) and use 'q' for quit"<<"\n"
-        <<"Threshold is: "<<ban_threshold_pps<<" pps and "<<ban_threshold_mbps<<" mbps"
+        <<"Threshold: "<<ban_threshold_pps<<" pps "<<ban_threshold_mbps<<" mbps "<<ban_threshold_flows<< " flows"
         <<" total hosts: "<<total_number_of_hosts_in_our_networks<<endl<<endl;
 
     output_buffer<<print_channel_speed("Incoming traffic", INCOMING)<<endl;
