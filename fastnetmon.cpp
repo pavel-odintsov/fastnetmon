@@ -779,8 +779,8 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
     // Initilize map element
     SubnetVectorMapFlow[subnet_as_integer] = vector_of_flow_counters(network_size_in_ips); 
 
+    // On creating it initilizes by zeros
     conntrack_main_struct zero_conntrack_main_struct;
-    //memset(&zero_conntrack_main_struct, 0, sizeof(conntrack_main_struct));
     std::fill(SubnetVectorMapFlow[subnet_as_integer].begin(), SubnetVectorMapFlow[subnet_as_integer].end(), zero_conntrack_main_struct);
 }
 
@@ -796,6 +796,7 @@ void zeroify_all_counters() {
 
 #ifdef ENABLE_CONNTRACKING
 void zeroify_all_flow_counters() {
+    // On creating it initilizes by zeros
     conntrack_main_struct zero_conntrack_main_struct;
 
     // Iterate over map
