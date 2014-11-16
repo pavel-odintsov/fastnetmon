@@ -1204,7 +1204,7 @@ void process_packet(simple_packet& current_packet) {
 
 #ifdef ENABLE_CONNTRACKING 
             flow_counter.lock();
-            conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow.in_tcp[connection_tracking_hash];
+            conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow.in_udp[connection_tracking_hash];
 
             conntrack_key_struct_ptr->packets++;
             conntrack_key_struct_ptr->bytes += current_packet.length;
