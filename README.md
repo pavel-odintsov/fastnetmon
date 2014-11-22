@@ -95,22 +95,25 @@ Example of second notification:
 subject: Myflower Guard: IP xx.xx.xx.xx blocked because incoming attack with power 120613 pps
 body:
 IP: xx.zz.xx.1
-Attack power: 95267 packets per second
-Peak attack power: 269017 packets per second
-Attack direction: incoming
-Incoming traffic: 43 mbps
-Outgoing traffic: 15 mbps
-Incoming pps: 95267 packets per second
-Outgoing pps: 31119 packets per second
-
-2014-07-04 13:59:54.778872 xx.xx.xx.xx:80 > xx.xx.xx.xx:46804 protocol: tcp size: 233 bytes
-2014-07-04 13:59:54.778874 xx.xx.xx.xx:80 > xx.xx.xx.xx:46804 protocol: tcp size: 233 bytes
-2014-07-04 13:59:54.778875 xx.xx.xx.xx:80 > xx.xx.xx.xx:46804 protocol: tcp size: 233 bytes
-2014-07-04 13:59:54.778877 xx.xx.xx.xx:46804 > xx.xx.xx.xx:80 protocol: tcp size: 52 bytes
-2014-07-04 13:59:54.778878 xx.xx.xx.xx:46804 > xx.xx.xx.xx:80 protocol: tcp size: 52 bytes
-2014-07-04 13:59:54.778882 xx.xx.xx.xx:80 > xx.xx.xx.xx:46804 protocol: tcp size: 233 bytes
-2014-07-04 13:59:54.778884 xx.xx.xx.xx:80 > xx.xx.xx.xx:46804 protocol: tcp size: 233 bytes
-2014-07-04 13:59:54.778885 xx.xx.xx.xx:46804 > xx.xx.xx.xx:80 protocol: tcp size: 52 bytes
+2014-11-21 08:01:11.419798 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
+2014-11-21 08:01:11.419799 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
+2014-11-21 08:01:11.419816 xx.xx.xx.xx:51469 > 216.239.36.109:53 protocol: udp flags:  size: 87 bytes
+2014-11-21 08:01:11.419837 216.239.38.109:53 > xx.xx.xx.xx:33611 protocol: udp flags:  size: 123 bytes
+2014-11-21 08:01:11.419838 216.239.34.109:53 > xx.xx.xx.xx:33611 protocol: udp flags:  size: 123 bytes
+2014-11-21 08:01:11.419859 216.239.38.109:53 > xx.xx.xx.xx:42279 protocol: udp flags:  size: 123 bytes
+2014-11-21 08:01:11.419877 xx.xx.xx.xx:51469 > 216.239.38.109:53 protocol: udp flags:  size: 87 bytes
+2014-11-21 08:01:11.419884 216.239.38.109:53 > xx.xx.xx.xx:33611 protocol: udp flags:  size: 123 bytes
+2014-11-21 08:01:11.419891 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
+2014-11-21 08:01:11.419906 216.239.38.109:53 > xx.xx.xx.xx:33611 protocol: udp flags:  size: 123 bytes
+2014-11-21 08:01:11.419907 216.239.38.109:53 > xx.xx.xx.xx:42279 protocol: udp flags:  size: 123 bytes
+2014-11-21 08:01:11.419908 216.239.38.109:53 > xx.xx.xx.xx:42279 protocol: udp flags:  size: 123 bytes
+2014-11-21 08:01:11.419916 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
+2014-11-21 08:01:11.419917 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
+2014-11-21 08:01:11.419929 216.239.38.109:53 > xx.xx.xx.xx:33611 protocol: udp flags:  size: 123 bytes
+2014-11-21 08:01:11.419961 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
+2014-11-21 08:01:11.419962 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
+2014-11-21 08:01:11.419963 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
+2014-11-21 08:01:11.419963 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
 ```
 
 You can find more info and graphics [here](http://forum.nag.ru/forum/index.php?showtopic=89703)
