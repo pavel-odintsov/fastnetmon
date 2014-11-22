@@ -91,3 +91,9 @@ Start it:
 ./fastnetmon eth1,eth2
 ```
 
+Enable programm start on server startup, please add to /etc/rc.local this lines:
+```bash
+cd /root/fastnetmon && screen -S fastnetmon -d -m ./fastnetmon eth3,eth4
+```
+
+When incoming or outgoing attack arrives programm call bash script (when it exists): /usr/local/bin/notify_about_attack.sh two times. First time when threshold exceed (at this step we know IP, direction and power of attack). Second when we collect 100 packets for detailed audit what did happens.

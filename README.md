@@ -3,11 +3,24 @@ FastNetMon
 Author: Pavel Odintsov pavel.odintsov at gmail.com
 License: GPLv2
 
-FastNetMon - High Performance Network DDoS and Load Analyzer with PCAP/PF_RING support. But I recommends only PF_RING variant because other variants is so slow and use big amount of CPU and expected big packetloss.
+FastNetMon - high performance DoS/DDoS and load analyzer builded on top of PF_RING.
 
-What we do? We can detect hosts in OUR network with big amount of packets per second (30 000 pps in standard configuration) incoming or outgoing from certain host. And we can call external bash script which can send notify, switch off server or blackhole this client.
+What we do? We can detect hosts in OUR network with big amount of packets per second incoming or outgoing from certain host. And we can call external bash script which can send notify, switch off server or blackhole this client.
 
-Why we write it? Because we can't find any software for solving this problem not in proprietary world not in open sourcу. NetFlow based solutions is so slow and can't react on attack with acceptable speed.
+Why we write it? Because we can't find any software for solving this problem not in proprietary world not in open source. NetFlow based solutions has some [critical limitations](NETFLOW_DISADVANTAGES.md) for this task.
+
+Features:
+- Can process incoming and outgoing traffic
+- Can trigger block script if certain IP load network with big amount of packets per second
+- Can trigger block script if certain IP load network with big amount of bytes per second
+- Can trigger block script if certain IP load network with big amount of flows per second
+- VLAN untagging
+- MPLS traffic processing
+- Can work on mirror ports
+- Can work on server/soft-router
+- Can detect DoS/DDoS in 1-2 seconds
+
+What is "flow" in FastNetMon terms? It's one or multiple connection udp, tcp, icmp with unique src IP, dst IP, src port, dst port and protocol.
 
 Main programm screen image:
 
@@ -16,62 +29,65 @@ Main programm screen image:
 Example for cpu load for Intel i7 2600 with Intel X540 NIC on 250 kpps load:
 ![Cpu consumption](fastnetmon_stats.png)
 
-Network map:
+Example deployment scheme:
 ![Network diagramm](network_map.png)
 
-Features:
-- VLAN untagging
-- MPLS traffic processing
-- Ability to work on mirror ports
-- Ability to work on router
-
 [Install manual](INSTALL.md)
-
-Example program screen:
-```bash
-FastNetMon v1.0 all IPs ordered by: packets
-
-Incoming Traffic        96667 pps 240 mbps
-xx.xx.xx.xx             7950 pps 3 mbps
-xx.xx.xx.xx             5863 pps 65 mbps
-xx.xx.xx.xx             2306 pps 1 mbps
-xx.xx.xx.xx             1535 pps 16 mbps
-xx.xx.xx.xx             1312 pps 14 mbps
-xx.xx.xx.xx             1153 pps 0 mbps
-xx.xx.xx.xx             1145 pps 0 mbps
-
-Outgoing traffic        133265 pps 952 mbps
-xx.xx.xx.xx             7414 pps 4 mbps
-xx.xx.xx.xx             5047 pps 4 mbps
-xx.xx.xx.xx             3458 pps 3 mbps
-xx.xx.xx.xx             2959 pps 35 mbps
-xx.xx.xx.xx             2612 pps 29 mbps
-xx.xx.xx.xx             2334 pps 26 mbps
-xx.xx.xx.xx             1906 pps 21 mbps
-
-Internal traffic        0 pps
-
-Other traffic           1815 pps
-
-Packets received:       6516913578
-Packets dropped:        0
-Packets dropped:        0.0 %
-
-Ban list:
-yy.yy.yy.yy/20613 pps incoming
-```
-
-Enable programm start on server startup, please add to /etc/rc.local this lines:
-```bash
-cd /root/fastnetmon && screen -S fastnetmon -d -m ./fastnetmon eth3,eth4
-```
-
-When incoming or outgoing attack arrives programm call bash script (when it exists): /usr/local/bin/notify_about_attack.sh two times. First time when threshold exceed (at this step we know IP, direction and power of attack). Second when we collect 100 packets for detailed audit what did happens.
 
 Example of first notification:
 ```bash
 subject: Myflower Guard: IP xx.xx.xx.xx blocked because incoming attack with power 120613 pps
-body: blank
+body:
+IP: XX.XX.XX.XX
+Initial attack power: 98285 packets per second
+Peak attack power: 98285 packets per second
+Attack direction: outgoing
+Incoming traffic: 62 mbps
+Outgoing traffic: 65 mbps
+Incoming pps: 66628 packets per second
+Outgoing pps: 98285 packets per second
+Incoming flows: 16
+Outgoing flows: 16
+Incoming
+
+UDP
+xx.xx.xx.xx:33611 < 216.239.32.109:53 729021 bytes 5927 packets
+xx.xx.xx.xx:33611 < 216.239.34.109:53 231609 bytes 1883 packets
+xx.xx.xx.xx:33611 < 216.239.36.109:53 728652 bytes 5924 packets
+xx.xx.xx.xx:33611 < 216.239.38.109:53 414387 bytes 3369 packets
+xx.xx.xx.xx:38458 < 216.239.32.109:53 724347 bytes 5889 packets
+xx.xx.xx.xx:38458 < 216.239.34.109:53 222753 bytes 1811 packets
+xx.xx.xx.xx:38458 < 216.239.36.109:53 729267 bytes 5929 packets
+xx.xx.xx.xx:38458 < 216.239.38.109:53 383514 bytes 3118 packets
+xx.xx.xx.xx:42279 < 216.239.32.109:53 687201 bytes 5587 packets
+xx.xx.xx.xx:42279 < 216.239.34.109:53 248091 bytes 2017 packets
+xx.xx.xx.xx:42279 < 216.239.36.109:53 737508 bytes 5996 packets
+xx.xx.xx.xx:42279 < 216.239.38.109:53 321276 bytes 2612 packets
+xx.xx.xx.xx:51469 < 216.239.32.109:53 735663 bytes 5981 packets
+xx.xx.xx.xx:51469 < 216.239.34.109:53 237267 bytes 1929 packets
+xx.xx.xx.xx:51469 < 216.239.36.109:53 735663 bytes 5981 packets
+xx.xx.xx.xx:51469 < 216.239.38.109:53 318570 bytes 2590 packets
+
+
+Outgoing
+
+UDP
+xx.xx.xx.xx:33611 > 216.239.32.109:53 531309 bytes 6107 packets
+xx.xx.xx.xx:33611 > 216.239.34.109:53 531222 bytes 6106 packets
+xx.xx.xx.xx:33611 > 216.239.36.109:53 531222 bytes 6106 packets
+xx.xx.xx.xx:33611 > 216.239.38.109:53 531222 bytes 6106 packets
+xx.xx.xx.xx:38458 > 216.239.32.109:53 527220 bytes 6060 packets
+xx.xx.xx.xx:38458 > 216.239.34.109:53 527133 bytes 6059 packets
+xx.xx.xx.xx:38458 > 216.239.36.109:53 527133 bytes 6059 packets
+xx.xx.xx.xx:38458 > 216.239.38.109:53 527220 bytes 6060 packets
+xx.xx.xx.xx:42279 > 216.239.32.109:53 539052 bytes 6196 packets
+xx.xx.xx.xx:42279 > 216.239.34.109:53 539052 bytes 6196 packets
+xx.xx.xx.xx:42279 > 216.239.36.109:53 539139 bytes 6197 packets
+xx.xx.xx.xx:42279 > 216.239.38.109:53 539139 bytes 6197 packets
+xx.xx.xx.xx:51469 > 216.239.32.109:53 532701 bytes 6123 packets
+xx.xx.xx.xx:51469 > 216.239.34.109:53 532701 bytes 6123 packets
+xx.xx.xx.xx:51469 > 216.239.36.109:53 532701 bytes 6123 packets
+xx.xx.xx.xx:51469 > 216.239.38.109:53 532788 bytes 6124 packets
 ```
 
 Example of second notification:
@@ -98,5 +114,3 @@ Outgoing pps: 31119 packets per second
 ```
 
 You can find more info and graphics [here](http://forum.nag.ru/forum/index.php?showtopic=89703)
-
-What is "flow" in FastNetMon terms? It's one or multiple connection (udp, tcp, icmp) with unique src IP, dst IP, src port, dst port and protocol. 
