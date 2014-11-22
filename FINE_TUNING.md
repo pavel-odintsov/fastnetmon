@@ -76,3 +76,4 @@ If you saw intel_idle in perf top with red higlihting you can disable it with fo
 intel_idle.max_cstate=0 processor.max_cstate=1
 ```
 
+You can find more info and graphics [here](http://forum.nag.ru/forum/index.php?showtopic=89703)
