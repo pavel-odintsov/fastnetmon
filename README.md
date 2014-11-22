@@ -9,6 +9,8 @@ What we do? We can detect hosts in OUR network with big amount of packets per se
 
 Why we write it? Because we can't find any software for solving this problem not in proprietary world not in open source. NetFlow based solutions has some [critical limitations](NETFLOW_DISADVANTAGES.md) for this task.
 
+[Install manual](INSTALL.md)
+
 Features:
 - Can process incoming and outgoing traffic
 - Can trigger block script if certain IP load network with big amount of packets per second
@@ -32,8 +34,6 @@ Example for cpu load for Intel i7 2600 with Intel X540/82599 NIC on 400 kpps loa
 
 Example deployment scheme:
 ![Network diagramm](network_map.png)
-
-[Install manual](INSTALL.md)
 
 Example of first notification:
 ```bash
