@@ -5,7 +5,7 @@ License: GPLv2
 
 FastNetMon - high performance DoS/DDoS and load analyzer builded on top of PF_RING.
 
-What we do? We can detect hosts in OUR network with big amount of packets per second incoming or outgoing from certain host. And we can call external bash script which can send notify, switch off server or blackhole this client.
+What we do? We can detect hosts in OUR network with big amount of packets per second/bytes per second or flow per second incoming or outgoing from certain host. And we can call external script which can send notify, switch off server or blackhole this client.
 
 Why we write it? Because we can't find any software for solving this problem not in proprietary world not in open source. NetFlow based solutions has some [critical limitations](NETFLOW_DISADVANTAGES.md) for this task.
 
@@ -19,6 +19,7 @@ Features:
 - Can work on mirror ports
 - Can work on server/soft-router
 - Can detect DoS/DDoS in 1-2 seconds
+- Tested up to 10GE with 5-6 Mpps on Intel i7 2600 with Intel Nic 82599
 
 What is "flow" in FastNetMon terms? It's one or multiple connection udp, tcp, icmp with unique src IP, dst IP, src port, dst port and protocol.
 
@@ -26,7 +27,7 @@ Main programm screen image:
 
 ![Main screen image](fastnetmon_screen.png)
 
-Example for cpu load for Intel i7 2600 with Intel X540 NIC on 250 kpps load:
+Example for cpu load for Intel i7 2600 with Intel X540/82599 NIC on 400 kpps load:
 ![Cpu consumption](fastnetmon_stats.png)
 
 Example deployment scheme:
@@ -115,5 +116,3 @@ IP: xx.zz.xx.1
 2014-11-21 08:01:11.419963 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
 2014-11-21 08:01:11.419963 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
 ```
-
-You can find more info and graphics [here](http://forum.nag.ru/forum/index.php?showtopic=89703)
