@@ -1624,6 +1624,7 @@ int main(int argc,char **argv) {
 
     if (!load_config_result) {
         fprintf(stderr, "Can't open config file %s, please create it!", global_config_path.c_str());
+        exit(1);
     }
 
     logger<< log4cpp::Priority::INFO<<"I need few seconds for collecting data, please wait. Thank you!";
