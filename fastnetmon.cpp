@@ -83,6 +83,8 @@ using namespace std;
 // Interface name or interface list (delimitered by comma)
 string work_on_interfaces = "";
 
+string global_config_path = "/etc/fastnetmon.conf";
+
 boost::regex regular_expression_cidr_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+\\/\\d+$");
 
 time_t last_call_of_traffic_recalculation;
@@ -350,6 +352,7 @@ vector<subnet> whitelist_networks;
 bool we_do_real_ban = true;
 
 // Prototypes
+bool load_configuration_file();
 std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, string client_ip);
 void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_data, packed_conntrack_hash* unpacked_data);
 uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash* struct_value);
@@ -673,75 +676,78 @@ vector<string> read_file_to_vector(string file_name) {
 }
 
 // Load configuration
-void load_configuration_file() {
-    ifstream config_file ("/etc/fastnetmon.conf");
+bool load_configuration_file() {
+    ifstream config_file (global_config_path.c_str());
     string line;
 
     map<string, std::string> configuration_map;
     
-    if (config_file.is_open()) {
-        while ( getline(config_file, line) ) {
-            vector<string> parsed_config; 
-            split( parsed_config, line, boost::is_any_of(" ="), boost::token_compress_on );
-            configuration_map[ parsed_config[0] ] = parsed_config[1];
-        }
+    if (!config_file.is_open()) {
+        logger<< log4cpp::Priority::INFO<<"Can't open config file";
+        return false;
+    }
 
-        if (configuration_map.count("threshold_pps") != 0) {
-            ban_threshold_pps = convert_string_to_integer( configuration_map[ "threshold_pps" ] );
-        }
+    while ( getline(config_file, line) ) {
+        vector<string> parsed_config; 
+        split( parsed_config, line, boost::is_any_of(" ="), boost::token_compress_on );
+        configuration_map[ parsed_config[0] ] = parsed_config[1];
+    }
 
-        if (configuration_map.count("threshold_mbps") != 0) {
-            ban_threshold_mbps = convert_string_to_integer(  configuration_map[ "threshold_mbps" ] );
-        }
+     if (configuration_map.count("threshold_pps") != 0) {
+        ban_threshold_pps = convert_string_to_integer( configuration_map[ "threshold_pps" ] );
+    }
 
-        if (configuration_map.count("ban_threshold_flows") != 0) {
-            ban_threshold_flows = convert_string_to_integer(  configuration_map[ "threshold_flows" ] );
-        }
+    if (configuration_map.count("threshold_mbps") != 0) {
+        ban_threshold_mbps = convert_string_to_integer(  configuration_map[ "threshold_mbps" ] );
+    }
+
+    if (configuration_map.count("ban_threshold_flows") != 0) {
+        ban_threshold_flows = convert_string_to_integer(  configuration_map[ "threshold_flows" ] );
+    }
 
 #ifdef REDIS
-        if (configuration_map.count("redis_port") != 0) { 
-            redis_port = convert_string_to_integer(configuration_map[ "redis_port" ] );
-        }
+    if (configuration_map.count("redis_port") != 0) { 
+        redis_port = convert_string_to_integer(configuration_map[ "redis_port" ] );
+    }
 
-        if (configuration_map.count("redis_host") != 0) {
-            redis_host = configuration_map[ "redis_host" ];
-        }
+    if (configuration_map.count("redis_host") != 0) {
+        redis_host = configuration_map[ "redis_host" ];
+    }
 
-        if (configuration_map.count("redis_enabled") != 0) {
-            if (configuration_map[ "redis_enabled" ] == "yes") {
-                redis_enabled = true;
-            } else {
-                redis_enabled = false;
-            } 
-        }
+    if (configuration_map.count("redis_enabled") != 0) {
+        if (configuration_map[ "redis_enabled" ] == "yes") {
+            redis_enabled = true;
+        } else {
+            redis_enabled = false;
+        } 
+    }
 #endif
 
-        if (configuration_map.count("ban_details_records_count") != 0 ) {
-            ban_details_records_count = convert_string_to_integer( configuration_map[ "ban_details_records_count" ]);
-        }
-
-        if (configuration_map.count("check_period") != 0) {
-            sort_parameter = convert_string_to_integer( configuration_map[ "check_period" ]);
-        }
-
-        if (configuration_map.count("sort_parameter") != 0) {
-            sort_parameter = configuration_map[ "sort_parameter" ];
-        }
-
-        if (configuration_map.count("interfaces") != 0) {
-            work_on_interfaces = configuration_map[ "interfaces" ]; 
-        }
-
-        if (configuration_map.count("max_ips_in_list") != 0) {
-            max_ips_in_list = convert_string_to_integer( configuration_map[ "max_ips_in_list" ]);
-        }
-
-        if (configuration_map.count("notify_script_path") != 0 ) {
-            notify_script_path = configuration_map[ "notify_script_path" ];
-        }
-    } else {
-        logger<< log4cpp::Priority::INFO<<"Can't open config file";
+    if (configuration_map.count("ban_details_records_count") != 0 ) {
+        ban_details_records_count = convert_string_to_integer( configuration_map[ "ban_details_records_count" ]);
     }
+
+    if (configuration_map.count("check_period") != 0) {
+        sort_parameter = convert_string_to_integer( configuration_map[ "check_period" ]);
+    }
+
+    if (configuration_map.count("sort_parameter") != 0) {
+        sort_parameter = configuration_map[ "sort_parameter" ];
+    }
+
+    if (configuration_map.count("interfaces") != 0) {
+        work_on_interfaces = configuration_map[ "interfaces" ]; 
+    }
+
+    if (configuration_map.count("max_ips_in_list") != 0) {
+        max_ips_in_list = convert_string_to_integer( configuration_map[ "max_ips_in_list" ]);
+    }
+
+    if (configuration_map.count("notify_script_path") != 0 ) {
+        notify_script_path = configuration_map[ "notify_script_path" ];
+    }
+
+    return true;
 }
 
 /* Enable core dumps for simplify debug tasks */
@@ -1614,7 +1620,11 @@ int main(int argc,char **argv) {
 
     logger<<log4cpp::Priority::INFO<<"Read configuration file";
 
-    load_configuration_file();
+    bool load_config_result = load_configuration_file();
+
+    if (!load_config_result) {
+        fprintf(stderr, "Can't open config file %s, please create it!", global_config_path.c_str());
+    }
 
     logger<< log4cpp::Priority::INFO<<"I need few seconds for collecting data, please wait. Thank you!";
 
