@@ -32,14 +32,14 @@ chmod +x fastnetmon
 
 If you want to use static version you can skip this guide to part about "networks_list".
 
-Build lib (We disabled bpf because it requires linking to PCAP):
+Build lib:
 ```bash
 # Debian
 apt-get install -y libnuma-dev
 # CentOS
 yum install -y numactl-devel
 cd /usr/src/PF_RING-6.0.2/userland/lib
-./configure  --disable-bpf --prefix=/opt/pf_ring
+./configure --prefix=/opt/pf_ring
 make
 make install
 ```

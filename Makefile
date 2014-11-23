@@ -48,6 +48,7 @@ ifeq ($(ENGINE), PF_RING)
  LIBS += -lnuma
  # for clock_gettime
  LIBS += -lrt
+ LIBS += -lpcap
  LIBS_PATH += -L/opt/pf_ring/lib
 endif
 
