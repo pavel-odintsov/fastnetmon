@@ -146,7 +146,7 @@ sub install {
         print "Select $interfaces_as_list as active interfaces\n";
 
         print "Tune config\n";
-        `sed 's/interfaces.*/interfaces = $interfaces_as_list/' $fastnetmon_config_path`;
+        `sed -i 's/interfaces.*/interfaces = $interfaces_as_list/' $fastnetmon_config_path`;
     }
 
     print "Please add your subnets in /etc/networks_list in CIDR format one subnet per line\n";
@@ -157,5 +157,16 @@ sub get_active_network_interfaces {
     my @interfaces = `netstat -i|egrep -v 'lo|Iface|Kernel'|awk '{print \$1}'`;
     chomp @interfaces;
 
-    return  @interfaces;
+    my @clean_interfaces = ();
+
+    for my $iface (@interfaces) {
+        # skip aliases
+        if ($iface =~ /:/) {
+            next;
+        }
+
+        push @clean_interfaces, $iface;
+    }
+
+    return  @clean_interfaces;
 }
