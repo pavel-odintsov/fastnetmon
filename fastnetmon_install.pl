@@ -110,7 +110,7 @@ sub install {
         my $fastnetmon_deps_as_string = join " ", @fastnetmon_deps;
         `apt-get install -y --force-yes $fastnetmon_deps_as_string`;
     } elsif ($distro_type eq 'centos') {
-        my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++', 'boost-devel', 'GeoIP-devel', 'log4cpp-devel', 'ncurses-devel', 'glibc-static', 'ncurses-static', 'gpm-static', 'gpm-devel');
+        my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++', 'boost-devel', 'GeoIP-devel', 'log4cpp-devel', 'ncurses-devel', 'glibc-static', 'ncurses-static', 'boost-thread', 'libpcap-devel', 'gpm-static', 'gpm-devel');
 
         my $fastnetmon_deps_as_string = join " ", @fastnetmon_deps;
         `yum install -y $fastnetmon_deps_as_string`;
@@ -121,6 +121,12 @@ sub install {
     `git clone $fastnetmon_git_path`;
 
     chdir "/usr/src/fastnetmon";
+
+    # Hmmmmmm..... I reinvented configure! :'(
+    if ($distro_type eq 'centos') {
+        `sed -i 's/boost_thread/boost_thread-mt/' Makefile`;
+    }
+
     `make`;
 
     my $fastnetmon_dir = "/opt/fastnetmon";
