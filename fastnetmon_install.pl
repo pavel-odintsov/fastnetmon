@@ -17,19 +17,38 @@ if (-e "/etc/debian_version") {
     chomp $distro_version;
 }
 
-unless ($distro_type eq 'debian') {
+if (-e "/etc/redhat-release") {
+    $distro_type = 'centos';
+
+    $distro_version = `cat /etc/redhat-release | awk '{print \$3}'`;
+    chomp $distro_version;
+}
+
+unless ($distro_type) {
     die "This distro is unsupported, please do manual install";
 }
 
-install_debian();
+install();
 
-sub install_debian {
+sub install {
     my $kernel_version = `uname -r`;
     chomp $kernel_version;
 
-    print "Install dependency with apt-get\n";
-    `apt-get update`;
-    `apt-get install -y build-essential bison flex linux-headers-$kernel_version libnuma-dev wget tar make`;
+    print "Install PF_RING dependency with package manager\n";
+
+    if ($distro_type eq 'debian') {
+        `apt-get update`;
+        `apt-get install -y --force-yes build-essential bison flex linux-headers-$kernel_version libnuma-dev wget tar make`;
+    } elsif ($distro_type eq 'centos') {
+        my $kernel_package_name = 'kernel-devel';
+
+        # Fix deplist for OpenVZ
+        if ($kernel_version =~ /stab/) {
+            $kernel_package_name = 'vzkernel-devel';
+        }
+
+        `yum install -y make bison flex $kernel_package_name gcc gcc-c++`;
+    }
 
     print "Download PF_RING $pf_ring_version sources\n";
 
@@ -84,10 +103,18 @@ sub install_debian {
     `ldconfig`; 
 
     print "Install FastNetMon dependency list\n";
-    my @fastnetmon_deps = ("git", "g++", "gcc", "libboost-all-dev", "libgpm-dev", "libncurses5-dev", "liblog4cpp5-dev", "libnuma-dev", "libgeoip-dev","libpcap-dev");
 
-    my $fastnetmon_deps_as_string = join " ", @fastnetmon_deps;
-    `apt-get install -y $fastnetmon_deps_as_string`;
+    if ($distro_type eq 'debian') {
+        my @fastnetmon_deps = ("git", "g++", "gcc", "libboost-all-dev", "libgpm-dev", "libncurses5-dev", "liblog4cpp5-dev", "libnuma-dev", "libgeoip-dev","libpcap-dev");
+
+        my $fastnetmon_deps_as_string = join " ", @fastnetmon_deps;
+        `apt-get install -y --force-yes $fastnetmon_deps_as_string`;
+    } elsif ($distro_type eq 'centos') {
+        my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++', 'boost-devel', 'GeoIP-devel', 'log4cpp-devel', 'ncurses-devel', 'glibc-static', 'ncurses-static', 'gpm-static', 'gpm-devel');
+
+        my $fastnetmon_deps_as_string = join " ", @fastnetmon_deps;
+        `yum install -y $fastnetmon_deps_as_string`;
+    }
 
     print "Clone FastNetMon repo\n";
     chdir "/usr/src";
