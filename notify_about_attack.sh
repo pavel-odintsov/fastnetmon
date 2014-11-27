@@ -16,7 +16,10 @@ if [ "$4" = "unban" ]; then
     exit 0
 fi
 
-cat | mail -s "FastNetMon Guard: IP $1 blocked because $2 attack with power $3 pps" $email_notify;
-# You can add ban code here!
-# iptables -A INPUT -s $1 -j DROP
-# iptables -A INPUT -d $1 -j DROP
+if [ "$4" = "ban" ]; then
+    cat | mail -s "FastNetMon Guard: IP $1 blocked because $2 attack with power $3 pps" $email_notify;
+    # You can add ban code here!
+    # iptables -A INPUT -s $1 -j DROP
+    # iptables -A INPUT -d $1 -j DROP
+    exit 0
+fi
