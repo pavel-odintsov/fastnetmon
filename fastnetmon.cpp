@@ -120,11 +120,17 @@ bool DEBUG = 0;
 // flag about dumping all packets to console
 bool DEBUG_DUMP_ALL_PACKETS = false;
 
-// Period for recounting pps/traffic
+// Period for update screen for console version of tool
 unsigned int check_period = 3;
 
 // Standard ban time in seconds for all attacks but you can tune this value
 int standard_ban_time = 1800; 
+
+// We calc average pps/bps for this time
+double average_calculation_amount = 15;
+
+// Enable or disable average traffic counter
+bool print_average_traffic_counts = false;
 
 #ifdef PCAP
 // Enlarge receive buffer for PCAP for minimize packet drops
@@ -219,7 +225,9 @@ typedef attack_details banlist_item;
 typedef pair<uint32_t, uint32_t> subnet;
 
 // main data structure for storing traffic and speed data for all our IPs
-typedef struct {
+class map_element {
+public:
+    map_element() : in_bytes(0), out_bytes(0), in_packets(0), out_packets(0), tcp_in_packets(0), tcp_out_packets(0), tcp_in_bytes(0), tcp_out_bytes(0), udp_in_packets(0), udp_out_packets(0), udp_in_bytes(0), udp_out_bytes(0), in_flows(0), out_flows(0) {}
     unsigned  int in_bytes;
     unsigned  int out_bytes;
     unsigned  int in_packets;
@@ -239,7 +247,7 @@ typedef struct {
 
     unsigned int in_flows;
     unsigned int out_flows;
-} map_element;
+};
 
 // struct for save per direction and per protocol details for flow
 typedef struct {
@@ -333,6 +341,9 @@ map<uint64_t, int> FlowCounter;
 
 // Struct for string speed per IP
 map_for_counters SpeedCounter;
+
+// Struct for storing average speed per IP for specified interval 
+map_for_counters SpeedCounterAverage;
 
 #ifdef GEOIP
 map_for_counters GeoIpCounter;
@@ -604,18 +615,30 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
         // flow per second 
         unsigned int flows = 0;
 
+        unsigned int pps_average = 0;
+        unsigned int bps_average = 0;
+    
         // Create polymorphic pps, byte and flow counters
         if (data_direction == INCOMING) {
             pps = SpeedCounter[client_ip].in_packets;
             bps = SpeedCounter[client_ip].in_bytes;
+
+            pps_average = SpeedCounterAverage[client_ip].in_packets;
+            bps_average = SpeedCounterAverage[client_ip].in_bytes;
+
             flows = SpeedCounter[client_ip].in_flows;
         } else if (data_direction == OUTGOING) {
             pps = SpeedCounter[client_ip].out_packets;
             bps = SpeedCounter[client_ip].out_bytes;
+
+            pps_average = SpeedCounterAverage[client_ip].out_packets;
+            bps_average = SpeedCounterAverage[client_ip].out_bytes;
+
             flows = SpeedCounter[client_ip].out_flows;
         }    
 
         double mbps = (double)bps/1024/1024*8;
+        double mbps_average = (double)bps_average/1024/1024*8;
 
         // Set one number after comma for double
         output_buffer<<fixed<<setprecision(1);
@@ -624,12 +647,18 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
         if (element_number < max_ips_in_list) {
             string is_banned = ban_list.count(client_ip) > 0 ? " *banned* " : "";
             // We use setw for alignment
-            output_buffer
-                <<client_ip_as_string << "\t\t"
-                <<setw(6)<<pps   << " pps "
-                <<setw(6)<<mbps  << " mbps "
-                <<setw(6)<<flows << " flows "
-                << is_banned << endl;
+            output_buffer<<client_ip_as_string << "\t\t";
+
+            if (print_average_traffic_counts) {
+                output_buffer<<setw(6)<<pps   <<"/"<<pps_average<< " pps ";
+                output_buffer<<setw(6)<<mbps  << "/"<<mbps_average<<" mbps ";
+            } else {
+                output_buffer<<setw(6)<<pps<<" pps ";
+                output_buffer<<setw(6)<<mbps<<" mbps ";
+            }
+
+            output_buffer <<setw(6)<<flows << " flows ";
+            output_buffer<< is_banned << endl;
         }  
    
 #ifdef REDIS 
@@ -1257,6 +1286,7 @@ unsigned int get_asn_for_ip(uint32_t ip) {
 #endif 
 
 // void* void* data
+// It's not an calculation thread, it's vizualization thread :)
 void calculation_thread() {
     // we need wait one second for calculating speed by recalculate_speed
 
@@ -1404,6 +1434,21 @@ void recalculate_speed() {
 
             speed_counters_mutex.unlock();
 
+            // http://en.wikipedia.org/wiki/Moving_average#Application_to_measuring_computer_performance 
+            double speed_calc_period = 1;
+            double exp_power = -speed_calc_period/average_calculation_amount;
+            double exp_value = exp(exp_power);
+            
+            SpeedCounterAverage[client_ip].in_bytes  = unsigned(in_bps  + exp_value *
+                ((double)SpeedCounterAverage[client_ip].in_bytes - (double)in_bps));
+            SpeedCounterAverage[client_ip].out_bytes = unsigned(out_bps + exp_value *
+                ((double)SpeedCounterAverage[client_ip].out_bytes - (double)out_bps)); 
+
+            SpeedCounterAverage[client_ip].in_packets  = unsigned(in_pps  + exp_value *
+                ((double)SpeedCounterAverage[client_ip].in_packets -  (double)in_pps));
+            SpeedCounterAverage[client_ip].out_packets = unsigned(out_pps + exp_value *
+                ((double)SpeedCounterAverage[client_ip].out_packets - (double)out_pps));
+
             data_counters_mutex.lock();
             *vector_itr = zero_map_element;
             data_counters_mutex.unlock();
@@ -1494,6 +1539,7 @@ void calculation_programm() {
 
     // Application statistics
     output_buffer<<"Traffic calculated in:  "<< calculation_thread_execution_time.tv_sec<<" sec "<<calculation_thread_execution_time.tv_usec<<" microseconds\n";
+
 #ifdef PF_RING
         pfring_stat pfring_status_data;
         if(pfring_stats(pf_ring_descr, &pfring_status_data) >= 0) {
