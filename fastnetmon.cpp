@@ -2075,7 +2075,9 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& 
     prefix_for_check_adreess.add.sin.s_addr = dst_ip;
 
     unsigned long destination_subnet = 0;
-    if (found_patrica_node = patricia_search_best(lookup_tree, &prefix_for_check_adreess)) {
+    found_patrica_node = patricia_search_best(lookup_tree, &prefix_for_check_adreess);
+
+    if (found_patrica_node) {
         our_ip_is_destination = true;
         destination_subnet = found_patrica_node->prefix->add.sin.s_addr;
     }    
@@ -2084,7 +2086,9 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& 
     prefix_for_check_adreess.add.sin.s_addr = src_ip;
 
     unsigned long source_subnet = 0;
-    if (found_patrica_node = patricia_search_best(lookup_tree, &prefix_for_check_adreess)) { 
+    found_patrica_node = patricia_search_best(lookup_tree, &prefix_for_check_adreess);
+
+    if (found_patrica_node) { 
         our_ip_is_source = true;
         source_subnet = found_patrica_node->prefix->add.sin.s_addr;
     } 
