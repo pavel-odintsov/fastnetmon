@@ -105,12 +105,12 @@ sub install {
     print "Install FastNetMon dependency list\n";
 
     if ($distro_type eq 'debian') {
-        my @fastnetmon_deps = ("git", "g++", "gcc", "libboost-all-dev", "libgpm-dev", "libncurses5-dev", "liblog4cpp5-dev", "libnuma-dev", "libgeoip-dev","libpcap-dev", "clang");
+        my @fastnetmon_deps = ("git", "g++", "gcc", "libboost-all-dev", "libgpm-dev", "libncurses5-dev", "liblog4cpp5-dev", "libnuma-dev", "libgeoip-dev","libpcap-dev", "clang", "cmake");
 
         my $fastnetmon_deps_as_string = join " ", @fastnetmon_deps;
         `apt-get install -y --force-yes $fastnetmon_deps_as_string`;
     } elsif ($distro_type eq 'centos') {
-        my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++', 'boost-devel', 'GeoIP-devel', 'log4cpp-devel', 'ncurses-devel', 'glibc-static', 'ncurses-static', 'boost-thread', 'libpcap-devel', 'gpm-static', 'gpm-devel', 'clang');
+        my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++', 'boost-devel', 'GeoIP-devel', 'log4cpp-devel', 'ncurses-devel', 'glibc-static', 'ncurses-static', 'boost-thread', 'libpcap-devel', 'gpm-static', 'gpm-devel', 'clang', 'cmake');
 
         my $fastnetmon_deps_as_string = join " ", @fastnetmon_deps;
         `yum install -y $fastnetmon_deps_as_string`;
