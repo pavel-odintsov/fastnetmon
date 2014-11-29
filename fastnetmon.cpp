@@ -2589,7 +2589,15 @@ void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_
 string print_flow_tracking_for_specified_protocol(contrack_map_type& protocol_map, string client_ip, direction flow_direction) {
     stringstream buffer;
     // We shoud iterate over all fields
+
+    int printed_records = 0;
     for (contrack_map_type::iterator itr = protocol_map.begin(); itr != protocol_map.end(); ++itr) {
+        // We should limit number of records in flow dump because syn flood attacks produce thounsands of lines
+        if (printed_records > ban_details_records_count) {
+            buffer<<"Flows are cropped due very long list\n";
+            break;
+        }
+
         uint64_t packed_connection_data = itr->first;
         packed_conntrack_hash unpacked_key_struct;
         convert_integer_to_conntrack_hash_struct(&packed_connection_data, &unpacked_key_struct);
@@ -2603,6 +2611,8 @@ string print_flow_tracking_for_specified_protocol(contrack_map_type& protocol_ma
         
         buffer<<itr->second.bytes<<" bytes "<<itr->second.packets<<" packets";
         buffer<<"\n";
+
+        printed_records++;
     } 
 
     return buffer.str();
