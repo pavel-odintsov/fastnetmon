@@ -312,18 +312,11 @@ void read_sflow_datagram(SFSample* sample) {
                     printf("SFLFLOW_SAMPLE\n");
                     skipBytes(sample, getData32(sample));
                     //readFlowSample(sample, NO);
-                    {
-                        //uint32_t sampleLength = getData32(sample);
-                        //printf("sample length: %d\n", sampleLength);
-                        //uint8_t * sampleStart = (uint8_t *)sample->datap;
-                        //sample->datap += sampleLength - 1;
-                    }
-                
                     break;
                 case SFLCOUNTERS_SAMPLE:
-                    //readCountersSample(sample, NO);
+                    // We do not need counters for our task, skip it
                     skipBytes(sample, getData32(sample));
-                    printf("SFLCOUNTERS_SAMPLE\n");
+                    //printf("SFLCOUNTERS_SAMPLE\n");
                     break;
                 case SFLFLOW_SAMPLE_EXPANDED:
                     printf("SFLFLOW_SAMPLE_EXPANDED\n");
@@ -331,12 +324,12 @@ void read_sflow_datagram(SFSample* sample) {
                     //readFlowSample(sample, YES);
                     break;
                 case SFLCOUNTERS_SAMPLE_EXPANDED:
-                    //readCountersSample(sample, YES);
+                    // We do not need counters for our task, skip it
                     skipBytes(sample, getData32(sample));
-                    printf("SFLCOUNTERS_SAMPLE_EXPANDED\n");
+                    //printf("SFLCOUNTERS_SAMPLE_EXPANDED\n");
                     break;
                 default:
-                    printf("skip TLV record\n");
+                    //printf("skip TLV record\n");
                     skipTLVRecord(sample, sample->sampleType, getData32(sample));
                     break;
             }
