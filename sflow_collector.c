@@ -12,6 +12,21 @@
 #include <setjmp.h>
 #include <stdlib.h>
 
+/* define my own IP header struct - to ease portability */
+struct myiphdr
+  {
+    uint8_t version_and_headerLen;
+    uint8_t tos;
+    uint16_t tot_len;
+    uint16_t id;
+    uint16_t frag_off;
+    uint8_t ttl;
+    uint8_t protocol;
+    uint16_t check;
+    uint32_t saddr;
+    uint32_t daddr;
+};
+
 typedef struct _SFSample {
   SFLAddress sourceIP;
   SFLAddress agent_addr;
@@ -180,6 +195,9 @@ typedef struct _SFSample {
 void read_sflow_datagram(SFSample* sample);
 uint32_t getData32(SFSample *sample);
 void skipTLVRecord(SFSample *sample, uint32_t tag, uint32_t len);
+void readFlowSample(SFSample *sample, int expanded);
+void readFlowSample_header(SFSample *sample);
+void decodeIPV4(SFSample *sample);
 
 int main() {
     unsigned int udp_buffer_size = 65536;
@@ -310,8 +328,8 @@ void read_sflow_datagram(SFSample* sample) {
             switch(sample->sampleType) {
                 case SFLFLOW_SAMPLE:
                     printf("SFLFLOW_SAMPLE\n");
-                    skipBytes(sample, getData32(sample));
-                    //readFlowSample(sample, NO);
+                    //skipBytes(sample, getData32(sample));
+                    readFlowSample(sample, 0);
                     break;
                 case SFLCOUNTERS_SAMPLE:
                     // We do not need counters for our task, skip it
@@ -320,8 +338,8 @@ void read_sflow_datagram(SFSample* sample) {
                     break;
                 case SFLFLOW_SAMPLE_EXPANDED:
                     printf("SFLFLOW_SAMPLE_EXPANDED\n");
-                    skipBytes(sample, getData32(sample));
-                    //readFlowSample(sample, YES);
+                    //skipBytes(sample, getData32(sample));
+                    readFlowSample(sample, 1);
                     break;
                 case SFLCOUNTERS_SAMPLE_EXPANDED:
                     // We do not need counters for our task, skip it
@@ -343,4 +361,213 @@ void skipTLVRecord(SFSample *sample, uint32_t tag, uint32_t len) {
 }
 
 
+void readFlowSample(SFSample *sample, int expanded) {
+    uint32_t num_elements, sampleLength;
+    uint8_t *sampleStart;
 
+    sampleLength = getData32(sample);
+    sampleStart = (uint8_t *)sample->datap;
+    sample->samplesGenerated = getData32(sample);
+  
+    if(expanded) {
+        sample->ds_class = getData32(sample);
+        sample->ds_index = getData32(sample);
+    } else {
+        uint32_t samplerId = getData32(sample);
+        sample->ds_class = samplerId >> 24;
+        sample->ds_index = samplerId & 0x00ffffff;
+    }
+
+    sample->meanSkipCount = getData32(sample);
+    sample->samplePool = getData32(sample);
+    sample->dropEvents = getData32(sample);
+   
+    if(expanded) {
+        sample->inputPortFormat = getData32(sample);
+        sample->inputPort = getData32(sample);
+        sample->outputPortFormat = getData32(sample);
+        sample->outputPort = getData32(sample);
+     } else {
+        uint32_t inp, outp;
+        inp = getData32(sample);
+        outp = getData32(sample);
+        sample->inputPortFormat = inp >> 30;
+        sample->outputPortFormat = outp >> 30;
+        sample->inputPort = inp & 0x3fffffff;
+        sample->outputPort = outp & 0x3fffffff;
+    }
+
+    num_elements = getData32(sample);
+    uint32_t el;
+    for(el = 0; el < num_elements; el++) {
+        uint32_t tag, length;
+        uint8_t *start;
+        char buf[51];
+        tag = sample->elementType = getData32(sample);
+
+        length = getData32(sample);
+        start = (uint8_t *)sample->datap;
+
+        // tag analyze
+        if (tag == SFLFLOW_HEADER) {
+            // process data
+            readFlowSample_header(sample);
+        } else {
+            skipTLVRecord(sample, tag, length);
+        }
+    }
+}
+
+#define NFT_ETHHDR_SIZ 14
+#define NFT_8022_SIZ 3
+#define NFT_MAX_8023_LEN 1500
+
+#define NFT_MIN_SIZ (NFT_ETHHDR_SIZ + sizeof(struct myiphdr))
+
+void decodeLinkLayer(SFSample *sample) {
+  uint8_t *start = (uint8_t *)sample->header;
+  uint8_t *end = start + sample->headerLen;
+  uint8_t *ptr = start;
+  uint16_t type_len;
+
+  /* assume not found */
+  sample->gotIPV4 = 0;
+  sample->gotIPV6 = 0;
+
+  if(sample->headerLen < NFT_ETHHDR_SIZ) return; /* not enough for an Ethernet header */
+  //sf_log(sample,"dstMAC %02x%02x%02x%02x%02x%02x\n", ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]);
+  memcpy(sample->eth_dst, ptr, 6);
+  ptr += 6;
+
+  //sf_log(sample,"srcMAC %02x%02x%02x%02x%02x%02x\n", ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]);
+  memcpy(sample->eth_src, ptr, 6);
+  ptr += 6;
+  type_len = (ptr[0] << 8) + ptr[1];
+  ptr += 2;
+
+   if(type_len == 0x8100) {
+    /* VLAN  - next two bytes */
+    uint32_t vlanData = (ptr[0] << 8) + ptr[1];
+    uint32_t vlan = vlanData & 0x0fff;
+    uint32_t priority = vlanData >> 13;
+    ptr += 2;
+    /*  _____________________________________ */
+    /* |   pri  | c |         vlan-id        | */
+    /*  ------------------------------------- */
+    /* [priority = 3bits] [Canonical Format Flag = 1bit] [vlan-id = 12 bits] */
+    //sf_log(sample,"decodedVLAN %u\n", vlan);
+    //sf_log(sample,"decodedPriority %u\n", priority);
+    sample->in_vlan = vlan;
+    /* now get the type_len again (next two bytes) */
+    type_len = (ptr[0] << 8) + ptr[1];
+    ptr += 2;
+  }
+
+  /* assume type_len is an ethernet-type now */
+  sample->eth_type = type_len;
+
+  if(type_len == 0x0800) {
+    /* IPV4 */
+    if((end - ptr) < sizeof(struct myiphdr)) return;
+    /* look at first byte of header.... */
+    /*  ___________________________ */
+    /* |   version   |    hdrlen   | */
+    /*  --------------------------- */
+    if((*ptr >> 4) != 4) return; /* not version 4 */
+    if((*ptr & 15) < 5) return; /* not IP (hdr len must be 5 quads or more) */
+    /* survived all the tests - store the offset to the start of the ip header */
+    sample->gotIPV4 = 1;
+    sample->offsetToIPV4 = (ptr - start);
+  }
+
+    //printf("vlan: %d\n",sample->in_vlan);
+}
+
+void readFlowSample_header(SFSample *sample) {
+    sample->headerProtocol = getData32(sample);
+    sample->sampledPacketSize = getData32(sample);
+  
+    if(sample->datagramVersion > 4) { 
+        /* stripped count introduced in sFlow version 5 */
+        sample->stripped = getData32(sample);
+    }
+    
+    sample->headerLen = getData32(sample);
+    sample->header = (uint8_t *)sample->datap; /* just point at the header */
+    skipBytes(sample, sample->headerLen);
+
+    if (sample->headerProtocol == SFLHEADER_ETHERNET_ISO8023) {
+        decodeLinkLayer(sample);
+
+        // if we found IPv4 
+        decodeIPV4(sample);
+    } else {
+        printf("Not supported protocol: %d\n", sample->headerProtocol);
+        return;
+    }
+}
+
+char *IP_to_a(uint32_t ipaddr, char *buf)
+{
+  uint8_t *ip = (uint8_t *)&ipaddr;
+  /* should really be: snprintf(buf, buflen,...) but snprintf() is not always available */
+  sprintf(buf, "%u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
+  return buf;
+}
+
+static char *printAddress(SFLAddress *address, char *buf) {
+  switch(address->type) {
+  case SFLADDRESSTYPE_IP_V4:
+    IP_to_a(address->address.ip_v4.addr, buf);
+    break;
+  case SFLADDRESSTYPE_IP_V6:
+    {
+      uint8_t *b = address->address.ip_v6.addr;
+      /* should really be: snprintf(buf, buflen,...) but snprintf() is not always available */
+      sprintf(buf, "%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+              b[0],b[1],b[2],b[3],b[4],b[5],b[6],b[7],b[8],b[9],b[10],b[11],b[12],b[13],b[14],b[15]);
+    }
+    break;
+  default:
+    sprintf(buf, "-");
+  }
+  return buf;
+}
+
+void decodeIPV4(SFSample *sample)
+{
+  if(sample->gotIPV4) {
+    char buf[51];
+    uint8_t *ptr = sample->header + sample->offsetToIPV4;
+    /* Create a local copy of the IP header (cannot overlay structure in case it is not quad-aligned...some
+       platforms would core-dump if we tried that).  It's OK coz this probably performs just as well anyway. */
+    struct myiphdr ip;
+    memcpy(&ip, ptr, sizeof(ip));
+    /* Value copy all ip elements into sample */
+    sample->ipsrc.type = SFLADDRESSTYPE_IP_V4;
+    sample->ipsrc.address.ip_v4.addr = ip.saddr;
+    sample->ipdst.type = SFLADDRESSTYPE_IP_V4;
+    sample->ipdst.address.ip_v4.addr = ip.daddr;
+    sample->dcd_ipProtocol = ip.protocol;
+    sample->dcd_ipTos = ip.tos;
+    sample->dcd_ipTTL = ip.ttl;
+
+    printf("ip.tot_len %d\n", ntohs(ip.tot_len));
+    /* Log out the decoded IP fields */
+    printf("srcIP %s\n", printAddress(&sample->ipsrc, buf));
+    printf("dstIP %s\n", printAddress(&sample->ipdst, buf));
+    //printf("IPProtocol %u\n", sample->dcd_ipProtocol);
+    //printf("IPTOS %u\n", sample->dcd_ipTos);
+    //printf("IPTTL %u\n", sample->dcd_ipTTL);
+    /* check for fragments */
+    sample->ip_fragmentOffset = ntohs(ip.frag_off) & 0x1FFF;
+    if(sample->ip_fragmentOffset > 0) {
+      //printf("IPFragmentOffset %u\n", sample->ip_fragmentOffset);
+    } else {
+      /* advance the pointer to the next protocol layer */
+      /* ip headerLen is expressed as a number of quads */
+      ptr += (ip.version_and_headerLen & 0x0f) * 4;
+      //decodeIPLayer4(sample, ptr);
+    }
+  }
+}
