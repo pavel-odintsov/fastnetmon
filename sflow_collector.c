@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <setjmp.h>
+#include <stdlib.h>
 
 typedef struct _SFSample {
   SFLAddress sourceIP;
@@ -178,6 +179,7 @@ typedef struct _SFSample {
 
 void read_sflow_datagram(SFSample* sample);
 uint32_t getData32(SFSample *sample);
+void skipTLVRecord(SFSample *sample, uint32_t tag, uint32_t len);
 
 int main() {
     unsigned int udp_buffer_size = 65536;
@@ -203,7 +205,7 @@ int main() {
         int received_bytes = recvfrom(sockfd, udp_buffer, udp_buffer_size, 0, (struct sockaddr *)&cliaddr, &address_len); 
    
         if (received_bytes > 0) {
-            printf("We receive %d\n", received_bytes);
+            //printf("We receive %d\n", received_bytes);
 
             SFSample sample;
             memset(&sample, 0, sizeof(sample));
@@ -243,7 +245,9 @@ void skipBytes(SFSample *sample, uint32_t skip) {
   int quads = (skip + 3) / 4;
   sample->datap += quads;
   if(skip > sample->rawSampleLen || (uint8_t *)sample->datap > sample->endp) {
-    SFABORT(sample, SF_ABORT_EOS);
+    //SFABORT(sample, SF_ABORT_EOS);
+    printf("Internal error!!!\n");
+    exit(0);
   }
 }
 
@@ -268,7 +272,7 @@ void read_sflow_datagram(SFSample* sample) {
     sample->endp = (uint8_t *)sample->rawSample + sample->rawSampleLen;
 
     sample->datagramVersion = getData32(sample);
-    printf("sFLOW version %d\n", sample->datagramVersion);
+    //printf("sFLOW version %d\n", sample->datagramVersion);
 
     if (sample->datagramVersion != 5) {
         printf("We do not support old sFLOW protocols. Please change version to sFLOW 5");
@@ -288,5 +292,62 @@ void read_sflow_datagram(SFSample* sample) {
     sample->sysUpTime = getData32(sample);
     uint32_t samplesInPacket = getData32(sample);
 
-    printf("We have %d samples in packet\n", samplesInPacket); 
+    // printf("We have %d samples in packet\n", samplesInPacket); 
+
+    uint32_t samp = 0;
+    for(; samp < samplesInPacket; samp++) {
+        if((uint8_t *)sample->datap >= sample->endp) {
+            printf("We try to read data outside packet!\n");
+            exit(0);
+            return;
+        }
+
+        printf("Sample #%d\n", samp);
+
+        /* just read the tag, then call the approriate decode fn */
+        sample->sampleType = getData32(sample);
+        if (sample->datagramVersion >= 5) {
+            switch(sample->sampleType) {
+                case SFLFLOW_SAMPLE:
+                    printf("SFLFLOW_SAMPLE\n");
+                    skipBytes(sample, getData32(sample));
+                    //readFlowSample(sample, NO);
+                    {
+                        //uint32_t sampleLength = getData32(sample);
+                        //printf("sample length: %d\n", sampleLength);
+                        //uint8_t * sampleStart = (uint8_t *)sample->datap;
+                        //sample->datap += sampleLength - 1;
+                    }
+                
+                    break;
+                case SFLCOUNTERS_SAMPLE:
+                    //readCountersSample(sample, NO);
+                    skipBytes(sample, getData32(sample));
+                    printf("SFLCOUNTERS_SAMPLE\n");
+                    break;
+                case SFLFLOW_SAMPLE_EXPANDED:
+                    printf("SFLFLOW_SAMPLE_EXPANDED\n");
+                    skipBytes(sample, getData32(sample));
+                    //readFlowSample(sample, YES);
+                    break;
+                case SFLCOUNTERS_SAMPLE_EXPANDED:
+                    //readCountersSample(sample, YES);
+                    skipBytes(sample, getData32(sample));
+                    printf("SFLCOUNTERS_SAMPLE_EXPANDED\n");
+                    break;
+                default:
+                    printf("skip TLV record\n");
+                    skipTLVRecord(sample, sample->sampleType, getData32(sample));
+                    break;
+            }
+        }
+    }
 }
+
+void skipTLVRecord(SFSample *sample, uint32_t tag, uint32_t len) {
+  char buf[51];
+  skipBytes(sample, len);
+}
+
+
+
