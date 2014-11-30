@@ -12,6 +12,37 @@
 #include <setjmp.h>
 #include <stdlib.h>
 
+/* same for tcp */
+struct mytcphdr
+  {
+    uint16_t th_sport;          /* source port */
+    uint16_t th_dport;          /* destination port */
+    uint32_t th_seq;            /* sequence number */
+    uint32_t th_ack;            /* acknowledgement number */
+    uint8_t th_off_and_unused;
+    uint8_t th_flags;
+    uint16_t th_win;            /* window */
+    uint16_t th_sum;            /* checksum */
+    uint16_t th_urp;            /* urgent pointer */
+};
+
+/* and UDP */
+struct myudphdr {
+  uint16_t uh_sport;           /* source port */
+  uint16_t uh_dport;           /* destination port */
+  uint16_t uh_ulen;            /* udp length */
+  uint16_t uh_sum;             /* udp checksum */
+};
+
+/* and ICMP */
+struct myicmphdr
+{
+  uint8_t type;         /* message type */
+  uint8_t code;         /* type sub-code */
+  /* ignore the rest */
+};
+
+
 /* define my own IP header struct - to ease portability */
 struct myiphdr
   {
@@ -535,8 +566,61 @@ static char *printAddress(SFLAddress *address, char *buf) {
   return buf;
 }
 
-void decodeIPV4(SFSample *sample)
-{
+static void decodeIPLayer4(SFSample *sample, uint8_t *ptr) {
+  uint8_t *end = sample->header + sample->headerLen;
+  if(ptr > (end - 8)) {
+    /* not enough header bytes left */
+    return;
+  }
+  switch(sample->dcd_ipProtocol) {
+  case 1: /* ICMP */
+    {    
+      struct myicmphdr icmp;
+      memcpy(&icmp, ptr, sizeof(icmp));
+      printf("ICMPType %u\n", icmp.type);
+      printf("ICMPCode %u\n", icmp.code);
+      sample->dcd_sport = icmp.type;
+      sample->dcd_dport = icmp.code;
+      sample->offsetToPayload = ptr + sizeof(icmp) - sample->header;
+    }    
+    break;
+  case 6: /* TCP */
+    {    
+      struct mytcphdr tcp; 
+      int headerBytes;
+      memcpy(&tcp, ptr, sizeof(tcp));
+      sample->dcd_sport = ntohs(tcp.th_sport);
+      sample->dcd_dport = ntohs(tcp.th_dport);
+      sample->dcd_tcpFlags = tcp.th_flags;
+      printf("TCPSrcPort %u\n", sample->dcd_sport);
+      printf("TCPDstPort %u\n",sample->dcd_dport);
+      printf("TCPFlags %u\n", sample->dcd_tcpFlags);
+      headerBytes = (tcp.th_off_and_unused >> 4) * 4; 
+      ptr += headerBytes;
+     sample->offsetToPayload = ptr - sample->header;
+    }
+    break;
+  case 17: /* UDP */
+    {
+      struct myudphdr udp;
+      memcpy(&udp, ptr, sizeof(udp));
+      sample->dcd_sport = ntohs(udp.uh_sport);
+      sample->dcd_dport = ntohs(udp.uh_dport);
+      sample->udp_pduLen = ntohs(udp.uh_ulen);
+      printf("UDPSrcPort %u\n", sample->dcd_sport);
+      printf("UDPDstPort %u\n", sample->dcd_dport);
+      printf("UDPBytes %u\n", sample->udp_pduLen);
+      sample->offsetToPayload = ptr + sizeof(udp) - sample->header;
+    }
+    break;
+  default: /* some other protcol */
+    sample->offsetToPayload = ptr - sample->header;
+    break;
+  }
+}
+
+
+void decodeIPV4(SFSample *sample) {
   if(sample->gotIPV4) {
     char buf[51];
     uint8_t *ptr = sample->header + sample->offsetToIPV4;
@@ -557,7 +641,7 @@ void decodeIPV4(SFSample *sample)
     /* Log out the decoded IP fields */
     printf("srcIP %s\n", printAddress(&sample->ipsrc, buf));
     printf("dstIP %s\n", printAddress(&sample->ipdst, buf));
-    //printf("IPProtocol %u\n", sample->dcd_ipProtocol);
+    printf("IPProtocol %u\n", sample->dcd_ipProtocol);
     //printf("IPTOS %u\n", sample->dcd_ipTos);
     //printf("IPTTL %u\n", sample->dcd_ipTTL);
     /* check for fragments */
@@ -568,7 +652,7 @@ void decodeIPV4(SFSample *sample)
       /* advance the pointer to the next protocol layer */
       /* ip headerLen is expressed as a number of quads */
       ptr += (ip.version_and_headerLen & 0x0f) * 4;
-      //decodeIPLayer4(sample, ptr);
+      decodeIPLayer4(sample, ptr);
     }
   }
 }
