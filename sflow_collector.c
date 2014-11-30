@@ -320,14 +320,14 @@ void read_sflow_datagram(SFSample* sample) {
             return;
         }
 
-        printf("Sample #%d\n", samp);
+        //printf("Sample #%d\n", samp);
 
         /* just read the tag, then call the approriate decode fn */
         sample->sampleType = getData32(sample);
         if (sample->datagramVersion >= 5) {
             switch(sample->sampleType) {
                 case SFLFLOW_SAMPLE:
-                    printf("SFLFLOW_SAMPLE\n");
+                    //printf("SFLFLOW_SAMPLE\n");
                     //skipBytes(sample, getData32(sample));
                     readFlowSample(sample, 0);
                     break;
@@ -337,7 +337,7 @@ void read_sflow_datagram(SFSample* sample) {
                     //printf("SFLCOUNTERS_SAMPLE\n");
                     break;
                 case SFLFLOW_SAMPLE_EXPANDED:
-                    printf("SFLFLOW_SAMPLE_EXPANDED\n");
+                    //printf("SFLFLOW_SAMPLE_EXPANDED\n");
                     //skipBytes(sample, getData32(sample));
                     readFlowSample(sample, 1);
                     break;
@@ -379,6 +379,7 @@ void readFlowSample(SFSample *sample, int expanded) {
     }
 
     sample->meanSkipCount = getData32(sample);
+    printf("Sample ratio: %d\n", sample->meanSkipCount);
     sample->samplePool = getData32(sample);
     sample->dropEvents = getData32(sample);
    
