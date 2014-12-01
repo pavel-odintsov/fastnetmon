@@ -44,7 +44,7 @@ sub install {
 
         # Fix deplist for OpenVZ
         if ($kernel_version =~ /stab/) {
-            $kernel_package_name = 'vzkernel-devel';
+            $kernel_package_name = "vzkernel-devel-$kernel_version";
         }
 
         `yum install -y make bison flex $kernel_package_name gcc gcc-c++`;
