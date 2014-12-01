@@ -22,6 +22,13 @@
 #include <netdb.h>
 
 #include "libpatricia/patricia.h"
+#include "fastnetmon_types.h"
+
+// #define sFLOW
+
+#ifdef sFLOW
+#include "sflow_plugin/sflow_collector.h"
+#endif
 
 #include <ncurses.h>
 
@@ -182,20 +189,9 @@ typedef struct {
 total_counter_element total_counters[4];
 total_counter_element total_speed_counters[4];
 
+
 unsigned int incoming_total_flows_speed = 0;
 unsigned int outgoing_total_flows_speed = 0;
-
-// simplified packet struct for lightweight save into memory
-struct simple_packet {
-    uint32_t     src_ip;
-    uint32_t     dst_ip;
-    uint16_t     source_port;
-    uint16_t     destination_port;
-    unsigned     int protocol;
-    unsigned     int length;
-    uint8_t      flags; /* tcp flags */
-    struct       timeval ts;
-};
 
 // structure with attack details
 struct attack_details {
@@ -1618,6 +1614,13 @@ void init_logging() {
     logger.info("Logger initialized!");
 }
 
+
+#ifdef sFLOW
+void sflow_collection_task() {
+    start_sflow_collection(process_packet);
+}
+#endif
+
 int main(int argc,char **argv) {
     lookup_tree = New_Patricia(32);
     whitelist_tree = New_Patricia(32);
@@ -1712,7 +1715,13 @@ int main(int argc,char **argv) {
     // Run banlist cleaner thread 
     boost::thread cleanup_ban_list_thread(cleanup_ban_list);
 
+    // pf_ring processing
     boost::thread main_packet_process_thread(main_packet_process_task);
+    
+#ifdef sFLOW
+    // sFLOW
+    boost::thread sflow_process_collector_thread(sflow_collection_task);
+#endif
 
     // Init ncurses screen 
     initscr();
@@ -1742,6 +1751,10 @@ int main(int argc,char **argv) {
                 break;
         }
     }
+
+#ifdef sFLOW
+    sflow_process_collector_thread.join();
+#endif
 
     // wait threads
     main_packet_process_thread.join();
