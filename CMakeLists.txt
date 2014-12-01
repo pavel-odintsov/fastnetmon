@@ -25,8 +25,12 @@ add_library(libpatricia STATIC libpatricia/patricia.c)
 add_executable(fastnetmon fastnetmon.cpp)
 
 # Find boost: http://www.cmake.org/cmake/help/v3.0/module/FindBoost.html
-# Detailed errors
+
+# Disable cmake script from Boost package becaus it is broken: http://public.kitware.com/Bug/view.php?id=15270
+set(Boost_NO_BOOST_CMAKE ON)
+# Enable detailed errors
 set(Boost_DETAILED_FAILURE_MSG ON)
+
 find_package(Boost COMPONENTS thread regex REQUIRED)
 
 if(Boost_FOUND)
