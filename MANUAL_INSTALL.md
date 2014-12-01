@@ -59,18 +59,12 @@ Install FastNetMon:
    cd fastnetmon
 ```
 
-Building FastNetMon with cmake:
+Build FastNetMon with cmake:
 ```bash
 cd /usr/src/fastnetmon
 mkdir build
 cd build
 cmake ..
-make
-```
-
-Select backend, we use PF_RING as default, if you need PCAP you must change variable ENGINE in Makefile.
-Compile it:
-```bash
 make
 ```
 
