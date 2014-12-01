@@ -1,8 +1,18 @@
+#include <iostream>
 #include <sys/types.h>
 #include <inttypes.h>
+#include <iterator>
+#include <sstream> 
+#include <vector>
+#include <ostream>
+using namespace std;
 
 // sflowtool-3.32
 #include "sflow.h"
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 // UDP server
 #include <sys/socket.h>
@@ -12,9 +22,22 @@
 #include <setjmp.h>
 #include <stdlib.h>
 
+// simplified packet struct for lightweight save into memory
+struct simple_packet {
+    uint32_t     src_ip;
+    uint32_t     dst_ip;
+    uint16_t     source_port;
+    uint16_t     destination_port;
+    unsigned     int protocol;
+    unsigned     int length;
+    uint8_t      flags; /* tcp flags */
+    struct       timeval ts;
+};
+
+typedef void (*process_packet_pointer)(simple_packet&);
+
 /* same for tcp */
-struct mytcphdr
-  {
+struct mytcphdr {
     uint16_t th_sport;          /* source port */
     uint16_t th_dport;          /* destination port */
     uint32_t th_seq;            /* sequence number */
@@ -35,8 +58,7 @@ struct myudphdr {
 };
 
 /* and ICMP */
-struct myicmphdr
-{
+struct myicmphdr {
   uint8_t type;         /* message type */
   uint8_t code;         /* type sub-code */
   /* ignore the rest */
@@ -44,8 +66,7 @@ struct myicmphdr
 
 
 /* define my own IP header struct - to ease portability */
-struct myiphdr
-  {
+struct myiphdr {
     uint8_t version_and_headerLen;
     uint8_t tos;
     uint16_t tot_len;
@@ -229,8 +250,17 @@ void skipTLVRecord(SFSample *sample, uint32_t tag, uint32_t len);
 void readFlowSample(SFSample *sample, int expanded);
 void readFlowSample_header(SFSample *sample);
 void decodeIPV4(SFSample *sample);
+int start_sflow_collection();
+void print_simple_packet(struct simple_packet& packet);
 
+process_packet_pointer process_func_ptr = NULL;
 int main() {
+    process_func_ptr = print_simple_packet;
+
+    start_sflow_collection();
+}
+
+int start_sflow_collection() {
     unsigned int udp_buffer_size = 65536;
     char udp_buffer[udp_buffer_size];
 
@@ -275,6 +305,116 @@ int main() {
         }
     }
 }
+
+// copy && paste
+int extract_bit_value(uint8_t num, int bit) {
+    if (bit > 0 && bit <= 8) {
+        return ( (num >> (bit-1)) & 1 );
+    } else {
+        return 0;
+    }
+}
+
+
+// copy && paste
+string print_tcp_flags(uint8_t flag_value) { 
+    vector<string> all_flags;
+
+    if (extract_bit_value(flag_value, 1)) {
+        all_flags.push_back("fin");
+    }
+
+    if (extract_bit_value(flag_value, 2)) {
+        all_flags.push_back("syn");
+    }
+
+    if (extract_bit_value(flag_value, 3)) {
+        all_flags.push_back("rst");
+    }
+
+    if (extract_bit_value(flag_value, 4)) {
+        all_flags.push_back("psh");
+    }
+
+    if (extract_bit_value(flag_value, 5)) {
+        all_flags.push_back("ack");
+    }
+
+    if (extract_bit_value(flag_value, 6)) {
+        all_flags.push_back("urg");
+    }
+
+
+    ostringstream flags_as_string;
+
+    if (all_flags.empty()) {
+        return "-";
+    }
+
+    // concatenate all vector elements with comma
+    std::copy(all_flags.begin(), all_flags.end() - 1, std::ostream_iterator<string>(flags_as_string, ","));
+
+    // add last element
+    flags_as_string << all_flags.back();
+
+    return flags_as_string.str();
+}
+
+// copy and paste
+string convert_ip_as_uint_to_string(uint32_t ip_as_integer) {
+    struct in_addr ip_addr;
+    ip_addr.s_addr = ip_as_integer;
+    return (string)inet_ntoa(ip_addr);
+}
+
+string convert_timeval_to_date(struct timeval tv) {
+    time_t nowtime = tv.tv_sec;
+    struct tm *nowtm = localtime(&nowtime);
+    
+    char tmbuf[64];
+    char buf[64];
+
+    strftime(tmbuf, sizeof(tmbuf), "%Y-%m-%d %H:%M:%S", nowtm);
+
+    snprintf(buf, sizeof(buf), "%s.%06ld", tmbuf, tv.tv_usec); 
+
+    return string(buf);
+}
+
+
+// copy and paste
+void print_simple_packet(struct simple_packet& packet) {
+    std::stringstream buffer;
+
+    string proto_name;
+    switch (packet.protocol) {
+        case IPPROTO_TCP:
+            proto_name = "tcp";
+            break;
+        case IPPROTO_UDP:
+            proto_name = "udp";
+            break;
+        case IPPROTO_ICMP:
+            proto_name = "icmp";
+            break;
+        default:
+            proto_name = "unknown";
+            break;
+    }
+
+    buffer<<convert_timeval_to_date(packet.ts)<<" ";
+
+    buffer
+        <<convert_ip_as_uint_to_string(packet.src_ip)<<":"<<packet.source_port
+        <<" > "
+        <<convert_ip_as_uint_to_string(packet.dst_ip)<<":"<<packet.destination_port
+        <<" protocol: "<<proto_name
+        <<" flags: "<<print_tcp_flags(packet.flags)
+        <<" size: "<<packet.length<<" bytes"<<"\n";
+
+    std::cout<<buffer.str()<<endl<<endl;
+}
+
 
 uint32_t getData32_nobswap(SFSample *sample) {
     uint32_t ans = *(sample->datap)++;
@@ -572,9 +712,18 @@ static void decodeIPLayer4(SFSample *sample, uint8_t *ptr) {
     /* not enough header bytes left */
     return;
   }
-  switch(sample->dcd_ipProtocol) {
-  case 1: /* ICMP */
-    {    
+
+    simple_packet current_packet;
+    current_packet.src_ip = sample->ipsrc.address.ip_v4.addr;
+    current_packet.dst_ip = sample->ipdst.address.ip_v4.addr;
+    current_packet.ts.tv_sec = sample->sysUpTime;
+    current_packet.ts.tv_usec = 0;
+    current_packet.flags = 0;
+    current_packet.length = sample->sampledPacketSize;
+
+    switch(sample->dcd_ipProtocol) {
+    case 1: /* ICMP */ {
+        current_packet.protocol = IPPROTO_ICMP; 
       struct myicmphdr icmp;
       memcpy(&icmp, ptr, sizeof(icmp));
       printf("ICMPType %u\n", icmp.type);
@@ -585,12 +734,19 @@ static void decodeIPLayer4(SFSample *sample, uint8_t *ptr) {
     }    
     break;
   case 6: /* TCP */
-    {    
+    { 
+        current_packet.protocol = IPPROTO_TCP;   
       struct mytcphdr tcp; 
       int headerBytes;
       memcpy(&tcp, ptr, sizeof(tcp));
       sample->dcd_sport = ntohs(tcp.th_sport);
       sample->dcd_dport = ntohs(tcp.th_dport);
+
+        current_packet.source_port = sample->dcd_sport ;
+        current_packet.destination_port = sample->dcd_dport;
+        // TODO: флаги могут быть бажные!!! наш парсер флагов расчитан на формат, используемый в PF_RING
+        current_packet.flags =  tcp.th_flags;
+    
       sample->dcd_tcpFlags = tcp.th_flags;
       printf("TCPSrcPort %u\n", sample->dcd_sport);
       printf("TCPDstPort %u\n",sample->dcd_dport);
@@ -602,10 +758,15 @@ static void decodeIPLayer4(SFSample *sample, uint8_t *ptr) {
     break;
   case 17: /* UDP */
     {
+        current_packet.protocol = IPPROTO_UDP;
       struct myudphdr udp;
       memcpy(&udp, ptr, sizeof(udp));
       sample->dcd_sport = ntohs(udp.uh_sport);
       sample->dcd_dport = ntohs(udp.uh_dport);
+
+        current_packet.source_port = sample->dcd_sport ;
+        current_packet.destination_port = sample->dcd_dport;
+
       sample->udp_pduLen = ntohs(udp.uh_ulen);
       printf("UDPSrcPort %u\n", sample->dcd_sport);
       printf("UDPDstPort %u\n", sample->dcd_dport);
@@ -617,6 +778,9 @@ static void decodeIPLayer4(SFSample *sample, uint8_t *ptr) {
     sample->offsetToPayload = ptr - sample->header;
     break;
   }
+
+    // Call external handler function
+    process_func_ptr(current_packet);
 }
 
 
