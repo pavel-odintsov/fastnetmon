@@ -118,10 +118,10 @@ sub install {
 
     print "Clone FastNetMon repo\n";
     chdir "/usr/src";
-    `git clone $fastnetmon_git_path`;
+    `git clone /usr/src/fastnetmon`;
 
-    `mkdir $fastnetmon_git_path/build`;
-    chdir "$fastnetmon_git_path/build";
+    `mkdir /usr/src/fastnetmon/build`;
+    chdir "/usr/src/fastnetmon/build";
 
     `cmake ..`;
     `make`;
