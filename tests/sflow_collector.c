@@ -550,7 +550,7 @@ void readFlowSample(SFSample *sample, int expanded) {
     }
 
     sample->meanSkipCount = getData32(sample);
-    printf("Sample ratio: %d\n", sample->meanSkipCount);
+    //printf("Sample ratio: %d\n", sample->meanSkipCount);
     sample->samplePool = getData32(sample);
     sample->dropEvents = getData32(sample);
    
@@ -779,9 +779,9 @@ void decodeIPLayer4(SFSample *sample, uint8_t *ptr) {
         current_packet.destination_port = sample->dcd_dport;
 
         sample->udp_pduLen = ntohs(udp.uh_ulen);
-        printf("UDPSrcPort %u\n", sample->dcd_sport);
-        printf("UDPDstPort %u\n", sample->dcd_dport);
-        printf("UDPBytes %u\n", sample->udp_pduLen);
+        //printf("UDPSrcPort %u\n", sample->dcd_sport);
+        //printf("UDPDstPort %u\n", sample->dcd_dport);
+        //printf("UDPBytes %u\n", sample->udp_pduLen);
         sample->offsetToPayload = ptr + sizeof(udp) - sample->header;
     }
         break;
