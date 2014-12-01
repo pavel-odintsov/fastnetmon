@@ -22,7 +22,6 @@
 #include <netdb.h>
 
 #include "libpatricia/patricia.h"
-#include "lru_cache/lru_cache.h"
 
 #include <ncurses.h>
 
@@ -97,17 +96,12 @@ string redis_host = "127.0.0.1";
 bool redis_enabled = false;
 #endif
 
-typedef LRUCache<uint32_t, bool> lpm_cache_t;
-
 // Time consumed by reaclculation for all IPs
 struct timeval calculation_thread_execution_time;
 
 // Total number of hosts in our networks
 // We need this as global variable because it's very important value for configuring data structures
 unsigned int total_number_of_hosts_in_our_networks = 0;
-
-// LPM cache
-lpm_cache_t *lpm_cache = NULL;
 
 #ifdef GEOIP
 GeoIP * geo_ip = NULL;
@@ -1625,8 +1619,6 @@ void init_logging() {
 }
 
 int main(int argc,char **argv) {
-    lpm_cache = new lpm_cache_t(16);
-
     lookup_tree = New_Patricia(32);
     whitelist_tree = New_Patricia(32);
 
@@ -2043,21 +2035,6 @@ void signal_handler(int signal_number) {
 bool fast_patricia_lookup(patricia_tree_t *patricia_tree, prefix_t* prefix) {
     bool result = patricia_search_best(patricia_tree, prefix) != NULL;
     return result;
-}
-
-// DONT USE THIS VERSION!!! USE fast_patricia_lookup instead because this version os so slow!
-bool cached_patricia_lookup(patricia_tree_t *patricia_tree, prefix_t* prefix, lpm_cache_t* lpm_cache) {
-    bool* lpm_status;
-
-    lpm_status = lpm_cache->fetch_ptr(prefix->add.sin.s_addr);
-
-    if (lpm_status == NULL) {
-         bool resolved_status = fast_patricia_lookup(patricia_tree, prefix);
-         lpm_cache->insert(prefix->add.sin.s_addr, resolved_status);
-        return resolved_status;
-    } else {
-        return lpm_status;
-    }
 }
 
 /* Get traffic type: check it belongs to our IPs */
