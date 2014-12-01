@@ -21,6 +21,9 @@ add_definitions(-DPF_RING)
 # Our LPM library
 add_library(libpatricia STATIC libpatricia/patricia.c)
 
+# Our sFLOW plugin
+add_library(sflow_plugin STATIC sflow_collector.cpp) 
+
 # Main tool
 add_executable(fastnetmon fastnetmon.cpp)
 
