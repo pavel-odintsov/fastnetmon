@@ -22,7 +22,7 @@ add_definitions(-DPF_RING)
 add_library(libpatricia STATIC libpatricia/patricia.c)
 
 # Our sFLOW plugin
-add_library(sflow_plugin STATIC sflow_collector.cpp) 
+add_library(sflow_plugin STATIC sflow_plugin/sflow_collector.cpp) 
 
 # Main tool
 add_executable(fastnetmon fastnetmon.cpp)
@@ -58,6 +58,9 @@ target_link_libraries(fastnetmon pcap)
 
 # Our libs
 target_link_libraries(fastnetmon libpatricia)
+
+# Our plugins
+target_link_libraries(fastnetmon sflow_plugin)
 
 # Custom PF_RING
 include_directories(${PFRING_INCLUDE_DIRS})
