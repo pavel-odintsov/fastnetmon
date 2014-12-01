@@ -27,13 +27,13 @@ What is "flow" in FastNetMon terms? It's one or multiple connection udp, tcp, ic
 
 Main programm screen image:
 
-![Main screen image](fastnetmon_screen.png)
+![Main screen image](images/fastnetmon_screen.png)
 
 Example for cpu load for Intel i7 2600 with Intel X540/82599 NIC on 400 kpps load:
-![Cpu consumption](fastnetmon_stats.png)
+![Cpu consumption](images/fastnetmon_stats.png)
 
 Example deployment scheme:
-![Network diagramm](network_map.png)
+![Network diagramm](images/network_map.png)
 
 Example of first notification:
 ```bash
