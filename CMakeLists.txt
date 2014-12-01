@@ -50,6 +50,8 @@ endif()
 target_link_libraries(fastnetmon log4cpp)
 target_link_libraries(fastnetmon numa)
 target_link_libraries(fastnetmon pthread)
+# For PF_RING
+target_link_libraries(fastnetmon pcap)
 
 # Our libs
 target_link_libraries(fastnetmon libpatricia)
