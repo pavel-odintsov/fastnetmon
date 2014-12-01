@@ -120,13 +120,10 @@ sub install {
     chdir "/usr/src";
     `git clone $fastnetmon_git_path`;
 
-    chdir "/usr/src/fastnetmon";
+    `mkdir $fastnetmon_git_path/build`;
+    chdir "$fastnetmon_git_path/build";
 
-    # Hmmmmmm..... I reinvented configure! :'(
-    if ($distro_type eq 'centos') {
-        `sed -i 's/boost_thread/boost_thread-mt/' Makefile`;
-    }
-
+    `cmake ..`;
     `make`;
 
     my $fastnetmon_dir = "/opt/fastnetmon";
