@@ -608,22 +608,24 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
 
         unsigned int pps_average = 0;
         unsigned int bps_average = 0;
-    
+   
+        map_element* current_average_speed_element = &SpeedCounterAverage[client_ip];
+ 
         // Create polymorphic pps, byte and flow counters
         if (data_direction == INCOMING) {
             pps = SpeedCounter[client_ip].in_packets;
             bps = SpeedCounter[client_ip].in_bytes;
 
-            pps_average = SpeedCounterAverage[client_ip].in_packets;
-            bps_average = SpeedCounterAverage[client_ip].in_bytes;
+            pps_average = current_average_speed_element->in_packets;
+            bps_average = current_average_speed_element->in_bytes;
 
             flows = SpeedCounter[client_ip].in_flows;
         } else if (data_direction == OUTGOING) {
             pps = SpeedCounter[client_ip].out_packets;
             bps = SpeedCounter[client_ip].out_bytes;
 
-            pps_average = SpeedCounterAverage[client_ip].out_packets;
-            bps_average = SpeedCounterAverage[client_ip].out_bytes;
+            pps_average = current_average_speed_element->out_packets;
+            bps_average = current_average_speed_element->out_bytes;
 
             flows = SpeedCounter[client_ip].out_flows;
         }    
@@ -711,6 +713,10 @@ bool load_configuration_file() {
         vector<string> parsed_config; 
         split( parsed_config, line, boost::is_any_of(" ="), boost::token_compress_on );
         configuration_map[ parsed_config[0] ] = parsed_config[1];
+    }
+
+    if (configuration_map.count("average_calculation_time") != 0) {
+        average_calculation_amount = convert_string_to_integer(configuration_map["average_calculation_time"]);
     }
 
     if (configuration_map.count("threshold_pps") != 0) {
@@ -1479,16 +1485,18 @@ void recalculate_speed() {
             double speed_calc_period = 1;
             double exp_power = -speed_calc_period/average_calculation_amount;
             double exp_value = exp(exp_power);
-            
-            SpeedCounterAverage[client_ip].in_bytes  = unsigned(in_bps  + exp_value *
-                ((double)SpeedCounterAverage[client_ip].in_bytes - (double)in_bps));
-            SpeedCounterAverage[client_ip].out_bytes = unsigned(out_bps + exp_value *
-                ((double)SpeedCounterAverage[client_ip].out_bytes - (double)out_bps)); 
 
-            SpeedCounterAverage[client_ip].in_packets  = unsigned(in_pps  + exp_value *
-                ((double)SpeedCounterAverage[client_ip].in_packets -  (double)in_pps));
-            SpeedCounterAverage[client_ip].out_packets = unsigned(out_pps + exp_value *
-                ((double)SpeedCounterAverage[client_ip].out_packets - (double)out_pps));
+            map_element* current_average_speed_element = &SpeedCounterAverage[client_ip]; 
+ 
+            current_average_speed_element->in_bytes  = unsigned(in_bps  + exp_value *
+                ((double)current_average_speed_element->in_bytes - (double)in_bps));
+            current_average_speed_element->out_bytes = unsigned(out_bps + exp_value *
+                ((double)current_average_speed_element->out_bytes - (double)out_bps)); 
+
+            current_average_speed_element->in_packets  = unsigned(in_pps  + exp_value *
+                ((double)current_average_speed_element->in_packets -  (double)in_pps));
+            current_average_speed_element->out_packets = unsigned(out_pps + exp_value *
+                ((double)current_average_speed_element->out_packets - (double)out_pps));
 
             data_counters_mutex.lock();
             *vector_itr = zero_map_element;
