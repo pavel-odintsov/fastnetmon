@@ -98,6 +98,10 @@ string redis_host = "127.0.0.1";
 bool redis_enabled = false;
 #endif
 
+bool enable_ban_for_pps = true;
+bool enable_ban_for_bandwidth = true;
+bool enable_ban_for_flows_per_second = false;
+ 
 bool enable_conection_tracking = true;
 
 bool enable_data_collection_from_mirror = true;
@@ -1430,59 +1434,9 @@ void recalculate_speed() {
             incoming_total_flows += in_flows;
             outgoing_total_flows += out_flows;
 
-            // we detect overspeed by packets
-            bool attack_detected_by_pps = false;
-            bool attack_detected_by_bandwidth = false;
-            bool attack_detected_by_flow = false;
-
-            if (in_pps > ban_threshold_pps or out_pps > ban_threshold_pps) {
-                attack_detected_by_pps = true;
-            }
-
-            // we detect overspeed by bandwidth
-            if (convert_speed_to_mbps(in_bps) > ban_threshold_mbps or convert_speed_to_mbps(out_bps) > ban_threshold_mbps) {
-                attack_detected_by_bandwidth = true;
-            }
-
-            if (in_flows > ban_threshold_flows or out_flows > ban_threshold_flows) {
-               attack_detected_by_flow = true; 
-            } 
-
-            // TODO: please check! We should do only __one__ ban for all sensor types!!!
-
-            if (attack_detected_by_pps) {
-                string flow_attack_details = print_flow_tracking_for_ip(*flow_counter_ptr, convert_ip_as_uint_to_string(client_ip));
-                execute_ip_ban(client_ip, in_pps, out_pps, in_bps, out_bps, in_flows, out_flows, flow_attack_details);
-            }
-    
-            if (attack_detected_by_bandwidth && !attack_detected_by_pps) {
-                // Bandwidth overuse without pps overuse
-
-                /* TODO: it's stub for debug bandwidth overspeed */
-
-                logger<<log4cpp::Priority::INFO<<"We detect bandwidth_overuse (and do not detect pps overuse) from ip: "<<convert_ip_as_uint_to_string(client_ip)
-                    <<" incoming: "<<convert_speed_to_mbps(in_bps)<<" mbps outgoing: "<<convert_speed_to_mbps(out_bps)<<" mbps";
-            }
-
-            if (attack_detected_by_flow) {
-                 logger<<log4cpp::Priority::INFO<<"We detect flow overuse for IP:"<<convert_ip_as_uint_to_string(client_ip)<<" incoming: "<<in_flows<<" outgoing: "<<out_flows;
-            }
-
-            speed_counters_mutex.lock();
-            // add speed values to speed struct
-            SpeedCounter[client_ip].in_bytes    = in_bps;
-            SpeedCounter[client_ip].out_bytes   = out_bps;
-
-            SpeedCounter[client_ip].in_packets  = in_pps;
-            SpeedCounter[client_ip].out_packets = out_pps;
-
-            SpeedCounter[client_ip].in_flows = in_flows;
-            SpeedCounter[client_ip].out_flows = out_flows;
-
-            speed_counters_mutex.unlock();
-
+            /* Moving average recalculation */
             // http://en.wikipedia.org/wiki/Moving_average#Application_to_measuring_computer_performance 
-            double speed_calc_period = 1;
+            double speed_calc_period = 1; 
             double exp_power = -speed_calc_period/average_calculation_amount;
             double exp_value = exp(exp_power);
 
@@ -1497,6 +1451,44 @@ void recalculate_speed() {
                 ((double)current_average_speed_element->in_packets -  (double)in_pps));
             current_average_speed_element->out_packets = unsigned(out_pps + exp_value *
                 ((double)current_average_speed_element->out_packets - (double)out_pps));
+            /* Moving average recalculation */
+
+            // we detect overspeed by packets
+            bool attack_detected_by_pps = false;
+            bool attack_detected_by_bandwidth = false;
+            bool attack_detected_by_flow = false;
+
+            if (enable_ban_for_pps && (in_pps > ban_threshold_pps or out_pps > ban_threshold_pps)) {
+                attack_detected_by_pps = true;
+            }
+
+            // we detect overspeed by bandwidth
+            if (enable_ban_for_bandwidth && (convert_speed_to_mbps(in_bps) > ban_threshold_mbps or convert_speed_to_mbps(out_bps) > ban_threshold_mbps)) {
+                attack_detected_by_bandwidth = true;
+            }
+
+            if (enable_ban_for_flows_per_second && (in_flows > ban_threshold_flows or out_flows > ban_threshold_flows)) {
+                attack_detected_by_flow = true; 
+            } 
+
+            if (attack_detected_by_pps or attack_detected_by_bandwidth or attack_detected_by_flow) {
+                string flow_attack_details = print_flow_tracking_for_ip(*flow_counter_ptr, convert_ip_as_uint_to_string(client_ip));
+                // TODO: we should pass type of ddos ban source!
+                execute_ip_ban(client_ip, in_pps, out_pps, in_bps, out_bps, in_flows, out_flows, flow_attack_details);
+            }
+    
+            speed_counters_mutex.lock();
+            // add speed values to speed struct
+            SpeedCounter[client_ip].in_bytes    = in_bps;
+            SpeedCounter[client_ip].out_bytes   = out_bps;
+
+            SpeedCounter[client_ip].in_packets  = in_pps;
+            SpeedCounter[client_ip].out_packets = out_pps;
+
+            SpeedCounter[client_ip].in_flows = in_flows;
+            SpeedCounter[client_ip].out_flows = out_flows;
+
+            speed_counters_mutex.unlock();
 
             data_counters_mutex.lock();
             *vector_itr = zero_map_element;
