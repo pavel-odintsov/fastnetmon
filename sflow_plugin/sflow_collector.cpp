@@ -1,10 +1,11 @@
 #include <iostream>
 #include <sys/types.h>
 #include <inttypes.h>
-#include <iterator>
-#include <sstream> 
-#include <vector>
-#include <ostream>
+
+//#include <iterator>
+//#include <sstream> 
+//#include <vector>
+//#include <ostream>
 
 #include "sflow_collector.h"
 

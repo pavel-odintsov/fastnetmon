@@ -18,7 +18,8 @@ Features:
 - Can trigger block script if certain IP load network with big amount of flows per second
 - VLAN untagging
 - MPLS traffic processing
-- Can work on mirror ports
+- Can process sFLOW v5
+- Can work on mirror/SPAN ports
 - Can work on server/soft-router
 - Can detect DoS/DDoS in 1-2 seconds
 - Tested up to 10GE with 5-6 Mpps on Intel i7 2600 with Intel Nic 82599
