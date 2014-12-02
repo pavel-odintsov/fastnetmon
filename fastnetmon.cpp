@@ -1475,6 +1475,13 @@ void recalculate_speed() {
                 ((double)current_average_speed_element->in_packets -  (double)in_pps));
             current_average_speed_element->out_packets = unsigned(out_pps + exp_value *
                 ((double)current_average_speed_element->out_packets - (double)out_pps));
+
+            current_average_speed_element->out_flows = unsigned(out_flows + exp_value *
+                ((double)current_average_speed_element->out_flows -  (double)out_flows));
+            
+            current_average_speed_element->in_flows = unsigned(in_flows + exp_value *
+                ((double)current_average_speed_element->in_flows -  (double)in_flows));
+
             /* Moving average recalculation */
 
             // we detect overspeed by packets
