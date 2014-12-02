@@ -23,12 +23,7 @@
 
 #include "libpatricia/patricia.h"
 #include "fastnetmon_types.h"
-
-// #define sFLOW
-
-#ifdef sFLOW
 #include "sflow_plugin/sflow_collector.h"
-#endif
 
 #include <ncurses.h>
 
@@ -104,6 +99,10 @@ bool redis_enabled = false;
 #endif
 
 bool enable_conection_tracking = true;
+
+bool enable_data_collection_from_mirror = true;
+
+bool enable_sflow_collection = false;
 
 // Time consumed by reaclculation for all IPs
 struct timeval calculation_thread_execution_time;
@@ -714,7 +713,7 @@ bool load_configuration_file() {
         configuration_map[ parsed_config[0] ] = parsed_config[1];
     }
 
-     if (configuration_map.count("threshold_pps") != 0) {
+    if (configuration_map.count("threshold_pps") != 0) {
         ban_threshold_pps = convert_string_to_integer( configuration_map[ "threshold_pps" ] );
     }
 
@@ -724,6 +723,22 @@ bool load_configuration_file() {
 
     if (configuration_map.count("ban_threshold_flows") != 0) {
         ban_threshold_flows = convert_string_to_integer(  configuration_map[ "threshold_flows" ] );
+    }
+
+    if (configuration_map.count("sflow") != 0) {
+        if (configuration_map[ "sflow" ] == "on") {
+            enable_sflow_collection = true;
+        } else {
+            enable_sflow_collection = false;
+        }
+    }
+
+    if (configuration_map.count("mirror") != 0) { 
+        if (configuration_map["mirror"] == "on") {
+            enable_data_collection_from_mirror = true;
+        } else {
+            enable_data_collection_from_mirror = false;
+        }
     }
 
 #ifdef REDIS
@@ -1745,13 +1760,16 @@ int main(int argc,char **argv) {
     boost::thread cleanup_ban_list_thread(cleanup_ban_list);
 
     // pf_ring processing
-    // TODO enable it
-    boost::thread main_packet_process_thread(main_packet_process_task);
-    
-#ifdef sFLOW
-    // sFLOW
-    boost::thread sflow_process_collector_thread(start_sflow_collection, process_packet);
-#endif
+    boost::thread main_packet_process_thread;
+
+    if (enable_data_collection_from_mirror) {
+        main_packet_process_thread = boost::thread(main_packet_process_task);   
+    }
+
+    boost::thread sflow_process_collector_thread; 
+    if (enable_sflow_collection) {
+        sflow_process_collector_thread = boost::thread(start_sflow_collection, process_packet);
+    }
 
     // Init ncurses screen 
     initscr();
@@ -1782,13 +1800,14 @@ int main(int argc,char **argv) {
         }
     }
 
-#ifdef sFLOW
-    sflow_process_collector_thread.join();
-#endif
+    if (enable_sflow_collection) {
+        sflow_process_collector_thread.join();
+    }
 
-    // wait threads 
-    // TODO: enable it
-    main_packet_process_thread.join();
+    if (enable_data_collection_from_mirror) {
+        main_packet_process_thread.join();
+    }
+
     recalculate_speed_thread.join();
     calc_thread.join();
 
