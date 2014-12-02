@@ -103,6 +103,8 @@ string redis_host = "127.0.0.1";
 bool redis_enabled = false;
 #endif
 
+bool enable_conection_tracking = true;
+
 // Time consumed by reaclculation for all IPs
 struct timeval calculation_thread_execution_time;
 
@@ -819,7 +821,6 @@ void zeroify_all_counters() {
     }
 }
 
-#ifdef ENABLE_CONNTRACKING
 void zeroify_all_flow_counters() {
     // On creating it initilizes by zeros
     conntrack_main_struct zero_conntrack_main_struct;
@@ -841,7 +842,6 @@ void zeroify_all_flow_counters() {
         }
     }
 }
-#endif
 
 bool load_our_networks_list() {
     if (file_exists("/etc/networks_whitelist")) {
@@ -1121,18 +1121,18 @@ void process_packet(simple_packet& current_packet) {
         }
     }
 
-#ifdef ENABLE_CONNTRACKING
     map_of_vector_counters_for_flow::iterator itr_flow;
 
-    if (packet_direction == OUTGOING or packet_direction == INCOMING) {
-        itr_flow = SubnetVectorMapFlow.find(subnet);
+    if (enable_conection_tracking) {
+        if (packet_direction == OUTGOING or packet_direction == INCOMING) {
+            itr_flow = SubnetVectorMapFlow.find(subnet);
 
-        if (itr_flow == SubnetVectorMapFlow.end()) {
-            logger<< log4cpp::Priority::INFO<<"Can't find vector address in subnet flow map";
-            return;
+            if (itr_flow == SubnetVectorMapFlow.end()) {
+                logger<< log4cpp::Priority::INFO<<"Can't find vector address in subnet flow map";
+                return;
+            }
         }
     }
-#endif
 
     total_counters_mutex.lock();
     uint32_t sampled_number_of_packets = current_packet.sample_ratio;
@@ -1142,116 +1142,149 @@ void process_packet(simple_packet& current_packet) {
     total_counters[packet_direction].bytes   += sampled_number_of_bytes;
     total_counters_mutex.unlock();
 
-    if (packet_direction == INTERNAL) {
-    
-    } else if (packet_direction == OUTGOING) {
-        uint32_t shift_in_vector = ntohl(current_packet.src_ip) - subnet_in_host_byte_order;
-        map_element* current_element = &itr->second[shift_in_vector];
-        conntrack_main_struct* current_element_flow = &itr_flow->second[shift_in_vector]; 
-
-        // Collect data when ban client
-        if  (ban_list_details.count(current_packet.src_ip) > 0 &&
-            ban_list_details[current_packet.src_ip].size() < ban_details_records_count) {
-
-            ban_list_details[current_packet.src_ip].push_back(current_packet);
+    switch (packet_direction) {
+        case INTERNAL: {
+            break;
         }
+        case OUTGOING: {
+            uint32_t shift_in_vector = ntohl(current_packet.src_ip) - subnet_in_host_byte_order;
+            map_element* current_element = &itr->second[shift_in_vector];
+            conntrack_main_struct* current_element_flow = NULL;
 
-        packed_conntrack_hash flow_tracking_structure;
-        flow_tracking_structure.opposite_ip = current_packet.dst_ip;
-        flow_tracking_structure.src_port = current_packet.source_port;
-        flow_tracking_structure.dst_port = current_packet.destination_port;
+            if (enable_conection_tracking) {
+                current_element_flow = &itr_flow->second[shift_in_vector]; 
+            }
 
-        // convert this struct to 64 bit integer
-        uint64_t connection_tracking_hash = convert_conntrack_hash_struct_to_integer(&flow_tracking_structure);
+            // Collect data when ban client
+            if  (ban_list_details.count(current_packet.src_ip) > 0 &&
+                ban_list_details[current_packet.src_ip].size() < ban_details_records_count) {
 
-        if (current_packet.protocol == IPPROTO_TCP) {
-            current_element->tcp_out_packets += sampled_number_of_packets;
-            current_element->tcp_out_bytes   += sampled_number_of_bytes;
+                ban_list_details[current_packet.src_ip].push_back(current_packet);
+            }
+
+            uint64_t connection_tracking_hash = 0;
+
+            if (enable_conection_tracking) {
+                packed_conntrack_hash flow_tracking_structure;
+                flow_tracking_structure.opposite_ip = current_packet.dst_ip;
+                flow_tracking_structure.src_port = current_packet.source_port;
+                flow_tracking_structure.dst_port = current_packet.destination_port;
+
+                // convert this struct to 64 bit integer
+                connection_tracking_hash = convert_conntrack_hash_struct_to_integer(&flow_tracking_structure);
+            }
+
+            switch (current_packet.protocol) {
+                case IPPROTO_TCP: {
+                    current_element->tcp_out_packets += sampled_number_of_packets;
+                    current_element->tcp_out_bytes   += sampled_number_of_bytes;
       
-#ifdef ENABLE_CONNTRACKING 
-            flow_counter.lock();
-            conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow->out_tcp[connection_tracking_hash];
+                    if (enable_conection_tracking) {
+                        flow_counter.lock();
+                        conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow->out_tcp[connection_tracking_hash];
  
-            conntrack_key_struct_ptr->packets += sampled_number_of_packets;
-            conntrack_key_struct_ptr->bytes   += sampled_number_of_bytes;
+                        conntrack_key_struct_ptr->packets += sampled_number_of_packets;
+                        conntrack_key_struct_ptr->bytes   += sampled_number_of_bytes;
 
-            flow_counter.unlock();
-#endif
-        } else if (current_packet.protocol == IPPROTO_UDP) {
-            current_element->udp_out_packets += sampled_number_of_packets;
-            current_element->udp_out_bytes   += sampled_number_of_bytes;
+                        flow_counter.unlock();
+                    }
 
-#ifdef ENABLE_CONNTRACKING 
-            flow_counter.lock();
-            conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow->out_udp[connection_tracking_hash];
+                    break;
+                }    
+                case IPPROTO_UDP: {
+                    current_element->udp_out_packets += sampled_number_of_packets;
+                    current_element->udp_out_bytes   += sampled_number_of_bytes;
 
-            conntrack_key_struct_ptr->packets += sampled_number_of_packets;
-            conntrack_key_struct_ptr->bytes   += sampled_number_of_bytes;
+                    if (enable_conection_tracking) {
+                        flow_counter.lock();
+                        conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow->out_udp[connection_tracking_hash];
+
+                        conntrack_key_struct_ptr->packets += sampled_number_of_packets;
+                        conntrack_key_struct_ptr->bytes   += sampled_number_of_bytes;
  
-            flow_counter.unlock();
-#endif
-        } else {
-            // TBD
+                        flow_counter.unlock();
+                    }
+                    break;
+                }
+                
+                default: {
+                    break;
+                }
+            }
+
+            current_element->out_packets += sampled_number_of_packets ;
+            current_element->out_bytes   += sampled_number_of_bytes; 
+            
+            break;
+            }
+        case INCOMING: {
+            uint32_t shift_in_vector = ntohl(current_packet.dst_ip) - subnet_in_host_byte_order;
+            map_element* current_element = &itr->second[shift_in_vector];
+
+            conntrack_main_struct* current_element_flow = NULL;
+   
+            if (enable_conection_tracking) {
+                current_element_flow = &itr_flow->second[shift_in_vector];
+            }
+ 
+            uint64_t connection_tracking_hash = 0;
+            if (enable_conection_tracking) {
+                packed_conntrack_hash flow_tracking_structure;
+                flow_tracking_structure.opposite_ip = current_packet.src_ip;
+                flow_tracking_structure.src_port = current_packet.source_port;
+                flow_tracking_structure.dst_port = current_packet.destination_port;
+
+                // convert this struct to 64 bit integer
+                connection_tracking_hash = convert_conntrack_hash_struct_to_integer(&flow_tracking_structure);
+            }
+
+            // logger<< log4cpp::Priority::INFO<<"Shift is: "<<shift_in_vector;
+
+            // Collect attack details
+            if  (ban_list_details.count(current_packet.dst_ip) > 0 &&
+                ban_list_details[current_packet.dst_ip].size() < ban_details_records_count) {
+
+                ban_list_details[current_packet.dst_ip].push_back(current_packet);
+            }
+
+            if (current_packet.protocol == IPPROTO_TCP) {
+                current_element->tcp_in_packets += sampled_number_of_packets;
+                current_element->tcp_in_bytes   += sampled_number_of_bytes;
+
+                if (enable_conection_tracking) {
+                    flow_counter.lock();
+                    conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow->in_tcp[connection_tracking_hash];
+
+                    conntrack_key_struct_ptr->packets += sampled_number_of_packets;
+                    conntrack_key_struct_ptr->bytes   += sampled_number_of_bytes;
+
+                    flow_counter.unlock();
+                }
+
+            } else if (current_packet.protocol == IPPROTO_UDP) {
+                current_element->udp_in_packets += sampled_number_of_packets;
+                current_element->udp_in_bytes   += sampled_number_of_bytes;
+
+                if (enable_conection_tracking) {
+                    flow_counter.lock();
+                    conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow->in_udp[connection_tracking_hash];
+
+                    conntrack_key_struct_ptr->packets += sampled_number_of_packets;
+                    conntrack_key_struct_ptr->bytes   += sampled_number_of_bytes;
+                    flow_counter.unlock();
+                }
+            } else {
+                // TBD
+            }
+
+            current_element->in_packets += sampled_number_of_packets;
+            current_element->in_bytes   += sampled_number_of_bytes;
+
+            break;
         }
-
-        current_element->out_packets += sampled_number_of_packets ;
-        current_element->out_bytes   += sampled_number_of_bytes; 
-    } else if (packet_direction == INCOMING) {
-        uint32_t shift_in_vector = ntohl(current_packet.dst_ip) - subnet_in_host_byte_order;
-        map_element* current_element = &itr->second[shift_in_vector];
-        conntrack_main_struct* current_element_flow = &itr_flow->second[shift_in_vector];
-    
-        packed_conntrack_hash flow_tracking_structure;
-        flow_tracking_structure.opposite_ip = current_packet.src_ip;
-        flow_tracking_structure.src_port = current_packet.source_port;
-        flow_tracking_structure.dst_port = current_packet.destination_port;
-
-        // convert this struct to 64 bit integer
-        uint64_t connection_tracking_hash = convert_conntrack_hash_struct_to_integer(&flow_tracking_structure);
-
-        // logger<< log4cpp::Priority::INFO<<"Shift is: "<<shift_in_vector;
-
-        // Collect attack details
-        if  (ban_list_details.count(current_packet.dst_ip) > 0 &&
-            ban_list_details[current_packet.dst_ip].size() < ban_details_records_count) {
-
-            ban_list_details[current_packet.dst_ip].push_back(current_packet);
+        default: {
+            break;
         }
-
-        if (current_packet.protocol == IPPROTO_TCP) {
-            current_element->tcp_in_packets += sampled_number_of_packets;
-            current_element->tcp_in_bytes   += sampled_number_of_bytes;
-
-#ifdef ENABLE_CONNTRACKING 
-            flow_counter.lock();
-            conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow->in_tcp[connection_tracking_hash];
-
-            conntrack_key_struct_ptr->packets += sampled_number_of_packets;
-            conntrack_key_struct_ptr->bytes   += sampled_number_of_bytes;
-
-            flow_counter.unlock();
-#endif
-
-        } else if (current_packet.protocol == IPPROTO_UDP) {
-            current_element->udp_in_packets += sampled_number_of_packets;
-            current_element->udp_in_bytes   += sampled_number_of_bytes;
-
-#ifdef ENABLE_CONNTRACKING 
-            flow_counter.lock();
-            conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow->in_udp[connection_tracking_hash];
-
-            conntrack_key_struct_ptr->packets += sampled_number_of_packets;
-            conntrack_key_struct_ptr->bytes   += sampled_number_of_bytes;
-            flow_counter.unlock();
-#endif
-        } else {
-            // TBD
-        }
-
-        current_element->in_packets += sampled_number_of_packets;
-        current_element->in_bytes   += sampled_number_of_bytes;
-    } else {
-        // Other traffic
     }
 }
 
@@ -1452,12 +1485,12 @@ void recalculate_speed() {
     incoming_total_flows_speed = int((double)incoming_total_flows / (double)speed_calc_period);
     outgoing_total_flows_speed = int((double)outgoing_total_flows / (double)speed_calc_period);
     
-#ifdef ENABLE_CONNTRACKING
-    // Clean Flow Counter
-    flow_counter.lock();
-    zeroify_all_flow_counters();
-    flow_counter.unlock();
-#endif
+    if (enable_conection_tracking) {
+        // Clean Flow Counter
+        flow_counter.lock();
+        zeroify_all_flow_counters();
+        flow_counter.unlock();
+    }
 
     total_counters_mutex.lock();
     

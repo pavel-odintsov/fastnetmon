@@ -15,7 +15,6 @@ set(PFRING_INCLUDE_DIRS /opt/pf_ring/include)
 set(PFRING_LIBRARIES /opt/pf_ring/lib/libpfring.so)
 
 # Some defines for FastNetMon compiation tuning
-add_definitions(-DENABLE_CONNTRACKING)
 add_definitions(-DPF_RING)
 
 # Our LPM library
