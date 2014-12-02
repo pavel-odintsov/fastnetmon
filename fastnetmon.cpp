@@ -955,7 +955,7 @@ uint32_t convert_cidr_to_binary_netmask(unsigned int cidr) {
     return htonl(binary_netmask);
 }
 
-string print_simple_packet(struct simple_packet packet) {
+string print_simple_packet(simple_packet packet) {
     std::stringstream buffer;
 
     string proto_name;
@@ -1135,8 +1135,11 @@ void process_packet(simple_packet& current_packet) {
 #endif
 
     total_counters_mutex.lock();
-    total_counters[packet_direction].packets++;
-    total_counters[packet_direction].bytes += current_packet.length;
+    uint32_t sampled_number_of_packets = current_packet.sample_ratio;
+    uint32_t sampled_number_of_bytes = current_packet.length * current_packet.sample_ratio;
+
+    total_counters[packet_direction].packets += sampled_number_of_packets;
+    total_counters[packet_direction].bytes   += sampled_number_of_bytes;
     total_counters_mutex.unlock();
 
     if (packet_direction == INTERNAL) {
@@ -1162,28 +1165,28 @@ void process_packet(simple_packet& current_packet) {
         uint64_t connection_tracking_hash = convert_conntrack_hash_struct_to_integer(&flow_tracking_structure);
 
         if (current_packet.protocol == IPPROTO_TCP) {
-            current_element->tcp_out_packets++;
-            current_element->tcp_out_bytes += current_packet.length;
+            current_element->tcp_out_packets += sampled_number_of_packets;
+            current_element->tcp_out_bytes   += sampled_number_of_bytes;
       
 #ifdef ENABLE_CONNTRACKING 
             flow_counter.lock();
             conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow->out_tcp[connection_tracking_hash];
  
-            conntrack_key_struct_ptr->packets++;
-            conntrack_key_struct_ptr->bytes += current_packet.length;
+            conntrack_key_struct_ptr->packets += sampled_number_of_packets;
+            conntrack_key_struct_ptr->bytes   += sampled_number_of_bytes;
 
             flow_counter.unlock();
 #endif
         } else if (current_packet.protocol == IPPROTO_UDP) {
-            current_element->udp_out_packets++;
-            current_element->udp_out_bytes += current_packet.length;
+            current_element->udp_out_packets += sampled_number_of_packets;
+            current_element->udp_out_bytes   += sampled_number_of_bytes;
 
 #ifdef ENABLE_CONNTRACKING 
             flow_counter.lock();
             conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow->out_udp[connection_tracking_hash];
 
-            conntrack_key_struct_ptr->packets++;
-            conntrack_key_struct_ptr->bytes += current_packet.length;
+            conntrack_key_struct_ptr->packets += sampled_number_of_packets;
+            conntrack_key_struct_ptr->bytes   += sampled_number_of_bytes;
  
             flow_counter.unlock();
 #endif
@@ -1191,8 +1194,8 @@ void process_packet(simple_packet& current_packet) {
             // TBD
         }
 
-        current_element->out_packets++;
-        current_element->out_bytes += current_packet.length; 
+        current_element->out_packets += sampled_number_of_packets ;
+        current_element->out_bytes   += sampled_number_of_bytes; 
     } else if (packet_direction == INCOMING) {
         uint32_t shift_in_vector = ntohl(current_packet.dst_ip) - subnet_in_host_byte_order;
         map_element* current_element = &itr->second[shift_in_vector];
@@ -1216,37 +1219,37 @@ void process_packet(simple_packet& current_packet) {
         }
 
         if (current_packet.protocol == IPPROTO_TCP) {
-            current_element->tcp_in_packets++;
-            current_element->tcp_in_bytes += current_packet.length;
+            current_element->tcp_in_packets += sampled_number_of_packets;
+            current_element->tcp_in_bytes   += sampled_number_of_bytes;
 
 #ifdef ENABLE_CONNTRACKING 
             flow_counter.lock();
             conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow->in_tcp[connection_tracking_hash];
 
-            conntrack_key_struct_ptr->packets++;
-            conntrack_key_struct_ptr->bytes += current_packet.length;
+            conntrack_key_struct_ptr->packets += sampled_number_of_packets;
+            conntrack_key_struct_ptr->bytes   += sampled_number_of_bytes;
 
             flow_counter.unlock();
 #endif
 
         } else if (current_packet.protocol == IPPROTO_UDP) {
-            current_element->udp_in_packets++;
-            current_element->udp_in_bytes += current_packet.length;
+            current_element->udp_in_packets += sampled_number_of_packets;
+            current_element->udp_in_bytes   += sampled_number_of_bytes;
 
 #ifdef ENABLE_CONNTRACKING 
             flow_counter.lock();
             conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow->in_udp[connection_tracking_hash];
 
-            conntrack_key_struct_ptr->packets++;
-            conntrack_key_struct_ptr->bytes += current_packet.length;
+            conntrack_key_struct_ptr->packets += sampled_number_of_packets;
+            conntrack_key_struct_ptr->bytes   += sampled_number_of_bytes;
             flow_counter.unlock();
 #endif
         } else {
             // TBD
         }
 
-        current_element->in_packets ++;
-        current_element->in_bytes += current_packet.length;
+        current_element->in_packets += sampled_number_of_packets;
+        current_element->in_bytes   += sampled_number_of_bytes;
     } else {
         // Other traffic
     }
@@ -1614,13 +1617,6 @@ void init_logging() {
     logger.info("Logger initialized!");
 }
 
-
-#ifdef sFLOW
-void sflow_collection_task() {
-    start_sflow_collection(process_packet);
-}
-#endif
-
 int main(int argc,char **argv) {
     lookup_tree = New_Patricia(32);
     whitelist_tree = New_Patricia(32);
@@ -1716,11 +1712,12 @@ int main(int argc,char **argv) {
     boost::thread cleanup_ban_list_thread(cleanup_ban_list);
 
     // pf_ring processing
+    // TODO enable it
     boost::thread main_packet_process_thread(main_packet_process_task);
     
 #ifdef sFLOW
     // sFLOW
-    boost::thread sflow_process_collector_thread(sflow_collection_task);
+    boost::thread sflow_process_collector_thread(start_sflow_collection, process_packet);
 #endif
 
     // Init ncurses screen 
@@ -1756,7 +1753,8 @@ int main(int argc,char **argv) {
     sflow_process_collector_thread.join();
 #endif
 
-    // wait threads
+    // wait threads 
+    // TODO: enable it
     main_packet_process_thread.join();
     recalculate_speed_thread.join();
     calc_thread.join();
