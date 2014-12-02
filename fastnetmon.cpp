@@ -98,8 +98,8 @@ string redis_host = "127.0.0.1";
 bool redis_enabled = false;
 #endif
 
-bool enable_ban_for_pps = true;
-bool enable_ban_for_bandwidth = true;
+bool enable_ban_for_pps = false;
+bool enable_ban_for_bandwidth = false;
 bool enable_ban_for_flows_per_second = false;
  
 bool enable_conection_tracking = true;
@@ -750,6 +750,30 @@ bool load_configuration_file() {
             enable_data_collection_from_mirror = false;
         }
     }
+
+    if (configuration_map.count("ban_for_pps") != 0) {
+        if (configuration_map["ban_for_pps"] == "on") {
+            enable_ban_for_pps = true;
+        } else {
+            enable_ban_for_pps = false;
+        }
+    }
+
+    if (configuration_map.count("ban_for_bandwidth") != 0) { 
+        if (configuration_map["ban_for_bandwidth"] == "on") {
+            enable_ban_for_bandwidth = true;
+        } else {
+            enable_ban_for_bandwidth = false;
+        }    
+    }    
+
+    if (configuration_map.count("ban_for_flows") != 0) { 
+        if (configuration_map["ban_for_flows"] == "on") {
+            enable_ban_for_flows_per_second = true;
+        } else {
+            enable_ban_for_flows_per_second = false;
+        }    
+    }    
 
 #ifdef REDIS
     if (configuration_map.count("redis_port") != 0) { 
@@ -1473,7 +1497,7 @@ void recalculate_speed() {
 
             if (attack_detected_by_pps or attack_detected_by_bandwidth or attack_detected_by_flow) {
                 string flow_attack_details = print_flow_tracking_for_ip(*flow_counter_ptr, convert_ip_as_uint_to_string(client_ip));
-                // TODO: we should pass type of ddos ban source!
+                // TODO: we should pass type of ddos ban source (pps, flowd, bandwidth)!
                 execute_ip_ban(client_ip, in_pps, out_pps, in_bps, out_bps, in_flows, out_flows, flow_attack_details);
             }
     
@@ -1547,7 +1571,10 @@ void calculation_programm() {
 
     output_buffer<<"FastNetMon v1.0 FastVPS Eesti OU (c) VPS and dedicated: http://FastVPS.host"<<"\n"
         <<"IPs ordered by: "<<sort_parameter<<" (use keys 'b'/'p'/'f' for change) and use 'q' for quit"<<"\n"
-        <<"Threshold: "<<ban_threshold_pps<<" pps "<<ban_threshold_mbps<<" mbps "<<ban_threshold_flows<< " flows"
+        <<"Threshold: "
+        << (enable_ban_for_pps ? convert_int_to_string(ban_threshold_pps) : "off")<<" pps "
+        << (enable_ban_for_bandwidth ? convert_int_to_string(ban_threshold_mbps) : "off")<<" mbps "
+        << (enable_ban_for_flows_per_second ? convert_int_to_string(ban_threshold_flows) : "off")<< " flows"
         <<" total hosts: "<<total_number_of_hosts_in_our_networks<<endl<<endl;
 
     output_buffer<<print_channel_speed("Incoming traffic", INCOMING)<<endl;
