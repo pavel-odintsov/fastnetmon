@@ -1484,7 +1484,7 @@ void recalculate_speed() {
             current_average_speed_element->in_flows = unsigned(in_flows + exp_value *
                 ((double)current_average_speed_element->in_flows -  (double)in_flows));
 
-            /* Moving average recalculation */
+            /* Moving average recalculation end */
 
             // we detect overspeed by packets
             bool attack_detected_by_pps = false;
