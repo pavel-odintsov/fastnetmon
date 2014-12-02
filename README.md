@@ -117,3 +117,5 @@ IP: xx.zz.xx.1
 2014-11-21 08:01:11.419963 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
 2014-11-21 08:01:11.419963 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
 ```
+
+How to enable sFLOW? Please specify IP of server with installed FastNetMon and specify 6343 port. 
