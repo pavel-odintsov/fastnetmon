@@ -3,7 +3,6 @@
 
 #include "../fastnetmon_types.h"
 
-typedef void (*process_packet_pointer)(simple_packet&);
 void start_sflow_collection(process_packet_pointer func_ptr); 
 
 #endif

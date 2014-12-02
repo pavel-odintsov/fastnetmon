@@ -19,4 +19,6 @@ public:
     struct       timeval ts;
 };
 
+typedef void (*process_packet_pointer)(simple_packet&);
+
 #endif 
