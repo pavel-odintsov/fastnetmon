@@ -17,6 +17,9 @@ set(PFRING_LIBRARIES /opt/pf_ring/lib/libpfring.so)
 # Some defines for FastNetMon compiation tuning
 add_definitions(-DPF_RING)
 
+# If you need hardware locking features
+# add_definitions(-DHWFILTER_LOCKING)
+
 # Our LPM library
 add_library(libpatricia STATIC libpatricia/patricia.c)
 
