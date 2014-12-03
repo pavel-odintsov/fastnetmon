@@ -724,6 +724,10 @@ bool load_configuration_file() {
         configuration_map[ parsed_config[0] ] = parsed_config[1];
     }
 
+    if (configuration_map.count("ban_time") != 0) {
+        standard_ban_time = convert_string_to_integer(configuration_map["ban_time"]);
+    }
+
     if (configuration_map.count("average_calculation_time") != 0) {
         average_calculation_amount = convert_string_to_integer(configuration_map["average_calculation_time"]);
     }
