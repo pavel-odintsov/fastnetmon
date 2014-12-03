@@ -358,6 +358,9 @@ vector<subnet> whitelist_networks;
 bool we_do_real_ban = true;
 
 // Prototypes
+#ifdef HWFILTER_LOCKING
+void block_all_traffic_with_82599_hardware_filtering(string client_ip_as_string);
+#endif
 bool load_configuration_file();
 std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, string client_ip);
 void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_data, packed_conntrack_hash* unpacked_data);
@@ -2269,9 +2272,29 @@ void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pp
     logger<<log4cpp::Priority::INFO<<"Attack with direction: " << data_direction_as_string
         << " IP: " << client_ip_as_string << " Power: "<<pps_as_string;
     
-#ifdef HWFILTER_LOCKING
     logger<<log4cpp::Priority::INFO<<"We will block traffic to/from this IP with hardware filters";
 
+#ifdef HWFILTER_LOCKING
+    block_all_traffic_with_82599_hardware_filtering(client_ip_as_string);
+#endif
+
+    if (file_exists(notify_script_path)) {
+        string script_call_params = notify_script_path + " " + client_ip_as_string + " " +
+            data_direction_as_string + " " + pps_as_string + " ban";
+     
+        logger<<log4cpp::Priority::INFO<<"Call script for ban client: "<<client_ip_as_string; 
+
+        // We should execute external script in separate thread because any lag in this code will be very distructive 
+        boost::thread exec_thread(exec_with_stdin_params, script_call_params,
+            get_attack_description(client_ip, current_attack) + flow_attack_details);
+        exec_thread.detach();
+
+        logger<<log4cpp::Priority::INFO<<"Script for ban client is finished: "<<client_ip_as_string;
+    }    
+}
+
+#ifdef HWFILTER_LOCKING
+void block_all_traffic_with_82599_hardware_filtering(string client_ip_as_string) {
     /* 6 - tcp, 17 - udp, 0 - other (non tcp and non udp) */
     vector<int> banned_protocols;
     banned_protocols.push_back(17);
@@ -2317,24 +2340,9 @@ void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pp
             rule_number ++;
         }
     }
-
+}
 #endif
          
-    if (file_exists(notify_script_path)) {
-        string script_call_params = notify_script_path + " " + client_ip_as_string + " " +
-            data_direction_as_string + " " + pps_as_string + " ban";
-       
-        logger<<log4cpp::Priority::INFO<<"Call script for ban client: "<<client_ip_as_string; 
-
-        // We should execute external script in separate thread because any lag in this code will be very distructive 
-        boost::thread exec_thread(exec_with_stdin_params, script_call_params,
-            get_attack_description(client_ip, current_attack) + flow_attack_details);
-        exec_thread.detach();
-
-        logger<<log4cpp::Priority::INFO<<"Script for ban client is finished: "<<client_ip_as_string;
-    }    
-}
-
 /* Thread for cleaning up ban list */
 void cleanup_ban_list() {
     // Every X seconds we will run ban list cleaner thread
