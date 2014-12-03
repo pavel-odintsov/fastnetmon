@@ -733,7 +733,7 @@ bool load_configuration_file() {
         ban_threshold_mbps = convert_string_to_integer(  configuration_map[ "threshold_mbps" ] );
     }
 
-    if (configuration_map.count("ban_threshold_flows") != 0) {
+    if (configuration_map.count("threshold_flows") != 0) {
         ban_threshold_flows = convert_string_to_integer(  configuration_map[ "threshold_flows" ] );
     }
 
