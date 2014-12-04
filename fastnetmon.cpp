@@ -199,7 +199,13 @@ unsigned int incoming_total_flows_speed = 0;
 unsigned int outgoing_total_flows_speed = 0;
 
 // structure with attack details
-struct attack_details {
+class attack_details {
+    public:
+    attack_details() :
+        attack_power(0), max_attack_power(0),
+        in_bytes(0), out_bytes(0), in_packets(0), out_packets(0), in_flows(0), out_flows(),
+        average_in_bytes(0), average_out_bytes(0), average_in_packets(0), average_out_packets(0), average_in_flows(0), average_out_flows(0) {
+    }
     direction attack_direction;
     // first attackpower detected
     unsigned int attack_power;
@@ -209,11 +215,20 @@ struct attack_details {
     unsigned int out_bytes;
     unsigned int in_packets;
     unsigned int out_packets;
+    unsigned int in_flows;
+    unsigned int out_flows;
+
+    // Average counters
+    unsigned int average_in_bytes;
+    unsigned int average_out_bytes;
+    unsigned int average_in_packets;
+    unsigned int average_out_packets;
+    unsigned int average_in_flows;
+    unsigned int average_out_flows;
+
     // time when we but this user
     time_t   ban_timestamp;
     int      ban_time; // seconds of the ban
-    unsigned int in_flows;
-    unsigned int out_flows;
 };
 
 typedef attack_details banlist_item;
@@ -2259,6 +2274,17 @@ void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pp
     current_attack.in_bytes = in_bps;
     current_attack.out_bytes = out_bps;
 
+    // Add average counters
+    map_element* current_average_speed_element = &SpeedCounterAverage[client_ip];
+   
+    current_attack.average_in_packets = current_average_speed_element->in_packets;
+    current_attack.average_in_bytes   = current_average_speed_element->in_bytes;
+    current_attack.average_in_flows   = current_average_speed_element->in_flows;
+
+    current_attack.average_out_packets = current_average_speed_element->out_packets;
+    current_attack.average_out_bytes   = current_average_speed_element->out_bytes;
+    current_attack.average_out_flows   = current_average_speed_element->out_flows;
+    
     // pass flow information
     current_attack.in_flows = in_flows;
     current_attack.out_flows = out_flows;
@@ -2431,10 +2457,19 @@ string get_attack_description(uint32_t client_ip, attack_details& current_attack
         <<"Outgoing traffic: "<<convert_speed_to_mbps(current_attack.out_bytes)<<" mbps\n"
         <<"Incoming pps: "<<current_attack.in_packets<<" packets per second\n"
         <<"Outgoing pps: "<<current_attack.out_packets<<" packets per second\n"
-        <<"Incoming flows: "<<current_attack.in_flows<<"\n"
-        <<"Outgoing flows: "<<current_attack.out_flows<<"\n";
+        <<"Incoming flows: "<<current_attack.in_flows<<" flows per second\n"
+        <<"Outgoing flows: "<<current_attack.out_flows<<" flows per second\n";
+        
+    // Add average counters 
+    attack_description
+        <<"Average incoming traffic: " << convert_speed_to_mbps(current_attack.average_in_bytes)  <<" mbps\n"
+        <<"Average outgoing traffic: " << convert_speed_to_mbps(current_attack.average_out_bytes) <<" mbps\n"
+        <<"Average incoming pps: "     << current_attack.average_in_packets                       <<" packets per second\n"
+        <<"Average outgoing pps: "     << current_attack.average_out_packets                      <<" packets per second\n"
+        <<"Average incoming flows: "   << current_attack.average_in_flows                         <<" flows per second\n"
+        <<"Average outgoing flows: "   << current_attack.average_out_flows                        <<" flows per second\n";
 
-        return attack_description.str();
+    return attack_description.str();
 }    
 
 string get_protocol_name_by_number(unsigned int proto_number) {
