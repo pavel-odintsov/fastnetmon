@@ -1050,9 +1050,14 @@ string print_simple_packet(simple_packet packet) {
         <<convert_ip_as_uint_to_string(packet.src_ip)<<":"<<packet.source_port
         <<" > "
         <<convert_ip_as_uint_to_string(packet.dst_ip)<<":"<<packet.destination_port
-        <<" protocol: "<<proto_name
-        <<" flags: "<<print_tcp_flags(packet.flags)
-        <<" size: "<<packet.length<<" bytes"<<"\n";
+        <<" protocol: "<<proto_name;
+   
+    // Print flags only for TCP 
+    if (packet.protocol == IPPROTO_TCP) { 
+        buffer<<" flags: "<<print_tcp_flags(packet.flags);
+    }
+
+    buffer<<" size: "<<packet.length<<" bytes"<<"\n";
     
     return buffer.str();
 }
