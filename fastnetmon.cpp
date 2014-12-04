@@ -397,30 +397,47 @@ void ulog_main_loop();
 void signal_handler(int signal_number);
 uint32_t convert_cidr_to_binary_netmask(unsigned int cidr);
 
-// Function for sorting Vector of pairs
-bool compare_function_by_in_packets (pair_of_map_elements a, pair_of_map_elements b) {
-    return a.second.in_packets > b.second.in_packets;
-}
+/* Class for custom comparison fields by different fields */
+class TrafficComparatorClass {
+    private:
+        sort_type sort_field;
+        direction sort_direction;
+    public:    
+        TrafficComparatorClass(direction sort_direction, sort_type sort_field) {
+            this->sort_field = sort_field;
+            this->sort_direction = sort_direction;
+        }
 
-bool compare_function_by_out_packets (pair_of_map_elements a, pair_of_map_elements b) {
-    return a.second.out_packets > b.second.out_packets;
-}
-
-bool compare_function_by_out_bytes (pair_of_map_elements a, pair_of_map_elements b) {
-    return a.second.out_bytes > b.second.out_bytes;
-}
-
-bool compare_function_by_in_bytes(pair_of_map_elements a, pair_of_map_elements b) {
-    return a.second.in_bytes > b.second.in_bytes;
-}
-
-bool compare_function_by_in_flows(pair_of_map_elements a, pair_of_map_elements b) {
-    return a.second.in_flows > b.second.in_flows;
-}
-
-bool compare_function_by_out_flows(pair_of_map_elements a, pair_of_map_elements b) {
-    return a.second.out_flows > b.second.out_flows;
-}
+        bool operator()(pair_of_map_elements a, pair_of_map_elements b) {
+            if (sort_field == FLOWS) {
+                if (sort_direction == INCOMING) {
+                    return a.second.in_flows > b.second.in_flows;
+                } else if (sort_direction == OUTGOING) {
+                    return a.second.out_flows > b.second.out_flows;
+                } else {
+                    return false;
+                }
+            } else if (sort_field == PACKETS) {
+                if (sort_direction == INCOMING) {
+                    return a.second.in_packets > b.second.in_packets; 
+                } else if (sort_direction == OUTGOING) {
+                    return a.second.out_packets > b.second.out_packets;
+                } else {
+                    return false;
+                }
+            } else if (sort_field == BYTES) {
+                if (sort_direction == INCOMING) {
+                    return a.second.in_bytes > b.second.in_bytes;
+                } else if (sort_direction == OUTGOING) {
+                    return a.second.out_bytes > b.second.out_bytes;
+                } else {
+                    return false;
+                }    
+            } else {
+                return false;
+            }
+        }
+};
 
 string get_direction_name(direction direction_value) {
     string direction_name; 
@@ -575,30 +592,9 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
         // store all elements into vector for sorting
         vector_for_sort.push_back( make_pair((*ii).first, (*ii).second) );
     } 
-  
-    if (sort_item == PACKETS) {
-
-        // We use different sorter functions below 
-        if (data_direction == INCOMING) {
-            std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_in_packets);
-        } else if (data_direction == OUTGOING) {
-            std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_out_packets);
-        } else {
-            // unexpected
-        }
-
-    } else if (sort_item == BYTES) {
-        if (data_direction == INCOMING) {
-            std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_in_bytes);
-        } else if (data_direction == OUTGOING) {
-            std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_out_bytes);
-        }
-    } else if (sort_item == FLOWS) {
-        if (data_direction == INCOMING) {
-            std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_in_flows);
-        } else if (data_direction == OUTGOING) {
-            std::sort( vector_for_sort.begin(), vector_for_sort.end(), compare_function_by_out_flows);
-        }
+ 
+    if (data_direction == INCOMING or data_direction == OUTGOING) {
+        std::sort( vector_for_sort.begin(), vector_for_sort.end(), TrafficComparatorClass(data_direction, sort_item));
     } else {
         logger<< log4cpp::Priority::INFO<<"Unexpected bahaviour on sort function";
     }
