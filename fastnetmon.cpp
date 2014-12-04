@@ -1504,9 +1504,17 @@ void recalculate_speed() {
 
             current_average_speed_element->out_flows = unsigned(out_flows + exp_value *
                 ((double)current_average_speed_element->out_flows -  (double)out_flows));
-            
             current_average_speed_element->in_flows = unsigned(in_flows + exp_value *
                 ((double)current_average_speed_element->in_flows -  (double)in_flows));
+
+            unsigned int in_pps_average  = current_average_speed_element->in_packets;
+            unsigned int out_pps_average = current_average_speed_element->out_packets;
+
+            unsigned int in_bps_average  = current_average_speed_element->in_bytes;
+            unsigned int out_bps_average = current_average_speed_element->out_bytes; 
+
+            unsigned int in_flows_average  = current_average_speed_element->in_flows;
+            unsigned int out_flows_average = current_average_speed_element->out_flows;
 
             /* Moving average recalculation end */
 
@@ -1515,23 +1523,23 @@ void recalculate_speed() {
             bool attack_detected_by_bandwidth = false;
             bool attack_detected_by_flow = false;
 
-            if (enable_ban_for_pps && (in_pps > ban_threshold_pps or out_pps > ban_threshold_pps)) {
+            if (enable_ban_for_pps && (in_pps_average > ban_threshold_pps or out_pps_average > ban_threshold_pps)) {
                 attack_detected_by_pps = true;
             }
 
             // we detect overspeed by bandwidth
-            if (enable_ban_for_bandwidth && (convert_speed_to_mbps(in_bps) > ban_threshold_mbps or convert_speed_to_mbps(out_bps) > ban_threshold_mbps)) {
+            if (enable_ban_for_bandwidth && (convert_speed_to_mbps(in_bps_average) > ban_threshold_mbps or convert_speed_to_mbps(out_bps_average) > ban_threshold_mbps)) {
                 attack_detected_by_bandwidth = true;
             }
 
-            if (enable_ban_for_flows_per_second && (in_flows > ban_threshold_flows or out_flows > ban_threshold_flows)) {
+            if (enable_ban_for_flows_per_second && (in_flows_average > ban_threshold_flows or out_flows_average > ban_threshold_flows)) {
                 attack_detected_by_flow = true; 
             } 
 
             if (attack_detected_by_pps or attack_detected_by_bandwidth or attack_detected_by_flow) {
                 string flow_attack_details = print_flow_tracking_for_ip(*flow_counter_ptr, convert_ip_as_uint_to_string(client_ip));
                 // TODO: we should pass type of ddos ban source (pps, flowd, bandwidth)!
-                execute_ip_ban(client_ip, in_pps, out_pps, in_bps, out_bps, in_flows, out_flows, flow_attack_details);
+                execute_ip_ban(client_ip, in_pps_average, out_pps_average, in_bps_average, out_bps_average, in_flows_average, out_flows_average, flow_attack_details);
             }
     
             speed_counters_mutex.lock();
@@ -2215,7 +2223,7 @@ void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pp
         return;
     }
 
-    // Check attack direction
+    // Check attack direction, it's so stupid!
     if (in_pps > out_pps) {
         data_direction = INCOMING;
         pps = in_pps;
