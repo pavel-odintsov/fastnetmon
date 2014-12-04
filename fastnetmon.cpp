@@ -376,6 +376,7 @@ bool we_do_real_ban = true;
 #ifdef HWFILTER_LOCKING
 void block_all_traffic_with_82599_hardware_filtering(string client_ip_as_string);
 #endif
+string print_ban_thresholds();
 bool load_configuration_file();
 std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, string client_ip);
 void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_data, packed_conntrack_hash* unpacked_data);
@@ -1597,12 +1598,7 @@ void calculation_programm() {
     }
 
     output_buffer<<"FastNetMon v1.0 FastVPS Eesti OU (c) VPS and dedicated: http://FastVPS.host"<<"\n"
-        <<"IPs ordered by: "<<sort_parameter<<" (use keys 'b'/'p'/'f' for change) and use 'q' for quit"<<"\n"
-        <<"Threshold: "
-        << (enable_ban_for_pps ? convert_int_to_string(ban_threshold_pps) : "off")<<" pps "
-        << (enable_ban_for_bandwidth ? convert_int_to_string(ban_threshold_mbps) : "off")<<" mbps "
-        << (enable_ban_for_flows_per_second ? convert_int_to_string(ban_threshold_flows) : "off")<< " flows"
-        <<" total hosts: "<<total_number_of_hosts_in_our_networks<<endl<<endl;
+        <<"IPs ordered by: "<<sort_parameter<<" (use keys 'b'/'p'/'f' for change) and use 'q' for quit"<<"\n";
 
     output_buffer<<print_channel_speed("Incoming traffic", INCOMING)<<endl;
     output_buffer<<draw_table(SpeedCounter, INCOMING, true, sorter);
@@ -1653,7 +1649,9 @@ void calculation_programm() {
             logger<< log4cpp::Priority::INFO<<"Can't get PF_RING stats";
         }
 #endif 
- 
+    // Print thresholds
+    output_buffer<<"\n\n"<<print_ban_thresholds();
+
     if (!ban_list.empty()) {
         output_buffer<<endl<<"Ban list:"<<endl;  
         output_buffer<<send_ddos_attack_details();
@@ -2780,5 +2778,38 @@ std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element,
     }
 
     return buffer.str();
+}
+
+string print_ban_thresholds() {
+    stringstream output_buffer;
+
+    output_buffer<<"Ban thresholds:\n";
+    output_buffer<<"Packets per second: ";
+    if (enable_ban_for_pps) {
+        output_buffer<<ban_threshold_pps;
+    } else {
+        output_buffer<<"disabled";
+    }
+
+    output_buffer<<"\n";
+
+    output_buffer<<"Mbps per second: ";
+    if (enable_ban_for_bandwidth) {
+        output_buffer<<ban_threshold_mbps;
+    } else {
+        output_buffer<<"disabled";
+    }
+
+    output_buffer<<"\n";
+
+    output_buffer<<"Flows per second: ";
+    if (enable_ban_for_flows_per_second) {
+        output_buffer<<ban_threshold_flows;
+    } else {
+        output_buffer<<"disabled";
+    }
+
+    output_buffer<<"\n";
+    return output_buffer.str();
 }
 
