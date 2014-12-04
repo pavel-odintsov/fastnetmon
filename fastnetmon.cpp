@@ -630,20 +630,21 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
         unsigned int flows_average = 0;  
  
         map_element* current_average_speed_element = &SpeedCounterAverage[client_ip];
+        map_element* current_speed_element = &SpeedCounter[client_ip];
  
         // Create polymorphic pps, byte and flow counters
         if (data_direction == INCOMING) {
-            pps = SpeedCounter[client_ip].in_packets;
-            bps = SpeedCounter[client_ip].in_bytes;
-            flows = SpeedCounter[client_ip].in_flows;
+            pps   = current_speed_element->in_packets;
+            bps   = current_speed_element->in_bytes;
+            flows = current_speed_element->in_flows;
         
             pps_average   = current_average_speed_element->in_packets;
             bps_average   = current_average_speed_element->in_bytes;
             flows_average = current_average_speed_element->in_flows;
         } else if (data_direction == OUTGOING) {
-            pps = SpeedCounter[client_ip].out_packets;
-            bps = SpeedCounter[client_ip].out_bytes;
-            flows = SpeedCounter[client_ip].out_flows;
+            pps   = current_speed_element->out_packets;
+            bps   = current_speed_element->out_bytes;
+            flows = current_speed_element->out_flows;
     
             pps_average = current_average_speed_element->out_packets;
             bps_average = current_average_speed_element->out_bytes;
