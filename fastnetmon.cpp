@@ -1649,6 +1649,12 @@ void calculation_programm() {
         pfring_stat pfring_status_data;
         if(pfring_stats(pf_ring_descr, &pfring_status_data) >= 0) {
             char stats_buffer[256];
+            double packets_dropped_percent = 0;
+
+            if (pfring_status_data.recv > 0) {
+                packets_dropped_percent = (double)pfring_status_data.drop / pfring_status_data.recv * 100;
+            } 
+
             sprintf(
                 stats_buffer,
                 "Packets received:\t%lu\n"
@@ -1656,7 +1662,7 @@ void calculation_programm() {
                 "Packets dropped:\t%.1f %%\n",
                 (long unsigned int) pfring_status_data.recv,
                 (long unsigned int) pfring_status_data.drop,
-                (double) pfring_status_data.drop/pfring_status_data.recv*100
+                packets_dropped_percent
             ); 
             output_buffer<<stats_buffer;
         } else {
