@@ -413,7 +413,7 @@ void free_up_all_resources();
 void main_packet_process_task();
 unsigned int get_cidr_mask_from_network_as_string(string network_cidr_format);
 string print_ddos_attack_details();
-void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pps, unsigned int in_bps, unsigned int out_bps, unsigned int in_flows, unsigned int out_flows, string flow_attack_details);
+void execute_ip_ban(uint32_t client_ip, map_element new_speed_element, unsigned int in_pps, unsigned int out_pps, unsigned int in_bps, unsigned int out_bps, unsigned int in_flows, unsigned int out_flows, string flow_attack_details);
 direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet);
 void recalculate_speed();
 std::string print_channel_speed(string traffic_type, direction packet_direction);
@@ -1495,6 +1495,29 @@ void recalculate_speed() {
             new_speed_element.in_bytes  = int((double)vector_itr->in_bytes  / (double)speed_calc_period);
             new_speed_element.out_bytes = int((double)vector_itr->out_bytes / (double)speed_calc_period);     
 
+            // By protocol counters
+
+            // TCP
+            new_speed_element.tcp_in_packets  = int((double)vector_itr->tcp_in_packets   / (double)speed_calc_period);
+            new_speed_element.tcp_out_packets = int((double)vector_itr->tcp_out_packets  / (double)speed_calc_period);
+
+            new_speed_element.tcp_in_bytes  = int((double)vector_itr->tcp_in_bytes  / (double)speed_calc_period);
+            new_speed_element.tcp_out_bytes = int((double)vector_itr->tcp_out_bytes / (double)speed_calc_period);    
+
+            // UDP
+            new_speed_element.udp_in_packets  = int((double)vector_itr->udp_in_packets   / (double)speed_calc_period);
+            new_speed_element.udp_out_packets = int((double)vector_itr->udp_out_packets  / (double)speed_calc_period);
+
+            new_speed_element.udp_in_bytes  = int((double)vector_itr->udp_in_bytes  / (double)speed_calc_period);
+            new_speed_element.udp_out_bytes = int((double)vector_itr->udp_out_bytes / (double)speed_calc_period); 
+
+            // ICMP
+            new_speed_element.icmp_in_packets  = int((double)vector_itr->icmp_in_packets   / (double)speed_calc_period);
+            new_speed_element.icmp_out_packets = int((double)vector_itr->icmp_out_packets  / (double)speed_calc_period);
+
+            new_speed_element.icmp_in_bytes  = int((double)vector_itr->icmp_in_bytes  / (double)speed_calc_period);
+            new_speed_element.icmp_out_bytes = int((double)vector_itr->icmp_out_bytes / (double)speed_calc_period);
+
             conntrack_main_struct* flow_counter_ptr = &SubnetVectorMapFlow[itr->first][current_index]; 
 
             // todo: optimize this operations!
@@ -1572,7 +1595,7 @@ void recalculate_speed() {
             if (attack_detected_by_pps or attack_detected_by_bandwidth or attack_detected_by_flow) {
                 string flow_attack_details = print_flow_tracking_for_ip(*flow_counter_ptr, convert_ip_as_uint_to_string(client_ip));
                 // TODO: we should pass type of ddos ban source (pps, flowd, bandwidth)!
-                execute_ip_ban(client_ip, in_pps_average, out_pps_average, in_bps_average, out_bps_average, in_flows_average, out_flows_average, flow_attack_details);
+                execute_ip_ban(client_ip, new_speed_element, in_pps_average, out_pps_average, in_bps_average, out_bps_average, in_flows_average, out_flows_average, flow_attack_details);
             }
     
             speed_counters_mutex.lock();
@@ -2265,7 +2288,7 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& 
     return packet_direction;
 }
 
-void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pps, unsigned int in_bps, unsigned int out_bps, unsigned int in_flows, unsigned int out_flows, string flow_attack_details) {
+void execute_ip_ban(uint32_t client_ip, map_element speed_element, unsigned int in_pps, unsigned int out_pps, unsigned int in_bps, unsigned int out_bps, unsigned int in_flows, unsigned int out_flows, string flow_attack_details) {
     direction data_direction;
     unsigned int pps = 0;
 
@@ -2336,6 +2359,26 @@ void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pp
     current_attack.in_bytes = in_bps;
     current_attack.out_bytes = out_bps;
 
+    // pass flow information
+    current_attack.in_flows = in_flows;
+    current_attack.out_flows = out_flows;
+
+    current_attack.tcp_in_packets  = speed_element.tcp_in_packets;
+    current_attack.udp_in_packets  = speed_element.udp_in_packets;
+    current_attack.icmp_in_packets = speed_element.icmp_in_packets;
+    
+    current_attack.tcp_out_packets = speed_element.tcp_out_packets;
+    current_attack.udp_out_packets = speed_element.udp_out_packets;
+    current_attack.icmp_out_packets = speed_element.icmp_out_packets;
+
+    current_attack.tcp_out_bytes  = speed_element.tcp_out_bytes;
+    current_attack.udp_out_bytes  = speed_element.udp_out_bytes;
+    current_attack.icmp_out_bytes = speed_element.icmp_out_bytes;
+
+    current_attack.tcp_in_bytes = speed_element.tcp_in_bytes;
+    current_attack.udp_in_bytes = speed_element.udp_in_bytes;
+    current_attack.icmp_in_bytes = speed_element.icmp_in_bytes;
+
     // Add average counters
     map_element* current_average_speed_element = &SpeedCounterAverage[client_ip];
    
@@ -2347,10 +2390,6 @@ void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pp
     current_attack.average_out_bytes   = current_average_speed_element->out_bytes;
     current_attack.average_out_flows   = current_average_speed_element->out_flows;
     
-    // pass flow information
-    current_attack.in_flows = in_flows;
-    current_attack.out_flows = out_flows;
-
     ban_list_mutex.lock();
     ban_list[client_ip] = current_attack;
     ban_list_mutex.unlock();
@@ -2360,9 +2399,8 @@ void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pp
     logger<<log4cpp::Priority::INFO<<"Attack with direction: " << data_direction_as_string
         << " IP: " << client_ip_as_string << " Power: "<<pps_as_string;
     
-    logger<<log4cpp::Priority::INFO<<"We will block traffic to/from this IP with hardware filters";
-
 #ifdef HWFILTER_LOCKING
+    logger<<log4cpp::Priority::INFO<<"We will block traffic to/from this IP with hardware filters";
     block_all_traffic_with_82599_hardware_filtering(client_ip_as_string);
 #endif
 
@@ -2524,16 +2562,16 @@ string get_attack_description(uint32_t client_ip, attack_details& current_attack
 
     attack_description
         <<"IP: "<<convert_ip_as_uint_to_string(client_ip)<<"\n"
-        <<"Initial attack power: "<<current_attack.attack_power<<" packets per second\n"
-        <<"Peak attack power: "<<current_attack.max_attack_power<< " packets per second\n"
-        <<"Attack direction: "<<get_direction_name(current_attack.attack_direction)<<"\n"
-        <<"Incoming traffic: "<<convert_speed_to_mbps(current_attack.in_bytes)<<" mbps\n"
-        <<"Outgoing traffic: "<<convert_speed_to_mbps(current_attack.out_bytes)<<" mbps\n"
-        <<"Incoming pps: "<<current_attack.in_packets<<" packets per second\n"
-        <<"Outgoing pps: "<<current_attack.out_packets<<" packets per second\n"
-        <<"Incoming flows: "<<current_attack.in_flows<<" flows per second\n"
-        <<"Outgoing flows: "<<current_attack.out_flows<<" flows per second\n";
-        
+        <<"Initial attack power: "  <<current_attack.attack_power<<" packets per second\n"
+        <<"Peak attack power: "     <<current_attack.max_attack_power<< " packets per second\n"
+        <<"Attack direction: "      <<get_direction_name(current_attack.attack_direction)<<"\n"
+        <<"Total incoming traffic: "      <<convert_speed_to_mbps(current_attack.in_bytes)<<" mbps\n"
+        <<"Total outgoing traffic: "      <<convert_speed_to_mbps(current_attack.out_bytes)<<" mbps\n"
+        <<"Total incoming pps: "          <<current_attack.in_packets<<" packets per second\n"
+        <<"Total outgoing pps: "          <<current_attack.out_packets<<" packets per second\n"
+        <<"Total incoming flows: "        <<current_attack.in_flows<<" flows per second\n"
+        <<"Total outgoing flows: "        <<current_attack.out_flows<<" flows per second\n";
+
     // Add average counters 
     attack_description
         <<"Average incoming traffic: " << convert_speed_to_mbps(current_attack.average_in_bytes)  <<" mbps\n"
@@ -2543,6 +2581,20 @@ string get_attack_description(uint32_t client_ip, attack_details& current_attack
         <<"Average incoming flows: "   << current_attack.average_in_flows                         <<" flows per second\n"
         <<"Average outgoing flows: "   << current_attack.average_out_flows                        <<" flows per second\n";
 
+    attack_description
+        <<"Incoming tcp traffic: "      <<convert_speed_to_mbps(current_attack.tcp_in_bytes)<<" mbps\n"
+        <<"Outgoing tcp traffic: "      <<convert_speed_to_mbps(current_attack.tcp_out_bytes)<<" mbps\n"
+        <<"Incoming tcp pps: "          <<current_attack.tcp_in_packets<<" packets per second\n"
+        <<"Outgoing tcp pps: "          <<current_attack.tcp_out_packets<<" packets per second\n"
+        <<"Incoming udp traffic: "      <<convert_speed_to_mbps(current_attack.udp_in_bytes)<<" mbps\n"
+        <<"Outgoing udp traffic: "      <<convert_speed_to_mbps(current_attack.udp_out_bytes)<<" mbps\n"
+        <<"Incoming udp pps: "          <<current_attack.udp_in_packets<<" packets per second\n"
+        <<"Outgoing udp pps: "          <<current_attack.udp_out_packets<<" packets per second\n"
+        <<"Incoming icmp traffic: "     <<convert_speed_to_mbps(current_attack.icmp_in_bytes)<<" mbps\n"
+        <<"Outgoing icmp traffic: "     <<convert_speed_to_mbps(current_attack.icmp_out_bytes)<<" mbps\n"
+        <<"Incoming icmp pps: "         <<current_attack.icmp_in_packets<<" packets per second\n"
+        <<"Outgoing icmp pps: "         <<current_attack.icmp_out_packets<<" packets per second\n";
+ 
     return attack_description.str();
 }    
 
@@ -2578,7 +2630,7 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
             <<") for protocol: "<< get_protocol_name_by_number(max_proto->first)<<"\n";
         
         logger<<log4cpp::Priority::INFO<<"Attack with direction: "<<attack_direction<<
-            " IP: "<<client_ip_as_string<<" Power: "<<pps_as_string<<" traffic sampel collected";
+            " IP: "<<client_ip_as_string<<" Power: "<<pps_as_string<<" traffic sample collected";
 
         print_attack_details_to_file(attack_details.str(), client_ip_as_string, current_attack_details);
 
