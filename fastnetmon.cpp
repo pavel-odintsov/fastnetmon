@@ -1443,10 +1443,6 @@ void recalculate_speed() {
  
     for (map_of_vector_counters::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); ++itr) {
         for (vector_of_counters::iterator vector_itr = itr->second.begin(); vector_itr !=  itr->second.end(); ++vector_itr) {
-            if (vector_itr->in_packets == 0 and vector_itr->out_packets == 0) {
-                continue;
-            } 
-
             int current_index = vector_itr - itr->second.begin();
 
             // convert to host order for math operations
