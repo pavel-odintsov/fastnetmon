@@ -1449,18 +1449,18 @@ void recalculate_speed_thread_handler() {
 
 /* Calculate speed for all connnections */
 void recalculate_speed() {
-    // TODO: WE SHOULD ZEROFY ALL ELEMETS IN TABLE SpeedCounter
+    // TODO: WE SHOULD ZEROFY ALL ELEMENTS IN TABLE SpeedCounter
 
     double speed_calc_period = 1;
     time_t current_time;
     time(&current_time);
 
-    // IF we got 1+ seconds lag we should use new "delta" or skip this step
+    // If we got 1+ seconds lag we should use new "delta" or skip this step
     double time_difference = difftime(current_time, last_call_of_traffic_recalculation);
 
     if (time_difference < 1) {
         // It could occur on programm start
-         logger<< log4cpp::Priority::INFO<<"We skip one iteration of speed_calc because it runs so early!";        
+        logger<< log4cpp::Priority::INFO<<"We skip one iteration of speed_calc because it runs so early!";        
         return;
     } else if (int(time_difference) == 1) {
         // All fine, we run on time
@@ -1468,8 +1468,6 @@ void recalculate_speed() {
         logger<< log4cpp::Priority::INFO<<"Time from last run of speed_recalc is soooo big, we got ugly lags: "<<time_difference;
         speed_calc_period = time_difference;
     }
-
-    //logger<< log4cpp::Priority::INFO<<"Difference: "<<time_difference;
 
     map_element zero_map_element;
     memset(&zero_map_element, 0, sizeof(zero_map_element));
@@ -1576,15 +1574,17 @@ void recalculate_speed() {
             }
     
             speed_counters_mutex.lock();
+            map_element* current_speed_element = &SpeedCounter[client_ip];
+
             // add speed values to speed struct
-            SpeedCounter[client_ip].in_bytes    = in_bps;
-            SpeedCounter[client_ip].out_bytes   = out_bps;
+            current_speed_element->in_bytes    = in_bps;
+            current_speed_element->out_bytes   = out_bps;
 
-            SpeedCounter[client_ip].in_packets  = in_pps;
-            SpeedCounter[client_ip].out_packets = out_pps;
+            current_speed_element->in_packets  = in_pps;
+            current_speed_element->out_packets = out_pps;
 
-            SpeedCounter[client_ip].in_flows = in_flows;
-            SpeedCounter[client_ip].out_flows = out_flows;
+            current_speed_element->in_flows = in_flows;
+            current_speed_element->out_flows = out_flows;
 
             speed_counters_mutex.unlock();
 
