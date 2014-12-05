@@ -757,6 +757,14 @@ bool load_configuration_file() {
         ban_threshold_flows = convert_string_to_integer(  configuration_map[ "threshold_flows" ] );
     }
 
+    if (configuration_map.count("enable_ban") != 0) {
+        if (configuration_map["enable_ban"] == "on") {
+            we_do_real_ban = true;
+        } else {
+            we_do_real_ban = false;
+        }
+    }
+
     if (configuration_map.count("sflow") != 0) {
         if (configuration_map[ "sflow" ] == "on") {
             enable_sflow_collection = true;
@@ -1753,12 +1761,6 @@ int main(int argc,char **argv) {
 
     if (getenv("DUMP_ALL_PACKETS") != NULL) {
         DEBUG_DUMP_ALL_PACKETS = true;
-    }
-
-    // We can disable ban with this flag
-    if (getenv("DISABLE_BAN") != NULL) {
-        logger<< log4cpp::Priority::INFO<<"User wants disable ban feature competely, do it!";
-        we_do_real_ban = false;
     }
 
     if (sizeof(packed_conntrack_hash) != sizeof(uint64_t) or sizeof(packed_conntrack_hash) != 8) {
@@ -2799,7 +2801,13 @@ std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element,
 string print_ban_thresholds() {
     stringstream output_buffer;
 
-    output_buffer<<"Ban thresholds:\n";
+    output_buffer<<"Configuration params:\n";
+    if (we_do_real_ban) {
+        output_buffer<<"We call ban script: yes\n";
+    } else {
+        output_buffer<<"We call ban script: no\n";
+    }
+
     output_buffer<<"Packets per second: ";
     if (enable_ban_for_pps) {
         output_buffer<<ban_threshold_pps;
