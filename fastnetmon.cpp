@@ -12,6 +12,7 @@
 
 #include <sys/socket.h>
 #include <sys/resource.h>
+#include <sys/stat.h>
 #include <arpa/inet.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
@@ -168,6 +169,7 @@ unsigned int ban_details_records_count = 500;
 // log file
 log4cpp::Category& logger = log4cpp::Category::getRoot();
 string log_file_path = "/var/log/fastnetmon.log";
+string attack_details_folder = "/var/log/fastnetmon_attacks";
 
 /* Configuration block ends */
 
@@ -376,6 +378,10 @@ bool we_do_real_ban = true;
 #ifdef HWFILTER_LOCKING
 void block_all_traffic_with_82599_hardware_filtering(string client_ip_as_string);
 #endif
+
+void print_attack_details_to_file(string details, string client_ip_as_string,  attack_details current_attack);
+bool folder_exists(string path);
+string print_time_t_in_fastnetmon_format(time_t current_time);
 string print_ban_thresholds();
 bool load_configuration_file();
 std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, string client_ip);
@@ -396,7 +402,7 @@ string convert_timeval_to_date(struct timeval tv);
 void free_up_all_resources();
 void main_packet_process_task();
 unsigned int get_cidr_mask_from_network_as_string(string network_cidr_format);
-string send_ddos_attack_details();
+string print_ddos_attack_details();
 void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pps, unsigned int in_bps, unsigned int out_bps, unsigned int in_flows, unsigned int out_flows, string flow_attack_details);
 direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet);
 void recalculate_speed();
@@ -1678,7 +1684,7 @@ void calculation_programm() {
 
     if (!ban_list.empty()) {
         output_buffer<<endl<<"Ban list:"<<endl;  
-        output_buffer<<send_ddos_attack_details();
+        output_buffer<<print_ddos_attack_details();
     }
  
     printw( (output_buffer.str()).c_str());
@@ -1741,6 +1747,19 @@ void init_logging() {
     logger.info("Logger initialized!");
 }
 
+bool folder_exists(string path) {
+    if (access(path.c_str(), 0) == 0) {
+        struct stat status;
+        stat(path.c_str(), &status);
+
+        if (status.st_mode & S_IFDIR) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 int main(int argc,char **argv) {
     lookup_tree = New_Patricia(32);
     whitelist_tree = New_Patricia(32);
@@ -1759,12 +1778,22 @@ int main(int argc,char **argv) {
 
     init_logging();
 
+    /* Create folder for attack details */
+    if (!folder_exists(attack_details_folder)) {
+        int mkdir_result = mkdir(attack_details_folder.c_str(), S_IRWXU);
+
+        if (mkdir_result != 0) {
+            logger<<log4cpp::Priority::INFO<<"Can't create folder for attack details: "<<attack_details_folder;
+            exit(1);
+        }
+    }
+
     if (getenv("DUMP_ALL_PACKETS") != NULL) {
         DEBUG_DUMP_ALL_PACKETS = true;
     }
 
     if (sizeof(packed_conntrack_hash) != sizeof(uint64_t) or sizeof(packed_conntrack_hash) != 8) {
-        logger<< log4cpp::Priority::INFO<<"Asserion about size of packed_conntrack_hash, it's "<<sizeof(packed_conntrack_hash)<<" instead 8";
+        logger<< log4cpp::Priority::INFO<<"Assertion about size of packed_conntrack_hash, it's "<<sizeof(packed_conntrack_hash)<<" instead 8";
         exit(1);
     }
  
@@ -2320,15 +2349,15 @@ void execute_ip_ban(uint32_t client_ip, unsigned int in_pps, unsigned int out_pp
     block_all_traffic_with_82599_hardware_filtering(client_ip_as_string);
 #endif
 
+    string full_attack_description = get_attack_description(client_ip, current_attack) + flow_attack_details;
+    print_attack_details_to_file(full_attack_description, client_ip_as_string, current_attack);
+
     if (file_exists(notify_script_path)) {
-        string script_call_params = notify_script_path + " " + client_ip_as_string + " " +
-            data_direction_as_string + " " + pps_as_string + " ban";
-     
+        string script_call_params = notify_script_path + " " + client_ip_as_string + " " + data_direction_as_string + " " + pps_as_string + " ban";
         logger<<log4cpp::Priority::INFO<<"Call script for ban client: "<<client_ip_as_string; 
 
         // We should execute external script in separate thread because any lag in this code will be very distructive 
-        boost::thread exec_thread(exec_with_stdin_params, script_call_params,
-            get_attack_description(client_ip, current_attack) + flow_attack_details);
+        boost::thread exec_thread(exec_with_stdin_params, script_call_params, full_attack_description);
         exec_thread.detach();
 
         logger<<log4cpp::Priority::INFO<<"Script for ban client is finished: "<<client_ip_as_string;
@@ -2441,7 +2470,19 @@ void cleanup_ban_list() {
     }
 }
 
-string send_ddos_attack_details() {
+string print_time_t_in_fastnetmon_format(time_t current_time) {
+    struct tm* timeinfo;
+    char buffer[80];
+
+    timeinfo = localtime (&current_time);
+
+    strftime (buffer, sizeof(buffer), "%d_%m_%y_%H:%M:%S", timeinfo);
+    puts (buffer);
+
+    return std::string(buffer);
+}
+
+string print_ddos_attack_details() {
     stringstream output_buffer;
 
     for( map<uint32_t,banlist_item>::iterator ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
@@ -2452,7 +2493,7 @@ string send_ddos_attack_details() {
         string max_pps_as_string = convert_int_to_string(((*ii).second).max_attack_power);
         string attack_direction = get_direction_name(((*ii).second).attack_direction);
 
-        output_buffer<<client_ip_as_string<<"/"<<max_pps_as_string<<" pps "<<attack_direction<<endl;
+        output_buffer<<client_ip_as_string<<"/"<<max_pps_as_string<<" pps "<<attack_direction<<" at "<<print_time_t_in_fastnetmon_format(ii->second.ban_timestamp)<<endl;
 
         send_attack_details(client_ip, (*ii).second);
     }
@@ -2520,8 +2561,9 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
             <<") for protocol: "<< get_protocol_name_by_number(max_proto->first)<<"\n";
         
         logger<<log4cpp::Priority::INFO<<"Attack with direction: "<<attack_direction<<
-            " IP: "<<client_ip_as_string<<" Power: "<<pps_as_string;
-        logger<<log4cpp::Priority::INFO<<attack_details.str();
+            " IP: "<<client_ip_as_string<<" Power: "<<pps_as_string<<" traffic sampel collected";
+
+        print_attack_details_to_file(attack_details.str(), client_ip_as_string, current_attack_details);
 
         // Pass attack details to script
         if (file_exists(notify_script_path)) {
@@ -2566,7 +2608,7 @@ int extract_bit_value(uint8_t num, int bit) {
 
 string print_tcp_flags(uint8_t flag_value) {
     if (flag_value == 0) {
-        return "";
+        return "-";
     }
 
     // cod from pfring.h
@@ -2835,5 +2877,21 @@ string print_ban_thresholds() {
 
     output_buffer<<"\n";
     return output_buffer.str();
+}
+
+void print_attack_details_to_file(string details, string client_ip_as_string,  attack_details current_attack) { 
+    ofstream my_attack_details_file;
+
+    string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack.ban_timestamp); 
+    string attack_dump_path =attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string;
+
+    my_attack_details_file.open(attack_dump_path.c_str(), ios::app);
+
+    if (my_attack_details_file.is_open()) {
+        my_attack_details_file << details << "\n\n"; 
+        my_attack_details_file.close();
+    } else {
+        logger<<log4cpp::Priority::INFO<<"Can't print attack details to file";
+    }    
 }
 
