@@ -200,40 +200,6 @@ total_counter_element total_speed_counters[4];
 unsigned int incoming_total_flows_speed = 0;
 unsigned int outgoing_total_flows_speed = 0;
 
-// structure with attack details
-class attack_details {
-    public:
-    attack_details() :
-        attack_power(0), max_attack_power(0),
-        in_bytes(0), out_bytes(0), in_packets(0), out_packets(0), in_flows(0), out_flows(),
-        average_in_bytes(0), average_out_bytes(0), average_in_packets(0), average_out_packets(0), average_in_flows(0), average_out_flows(0) {
-    }
-    direction attack_direction;
-    // first attackpower detected
-    unsigned int attack_power;
-    // max attack power
-    unsigned int max_attack_power;
-    unsigned int in_bytes;
-    unsigned int out_bytes;
-    unsigned int in_packets;
-    unsigned int out_packets;
-    unsigned int in_flows;
-    unsigned int out_flows;
-
-    // Average counters
-    unsigned int average_in_bytes;
-    unsigned int average_out_bytes;
-    unsigned int average_in_packets;
-    unsigned int average_out_packets;
-    unsigned int average_in_flows;
-    unsigned int average_out_flows;
-
-    // time when we but this user
-    time_t   ban_timestamp;
-    int      ban_time; // seconds of the ban
-};
-
-typedef attack_details banlist_item;
 typedef pair<uint32_t, uint32_t> subnet;
 
 // main data structure for storing traffic and speed data for all our IPs
@@ -263,11 +229,47 @@ public:
     unsigned  int icmp_out_packets;
     unsigned  int icmp_in_bytes;
     unsigned  int icmp_out_bytes;
- 
 
     unsigned int in_flows;
     unsigned int out_flows;
 };
+
+// structure with attack details
+class attack_details : public map_element {
+    public:
+    attack_details() :
+        attack_power(0), max_attack_power(0), average_in_bytes(0), average_out_bytes(0), average_in_packets(0), average_out_packets(0), average_in_flows(0), average_out_flows(0) {
+    }    
+    direction attack_direction;
+    // first attackpower detected
+    unsigned int attack_power;
+    // max attack power
+    unsigned int max_attack_power;
+
+    /*
+    unsigned int in_bytes;
+    unsigned int out_bytes;
+    unsigned int in_packets;
+    unsigned int out_packets;
+    unsigned int in_flows;
+    unsigned int out_flows;
+    */
+
+    // Average counters
+    unsigned int average_in_bytes;
+    unsigned int average_out_bytes;
+    unsigned int average_in_packets;
+    unsigned int average_out_packets;
+    unsigned int average_in_flows;
+    unsigned int average_out_flows;
+
+    // time when we but this user
+    time_t   ban_timestamp;
+    int      ban_time; // seconds of the ban
+};
+
+typedef attack_details banlist_item;
+
 
 // struct for save per direction and per protocol details for flow
 typedef struct {
