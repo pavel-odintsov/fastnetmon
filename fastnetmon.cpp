@@ -2330,7 +2330,7 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, unsigned int 
     }
 
     // Detect attack direction with simple heuristic 
-    if (abs(in_pps - out_pps) < 1000) {
+    if (abs(int(in_pps - out_pps)) < 1000) {
         // If difference between pps speed is so small we should do additional investigation using bandwidth speed 
         if (in_bps > out_bps) {
             data_direction = INCOMING;
