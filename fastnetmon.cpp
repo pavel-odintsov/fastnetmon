@@ -1478,6 +1478,9 @@ void recalculate_speed() {
     for (map_of_vector_counters::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); ++itr) {
         for (vector_of_counters::iterator vector_itr = itr->second.begin(); vector_itr !=  itr->second.end(); ++vector_itr) {
             int current_index = vector_itr - itr->second.begin();
+            
+            // New element
+            map_element new_speed_element;
 
             // convert to host order for math operations
             uint32_t subnet_ip = ntohl(itr->first);
@@ -1486,12 +1489,11 @@ void recalculate_speed() {
             // covnert to our standard network byte order
             uint32_t client_ip = htonl(client_ip_in_host_bytes_order); 
             
-            //logger<< log4cpp::Priority::INFO<<convert_ip_as_uint_to_string(client_ip);
-            unsigned int in_pps  = int((double)vector_itr->in_packets   / (double)speed_calc_period);
-            unsigned int out_pps = int((double)vector_itr->out_packets / (double)speed_calc_period);
+            new_speed_element.in_packets  = int((double)vector_itr->in_packets   / (double)speed_calc_period);
+            new_speed_element.out_packets = int((double)vector_itr->out_packets / (double)speed_calc_period);
 
-            unsigned int in_bps  = int((double)vector_itr->in_bytes  / (double)speed_calc_period);
-            unsigned int out_bps = int((double)vector_itr->out_bytes / (double)speed_calc_period);     
+            new_speed_element.in_bytes  = int((double)vector_itr->in_bytes  / (double)speed_calc_period);
+            new_speed_element.out_bytes = int((double)vector_itr->out_bytes / (double)speed_calc_period);     
 
             conntrack_main_struct* flow_counter_ptr = &SubnetVectorMapFlow[itr->first][current_index]; 
 
@@ -1508,12 +1510,12 @@ void recalculate_speed() {
                 (unsigned int)flow_counter_ptr->in_icmp.size() +
                 (unsigned int)flow_counter_ptr->in_other.size();
 
-            unsigned int out_flows = int((double)total_out_flows  / (double)speed_calc_period);
-            unsigned int in_flows  = int((double)total_in_flows   / (double)speed_calc_period);
+            new_speed_element.out_flows = int((double)total_out_flows  / (double)speed_calc_period);
+            new_speed_element.in_flows  = int((double)total_in_flows   / (double)speed_calc_period);
 
             // Increment global counter
-            incoming_total_flows += in_flows;
-            outgoing_total_flows += out_flows;
+            incoming_total_flows += new_speed_element.in_flows;
+            outgoing_total_flows += new_speed_element.out_flows;
 
             /* Moving average recalculation */
             // http://en.wikipedia.org/wiki/Moving_average#Application_to_measuring_computer_performance 
@@ -1523,20 +1525,20 @@ void recalculate_speed() {
 
             map_element* current_average_speed_element = &SpeedCounterAverage[client_ip]; 
  
-            current_average_speed_element->in_bytes  = unsigned(in_bps  + exp_value *
-                ((double)current_average_speed_element->in_bytes - (double)in_bps));
-            current_average_speed_element->out_bytes = unsigned(out_bps + exp_value *
-                ((double)current_average_speed_element->out_bytes - (double)out_bps)); 
+            current_average_speed_element->in_bytes  = unsigned(new_speed_element.in_bytes  + exp_value *
+                ((double)current_average_speed_element->in_bytes - (double)new_speed_element.in_bytes));
+            current_average_speed_element->out_bytes = unsigned(new_speed_element.out_bytes + exp_value *
+                ((double)current_average_speed_element->out_bytes - (double)new_speed_element.out_bytes)); 
 
-            current_average_speed_element->in_packets  = unsigned(in_pps  + exp_value *
-                ((double)current_average_speed_element->in_packets -  (double)in_pps));
-            current_average_speed_element->out_packets = unsigned(out_pps + exp_value *
-                ((double)current_average_speed_element->out_packets - (double)out_pps));
+            current_average_speed_element->in_packets  = unsigned(new_speed_element.in_packets  + exp_value *
+                ((double)current_average_speed_element->in_packets -  (double)new_speed_element.in_packets));
+            current_average_speed_element->out_packets = unsigned(new_speed_element.out_packets + exp_value *
+                ((double)current_average_speed_element->out_packets - (double)new_speed_element.out_packets));
 
-            current_average_speed_element->out_flows = unsigned(out_flows + exp_value *
-                ((double)current_average_speed_element->out_flows -  (double)out_flows));
-            current_average_speed_element->in_flows = unsigned(in_flows + exp_value *
-                ((double)current_average_speed_element->in_flows -  (double)in_flows));
+            current_average_speed_element->out_flows = unsigned(new_speed_element.out_flows + exp_value *
+                ((double)current_average_speed_element->out_flows -  (double)new_speed_element.out_flows));
+            current_average_speed_element->in_flows = unsigned(new_speed_element.in_flows + exp_value *
+                ((double)current_average_speed_element->in_flows -  (double)new_speed_element.in_flows));
 
             unsigned int in_pps_average  = current_average_speed_element->in_packets;
             unsigned int out_pps_average = current_average_speed_element->out_packets;
@@ -1574,17 +1576,10 @@ void recalculate_speed() {
             }
     
             speed_counters_mutex.lock();
-            map_element* current_speed_element = &SpeedCounter[client_ip];
-
-            // add speed values to speed struct
-            current_speed_element->in_bytes    = in_bps;
-            current_speed_element->out_bytes   = out_bps;
-
-            current_speed_element->in_packets  = in_pps;
-            current_speed_element->out_packets = out_pps;
-
-            current_speed_element->in_flows = in_flows;
-            current_speed_element->out_flows = out_flows;
+            
+            //map_element* current_speed_element = &SpeedCounter[client_ip];
+            //*current_speed_element = new_speed_element;
+            SpeedCounter[client_ip] = new_speed_element;
 
             speed_counters_mutex.unlock();
 
