@@ -1471,16 +1471,16 @@ void recalculate_speed() {
 
             // todo: optimize this operations!
             unsigned int total_out_flows =
-                flow_counter_ptr->out_tcp.size()  +
-                flow_counter_ptr->out_udp.size()  +
-                flow_counter_ptr->out_icmp.size() +
-                flow_counter_ptr->out_other.size();
+                (unsigned int)flow_counter_ptr->out_tcp.size()  +
+                (unsigned int)flow_counter_ptr->out_udp.size()  +
+                (unsigned int)flow_counter_ptr->out_icmp.size() +
+                (unsigned int)flow_counter_ptr->out_other.size();
 
             unsigned int total_in_flows =
-                flow_counter_ptr->in_tcp.size()  +
-                flow_counter_ptr->in_udp.size()  +
-                flow_counter_ptr->in_icmp.size() +
-                flow_counter_ptr->in_other.size();
+                (unsigned int)flow_counter_ptr->in_tcp.size()  +
+                (unsigned int)flow_counter_ptr->in_udp.size()  +
+                (unsigned int)flow_counter_ptr->in_icmp.size() +
+                (unsigned int)flow_counter_ptr->in_other.size();
 
             unsigned int out_flows = int((double)total_out_flows  / (double)speed_calc_period);
             unsigned int in_flows  = int((double)total_in_flows   / (double)speed_calc_period);
