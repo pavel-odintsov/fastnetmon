@@ -239,7 +239,10 @@ typedef pair<uint32_t, uint32_t> subnet;
 // main data structure for storing traffic and speed data for all our IPs
 class map_element {
 public:
-    map_element() : in_bytes(0), out_bytes(0), in_packets(0), out_packets(0), tcp_in_packets(0), tcp_out_packets(0), tcp_in_bytes(0), tcp_out_bytes(0), udp_in_packets(0), udp_out_packets(0), udp_in_bytes(0), udp_out_bytes(0), in_flows(0), out_flows(0) {}
+    map_element() : in_bytes(0), out_bytes(0), in_packets(0), out_packets(0), tcp_in_packets(0), tcp_out_packets(0), tcp_in_bytes(0), tcp_out_bytes(0),
+        udp_in_packets(0), udp_out_packets(0), udp_in_bytes(0), udp_out_bytes(0), in_flows(0), out_flows(0),
+        icmp_in_packets(0), icmp_out_packets(0), icmp_in_bytes(0), icmp_out_bytes(0)
+     {}
     unsigned  int in_bytes;
     unsigned  int out_bytes;
     unsigned  int in_packets;
@@ -253,9 +256,14 @@ public:
 
     unsigned  int udp_in_packets;
     unsigned  int udp_out_packets;
-
     unsigned  int udp_in_bytes;
     unsigned  int udp_out_bytes;
+
+    unsigned  int icmp_in_packets;
+    unsigned  int icmp_out_packets;
+    unsigned  int icmp_in_bytes;
+    unsigned  int icmp_out_bytes;
+ 
 
     unsigned int in_flows;
     unsigned int out_flows;
@@ -1296,7 +1304,14 @@ void process_packet(simple_packet& current_packet) {
                     }
                     break;
                 }
-                
+                case IPPROTO_ICMP: {
+                    current_element->icmp_out_packets += sampled_number_of_packets;
+                    current_element->icmp_out_bytes   += sampled_number_of_bytes;
+
+                    // no flow tarcking for icmp
+
+                    break;
+                }               
                 default: {
                     break;
                 }
@@ -1363,6 +1378,11 @@ void process_packet(simple_packet& current_packet) {
                     conntrack_key_struct_ptr->bytes   += sampled_number_of_bytes;
                     flow_counter.unlock();
                 }
+            } else if (current_packet.protocol == IPPROTO_ICMP) {
+                current_element->icmp_in_packets += sampled_number_of_packets;
+                current_element->icmp_in_bytes   += sampled_number_of_bytes;
+
+                // no flow tarcking for icmp
             } else {
                 // TBD
             }
@@ -2793,6 +2813,34 @@ string print_flow_tracking_for_specified_protocol(contrack_map_type& protocol_ma
     } 
 
     return buffer.str();
+}
+
+/*
+    Attack types: 
+        - syn flood: one local port, multiple remote hosts (and maybe multiple remote ports) and small packet size
+*/
+
+/* Iterate over all flow tracking table */
+bool process_flow_tracking_table(conntrack_main_struct& conntrack_element, string client_ip) {
+    std::map <uint32_t, unsigned int>     uniq_remote_hosts_which_generate_requests_to_us;
+    std::map <unsigned int, unsigned int> uniq_local_ports_which_target_of_connectiuons_from_inside;
+
+    /* Process incoming TCP connections */
+    for (contrack_map_type::iterator itr = conntrack_element.in_tcp.begin(); itr != conntrack_element.in_tcp.end(); ++itr) {
+        uint64_t packed_connection_data = itr->first;
+        packed_conntrack_hash unpacked_key_struct;
+        convert_integer_to_conntrack_hash_struct(&packed_connection_data, &unpacked_key_struct);
+        
+        uniq_remote_hosts_which_generate_requests_to_us[unpacked_key_struct.opposite_ip]++;
+        uniq_local_ports_which_target_of_connectiuons_from_inside[unpacked_key_struct.dst_port]++;
+       
+        // we can calc average packet size 
+        // string opposite_ip_as_string = convert_ip_as_uint_to_string(unpacked_key_struct.opposite_ip);
+        // unpacked_key_struct.src_port
+        // unpacked_key_struct.dst_port
+        // itr->second.packets
+        // itr->second.bytes
+    } 
 }
 
 std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, string client_ip) {
