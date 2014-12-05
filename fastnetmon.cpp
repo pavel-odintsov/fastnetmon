@@ -2312,13 +2312,25 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, unsigned int 
     // IPPROTO_UDP
     // IPPROTO_ICMP
 
-    // Check attack direction, it's so stupid!
-    if (in_pps > out_pps) {
-        data_direction = INCOMING;
-        pps = in_pps;
+    // Detect attack direction with simple heuristic 
+
+    if (abs(in_pps - out_pps) < 1000) {
+        // If difference between pps speed is so small we should do additional investigation using bandwidth speed 
+        if (in_bps > out_bps) {
+            data_direction = INCOMING;
+            pps = in_pps;
+        } else {
+            data_direction = OUTGOING;
+            pps = out_pps;
+        } 
     } else {
-        data_direction = OUTGOING;
-        pps = out_pps;
+        if (in_pps > out_pps) {
+            data_direction = INCOMING;
+            pps = in_pps;
+        } else {
+            data_direction = OUTGOING;
+            pps = out_pps;    
+        }
     }
 
     if (ban_list.count(client_ip) > 0) {
