@@ -389,6 +389,7 @@ bool we_do_real_ban = true;
 void block_all_traffic_with_82599_hardware_filtering(string client_ip_as_string);
 #endif
 
+string get_printable_protocol_name(unsigned int protocol);
 void print_attack_details_to_file(string details, string client_ip_as_string,  attack_details current_attack);
 bool folder_exists(string path);
 string print_time_t_in_fastnetmon_format(time_t current_time);
@@ -1050,11 +1051,10 @@ uint32_t convert_cidr_to_binary_netmask(unsigned int cidr) {
     return htonl(binary_netmask);
 }
 
-string print_simple_packet(simple_packet packet) {
-    std::stringstream buffer;
-
+string get_printable_protocol_name(unsigned int protocol) {
     string proto_name;
-    switch (packet.protocol) {
+
+    switch (protocol) {
         case IPPROTO_TCP:
             proto_name = "tcp";
             break;
@@ -1067,15 +1067,21 @@ string print_simple_packet(simple_packet packet) {
         default:
             proto_name = "unknown";
             break;
-    }
-    
+    } 
+
+    return proto_name;
+}
+
+string print_simple_packet(simple_packet packet) {
+    std::stringstream buffer;
+
     buffer<<convert_timeval_to_date(packet.ts)<<" ";
 
     buffer
         <<convert_ip_as_uint_to_string(packet.src_ip)<<":"<<packet.source_port
         <<" > "
         <<convert_ip_as_uint_to_string(packet.dst_ip)<<":"<<packet.destination_port
-        <<" protocol: "<<proto_name;
+        <<" protocol: "<<get_printable_protocol_name(packet.protocol);
    
     // Print flags only for TCP 
     if (packet.protocol == IPPROTO_TCP) { 
@@ -2289,13 +2295,22 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& 
 }
 
 void execute_ip_ban(uint32_t client_ip, map_element speed_element, unsigned int in_pps, unsigned int out_pps, unsigned int in_bps, unsigned int out_bps, unsigned int in_flows, unsigned int out_flows, string flow_attack_details) {
-    direction data_direction;
+    struct attack_details current_attack;
     unsigned int pps = 0;
+
+    direction data_direction;
 
     if (!we_do_real_ban) {
         logger<<log4cpp::Priority::INFO<<"We do not ban: "<<convert_ip_as_uint_to_string(client_ip)<<" because ban disabled completely";
         return;
     }
+
+    // TODO: add protocol detection here
+    unsigned int attack_protocol = 0;
+
+    // IPPROTO_TCP
+    // IPPROTO_UDP
+    // IPPROTO_ICMP
 
     // Check attack direction, it's so stupid!
     if (in_pps > out_pps) {
@@ -2340,8 +2355,6 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, unsigned int 
 
     string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
     string pps_as_string = convert_int_to_string(pps);
-
-    struct attack_details current_attack;
 
     // Store ban time
     time(&current_attack.ban_timestamp); 
