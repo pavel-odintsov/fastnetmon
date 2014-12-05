@@ -238,14 +238,14 @@ public:
 class attack_details : public map_element {
     public:
     attack_details() :
-        attack_power(0), max_attack_power(0), average_in_bytes(0), average_out_bytes(0), average_in_packets(0), average_out_packets(0), average_in_flows(0), average_out_flows(0) {
+        attack_protocol(0), attack_power(0), max_attack_power(0), average_in_bytes(0), average_out_bytes(0), average_in_packets(0), average_out_packets(0), average_in_flows(0), average_out_flows(0) {
     }    
     direction attack_direction;
     // first attackpower detected
     unsigned int attack_power;
     // max attack power
     unsigned int max_attack_power;
-
+    unsigned int attack_protocol;
     /*
     unsigned int in_bytes;
     unsigned int out_bytes;
@@ -389,6 +389,7 @@ bool we_do_real_ban = true;
 void block_all_traffic_with_82599_hardware_filtering(string client_ip_as_string);
 #endif
 
+unsigned int get_max_used_protocol(unsigned int tcp, unsigned int udp, unsigned int icmp);
 string get_printable_protocol_name(unsigned int protocol);
 void print_attack_details_to_file(string details, string client_ip_as_string,  attack_details current_attack);
 bool folder_exists(string path);
@@ -2294,6 +2295,29 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& 
     return packet_direction;
 }
 
+unsigned int detect_attack_protocol(map_element& speed_element, direction attack_direction) {
+    if (attack_direction == INCOMING) {
+        return get_max_used_protocol(speed_element.tcp_in_packets, speed_element.udp_in_packets, speed_element.icmp_in_packets);
+    } else {
+        // OUTGOING
+        return get_max_used_protocol(speed_element.tcp_out_packets, speed_element.udp_out_packets, speed_element.icmp_out_packets);    
+    }
+} 
+
+unsigned int get_max_used_protocol(unsigned int tcp, unsigned int udp, unsigned int icmp) {
+    unsigned int max = max(max(udp, tcp), icmp);
+
+    if (max == tcp) {
+        return IPPROTO_TCP;
+    } else if (max == udp) {
+        return IPPROTO_UDP;
+    } else if (max == icmp) {
+        return IPPROTO_ICMP;
+    }
+
+    return 0;
+}
+
 void execute_ip_ban(uint32_t client_ip, map_element speed_element, unsigned int in_pps, unsigned int out_pps, unsigned int in_bps, unsigned int out_bps, unsigned int in_flows, unsigned int out_flows, string flow_attack_details) {
     struct attack_details current_attack;
     unsigned int pps = 0;
@@ -2305,15 +2329,7 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, unsigned int 
         return;
     }
 
-    // TODO: add protocol detection here
-    unsigned int attack_protocol = 0;
-
-    // IPPROTO_TCP
-    // IPPROTO_UDP
-    // IPPROTO_ICMP
-
     // Detect attack direction with simple heuristic 
-
     if (abs(in_pps - out_pps) < 1000) {
         // If difference between pps speed is so small we should do additional investigation using bandwidth speed 
         if (in_bps > out_bps) {
@@ -2332,6 +2348,8 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, unsigned int 
             pps = out_pps;    
         }
     }
+
+    current_attack.attack_protocol = detect_attack_protocol(speed_element, data_direction);
 
     if (ban_list.count(client_ip) > 0) {
         if ( ban_list[client_ip].attack_direction != data_direction ) {
@@ -2590,6 +2608,8 @@ string get_attack_description(uint32_t client_ip, attack_details& current_attack
         <<"Initial attack power: "  <<current_attack.attack_power<<" packets per second\n"
         <<"Peak attack power: "     <<current_attack.max_attack_power<< " packets per second\n"
         <<"Attack direction: "      <<get_direction_name(current_attack.attack_direction)<<"\n"
+        <<"Attack protocol: "       <<get_printable_protocol_name(current_attack.attack_protocol)<<"\n"
+
         <<"Total incoming traffic: "      <<convert_speed_to_mbps(current_attack.in_bytes)<<" mbps\n"
         <<"Total outgoing traffic: "      <<convert_speed_to_mbps(current_attack.out_bytes)<<" mbps\n"
         <<"Total incoming pps: "          <<current_attack.in_packets<<" packets per second\n"
