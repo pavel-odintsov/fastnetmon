@@ -10,7 +10,7 @@ before_script:
   - tar -xf PF_RING-6.0.2.tar.gz
   - sudo apt-get update
   - sudo apt-get install -y build-essential bison flex libnuma-dev wget tar make
-  - cd userland/lib; ./configure --prefix=/opt/pf_ring; make; sudo make install
+  - cd PF_RING-6.0.2; cd userland/lib; ./configure --prefix=/opt/pf_ring; make; sudo make install
 script: mkdir -p build; cd build; cmake ..; make
 notifications:
   email:
