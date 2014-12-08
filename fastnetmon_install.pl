@@ -38,7 +38,7 @@ sub install {
 
     if ($distro_type eq 'debian') {
         `apt-get update`;
-        `apt-get install -y --force-yes build-essential bison flex linux-headers-$kernel_version libnuma-dev wget tar make`;
+        `apt-get install -y --force-yes build-essential bison flex linux-headers-$kernel_version libnuma-dev wget tar make dpkg-dev dkms debhelper`;
     } elsif ($distro_type eq 'centos') {
         my $kernel_package_name = 'kernel-devel';
 
@@ -47,7 +47,7 @@ sub install {
             $kernel_package_name = "vzkernel-devel-$kernel_version";
         }
 
-        `yum install -y make bison flex $kernel_package_name gcc gcc-c++`;
+        `yum install -y make bison flex $kernel_package_name gcc gcc-c++ dkms`;
     }
 
     print "Download PF_RING $pf_ring_version sources\n";
