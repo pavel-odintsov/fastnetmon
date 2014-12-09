@@ -91,6 +91,9 @@ boost::regex regular_expression_cidr_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+\\/\\d+$
 
 time_t last_call_of_traffic_recalculation;
 
+// We can use software or hardware (in kernel module) packet parser
+bool we_use_pf_ring_in_kernel_parser = true;
+
 /* Configuration block, we must move it to configuration file  */
 #ifdef REDIS
 unsigned int redis_port = 6379;
@@ -1098,11 +1101,13 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
     // Описание всех полей: http://www.ntop.org/pfring_api/structpkt__parsing__info.html
     simple_packet packet;
 
-    // In ZC (zc:eth0) mode you should manually add packet parsing here
-    // Because it disabled by default: "parsing already disabled in zero-copy"
-    // http://www.ntop.org/pfring_api/pfring_8h.html 
-    // Parse up to L3, no timestamp, no hashing
-    // pfring_parse_pkt((u_char*)p, (struct pfring_pkthdr*)h, 3, 0, 0);
+    if (!we_use_pf_ring_in_kernel_parser) {
+        // In ZC (zc:eth0) mode you should manually add packet parsing here
+        // Because it disabled by default: "parsing already disabled in zero-copy"
+        // http://www.ntop.org/pfring_api/pfring_8h.html 
+        // Parse up to L3, no timestamp, no hashing
+        pfring_parse_pkt((u_char*)p, (struct pfring_pkthdr*)h, 3, 0, 0);
+    }
 
     /* We handle only IPv4 */
     if (h->extended_hdr.parsed_pkt.ip_version == 4) {
@@ -1128,12 +1133,38 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
         //std::cout<<print_simple_packet(packet)<<std::endl;
         //printf("hash%d\n",h->extended_hdr.pkt_hash);
     } else {
-        // Uncomment this line for deep inspection of all packets
-        /*
-        char buffer[512]; 
-        pfring_print_parsed_pkt(buffer, 512, p, h);
-        logger<<log4cpp::Priority::INFO<<buffer; 
-        */
+
+    }
+
+    bool unpack_l2tp = false;
+
+    if (unpack_l2tp) {
+        // 2014-12-08 13:36:53,537 [INFO] [00:1F:12:84:E2:E7 -> 90:E2:BA:49:85:C8] [IPv4][5.254.105.102:0 -> 159.253.17.251:0] [l3_proto=115][hash=2784721876][tos=32][tcp_seq_num=0] [caplen=128][len=873][parsed_header_len=0][eth_offset=-14][l3_offset=14][l4_offset=34][payload_offset=0]
+        // L2TP: 115
+        if (packet.protocol == 115) {
+            /*
+            char buffer_old[512];
+            pfring_print_parsed_pkt(buffer_old, 512, p, h);
+            logger<<log4cpp::Priority::INFO<<buffer_old;        
+            */
+
+            // pfring_parse_pkt expects that the hdr memory is either zeroed or contains valid values
+            // for the current packet, in order to avoid parsing twice the same packet headers.
+            struct pfring_pkthdr l2tp_header;
+            memset(&l2tp_header, 0, sizeof(l2tp_header));
+
+            l2tp_header.len = h->len - (h->extended_hdr.parsed_pkt.offset.l4_offset + 8);
+            l2tp_header.caplen = h->caplen - (h->extended_hdr.parsed_pkt.offset.l4_offset + 8);
+
+            // L2TP has two headers: L2TP and default L2-Specific Sublayer: every header for 4bytes
+            const u_char *l2tp_tunnel_payload = p + h->extended_hdr.parsed_pkt.offset.l4_offset + 8;
+            pfring_parse_pkt((u_char*)l2tp_tunnel_payload, &l2tp_header, 4, 0, 0);
+        
+            // Uncomment this line for deep inspection of all packets
+            char buffer[512]; 
+            pfring_print_parsed_pkt(buffer, 512, l2tp_tunnel_payload, &l2tp_header);
+            logger<<log4cpp::Priority::INFO<<buffer; 
+        }
     }
 }
 
@@ -2105,6 +2136,11 @@ bool pf_ring_main_loop(const char* dev) {
     if (promisc)                 flags |= PF_RING_PROMISC;
     if (enable_hw_timestamp)     flags |= PF_RING_HW_TIMESTAMP;
     if (!dont_strip_timestamps)  flags |= PF_RING_STRIP_HW_TIMESTAMP;
+
+    if (!we_use_pf_ring_in_kernel_parser) {
+        flags != PF_RING_DO_NOT_PARSE;
+    }
+
     flags |= PF_RING_DNA_SYMMETRIC_RSS;  /* Note that symmetric RSS is ignored by non-DNA drivers */ 
 
     // use default value from pfcount.c
