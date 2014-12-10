@@ -18,6 +18,7 @@ Features:
 - Can trigger block script if certain IP load network with big amount of flows per second
 - VLAN untagging
 - MPLS traffic processing
+- L2TP decapsulation of nested packets
 - Can process sFLOW v5
 - Can work on mirror/SPAN ports
 - Can work on server/soft-router
