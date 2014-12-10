@@ -1110,7 +1110,8 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
         // Because it disabled by default: "parsing already disabled in zero-copy"
         // http://www.ntop.org/pfring_api/pfring_8h.html 
         // Parse up to L3, no timestamp, no hashing
-        pfring_parse_pkt((u_char*)p, (struct pfring_pkthdr*)h, 3, 0, 0);
+        // 1 - add timestamp, 0 - disable hash
+        pfring_parse_pkt((u_char*)p, (struct pfring_pkthdr*)h, 3, 1, 0);
     }
 
     if (do_unpack_l2tp_over_ip) {
@@ -1130,7 +1131,8 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
             l2tp_header.caplen = h->caplen - (l4_offset + l2tp_header_size);
 
             const u_char *l2tp_tunnel_payload = p + l4_offset + l2tp_header_size;
-            pfring_parse_pkt((u_char*)l2tp_tunnel_payload, &l2tp_header, 4, 0, 0);
+            // 1 - add timestamp, 0 - disable hash
+            pfring_parse_pkt((u_char*)l2tp_tunnel_payload, &l2tp_header, 4, 1, 0);
 
             // Copy data back
             // TODO: it's not fine solution and I should redesign this code
