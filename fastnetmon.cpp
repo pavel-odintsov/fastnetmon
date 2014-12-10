@@ -203,6 +203,8 @@ typedef struct {
 total_counter_element total_counters[4];
 total_counter_element total_speed_counters[4];
 
+// Total amount of non parsed packets
+unsigned int total_unparsed_packets = 0;
 
 unsigned int incoming_total_flows_speed = 0;
 unsigned int outgoing_total_flows_speed = 0;
@@ -1171,7 +1173,7 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
 
         process_packet(packet);
     } else {
-
+        total_unparsed_packets++;
     }
 
     // Uncomment this line for deep inspection of all packets
@@ -1746,6 +1748,7 @@ void calculation_programm() {
 
     // Application statistics
     output_buffer<<"Traffic calculated in:  "<< calculation_thread_execution_time.tv_sec<<" sec "<<calculation_thread_execution_time.tv_usec<<" microseconds\n";
+    output_buffer<<"Total amount of not processed packets: "<<total_unparsed_packets<<"\n";
 
 #ifdef PF_RING
         pfring_stat pfring_status_data;
