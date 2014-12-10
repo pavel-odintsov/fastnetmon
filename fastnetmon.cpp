@@ -91,6 +91,10 @@ boost::regex regular_expression_cidr_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+\\/\\d+$
 
 time_t last_call_of_traffic_recalculation;
 
+// We can look inside L2TP packets with IP encapsulation
+// And do it by default
+bool do_unpack_l2tp_over_ip = true;
+
 // We can use software or hardware (in kernel module) packet parser
 bool we_use_pf_ring_in_kernel_parser = true;
 
@@ -1109,6 +1113,38 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
         pfring_parse_pkt((u_char*)p, (struct pfring_pkthdr*)h, 3, 0, 0);
     }
 
+    if (do_unpack_l2tp_over_ip) {
+        // 2014-12-08 13:36:53,537 [INFO] [00:1F:12:84:E2:E7 -> 90:E2:BA:49:85:C8] [IPv4][5.254.105.102:0 -> 159.253.17.251:0] [l3_proto=115][hash=2784721876][tos=32][tcp_seq_num=0] [caplen=128][len=873][parsed_header_len=0][eth_offset=-14][l3_offset=14][l4_offset=34][payload_offset=0]
+        // L2TP has an proto number 115
+        if (h->extended_hdr.parsed_pkt.l3_proto == 115) {
+            // pfring_parse_pkt expects that the hdr memory is either zeroed or contains valid values
+            // for the current packet, in order to avoid parsing twice the same packet headers.
+            struct pfring_pkthdr l2tp_header;
+            memset(&l2tp_header, 0, sizeof(l2tp_header));
+
+            int16_t l4_offset = h->extended_hdr.parsed_pkt.offset.l4_offset;
+
+            // L2TP has two headers: L2TP and default L2-Specific Sublayer: every header for 4bytes
+            int16_t l2tp_header_size = 8;
+            l2tp_header.len = h->len - (l4_offset + l2tp_header_size);
+            l2tp_header.caplen = h->caplen - (l4_offset + l2tp_header_size);
+
+            const u_char *l2tp_tunnel_payload = p + l4_offset + l2tp_header_size;
+            pfring_parse_pkt((u_char*)l2tp_tunnel_payload, &l2tp_header, 4, 0, 0);
+
+            // Copy data back
+            // TODO: it's not fine solution and I should redesign this code
+            memcpy((struct pfring_pkthdr*)h, &l2tp_header, sizeof(l2tp_header));
+
+            // TODO: Global pfring_print_parsed_pkt can fail because we did not shift 'p' pointer
+
+            // Uncomment this line for deep inspection of all packets
+            char buffer[512];
+            pfring_print_parsed_pkt(buffer, 512, l2tp_tunnel_payload, h);
+            logger<<log4cpp::Priority::INFO<<buffer;
+        }    
+    } 
+
     /* We handle only IPv4 */
     if (h->extended_hdr.parsed_pkt.ip_version == 4) {
         /* PF_RING stores data in host byte order but we use network byte order */
@@ -1130,41 +1166,8 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
         } 
 
         process_packet(packet);
-        //std::cout<<print_simple_packet(packet)<<std::endl;
-        //printf("hash%d\n",h->extended_hdr.pkt_hash);
     } else {
 
-    }
-
-    bool unpack_l2tp = false;
-
-    if (unpack_l2tp) {
-        // 2014-12-08 13:36:53,537 [INFO] [00:1F:12:84:E2:E7 -> 90:E2:BA:49:85:C8] [IPv4][5.254.105.102:0 -> 159.253.17.251:0] [l3_proto=115][hash=2784721876][tos=32][tcp_seq_num=0] [caplen=128][len=873][parsed_header_len=0][eth_offset=-14][l3_offset=14][l4_offset=34][payload_offset=0]
-        // L2TP: 115
-        if (packet.protocol == 115) {
-            /*
-            char buffer_old[512];
-            pfring_print_parsed_pkt(buffer_old, 512, p, h);
-            logger<<log4cpp::Priority::INFO<<buffer_old;        
-            */
-
-            // pfring_parse_pkt expects that the hdr memory is either zeroed or contains valid values
-            // for the current packet, in order to avoid parsing twice the same packet headers.
-            struct pfring_pkthdr l2tp_header;
-            memset(&l2tp_header, 0, sizeof(l2tp_header));
-
-            l2tp_header.len = h->len - (h->extended_hdr.parsed_pkt.offset.l4_offset + 8);
-            l2tp_header.caplen = h->caplen - (h->extended_hdr.parsed_pkt.offset.l4_offset + 8);
-
-            // L2TP has two headers: L2TP and default L2-Specific Sublayer: every header for 4bytes
-            const u_char *l2tp_tunnel_payload = p + h->extended_hdr.parsed_pkt.offset.l4_offset + 8;
-            pfring_parse_pkt((u_char*)l2tp_tunnel_payload, &l2tp_header, 4, 0, 0);
-        
-            // Uncomment this line for deep inspection of all packets
-            char buffer[512]; 
-            pfring_print_parsed_pkt(buffer, 512, l2tp_tunnel_payload, &l2tp_header);
-            logger<<log4cpp::Priority::INFO<<buffer; 
-        }
     }
 }
 
