@@ -1139,9 +1139,11 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
             // TODO: Global pfring_print_parsed_pkt can fail because we did not shift 'p' pointer
 
             // Uncomment this line for deep inspection of all packets
+            /*
             char buffer[512];
             pfring_print_parsed_pkt(buffer, 512, l2tp_tunnel_payload, h);
             logger<<log4cpp::Priority::INFO<<buffer;
+            */
         }    
     } 
 
