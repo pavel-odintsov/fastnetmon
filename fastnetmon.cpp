@@ -1171,6 +1171,13 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
     } else {
 
     }
+
+    // Uncomment this line for deep inspection of all packets
+    /*
+    char buffer[512];
+    pfring_print_parsed_pkt(buffer, 512, p, h);
+    logger<<log4cpp::Priority::INFO<<buffer;
+    */
 }
 
 // We do not use this function now! It's buggy!
