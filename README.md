@@ -19,6 +19,7 @@ Features:
 - VLAN untagging
 - MPLS traffic processing
 - L2TP decapsulation of nested packets
+- PF_RING ZC/DNA support (wire speed processing on tens of MPPS but need [license](http://www.ntop.org/products/pf_ring/))
 - Can process sFLOW v5
 - Can work on mirror/SPAN ports
 - Can work on server/soft-router
