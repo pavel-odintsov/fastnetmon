@@ -6,7 +6,8 @@
 */
 
 void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const u_char *user_bytes) {
-    pfring_parse_pkt((u_char*)p, (struct pfring_pkthdr*)h, 3, 1, 0);
+    memset((void*)&h->extended_hdr.parsed_pkt, 0, sizeof(h->extended_hdr.parsed_pkt));
+    pfring_parse_pkt((u_char*)p, (struct pfring_pkthdr*)h, 4, 1, 0);
 
     char buffer[512];
     pfring_print_parsed_pkt(buffer, 512, p, h);
