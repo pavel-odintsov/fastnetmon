@@ -1113,7 +1113,10 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
         // http://www.ntop.org/pfring_api/pfring_8h.html 
         // Parse up to L3, no timestamp, no hashing
         // 1 - add timestamp, 0 - disable hash
-        pfring_parse_pkt((u_char*)p, (struct pfring_pkthdr*)h, 3, 1, 0);
+
+        // We should zeroify packet header because PFRING ZC did not do this!
+        memset((void*)&h->extended_hdr.parsed_pkt, 0, sizeof(h->extended_hdr.parsed_pkt));
+        pfring_parse_pkt((u_char*)p, (struct pfring_pkthdr*)h, 4, 1, 0);
     }
 
     if (do_unpack_l2tp_over_ip) {
@@ -1177,7 +1180,8 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
     }
 
     // Uncomment this line for deep inspection of all packets
-    /*
+
+    /*    
     char buffer[512];
     pfring_print_parsed_pkt(buffer, 512, p, h);
     logger<<log4cpp::Priority::INFO<<buffer;
