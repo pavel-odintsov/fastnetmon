@@ -23,3 +23,7 @@ if [ "$4" = "ban" ]; then
     # iptables -A INPUT -d $1 -j DROP
     exit 0
 fi
+
+if [ "$4" == "attack_details" ]; then
+    cat | mail -s "FastNetMon Guard: IP $1 blocked because $2 attack with power $3 pps" $email_notify;
+fi
