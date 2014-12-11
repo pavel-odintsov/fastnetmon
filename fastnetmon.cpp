@@ -863,7 +863,13 @@ bool load_configuration_file() {
     }
 
     if (configuration_map.count("interfaces") != 0) {
-        work_on_interfaces = configuration_map[ "interfaces" ]; 
+        work_on_interfaces = configuration_map[ "interfaces" ];
+
+        // We should check all interfaces and check zc flag for all
+        if (work_on_interfaces.find("zc:") != string::npos) {
+            we_use_pf_ring_in_kernel_parser = false;
+            logger<< log4cpp::Priority::INFO<<"We detect run in PF_RING Zero Copy or DNA mode and we enable packet parser!";
+        }
     }
 
     if (configuration_map.count("max_ips_in_list") != 0) {
