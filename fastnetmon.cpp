@@ -95,8 +95,14 @@ time_t last_call_of_traffic_recalculation;
 // And do it by default
 bool do_unpack_l2tp_over_ip = true;
 
+// Variable from PF_RING multi channel mode
+int num_pfring_channels = 0;
+
 // We can use software or hardware (in kernel module) packet parser
 bool we_use_pf_ring_in_kernel_parser = true;
+
+// By default we pool PF_RING on one thread
+bool enable_pfring_multi_channel_mode = false;
 
 /* Configuration block, we must move it to configuration file  */
 #ifdef REDIS
@@ -409,7 +415,7 @@ std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element,
 void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_data, packed_conntrack_hash* unpacked_data);
 uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash* struct_value);
 int timeval_subtract (struct timeval * result, struct timeval * x,  struct timeval * y);
-bool pf_ring_main_loop_multy_channel(const char* dev);
+bool pf_ring_main_loop_multi_channel(const char* dev);
 void* pf_ring_packet_consumer_thread(void* _id);
 bool is_cidr_subnet(string subnet);
 uint64_t MurmurHash64A (const void * key, int len, uint64_t seed);
@@ -1768,8 +1774,11 @@ void calculation_programm() {
     output_buffer<<"Traffic calculated in:  "<< calculation_thread_execution_time.tv_sec<<" sec "<<calculation_thread_execution_time.tv_usec<<" microseconds\n";
     output_buffer<<"Total amount of not processed packets: "<<total_unparsed_packets<<"\n";
 
-#ifdef PF_RING
+#ifdef PF_RING  
+    // Getting stats for multi channel mode is so complex task
+    if (!enable_pfring_multi_channel_mode) {
         pfring_stat pfring_status_data;
+        
         if(pfring_stats(pf_ring_descr, &pfring_status_data) >= 0) {
             char stats_buffer[256];
             double packets_dropped_percent = 0;
@@ -1791,6 +1800,7 @@ void calculation_programm() {
         } else {
             logger<< log4cpp::Priority::INFO<<"Can't get PF_RING stats";
         }
+    }
 #endif 
     // Print thresholds
     output_buffer<<"\n\n"<<print_ban_thresholds();
@@ -2037,9 +2047,14 @@ void main_packet_process_task() {
 #endif
 
 #ifdef PF_RING
-    bool pf_ring_init_result = pf_ring_main_loop(device_name);
-    // Uncomment this line if you want multichannel PF_RING pooler
-    // bool pf_ring_init_result = pf_ring_main_loop_multy_channel(device_name);
+    bool pf_ring_init_result = false;   
+
+    if (enable_pfring_multi_channel_mode) {
+        pf_ring_init_result = pf_ring_main_loop_multi_channel(device_name);
+    } else {
+        pf_ring_init_result = pf_ring_main_loop(device_name);
+    }
+
     if (!pf_ring_init_result) {
         // Internal error in PF_RING
         logger<< log4cpp::Priority::INFO<<"PF_RING initilization failed, exit from programm"; 
@@ -2060,10 +2075,12 @@ void free_up_all_resources() {
 }
 
 #ifdef PF_RING 
-bool pf_ring_main_loop_multy_channel(const char* dev) {
+bool pf_ring_main_loop_multi_channel(const char* dev) {
     int MAX_NUM_THREADS = 64;
     // TODO: enable tuning for number of threads
-    unsigned int num_threads = 8;
+    unsigned int num_threads = 4;
+
+    logger<< log4cpp::Priority::INFO<<"We will run PF_RING in multy channel mode with "<<num_threads<<" threads";
 
     if ((threads = (struct thread_stats*)calloc(MAX_NUM_THREADS, sizeof(struct thread_stats))) == NULL) {
         logger<< log4cpp::Priority::INFO<<"Can't allocate memory for threads structure";
@@ -2072,28 +2089,28 @@ bool pf_ring_main_loop_multy_channel(const char* dev) {
 
     u_int32_t flags = 0;
 
-    flags |= PF_RING_PROMISC; /* hardcode: promisc=1 */
+    flags |= PF_RING_PROMISC;            /* hardcode: promisc=1 */
     flags |= PF_RING_DNA_SYMMETRIC_RSS;  /* Note that symmetric RSS is ignored by non-DNA drivers */
     flags |= PF_RING_LONG_HEADER;
 
     packet_direction direction = rx_only_direction;
 
-    pfring* ring[MAX_NUM_RX_CHANNELS];
+    pfring* ring_array[MAX_NUM_RX_CHANNELS];
     
     unsigned int snaplen = 128;
-    int num_channels = pfring_open_multichannel(dev, snaplen, flags, ring);
+    num_pfring_channels = pfring_open_multichannel(dev, snaplen, flags, ring_array);
 
-    if (num_channels <= 0) {
-        logger<< log4cpp::Priority::INFO<<"pfring_open_multichannel returned: "<<num_channels<<" and error:"<<strerror(errno);
+    if (num_pfring_channels <= 0) {
+        logger<< log4cpp::Priority::INFO<<"pfring_open_multichannel returned: "<<num_pfring_channels<<" and error:"<<strerror(errno);
         return false;
     }
 
-    logger<< log4cpp::Priority::INFO<<"We open "<<num_channels<<" channels from pf_ring NIC";
+    logger<< log4cpp::Priority::INFO<<"We open "<<num_pfring_channels<<" channels from pf_ring NIC";
 
-    for (int i = 0; i < num_channels; i++) {
+    for (int i = 0; i < num_pfring_channels; i++) {
         // char buf[32];
   
-        threads[i].ring = ring[i];
+        threads[i].ring = ring_array[i];
         // threads[i].core_affinity = threads_core_affinity[i];
 
         int rc = 0;
@@ -2121,7 +2138,7 @@ bool pf_ring_main_loop_multy_channel(const char* dev) {
         pthread_create(&threads[i].pd_thread, NULL, pf_ring_packet_consumer_thread, (void*)thread_id);
     }
 
-    for(int i = 0; i < num_channels; i++) {
+    for(int i = 0; i < num_pfring_channels; i++) {
         pthread_join(threads[i].pd_thread, NULL);
         pfring_close(threads[i].ring);
     }
@@ -2150,7 +2167,7 @@ void* pf_ring_packet_consumer_thread(void* _id) {
         }
    }
 
-   return(NULL);
+   return NULL;
 }
 #endif
  
