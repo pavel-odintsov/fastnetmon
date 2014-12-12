@@ -764,6 +764,14 @@ bool load_configuration_file() {
         configuration_map[ parsed_config[0] ] = parsed_config[1];
     }
 
+    if (configuration_map.count("enable_connection_tracking")) {
+        if (configuration_map["enable_connection_tracking"] == "on") {
+            enable_conection_tracking = true;
+        } else {
+            enable_conection_tracking = false;
+        }
+    }
+
     if (configuration_map.count("ban_time") != 0) {
         standard_ban_time = convert_string_to_integer(configuration_map["ban_time"]);
     }
