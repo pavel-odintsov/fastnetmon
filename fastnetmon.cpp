@@ -102,7 +102,7 @@ int num_pfring_channels = 0;
 bool we_use_pf_ring_in_kernel_parser = true;
 
 // By default we pool PF_RING on one thread
-bool enable_pfring_multi_channel_mode = false;
+bool enable_pfring_multi_channel_mode = true;
 
 /* Configuration block, we must move it to configuration file  */
 #ifdef REDIS
@@ -1312,10 +1312,10 @@ void process_packet(simple_packet& current_packet) {
         }
     }
 
-    total_counters_mutex.lock();
     uint32_t sampled_number_of_packets = current_packet.sample_ratio;
     uint32_t sampled_number_of_bytes = current_packet.length * current_packet.sample_ratio;
 
+    total_counters_mutex.lock();
     total_counters[packet_direction].packets += sampled_number_of_packets;
     total_counters[packet_direction].bytes   += sampled_number_of_bytes;
     total_counters_mutex.unlock();
@@ -1779,7 +1779,7 @@ void calculation_programm() {
     if (!enable_pfring_multi_channel_mode) {
         pfring_stat pfring_status_data;
         
-        if(pfring_stats(pf_ring_descr, &pfring_status_data) >= 0) {
+        if (pfring_stats(pf_ring_descr, &pfring_status_data) >= 0) {
             char stats_buffer[256];
             double packets_dropped_percent = 0;
 
