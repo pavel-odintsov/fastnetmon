@@ -73,4 +73,6 @@ intel_idle.max_cstate=0 processor.max_cstate=1
 
 How I can enable ZC support? Please install DNA/ZC dreivers, load they and add interface name with zc prefix in config file (i.e. zc:eth3)
 
+How I can optimally use ZC mode? You should enable number of NIC queues as number of logical cores in load_driver.sh 
+
 You can find more info and graphics [here](http://forum.nag.ru/forum/index.php?showtopic=89703)
