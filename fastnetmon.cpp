@@ -102,7 +102,7 @@ int num_pfring_channels = 0;
 bool we_use_pf_ring_in_kernel_parser = true;
 
 // By default we pool PF_RING on one thread
-bool enable_pfring_multi_channel_mode = true;
+bool enable_pfring_multi_channel_mode = false;
 
 /* Configuration block, we must move it to configuration file  */
 #ifdef REDIS
