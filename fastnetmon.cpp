@@ -2077,10 +2077,6 @@ void free_up_all_resources() {
 #ifdef PF_RING 
 bool pf_ring_main_loop_multi_channel(const char* dev) {
     int MAX_NUM_THREADS = 64;
-    // TODO: enable tuning for number of threads
-    unsigned int num_threads = 4;
-
-    logger<< log4cpp::Priority::INFO<<"We will run PF_RING in multy channel mode with "<<num_threads<<" threads";
 
     if ((threads = (struct thread_stats*)calloc(MAX_NUM_THREADS, sizeof(struct thread_stats))) == NULL) {
         logger<< log4cpp::Priority::INFO<<"Can't allocate memory for threads structure";
@@ -2105,7 +2101,14 @@ bool pf_ring_main_loop_multi_channel(const char* dev) {
         return false;
     }
 
-    logger<< log4cpp::Priority::INFO<<"We open "<<num_pfring_channels<<" channels from pf_ring NIC";
+    u_int num_cpus = sysconf( _SC_NPROCESSORS_ONLN );
+    logger<< log4cpp::Priority::INFO<<"We have: "<<num_cpus<<" logical cpus in this server";    
+    logger<< log4cpp::Priority::INFO<<"We have: "<<num_pfring_channels<<" channels from pf_ring NIC";
+
+    // We should not start more processes then we have kernel cores
+    //if (num_pfring_channels > num_cpus) {
+    //    num_pfring_channels = num_cpus;
+    //}
 
     for (int i = 0; i < num_pfring_channels; i++) {
         // char buf[32];
