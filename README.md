@@ -1,6 +1,6 @@
 FastNetMon
 ===========
-Author: Pavel Odintsov pavel.odintsov at gmail.com
+Author: [Pavel Odintsov](http://ru.linkedin.com/in/podintsov/) pavel.odintsov at gmail.com
 License: GPLv2
 
 FastNetMon - high performance DoS/DDoS and load analyzer builded on top of PF_RING.
