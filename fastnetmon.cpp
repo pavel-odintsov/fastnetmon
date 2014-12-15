@@ -68,6 +68,8 @@
 
 #ifdef PF_RING
 #include "pfring.h"
+#include "pfring_zc.h"
+#include <numa.h>
 #endif
 
 using namespace std;
@@ -103,6 +105,9 @@ bool we_use_pf_ring_in_kernel_parser = true;
 
 // By default we pool PF_RING on one thread
 bool enable_pfring_multi_channel_mode = false;
+
+// We can use ZC api
+bool pf_ring_zc_api_mode = false;
 
 /* Configuration block, we must move it to configuration file  */
 #ifdef REDIS
@@ -404,6 +409,7 @@ bool we_do_real_ban = true;
 void block_all_traffic_with_82599_hardware_filtering(string client_ip_as_string);
 #endif
 
+bool zc_main_loop(const char* device);
 unsigned int get_max_used_protocol(unsigned int tcp, unsigned int udp, unsigned int icmp);
 string get_printable_protocol_name(unsigned int protocol);
 void print_attack_details_to_file(string details, string client_ip_as_string,  attack_details current_attack);
@@ -2049,10 +2055,14 @@ void main_packet_process_task() {
 #ifdef PF_RING
     bool pf_ring_init_result = false;   
 
-    if (enable_pfring_multi_channel_mode) {
-        pf_ring_init_result = pf_ring_main_loop_multi_channel(device_name);
+    if (pf_ring_zc_api_mode) {
+        pf_ring_init_result = zc_main_loop((char*)device_name); 
     } else {
-        pf_ring_init_result = pf_ring_main_loop(device_name);
+        if (enable_pfring_multi_channel_mode) {
+            pf_ring_init_result = pf_ring_main_loop_multi_channel(device_name);
+        } else {
+            pf_ring_init_result = pf_ring_main_loop(device_name);
+        }
     }
 
     if (!pf_ring_init_result) {
@@ -2171,6 +2181,114 @@ void* pf_ring_packet_consumer_thread(void* _id) {
    }
 
    return NULL;
+}
+#endif
+
+#ifdef PF_RING
+u_int32_t nbuff = 256;       /* pow */
+#define NBUFF 256
+u_int32_t nbuff_mask = 0xff; /* 256-1 */
+
+pfring_zc_queue *zq = NULL;
+pfring_zc_cluster *zc = NULL;
+pfring_zc_pkt_buff *buffers[NBUFF];
+
+u_int32_t lru = 0;
+#endif
+
+#ifdef PF_RING
+void *zc_packet_consumer_thread(void *user) {
+    u_int8_t wait_for_packet = 1;
+
+    struct pfring_pkthdr zc_header;
+    memset(&zc_header, 0, sizeof(zc_header));
+
+    while (true) {
+        if (pfring_zc_recv_pkt(zq, &buffers[lru], wait_for_packet) > 0) {
+
+            u_char *pkt_data = pfring_zc_pkt_buff_data(buffers[lru], zq);
+
+            memset(&zc_header, 0, sizeof(zc_header));
+            zc_header.len = buffers[lru]->len; 
+
+            pfring_parse_pkt(pkt_data, (struct pfring_pkthdr*)&zc_header, 4, 1, 0);
+
+            parse_packet_pf_ring(&zc_header, pkt_data, 0);
+        
+            total_unparsed_packets++;
+            // numPkts++;
+            // numBytes += buffers[lru]->len + 24; /* 8 Preamble + 4 CRC + 12 IFG */
+            lru++;
+            lru = lru & nbuff_mask;    
+        }
+    }
+}
+
+int max_packet_len(const char *device) { 
+    int max_len;
+    pfring *ring;
+
+    ring = pfring_open(device, 1536, PF_RING_PROMISC);
+
+    if (ring == NULL)
+        return 1536;
+
+    if (ring->dna.dna_mapped_device) {
+        max_len = ring->dna.dna_dev.mem_info.rx.packet_memory_slot_len;
+    } else {
+        max_len = pfring_get_mtu_size(ring);
+        if (max_len == 0) max_len = 9000 /* Jumbo */;
+            max_len += 14 /* Eth */ + 4 /* VLAN */;
+    }
+
+    pfring_close(ring);
+
+    return max_len;
+}
+
+bool zc_main_loop(const char* device) {
+    u_int32_t cluster_id = 0;
+    int bind_core = -1;
+    u_int32_t max_card_slots = 32768;
+    u_int32_t tot_num_buffers = max_card_slots + nbuff; 
+ 
+    u_int32_t buffer_len = max_packet_len(device);   
+    logger<< log4cpp::Priority::INFO<<"We got max packet len from device: "<<buffer_len; 
+
+    zc = pfring_zc_create_cluster(
+        cluster_id, 
+        buffer_len,
+        0,  
+        tot_num_buffers,
+        numa_node_of_cpu(bind_core),
+        NULL /* auto hugetlb mountpoint */ 
+    );  
+
+    if (zc == NULL) {
+        logger<< log4cpp::Priority::INFO<<"pfring_zc_create_cluster error: "<<strerror(errno)<<" Please check that pf_ring.ko is loaded and hugetlb fs is mounted";
+        return false; 
+    }
+
+
+    zq = pfring_zc_open_device(zc, device, rx_only, 0);
+
+    if (zq == NULL) {
+        logger<< log4cpp::Priority::INFO<<"pfring_zc_open_device error "<<strerror(errno)<<" Please check that device is up and not already used";
+        return false;
+    }
+
+    for (int i = 0; i < nbuff; i++) {
+        buffers[i] = pfring_zc_get_packet_handle(zc);
+
+        if (buffers[i] == NULL) {
+            logger<< log4cpp::Priority::INFO<<"pfring_zc_get_packet_handle";
+            return false;
+        }
+    }   
+
+    pthread_t my_thread;
+    pthread_create(&my_thread, NULL, zc_packet_consumer_thread, (void*) NULL);
+    pthread_join(my_thread, NULL);
 }
 #endif
  
