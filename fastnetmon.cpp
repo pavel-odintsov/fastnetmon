@@ -142,7 +142,7 @@ patricia_tree_t *lookup_tree, *whitelist_tree;
 
 bool DEBUG = 0;
 
-// flag about dumping all packets to console
+// flag about dumping all packets to log
 bool DEBUG_DUMP_ALL_PACKETS = false;
 
 // Period for update screen for console version of tool
@@ -2205,23 +2205,23 @@ void *zc_packet_consumer_thread(void *user) {
 
     while (true) {
         if (pfring_zc_recv_pkt(zq, &buffers[lru], wait_for_packet) > 0) {
-
             u_char *pkt_data = pfring_zc_pkt_buff_data(buffers[lru], zq);
 
             memset(&zc_header, 0, sizeof(zc_header));
             zc_header.len = buffers[lru]->len; 
+            zc_header.caplen = buffers[lru]->len;
 
             pfring_parse_pkt(pkt_data, (struct pfring_pkthdr*)&zc_header, 4, 1, 0);
 
             parse_packet_pf_ring(&zc_header, pkt_data, 0);
         
-            total_unparsed_packets++;
-            // numPkts++;
-            // numBytes += buffers[lru]->len + 24; /* 8 Preamble + 4 CRC + 12 IFG */
             lru++;
             lru = lru & nbuff_mask;    
         }
     }
+
+    pfring_zc_sync_queue(zq, rx_only);
+    return NULL;
 }
 
 int max_packet_len(const char *device) { 
@@ -2249,11 +2249,13 @@ int max_packet_len(const char *device) {
 bool zc_main_loop(const char* device) {
     u_int32_t cluster_id = 0;
     int bind_core = -1;
+    
     u_int32_t max_card_slots = 32768;
     u_int32_t tot_num_buffers = max_card_slots + nbuff; 
  
     u_int32_t buffer_len = max_packet_len(device);   
     logger<< log4cpp::Priority::INFO<<"We got max packet len from device: "<<buffer_len; 
+    logger<< log4cpp::Priority::INFO<<"We will use total number of ZC buffers: "<<tot_num_buffers;
 
     zc = pfring_zc_create_cluster(
         cluster_id, 
@@ -2269,8 +2271,8 @@ bool zc_main_loop(const char* device) {
         return false; 
     }
 
-
-    zq = pfring_zc_open_device(zc, device, rx_only, 0);
+    u_int32_t zc_flags = 0;
+    zq = pfring_zc_open_device(zc, device, rx_only, zc_flags);
 
     if (zq == NULL) {
         logger<< log4cpp::Priority::INFO<<"pfring_zc_open_device error "<<strerror(errno)<<" Please check that device is up and not already used";
@@ -2281,7 +2283,7 @@ bool zc_main_loop(const char* device) {
         buffers[i] = pfring_zc_get_packet_handle(zc);
 
         if (buffers[i] == NULL) {
-            logger<< log4cpp::Priority::INFO<<"pfring_zc_get_packet_handle";
+            logger<< log4cpp::Priority::INFO<<"pfring_zc_get_packet_handle failed";
             return false;
         }
     }   
