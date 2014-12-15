@@ -47,7 +47,7 @@ sub install {
             $kernel_package_name = "vzkernel-devel-$kernel_version";
         }
 
-        `yum install -y make bison flex $kernel_package_name gcc gcc-c++ dkms`;
+        `yum install -y make bison flex $kernel_package_name gcc gcc-c++ dkms numactl-devel`;
     }
 
     print "Download PF_RING $pf_ring_version sources\n";
