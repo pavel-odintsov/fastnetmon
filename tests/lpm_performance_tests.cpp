@@ -1,13 +1,75 @@
 #include <stdio.h>
+#include <iostream>
 #include <unistd.h>
 #include <stdint.h>
 #include <sys/time.h>
 #include <ctime>
+#include <vector>
 #include <map>
+#include <math.h> 
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 #include "../libpatricia/patricia.h"
 
-void suxx_func(bool param) {
-   
+using namespace std;
+
+// main data structure for storing traffic and speed data for all our IPs
+class map_element {
+public:
+    map_element() : in_bytes(0), out_bytes(0), in_packets(0), out_packets(0), tcp_in_packets(0), tcp_out_packets(0), tcp_in_bytes(0), tcp_out_bytes(0),
+        udp_in_packets(0), udp_out_packets(0), udp_in_bytes(0), udp_out_bytes(0), in_flows(0), out_flows(0),
+        icmp_in_packets(0), icmp_out_packets(0), icmp_in_bytes(0), icmp_out_bytes(0)
+     {}   
+    unsigned  int in_bytes;
+    unsigned  int out_bytes;
+    unsigned  int in_packets;
+    unsigned  int out_packets;
+    
+    // Additional data for correct attack protocol detection
+    unsigned  int tcp_in_packets;
+    unsigned  int tcp_out_packets;
+    unsigned  int tcp_in_bytes;
+    unsigned  int tcp_out_bytes;
+
+    unsigned  int udp_in_packets;
+    unsigned  int udp_out_packets;
+    unsigned  int udp_in_bytes;
+    unsigned  int udp_out_bytes;
+
+    unsigned  int icmp_in_packets;
+    unsigned  int icmp_out_packets;
+    unsigned  int icmp_in_bytes;
+    unsigned  int icmp_out_bytes;
+
+    unsigned int in_flows;
+    unsigned int out_flows;
+};
+
+typedef vector<map_element> vector_of_counters;
+typedef std::map <unsigned long int, vector_of_counters> map_of_vector_counters;
+map_of_vector_counters SubnetVectorMap;
+
+void subnet_vectors_allocator(prefix_t* prefix, void* data) { 
+    uint32_t subnet_as_integer = prefix->add.sin.s_addr;
+    u_short bitlen = prefix->bitlen;
+
+    int network_size_in_ips = pow(2, 32-bitlen);
+    SubnetVectorMap[subnet_as_integer] = vector_of_counters(network_size_in_ips);
+}
+
+void suxx_func(map_of_vector_counters::iterator itr) {
+
+}
+
+uint32_t convert_ip_as_string_to_uint(string ip) {
+    struct in_addr ip_addr;
+    inet_aton(ip.c_str(), &ip_addr);
+
+    // in network byte order
+    return ip_addr.s_addr;
 }
 
 int main() {
@@ -22,6 +84,8 @@ int main() {
     make_and_lookup(lookup_tree, "185.4.72.0/22");
     make_and_lookup(lookup_tree, "181.114.240.0/20");
     make_and_lookup(lookup_tree, "193.42.142.0/24");
+
+    patricia_process (lookup_tree, (void_fn_t)subnet_vectors_allocator);
 
     prefix_t prefix_for_check_adreess;
     prefix_for_check_adreess.family = AF_INET;
@@ -48,13 +112,30 @@ int main() {
     timespec start_time;
     clock_gettime(CLOCK_REALTIME, &start_time);
 
+    prefix_for_check_adreess.add.sin.s_addr = convert_ip_as_string_to_uint("193.42.142.22");
+
     for (int j = 0; j < j_iter; j++) {
         for (int i = 0; i < i_iter; i++) {
-            // Pseudo IP
-            prefix_for_check_adreess.add.sin.s_addr = i*j;
-            bool result = patricia_search_best(lookup_tree, &prefix_for_check_adreess) != NULL;
+            // Random Pseudo IP
+            //prefix_for_check_adreess.add.sin.s_addr = i*j;
+            patricia_node_t* found_patrica_node = patricia_search_best(lookup_tree, &prefix_for_check_adreess);
 
-            suxx_func(result);
+            unsigned long destination_subnet = 0;
+            if (found_patrica_node != NULL) {
+                destination_subnet = found_patrica_node->prefix->add.sin.s_addr;
+
+                //std::cout<<SubnetVectorMap.size();
+
+                map_of_vector_counters::iterator itr;
+                itr = SubnetVectorMap.find(destination_subnet);
+
+                if (itr == SubnetVectorMap.end()) {
+                    
+                } else {
+                    suxx_func(itr);
+                }
+            }
+
             //std::map <unsigned int, bool>::iterator itr = lpm_cache.find(i*j);
 
             //if (itr !=  lpm_cache.end()) {
