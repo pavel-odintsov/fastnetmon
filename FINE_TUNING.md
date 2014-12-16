@@ -76,6 +76,11 @@ If you want build with clang:
 cmake -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ ..
 ```
 
+If tou want build tool with debug info:
+```bash
+cmake -DCMAKE_BUILD_TYPE=Debug  ..
+```
+
 How I can enable ZC support? Please install DNA/ZC dreivers, load they and add interface name with zc prefix in config file (i.e. zc:eth3)
 
 How I can optimally use ZC mode? You should enable number of NIC queues as number of logical cores in load_driver.sh 
