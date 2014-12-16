@@ -2418,7 +2418,7 @@ bool pf_ring_main_loop(const char* dev) {
     if (!dont_strip_timestamps)  flags |= PF_RING_STRIP_HW_TIMESTAMP;
 
     if (!we_use_pf_ring_in_kernel_parser) {
-        flags != PF_RING_DO_NOT_PARSE;
+        flags |= PF_RING_DO_NOT_PARSE;
     }
 
     flags |= PF_RING_DNA_SYMMETRIC_RSS;  /* Note that symmetric RSS is ignored by non-DNA drivers */ 
