@@ -6,6 +6,10 @@
 #include <map>
 #include "../libpatricia/patricia.h"
 
+void suxx_func(bool param) {
+   
+}
+
 int main() {
     patricia_tree_t *lookup_tree;
     lookup_tree = New_Patricia(32);
@@ -28,17 +32,17 @@ int main() {
     std::map <unsigned int, bool> lpm_cache;
     // Without cache: 16.7 million of operations 
 
-    int i_iter = 10;
+    int i_iter = 100;
     // Million operations
     int j_iter = 1000000;
 
-    printf("Preallocate table\n");
+    //printf("Preallocate table\n");
     // Iterate over all our IP addresses
-    for (int j = 0; j < j_iter; j++) {
-        for (int i = 0; i < i_iter; i++) {
-            lpm_cache[i*j] = true;
-        }
-    }  
+    //for (int j = 0; j < j_iter; j++) {
+    //    for (int i = 0; i < i_iter; i++) {
+    //        lpm_cache[i*j] = true;
+    //    }
+    //}  
 
     printf("Start tests\n");
     timespec start_time;
@@ -48,17 +52,19 @@ int main() {
         for (int i = 0; i < i_iter; i++) {
             // Pseudo IP
             prefix_for_check_adreess.add.sin.s_addr = i*j;
+            bool result = patricia_search_best(lookup_tree, &prefix_for_check_adreess) != NULL;
 
-            std::map <unsigned int, bool>::iterator itr = lpm_cache.find(i*j);
+            suxx_func(result);
+            //std::map <unsigned int, bool>::iterator itr = lpm_cache.find(i*j);
 
-            if (itr !=  lpm_cache.end()) {
+            //if (itr !=  lpm_cache.end()) {
                 // found it!
-            } else {
+            //} else {
                 // cache miss
                 // bool result = patricia_search_best(lookup_tree, &prefix_for_check_adreess) != NULL;
                 //lpm_cache[i*j] = result;
                 // not found!
-            }
+            //}
         }
     }
 
@@ -69,7 +75,7 @@ int main() {
     unsigned long total_ops = i_iter*j_iter;
     float megaops_per_second = (float)total_ops/(float)used_seconds/1000000;
 
-    printf("Total time is %d seconds total ops: %d million of ops per second: %.1f\n", used_seconds, total_ops, megaops_per_second);
+    printf("Total time is %d seconds total ops: %d\nMillion of ops per second: %.1f\n", used_seconds, total_ops, megaops_per_second);
 
     Destroy_Patricia(lookup_tree,    (void_fn_t)0);
 }
