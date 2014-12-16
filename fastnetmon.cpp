@@ -128,7 +128,10 @@ bool enable_data_collection_from_mirror = true;
 bool enable_sflow_collection = false;
 
 // Time consumed by reaclculation for all IPs
-struct timeval calculation_thread_execution_time;
+struct timeval speed_calculation_time;
+
+// Time consumed by drawing stats for all IPs
+struct timeval drawing_thread_execution_time;
 
 // Total number of hosts in our networks
 // We need this as global variable because it's very important value for configuring data structures
@@ -410,6 +413,8 @@ bool we_do_real_ban = true;
 void block_all_traffic_with_82599_hardware_filtering(string client_ip_as_string);
 #endif
 
+string get_pcap_stats();
+string get_pf_ring_stats();
 bool zc_main_loop(const char* device);
 unsigned int get_max_used_protocol(unsigned int tcp, unsigned int udp, unsigned int icmp);
 string get_printable_protocol_name(unsigned int protocol);
@@ -445,7 +450,7 @@ void process_packet(simple_packet& current_packet);
 void copy_networks_from_string_form_to_binary(vector<string> networks_list_as_string, vector<subnet>& our_networks);
 
 bool file_exists(string path);
-void calculation_programm();
+void traffic_draw_programm();
 void pcap_main_loop(const char* dev);
 bool pf_ring_main_loop(const char* dev);
 void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *packetptr);
@@ -1521,7 +1526,7 @@ void calculation_thread() {
     while (1) {
         // Availible only from boost 1.54: boost::this_thread::sleep_for( boost::chrono::seconds(check_period) );
         boost::this_thread::sleep(boost::posix_time::seconds(check_period));
-        calculation_programm();
+        traffic_draw_programm();
     }
 }
 
@@ -1538,12 +1543,16 @@ void recalculate_speed_thread_handler() {
 void recalculate_speed() {
     // TODO: WE SHOULD ZEROFY ALL ELEMENTS IN TABLE SpeedCounter
 
+    struct timeval start_calc_time;
+    gettimeofday(&start_calc_time, NULL);
+
+
     double speed_calc_period = 1;
-    time_t current_time;
-    time(&current_time);
+    time_t start_time;
+    time(&start_time);
 
     // If we got 1+ seconds lag we should use new "delta" or skip this step
-    double time_difference = difftime(current_time, last_call_of_traffic_recalculation);
+    double time_difference = difftime(start_time, last_call_of_traffic_recalculation);
 
     if (time_difference < 1) {
         // It could occur on programm start
@@ -1721,9 +1730,14 @@ void recalculate_speed() {
 
     // Set time of previous startup 
     time(&last_call_of_traffic_recalculation);
+
+    struct timeval finish_calc_time;
+    gettimeofday(&finish_calc_time, NULL);
+
+    timeval_subtract(&speed_calculation_time, &finish_calc_time, &start_calc_time);
 }
 
-void calculation_programm() {
+void traffic_draw_programm() {
     stringstream output_buffer;
     
     struct timeval start_calc_time;
@@ -1766,47 +1780,17 @@ void calculation_programm() {
     output_buffer<<endl;
 
 #ifdef PCAP
-    struct pcap_stat current_pcap_stats;
-    if (pcap_stats(descr, &current_pcap_stats) == 0) {
-        output_buffer<<"PCAP statistics"<<endl<<"Received packets: "<<current_pcap_stats.ps_recv<<endl
-            <<"Dropped packets: "<<current_pcap_stats.ps_drop
-            <<" ("<<int((double)current_pcap_stats.ps_drop/current_pcap_stats.ps_recv*100)<<"%)"<<endl
-             <<"Dropped by driver or interface: "<<current_pcap_stats.ps_ifdrop<<endl;
-    }
+    output_buffer<<get_pcap_stats();
 #endif
-
     // Application statistics
-    output_buffer<<"Traffic calculated in:  "<< calculation_thread_execution_time.tv_sec<<" sec "<<calculation_thread_execution_time.tv_usec<<" microseconds\n";
+    output_buffer<<"Traffic drew in:\t\t"<< drawing_thread_execution_time.tv_sec<<" sec "<<drawing_thread_execution_time.tv_usec<<" microseconds\n";
+    output_buffer<<"Traffic calculated in:\t\t"<< speed_calculation_time.tv_sec<<" sec "<<speed_calculation_time.tv_usec<<" microseconds\n";
     output_buffer<<"Total amount of not processed packets: "<<total_unparsed_packets<<"\n";
 
 #ifdef PF_RING  
-    // Getting stats for multi channel mode is so complex task
-    if (!enable_pfring_multi_channel_mode && !pf_ring_zc_api_mode) {
-        pfring_stat pfring_status_data;
-        
-        if (pfring_stats(pf_ring_descr, &pfring_status_data) >= 0) {
-            char stats_buffer[256];
-            double packets_dropped_percent = 0;
+    output_buffer<<get_pf_ring_stats();
+#endif
 
-            if (pfring_status_data.recv > 0) {
-                packets_dropped_percent = (double)pfring_status_data.drop / pfring_status_data.recv * 100;
-            } 
-
-            sprintf(
-                stats_buffer,
-                "Packets received:\t%lu\n"
-                "Packets dropped:\t%lu\n"
-                "Packets dropped:\t%.1f %%\n",
-                (long unsigned int) pfring_status_data.recv,
-                (long unsigned int) pfring_status_data.drop,
-                packets_dropped_percent
-            ); 
-            output_buffer<<stats_buffer;
-        } else {
-            logger<< log4cpp::Priority::INFO<<"Can't get PF_RING stats";
-        }
-    }
-#endif 
     // Print thresholds
     output_buffer<<"\n\n"<<print_ban_thresholds();
 
@@ -1822,7 +1806,7 @@ void calculation_programm() {
     struct timeval end_calc_time;
     gettimeofday(&end_calc_time, NULL);
 
-    timeval_subtract(&calculation_thread_execution_time, &end_calc_time, &start_calc_time);
+    timeval_subtract(&drawing_thread_execution_time, &end_calc_time, &start_calc_time);
 }
 
 // pretty print channel speed in pps and MBit
@@ -3354,4 +3338,55 @@ void print_attack_details_to_file(string details, string client_ip_as_string,  a
         logger<<log4cpp::Priority::INFO<<"Can't print attack details to file";
     }    
 }
+
+#ifdef PF_RING  
+string get_pf_ring_stats() {
+    std::stringstream output_buffer;
+
+    // Getting stats for multi channel mode is so complex task
+    if (!enable_pfring_multi_channel_mode && !pf_ring_zc_api_mode) {
+        pfring_stat pfring_status_data;
+             
+        if (pfring_stats(pf_ring_descr, &pfring_status_data) >= 0) { 
+            char stats_buffer[256];
+            double packets_dropped_percent = 0; 
+
+            if (pfring_status_data.recv > 0) { 
+                packets_dropped_percent = (double)pfring_status_data.drop / pfring_status_data.recv * 100; 
+            }    
+
+            sprintf(
+                stats_buffer,
+                "Packets received:\t%lu\n"
+                "Packets dropped:\t%lu\n"
+                "Packets dropped:\t%.1f %%\n",
+                (long unsigned int) pfring_status_data.recv,
+                (long unsigned int) pfring_status_data.drop,
+                packets_dropped_percent
+            );   
+            output_buffer<<stats_buffer;
+        } else {
+            logger<< log4cpp::Priority::INFO<<"Can't get PF_RING stats";
+        }    
+    }    
+    
+    return output_buffer.str();
+}
+#endif 
+
+#ifdef PCAP
+string get_pcap_stats() {
+    stringstream output_buffer;
+
+    struct pcap_stat current_pcap_stats;
+    if (pcap_stats(descr, &current_pcap_stats) == 0) { 
+        output_buffer<<"PCAP statistics"<<endl<<"Received packets: "<<current_pcap_stats.ps_recv<<endl
+            <<"Dropped packets: "<<current_pcap_stats.ps_drop
+            <<" ("<<int((double)current_pcap_stats.ps_drop/current_pcap_stats.ps_recv*100)<<"%)"<<endl
+             <<"Dropped by driver or interface: "<<current_pcap_stats.ps_ifdrop<<endl;
+    }    
+
+    return output_buffer.str();   
+}
+#endif
 
