@@ -319,6 +319,7 @@ public:
 
 typedef std::map <uint32_t, map_element> map_for_counters;
 typedef vector<map_element> vector_of_counters;
+
 typedef std::map <unsigned long int, vector_of_counters> map_of_vector_counters;
 
 map_of_vector_counters SubnetVectorMap;
@@ -1133,16 +1134,18 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
     // Описание всех полей: http://www.ntop.org/pfring_api/structpkt__parsing__info.html
     simple_packet packet;
 
-    if (!we_use_pf_ring_in_kernel_parser) {
-        // In ZC (zc:eth0) mode you should manually add packet parsing here
-        // Because it disabled by default: "parsing already disabled in zero-copy"
-        // http://www.ntop.org/pfring_api/pfring_8h.html 
-        // Parse up to L3, no timestamp, no hashing
-        // 1 - add timestamp, 0 - disable hash
+    if (!pf_ring_zc_api_mode) {
+        if (!we_use_pf_ring_in_kernel_parser) {
+            // In ZC (zc:eth0) mode you should manually add packet parsing here
+            // Because it disabled by default: "parsing already disabled in zero-copy"
+            // http://www.ntop.org/pfring_api/pfring_8h.html 
+            // Parse up to L3, no timestamp, no hashing
+            // 1 - add timestamp, 0 - disable hash
 
-        // We should zeroify packet header because PFRING ZC did not do this!
-        memset((void*)&h->extended_hdr.parsed_pkt, 0, sizeof(h->extended_hdr.parsed_pkt));
-        pfring_parse_pkt((u_char*)p, (struct pfring_pkthdr*)h, 4, 1, 0);
+            // We should zeroify packet header because PFRING ZC did not do this!
+            memset((void*)&h->extended_hdr.parsed_pkt, 0, sizeof(h->extended_hdr.parsed_pkt));
+            pfring_parse_pkt((u_char*)p, (struct pfring_pkthdr*)h, 4, 1, 0);
+        }
     }
 
     if (do_unpack_l2tp_over_ip) {
@@ -1321,10 +1324,8 @@ void process_packet(simple_packet& current_packet) {
     uint32_t sampled_number_of_packets = current_packet.sample_ratio;
     uint32_t sampled_number_of_bytes = current_packet.length * current_packet.sample_ratio;
 
-    total_counters_mutex.lock();
     total_counters[packet_direction].packets += sampled_number_of_packets;
     total_counters[packet_direction].bytes   += sampled_number_of_bytes;
-    total_counters_mutex.unlock();
 
     switch (packet_direction) {
         case INTERNAL: {
@@ -1340,7 +1341,7 @@ void process_packet(simple_packet& current_packet) {
             }
 
             // Collect data when ban client
-            if  (ban_list_details.count(current_packet.src_ip) > 0 &&
+            if  (ban_list_details.size() > 0 && ban_list_details.count(current_packet.src_ip) > 0 &&
                 ban_list_details[current_packet.src_ip].size() < ban_details_records_count) {
 
                 ban_list_details[current_packet.src_ip].push_back(current_packet);
@@ -1429,10 +1430,8 @@ void process_packet(simple_packet& current_packet) {
                 connection_tracking_hash = convert_conntrack_hash_struct_to_integer(&flow_tracking_structure);
             }
 
-            // logger<< log4cpp::Priority::INFO<<"Shift is: "<<shift_in_vector;
-
             // Collect attack details
-            if  (ban_list_details.count(current_packet.dst_ip) > 0 &&
+            if  (ban_list_details.size() > 0 && ban_list_details.count(current_packet.dst_ip) > 0 &&
                 ban_list_details[current_packet.dst_ip].size() < ban_details_records_count) {
 
                 ban_list_details[current_packet.dst_ip].push_back(current_packet);
@@ -1707,8 +1706,6 @@ void recalculate_speed() {
         flow_counter.unlock();
     }
 
-    total_counters_mutex.lock();
-    
     for (unsigned int index = 0; index < 4; index++) {
         total_speed_counters[index].bytes   = int((double)total_counters[index].bytes   / (double)speed_calc_period);
         total_speed_counters[index].packets = int((double)total_counters[index].packets / (double)speed_calc_period);
@@ -1717,8 +1714,6 @@ void recalculate_speed() {
         total_counters[index].bytes = 0; 
         total_counters[index].packets = 0; 
     }    
-
-    total_counters_mutex.unlock();
 
     // Set time of previous startup 
     time(&last_call_of_traffic_recalculation);
@@ -1782,7 +1777,7 @@ void calculation_programm() {
 
 #ifdef PF_RING  
     // Getting stats for multi channel mode is so complex task
-    if (!enable_pfring_multi_channel_mode) {
+    if (!enable_pfring_multi_channel_mode && !pf_ring_zc_api_mode) {
         pfring_stat pfring_status_data;
         
         if (pfring_stats(pf_ring_descr, &pfring_status_data) >= 0) {
@@ -2185,42 +2180,75 @@ void* pf_ring_packet_consumer_thread(void* _id) {
 #endif
 
 #ifdef PF_RING
-u_int32_t nbuff = 256;       /* pow */
-#define NBUFF 256
-u_int32_t nbuff_mask = 0xff; /* 256-1 */
-
-pfring_zc_queue *zq = NULL;
-pfring_zc_cluster *zc = NULL;
-pfring_zc_pkt_buff *buffers[NBUFF];
-
-u_int32_t lru = 0;
+pthread_t *zc_threads;
+pfring_zc_cluster *zc;
+pfring_zc_worker *zw;
+pfring_zc_queue **inzq;
+pfring_zc_queue **outzq;
+pfring_zc_multi_queue *outzmq; /* fanout */
+pfring_zc_buffer_pool *wsp;
+pfring_zc_pkt_buff **buffers;
 #endif
 
 #ifdef PF_RING
-void *zc_packet_consumer_thread(void *user) {
+int rr = -1;
+
+int32_t rr_distribution_func(pfring_zc_pkt_buff *pkt_handle, pfring_zc_queue *in_queue, void *user) {
+    long num_out_queues = (long) user;
+
+    if (++rr == num_out_queues) {
+        rr = 0;
+    }
+
+    return rr;
+}
+
+
+int bind2core(int core_id) {
+    cpu_set_t cpuset;
+    int s;
+
+    if (core_id < 0)
+        return -1; 
+
+    CPU_ZERO(&cpuset);
+    CPU_SET(core_id, &cpuset);
+    if ((s = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset)) != 0) {
+        logger<< log4cpp::Priority::INFO<<"Error while binding to core:"<<core_id;
+        return -1; 
+    } else {
+        return 0;
+    }
+}
+
+void *zc_packet_consumer_thread(void *_id) {
+    long id = (long) _id;
+    pfring_zc_pkt_buff *b = buffers[id];
+
+    // Bind to core with thread number
+    bind2core(id);
+
     u_int8_t wait_for_packet = 1;
 
     struct pfring_pkthdr zc_header;
     memset(&zc_header, 0, sizeof(zc_header));
 
     while (true) {
-        if (pfring_zc_recv_pkt(zq, &buffers[lru], wait_for_packet) > 0) {
-            u_char *pkt_data = pfring_zc_pkt_buff_data(buffers[lru], zq);
+        if (pfring_zc_recv_pkt(outzq[id], &b, wait_for_packet) > 0) {
+            u_char *pkt_data = pfring_zc_pkt_buff_data(b, outzq[id]);
 
             memset(&zc_header, 0, sizeof(zc_header));
-            zc_header.len = buffers[lru]->len; 
-            zc_header.caplen = buffers[lru]->len;
+            zc_header.len = b->len; 
+            zc_header.caplen = b->len;
 
             pfring_parse_pkt(pkt_data, (struct pfring_pkthdr*)&zc_header, 4, 1, 0);
 
             parse_packet_pf_ring(&zc_header, pkt_data, 0);
-        
-            lru++;
-            lru = lru & nbuff_mask;    
         }
     }
 
-    pfring_zc_sync_queue(zq, rx_only);
+    pfring_zc_sync_queue(outzq[id], rx_only);
+        
     return NULL;
 }
 
@@ -2246,17 +2274,29 @@ int max_packet_len(const char *device) {
     return max_len;
 }
 
+#define MAX_CARD_SLOTS      32768
+#define PREFETCH_BUFFERS        8
+#define QUEUE_LEN            8192
+
 bool zc_main_loop(const char* device) {
     u_int32_t cluster_id = 0;
     int bind_core = -1;
     
-    u_int32_t max_card_slots = 32768;
-    u_int32_t tot_num_buffers = max_card_slots + nbuff; 
+    u_int num_cpus = sysconf( _SC_NPROCESSORS_ONLN );
+    logger<< log4cpp::Priority::INFO<<"We have: "<<num_cpus<<" logical cpus in this server";
+
+    // TODO: add support for multiple devices!
+    u_int32_t num_devices = 1;
+    // TODO: make it configurable
+    u_int32_t num_threads = num_cpus - 1;   
+    logger<< log4cpp::Priority::INFO<<"We will start "<<num_threads<<" worker threads";
+ 
+    u_int32_t tot_num_buffers = (num_devices * MAX_CARD_SLOTS) + (num_threads * QUEUE_LEN) + num_threads + PREFETCH_BUFFERS; 
  
     u_int32_t buffer_len = max_packet_len(device);   
     logger<< log4cpp::Priority::INFO<<"We got max packet len from device: "<<buffer_len; 
     logger<< log4cpp::Priority::INFO<<"We will use total number of ZC buffers: "<<tot_num_buffers;
-
+    
     zc = pfring_zc_create_cluster(
         cluster_id, 
         buffer_len,
@@ -2271,26 +2311,87 @@ bool zc_main_loop(const char* device) {
         return false; 
     }
 
-    u_int32_t zc_flags = 0;
-    zq = pfring_zc_open_device(zc, device, rx_only, zc_flags);
+    zc_threads = (pthread_t *)calloc(num_threads,     sizeof(pthread_t));
+    buffers = (pfring_zc_pkt_buff**)calloc(num_threads,     sizeof(pfring_zc_pkt_buff *));
+    inzq =    (pfring_zc_queue**)calloc(num_devices,     sizeof(pfring_zc_queue *));
+    outzq =   (pfring_zc_queue**)calloc(num_threads,     sizeof(pfring_zc_queue *));
 
-    if (zq == NULL) {
-        logger<< log4cpp::Priority::INFO<<"pfring_zc_open_device error "<<strerror(errno)<<" Please check that device is up and not already used";
-        return false;
-    }
-
-    for (int i = 0; i < nbuff; i++) {
+    for (int i = 0; i < num_threads; i++) { 
         buffers[i] = pfring_zc_get_packet_handle(zc);
 
         if (buffers[i] == NULL) {
             logger<< log4cpp::Priority::INFO<<"pfring_zc_get_packet_handle failed";
             return false;
         }
-    }   
+    }
 
-    pthread_t my_thread;
-    pthread_create(&my_thread, NULL, zc_packet_consumer_thread, (void*) NULL);
-    pthread_join(my_thread, NULL);
+
+    for (int i = 0; i < num_devices; i++) {
+        u_int32_t zc_flags = 0;
+         inzq[i] = pfring_zc_open_device(zc, device, rx_only, zc_flags);
+
+        if (inzq[i] == NULL) {
+            logger<< log4cpp::Priority::INFO<<"pfring_zc_open_device error "<<strerror(errno)<<" Please check that device is up and not already used";
+            return false;
+        }
+    }
+
+    for (int i = 0; i < num_threads; i++) { 
+        outzq[i] = pfring_zc_create_queue(zc, QUEUE_LEN);
+        
+        if (outzq[i] == NULL) {
+            logger<< log4cpp::Priority::INFO<<"pfring_zc_create_queue error: "<<strerror(errno);
+            return false;
+        }
+    }
+   
+    wsp = pfring_zc_create_buffer_pool(zc, PREFETCH_BUFFERS);
+
+    if (wsp == NULL) {
+        logger<< log4cpp::Priority::INFO<<"pfring_zc_create_buffer_pool error";
+        return false;
+    } 
+
+    logger<< log4cpp::Priority::INFO<<"We are starting balancer with: "<<num_threads<<" threads";
+   
+    pfring_zc_distribution_func func = rr_distribution_func;
+
+    u_int8_t wait_for_packet = 1;
+ 
+    // We run balancer at last thread
+    int32_t bind_worker_core = 3;
+
+    zw = pfring_zc_run_balancer(
+        inzq, 
+        outzq, 
+        num_devices, 
+        num_threads, 
+        wsp,
+        round_robin_bursts_policy, 
+        NULL /* idle callback */,
+        func,
+        (void *) ((long) num_threads),
+        !wait_for_packet, 
+        bind_worker_core
+    );
+
+    if (zw == NULL) {
+        logger<< log4cpp::Priority::INFO<<"pfring_zc_run_balancer error:"<<strerror(errno);
+        return false;
+    }    
+
+    for (int i = 0; i < num_threads; i++) {
+        pthread_create(&zc_threads[i], NULL, zc_packet_consumer_thread, (void*)i);
+    }
+
+    for (int i = 0; i < num_threads; i++) {
+        pthread_join(zc_threads[i], NULL);
+    }
+
+    pfring_zc_kill_worker(zw);
+    pfring_zc_destroy_cluster(zc);
+    
+    return true;
 }
 #endif
  
