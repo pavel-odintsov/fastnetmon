@@ -49,15 +49,30 @@ public:
 };
 
 typedef vector<map_element> vector_of_counters;
-typedef std::map <unsigned long int, vector_of_counters> map_of_vector_counters;
+typedef std::map <unsigned long int, vector_of_counters*> map_of_vector_counters;
+
+typedef std::pair <unsigned long int, vector_of_counters> pair_of_subnets_with_key;
+
+typedef vector<pair_of_subnets_with_key> vector_of_vector_counters;
+
 map_of_vector_counters SubnetVectorMap;
+
+vector_of_vector_counters SubnetVectorVector;
+
+#include <algorithm>
 
 void subnet_vectors_allocator(prefix_t* prefix, void* data) { 
     uint32_t subnet_as_integer = prefix->add.sin.s_addr;
     u_short bitlen = prefix->bitlen;
 
     int network_size_in_ips = pow(2, 32-bitlen);
-    SubnetVectorMap[subnet_as_integer] = vector_of_counters(network_size_in_ips);
+    SubnetVectorMap[subnet_as_integer] = new vector_of_counters(network_size_in_ips);
+
+    pair_of_subnets_with_key my_pair;
+    my_pair.first = subnet_as_integer;
+    my_pair.second = vector_of_counters(network_size_in_ips);
+
+    SubnetVectorVector.push_back(my_pair);
 }
 
 void suxx_func(map_of_vector_counters::iterator itr) {
@@ -71,6 +86,8 @@ uint32_t convert_ip_as_string_to_uint(string ip) {
     // in network byte order
     return ip_addr.s_addr;
 }
+
+bool mysortfunction (pair_of_subnets_with_key i, pair_of_subnets_with_key j) { return (i.first < j.first); }
 
 int main() {
     patricia_tree_t *lookup_tree;
@@ -86,6 +103,7 @@ int main() {
     make_and_lookup(lookup_tree, "193.42.142.0/24");
 
     patricia_process (lookup_tree, (void_fn_t)subnet_vectors_allocator);
+    std::sort(SubnetVectorVector.begin(), SubnetVectorVector.end(), mysortfunction); 
 
     prefix_t prefix_for_check_adreess;
     prefix_for_check_adreess.family = AF_INET;
@@ -125,6 +143,8 @@ int main() {
                 destination_subnet = found_patrica_node->prefix->add.sin.s_addr;
 
                 //std::cout<<SubnetVectorMap.size();
+                //SubnetVectorVector::iterator first = std::lower_bound(SubnetVectorVector.begin(), SubnetVectorVector.end(), mysortfunction);
+                
 
                 map_of_vector_counters::iterator itr;
                 itr = SubnetVectorMap.find(destination_subnet);
