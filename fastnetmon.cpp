@@ -207,9 +207,9 @@ enum direction {
 };
 
 typedef struct {
-    unsigned int bytes;
-    unsigned int packets;
-    unsigned int flows;
+    uint64_t bytes;
+    uint64_t packets;
+    uint64_t flows;
 } total_counter_element;
 
 // We count total number of incoming/outgoing/internal and other traffic type packets/bytes
@@ -218,10 +218,10 @@ total_counter_element total_counters[4];
 total_counter_element total_speed_counters[4];
 
 // Total amount of non parsed packets
-unsigned int total_unparsed_packets = 0;
+uint64_t total_unparsed_packets = 0;
 
-unsigned int incoming_total_flows_speed = 0;
-unsigned int outgoing_total_flows_speed = 0;
+uint64_t incoming_total_flows_speed = 0;
+uint64_t outgoing_total_flows_speed = 0;
 
 typedef pair<uint32_t, uint32_t> subnet;
 
@@ -232,29 +232,29 @@ public:
         udp_in_packets(0), udp_out_packets(0), udp_in_bytes(0), udp_out_bytes(0), in_flows(0), out_flows(0),
         icmp_in_packets(0), icmp_out_packets(0), icmp_in_bytes(0), icmp_out_bytes(0)
      {}
-    unsigned  int in_bytes;
-    unsigned  int out_bytes;
-    unsigned  int in_packets;
-    unsigned  int out_packets;
+    uint64_t in_bytes;
+    uint64_t out_bytes;
+    uint64_t in_packets;
+    uint64_t out_packets;
     
     // Additional data for correct attack protocol detection
-    unsigned  int tcp_in_packets;
-    unsigned  int tcp_out_packets;
-    unsigned  int tcp_in_bytes;
-    unsigned  int tcp_out_bytes;
+    uint64_t tcp_in_packets;
+    uint64_t tcp_out_packets;
+    uint64_t tcp_in_bytes;
+    uint64_t tcp_out_bytes;
 
-    unsigned  int udp_in_packets;
-    unsigned  int udp_out_packets;
-    unsigned  int udp_in_bytes;
-    unsigned  int udp_out_bytes;
+    uint64_t udp_in_packets;
+    uint64_t udp_out_packets;
+    uint64_t udp_in_bytes;
+    uint64_t udp_out_bytes;
 
-    unsigned  int icmp_in_packets;
-    unsigned  int icmp_out_packets;
-    unsigned  int icmp_in_bytes;
-    unsigned  int icmp_out_bytes;
+    uint64_t icmp_in_packets;
+    uint64_t icmp_out_packets;
+    uint64_t icmp_in_bytes;
+    uint64_t icmp_out_bytes;
 
-    unsigned int in_flows;
-    unsigned int out_flows;
+    uint64_t in_flows;
+    uint64_t out_flows;
 };
 
 // structure with attack details
@@ -265,26 +265,18 @@ class attack_details : public map_element {
     }    
     direction attack_direction;
     // first attackpower detected
-    unsigned int attack_power;
+    uint64_t attack_power;
     // max attack power
-    unsigned int max_attack_power;
+    uint64_t max_attack_power;
     unsigned int attack_protocol;
-    /*
-    unsigned int in_bytes;
-    unsigned int out_bytes;
-    unsigned int in_packets;
-    unsigned int out_packets;
-    unsigned int in_flows;
-    unsigned int out_flows;
-    */
 
     // Average counters
-    unsigned int average_in_bytes;
-    unsigned int average_out_bytes;
-    unsigned int average_in_packets;
-    unsigned int average_out_packets;
-    unsigned int average_in_flows;
-    unsigned int average_out_flows;
+    uint64_t average_in_bytes;
+    uint64_t average_out_bytes;
+    uint64_t average_in_packets;
+    uint64_t average_out_packets;
+    uint64_t average_in_flows;
+    uint64_t average_out_flows;
 
     // time when we but this user
     time_t   ban_timestamp;
@@ -296,8 +288,8 @@ typedef attack_details banlist_item;
 
 // struct for save per direction and per protocol details for flow
 typedef struct {
-    unsigned int bytes;
-    unsigned int packets;
+    uint64_t bytes;
+    uint64_t packets;
     // will be used for Garbage Collection
     time_t   last_update_time;
 } conntrack_key_struct;
@@ -416,7 +408,7 @@ void block_all_traffic_with_82599_hardware_filtering(string client_ip_as_string)
 string get_pcap_stats();
 string get_pf_ring_stats();
 bool zc_main_loop(const char* device);
-unsigned int get_max_used_protocol(unsigned int tcp, unsigned int udp, unsigned int icmp);
+unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp);
 string get_printable_protocol_name(unsigned int protocol);
 void print_attack_details_to_file(string details, string client_ip_as_string,  attack_details current_attack);
 bool folder_exists(string path);
@@ -435,14 +427,14 @@ void cleanup_ban_list();
 string print_tcp_flags(uint8_t flag_value);
 int extract_bit_value(uint8_t num, int bit);
 string get_attack_description(uint32_t client_ip, attack_details& current_attack);
-unsigned int convert_speed_to_mbps(unsigned int speed_in_bps);
+uint64_t convert_speed_to_mbps(uint64_t speed_in_bps);
 void send_attack_details(uint32_t client_ip, attack_details current_attack_details);
 string convert_timeval_to_date(struct timeval tv);
 void free_up_all_resources();
 void main_packet_process_task();
 unsigned int get_cidr_mask_from_network_as_string(string network_cidr_format);
 string print_ddos_attack_details();
-void execute_ip_ban(uint32_t client_ip, map_element new_speed_element, unsigned int in_pps, unsigned int out_pps, unsigned int in_bps, unsigned int out_bps, unsigned int in_flows, unsigned int out_flows, string flow_attack_details);
+void execute_ip_ban(uint32_t client_ip, map_element new_speed_element, uint64_t in_pps, uint64_t out_pps, uint64_t in_bps, uint64_t out_bps, uint64_t in_flows, uint64_t out_flows, string flow_attack_details);
 direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet);
 void recalculate_speed();
 std::string print_channel_speed(string traffic_type, direction packet_direction);
@@ -665,14 +657,13 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
         uint32_t client_ip = (*ii).first;
         string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
 
-        unsigned int pps = 0; 
-        unsigned int bps = 0;
-        // flow per second 
-        unsigned int flows = 0;
+        uint64_t pps = 0; 
+        uint64_t bps = 0;
+        uint64_t flows = 0;
 
-        unsigned int pps_average = 0;
-        unsigned int bps_average = 0;
-        unsigned int flows_average = 0;  
+        uint64_t pps_average = 0;
+        uint64_t bps_average = 0;
+        uint64_t flows_average = 0;  
  
         map_element* current_average_speed_element = &SpeedCounterAverage[client_ip];
         map_element* current_speed_element = &SpeedCounter[client_ip];
@@ -696,11 +687,8 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
             flows_average = current_average_speed_element->out_flows;
         }    
 
-        double mbps = (double)bps/1024/1024*8;
-        double mbps_average = (double)bps_average/1024/1024*8;
-
-        // Set one number after comma for double
-        output_buffer<<fixed<<setprecision(1);
+        uint64_t mbps = convert_speed_to_mbps(bps);
+        uint64_t mbps_average = convert_speed_to_mbps(bps_average);
 
         // Print first max_ips_in_list elements in list, we will show top 20 "huge" channel loaders
         if (element_number < max_ips_in_list) {
@@ -881,7 +869,7 @@ bool load_configuration_file() {
     }
 
     if (configuration_map.count("check_period") != 0) {
-        sort_parameter = convert_string_to_integer( configuration_map[ "check_period" ]);
+        check_period = convert_string_to_integer( configuration_map[ "check_period" ]);
     }
 
     if (configuration_map.count("sort_parameter") != 0) {
@@ -1520,8 +1508,11 @@ unsigned int get_asn_for_ip(uint32_t ip) {
 void calculation_thread() {
     // we need wait one second for calculating speed by recalculate_speed
 
-    // #include <sys/prctl.h>
+    //#include <sys/prctl.h>
     //prctl(PR_SET_NAME , "fastnetmon calc thread", 0, 0, 0);
+
+    // Sleep for a half second for shift against calculatiuon thread
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 
     while (1) {
         // Availible only from boost 1.54: boost::this_thread::sleep_for( boost::chrono::seconds(check_period) );
@@ -1541,11 +1532,10 @@ void recalculate_speed_thread_handler() {
 
 /* Calculate speed for all connnections */
 void recalculate_speed() {
-    // TODO: WE SHOULD ZEROFY ALL ELEMENTS IN TABLE SpeedCounter
+    //logger<< log4cpp::Priority::INFO<<"We run recalculate_speed";
 
     struct timeval start_calc_time;
     gettimeofday(&start_calc_time, NULL);
-
 
     double speed_calc_period = 1;
     time_t start_time;
@@ -1568,8 +1558,8 @@ void recalculate_speed() {
     map_element zero_map_element;
     memset(&zero_map_element, 0, sizeof(zero_map_element));
    
-    unsigned int incoming_total_flows = 0;
-    unsigned int outgoing_total_flows = 0;
+    uint64_t incoming_total_flows = 0;
+    uint64_t outgoing_total_flows = 0;
  
     for (map_of_vector_counters::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); ++itr) {
         for (vector_of_counters::iterator vector_itr = itr->second.begin(); vector_itr !=  itr->second.end(); ++vector_itr) {
@@ -1585,52 +1575,52 @@ void recalculate_speed() {
             // covnert to our standard network byte order
             uint32_t client_ip = htonl(client_ip_in_host_bytes_order); 
             
-            new_speed_element.in_packets  = int((double)vector_itr->in_packets   / (double)speed_calc_period);
-            new_speed_element.out_packets = int((double)vector_itr->out_packets / (double)speed_calc_period);
+            new_speed_element.in_packets  = uint64_t((double)vector_itr->in_packets   / speed_calc_period);
+            new_speed_element.out_packets = uint64_t((double)vector_itr->out_packets  / speed_calc_period);
 
-            new_speed_element.in_bytes  = int((double)vector_itr->in_bytes  / (double)speed_calc_period);
-            new_speed_element.out_bytes = int((double)vector_itr->out_bytes / (double)speed_calc_period);     
+            new_speed_element.in_bytes  = uint64_t((double)vector_itr->in_bytes  / speed_calc_period);
+            new_speed_element.out_bytes = uint64_t((double)vector_itr->out_bytes / speed_calc_period);     
 
             // By protocol counters
 
             // TCP
-            new_speed_element.tcp_in_packets  = int((double)vector_itr->tcp_in_packets   / (double)speed_calc_period);
-            new_speed_element.tcp_out_packets = int((double)vector_itr->tcp_out_packets  / (double)speed_calc_period);
+            new_speed_element.tcp_in_packets  = uint64_t((double)vector_itr->tcp_in_packets   / speed_calc_period);
+            new_speed_element.tcp_out_packets = uint64_t((double)vector_itr->tcp_out_packets  / speed_calc_period);
 
-            new_speed_element.tcp_in_bytes  = int((double)vector_itr->tcp_in_bytes  / (double)speed_calc_period);
-            new_speed_element.tcp_out_bytes = int((double)vector_itr->tcp_out_bytes / (double)speed_calc_period);    
+            new_speed_element.tcp_in_bytes  = uint64_t((double)vector_itr->tcp_in_bytes  / speed_calc_period);
+            new_speed_element.tcp_out_bytes = uint64_t((double)vector_itr->tcp_out_bytes / speed_calc_period);    
 
             // UDP
-            new_speed_element.udp_in_packets  = int((double)vector_itr->udp_in_packets   / (double)speed_calc_period);
-            new_speed_element.udp_out_packets = int((double)vector_itr->udp_out_packets  / (double)speed_calc_period);
+            new_speed_element.udp_in_packets  = uint64_t((double)vector_itr->udp_in_packets   / speed_calc_period);
+            new_speed_element.udp_out_packets = uint64_t((double)vector_itr->udp_out_packets  / speed_calc_period);
 
-            new_speed_element.udp_in_bytes  = int((double)vector_itr->udp_in_bytes  / (double)speed_calc_period);
-            new_speed_element.udp_out_bytes = int((double)vector_itr->udp_out_bytes / (double)speed_calc_period); 
+            new_speed_element.udp_in_bytes  = uint64_t((double)vector_itr->udp_in_bytes  / speed_calc_period);
+            new_speed_element.udp_out_bytes = uint64_t((double)vector_itr->udp_out_bytes / speed_calc_period); 
 
             // ICMP
-            new_speed_element.icmp_in_packets  = int((double)vector_itr->icmp_in_packets   / (double)speed_calc_period);
-            new_speed_element.icmp_out_packets = int((double)vector_itr->icmp_out_packets  / (double)speed_calc_period);
+            new_speed_element.icmp_in_packets  = uint64_t((double)vector_itr->icmp_in_packets   / speed_calc_period);
+            new_speed_element.icmp_out_packets = uint64_t((double)vector_itr->icmp_out_packets  / speed_calc_period);
 
-            new_speed_element.icmp_in_bytes  = int((double)vector_itr->icmp_in_bytes  / (double)speed_calc_period);
-            new_speed_element.icmp_out_bytes = int((double)vector_itr->icmp_out_bytes / (double)speed_calc_period);
+            new_speed_element.icmp_in_bytes  = uint64_t((double)vector_itr->icmp_in_bytes  / speed_calc_period);
+            new_speed_element.icmp_out_bytes = uint64_t((double)vector_itr->icmp_out_bytes / speed_calc_period);
 
             conntrack_main_struct* flow_counter_ptr = &SubnetVectorMapFlow[itr->first][current_index]; 
 
             // todo: optimize this operations!
-            unsigned int total_out_flows =
-                (unsigned int)flow_counter_ptr->out_tcp.size()  +
-                (unsigned int)flow_counter_ptr->out_udp.size()  +
-                (unsigned int)flow_counter_ptr->out_icmp.size() +
-                (unsigned int)flow_counter_ptr->out_other.size();
+            uint64_t total_out_flows =
+                (uint64_t)flow_counter_ptr->out_tcp.size()  +
+                (uint64_t)flow_counter_ptr->out_udp.size()  +
+                (uint64_t)flow_counter_ptr->out_icmp.size() +
+                (uint64_t)flow_counter_ptr->out_other.size();
 
-            unsigned int total_in_flows =
-                (unsigned int)flow_counter_ptr->in_tcp.size()  +
-                (unsigned int)flow_counter_ptr->in_udp.size()  +
-                (unsigned int)flow_counter_ptr->in_icmp.size() +
-                (unsigned int)flow_counter_ptr->in_other.size();
+            uint64_t total_in_flows =
+                (uint64_t)flow_counter_ptr->in_tcp.size()  +
+                (uint64_t)flow_counter_ptr->in_udp.size()  +
+                (uint64_t)flow_counter_ptr->in_icmp.size() +
+                (uint64_t)flow_counter_ptr->in_other.size();
 
-            new_speed_element.out_flows = int((double)total_out_flows  / (double)speed_calc_period);
-            new_speed_element.in_flows  = int((double)total_in_flows   / (double)speed_calc_period);
+            new_speed_element.out_flows = uint64_t((double)total_out_flows  / speed_calc_period);
+            new_speed_element.in_flows  = uint64_t((double)total_in_flows   / speed_calc_period);
 
             // Increment global counter
             incoming_total_flows += new_speed_element.in_flows;
@@ -1638,35 +1628,35 @@ void recalculate_speed() {
 
             /* Moving average recalculation */
             // http://en.wikipedia.org/wiki/Moving_average#Application_to_measuring_computer_performance 
-            double speed_calc_period = 1; 
+            //double speed_calc_period = 1; 
             double exp_power = -speed_calc_period/average_calculation_amount;
             double exp_value = exp(exp_power);
 
             map_element* current_average_speed_element = &SpeedCounterAverage[client_ip]; 
  
-            current_average_speed_element->in_bytes  = unsigned(new_speed_element.in_bytes  + exp_value *
+            current_average_speed_element->in_bytes  = uint64_t(new_speed_element.in_bytes  + exp_value *
                 ((double)current_average_speed_element->in_bytes - (double)new_speed_element.in_bytes));
-            current_average_speed_element->out_bytes = unsigned(new_speed_element.out_bytes + exp_value *
+            current_average_speed_element->out_bytes = uint64_t(new_speed_element.out_bytes + exp_value *
                 ((double)current_average_speed_element->out_bytes - (double)new_speed_element.out_bytes)); 
 
-            current_average_speed_element->in_packets  = unsigned(new_speed_element.in_packets  + exp_value *
+            current_average_speed_element->in_packets  = uint64_t(new_speed_element.in_packets  + exp_value *
                 ((double)current_average_speed_element->in_packets -  (double)new_speed_element.in_packets));
-            current_average_speed_element->out_packets = unsigned(new_speed_element.out_packets + exp_value *
+            current_average_speed_element->out_packets = uint64_t(new_speed_element.out_packets + exp_value *
                 ((double)current_average_speed_element->out_packets - (double)new_speed_element.out_packets));
 
-            current_average_speed_element->out_flows = unsigned(new_speed_element.out_flows + exp_value *
+            current_average_speed_element->out_flows = uint64_t(new_speed_element.out_flows + exp_value *
                 ((double)current_average_speed_element->out_flows -  (double)new_speed_element.out_flows));
-            current_average_speed_element->in_flows = unsigned(new_speed_element.in_flows + exp_value *
+            current_average_speed_element->in_flows = uint64_t(new_speed_element.in_flows + exp_value *
                 ((double)current_average_speed_element->in_flows -  (double)new_speed_element.in_flows));
 
-            unsigned int in_pps_average  = current_average_speed_element->in_packets;
-            unsigned int out_pps_average = current_average_speed_element->out_packets;
+            uint64_t in_pps_average  = current_average_speed_element->in_packets;
+            uint64_t out_pps_average = current_average_speed_element->out_packets;
 
-            unsigned int in_bps_average  = current_average_speed_element->in_bytes;
-            unsigned int out_bps_average = current_average_speed_element->out_bytes; 
+            uint64_t in_bps_average  = current_average_speed_element->in_bytes;
+            uint64_t out_bps_average = current_average_speed_element->out_bytes; 
 
-            unsigned int in_flows_average  = current_average_speed_element->in_flows;
-            unsigned int out_flows_average = current_average_speed_element->out_flows;
+            uint64_t in_flows_average  = current_average_speed_element->in_flows;
+            uint64_t out_flows_average = current_average_speed_element->out_flows;
 
             /* Moving average recalculation end */
 
@@ -1709,8 +1699,8 @@ void recalculate_speed() {
     }
 
     // Calculate global flow speed
-    incoming_total_flows_speed = int((double)incoming_total_flows / (double)speed_calc_period);
-    outgoing_total_flows_speed = int((double)outgoing_total_flows / (double)speed_calc_period);
+    incoming_total_flows_speed = uint64_t((double)incoming_total_flows / (double)speed_calc_period);
+    outgoing_total_flows_speed = uint64_t((double)outgoing_total_flows / (double)speed_calc_period);
     
     if (enable_conection_tracking) {
         // Clean Flow Counter
@@ -1720,8 +1710,8 @@ void recalculate_speed() {
     }
 
     for (unsigned int index = 0; index < 4; index++) {
-        total_speed_counters[index].bytes   = int((double)total_counters[index].bytes   / (double)speed_calc_period);
-        total_speed_counters[index].packets = int((double)total_counters[index].packets / (double)speed_calc_period);
+        total_speed_counters[index].bytes   = uint64_t((double)total_counters[index].bytes   / (double)speed_calc_period);
+        total_speed_counters[index].packets = uint64_t((double)total_counters[index].packets / (double)speed_calc_period);
 
         // nullify data counters after speed calculation
         total_counters[index].bytes = 0; 
@@ -1739,7 +1729,9 @@ void recalculate_speed() {
 
 void traffic_draw_programm() {
     stringstream output_buffer;
-    
+   
+    //logger<<log4cpp::Priority::INFO<<"Draw table call";
+ 
     struct timeval start_calc_time;
     gettimeofday(&start_calc_time, NULL);
 
@@ -1783,7 +1775,7 @@ void traffic_draw_programm() {
     output_buffer<<get_pcap_stats();
 #endif
     // Application statistics
-    output_buffer<<"Traffic drew in:\t\t"<< drawing_thread_execution_time.tv_sec<<" sec "<<drawing_thread_execution_time.tv_usec<<" microseconds\n";
+    output_buffer<<"Screen updated in:\t\t"<< drawing_thread_execution_time.tv_sec<<" sec "<<drawing_thread_execution_time.tv_usec<<" microseconds\n";
     output_buffer<<"Traffic calculated in:\t\t"<< speed_calculation_time.tv_sec<<" sec "<<speed_calculation_time.tv_usec<<" microseconds\n";
     output_buffer<<"Total amount of not processed packets: "<<total_unparsed_packets<<"\n";
 
@@ -1811,9 +1803,8 @@ void traffic_draw_programm() {
 
 // pretty print channel speed in pps and MBit
 std::string print_channel_speed(string traffic_type, direction packet_direction) {
-
-    unsigned int speed_in_pps = total_speed_counters[packet_direction].packets;
-    unsigned int speed_in_bps = total_speed_counters[packet_direction].bytes;
+    uint64_t speed_in_pps = total_speed_counters[packet_direction].packets;
+    uint64_t speed_in_bps = total_speed_counters[packet_direction].bytes;
 
     unsigned int number_of_tabs = 1; 
     // We need this for correct alignment of blocks
@@ -1828,7 +1819,7 @@ std::string print_channel_speed(string traffic_type, direction packet_direction)
         stream<<"\t";
     }
 
-    unsigned int speed_in_mbps = convert_speed_to_mbps(speed_in_bps);
+    uint64_t speed_in_mbps = convert_speed_to_mbps(speed_in_bps);
 
     stream<<setw(6)<<speed_in_pps<<" pps "<<setw(6)<<speed_in_mbps<<" mbps";
 
@@ -1843,8 +1834,8 @@ std::string print_channel_speed(string traffic_type, direction packet_direction)
     return stream.str();
 }    
 
-unsigned int convert_speed_to_mbps(unsigned int speed_in_bps) {
-    return int((double)speed_in_bps/1024/1024*8);
+uint64_t convert_speed_to_mbps(uint64_t speed_in_bps) {
+    return uint64_t((double)speed_in_bps / 1024 / 1024 * 8);
 }
 
 void init_logging() {
@@ -2604,7 +2595,7 @@ unsigned int detect_attack_protocol(map_element& speed_element, direction attack
     }
 } 
 
-unsigned int get_max_used_protocol(unsigned int tcp, unsigned int udp, unsigned int icmp) {
+unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp) {
     unsigned int max = max(max(udp, tcp), icmp);
 
     if (max == tcp) {
@@ -2618,9 +2609,9 @@ unsigned int get_max_used_protocol(unsigned int tcp, unsigned int udp, unsigned 
     return 0;
 }
 
-void execute_ip_ban(uint32_t client_ip, map_element speed_element, unsigned int in_pps, unsigned int out_pps, unsigned int in_bps, unsigned int out_bps, unsigned int in_flows, unsigned int out_flows, string flow_attack_details) {
+void execute_ip_ban(uint32_t client_ip, map_element speed_element, uint64_t in_pps, uint64_t out_pps, uint64_t in_bps, uint64_t out_bps, uint64_t in_flows, uint64_t out_flows, string flow_attack_details) {
     struct attack_details current_attack;
-    unsigned int pps = 0;
+    uint64_t pps = 0;
 
     direction data_direction;
 
