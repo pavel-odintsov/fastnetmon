@@ -71,6 +71,11 @@ If you saw intel_idle in perf top with red higlihting you can disable it with fo
 intel_idle.max_cstate=0 processor.max_cstate=1
 ```
 
+If you want build with clang:
+```bash
+cmake -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ ..
+```
+
 How I can enable ZC support? Please install DNA/ZC dreivers, load they and add interface name with zc prefix in config file (i.e. zc:eth3)
 
 How I can optimally use ZC mode? You should enable number of NIC queues as number of logical cores in load_driver.sh 
