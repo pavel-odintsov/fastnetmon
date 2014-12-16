@@ -81,6 +81,10 @@ If tou want build tool with debug info:
 cmake -DCMAKE_BUILD_TYPE=Debug  ..
 ```
 
+Performance tuning:
+- Do not use short prefixes (lesser then /24)
+- Do not use extremely big prefixes (/8, /16) because memory consumption will be very big
+
 How I can enable ZC support? Please install DNA/ZC dreivers, load they and add interface name with zc prefix in config file (i.e. zc:eth3)
 
 How I can optimally use ZC mode? You should enable number of NIC queues as number of logical cores in load_driver.sh 
