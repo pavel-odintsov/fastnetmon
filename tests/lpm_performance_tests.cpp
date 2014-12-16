@@ -4,7 +4,7 @@
 #include <sys/time.h>
 #include <ctime>
 #include <map>
-#include "libpatricia/patricia.h"
+#include "../libpatricia/patricia.h"
 
 int main() {
     patricia_tree_t *lookup_tree;
