@@ -21,7 +21,7 @@ add_definitions(-DPF_RING)
 # add_definitions(-DHWFILTER_LOCKING)
 
 # Our LPM library
-add_library(libpatricia STATIC libpatricia/patricia.c)
+add_library(patricia STATIC libpatricia/patricia.c)
 
 # Our sFLOW plugin
 add_library(sflow_plugin STATIC sflow_plugin/sflow_collector.cpp) 
@@ -59,7 +59,7 @@ target_link_libraries(fastnetmon pthread)
 target_link_libraries(fastnetmon pcap)
 
 # Our libs
-target_link_libraries(fastnetmon libpatricia)
+target_link_libraries(fastnetmon patricia)
 
 # Our plugins
 target_link_libraries(fastnetmon sflow_plugin)
