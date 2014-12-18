@@ -10,6 +10,10 @@ project(FastNetMon)
 set (Tutorial_VERSION_MAJOR 1)
 set (Tutorial_VERSION_MINOR 1)
 
+# It's pretty safe and provide big speedup for our packet processor and patricia code
+set(CMAKE_C_FLAGS "-O2")
+set(CMAKE_CXX_FLAGS "-O2")
+
 # Set path to home compiled PF_RING
 set(PFRING_INCLUDE_DIRS /opt/pf_ring/include)
 set(PFRING_LIBRARIES /opt/pf_ring/lib/libpfring.so)
