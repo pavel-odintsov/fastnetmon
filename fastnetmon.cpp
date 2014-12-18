@@ -664,16 +664,17 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
         uint64_t pps_average = 0;
         uint64_t bps_average = 0;
         uint64_t flows_average = 0;  
- 
+
+        // TODO: replace map by vector iteration 
         map_element* current_average_speed_element = &SpeedCounterAverage[client_ip];
-        map_element* current_speed_element = &SpeedCounter[client_ip];
+        map_element* current_speed_element         = &SpeedCounter[client_ip];
  
         // Create polymorphic pps, byte and flow counters
         if (data_direction == INCOMING) {
             pps   = current_speed_element->in_packets;
             bps   = current_speed_element->in_bytes;
             flows = current_speed_element->in_flows;
-        
+       
             pps_average   = current_average_speed_element->in_packets;
             bps_average   = current_average_speed_element->in_bytes;
             flows_average = current_average_speed_element->in_flows;
@@ -1321,8 +1322,8 @@ void process_packet(simple_packet& current_packet) {
     uint32_t sampled_number_of_packets = current_packet.sample_ratio;
     uint32_t sampled_number_of_bytes = current_packet.length * current_packet.sample_ratio;
 
-    total_counters[packet_direction].packets += sampled_number_of_packets;
-    total_counters[packet_direction].bytes   += sampled_number_of_bytes;
+    __sync_fetch_and_add(&total_counters[packet_direction].packets, sampled_number_of_packets);
+    __sync_fetch_and_add(&total_counters[packet_direction].bytes,   sampled_number_of_bytes);
 
     switch (packet_direction) {
         case INTERNAL: {
@@ -1358,9 +1359,9 @@ void process_packet(simple_packet& current_packet) {
 
             switch (current_packet.protocol) {
                 case IPPROTO_TCP: {
-                    current_element->tcp_out_packets += sampled_number_of_packets;
-                    current_element->tcp_out_bytes   += sampled_number_of_bytes;
-      
+                    __sync_fetch_and_add(&current_element->tcp_out_packets, sampled_number_of_packets);
+                    __sync_fetch_and_add(&current_element->tcp_out_bytes,   sampled_number_of_bytes);    
+
                     if (enable_conection_tracking) {
                         flow_counter.lock();
                         conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow->out_tcp[connection_tracking_hash];
@@ -1374,8 +1375,8 @@ void process_packet(simple_packet& current_packet) {
                     break;
                 }    
                 case IPPROTO_UDP: {
-                    current_element->udp_out_packets += sampled_number_of_packets;
-                    current_element->udp_out_bytes   += sampled_number_of_bytes;
+                    __sync_fetch_and_add(&current_element->udp_out_packets, sampled_number_of_packets);
+                    __sync_fetch_and_add(&current_element->udp_out_bytes,   sampled_number_of_bytes);
 
                     if (enable_conection_tracking) {
                         flow_counter.lock();
@@ -1389,8 +1390,8 @@ void process_packet(simple_packet& current_packet) {
                     break;
                 }
                 case IPPROTO_ICMP: {
-                    current_element->icmp_out_packets += sampled_number_of_packets;
-                    current_element->icmp_out_bytes   += sampled_number_of_bytes;
+                    __sync_fetch_and_add(&current_element->icmp_out_packets, sampled_number_of_packets);
+                    __sync_fetch_and_add(&current_element->icmp_out_bytes,   sampled_number_of_bytes);
 
                     // no flow tarcking for icmp
 
@@ -1401,8 +1402,8 @@ void process_packet(simple_packet& current_packet) {
                 }
             }
 
-            current_element->out_packets += sampled_number_of_packets ;
-            current_element->out_bytes   += sampled_number_of_bytes; 
+            __sync_fetch_and_add(&current_element->out_packets, sampled_number_of_packets);
+            __sync_fetch_and_add(&current_element->out_bytes,   sampled_number_of_bytes);
             
             break;
             }
@@ -1435,8 +1436,8 @@ void process_packet(simple_packet& current_packet) {
             }
 
             if (current_packet.protocol == IPPROTO_TCP) {
-                current_element->tcp_in_packets += sampled_number_of_packets;
-                current_element->tcp_in_bytes   += sampled_number_of_bytes;
+                __sync_fetch_and_add(&current_element->tcp_in_packets, sampled_number_of_packets);
+                __sync_fetch_and_add(&current_element->tcp_in_bytes,   sampled_number_of_bytes);
 
                 if (enable_conection_tracking) {
                     flow_counter.lock();
@@ -1449,8 +1450,8 @@ void process_packet(simple_packet& current_packet) {
                 }
 
             } else if (current_packet.protocol == IPPROTO_UDP) {
-                current_element->udp_in_packets += sampled_number_of_packets;
-                current_element->udp_in_bytes   += sampled_number_of_bytes;
+                __sync_fetch_and_add(&current_element->udp_in_packets, sampled_number_of_packets);
+                __sync_fetch_and_add(&current_element->udp_in_bytes,   sampled_number_of_bytes);
 
                 if (enable_conection_tracking) {
                     flow_counter.lock();
@@ -1461,16 +1462,16 @@ void process_packet(simple_packet& current_packet) {
                     flow_counter.unlock();
                 }
             } else if (current_packet.protocol == IPPROTO_ICMP) {
-                current_element->icmp_in_packets += sampled_number_of_packets;
-                current_element->icmp_in_bytes   += sampled_number_of_bytes;
+                __sync_fetch_and_add(&current_element->icmp_in_packets, sampled_number_of_packets);
+                __sync_fetch_and_add(&current_element->icmp_in_bytes,   sampled_number_of_bytes);
 
                 // no flow tarcking for icmp
             } else {
                 // TBD
             }
 
-            current_element->in_packets += sampled_number_of_packets;
-            current_element->in_bytes   += sampled_number_of_bytes;
+            __sync_fetch_and_add(&current_element->in_packets, sampled_number_of_packets);
+            __sync_fetch_and_add(&current_element->in_bytes,   sampled_number_of_bytes);
 
             break;
         }
@@ -1685,11 +1686,9 @@ void recalculate_speed() {
             }
     
             speed_counters_mutex.lock();
-            
             //map_element* current_speed_element = &SpeedCounter[client_ip];
             //*current_speed_element = new_speed_element;
             SpeedCounter[client_ip] = new_speed_element;
-
             speed_counters_mutex.unlock();
 
             data_counters_mutex.lock();
@@ -1714,8 +1713,10 @@ void recalculate_speed() {
         total_speed_counters[index].packets = uint64_t((double)total_counters[index].packets / (double)speed_calc_period);
 
         // nullify data counters after speed calculation
+        //total_counters_mutex.lock();
         total_counters[index].bytes = 0; 
         total_counters[index].packets = 0; 
+        //total_counters_mutex.unlock();
     }    
 
     // Set time of previous startup 
