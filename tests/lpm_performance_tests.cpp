@@ -7,7 +7,7 @@
 #include <vector>
 #include <map>
 #include <math.h> 
-
+#include <boost/unordered_map.hpp>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -51,7 +51,7 @@ public:
 typedef vector<map_element> vector_of_counters;
 typedef std::map <unsigned long int, vector_of_counters*> map_of_vector_counters;
 
-typedef std::pair <unsigned long int, vector_of_counters> pair_of_subnets_with_key;
+typedef std::pair <unsigned long int, vector_of_counters*> pair_of_subnets_with_key;
 
 typedef vector<pair_of_subnets_with_key> vector_of_vector_counters;
 
@@ -66,16 +66,18 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
     u_short bitlen = prefix->bitlen;
 
     int network_size_in_ips = pow(2, 32-bitlen);
+    network_size_in_ips = 1;
+
     SubnetVectorMap[subnet_as_integer] = new vector_of_counters(network_size_in_ips);
 
     pair_of_subnets_with_key my_pair;
     my_pair.first = subnet_as_integer;
-    my_pair.second = vector_of_counters(network_size_in_ips);
+    my_pair.second = new vector_of_counters(network_size_in_ips);
 
     SubnetVectorVector.push_back(my_pair);
 }
 
-void suxx_func(map_of_vector_counters::iterator itr) {
+void suxx_func(unsigned long suxx) {
 
 }
 
@@ -135,25 +137,37 @@ int main() {
     for (int j = 0; j < j_iter; j++) {
         for (int i = 0; i < i_iter; i++) {
             // Random Pseudo IP
-            //prefix_for_check_adreess.add.sin.s_addr = i*j;
+            prefix_for_check_adreess.add.sin.s_addr = i*j;
             patricia_node_t* found_patrica_node = patricia_search_best(lookup_tree, &prefix_for_check_adreess);
 
             unsigned long destination_subnet = 0;
+
+            suxx_func(found_patrica_node != NULL);
+
             if (found_patrica_node != NULL) {
                 destination_subnet = found_patrica_node->prefix->add.sin.s_addr;
+                std::cout<<"*";
+                /*
+                for (vector_of_vector_counters::iterator it = SubnetVectorVector.begin() ; it != SubnetVectorVector.end(); ++it) {
+                    std::cout<<it->first<<",";
+                    if (it->first == destination_subnet) {
+                        suxx_func(destination_subnet);
+                    }
+                } 
 
-                //std::cout<<SubnetVectorMap.size();
-                //SubnetVectorVector::iterator first = std::lower_bound(SubnetVectorVector.begin(), SubnetVectorVector.end(), mysortfunction);
-                
+                std::cout<<"\n";
+                */
 
+                /*
                 map_of_vector_counters::iterator itr;
                 itr = SubnetVectorMap.find(destination_subnet);
 
                 if (itr == SubnetVectorMap.end()) {
                     
                 } else {
-                    suxx_func(itr);
+                    suxx_func(destination_subnet);
                 }
+                */
             }
 
             //std::map <unsigned int, bool>::iterator itr = lpm_cache.find(i*j);
