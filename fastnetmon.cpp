@@ -2538,11 +2538,6 @@ void signal_handler(int signal_number) {
     exit(1); 
 }
 
-bool fast_patricia_lookup(patricia_tree_t *patricia_tree, prefix_t* prefix) {
-    bool result = patricia_search_best(patricia_tree, prefix) != NULL;
-    return result;
-}
-
 /* Get traffic type: check it belongs to our IPs */
 direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet) {
     direction packet_direction;
@@ -2558,7 +2553,7 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& 
     prefix_for_check_adreess.add.sin.s_addr = dst_ip;
 
     unsigned long destination_subnet = 0;
-    found_patrica_node = patricia_search_best(lookup_tree, &prefix_for_check_adreess);
+    found_patrica_node = patricia_search_best2(lookup_tree, &prefix_for_check_adreess, 1);
 
     if (found_patrica_node) {
         our_ip_is_destination = true;
@@ -2569,7 +2564,7 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& 
     prefix_for_check_adreess.add.sin.s_addr = src_ip;
 
     unsigned long source_subnet = 0;
-    found_patrica_node = patricia_search_best(lookup_tree, &prefix_for_check_adreess);
+    found_patrica_node = patricia_search_best2(lookup_tree, &prefix_for_check_adreess, 1);
 
     if (found_patrica_node) { 
         our_ip_is_source = true;
@@ -2669,7 +2664,7 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, uint64_t in_p
     prefix_for_check_adreess.family = AF_INET;
     prefix_for_check_adreess.bitlen = 32;
 
-    bool in_white_list = (patricia_search_best(whitelist_tree, &prefix_for_check_adreess) != NULL);
+    bool in_white_list = (patricia_search_best2(whitelist_tree, &prefix_for_check_adreess, 1) != NULL);
     
     if (in_white_list) {
         return;
