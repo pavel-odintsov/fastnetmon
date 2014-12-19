@@ -109,6 +109,8 @@ bool enable_pfring_multi_channel_mode = false;
 // We can use ZC api
 bool pf_ring_zc_api_mode = false;
 
+u_int32_t zc_num_threads = 0;
+
 /* Configuration block, we must move it to configuration file  */
 #ifdef REDIS
 unsigned int redis_port = 6379;
@@ -2280,10 +2282,10 @@ bool zc_main_loop(const char* device) {
 
     // TODO: add support for multiple devices!
     u_int32_t num_devices = 1;
-    u_int32_t num_threads = num_cpus - 1;   
-    logger<< log4cpp::Priority::INFO<<"We will start "<<num_threads<<" worker threads";
+    zc_num_threads = num_cpus - 1;   
+    logger<< log4cpp::Priority::INFO<<"We will start "<<zc_num_threads<<" worker threads";
  
-    u_int32_t tot_num_buffers = (num_devices * MAX_CARD_SLOTS) + (num_threads * QUEUE_LEN) + num_threads + PREFETCH_BUFFERS; 
+    u_int32_t tot_num_buffers = (num_devices * MAX_CARD_SLOTS) + (zc_num_threads * QUEUE_LEN) + zc_num_threads + PREFETCH_BUFFERS; 
  
     u_int32_t buffer_len = max_packet_len(device);   
     logger<< log4cpp::Priority::INFO<<"We got max packet len from device: "<<buffer_len; 
@@ -2303,12 +2305,12 @@ bool zc_main_loop(const char* device) {
         return false; 
     }
 
-    zc_threads = (pthread_t *)calloc(num_threads,     sizeof(pthread_t));
-    buffers = (pfring_zc_pkt_buff**)calloc(num_threads,     sizeof(pfring_zc_pkt_buff *));
-    inzq =    (pfring_zc_queue**)calloc(num_devices,     sizeof(pfring_zc_queue *));
-    outzq =   (pfring_zc_queue**)calloc(num_threads,     sizeof(pfring_zc_queue *));
+    zc_threads  = (pthread_t *)calloc(zc_num_threads,           sizeof(pthread_t));
+    buffers     = (pfring_zc_pkt_buff**)calloc(zc_num_threads,  sizeof(pfring_zc_pkt_buff *));
+    inzq        = (pfring_zc_queue**)calloc(num_devices,        sizeof(pfring_zc_queue *));
+    outzq       = (pfring_zc_queue**)calloc(zc_num_threads,     sizeof(pfring_zc_queue *));
 
-    for (int i = 0; i < num_threads; i++) { 
+    for (int i = 0; i < zc_num_threads; i++) { 
         buffers[i] = pfring_zc_get_packet_handle(zc);
 
         if (buffers[i] == NULL) {
@@ -2320,7 +2322,7 @@ bool zc_main_loop(const char* device) {
 
     for (int i = 0; i < num_devices; i++) {
         u_int32_t zc_flags = 0;
-         inzq[i] = pfring_zc_open_device(zc, device, rx_only, zc_flags);
+        inzq[i] = pfring_zc_open_device(zc, device, rx_only, zc_flags);
 
         if (inzq[i] == NULL) {
             logger<< log4cpp::Priority::ERROR<<"pfring_zc_open_device error "<<strerror(errno)<<" Please check that device is up and not already used";
@@ -2328,7 +2330,7 @@ bool zc_main_loop(const char* device) {
         }
     }
 
-    for (int i = 0; i < num_threads; i++) { 
+    for (int i = 0; i < zc_num_threads; i++) { 
         outzq[i] = pfring_zc_create_queue(zc, QUEUE_LEN);
         
         if (outzq[i] == NULL) {
@@ -2344,7 +2346,7 @@ bool zc_main_loop(const char* device) {
         return false;
     } 
 
-    logger<< log4cpp::Priority::INFO<<"We are starting balancer with: "<<num_threads<<" threads";
+    logger<< log4cpp::Priority::INFO<<"We are starting balancer with: "<<zc_num_threads<<" threads";
    
     pfring_zc_distribution_func func = rr_distribution_func;
 
@@ -2357,12 +2359,12 @@ bool zc_main_loop(const char* device) {
         inzq, 
         outzq, 
         num_devices, 
-        num_threads, 
+        zc_num_threads, 
         wsp,
         round_robin_bursts_policy, 
         NULL /* idle callback */,
         func,
-        (void *) ((long) num_threads),
+        (void *) ((long) zc_num_threads),
         !wait_for_packet, 
         bind_worker_core
     );
@@ -2372,11 +2374,11 @@ bool zc_main_loop(const char* device) {
         return false;
     }    
 
-    for (int i = 0; i < num_threads; i++) {
+    for (int i = 0; i < zc_num_threads; i++) {
         pthread_create(&zc_threads[i], NULL, zc_packet_consumer_thread, (void*)(long)i);
     }
 
-    for (int i = 0; i < num_threads; i++) {
+    for (int i = 0; i < zc_num_threads; i++) {
         pthread_join(zc_threads[i], NULL);
     }
 
@@ -3342,6 +3344,50 @@ void print_attack_details_to_file(string details, string client_ip_as_string,  a
 string get_pf_ring_stats() {
     std::stringstream output_buffer;
 
+    if (pf_ring_zc_api_mode) {
+        pfring_zc_stat stats;
+        // We have elements in insq for every hardware device! We shoulw add ability to configure ot
+        int stats_res = pfring_zc_stats(inzq[0], &stats);
+    
+        if (stats_res) {
+            logger<<log4cpp::Priority::ERROR<<"Can't get PF_RING ZC stats for in queue";
+        } else {
+            double dropped_percent = (double)stats.drop / ((double)stats.recv + (double)stats.sent) * 100;
+
+            output_buffer<<"\n";
+            output_buffer<<"PF_RING ZC in queue statistics\n";
+            output_buffer<<"Received:\t"<<stats.recv<<"\n";
+            output_buffer<<"Sent:\t\t"<<stats.sent<<"\n";
+            output_buffer<<"Dropped:\t"<<stats.drop<<"\n";
+            output_buffer<<"Dropped:\t"<<std::fixed << std::setprecision(2)<<dropped_percent<<" %\n";
+        }
+
+        output_buffer<<"\n";
+        output_buffer<<"PF_RING ZC out queue statistics\n";
+
+        u_int64_t total_recv = 0;
+        u_int64_t total_sent = 0;
+        u_int64_t total_drop = 0;
+        for (int i = 0; i < zc_num_threads; i++) {
+            pfring_zc_stat outq_stats;
+
+            int outq_stats_res = pfring_zc_stats(outzq[0], &outq_stats);
+            if (stats_res) {
+                logger<<log4cpp::Priority::ERROR<<"Can't get PF_RING ZC stats for out queue";
+            } else {
+                total_recv += outq_stats.recv;
+                total_sent += outq_stats.sent;
+                total_drop += outq_stats.drop;
+            }
+        }
+
+        double total_drop_percent = (double)total_drop / ((double)total_recv + (double)total_sent) * 100;
+        output_buffer<<"Received:\t"<<total_recv<<"\n";
+        output_buffer<<"Sent:\t\t"<<total_sent<<"\n";
+        output_buffer<<"Dropped:\t"<<total_drop<<"\n";
+        output_buffer<<"Dropped:\t"<<std::fixed << std::setprecision(2)<<total_drop_percent<<" %\n";
+    }
+    
     // Getting stats for multi channel mode is so complex task
     if (!enable_pfring_multi_channel_mode && !pf_ring_zc_api_mode) {
         pfring_stat pfring_status_data;
