@@ -421,7 +421,7 @@ uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash* struct_
 int timeval_subtract (struct timeval * result, struct timeval * x,  struct timeval * y);
 bool pf_ring_main_loop_multi_channel(const char* dev);
 void* pf_ring_packet_consumer_thread(void* _id);
-bool is_cidr_subnet(string subnet);
+bool is_cidr_subnet(const char* subnet);
 uint64_t MurmurHash64A (const void * key, int len, uint64_t seed);
 void cleanup_ban_list();
 string print_tcp_flags(uint8_t flag_value);
@@ -620,7 +620,7 @@ void update_traffic_in_redis(uint32_t ip, unsigned int traffic_bytes, direction 
 
     // If we store data correctly ...
     if (!reply) {
-        logger.info("Can't increment traffic in redis error_code: %d error_string: %s", redis_context->err, redis_context->errstr);
+        logger.error("Can't increment traffic in redis error_code: %d error_string: %s", redis_context->err, redis_context->errstr);
    
         // Handle redis server restart corectly
         if (redis_context->err == 1 or redis_context->err == 3) {
@@ -747,7 +747,7 @@ vector<string> read_file_to_vector(string file_name) {
             data.push_back(line); 
         }
     } else {
-        logger<< log4cpp::Priority::INFO <<"Can't open file: "<<file_name;
+        logger<< log4cpp::Priority::ERROR <<"Can't open file: "<<file_name;
     }
 
     return data;
@@ -761,14 +761,19 @@ bool load_configuration_file() {
     map<string, std::string> configuration_map;
     
     if (!config_file.is_open()) {
-        logger<< log4cpp::Priority::INFO<<"Can't open config file";
+        logger<< log4cpp::Priority::ERROR<<"Can't open config file";
         return false;
     }
 
     while ( getline(config_file, line) ) {
         vector<string> parsed_config; 
-        split( parsed_config, line, boost::is_any_of(" ="), boost::token_compress_on );
-        configuration_map[ parsed_config[0] ] = parsed_config[1];
+        boost::split( parsed_config, line, boost::is_any_of(" ="), boost::token_compress_on );
+
+        if (parsed_config.size() == 2) {
+            configuration_map[ parsed_config[0] ] = parsed_config[1];
+        } else {
+            logger<< log4cpp::Priority::ERROR<<"Can't parse config line: "<<line;
+        }
     }
 
     if (configuration_map.count("enable_connection_tracking")) {
@@ -905,7 +910,7 @@ void enable_core_dumps() {
     int result = getrlimit(RLIMIT_CORE, &rlim);
 
     if (result) {
-        logger<< log4cpp::Priority::INFO<<"Can't get current rlimit for RLIMIT_CORE";
+        logger<< log4cpp::Priority::ERROR<<"Can't get current rlimit for RLIMIT_CORE";
         return;
     } else {
         rlim.rlim_cur = rlim.rlim_max;
@@ -975,10 +980,10 @@ bool load_our_networks_list() {
         vector<string> network_list_from_config = read_file_to_vector("/etc/networks_whitelist");
 
         for( vector<string>::iterator ii=network_list_from_config.begin(); ii!=network_list_from_config.end(); ++ii) {
-            if (ii->length() > 0 && is_cidr_subnet(*ii)) {
+            if (ii->length() > 0 && is_cidr_subnet(ii->c_str())) {
                 make_and_lookup(whitelist_tree, const_cast<char*>(ii->c_str()));
             } else {
-                logger<<log4cpp::Priority::INFO<<"Can't parse line from whitelist: "<<*ii;
+                logger<<log4cpp::Priority::ERROR<<"Can't parse line from whitelist: "<<*ii;
             }
         }
 
@@ -1024,13 +1029,13 @@ bool load_our_networks_list() {
     assert( convert_ip_as_string_to_uint("255.255.255.255") == convert_cidr_to_binary_netmask(32) );
 
     for( vector<string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) { 
-        if (ii->length() > 0 && is_cidr_subnet(*ii)) { 
+        if (ii->length() > 0 && is_cidr_subnet(ii->c_str())) { 
             unsigned int cidr_mask = get_cidr_mask_from_network_as_string(*ii);
             total_number_of_hosts_in_our_networks += pow(2, 32-cidr_mask);
 
             make_and_lookup(lookup_tree, const_cast<char*>(ii->c_str()));
         } else {
-            logger<<log4cpp::Priority::INFO<<"Can't parse line from subnet list: "<<*ii;
+            logger<<log4cpp::Priority::ERROR<<"Can't parse line from subnet list: "<<*ii;
         }
     }    
 
@@ -1301,7 +1306,7 @@ void process_packet(simple_packet& current_packet) {
         itr = SubnetVectorMap.find(subnet);
 
         if (itr == SubnetVectorMap.end()) {
-            logger<< log4cpp::Priority::INFO<<"Can't find vector address in subnet map";
+            logger<< log4cpp::Priority::ERROR<<"Can't find vector address in subnet map";
             return; 
         }
     }
@@ -1313,7 +1318,7 @@ void process_packet(simple_packet& current_packet) {
             itr_flow = SubnetVectorMapFlow.find(subnet);
 
             if (itr_flow == SubnetVectorMapFlow.end()) {
-                logger<< log4cpp::Priority::INFO<<"Can't find vector address in subnet flow map";
+                logger<< log4cpp::Priority::ERROR<<"Can't find vector address in subnet flow map";
                 return;
             }
         }
@@ -1887,7 +1892,7 @@ int main(int argc,char **argv) {
         int mkdir_result = mkdir(attack_details_folder.c_str(), S_IRWXU);
 
         if (mkdir_result != 0) {
-            logger<<log4cpp::Priority::INFO<<"Can't create folder for attack details: "<<attack_details_folder;
+            logger<<log4cpp::Priority::ERROR<<"Can't create folder for attack details: "<<attack_details_folder;
             exit(1);
         }
     }
@@ -1938,7 +1943,7 @@ int main(int argc,char **argv) {
     // Init redis connection
     if (redis_enabled) {
         if (!redis_init_connection()) {
-            logger<< log4cpp::Priority::INFO<<"Can't establish connection to the redis";
+            logger<< log4cpp::Priority::ERROR<<"Can't establish connection to the redis";
             exit(1);
         }
     }
@@ -1947,7 +1952,7 @@ int main(int argc,char **argv) {
 #ifdef GEOIP
     // Init GeoIP
     if(!geoip_init()) {
-        logger<< log4cpp::Priority::INFO<<"Can't load geoip tables";
+        logger<< log4cpp::Priority::ERROR<<"Can't load geoip tables";
         exit(1);
     } 
 #endif
@@ -2042,7 +2047,7 @@ void main_packet_process_task() {
 
     if (!pf_ring_init_result) {
         // Internal error in PF_RING
-        logger<< log4cpp::Priority::INFO<<"PF_RING initilization failed, exit from programm"; 
+        logger<< log4cpp::Priority::ERROR<<"PF_RING initilization failed, exit from programm"; 
         exit(1);
     }
 #endif
@@ -2064,7 +2069,7 @@ bool pf_ring_main_loop_multi_channel(const char* dev) {
     int MAX_NUM_THREADS = 64;
 
     if ((threads = (struct thread_stats*)calloc(MAX_NUM_THREADS, sizeof(struct thread_stats))) == NULL) {
-        logger<< log4cpp::Priority::INFO<<"Can't allocate memory for threads structure";
+        logger<< log4cpp::Priority::ERROR<<"Can't allocate memory for threads structure";
         return false;
     }
 
@@ -2300,7 +2305,7 @@ bool zc_main_loop(const char* device) {
         buffers[i] = pfring_zc_get_packet_handle(zc);
 
         if (buffers[i] == NULL) {
-            logger<< log4cpp::Priority::INFO<<"pfring_zc_get_packet_handle failed";
+            logger<< log4cpp::Priority::ERROR<<"pfring_zc_get_packet_handle failed";
             return false;
         }
     }
@@ -2311,7 +2316,7 @@ bool zc_main_loop(const char* device) {
          inzq[i] = pfring_zc_open_device(zc, device, rx_only, zc_flags);
 
         if (inzq[i] == NULL) {
-            logger<< log4cpp::Priority::INFO<<"pfring_zc_open_device error "<<strerror(errno)<<" Please check that device is up and not already used";
+            logger<< log4cpp::Priority::ERROR<<"pfring_zc_open_device error "<<strerror(errno)<<" Please check that device is up and not already used";
             return false;
         }
     }
@@ -2320,7 +2325,7 @@ bool zc_main_loop(const char* device) {
         outzq[i] = pfring_zc_create_queue(zc, QUEUE_LEN);
         
         if (outzq[i] == NULL) {
-            logger<< log4cpp::Priority::INFO<<"pfring_zc_create_queue error: "<<strerror(errno);
+            logger<< log4cpp::Priority::ERROR<<"pfring_zc_create_queue error: "<<strerror(errno);
             return false;
         }
     }
@@ -2328,7 +2333,7 @@ bool zc_main_loop(const char* device) {
     wsp = pfring_zc_create_buffer_pool(zc, PREFETCH_BUFFERS);
 
     if (wsp == NULL) {
-        logger<< log4cpp::Priority::INFO<<"pfring_zc_create_buffer_pool error";
+        logger<< log4cpp::Priority::ERROR<<"pfring_zc_create_buffer_pool error";
         return false;
     } 
 
@@ -2356,7 +2361,7 @@ bool zc_main_loop(const char* device) {
     );
 
     if (zw == NULL) {
-        logger<< log4cpp::Priority::INFO<<"pfring_zc_run_balancer error:"<<strerror(errno);
+        logger<< log4cpp::Priority::ERROR<<"pfring_zc_run_balancer error:"<<strerror(errno);
         return false;
     }    
 
@@ -2420,7 +2425,7 @@ bool pf_ring_main_loop(const char* dev) {
         pfring_set_application_name(pf_ring_descr, (char*)"fastnetmon");
 
     if (pfring_set_application_name_result != 0) {
-        logger<< log4cpp::Priority::INFO<<"Can't set programm name for PF_RING: pfring_set_application_name";
+        logger<< log4cpp::Priority::ERROR<<"Can't set programm name for PF_RING: pfring_set_application_name";
     }
 
     pfring_version(pf_ring_descr, &version);
@@ -2469,7 +2474,7 @@ void pcap_main_loop(const char* dev) {
     descr = pcap_create(dev, errbuf);
 
     if (descr == NULL) {
-        logger<< log4cpp::Priority::INFO<<"pcap_create was failed with error: "<<errbuf;
+        logger<< log4cpp::Priority::ERROR<<"pcap_create was failed with error: "<<errbuf;
         exit(0);
     }
 
@@ -2477,21 +2482,21 @@ void pcap_main_loop(const char* dev) {
     int set_buffer_size_res = pcap_set_buffer_size(descr, pcap_buffer_size_mbytes * 1024 * 1024);
     if (set_buffer_size_res != 0 ) {
         if (set_buffer_size_res == PCAP_ERROR_ACTIVATED) {
-            logger<< log4cpp::Priority::INFO<<"Can't set buffer size because pcap already activated\n";
+            logger<< log4cpp::Priority::ERROR<<"Can't set buffer size because pcap already activated\n";
             exit(1);
         } else {
-            logger<< log4cpp::Priority::INFO<<"Can't set buffer size due to error: "<<set_buffer_size_res;
+            logger<< log4cpp::Priority::ERROR<<"Can't set buffer size due to error: "<<set_buffer_size_res;
             exit(1);
         }   
     } 
 
     if (pcap_set_promisc(descr, promisc) != 0) {
-        logger<< log4cpp::Priority::INFO<<"Can't activate promisc mode for interface: "<<dev;
+        logger<< log4cpp::Priority::ERROR<<"Can't activate promisc mode for interface: "<<dev;
         exit(1);
     }
 
     if (pcap_activate(descr) != 0) {
-        logger<< log4cpp::Priority::INFO<<"Call pcap_activate was failed: "<<pcap_geterr(descr);
+        logger<< log4cpp::Priority::ERROR<<"Call pcap_activate was failed: "<<pcap_geterr(descr);
         exit(1);
     }
 
@@ -2795,7 +2800,7 @@ void block_all_traffic_with_82599_hardware_filtering(string client_ip_as_string)
             }
 
             if (pfring_add_hw_rule(pf_ring_descr, &rule) != 0) {
-                logger<<log4cpp::Priority::INFO<<"Can't add hardware filtering rule for protocol: "<<*banned_protocol<<" in direction: "<<hw_filter_rule_direction;
+                logger<<log4cpp::Priority::ERROR<<"Can't add hardware filtering rule for protocol: "<<*banned_protocol<<" in direction: "<<hw_filter_rule_direction;
             }
 
             rule_number ++;
@@ -3126,9 +3131,9 @@ uint64_t MurmurHash64A ( const void * key, int len, uint64_t seed ) {
     return h;
 } 
 
-bool is_cidr_subnet(string subnet) {
+bool is_cidr_subnet(const char* subnet) {
     boost::cmatch what;
-    if (regex_match(subnet.c_str(), what, regular_expression_cidr_pattern)) {
+    if (regex_match(subnet, what, regular_expression_cidr_pattern)) {
         return true;
     } else {
         return false;
@@ -3327,7 +3332,7 @@ void print_attack_details_to_file(string details, string client_ip_as_string,  a
         my_attack_details_file << details << "\n\n"; 
         my_attack_details_file.close();
     } else {
-        logger<<log4cpp::Priority::INFO<<"Can't print attack details to file";
+        logger<<log4cpp::Priority::ERROR<<"Can't print attack details to file";
     }    
 }
 
@@ -3358,7 +3363,7 @@ string get_pf_ring_stats() {
             );   
             output_buffer<<stats_buffer;
         } else {
-            logger<< log4cpp::Priority::INFO<<"Can't get PF_RING stats";
+            logger<< log4cpp::Priority::ERROR<<"Can't get PF_RING stats";
         }    
     }    
     
