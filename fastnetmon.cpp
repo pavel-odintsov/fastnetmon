@@ -2280,7 +2280,6 @@ bool zc_main_loop(const char* device) {
 
     // TODO: add support for multiple devices!
     u_int32_t num_devices = 1;
-    // TODO: make it configurable
     u_int32_t num_threads = num_cpus - 1;   
     logger<< log4cpp::Priority::INFO<<"We will start "<<num_threads<<" worker threads";
  
@@ -2374,7 +2373,7 @@ bool zc_main_loop(const char* device) {
     }    
 
     for (int i = 0; i < num_threads; i++) {
-        pthread_create(&zc_threads[i], NULL, zc_packet_consumer_thread, (void*)i);
+        pthread_create(&zc_threads[i], NULL, zc_packet_consumer_thread, (void*)(long)i);
     }
 
     for (int i = 0; i < num_threads; i++) {
