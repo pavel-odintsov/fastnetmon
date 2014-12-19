@@ -1348,6 +1348,7 @@ void process_packet(simple_packet& current_packet) {
         uint32_t shift_in_vector = ntohl(current_packet.src_ip) - subnet_in_host_byte_order;
         map_element* current_element = &itr->second[shift_in_vector];
 
+        // Main packet/bytes counter
         __sync_fetch_and_add(&current_element->out_packets, sampled_number_of_packets);
         __sync_fetch_and_add(&current_element->out_bytes,   sampled_number_of_bytes);
 
@@ -1406,7 +1407,7 @@ void process_packet(simple_packet& current_packet) {
         } else if (current_packet.protocol == IPPROTO_ICMP) {
             __sync_fetch_and_add(&current_element->icmp_out_packets, sampled_number_of_packets);
             __sync_fetch_and_add(&current_element->icmp_out_bytes,   sampled_number_of_bytes);
-            // no flow tarcking for icmp
+            // no flow tracking for icmp
         } else {
 
         } 
@@ -1414,7 +1415,8 @@ void process_packet(simple_packet& current_packet) {
     } else if (packet_direction == INCOMING) {
         uint32_t shift_in_vector = ntohl(current_packet.dst_ip) - subnet_in_host_byte_order;
         map_element* current_element = &itr->second[shift_in_vector];
-    
+   
+        // Main packet/bytes counter 
         __sync_fetch_and_add(&current_element->in_packets, sampled_number_of_packets);
         __sync_fetch_and_add(&current_element->in_bytes,   sampled_number_of_bytes);
 
