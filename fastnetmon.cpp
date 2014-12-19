@@ -776,6 +776,14 @@ bool load_configuration_file() {
         }
     }
 
+    if (configuration_map.count("enable_pf_ring_zc_mode")) {
+        if (configuration_map["enable_pf_ring_zc_mode"] == "on") {
+            pf_ring_zc_api_mode = true;
+        } else {
+            pf_ring_zc_api_mode = false;
+        }
+    }
+
     if (configuration_map.count("enable_connection_tracking")) {
         if (configuration_map["enable_connection_tracking"] == "on") {
             enable_conection_tracking = true;
