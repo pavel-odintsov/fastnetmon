@@ -2277,15 +2277,6 @@ bool zc_main_loop(const char* device) {
     u_int32_t cluster_id = 0;
     int bind_core = -1;
    
-#if RING_VERSION_NUM >= 0x060003
-    int pf_ring_license_state = pfring_zc_check_license();
-
-    logger<< log4cpp::Priority::INFO<<"pfring_zc_check_license return:"<<pf_ring_license_state;
-    //if (!pf_ring_license_state) {
-    //    logger<< log4cpp::Priority::ERROR<<"PF_RING ZC running in trial mode and will work only 5 minutes! Please buy license or switch to vanilla PF_RING";
-    //}
-#endif
- 
     u_int num_cpus = sysconf( _SC_NPROCESSORS_ONLN );
     logger<< log4cpp::Priority::INFO<<"We have: "<<num_cpus<<" logical cpus in this server";
 
@@ -2337,6 +2328,15 @@ bool zc_main_loop(const char* device) {
             logger<< log4cpp::Priority::ERROR<<"pfring_zc_open_device error "<<strerror(errno)<<" Please check that device is up and not already used";
             return false;
         }
+
+#if RING_VERSION_NUM >= 0x060003
+        int pf_ring_license_state = pfring_zc_check_license();
+
+        if (!pf_ring_license_state) {
+            logger<< log4cpp::Priority::ERROR<<"PF_RING ZC haven't license for device"<<device
+                <<" and running in trial mode and will work only 5 minutes! Please buy license or switch to vanilla PF_RING";
+        }  
+#endif
     }
 
     for (int i = 0; i < zc_num_threads; i++) { 
