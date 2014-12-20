@@ -2251,6 +2251,10 @@ int max_packet_len(const char *device) {
     if (ring == NULL)
         return 1536;
 
+// pfring_get_max_packet_size added in 6.0.3
+#if RING_VERSION_NUM >= 0x060003
+    max_len = pfring_get_max_packet_size(ring);
+#else
     if (ring->dna.dna_mapped_device) {
         max_len = ring->dna.dna_dev.mem_info.rx.packet_memory_slot_len;
     } else {
@@ -2258,6 +2262,7 @@ int max_packet_len(const char *device) {
         if (max_len == 0) max_len = 9000 /* Jumbo */;
             max_len += 14 /* Eth */ + 4 /* VLAN */;
     }
+#endif
 
     pfring_close(ring);
 
