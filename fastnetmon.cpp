@@ -100,6 +100,9 @@ bool do_unpack_l2tp_over_ip = true;
 // Variable from PF_RING multi channel mode
 int num_pfring_channels = 0;
 
+// Variable with all data from main screen
+string screen_data_stats = "";
+
 // We can use software or hardware (in kernel module) packet parser
 bool we_use_pf_ring_in_kernel_parser = true;
 
@@ -1737,6 +1740,18 @@ void recalculate_speed() {
     timeval_subtract(&speed_calculation_time, &finish_calc_time, &start_calc_time);
 }
 
+void print_screen_contents_into_file(string screen_data_stats_param) {
+    ofstream screen_data_file;
+    screen_data_file.open("/tmp/fastnetmon.dat", ios::trunc);
+
+    if (screen_data_file.is_open()) {
+        screen_data_file<<screen_data_stats_param;
+        screen_data_file.close();
+    } else {
+        logger<<log4cpp::Priority::ERROR<<"Can't print programm screen into file";
+    }
+}
+
 void traffic_draw_programm() {
     stringstream output_buffer;
    
@@ -1800,10 +1815,14 @@ void traffic_draw_programm() {
         output_buffer<<endl<<"Ban list:"<<endl;  
         output_buffer<<print_ddos_attack_details();
     }
- 
-    printw( (output_buffer.str()).c_str());
+
+    screen_data_stats = output_buffer.str();
+    printw( screen_data_stats.c_str() );
     // update screen
     refresh();
+
+    // Print screen contents into file
+    print_screen_contents_into_file(screen_data_stats);
 
     struct timeval end_calc_time;
     gettimeofday(&end_calc_time, NULL);
@@ -3339,7 +3358,7 @@ void print_attack_details_to_file(string details, string client_ip_as_string,  a
     ofstream my_attack_details_file;
 
     string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack.ban_timestamp); 
-    string attack_dump_path =attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string;
+    string attack_dump_path = attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string;
 
     my_attack_details_file.open(attack_dump_path.c_str(), ios::app);
 
