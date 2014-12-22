@@ -97,6 +97,8 @@ time_t last_call_of_traffic_recalculation;
 // And do it by default
 bool do_unpack_l2tp_over_ip = true;
 
+bool enable_ncurses = true;
+
 // Variable from PF_RING multi channel mode
 int num_pfring_channels = 0;
 
@@ -1760,8 +1762,10 @@ void traffic_draw_programm() {
     struct timeval start_calc_time;
     gettimeofday(&start_calc_time, NULL);
 
-    // clean up screen
-    clear();
+    if (enable_ncurses) {
+        // clean up screen
+        clear();
+    }
 
     sort_type sorter;
     if (sort_parameter == "packets") {
@@ -1817,9 +1821,13 @@ void traffic_draw_programm() {
     }
 
     screen_data_stats = output_buffer.str();
-    printw( screen_data_stats.c_str() );
-    // update screen
-    refresh();
+
+    if (enable_ncurses) {
+        printw( screen_data_stats.c_str() );
+    
+        // update screen
+        refresh();
+    }
 
     // Print screen contents into file
     print_screen_contents_into_file(screen_data_stats);
@@ -2003,32 +2011,34 @@ int main(int argc,char **argv) {
         sflow_process_collector_thread = boost::thread(start_sflow_collection, process_packet);
     }
 
-    // Init ncurses screen 
-    initscr();
+    if (enable_ncurses) {
+        // Init ncurses screen 
+        initscr();
 
-    // disable any character output 
-    noecho();
-    // hide cursor
-    curs_set(0);
+        // disable any character output 
+        noecho();
+        // hide cursor
+        curs_set(0);
 
-    while(1) { 
-        int c = getch(); 
+        while(1) { 
+            int c = getch(); 
 
-        switch(c) {
-            case 'b':
-                sort_parameter = "bytes";
-                break;
-            case 'p':
-                sort_parameter = "packets";
-                break;
-            case 'f':
-                sort_parameter = "flows";
-                break;
-            case 'q':
-                signal_handler(0);
-                break;
-            default:
-                break;
+            switch(c) {
+                case 'b':
+                    sort_parameter = "bytes";
+                    break;
+                case 'p':
+                    sort_parameter = "packets";
+                    break;
+                case 'f':
+                    sort_parameter = "flows";
+                    break;
+                case 'q':
+                    signal_handler(0);
+                    break;
+                default:
+                    break;
+            }
         }
     }
 
