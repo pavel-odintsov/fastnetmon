@@ -128,7 +128,7 @@ sub install {
 
     my $fastnetmon_dir = "/opt/fastnetmon";
 
-    my $fastnetmon_build_binary_path = "/usr/src/fastnetmon/fastnetmon";
+    my $fastnetmon_build_binary_path = "/usr/src/fastnetmon/build/fastnetmon";
 
     unless (-e $fastnetmon_build_binary_path) {
         die "Can't build fastnetmon!";
@@ -138,6 +138,7 @@ sub install {
 
     print "Install fastnetmon to dir $fastnetmon_dir";
     `cp $fastnetmon_build_binary_path $fastnetmon_dir/fastnetmon`;
+    `cp /usr/src/fastnetmon/build/fastnetmon_client $fastnetmon_dir/fastnetmon_client`;
 
     my $fastnetmon_config_path = "/etc/fastnetmon.conf";
     unless (-e $fastnetmon_config_path) {

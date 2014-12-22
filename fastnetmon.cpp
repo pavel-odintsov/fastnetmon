@@ -26,8 +26,6 @@
 #include "fastnetmon_types.h"
 #include "sflow_plugin/sflow_collector.h"
 
-#include <ncurses.h>
-
 #include <algorithm>
 #include <iostream>
 #include <map>
@@ -96,8 +94,6 @@ time_t last_call_of_traffic_recalculation;
 // We can look inside L2TP packets with IP encapsulation
 // And do it by default
 bool do_unpack_l2tp_over_ip = true;
-
-bool enable_ncurses = true;
 
 // Variable from PF_RING multi channel mode
 int num_pfring_channels = 0;
@@ -1762,11 +1758,6 @@ void traffic_draw_programm() {
     struct timeval start_calc_time;
     gettimeofday(&start_calc_time, NULL);
 
-    if (enable_ncurses) {
-        // clean up screen
-        clear();
-    }
-
     sort_type sorter;
     if (sort_parameter == "packets") {
         sorter = PACKETS;
@@ -1780,7 +1771,7 @@ void traffic_draw_programm() {
     }
 
     output_buffer<<"FastNetMon v1.0 FastVPS Eesti OU (c) VPS and dedicated: http://FastVPS.host"<<"\n"
-        <<"IPs ordered by: "<<sort_parameter<<" (use keys 'b'/'p'/'f' for change) and use 'q' for quit"<<"\n";
+        <<"IPs ordered by: "<<sort_parameter<<"\n";
 
     output_buffer<<print_channel_speed("Incoming traffic", INCOMING)<<endl;
     output_buffer<<draw_table(SpeedCounter, INCOMING, true, sorter);
@@ -1821,13 +1812,6 @@ void traffic_draw_programm() {
     }
 
     screen_data_stats = output_buffer.str();
-
-    if (enable_ncurses) {
-        printw( screen_data_stats.c_str() );
-    
-        // update screen
-        refresh();
-    }
 
     // Print screen contents into file
     print_screen_contents_into_file(screen_data_stats);
@@ -2009,37 +1993,6 @@ int main(int argc,char **argv) {
     boost::thread sflow_process_collector_thread; 
     if (enable_sflow_collection) {
         sflow_process_collector_thread = boost::thread(start_sflow_collection, process_packet);
-    }
-
-    if (enable_ncurses) {
-        // Init ncurses screen 
-        initscr();
-
-        // disable any character output 
-        noecho();
-        // hide cursor
-        curs_set(0);
-
-        while(1) { 
-            int c = getch(); 
-
-            switch(c) {
-                case 'b':
-                    sort_parameter = "bytes";
-                    break;
-                case 'p':
-                    sort_parameter = "packets";
-                    break;
-                case 'f':
-                    sort_parameter = "flows";
-                    break;
-                case 'q':
-                    signal_handler(0);
-                    break;
-                default:
-                    break;
-            }
-        }
     }
 
     if (enable_sflow_collection) {
@@ -2580,8 +2533,6 @@ void signal_handler(int signal_number) {
         redisFree(redis_context);
     }
 #endif
-    /* End ncurses mode */
-    endwin(); 
     exit(1); 
 }
 

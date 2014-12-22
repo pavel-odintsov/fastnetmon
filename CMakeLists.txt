@@ -43,6 +43,9 @@ add_library(sflow_plugin STATIC sflow_plugin/sflow_collector.cpp)
 # Main tool
 add_executable(fastnetmon fastnetmon.cpp)
 
+# Client tool
+add_executable(fastnetmon_client fastnetmon_client.cpp)
+
 # Find boost: http://www.cmake.org/cmake/help/v3.0/module/FindBoost.html
 
 # Disable cmake script from Boost package becaus it is broken: http://public.kitware.com/Bug/view.php?id=15270
@@ -62,7 +65,7 @@ find_package(Curses REQUIRED)
 
 if(CURSES_FOUND) 
     include_directories(${CURSES_INCLUDE_DIRS})
-    target_link_libraries(fastnetmon ${CURSES_LIBRARIES})
+    target_link_libraries(fastnetmon_client ${CURSES_LIBRARIES})
 endif()
 
 # External libs
