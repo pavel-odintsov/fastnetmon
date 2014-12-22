@@ -8,9 +8,14 @@ It's REQUIRED to add all your networks in CIDR form (11.22.33.44/24) to file /et
 
 You can add whitelist subnets in similar form to /etc/networks_whitelist (CIDR masks too).
 
-Start it:
+Start main process:
 ```bash
 ./opt/fastnetmon/fastnetmon 
+```
+
+Start client process in another console:
+```bash
+/opt/fastnetmon/fastnetmon_client
 ```
 
 Enable programm start on server startup, please add to /etc/rc.local this lines:
