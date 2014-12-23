@@ -197,10 +197,38 @@ void *packet_consumer_thread(void *_i) {
                 //char bigbuf[4096];
                 //pfring_print_pkt(bigbuf, sizeof(bigbuf), packet_pointer, i->tmpbuff->len, i->tmpbuff->len);
                 //fputs(bigbuf, stdout);
+            }
 
-                Crafter::Packet recv_packet;
-                recv_packet.PacketFromEthernet(packet_pointer, i->tmpbuff->len);
-                recv_packet.Print();
+            u_char* packet_pointer = pfring_zc_pkt_buff_data(i->tmpbuff, i->inzq);
+
+            Crafter::Packet recv_packet;
+            recv_packet.PacketFromEthernet(packet_pointer, i->tmpbuff->len);
+            recv_packet.Print();
+
+            Crafter::IP*  recv_ip  = recv_packet.GetLayer<Crafter::IP>();
+            Crafter::TCP* recv_tcp = recv_packet.GetLayer<Crafter::TCP>();
+           
+            Crafter::IP response_ip_header;
+            response_ip_header.SetSourceIP(      recv_ip->GetDestinationIP()  );
+            response_ip_header.SetDestinationIP( recv_ip->GetSourceIP()       );
+            response_ip_header.SetTTL(128);
+
+            if (recv_tcp->GetSYN()) {
+                Crafter::TCP tcp_header;
+            
+                tcp_header.SetSeqNumber( recv_tcp->GetSeqNumber() + 1 );
+    
+                tcp_header.SetSrcPort( recv_tcp->GetDstPort() );
+                tcp_header.SetDstPort( recv_tcp->GetSrcPort() );
+                tcp_header.SetFlags(Crafter::TCP::SYN | Crafter::TCP::ACK);
+
+                tcp_header.SetWindowsSize(5480);
+
+                Crafter::RawLayer payload("");
+
+                Crafter::Packet reponse_packet = response_ip_header / tcp_header / payload;
+
+                reponse_packet.Print();
             }
 
             i->numPkts++;
