@@ -203,7 +203,9 @@ void *packet_consumer_thread(void *_i) {
 
             Crafter::Packet recv_packet;
             recv_packet.PacketFromEthernet(packet_pointer, i->tmpbuff->len);
-            //recv_packet.Print();
+            
+            printf("Received\n\n");
+            recv_packet.Print();
 
             Crafter::Ethernet*  recv_eth = recv_packet.GetLayer<Crafter::Ethernet>();
             Crafter::IP*        recv_ip  = recv_packet.GetLayer<Crafter::IP>();
@@ -222,8 +224,9 @@ void *packet_consumer_thread(void *_i) {
             if (recv_tcp->GetSYN()) {
                 printf("Got syn packet\n");
                 Crafter::TCP tcp_header;
-            
-                tcp_header.SetSeqNumber( recv_tcp->GetSeqNumber() + 1 );
+           
+                tcp_header.SetAckNumber( recv_tcp->GetSeqNumber() + 1 ); 
+                tcp_header.SetSeqNumber( 100500 );
     
                 tcp_header.SetSrcPort( recv_tcp->GetDstPort() );
                 tcp_header.SetDstPort( recv_tcp->GetSrcPort() );
@@ -235,6 +238,7 @@ void *packet_consumer_thread(void *_i) {
 
                 Crafter::Packet reponse_packet = reponse_eth_header / response_ip_header / tcp_header / payload;
 
+                printf("To Send\n\n");
                 reponse_packet.Print();
 
                 //pfring_zc_pkt_buff *response_pkt_handle = pfring_zc_get_packet_handle(zc);
