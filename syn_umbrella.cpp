@@ -222,13 +222,21 @@ void *packet_consumer_thread(void *_i) {
                 tcp_header.SetDstPort( recv_tcp->GetSrcPort() );
                 tcp_header.SetFlags(Crafter::TCP::SYN | Crafter::TCP::ACK);
 
+                // TODO!!! Fix WS!
                 tcp_header.SetWindowsSize(5480);
-
                 Crafter::RawLayer payload("");
 
                 Crafter::Packet reponse_packet = response_ip_header / tcp_header / payload;
 
                 reponse_packet.Print();
+
+                pfring_zc_pkt_buff *response_pkt_handle = pfring_zc_get_packet_handle(zc);
+                const unsigned char* responce_data_perpared_for_send = reponse_packet.GetRawPtr();
+                
+                memcpy( pfring_zc_pkt_buff_data(i->tmpbuff, i->inzq), responce_data_perpared_for_send, sizeof(responce_data_perpared_for_send));
+
+                // TODO
+                //pfring_zc_release_packet_handle(zc, response_pkt_handle);
             }
 
             i->numPkts++;
