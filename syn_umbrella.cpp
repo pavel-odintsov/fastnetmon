@@ -203,17 +203,24 @@ void *packet_consumer_thread(void *_i) {
 
             Crafter::Packet recv_packet;
             recv_packet.PacketFromEthernet(packet_pointer, i->tmpbuff->len);
-            recv_packet.Print();
+            //recv_packet.Print();
 
-            Crafter::IP*  recv_ip  = recv_packet.GetLayer<Crafter::IP>();
-            Crafter::TCP* recv_tcp = recv_packet.GetLayer<Crafter::TCP>();
-           
+            Crafter::Ethernet*  recv_eth = recv_packet.GetLayer<Crafter::Ethernet>();
+            Crafter::IP*        recv_ip  = recv_packet.GetLayer<Crafter::IP>();
+            Crafter::TCP*       recv_tcp = recv_packet.GetLayer<Crafter::TCP>();
+          
+            Crafter::Ethernet reponse_eth_header;
+            reponse_eth_header.SetDestinationMAC(recv_eth->GetSourceMAC());
+            reponse_eth_header.SetSourceMAC(recv_eth->GetDestinationMAC());
+            reponse_eth_header.SetType(recv_eth->GetType());
+ 
             Crafter::IP response_ip_header;
             response_ip_header.SetSourceIP(      recv_ip->GetDestinationIP()  );
             response_ip_header.SetDestinationIP( recv_ip->GetSourceIP()       );
             response_ip_header.SetTTL(128);
 
             if (recv_tcp->GetSYN()) {
+                printf("Got syn packet\n");
                 Crafter::TCP tcp_header;
             
                 tcp_header.SetSeqNumber( recv_tcp->GetSeqNumber() + 1 );
@@ -226,17 +233,16 @@ void *packet_consumer_thread(void *_i) {
                 tcp_header.SetWindowsSize(5480);
                 Crafter::RawLayer payload("");
 
-                Crafter::Packet reponse_packet = response_ip_header / tcp_header / payload;
+                Crafter::Packet reponse_packet = reponse_eth_header / response_ip_header / tcp_header / payload;
 
                 reponse_packet.Print();
 
-                pfring_zc_pkt_buff *response_pkt_handle = pfring_zc_get_packet_handle(zc);
+                //pfring_zc_pkt_buff *response_pkt_handle = pfring_zc_get_packet_handle(zc);
                 const unsigned char* responce_data_perpared_for_send = reponse_packet.GetRawPtr();
-                
-                memcpy( pfring_zc_pkt_buff_data(i->tmpbuff, i->inzq), responce_data_perpared_for_send, sizeof(responce_data_perpared_for_send));
-
-                // TODO
-                //pfring_zc_release_packet_handle(zc, response_pkt_handle);
+               
+                memcpy( pfring_zc_pkt_buff_data(i->tmpbuff, i->inzq), responce_data_perpared_for_send, reponse_packet.GetSize());
+            } else {
+                printf("Got not a syn packet\n");
             }
 
             i->numPkts++;
