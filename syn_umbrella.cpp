@@ -184,11 +184,13 @@ void *packet_consumer_thread(void *_i) {
     struct dir_info *i = (struct dir_info *) _i;
     int tx_queue_not_empty = 0;
 
+    static bool is_syn_received = false;
+    static bool is_first_ack_received = false;
+
     if (i->bind_core >= 0)
         bind2core(i->bind_core);
 
     while(!do_shutdown) {
-
         if (pfring_zc_recv_pkt(i->inzq, &i->tmpbuff, 0 /* wait_for_packet */) > 0) {
 
             if (unlikely(verbose)) {
@@ -204,13 +206,14 @@ void *packet_consumer_thread(void *_i) {
             Crafter::Packet recv_packet;
             recv_packet.PacketFromEthernet(packet_pointer, i->tmpbuff->len);
             
-            printf("Received\n\n");
-            recv_packet.Print();
+            //printf("Received\n\n");
+            //recv_packet.Print();
 
-            Crafter::Ethernet*  recv_eth = recv_packet.GetLayer<Crafter::Ethernet>();
-            Crafter::IP*        recv_ip  = recv_packet.GetLayer<Crafter::IP>();
-            Crafter::TCP*       recv_tcp = recv_packet.GetLayer<Crafter::TCP>();
-          
+            Crafter::Ethernet*           recv_eth      = recv_packet.GetLayer<Crafter::Ethernet>();
+            Crafter::IP*                 recv_ip       = recv_packet.GetLayer<Crafter::IP>();
+            Crafter::TCP*                recv_tcp      = recv_packet.GetLayer<Crafter::TCP>();
+            Crafter::TCPOptionTimestamp* recv_timestamp_opt = recv_packet.GetLayer<Crafter::TCPOptionTimestamp>();         
+ 
             Crafter::Ethernet reponse_eth_header;
             reponse_eth_header.SetDestinationMAC(recv_eth->GetSourceMAC());
             reponse_eth_header.SetSourceMAC(recv_eth->GetDestinationMAC());
@@ -219,44 +222,75 @@ void *packet_consumer_thread(void *_i) {
             Crafter::IP response_ip_header;
             response_ip_header.SetSourceIP(      recv_ip->GetDestinationIP()  );
             response_ip_header.SetDestinationIP( recv_ip->GetSourceIP()       );
-            response_ip_header.SetTTL(128);
 
-            if (recv_tcp->GetSYN()) {
-                printf("Got syn packet\n");
+            // We tune TTL like OpenVZ 2.6.32 kernel
+            response_ip_header.SetTTL(64);
+
+            if (recv_tcp->GetSYN() && !is_syn_received) {
+                printf("Got initial syn packet from client\n");
                 Crafter::TCP tcp_header;
            
                 tcp_header.SetAckNumber( recv_tcp->GetSeqNumber() + 1 ); 
-                tcp_header.SetSeqNumber( 100500 );
+                tcp_header.SetSeqNumber( Crafter::RNG32() );
     
                 tcp_header.SetSrcPort( recv_tcp->GetDstPort() );
                 tcp_header.SetDstPort( recv_tcp->GetSrcPort() );
                 tcp_header.SetFlags(Crafter::TCP::SYN | Crafter::TCP::ACK);
 
-                // TODO!!! Fix WS!
-                tcp_header.SetWindowsSize(5480);
+                /* Max segment size option */
+                Crafter::TCPOptionMaxSegSize maxseg;
+                maxseg.SetMaxSegSize(1460);
+
+                Crafter::TCPOptionWindowScale wscale;
+                wscale.SetShift(7);
+
+                /* Time stamp option */
+                Crafter::TCPOptionTimestamp tstamp;
+                tstamp.SetValue(398303815); 
+
+                /* a 4-byte echo reply timestamp value (the most recent timestamp received from you) */
+                /* I should put there latest timestamp received from client */
+                tstamp.SetEchoReply(recv_timestamp_opt->GetValue());
+
+                /* We got 14480 from RHEL 6 OpenVZ kernel */
+                tcp_header.SetWindowsSize(14480);
                 Crafter::RawLayer payload("");
 
-                Crafter::Packet reponse_packet = reponse_eth_header / response_ip_header / tcp_header / payload;
+                Crafter::Packet reponse_packet = reponse_eth_header / response_ip_header /
+                    tcp_header /
+                        /* START Option (padding should be controlled by the user) */
+                        maxseg                              / // 4 bytes
+                        Crafter::TCPOptionSACKPermitted()   / // 2 bytes
+                        tstamp                              / // 10 bytes
+                        Crafter::TCPOption::NOP             / // 1 byte
+                        wscale                              / // 3 byte                   
+                        // Crafter::TCPOption::EOL          / // 1 bytes
+                    payload;
 
-                printf("To Send\n\n");
-                reponse_packet.Print();
+                //printf("To Send\n\n");
+                //reponse_packet.Print();
 
                 //pfring_zc_pkt_buff *response_pkt_handle = pfring_zc_get_packet_handle(zc);
                 const unsigned char* responce_data_perpared_for_send = reponse_packet.GetRawPtr();
-               
                 memcpy( pfring_zc_pkt_buff_data(i->tmpbuff, i->inzq), responce_data_perpared_for_send, reponse_packet.GetSize());
-            } else {
-                printf("Got not a syn packet\n");
+
+                is_syn_received = true;
+
+                while (unlikely(pfring_zc_send_pkt(i->outzq, &i->tmpbuff, flush_packet) < 0 && !do_shutdown))
+                    if (wait_for_packet)
+                        usleep(1);
+
+                    tx_queue_not_empty = 1;
+
+            } else if (recv_tcp->GetACK()) {
+                if (is_syn_received && !is_first_ack_received) {
+                    printf ("We received ACK from client for TCP handshake\n");
+                    is_first_ack_received = true;
+                }
             }
 
             i->numPkts++;
             i->numBytes += i->tmpbuff->len + 24; /* 8 Preamble + 4 CRC + 12 IFG */
-
-            while (unlikely(pfring_zc_send_pkt(i->outzq, &i->tmpbuff, flush_packet) < 0 && !do_shutdown))
-                if (wait_for_packet)
-                    usleep(1);
-
-                tx_queue_not_empty = 1;
         } else {
             if (tx_queue_not_empty) {
                 pfring_zc_sync_queue(i->outzq, tx_only);
@@ -303,6 +337,9 @@ int init_direction(int direction, char *in_dev, char *out_dev) {
 }
 
 int main(int argc, char* argv[]) {
+    /* Init the library */
+    Crafter::InitCrafter();
+
     char *device1 = NULL, *device2 = NULL, *bind_mask = NULL, c;
     int cluster_id = -1;
     u_int numCPU = sysconf( _SC_NPROCESSORS_ONLN );
