@@ -568,12 +568,16 @@ vector<string> exec(string cmd) {
 // exec command and pass data to it stdin
 bool exec_with_stdin_params(string cmd, string params) {
     FILE* pipe = popen(cmd.c_str(), "w");
-    if (!pipe) return false;
+    if (!pipe) {
+        logger<<log4cpp::Priority::ERROR<<"Can't execute programm "<<cmd<<" error code: "<<errno<<" error text: "<<strerror(errno);
+        return false;
+    }
 
     if (fputs(params.c_str(), pipe)) {
         fclose(pipe);
         return true;
     } else {
+        logger<<log4cpp::Priority::ERROR<<"Can't pass data to stdin of programm "<<cmd;
         fclose(pipe);
         return false;
     }
