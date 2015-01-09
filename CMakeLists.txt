@@ -28,8 +28,15 @@ endif()
 set(PFRING_INCLUDE_DIRS /opt/pf_ring/include)
 set(PFRING_LIBRARIES /opt/pf_ring/lib/libpfring.so)
 
-# Some defines for FastNetMon compiation tuning
-add_definitions(-DPF_RING)
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+    message("You are running Linux and we can build PF_RING support")
+    # Fefines for enable PF_RING for FastNetMon compiation
+    add_definitions(-DPF_RING)
+else()
+    message("You are running not an Linux and we can't build PF_RING support")
+endif()
+
+
 
 # If you need hardware locking features
 # add_definitions(-DHWFILTER_LOCKING)
