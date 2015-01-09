@@ -26,6 +26,10 @@ Features:
 - Can detect DoS/DDoS in 1-2 seconds
 - Tested up to 10GE with 5-6 Mpps on Intel i7 2600 with Intel Nic 82599
 
+Supported platforms:
+- Linux (Debian 6+, CentOS 6+, Ubuntu 12+)
+- FreeBSD 10+ (without PF_RING support, only sFLOW)
+
 What is "flow" in FastNetMon terms? It's one or multiple connection udp, tcp, icmp with unique src IP, dst IP, src port, dst port and protocol.
 
 Main programm screen image:
