@@ -3,8 +3,8 @@
 COMPILER=clang
 CPP_COMPILER=clang++
 
-gcc -O3 ../libpatricia/patricia.c -c -o patricia.o 
-g++ -O3 lpm_performance_tests.cpp patricia.o -olpm_performance_tests -lrt
+gcc -g -pg -O2 ../libpatricia/patricia.c -c -o patricia.o 
+g++ -g -pg -O2 lpm_performance_tests.cpp patricia.o -olpm_performance_tests -lrt
 
 #$COMPILER -O4 ../libpatricia/patricia.c -c -o patricia.o
 #ar q patricia.a patricia.o
