@@ -1151,6 +1151,7 @@ string print_simple_packet(simple_packet packet) {
     return buffer.str();
 }
 
+#ifdef PF_RING
 void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const u_char *user_bytes) {
     // Описание всех полей: http://www.ntop.org/pfring_api/structpkt__parsing__info.html
     simple_packet packet;
@@ -1237,6 +1238,7 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
     logger<<log4cpp::Priority::INFO<<buffer;
     */
 }
+#endif
 
 // We do not use this function now! It's buggy!
 void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *packetptr) {
@@ -2598,8 +2600,9 @@ unsigned int detect_attack_protocol(map_element& speed_element, direction attack
     }
 } 
 
+#define my_max_on_defines(a, b) (a > b ? a : b)
 unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp) {
-    unsigned int max = max(max(udp, tcp), icmp);
+    unsigned int max = my_max_on_defines(my_max_on_defines(udp, tcp), icmp);
 
     if (max == tcp) {
         return IPPROTO_TCP;
