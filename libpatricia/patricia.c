@@ -50,7 +50,6 @@ prefix_tochar (prefix_t * prefix)
 int 
 comp_with_mask (void *addr, void *dest, u_int mask)
 {
-
     if ( /* mask/8 == 0 || */ memcmp (addr, dest, mask / 8) == 0) {
 	int n = mask / 8;
 	int m = ((-1) << (8 - (mask % 8)));

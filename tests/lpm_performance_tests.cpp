@@ -94,6 +94,7 @@ bool mysortfunction (pair_of_subnets_with_key i, pair_of_subnets_with_key j) { r
 int main() {
     patricia_tree_t *lookup_tree;
     lookup_tree = New_Patricia(32);
+
     make_and_lookup(lookup_tree, "46.36.216.0/21");
     make_and_lookup(lookup_tree, "159.253.16.0/21");
     make_and_lookup(lookup_tree, "5.45.112.0/21");
@@ -103,9 +104,9 @@ int main() {
     make_and_lookup(lookup_tree, "185.4.72.0/22");
     make_and_lookup(lookup_tree, "181.114.240.0/20");
     make_and_lookup(lookup_tree, "193.42.142.0/24");
-
-    patricia_process (lookup_tree, (void_fn_t)subnet_vectors_allocator);
-    std::sort(SubnetVectorVector.begin(), SubnetVectorVector.end(), mysortfunction); 
+    
+    //patricia_process (lookup_tree, (void_fn_t)subnet_vectors_allocator);
+    //std::sort(SubnetVectorVector.begin(), SubnetVectorVector.end(), mysortfunction); 
 
     prefix_t prefix_for_check_adreess;
     prefix_for_check_adreess.family = AF_INET;
@@ -113,7 +114,7 @@ int main() {
     patricia_node_t* found_patrica_node = NULL;
     //prefix_for_check_adreess.add.sin.s_addr = 123123123;
 
-    std::map <unsigned int, bool> lpm_cache;
+    //std::map <unsigned int, bool> lpm_cache;
     // Without cache: 16.7 million of operations 
 
     int i_iter = 100;
@@ -132,13 +133,13 @@ int main() {
     timespec start_time;
     clock_gettime(CLOCK_REALTIME, &start_time);
 
-    prefix_for_check_adreess.add.sin.s_addr = convert_ip_as_string_to_uint("193.42.142.22");
+    prefix_for_check_adreess.add.sin.s_addr = convert_ip_as_string_to_uint("159.253.17.1");
 
     for (int j = 0; j < j_iter; j++) {
         for (int i = 0; i < i_iter; i++) {
             // Random Pseudo IP
-            prefix_for_check_adreess.add.sin.s_addr = i*j;
-            patricia_node_t* found_patrica_node = patricia_search_best(lookup_tree, &prefix_for_check_adreess);
+            //prefix_for_check_adreess.add.sin.s_addr = i*j;
+            patricia_node_t* found_patrica_node = patricia_search_best2(lookup_tree, &prefix_for_check_adreess, 1);
 
             unsigned long destination_subnet = 0;
 
@@ -146,7 +147,8 @@ int main() {
 
             if (found_patrica_node != NULL) {
                 destination_subnet = found_patrica_node->prefix->add.sin.s_addr;
-                std::cout<<"*";
+                suxx_func(destination_subnet);
+                //std::cout<<"*";
                 /*
                 for (vector_of_vector_counters::iterator it = SubnetVectorVector.begin() ; it != SubnetVectorVector.end(); ++it) {
                     std::cout<<it->first<<",";
@@ -169,6 +171,9 @@ int main() {
                 }
                 */
             }
+
+            //prefix_for_check_adreess.add.sin.s_addr = i*j + 1;
+            //patricia_node_t* found_second_patrica_node = patricia_search_best(lookup_tree, &prefix_for_check_adreess);
 
             //std::map <unsigned int, bool>::iterator itr = lpm_cache.find(i*j);
 
