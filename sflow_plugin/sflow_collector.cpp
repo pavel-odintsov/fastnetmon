@@ -616,8 +616,8 @@ void decodeIPLayer4(SFSample *sample, uint8_t *ptr) {
         current_packet.protocol = IPPROTO_ICMP; 
         struct myicmphdr icmp;
         memcpy(&icmp, ptr, sizeof(icmp));
-        printf("ICMPType %u\n", icmp.type);
-        printf("ICMPCode %u\n", icmp.code);
+        //printf("ICMPType %u\n", icmp.type);
+        //printf("ICMPCode %u\n", icmp.code);
         sample->dcd_sport = icmp.type;
         sample->dcd_dport = icmp.code;
         sample->offsetToPayload = ptr + sizeof(icmp) - sample->header;
