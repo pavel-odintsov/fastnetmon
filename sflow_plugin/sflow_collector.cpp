@@ -2,11 +2,6 @@
 #include <sys/types.h>
 #include <inttypes.h>
 
-//#include <iterator>
-//#include <sstream> 
-//#include <vector>
-//#include <ostream>
-
 #include "sflow_collector.h"
 
 // sflowtool-3.32
@@ -23,6 +18,19 @@
 #include <string.h>
 #include <setjmp.h>
 #include <stdlib.h>
+
+// log4cpp logging facility
+#include "log4cpp/Category.hh"
+#include "log4cpp/Appender.hh"
+#include "log4cpp/FileAppender.hh"
+#include "log4cpp/OstreamAppender.hh"
+#include "log4cpp/Layout.hh"
+#include "log4cpp/BasicLayout.hh"
+#include "log4cpp/PatternLayout.hh"
+#include "log4cpp/Priority.hh"
+
+// Get it from main programm
+extern log4cpp::Category& logger;
 
 /* same for tcp */
 struct mytcphdr {
@@ -240,13 +248,10 @@ void decodeIPV4(SFSample *sample);
 void print_simple_packet(struct simple_packet& packet);
 
 process_packet_pointer process_func_ptr = NULL;
-//int main() {
-    //process_func_ptr = print_simple_packet;
-
-    // start_sflow_collection();
-//}
 
 void start_sflow_collection(process_packet_pointer func_ptr) {
+    logger<< log4cpp::Priority::INFO<<"sflow plugin started";
+ 
     process_func_ptr = func_ptr;
 
     unsigned int udp_buffer_size = 65536;
@@ -289,7 +294,7 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
                 // We do not support an IPv6 
             }
         } else {
-            printf("Data receive failed\n");
+            logger<< log4cpp::Priority::ERROR<<"Data receive failed";
         }
     }
 }
@@ -301,7 +306,7 @@ uint32_t getData32_nobswap(SFSample *sample) {
     if((uint8_t *)sample->datap > sample->endp) {
         // SFABORT(sample, SF_ABORT_EOS);
         // Error!!!
-        printf("We tried to read data in bad place! Fault!\n");
+        logger<< log4cpp::Priority::ERROR<<"We tried to read data in bad place! Fault!";
         return 0;
     }
   
@@ -313,7 +318,7 @@ void skipBytes(SFSample *sample, uint32_t skip) {
     sample->datap += quads;
     if(skip > sample->rawSampleLen || (uint8_t *)sample->datap > sample->endp) {
         //SFABORT(sample, SF_ABORT_EOS);
-        printf("Internal error!!!\n");
+        logger<< log4cpp::Priority::ERROR<<"Internal error!!!";
         exit(0);
     }
 }
@@ -343,7 +348,7 @@ void read_sflow_datagram(SFSample* sample) {
     //printf("sFLOW version %d\n", sample->datagramVersion);
 
     if (sample->datagramVersion != 5) {
-        printf("We do not support old sFLOW protocols. Please change version to sFLOW 5");
+        logger<< log4cpp::Priority::ERROR<<"We do not support old sFLOW protocols. Please change version to sFLOW 5";
         return;
     }
    
@@ -365,7 +370,7 @@ void read_sflow_datagram(SFSample* sample) {
     uint32_t samp = 0;
     for(; samp < samplesInPacket; samp++) {
         if((uint8_t *)sample->datap >= sample->endp) {
-            printf("We try to read data outside packet!\n");
+            logger<< log4cpp::Priority::INFO<<"We try to read data outside packet! It's very dangerous, we stop all operations";
             exit(0);
             return;
         }
@@ -562,7 +567,7 @@ void readFlowSample_header(SFSample *sample) {
         // if we found IPv4 
         decodeIPV4(sample);
     } else {
-        printf("Not supported protocol: %d\n", sample->headerProtocol);
+        logger<< log4cpp::Priority::ERROR<<"Not supported protocol: "<<sample->headerProtocol;
         return;
     }
 }

@@ -1996,6 +1996,7 @@ int main(int argc,char **argv) {
         main_packet_process_thread = boost::thread(main_packet_process_task);   
     }
 
+
     boost::thread sflow_process_collector_thread; 
     if (enable_sflow_collection) {
         sflow_process_collector_thread = boost::thread(start_sflow_collection, process_packet);
