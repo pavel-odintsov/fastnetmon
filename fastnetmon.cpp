@@ -943,7 +943,7 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
     u_short bitlen = prefix->bitlen;
     int network_size_in_ips = pow(2, 32-bitlen);
     //logger<< log4cpp::Priority::INFO<<"Subnet: "<<prefix->add.sin.s_addr<<" network size: "<<network_size_in_ips;
-    logger<< log4cpp::Priority::INFO<<"I will allocate "<<network_size_in_ips<<" records for subnet "<<subnet_as_integer;
+    logger<< log4cpp::Priority::INFO<<"I will allocate "<<network_size_in_ips<<" records for subnet "<<subnet_as_integer<<" cidr mask: "<<bitlen;
 
     // Initialize map element
     SubnetVectorMap[subnet_as_integer] = vector_of_counters(network_size_in_ips);
@@ -1353,6 +1353,12 @@ void process_packet(simple_packet& current_packet) {
     // Incerementi main and per protocol packet counters
     if (packet_direction == OUTGOING) {
         uint32_t shift_in_vector = ntohl(current_packet.src_ip) - subnet_in_host_byte_order;
+
+        if (shift_in_vector >= itr->second.size()) {
+            logger<< log4cpp::Priority::ERROR<<"We tried to access outsize allocated vector!";
+            return;
+        } 
+
         map_element* current_element = &itr->second[shift_in_vector];
 
         // Main packet/bytes counter
@@ -1421,6 +1427,12 @@ void process_packet(simple_packet& current_packet) {
 
     } else if (packet_direction == INCOMING) {
         uint32_t shift_in_vector = ntohl(current_packet.dst_ip) - subnet_in_host_byte_order;
+
+        if (shift_in_vector >= itr->second.size()) {
+            logger<< log4cpp::Priority::ERROR<<"We tried to access outsize allocated vector!";
+            return;
+        }
+
         map_element* current_element = &itr->second[shift_in_vector];
    
         // Main packet/bytes counter 
