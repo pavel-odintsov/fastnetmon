@@ -1805,8 +1805,10 @@ void traffic_draw_programm() {
     output_buffer<<"Traffic calculated in:\t\t"<< speed_calculation_time.tv_sec<<" sec "<<speed_calculation_time.tv_usec<<" microseconds\n";
     output_buffer<<"Total amount of not processed packets: "<<total_unparsed_packets<<"\n";
 
-#ifdef PF_RING  
-    output_buffer<<get_pf_ring_stats();
+#ifdef PF_RING 
+    if (enable_data_collection_from_mirror) { 
+        output_buffer<<get_pf_ring_stats();
+    }
 #endif
 
     // Print thresholds
