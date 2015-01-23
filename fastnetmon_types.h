@@ -4,7 +4,7 @@
 // simplified packet struct for lightweight save into memory
 class simple_packet {
 public:
-    simple_packet() : sample_ratio(1), src_ip(0), dst_ip(0), source_port(0), destination_port(0), protocol(0), length(0), flags(0) { 
+    simple_packet() : sample_ratio(1), src_ip(0), dst_ip(0), source_port(0), destination_port(0), protocol(0), length(0), flags(0), number_of_packets(1) { 
         ts.tv_usec = 0;
         ts.tv_sec = 0;
     }
@@ -15,6 +15,7 @@ public:
     uint16_t     destination_port;
     unsigned     int protocol;
     unsigned     int length;
+    unsigned     int number_of_packets; /* for netflow */
     uint8_t      flags; /* tcp flags */
     struct       timeval ts;
 };

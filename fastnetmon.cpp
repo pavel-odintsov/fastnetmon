@@ -130,6 +130,8 @@ bool enable_data_collection_from_mirror = true;
 
 bool enable_sflow_collection = false;
 
+bool enable_netflow_collection = false;
+
 // Time consumed by reaclculation for all IPs
 struct timeval speed_calculation_time;
 
@@ -835,6 +837,14 @@ bool load_configuration_file() {
             enable_sflow_collection = true;
         } else {
             enable_sflow_collection = false;
+        }
+    }
+
+    if (configuration_map.count("netflow") != 0) {
+        if (configuration_map[ "netflow" ] == "on") {
+            enable_netflow_collection = true;
+        } else {
+            enable_netflow_collection = false;
         }
     }
 
