@@ -1355,7 +1355,11 @@ void process_packet(simple_packet& current_packet) {
         uint32_t shift_in_vector = ntohl(current_packet.src_ip) - subnet_in_host_byte_order;
 
         if (shift_in_vector >= itr->second.size()) {
-            logger<< log4cpp::Priority::ERROR<<"We tried to access outsize allocated vector!";
+            logger<< log4cpp::Priority::ERROR<<"We tried to access to element with index "<<shift_in_vector
+                <<"which located outside allocated vector with size "<<itr->second.size();
+            
+            logger<< log4cpp::Priority::INFO<<"We expect issues with this packet in OUTGOING direction: "<<print_simple_packet(current_packet);
+
             return;
         } 
 
@@ -1429,7 +1433,11 @@ void process_packet(simple_packet& current_packet) {
         uint32_t shift_in_vector = ntohl(current_packet.dst_ip) - subnet_in_host_byte_order;
 
         if (shift_in_vector >= itr->second.size()) {
-            logger<< log4cpp::Priority::ERROR<<"We tried to access outsize allocated vector!";
+            logger<< log4cpp::Priority::ERROR<<"We tried to access to element with index "<<shift_in_vector
+                <<"which located outside allocated vector with size "<<itr->second.size();
+
+            logger<< log4cpp::Priority::INFO<<"We expect issues with this packet in INCOMING direction: "<<print_simple_packet(current_packet);
+
             return;
         }
 
