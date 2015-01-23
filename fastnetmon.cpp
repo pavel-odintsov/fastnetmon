@@ -1356,7 +1356,7 @@ void process_packet(simple_packet& current_packet) {
 
         if (shift_in_vector >= itr->second.size()) {
             logger<< log4cpp::Priority::ERROR<<"We tried to access to element with index "<<shift_in_vector
-                <<"which located outside allocated vector with size "<<itr->second.size();
+                <<" which located outside allocated vector with size "<<itr->second.size();
             
             logger<< log4cpp::Priority::INFO<<"We expect issues with this packet in OUTGOING direction: "<<print_simple_packet(current_packet);
 
@@ -1434,7 +1434,7 @@ void process_packet(simple_packet& current_packet) {
 
         if (shift_in_vector >= itr->second.size()) {
             logger<< log4cpp::Priority::ERROR<<"We tried to access to element with index "<<shift_in_vector
-                <<"which located outside allocated vector with size "<<itr->second.size();
+                <<" which located outside allocated vector with size "<<itr->second.size();
 
             logger<< log4cpp::Priority::INFO<<"We expect issues with this packet in INCOMING direction: "<<print_simple_packet(current_packet);
 
