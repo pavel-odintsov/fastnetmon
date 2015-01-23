@@ -24,7 +24,10 @@
 
 #include "libpatricia/patricia.h"
 #include "fastnetmon_types.h"
+
+// Plugins
 #include "sflow_plugin/sflow_collector.h"
+#include "netflow_plugin/netflow_collector.h"
 
 #include <algorithm>
 #include <iostream>
@@ -2032,6 +2035,11 @@ int main(int argc,char **argv) {
     boost::thread sflow_process_collector_thread; 
     if (enable_sflow_collection) {
         sflow_process_collector_thread = boost::thread(start_sflow_collection, process_packet);
+    }
+
+    boost::thread netflow_process_collector_thread;
+    if (enable_netflow_collection) {
+        netflow_process_collector_thread = boost::thread(start_netflow_collection, process_packet);
     }
 
     if (enable_sflow_collection) {
