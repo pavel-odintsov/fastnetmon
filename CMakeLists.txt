@@ -24,19 +24,22 @@ if (FASTNETMON_PROFILER)
     set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${FASTNETMON_PROFILE_FLAGS}")
 endif()
 
-# Set path to home compiled PF_RING
-set(PFRING_INCLUDE_DIRS /opt/pf_ring/include)
-set(PFRING_LIBRARIES /opt/pf_ring/lib/libpfring.so)
-
-if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-    message("You are running Linux and we can build PF_RING support")
-    # Fefines for enable PF_RING for FastNetMon compiation
-    add_definitions(-DPF_RING)
-else()
-    message("You are running not an Linux and we can't build PF_RING support")
+# With this flag we can diable PF_RING build via console: cmake .. -DDISABLE_PF_RING_SUPPORT=ON
+if (NOT DISABLE_PF_RING_SUPPORT) 
+    if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+        message("You are running Linux and we can build PF_RING support")
+        set (ENABLE_PFRING_SUPPORT ON)
+    else()
+        message("You are running not an Linux and we can't build PF_RING support")
+    endif() 
 endif()
 
-
+if (ENABLE_PFRING_SUPPORT)
+    # Set path to home compiled PF_RING
+    set(PFRING_INCLUDE_DIRS /opt/pf_ring/include)
+    set(PFRING_LIBRARIES /opt/pf_ring/lib/libpfring.so)
+    add_definitions(-DPF_RING)
+endif()
 
 # If you need hardware locking features
 # add_definitions(-DHWFILTER_LOCKING)
@@ -92,6 +95,8 @@ target_link_libraries(fastnetmon patricia)
 target_link_libraries(fastnetmon sflow_plugin)
 target_link_libraries(fastnetmon netflow_plugin)
 
-# Custom PF_RING
-include_directories(${PFRING_INCLUDE_DIRS})
+if (ENABLE_PFRING_SUPPORT)
+    # Custom PF_RING
+    include_directories(${PFRING_INCLUDE_DIRS})
+endif()
 target_link_libraries(fastnetmon ${PFRING_LIBRARIES})
