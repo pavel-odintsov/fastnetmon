@@ -9,8 +9,6 @@ What we do? We can detect hosts in OUR network with big amount of packets per se
 
 Why we write it? Because we can't find any software for solving this problem not in proprietary world not in open source. NetFlow based solutions has some [critical limitations](NETFLOW_DISADVANTAGES.md) for this task.
 
-![Travis CI](https://travis-ci.org/FastVPSEestiOu/fastnetmon.svg)
-
 [Install manual](INSTALL.md)
 
 Features:
@@ -27,6 +25,8 @@ Features:
 - Can work on server/soft-router
 - Can detect DoS/DDoS in 1-2 seconds
 - Tested up to 10GE with 5-6 Mpps on Intel i7 2600 with Intel Nic 82599
+
+[![Build Status](https://travis-ci.org/FastVPSEestiOu/fastnetmon.svg?branch=master)](https://travis-ci.org/FastVPSEestiOu/fastnetmon)
 
 Supported platforms:
 - Linux (Debian 6+, CentOS 6+, Ubuntu 12+)
