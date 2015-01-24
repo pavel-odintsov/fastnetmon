@@ -9,6 +9,8 @@ What we do? We can detect hosts in OUR network with big amount of packets per se
 
 Why we write it? Because we can't find any software for solving this problem not in proprietary world not in open source. NetFlow based solutions has some [critical limitations](NETFLOW_DISADVANTAGES.md) for this task.
 
+![Travis CI](https://travis-ci.org/FastVPSEestiOu/fastnetmon.svg)
+
 [Install manual](INSTALL.md)
 
 Features:
