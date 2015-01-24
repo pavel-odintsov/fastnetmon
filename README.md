@@ -11,6 +11,8 @@ Why we write it? Because we can't find any software for solving this problem not
 
 [Install manual](INSTALL.md)
 
+[![Build Status](https://travis-ci.org/FastVPSEestiOu/fastnetmon.svg?branch=master)](https://travis-ci.org/FastVPSEestiOu/fastnetmon)
+
 Features:
 - Can process incoming and outgoing traffic
 - Can trigger block script if certain IP load network with big amount of packets per second
@@ -25,8 +27,6 @@ Features:
 - Can work on server/soft-router
 - Can detect DoS/DDoS in 1-2 seconds
 - Tested up to 10GE with 5-6 Mpps on Intel i7 2600 with Intel Nic 82599
-
-[![Build Status](https://travis-ci.org/FastVPSEestiOu/fastnetmon.svg?branch=master)](https://travis-ci.org/FastVPSEestiOu/fastnetmon)
 
 Supported platforms:
 - Linux (Debian 6+, CentOS 6+, Ubuntu 12+)
