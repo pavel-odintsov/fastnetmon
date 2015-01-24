@@ -66,6 +66,11 @@ fastnetmon.o: fastnetmon.cpp
 +       $(COMPILER) $(STATIC) $(DEFINES) $(HEADERS) -c fastnetmon.cpp -o fastnetmon.o $(BUILD_FLAGS) -DHWFILTER_LOCKING
 ```
 
+How I can compile FastNetMon without PF_RING support?
+```bash
+cmake .. -DDISABLE_PF_RING_SUPPORT=ON
+```
+
 If you saw intel_idle in perf top with red higlihting you can disable it with following kernel params (more details you can find Performance_Tuning_Guide_for_Mellanox_Network_Adapters.pdf):
 ```bash
 intel_idle.max_cstate=0 processor.max_cstate=1
