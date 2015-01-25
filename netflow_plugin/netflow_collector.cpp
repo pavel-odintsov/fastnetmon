@@ -70,11 +70,14 @@ void process_netflow_packet_v5(u_int len, u_int8_t *packet) {
         switch (nf5_flow->protocol) {
             case 1: {
                 //ICMP
+                current_packet.protocol = IPPROTO_ICMP; 
             }
             break;
 
             case 6: { 
                 // TCP
+                current_packet.protocol = IPPROTO_TCP;
+
                 current_packet.source_port      = nf5_flow->src_port;
                 current_packet.destination_port = nf5_flow->dest_port;
 
@@ -85,6 +88,8 @@ void process_netflow_packet_v5(u_int len, u_int8_t *packet) {
 
             case 17: {
                 // UDP
+                current_packet.protocol = IPPROTO_UDP;
+
                 current_packet.source_port      = nf5_flow->src_port;
                 current_packet.destination_port = nf5_flow->dest_port;
             }
