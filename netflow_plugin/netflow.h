@@ -33,7 +33,7 @@ struct peer_nf9_template {
         u_int16_t template_id;
         u_int num_records;
         u_int total_len;
-        struct peer_nf9_record *records;
+        std::vector <struct peer_nf9_record> records;
 };
 
 
