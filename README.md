@@ -27,6 +27,7 @@ Features:
 - Can work on server/soft-router
 - Can detect DoS/DDoS in 1-2 seconds
 - Tested up to 10GE with 5-6 Mpps on Intel i7 2600 with Intel Nic 82599
+- Complete plugin support
 
 Supported platforms:
 - Linux (Debian 6+, CentOS 6+, Ubuntu 12+)
