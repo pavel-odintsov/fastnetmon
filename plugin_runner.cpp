@@ -169,7 +169,10 @@ string print_simple_packet(simple_packet packet) {
         buffer<<" flags: "<<print_tcp_flags(packet.flags);
     }
 
-    buffer<<" size: "<<packet.length<<" bytes"<<"\n";
+    buffer<<" packets: "<<packet.number_of_packets<<" ";
+    buffer<<"size: "   <<packet.length<<" bytes"<<" ";
+    buffer<<"sample ratio: "<<packet.sample_ratio<<" ";
+    buffer<<"\n";
     
     return buffer.str();
 }

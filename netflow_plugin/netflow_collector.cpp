@@ -25,45 +25,45 @@ extern log4cpp::Category& logger;
 #include "netflow_collector.h"
 #include "netflow.h"
 
-// This variable name should be uniq for every plugin!
 process_packet_pointer netflow_process_func_ptr = NULL;
 
 void process_netflow_packet_v5(u_int len, u_int8_t *packet) {
-    logger<< log4cpp::Priority::INFO<<"We get v5 netflow packet!";
+    //logger<< log4cpp::Priority::INFO<<"We get v5 netflow packet!";
     
-    struct NF5_HEADER *nf5_hdr = (struct NF5_HEADER *)packet;
-    struct NF5_FLOW *nf5_flow;
-    size_t offset;
+    struct NF5_HEADER* nf5_hdr = (struct NF5_HEADER*)packet;
 
     if (len < sizeof(*nf5_hdr)) {
-        // short netflow v.5 packet %d bytes from %s
+        logger<< log4cpp::Priority::ERROR<<"Short netflow v5 packet "<<len;
         return;
     }
 
     u_int nflows = ntohs(nf5_hdr->c.flows);
     if (nflows == 0 || nflows > NF5_MAXFLOWS) {
-        // Invalid number of flows (%u) in netflow 
-
+        logger<< log4cpp::Priority::ERROR<<"Invalid number of flows in netflow "<<nflows;
         return;
     }
     
     for (u_int i = 0; i < nflows; i++) {
-        offset = NF5_PACKET_SIZE(i);
-        nf5_flow = (struct NF5_FLOW *)(packet + offset);
+        size_t offset = NF5_PACKET_SIZE(i);
+        struct NF5_FLOW* nf5_flow = (struct NF5_FLOW *)(packet + offset);
 
         // convert netflow to simple packet form
         simple_packet current_packet;
   
         current_packet.src_ip = nf5_flow->src_ip;
         current_packet.dst_ip = nf5_flow->dest_ip;
-        current_packet.ts.tv_sec = 0;
-        current_packet.ts.tv_usec = 0;
+        current_packet.ts.tv_sec  = ntohl(nf5_hdr->time_sec);
+        current_packet.ts.tv_usec = ntohl(nf5_hdr->time_nanosec);
         current_packet.flags = 0;
 
-        // TODO: we should pass data about "flow" structure of this data
+        current_packet.source_port = 0;
+        current_packet.destination_port = 0;
 
-        current_packet.length            = htobe64(ntohl(nf5_flow->flow_octets));
-        current_packet.number_of_packets = htobe64(ntohl(nf5_flow->flow_packets));
+        // TODO: we should pass data about "flow" structure of this data
+    
+        // htobe64 removed
+        current_packet.length            = ntohl(nf5_flow->flow_octets);
+        current_packet.number_of_packets = ntohl(nf5_flow->flow_packets);
 
         // netflow did not support sampling
         current_packet.sample_ratio = 1;
@@ -96,7 +96,8 @@ void process_netflow_packet_v5(u_int len, u_int8_t *packet) {
             }
             break;
         }
-    
+   
+        // Call processing function for every flow in packet
         netflow_process_func_ptr(current_packet);
     }
 }
@@ -128,11 +129,19 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
 
     struct sockaddr_in servaddr;
     memset(&servaddr, 0, sizeof(servaddr));
-    
+   
+    unsigned int netflow_port = 2055;
+ 
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port = htons(2055);
-    bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
+    servaddr.sin_port = htons(netflow_port);
+    
+    int bind_result = bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
+
+    if (bind_result) {
+        logger<< log4cpp::Priority::ERROR<<"Can't listen port: "<<netflow_port;
+        return;
+    }
 
     struct sockaddr_in6 peer;
     memset(&peer, 0, sizeof(peer));
@@ -147,7 +156,7 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
             // printf("We receive %d\n", received_bytes);
             process_netflow_packet(received_bytes, (u_int8_t*)udp_buffer);
         } else {
-            // logger<< log4cpp::Priority::ERROR<<"Data receive failed";
+            logger<< log4cpp::Priority::ERROR<<"netflow data receive failed";
         }
     }
 }
