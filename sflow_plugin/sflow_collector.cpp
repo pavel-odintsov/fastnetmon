@@ -262,10 +262,17 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
     struct sockaddr_in servaddr;
     memset(&servaddr, 0, sizeof(servaddr));
     
+    unsigned int sflow_port = 6343;
+
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr=htonl(INADDR_ANY);
-    servaddr.sin_port = htons(6343);
-    bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
+    servaddr.sin_port = htons(sflow_port);
+    int bind_result = bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
+
+    if (bind_result) {
+        logger<< log4cpp::Priority::ERROR<<"Can't listen port: "<<sflow_port;
+        return;
+    }
 
     struct sockaddr_in6 peer;
     memset(&peer, 0, sizeof(peer));
