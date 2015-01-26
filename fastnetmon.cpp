@@ -166,8 +166,8 @@ int standard_ban_time = 1800;
 // We calc average pps/bps for this time
 double average_calculation_amount = 15;
 
-// Enable or disable average traffic counter
-bool print_average_traffic_counts = false;
+// Show average or absolute value of speed 
+bool print_average_traffic_counts = true;
 
 #ifdef PCAP
 // Enlarge receive buffer for PCAP for minimize packet drops
@@ -714,13 +714,13 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
             output_buffer<<client_ip_as_string << "\t\t";
 
             if (print_average_traffic_counts) {
-                output_buffer<<setw(6)<<pps   << "/" << pps_average   << " pps ";
-                output_buffer<<setw(6)<<mbps  << "/" << mbps_average  << " mbps ";
-                output_buffer<<setw(6)<<flows << "/" << flows_average << " flows ";
+                output_buffer<<setw(6)<<pps_average   << " pps ";
+                output_buffer<<setw(6)<<mbps_average  << " mbps ";
+                output_buffer<<setw(6)<<flows_average << " flows ";
             } else {
-                output_buffer<<setw(6)<<pps<<" pps ";
-                output_buffer<<setw(6)<<mbps<<" mbps ";
-                output_buffer<<setw(6)<<flows << " flows ";
+                output_buffer<<setw(6)<< pps   <<" pps ";
+                output_buffer<<setw(6)<< mbps  <<" mbps ";
+                output_buffer<<setw(6)<< flows <<" flows ";
             }
 
             output_buffer<< is_banned << endl;
