@@ -28,6 +28,7 @@
 // Plugins
 #include "sflow_plugin/sflow_collector.h"
 #include "netflow_plugin/netflow_collector.h"
+#include "example_plugin/example_collector.h"
 
 #include <algorithm>
 #include <iostream>

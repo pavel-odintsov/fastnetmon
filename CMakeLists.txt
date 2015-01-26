@@ -47,11 +47,14 @@ endif()
 # Our LPM library
 add_library(patricia STATIC libpatricia/patricia.c)
 
-# Our sFLOW plugin
+# sFLOW plugin
 add_library(sflow_plugin STATIC sflow_plugin/sflow_collector.cpp) 
 
-# Out netflow plugin
+# netflow plugin
 add_library(netflow_plugin STATIC netflow_plugin/netflow_collector.cpp)
+
+# example plugin
+add_library(example_plugin STATIC example_plugin/example_collector.cpp)
 
 # Main tool
 add_executable(fastnetmon fastnetmon.cpp)
@@ -94,6 +97,7 @@ target_link_libraries(fastnetmon patricia)
 # Our plugins
 target_link_libraries(fastnetmon sflow_plugin)
 target_link_libraries(fastnetmon netflow_plugin)
+target_link_libraries(fastnetmon example_plugin)
 
 if (ENABLE_PFRING_SUPPORT)
     # Custom PF_RING
