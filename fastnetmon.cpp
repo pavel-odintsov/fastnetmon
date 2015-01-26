@@ -1170,7 +1170,7 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
     simple_packet packet;
 
     // We pass only one packet to processing
-    current_packet.number_of_packets = 1;
+    packet.number_of_packets = 1;
 
     // Now we support only non sampled input from PF_RING
     current_packet.sample_ratio = 1;
