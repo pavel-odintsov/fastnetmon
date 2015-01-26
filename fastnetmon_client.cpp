@@ -13,6 +13,7 @@ int main() {
 
     // disable any character output 
     noecho();
+
     // hide cursor
     curs_set(0);
 
