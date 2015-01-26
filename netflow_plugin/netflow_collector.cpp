@@ -27,6 +27,187 @@ extern log4cpp::Category& logger;
 
 process_packet_pointer netflow_process_func_ptr = NULL;
 
+struct peer_nf9_template* peer_nf9_find_template(u_int32_t source_id, u_int flowset_id) {
+    return NULL;
+}
+
+int process_netflow_v9_template(u_int8_t *pkt, size_t len, u_int32_t source_id) {
+    struct NF9_FLOWSET_HEADER_COMMON *template_header = (struct NF9_FLOWSET_HEADER_COMMON *)pkt;
+    struct peer_nf9_template field_template;
+
+    if (len < sizeof(*template_header)) {
+        logger<< log4cpp::Priority::ERROR<<"Short netflow v9 flowset template header";
+        return 1;
+    }
+
+    // TODO: what does it mean?
+    if (ntohs(template_header->flowset_id) != NF9_TEMPLATE_FLOWSET_ID) {
+        logger<< log4cpp::Priority::ERROR<<"Confused template, we expect NF9_TEMPLATE_FLOWSET_ID but got "<<ntohs(template_header->flowset_id);
+        return 1;
+    }
+
+    for (u_int offset = sizeof(*template_header); offset < len;) {
+        struct NF9_TEMPLATE_FLOWSET_HEADER *tmplh = (struct NF9_TEMPLATE_FLOWSET_HEADER *)(pkt + offset);
+
+        u_int template_id = ntohs(tmplh->template_id);
+        u_int count = ntohs(tmplh->count);
+        offset += sizeof(*tmplh);
+   
+        u_int total_size = 0;
+
+        u_int i = 0;
+        for (i = 0; i < count; i++) { 
+            if (offset >= len) {
+                logger<< log4cpp::Priority::ERROR<<"short netflow v.9 flowset  template";
+                return 1;
+            }
+
+
+            struct NF9_TEMPLATE_FLOWSET_RECORD *tmplr = (struct NF9_TEMPLATE_FLOWSET_RECORD *)(pkt + offset);
+            struct peer_nf9_record current_record;
+
+            current_record.type = ntohs(tmplr->type);
+            current_record.len  = ntohs(tmplr->length);
+           
+            field_template.records.push_back(current_record);
+ 
+            offset += sizeof(*tmplr);
+            total_size += current_record.len;
+
+            //if (total_size > peers->max_template_len) {
+            //   logger<< log4cpp::Priority::ERROR<<"Template too large!";
+            //    return 1;
+            //}
+
+            // TODO: introduce nf9_check_rec_len
+        }   
+
+        // field_template.records = recs;
+        field_template.num_records = i;
+        field_template.total_len = total_size; 
+    }
+
+    return 1;
+}
+
+int process_netflow_v9_data(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr, u_int32_t source_id) {
+    struct NF9_DATA_FLOWSET_HEADER *dath = (struct NF9_DATA_FLOWSET_HEADER *)pkt;
+
+    if (len < sizeof(*dath)) {
+        logger<< log4cpp::Priority::INFO<<"Short netflow v9 data flowset header";
+        return 1;
+    }
+
+    u_int flowset_id = ntohs(dath->c.flowset_id);
+    logger<< log4cpp::Priority::INFO<<"We have data with flowset_id: "<<flowset_id;
+
+    // We should find template here
+    struct peer_nf9_template *flowset_template = peer_nf9_find_template(source_id, flowset_id); 
+    
+    if (flowset_template == NULL) {
+        logger<< log4cpp::Priority::INFO<<"We haven't template for flowset_id: "<<flowset_id<<" but it's not an error if we got it shortly";
+        return 0;
+    }
+
+    if (flowset_template->records.size() == 0) {
+        logger<< log4cpp::Priority::ERROR<<"Blank records in template"; 
+        return 1;
+    }
+
+    u_int offset = sizeof(*dath);
+    u_int num_flowsets = (len - offset) / flowset_template->total_len;
+
+    if (num_flowsets == 0 || num_flowsets > 0x4000) {
+        logger<< log4cpp::Priority::ERROR<<"Invalid number of data flowset, strange number of flows: "<<num_flowsets;
+        return 1;
+    }
+
+    for (u_int i = 0; i < num_flowsets; i++) {
+        // Do processing
+
+        offset += flowset_template->total_len;
+    }
+
+    return 0;
+}
+
+void process_netflow_packet_v9(u_int len, u_int8_t *packet) {
+    logger<< log4cpp::Priority::INFO<<"We get v9 netflow packet!";
+
+    struct NF9_HEADER *nf9_hdr = (struct NF9_HEADER*)packet;
+    struct NF9_FLOWSET_HEADER_COMMON *flowset;
+    u_int32_t count, flowset_id, flowset_len, flowset_flows;
+    u_int32_t offset, source_id, total_flows;
+
+    if (len < sizeof(*nf9_hdr)) {
+        logger<< log4cpp::Priority::ERROR<<"Short netflow v9 header";
+        return; 
+    }
+   
+    count = ntohs(nf9_hdr->c.flows);
+    source_id = ntohl(nf9_hdr->source_id);
+
+    offset = sizeof(*nf9_hdr);
+    total_flows = 0;
+
+    for (u_int32_t i = 0;; i++) {
+        /* Make sure we don't run off the end of the flow */
+        if (offset >= len) {
+            logger<< log4cpp::Priority::ERROR<<"We tried to read from address outside netflow packet";
+            return;
+        }
+
+        flowset = (struct NF9_FLOWSET_HEADER_COMMON *)(packet + offset);
+
+        flowset_id = ntohs(flowset->flowset_id);
+        flowset_len = ntohs(flowset->length);
+
+        /*
+         * Yes, this is a near duplicate of the short packet check
+         * above, but this one validates the flowset length from in
+         * the packet before we pass it to the flowset-specific
+         * handlers below.
+         */
+        
+        if (offset + flowset_len > len) {
+            logger<< log4cpp::Priority::ERROR<<"We tried to read from address outside netflow's packet flowset";
+            return;
+        }
+
+        switch (flowset_id) {
+            case NF9_TEMPLATE_FLOWSET_ID:
+                logger<< log4cpp::Priority::INFO<<"We read template";
+                if (process_netflow_v9_template(packet + offset, flowset_len, source_id) != 0) {
+                    logger<<log4cpp::Priority::ERROR<<"Function process_netflow_v9_template executed with errors";
+                    break;
+                }
+                break;
+            case NF9_OPTIONS_FLOWSET_ID:
+                /* Not implemented yet */
+                break;
+            default:
+                if (flowset_id < NF9_MIN_RECORD_FLOWSET_ID) {
+                    logger<< log4cpp::Priority::ERROR<<"Received unknown netflow v9 reserved flowset type "<<flowset_id;
+                    break;
+                }
+
+                logger<< log4cpp::Priority::INFO<<"We read data";
+
+                if (process_netflow_v9_data(packet + offset, flowset_len, nf9_hdr, source_id) != 0) {
+                    logger<< log4cpp::Priority::ERROR<<"Can't process function process_netflow_v9_data correctly";
+                    return;
+                }
+
+                break;
+        }
+
+        offset += flowset_len;
+        if (offset == len) {
+            break;
+        }
+    } 
+}
+
 void process_netflow_packet_v5(u_int len, u_int8_t *packet) {
     //logger<< log4cpp::Priority::INFO<<"We get v5 netflow packet!";
     
@@ -109,9 +290,9 @@ void process_netflow_packet(u_int len, u_int8_t *packet) {
         case 5:
             process_netflow_packet_v5(len, packet);
             break;
-        //case 9:
-        //   process_netflow_v9(fp, conf, peer, peers, log_fd, log_socket);
-        //    break;
+        case 9:
+            process_netflow_packet_v9(len, packet);
+            break;
         default:
             logger<< log4cpp::Priority::ERROR<<"We did not support this version of netflow "<<ntohs(hdr->version);
             break;    
