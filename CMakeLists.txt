@@ -53,6 +53,9 @@ add_library(sflow_plugin STATIC sflow_plugin/sflow_collector.cpp)
 # netflow plugin
 add_library(netflow_plugin STATIC netflow_plugin/netflow_collector.cpp)
 
+# pcap plugin
+add_library(pcap_plugin STATIC pcap_plugin/pcap_collector.cpp)
+
 # example plugin
 add_library(example_plugin STATIC example_plugin/example_collector.cpp)
 
@@ -97,6 +100,7 @@ target_link_libraries(fastnetmon patricia)
 # Our plugins
 target_link_libraries(fastnetmon sflow_plugin)
 target_link_libraries(fastnetmon netflow_plugin)
+target_link_libraries(fastnetmon pcap_plugin)
 target_link_libraries(fastnetmon example_plugin)
 
 if (ENABLE_PFRING_SUPPORT)
