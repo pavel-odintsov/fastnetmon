@@ -60,12 +60,13 @@ void process_netflow_packet_v5(u_int len, u_int8_t *packet) {
         current_packet.ts.tv_usec = 0;
         current_packet.flags = 0;
 
-#define NTO64(a) (htobe64(ntohl(a)))
-        current_packet.length = NTO64(nf5_flow->flow_octets);
-        // TODO: it's COMPLETELY WRONG!!!! WE SHOULD NOT DO IT!!!!
-        // We should set current_packet = number_of_packets instead!!!
-        current_packet.sample_ratio = NTO64(nf5_flow->flow_packets);
-#undef NTO64
+        // TODO: we should pass data about "flow" structure of this data
+
+        current_packet.length            = htobe64(ntohl(nf5_flow->flow_octets));
+        current_packet.number_of_packets = htobe64(ntohl(nf5_flow->flow_packets));
+
+        // netflow did not support sampling
+        current_packet.sample_ratio = 1;
 
         switch (nf5_flow->protocol) {
             case 1: {

@@ -1169,6 +1169,12 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
     // Описание всех полей: http://www.ntop.org/pfring_api/structpkt__parsing__info.html
     simple_packet packet;
 
+    // We pass only one packet to processing
+    current_packet.number_of_packets = 1;
+
+    // Now we support only non sampled input from PF_RING
+    current_packet.sample_ratio = 1;
+
     if (!pf_ring_zc_api_mode) {
         if (!we_use_pf_ring_in_kernel_parser) {
             // In ZC (zc:eth0) mode you should manually add packet parsing here
@@ -1357,8 +1363,15 @@ void process_packet(simple_packet& current_packet) {
         }
     }
 
-    uint32_t sampled_number_of_packets = current_packet.sample_ratio;
-    uint32_t sampled_number_of_bytes = current_packet.length * current_packet.sample_ratio;
+    /* Because we support mirroring, sflow and netflow we should support different cases:
+        - One packet passed for processing (mirror)
+        - Multiple packets ("flows") passed for processing (netflow)
+        - One sampled packed passed for processing (netflow)
+        - Another combinations of this three options
+    */ 
+     
+    uint32_t sampled_number_of_packets = current_packet.number_of_packets * current_packet.sample_ratio;
+    uint32_t sampled_number_of_bytes   = current_packet.length            * current_packet.sample_ratio;
 
     __sync_fetch_and_add(&total_counters[packet_direction].packets, sampled_number_of_packets);
     __sync_fetch_and_add(&total_counters[packet_direction].bytes,   sampled_number_of_bytes);

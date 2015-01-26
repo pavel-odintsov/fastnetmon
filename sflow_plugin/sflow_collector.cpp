@@ -612,6 +612,7 @@ void decodeIPLayer4(SFSample *sample, uint8_t *ptr) {
     current_packet.ts.tv_sec = 0;
     current_packet.ts.tv_usec = 0;
     current_packet.flags = 0;
+    current_packet.number_of_packets = 1;
     current_packet.length = sample->sampledPacketSize;
     current_packet.sample_ratio = sample->meanSkipCount;
 
