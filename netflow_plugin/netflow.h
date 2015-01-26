@@ -21,6 +21,21 @@
 #ifndef _NETFLOW_H
 #define _NETFLOW_H
 
+/* A record in a NetFlow v.9 template record */
+struct peer_nf9_record {
+        u_int type;
+        u_int len;
+};
+
+
+/* A NetFlow v.9 template record */
+struct peer_nf9_template {
+        u_int16_t template_id;
+        u_int num_records;
+        u_int total_len;
+        struct peer_nf9_record *records;
+};
+
 
 // TODO: clean up!!! 
 #if defined(__GNUC__)
