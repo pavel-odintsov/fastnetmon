@@ -9,6 +9,9 @@
 #include <sys/types.h>
 #include <inttypes.h>
 
+#include <vector>
+#include <map>
+
 // log4cpp logging facility
 #include "log4cpp/Category.hh"
 #include "log4cpp/Appender.hh"
@@ -27,8 +30,16 @@ extern log4cpp::Category& logger;
 
 process_packet_pointer netflow_process_func_ptr = NULL;
 
+std::map<u_int, struct peer_nf9_template> global_templates_array;
+
 struct peer_nf9_template* peer_nf9_find_template(u_int32_t source_id, u_int flowset_id) {
-    return NULL;
+    // TODO: we ignore source_id !!! FIX IT
+
+    if (global_templates_array.count(flowset_id) > 0) {
+        return &global_templates_array[flowset_id];  
+    } else {
+        return NULL;
+    }
 }
 
 int process_netflow_v9_template(u_int8_t *pkt, size_t len, u_int32_t source_id) {
@@ -52,7 +63,9 @@ int process_netflow_v9_template(u_int8_t *pkt, size_t len, u_int32_t source_id) 
         u_int template_id = ntohs(tmplh->template_id);
         u_int count = ntohs(tmplh->count);
         offset += sizeof(*tmplh);
-   
+    
+        logger<< log4cpp::Priority::INFO<<"Template template_id is:"<<template_id;  
+ 
         u_int total_size = 0;
 
         u_int i = 0;
@@ -80,11 +93,12 @@ int process_netflow_v9_template(u_int8_t *pkt, size_t len, u_int32_t source_id) 
             //}
 
             // TODO: introduce nf9_check_rec_len
-        }   
+        } 
 
-        // field_template.records = recs;
         field_template.num_records = i;
         field_template.total_len = total_size; 
+    
+        global_templates_array[ template_id ] = field_template;
     }
 
     return 1;
@@ -146,6 +160,8 @@ void process_netflow_packet_v9(u_int len, u_int8_t *packet) {
    
     count = ntohs(nf9_hdr->c.flows);
     source_id = ntohl(nf9_hdr->source_id);
+
+    logger<< log4cpp::Priority::INFO<<"Template source id: "<<source_id;
 
     offset = sizeof(*nf9_hdr);
     total_flows = 0;
