@@ -30,6 +30,9 @@ using namespace std;
 std::string log_file_path = "/tmp/fastnetmon_plugin_tester.log";
 log4cpp::Category& logger = log4cpp::Category::getRoot();
 
+// Global map with parsed config file
+std::map<std::string, std::string> configuration_map;
+
 void init_logging() {
     log4cpp::PatternLayout* layout = new log4cpp::PatternLayout(); 
     layout->setConversionPattern ("%d [%p] %m%n"); 
