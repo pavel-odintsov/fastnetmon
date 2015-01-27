@@ -1,5 +1,7 @@
 FastNetMon
 ===========
+
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/FastVPSEestiOu/fastnetmon?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 Author: [Pavel Odintsov](http://ru.linkedin.com/in/podintsov/) pavel.odintsov at gmail.com
 License: GPLv2
 
