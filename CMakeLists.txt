@@ -91,7 +91,7 @@ endif()
 target_link_libraries(fastnetmon log4cpp)
 target_link_libraries(fastnetmon numa)
 target_link_libraries(fastnetmon pthread)
-# For PF_RING
+# For PF_RING and pcap plugin
 target_link_libraries(fastnetmon pcap)
 
 # Our libs
