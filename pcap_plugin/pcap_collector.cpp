@@ -119,13 +119,33 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
     switch (iphdr->ip_p) {
         case IPPROTO_TCP: 
             tcphdr = (struct tcphdr*)packetptr;
+
+#ifdef __FreeBSD__
+            current_packet.source_port = ntohs(tcphdr->th_sport);
+#else
             current_packet.source_port = ntohs(tcphdr->source);
+#endif
+
+#ifdef __FreeBSD__
+            current_packet.destination_port = ntohs(tcphdr->th_dport);
+#else
             current_packet.destination_port = ntohs(tcphdr->dest);
+#endif
             break;
         case IPPROTO_UDP:
             udphdr = (struct udphdr*)packetptr;
+
+#ifdef __FreeBSD__
+            current_packet.source_port = ntohs(udphdr->uh_sport);
+#else
             current_packet.source_port = ntohs(udphdr->source);
+#endif
+
+#ifdef __FreeBSD__
+            current_packet.destination_port = ntohs(udphdr->uh_dport);
+#else
             current_packet.destination_port = ntohs(udphdr->dest);
+#endif
             break;
         case IPPROTO_ICMP:
             // there are no port for ICMP
