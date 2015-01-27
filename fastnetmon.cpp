@@ -936,7 +936,8 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
     uint32_t subnet_as_integer = prefix->add.sin.s_addr;
 
     u_short bitlen = prefix->bitlen;
-    int network_size_in_ips = pow(2, 32-bitlen);
+    double base = 2;
+    int network_size_in_ips = pow(base, 32-bitlen);
     //logger<< log4cpp::Priority::INFO<<"Subnet: "<<prefix->add.sin.s_addr<<" network size: "<<network_size_in_ips;
     logger<< log4cpp::Priority::INFO<<"I will allocate "<<network_size_in_ips<<" records for subnet "<<subnet_as_integer<<" cidr mask: "<<bitlen;
 
@@ -1044,7 +1045,9 @@ bool load_our_networks_list() {
     for( std::vector<std::string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) { 
         if (ii->length() > 0 && is_cidr_subnet(ii->c_str())) { 
             unsigned int cidr_mask = get_cidr_mask_from_network_as_string(*ii);
-            total_number_of_hosts_in_our_networks += pow(2, 32-cidr_mask);
+
+            double base = 2;
+            total_number_of_hosts_in_our_networks += pow(base, 32-cidr_mask);
 
             make_and_lookup(lookup_tree, const_cast<char*>(ii->c_str()));
         } else {
