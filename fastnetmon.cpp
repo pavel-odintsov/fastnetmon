@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <time.h>
+
 #include <math.h> 
 
 #include <sys/socket.h>
@@ -74,12 +75,10 @@
 #include <numa.h>
 #endif
 
-using namespace std;
-
 // Interface name or interface list (delimitered by comma)
-string work_on_interfaces = "";
+std::string work_on_interfaces = "";
 
-string global_config_path = "/etc/fastnetmon.conf";
+std::string global_config_path = "/etc/fastnetmon.conf";
 
 boost::regex regular_expression_cidr_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+\\/\\d+$");
 
@@ -93,7 +92,7 @@ bool do_unpack_l2tp_over_ip = true;
 int num_pfring_channels = 0;
 
 // Variable with all data from main screen
-string screen_data_stats = "";
+std::string screen_data_stats = "";
 
 // We can use software or hardware (in kernel module) packet parser
 bool we_use_pf_ring_in_kernel_parser = true;
@@ -107,12 +106,12 @@ bool pf_ring_zc_api_mode = false;
 u_int32_t zc_num_threads = 0;
 
 // Global map with parsed config file
-map<string, std::string> configuration_map;
+std::map<std::string, std::string> configuration_map;
 
 /* Configuration block, we must move it to configuration file  */
 #ifdef REDIS
 unsigned int redis_port = 6379;
-string redis_host = "127.0.0.1";
+std::string redis_host = "127.0.0.1";
 // because it's additional and very specific feature we should disable it by default
 bool redis_enabled = false;
 #endif
@@ -162,10 +161,10 @@ double average_calculation_amount = 15;
 bool print_average_traffic_counts = true;
 
 // Key used for sorting clients in output.  Allowed sort params: packets/bytes
-string sort_parameter = "packets";
+std::string sort_parameter = "packets";
 
 // Path to notify script 
-string notify_script_path = "/usr/local/bin/notify_about_attack.sh";
+std::string notify_script_path = "/usr/local/bin/notify_about_attack.sh";
 
 // Number of lines in programm output
 unsigned int max_ips_in_list = 7;
@@ -185,8 +184,8 @@ unsigned int ban_details_records_count = 500;
 
 // log file
 log4cpp::Category& logger = log4cpp::Category::getRoot();
-string log_file_path = "/var/log/fastnetmon.log";
-string attack_details_folder = "/var/log/fastnetmon_attacks";
+std::string log_file_path = "/var/log/fastnetmon.log";
+std::string attack_details_folder = "/var/log/fastnetmon_attacks";
 
 /* Configuration block ends */
 
@@ -219,7 +218,7 @@ uint64_t total_unparsed_packets = 0;
 uint64_t incoming_total_flows_speed = 0;
 uint64_t outgoing_total_flows_speed = 0;
 
-typedef pair<uint32_t, uint32_t> subnet;
+typedef std::pair<uint32_t, uint32_t> subnet;
 
 // main data structure for storing traffic and speed data for all our IPs
 class map_element {
@@ -309,14 +308,14 @@ public:
 };
 
 typedef std::map <uint32_t, map_element> map_for_counters;
-typedef vector<map_element> vector_of_counters;
+typedef std::vector<map_element> vector_of_counters;
 
 typedef std::map <unsigned long int, vector_of_counters> map_of_vector_counters;
 
 map_of_vector_counters SubnetVectorMap;
 
 // Flow tracking structures
-typedef vector<conntrack_main_struct> vector_of_flow_counters;
+typedef std::vector<conntrack_main_struct> vector_of_flow_counters;
 typedef std::map <unsigned long int, vector_of_flow_counters> map_of_vector_counters_for_flow;
 map_of_vector_counters_for_flow SubnetVectorMapFlow;
 
@@ -331,7 +330,7 @@ public:
 
 
 // data structure for storing data in Vector
-typedef pair<uint32_t, map_element> pair_of_map_elements;
+typedef std::pair<uint32_t, map_element> pair_of_map_elements;
 
 /* End of our data structs */
 
@@ -369,7 +368,7 @@ pfring* pf_ring_descr = NULL;
 #endif
 
 // map for flows
-map<uint64_t, int> FlowCounter;
+std::map<uint64_t, int> FlowCounter;
 
 // Struct for string speed per IP
 map_for_counters SpeedCounter;
@@ -382,30 +381,30 @@ map_for_counters GeoIpCounter;
 #endif
 
 // In ddos info we store attack power and direction
-map<uint32_t, banlist_item> ban_list;
-map<uint32_t, vector<simple_packet> > ban_list_details;
+std::map<uint32_t, banlist_item> ban_list;
+std::map<uint32_t, std::vector<simple_packet> > ban_list_details;
 
-vector<subnet> our_networks;
-vector<subnet> whitelist_networks;
+std::vector<subnet> our_networks;
+std::vector<subnet> whitelist_networks;
 
 // Ban enable/disable flag
 bool we_do_real_ban = true;
 
 // Prototypes
 #ifdef HWFILTER_LOCKING
-void block_all_traffic_with_82599_hardware_filtering(string client_ip_as_string);
+void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_string);
 #endif
 
-string get_pf_ring_stats();
+std::string get_pf_ring_stats();
 bool zc_main_loop(const char* device);
 unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp);
-string get_printable_protocol_name(unsigned int protocol);
-void print_attack_details_to_file(string details, string client_ip_as_string,  attack_details current_attack);
-bool folder_exists(string path);
-string print_time_t_in_fastnetmon_format(time_t current_time);
-string print_ban_thresholds();
+std::string get_printable_protocol_name(unsigned int protocol);
+void print_attack_details_to_file(std::string details, std::string client_ip_as_string,  attack_details current_attack);
+bool folder_exists(std::string path);
+std::string print_time_t_in_fastnetmon_format(time_t current_time);
+std::string print_ban_thresholds();
 bool load_configuration_file();
-std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, string client_ip);
+std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, std::string client_ip);
 void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_data, packed_conntrack_hash* unpacked_data);
 uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash* struct_value);
 int timeval_subtract (struct timeval * result, struct timeval * x,  struct timeval * y);
@@ -414,24 +413,24 @@ void* pf_ring_packet_consumer_thread(void* _id);
 bool is_cidr_subnet(const char* subnet);
 uint64_t MurmurHash64A (const void * key, int len, uint64_t seed);
 void cleanup_ban_list();
-string print_tcp_flags(uint8_t flag_value);
+std::string print_tcp_flags(uint8_t flag_value);
 int extract_bit_value(uint8_t num, int bit);
-string get_attack_description(uint32_t client_ip, attack_details& current_attack);
+std::string get_attack_description(uint32_t client_ip, attack_details& current_attack);
 uint64_t convert_speed_to_mbps(uint64_t speed_in_bps);
 void send_attack_details(uint32_t client_ip, attack_details current_attack_details);
-string convert_timeval_to_date(struct timeval tv);
+std::string convert_timeval_to_date(struct timeval tv);
 void free_up_all_resources();
 void main_packet_process_task();
-unsigned int get_cidr_mask_from_network_as_string(string network_cidr_format);
-string print_ddos_attack_details();
-void execute_ip_ban(uint32_t client_ip, map_element new_speed_element, uint64_t in_pps, uint64_t out_pps, uint64_t in_bps, uint64_t out_bps, uint64_t in_flows, uint64_t out_flows, string flow_attack_details);
+unsigned int get_cidr_mask_from_network_as_string(std::string network_cidr_format);
+std::string print_ddos_attack_details();
+void execute_ip_ban(uint32_t client_ip, map_element new_speed_element, uint64_t in_pps, uint64_t out_pps, uint64_t in_bps, uint64_t out_bps, uint64_t in_flows, uint64_t out_flows, std::string flow_attack_details);
 direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet);
 void recalculate_speed();
-std::string print_channel_speed(string traffic_type, direction packet_direction);
+std::string print_channel_speed(std::string traffic_type, direction packet_direction);
 void process_packet(simple_packet& current_packet);
-void copy_networks_from_string_form_to_binary(vector<string> networks_list_as_string, vector<subnet>& our_networks);
+void copy_networks_from_string_form_to_binary(std::vector<std::string> networks_list_as_string, std::vector<subnet>& our_networks);
 
-bool file_exists(string path);
+bool file_exists(std::string path);
 void traffic_draw_programm();
 bool pf_ring_main_loop(const char* dev);
 void ulog_main_loop();
@@ -480,8 +479,8 @@ class TrafficComparatorClass {
         }
 };
 
-string get_direction_name(direction direction_value) {
-    string direction_name; 
+std::string get_direction_name(direction direction_value) {
+    std::string direction_name; 
 
     switch (direction_value) {
         case INCOMING: direction_name = "incoming"; break;
@@ -494,7 +493,7 @@ string get_direction_name(direction direction_value) {
     return direction_name;
 }
 
-uint32_t convert_ip_as_string_to_uint(string ip) {
+uint32_t convert_ip_as_string_to_uint(std::string ip) {
     struct in_addr ip_addr;
     inet_aton(ip.c_str(), &ip_addr);
 
@@ -502,14 +501,14 @@ uint32_t convert_ip_as_string_to_uint(string ip) {
     return ip_addr.s_addr;
 }
 
-string convert_ip_as_uint_to_string(uint32_t ip_as_integer) {
+std::string convert_ip_as_uint_to_string(uint32_t ip_as_integer) {
     struct in_addr ip_addr;
     ip_addr.s_addr = ip_as_integer;
-    return (string)inet_ntoa(ip_addr);
+    return (std::string)inet_ntoa(ip_addr);
 }
 
 // convert integer to string
-string convert_int_to_string(int value) {
+std::string convert_int_to_string(int value) {
     std::stringstream out;
     out << value;
 
@@ -517,13 +516,13 @@ string convert_int_to_string(int value) {
 }
 
 // convert string to integer
-int convert_string_to_integer(string line) {
+int convert_string_to_integer(std::string line) {
     return atoi(line.c_str());
 }
 
 // exec command in shell
-vector<string> exec(string cmd) {
-    vector<string> output_list;
+std::vector<std::string> exec(std::string cmd) {
+    std::vector<std::string> output_list;
 
     FILE* pipe = popen(cmd.c_str(), "r");
     if (!pipe) return output_list;
@@ -548,7 +547,7 @@ vector<string> exec(string cmd) {
 }
 
 // exec command and pass data to it stdin
-bool exec_with_stdin_params(string cmd, string params) {
+bool exec_with_stdin_params(std::string cmd, std::string params) {
     FILE* pipe = popen(cmd.c_str(), "w");
     if (!pipe) {
         logger<<log4cpp::Priority::ERROR<<"Can't execute programm "<<cmd<<" error code: "<<errno<<" error text: "<<strerror(errno);
@@ -599,7 +598,7 @@ bool redis_init_connection() {
 }
 
 void update_traffic_in_redis(uint32_t ip, unsigned int traffic_bytes, direction my_direction) {
-    string ip_as_string = convert_ip_as_uint_to_string(ip);
+    std::string ip_as_string = convert_ip_as_uint_to_string(ip);
     redisReply *reply;
 
     if (!redis_context) {
@@ -607,7 +606,7 @@ void update_traffic_in_redis(uint32_t ip, unsigned int traffic_bytes, direction 
         return;
     }
 
-    string key_name = ip_as_string + "_" + get_direction_name(my_direction);
+    std::string key_name = ip_as_string + "_" + get_direction_name(my_direction);
     reply = (redisReply *)redisCommand(redis_context, "INCRBY %s %s", key_name.c_str(), convert_int_to_string(traffic_bytes).c_str());
 
     // If we store data correctly ...
@@ -625,17 +624,17 @@ void update_traffic_in_redis(uint32_t ip, unsigned int traffic_bytes, direction 
 }
 #endif
 
-string draw_table(map_for_counters& my_map_packets, direction data_direction, bool do_redis_update, sort_type sort_item) {
+std::string draw_table(map_for_counters& my_map_packets, direction data_direction, bool do_redis_update, sort_type sort_item) {
     std::vector<pair_of_map_elements> vector_for_sort;
 
-    stringstream output_buffer;
+    std::stringstream output_buffer;
 
     // Preallocate memory for sort vector
     vector_for_sort.reserve(my_map_packets.size());
 
     for( map_for_counters::iterator ii = my_map_packets.begin(); ii != my_map_packets.end(); ++ii) {
         // store all elements into vector for sorting
-        vector_for_sort.push_back( make_pair((*ii).first, (*ii).second) );
+        vector_for_sort.push_back( std::make_pair((*ii).first, (*ii).second) );
     } 
  
     if (data_direction == INCOMING or data_direction == OUTGOING) {
@@ -645,9 +644,9 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
     }
 
     unsigned int element_number = 0;
-    for( vector<pair_of_map_elements>::iterator ii=vector_for_sort.begin(); ii!=vector_for_sort.end(); ++ii) {
+    for( std::vector<pair_of_map_elements>::iterator ii=vector_for_sort.begin(); ii!=vector_for_sort.end(); ++ii) {
         uint32_t client_ip = (*ii).first;
-        string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
+        std::string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
 
         uint64_t pps = 0; 
         uint64_t bps = 0;
@@ -685,21 +684,21 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
 
         // Print first max_ips_in_list elements in list, we will show top 20 "huge" channel loaders
         if (element_number < max_ips_in_list) {
-            string is_banned = ban_list.count(client_ip) > 0 ? " *banned* " : "";
+            std::string is_banned = ban_list.count(client_ip) > 0 ? " *banned* " : "";
             // We use setw for alignment
             output_buffer<<client_ip_as_string << "\t\t";
 
             if (print_average_traffic_counts) {
-                output_buffer<<setw(6)<<pps_average   << " pps ";
-                output_buffer<<setw(6)<<mbps_average  << " mbps ";
-                output_buffer<<setw(6)<<flows_average << " flows ";
+                output_buffer<<std::setw(6)<<pps_average   << " pps ";
+                output_buffer<<std::setw(6)<<mbps_average  << " mbps ";
+                output_buffer<<std::setw(6)<<flows_average << " flows ";
             } else {
-                output_buffer<<setw(6)<< pps   <<" pps ";
-                output_buffer<<setw(6)<< mbps  <<" mbps ";
-                output_buffer<<setw(6)<< flows <<" flows ";
+                output_buffer<<std::setw(6)<< pps   <<" pps ";
+                output_buffer<<std::setw(6)<< mbps  <<" mbps ";
+                output_buffer<<std::setw(6)<< flows <<" flows ";
             }
 
-            output_buffer<< is_banned << endl;
+            output_buffer<< is_banned << std::endl;
         }  
    
 #ifdef REDIS 
@@ -716,7 +715,7 @@ string draw_table(map_for_counters& my_map_packets, direction data_direction, bo
 }
 
 // check file existence
-bool file_exists(string path) {
+bool file_exists(std::string path) {
     FILE* check_file = fopen(path.c_str(), "r");
     if (check_file) {
         fclose(check_file);
@@ -727,11 +726,11 @@ bool file_exists(string path) {
 }
 
 // read whole file to vector
-vector<string> read_file_to_vector(string file_name) {
-    vector<string> data;
-    string line;
+std::vector<std::string> read_file_to_vector(std::string file_name) {
+    std::vector<std::string> data;
+    std::string line;
 
-    ifstream reading_file;
+    std::ifstream reading_file;
 
     reading_file.open(file_name.c_str(), std::ifstream::in);
     if (reading_file.is_open()) {
@@ -747,8 +746,8 @@ vector<string> read_file_to_vector(string file_name) {
 
 // Load configuration
 bool load_configuration_file() {
-    ifstream config_file (global_config_path.c_str());
-    string line;
+    std::ifstream config_file (global_config_path.c_str());
+    std::string line;
 
     if (!config_file.is_open()) {
         logger<< log4cpp::Priority::ERROR<<"Can't open config file";
@@ -756,7 +755,7 @@ bool load_configuration_file() {
     }
 
     while ( getline(config_file, line) ) {
-        vector<string> parsed_config; 
+        std::vector<std::string> parsed_config; 
         boost::split( parsed_config, line, boost::is_any_of(" ="), boost::token_compress_on );
 
         if (parsed_config.size() == 2) {
@@ -900,7 +899,7 @@ bool load_configuration_file() {
         work_on_interfaces = configuration_map[ "interfaces" ];
 
         // We should check all interfaces and check zc flag for all
-        if (work_on_interfaces.find("zc:") != string::npos) {
+        if (work_on_interfaces.find("zc:") != std::string::npos) {
             we_use_pf_ring_in_kernel_parser = false;
             logger<< log4cpp::Priority::INFO<<"We detect run in PF_RING Zero Copy or DNA mode and we enable packet parser!";
         }
@@ -991,9 +990,9 @@ void zeroify_all_flow_counters() {
 
 bool load_our_networks_list() {
     if (file_exists("/etc/networks_whitelist")) {
-        vector<string> network_list_from_config = read_file_to_vector("/etc/networks_whitelist");
+        std::vector<std::string> network_list_from_config = read_file_to_vector("/etc/networks_whitelist");
 
-        for( vector<string>::iterator ii=network_list_from_config.begin(); ii!=network_list_from_config.end(); ++ii) {
+        for( std::vector<std::string>::iterator ii=network_list_from_config.begin(); ii!=network_list_from_config.end(); ++ii) {
             if (ii->length() > 0 && is_cidr_subnet(ii->c_str())) {
                 make_and_lookup(whitelist_tree, const_cast<char*>(ii->c_str()));
             } else {
@@ -1004,13 +1003,13 @@ bool load_our_networks_list() {
         logger<<log4cpp::Priority::INFO<<"We loaded "<<network_list_from_config.size()<< " networks from whitelist file";
     }
  
-    vector<string> networks_list_as_string;
+    std::vector<std::string> networks_list_as_string;
     // We can bould "our subnets" automatically here 
     if (file_exists("/proc/vz/version")) {
         logger<< log4cpp::Priority::INFO<<"We found OpenVZ";
         // Add /32 CIDR mask for every IP here
-        vector<string> openvz_ips = read_file_to_vector("/proc/vz/veip");
-        for( vector<string>::iterator ii=openvz_ips.begin(); ii!=openvz_ips.end(); ++ii) {
+        std::vector<std::string> openvz_ips = read_file_to_vector("/proc/vz/veip");
+        for( std::vector<std::string>::iterator ii=openvz_ips.begin(); ii!=openvz_ips.end(); ++ii) {
             // skip IPv6 addresses
             if (strstr(ii->c_str(), ":") != NULL) {
                 continue;
@@ -1021,10 +1020,10 @@ bool load_our_networks_list() {
                 continue;
             }
 
-            vector<string> subnet_as_string; 
+            std::vector<std::string> subnet_as_string; 
             split( subnet_as_string, *ii, boost::is_any_of(" "), boost::token_compress_on );
  
-            string openvz_subnet = subnet_as_string[1] + "/32";
+            std::string openvz_subnet = subnet_as_string[1] + "/32";
             networks_list_as_string.push_back(openvz_subnet);
         }
 
@@ -1032,7 +1031,7 @@ bool load_our_networks_list() {
     } 
 
     if (file_exists("/etc/networks_list")) { 
-        vector<string> network_list_from_config = read_file_to_vector("/etc/networks_list");
+        std::vector<std::string> network_list_from_config = read_file_to_vector("/etc/networks_list");
         networks_list_as_string.insert(networks_list_as_string.end(), network_list_from_config.begin(), network_list_from_config.end());
 
         logger<<log4cpp::Priority::INFO<<"We loaded "<<network_list_from_config.size()<< " networks from networks file";
@@ -1042,7 +1041,7 @@ bool load_our_networks_list() {
     assert( convert_ip_as_string_to_uint("255.255.255.0")   == convert_cidr_to_binary_netmask(24) );
     assert( convert_ip_as_string_to_uint("255.255.255.255") == convert_cidr_to_binary_netmask(32) );
 
-    for( vector<string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) { 
+    for( std::vector<std::string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) { 
         if (ii->length() > 0 && is_cidr_subnet(ii->c_str())) { 
             unsigned int cidr_mask = get_cidr_mask_from_network_as_string(*ii);
             total_number_of_hosts_in_our_networks += pow(2, 32-cidr_mask);
@@ -1069,8 +1068,8 @@ bool load_our_networks_list() {
 }
 
 // extract 24 from 192.168.1.1/24
-unsigned int get_cidr_mask_from_network_as_string(string network_cidr_format) {
-    vector<string> subnet_as_string; 
+unsigned int get_cidr_mask_from_network_as_string(std::string network_cidr_format) {
+    std::vector<std::string> subnet_as_string; 
     split( subnet_as_string, network_cidr_format, boost::is_any_of("/"), boost::token_compress_on );
 
     if (subnet_as_string.size() != 2) {
@@ -1080,9 +1079,9 @@ unsigned int get_cidr_mask_from_network_as_string(string network_cidr_format) {
     return convert_string_to_integer(subnet_as_string[1]);
 }
 
-void copy_networks_from_string_form_to_binary(vector<string> networks_list_as_string, vector<subnet>& our_networks ) {
-    for( vector<string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) {
-        vector<string> subnet_as_string; 
+void copy_networks_from_string_form_to_binary(std::vector<std::string> networks_list_as_string, std::vector<subnet>& our_networks ) {
+    for( std::vector<std::string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) {
+        std::vector<std::string> subnet_as_string; 
         split( subnet_as_string, *ii, boost::is_any_of("/"), boost::token_compress_on );
         unsigned int cidr = convert_string_to_integer(subnet_as_string[1]);
 
@@ -1105,8 +1104,8 @@ uint32_t convert_cidr_to_binary_netmask(unsigned int cidr) {
     return htonl(binary_netmask);
 }
 
-string get_printable_protocol_name(unsigned int protocol) {
-    string proto_name;
+std::string get_printable_protocol_name(unsigned int protocol) {
+    std::string proto_name;
 
     switch (protocol) {
         case IPPROTO_TCP:
@@ -1126,7 +1125,7 @@ string get_printable_protocol_name(unsigned int protocol) {
     return proto_name;
 }
 
-string print_simple_packet(simple_packet packet) {
+std::string print_simple_packet(simple_packet packet) {
     std::stringstream buffer;
 
     buffer<<convert_timeval_to_date(packet.ts)<<" ";
@@ -1468,7 +1467,7 @@ unsigned int get_asn_for_ip(uint32_t ip) {
         asn_number = 0; 
     } else {
         // split string: AS1299 TeliaSonera International Carrier
-        vector<string> asn_as_string;
+        std::vector<std::string> asn_as_string;
         split( asn_as_string, asn_raw, boost::is_any_of(" "), boost::token_compress_on );
 
         // free up original string
@@ -1658,7 +1657,7 @@ void recalculate_speed() {
             } 
 
             if (attack_detected_by_pps or attack_detected_by_bandwidth or attack_detected_by_flow) {
-                string flow_attack_details = "";
+                std::string flow_attack_details = "";
                 
                 if (enable_conection_tracking) {
                     flow_attack_details = print_flow_tracking_for_ip(*flow_counter_ptr, convert_ip_as_uint_to_string(client_ip));
@@ -1711,9 +1710,9 @@ void recalculate_speed() {
     timeval_subtract(&speed_calculation_time, &finish_calc_time, &start_calc_time);
 }
 
-void print_screen_contents_into_file(string screen_data_stats_param) {
-    ofstream screen_data_file;
-    screen_data_file.open("/tmp/fastnetmon.dat", ios::trunc);
+void print_screen_contents_into_file(std::string screen_data_stats_param) {
+    std::ofstream screen_data_file;
+    screen_data_file.open("/tmp/fastnetmon.dat", std::ios::trunc);
 
     if (screen_data_file.is_open()) {
         screen_data_file<<screen_data_stats_param;
@@ -1724,7 +1723,7 @@ void print_screen_contents_into_file(string screen_data_stats_param) {
 }
 
 void traffic_draw_programm() {
-    stringstream output_buffer;
+    std::stringstream output_buffer;
    
     //logger<<log4cpp::Priority::INFO<<"Draw table call";
  
@@ -1746,23 +1745,23 @@ void traffic_draw_programm() {
     output_buffer<<"FastNetMon v1.0 FastVPS Eesti OU (c) VPS and dedicated: http://FastVPS.host"<<"\n"
         <<"IPs ordered by: "<<sort_parameter<<"\n";
 
-    output_buffer<<print_channel_speed("Incoming traffic", INCOMING)<<endl;
+    output_buffer<<print_channel_speed("Incoming traffic", INCOMING)<<std::endl;
     output_buffer<<draw_table(SpeedCounter, INCOMING, true, sorter);
     
-    output_buffer<<endl; 
+    output_buffer<<std::endl; 
     
-    output_buffer<<print_channel_speed("Outgoing traffic", OUTGOING)<<endl;
+    output_buffer<<print_channel_speed("Outgoing traffic", OUTGOING)<<std::endl;
     output_buffer<<draw_table(SpeedCounter, OUTGOING, false, sorter);
 
-    output_buffer<<endl;
+    output_buffer<<std::endl;
 
-    output_buffer<<print_channel_speed("Internal traffic", INTERNAL)<<endl;
+    output_buffer<<print_channel_speed("Internal traffic", INTERNAL)<<std::endl;
 
-    output_buffer<<endl;
+    output_buffer<<std::endl;
 
-    output_buffer<<print_channel_speed("Other traffic", OTHER)<<endl;
+    output_buffer<<print_channel_speed("Other traffic", OTHER)<<std::endl;
 
-    output_buffer<<endl;
+    output_buffer<<std::endl;
 
     if (enable_pcap_collection) {
         output_buffer<<get_pcap_stats()<<"\n";
@@ -1783,7 +1782,7 @@ void traffic_draw_programm() {
     output_buffer<<"\n\n"<<print_ban_thresholds();
 
     if (!ban_list.empty()) {
-        output_buffer<<endl<<"Ban list:"<<endl;  
+        output_buffer<<std::endl<<"Ban list:"<<std::endl;  
         output_buffer<<print_ddos_attack_details();
     }
 
@@ -1799,7 +1798,7 @@ void traffic_draw_programm() {
 }
 
 // pretty print channel speed in pps and MBit
-std::string print_channel_speed(string traffic_type, direction packet_direction) {
+std::string print_channel_speed(std::string traffic_type, direction packet_direction) {
     uint64_t speed_in_pps = total_speed_counters[packet_direction].packets;
     uint64_t speed_in_bps = total_speed_counters[packet_direction].bytes;
 
@@ -1818,13 +1817,13 @@ std::string print_channel_speed(string traffic_type, direction packet_direction)
 
     uint64_t speed_in_mbps = convert_speed_to_mbps(speed_in_bps);
 
-    stream<<setw(6)<<speed_in_pps<<" pps "<<setw(6)<<speed_in_mbps<<" mbps";
+    stream<<std::setw(6)<<speed_in_pps<<" pps "<<std::setw(6)<<speed_in_mbps<<" mbps";
 
     if (traffic_type ==  "Incoming traffic" or traffic_type ==  "Outgoing traffic") {
         if (packet_direction == INCOMING) {
-            stream<<" "<<setw(6)<<incoming_total_flows_speed<<" flows";
+            stream<<" "<<std::setw(6)<<incoming_total_flows_speed<<" flows";
         } else if (packet_direction == OUTGOING) {
-            stream<<" "<<setw(6)<<outgoing_total_flows_speed<<" flows";
+            stream<<" "<<std::setw(6)<<outgoing_total_flows_speed<<" flows";
         }
     }
  
@@ -1847,7 +1846,7 @@ void init_logging() {
     logger.info("Logger initialized!");
 }
 
-bool folder_exists(string path) {
+bool folder_exists(std::string path) {
     if (access(path.c_str(), 0) == 0) {
         struct stat status;
         stat(path.c_str(), &status);
@@ -2527,7 +2526,7 @@ unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp) {
     return 0;
 }
 
-void execute_ip_ban(uint32_t client_ip, map_element speed_element, uint64_t in_pps, uint64_t out_pps, uint64_t in_bps, uint64_t out_bps, uint64_t in_flows, uint64_t out_flows, string flow_attack_details) {
+void execute_ip_ban(uint32_t client_ip, map_element speed_element, uint64_t in_pps, uint64_t out_pps, uint64_t in_bps, uint64_t out_bps, uint64_t in_flows, uint64_t out_flows, std::string flow_attack_details) {
     struct attack_details current_attack;
     uint64_t pps = 0;
 
@@ -2587,13 +2586,13 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, uint64_t in_p
         return;
     }  
 
-    string data_direction_as_string = get_direction_name(data_direction);
+    std::string data_direction_as_string = get_direction_name(data_direction);
 
     logger.info("We run execute_ip_ban code with following params in_pps: %d out_pps: %d in_bps: %d out_bps: %d and we decide it's %s attack",
         in_pps, out_pps, in_bps, out_bps, data_direction_as_string.c_str());
 
-    string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
-    string pps_as_string = convert_int_to_string(pps);
+    std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+    std::string pps_as_string = convert_int_to_string(pps);
 
     // Store ban time
     time(&current_attack.ban_timestamp); 
@@ -2647,7 +2646,7 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, uint64_t in_p
     ban_list_mutex.unlock();
 
     ban_list_details_mutex.lock();
-    ban_list_details[client_ip] = vector<simple_packet>();
+    ban_list_details[client_ip] = std::vector<simple_packet>();
     ban_list_details_mutex.unlock();                         
 
     logger<<log4cpp::Priority::INFO<<"Attack with direction: " << data_direction_as_string
@@ -2658,11 +2657,11 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, uint64_t in_p
     block_all_traffic_with_82599_hardware_filtering(client_ip_as_string);
 #endif
 
-    string full_attack_description = get_attack_description(client_ip, current_attack) + flow_attack_details;
+    std::string full_attack_description = get_attack_description(client_ip, current_attack) + flow_attack_details;
     print_attack_details_to_file(full_attack_description, client_ip_as_string, current_attack);
 
     if (file_exists(notify_script_path)) {
-        string script_call_params = notify_script_path + " " + client_ip_as_string + " " + data_direction_as_string + " " + pps_as_string + " attack_details";
+        std::string script_call_params = notify_script_path + " " + client_ip_as_string + " " + data_direction_as_string + " " + pps_as_string + " attack_details";
         logger<<log4cpp::Priority::INFO<<"Call script for ban client: "<<client_ip_as_string; 
 
         // We should execute external script in separate thread because any lag in this code will be very distructive 
@@ -2674,9 +2673,9 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, uint64_t in_p
 }
 
 #ifdef HWFILTER_LOCKING
-void block_all_traffic_with_82599_hardware_filtering(string client_ip_as_string) {
+void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_string) {
     /* 6 - tcp, 17 - udp, 0 - other (non tcp and non udp) */
-    vector<int> banned_protocols;
+    std::vector<int> banned_protocols;
     banned_protocols.push_back(17);
     banned_protocols.push_back(6);
     banned_protocols.push_back(0); 
@@ -2704,7 +2703,7 @@ void block_all_traffic_with_82599_hardware_filtering(string client_ip_as_string)
             ft_rule->queue_id = -1; // drop traffic
             ft_rule->proto = *banned_protocol;
 
-            string hw_filter_rule_direction = "";
+            std::string hw_filter_rule_direction = "";
             if (rule_direction == 0) {
                 hw_filter_rule_direction = "outgoing";
                 ft_rule->s_addr = ntohl(inet_addr(client_ip_as_string.c_str()));
@@ -2737,7 +2736,7 @@ void cleanup_ban_list() {
         time_t current_time;
         time(&current_time);
 
-        map<uint32_t,banlist_item>::iterator itr = ban_list.begin();
+        std::map<uint32_t,banlist_item>::iterator itr = ban_list.begin();
         while (itr != ban_list.end()) {
             uint32_t client_ip = (*itr).first;
 
@@ -2746,22 +2745,22 @@ void cleanup_ban_list() {
 
             if (time_difference > ban_time) {
                 // Cleanup all data related with this attack
-                string data_direction_as_string = get_direction_name((*itr).second.attack_direction);
-                string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
-                string pps_as_string = convert_int_to_string((*itr).second.attack_power);
+                std::string data_direction_as_string = get_direction_name((*itr).second.attack_direction);
+                std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+                std::string pps_as_string = convert_int_to_string((*itr).second.attack_power);
 
                 logger<<log4cpp::Priority::INFO<<"We will unban banned IP: "<<client_ip_as_string<<
                     " because it ban time "<<ban_time<<" seconds is ended";
 
                 ban_list_mutex.lock();
-                map<uint32_t,banlist_item>::iterator itr_to_erase = itr;
+                std::map<uint32_t,banlist_item>::iterator itr_to_erase = itr;
                 itr++;
 
                 ban_list.erase(itr_to_erase);
                 ban_list_mutex.unlock();
 
                 if (file_exists(notify_script_path)) {
-                    string script_call_params = notify_script_path + " " + client_ip_as_string + " " +
+                    std::string script_call_params = notify_script_path + " " + client_ip_as_string + " " +
                         data_direction_as_string + " " + pps_as_string + " unban";
      
                     logger<<log4cpp::Priority::INFO<<"Call script for unban client: "<<client_ip_as_string; 
@@ -2779,7 +2778,7 @@ void cleanup_ban_list() {
     }
 }
 
-string print_time_t_in_fastnetmon_format(time_t current_time) {
+std::string print_time_t_in_fastnetmon_format(time_t current_time) {
     struct tm* timeinfo;
     char buffer[80];
 
@@ -2791,18 +2790,18 @@ string print_time_t_in_fastnetmon_format(time_t current_time) {
     return std::string(buffer);
 }
 
-string print_ddos_attack_details() {
-    stringstream output_buffer;
+std::string print_ddos_attack_details() {
+    std::stringstream output_buffer;
 
-    for( map<uint32_t,banlist_item>::iterator ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
+    for( std::map<uint32_t,banlist_item>::iterator ii=ban_list.begin(); ii!=ban_list.end(); ++ii) {
         uint32_t client_ip = (*ii).first; 
 
-        string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
-        string pps_as_string = convert_int_to_string(((*ii).second).attack_power);
-        string max_pps_as_string = convert_int_to_string(((*ii).second).max_attack_power);
-        string attack_direction = get_direction_name(((*ii).second).attack_direction);
+        std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+        std::string pps_as_string = convert_int_to_string(((*ii).second).attack_power);
+        std::string max_pps_as_string = convert_int_to_string(((*ii).second).max_attack_power);
+        std::string attack_direction = get_direction_name(((*ii).second).attack_direction);
 
-        output_buffer<<client_ip_as_string<<"/"<<max_pps_as_string<<" pps "<<attack_direction<<" at "<<print_time_t_in_fastnetmon_format(ii->second.ban_timestamp)<<endl;
+        output_buffer<<client_ip_as_string<<"/"<<max_pps_as_string<<" pps "<<attack_direction<<" at "<<print_time_t_in_fastnetmon_format(ii->second.ban_timestamp)<<std::endl;
 
         send_attack_details(client_ip, (*ii).second);
     }
@@ -2811,8 +2810,8 @@ string print_ddos_attack_details() {
     return output_buffer.str();
 }
 
-string get_attack_description(uint32_t client_ip, attack_details& current_attack) {
-    stringstream attack_description;
+std::string get_attack_description(uint32_t client_ip, attack_details& current_attack) {
+    std::stringstream attack_description;
 
     attack_description
         <<"IP: "<<convert_ip_as_uint_to_string(client_ip)<<"\n"
@@ -2854,25 +2853,25 @@ string get_attack_description(uint32_t client_ip, attack_details& current_attack
     return attack_description.str();
 }    
 
-string get_protocol_name_by_number(unsigned int proto_number) {
+std::string get_protocol_name_by_number(unsigned int proto_number) {
     struct protoent* proto_ent = getprotobynumber( proto_number );
-    string proto_name = proto_ent->p_name;
+    std::string proto_name = proto_ent->p_name;
     return proto_name;
 }       
 
 void send_attack_details(uint32_t client_ip, attack_details current_attack_details) {
-    string pps_as_string = convert_int_to_string(current_attack_details.attack_power);
-    string attack_direction = get_direction_name(current_attack_details.attack_direction);
-    string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+    std::string pps_as_string = convert_int_to_string(current_attack_details.attack_power);
+    std::string attack_direction = get_direction_name(current_attack_details.attack_direction);
+    std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
 
     // Very strange code but it work in 95% cases 
     if (ban_list_details.count( client_ip ) > 0 && ban_list_details[ client_ip ].size() == ban_details_records_count) {
-        stringstream attack_details;
+        std::stringstream attack_details;
 
         attack_details<<get_attack_description(client_ip, current_attack_details)<<"\n\n";
 
         std::map<unsigned int, unsigned int> protocol_counter;
-        for( vector<simple_packet>::iterator iii=ban_list_details[ client_ip ].begin(); iii!=ban_list_details[ client_ip ].end(); ++iii) {
+        for( std::vector<simple_packet>::iterator iii=ban_list_details[ client_ip ].begin(); iii!=ban_list_details[ client_ip ].end(); ++iii) {
             attack_details<<print_simple_packet( *iii );
 
             protocol_counter[ iii->protocol ]++;
@@ -2894,7 +2893,7 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
         if (file_exists(notify_script_path)) {
             logger<<log4cpp::Priority::INFO<<"Call script for notify about attack details for: "<<client_ip_as_string;
 
-            string script_params = notify_script_path + " " + client_ip_as_string + " " + attack_direction  + " " + pps_as_string + " ban";
+            std::string script_params = notify_script_path + " " + client_ip_as_string + " " + attack_direction  + " " + pps_as_string + " ban";
 
             // We should execute external script in separate thread because any lag in this code will be very distructive 
             boost::thread exec_with_params_thread(exec_with_stdin_params, script_params, attack_details.str());
@@ -2908,7 +2907,7 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
 }
 
 
-string convert_timeval_to_date(struct timeval tv) {
+std::string convert_timeval_to_date(struct timeval tv) {
     time_t nowtime = tv.tv_sec;
     struct tm *nowtm = localtime(&nowtime);
     
@@ -2919,7 +2918,7 @@ string convert_timeval_to_date(struct timeval tv) {
 
     snprintf(buf, sizeof(buf), "%s.%06ld", tmbuf, tv.tv_usec); 
 
-    return string(buf);
+    return std::string(buf);
 }
 
 // http://stackoverflow.com/questions/14528233/bit-masking-in-c-how-to-get-first-bit-of-a-byte
@@ -2931,7 +2930,7 @@ int extract_bit_value(uint8_t num, int bit) {
     }
 }
 
-string print_tcp_flags(uint8_t flag_value) {
+std::string print_tcp_flags(uint8_t flag_value) {
     if (flag_value == 0) {
         return "-";
     }
@@ -2951,7 +2950,7 @@ string print_tcp_flags(uint8_t flag_value) {
         #define TH_URG_MULTIPLIER   0x20
     */
 
-    vector<string> all_flags;
+    std::vector<std::string> all_flags;
 
     if (extract_bit_value(flag_value, 1)) {
         all_flags.push_back("fin");
@@ -2978,14 +2977,14 @@ string print_tcp_flags(uint8_t flag_value) {
     }   
 
     
-    ostringstream flags_as_string;
+    std::ostringstream flags_as_string;
 
     if (all_flags.empty()) {
         return "-";
     }
 
     // concatenate all vector elements with comma
-    std::copy(all_flags.begin(), all_flags.end() - 1, std::ostream_iterator<string>(flags_as_string, ","));
+    std::copy(all_flags.begin(), all_flags.end() - 1, std::ostream_iterator<std::string>(flags_as_string, ","));
 
     // add last element
     flags_as_string << all_flags.back();
@@ -3088,8 +3087,8 @@ void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_
     memcpy(unpacked_data, packed_connection_data, sizeof(uint64_t)); 
 }
 
-string print_flow_tracking_for_specified_protocol(contrack_map_type& protocol_map, string client_ip, direction flow_direction) {
-    stringstream buffer;
+std::string print_flow_tracking_for_specified_protocol(contrack_map_type& protocol_map, std::string client_ip, direction flow_direction) {
+    std::stringstream buffer;
     // We shoud iterate over all fields
 
     int printed_records = 0;
@@ -3104,7 +3103,7 @@ string print_flow_tracking_for_specified_protocol(contrack_map_type& protocol_ma
         packed_conntrack_hash unpacked_key_struct;
         convert_integer_to_conntrack_hash_struct(&packed_connection_data, &unpacked_key_struct);
       
-        string opposite_ip_as_string = convert_ip_as_uint_to_string(unpacked_key_struct.opposite_ip);  
+        std::string opposite_ip_as_string = convert_ip_as_uint_to_string(unpacked_key_struct.opposite_ip);  
         if (flow_direction == INCOMING) {
             buffer<<client_ip<<":"<<unpacked_key_struct.dst_port<<" < "<<opposite_ip_as_string<<":"<<unpacked_key_struct.src_port<<" "; 
         } else if (flow_direction == OUTGOING) {
@@ -3126,7 +3125,7 @@ string print_flow_tracking_for_specified_protocol(contrack_map_type& protocol_ma
 */
 
 /* Iterate over all flow tracking table */
-bool process_flow_tracking_table(conntrack_main_struct& conntrack_element, string client_ip) {
+bool process_flow_tracking_table(conntrack_main_struct& conntrack_element, std::string client_ip) {
     std::map <uint32_t, unsigned int>     uniq_remote_hosts_which_generate_requests_to_us;
     std::map <unsigned int, unsigned int> uniq_local_ports_which_target_of_connectiuons_from_inside;
 
@@ -3150,11 +3149,11 @@ bool process_flow_tracking_table(conntrack_main_struct& conntrack_element, strin
     return true;
 }
 
-std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, string client_ip) {
-    stringstream buffer;
+std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, std::string client_ip) {
+    std::stringstream buffer;
 
-    string in_tcp = print_flow_tracking_for_specified_protocol(conntrack_element.in_tcp, client_ip, INCOMING);
-    string in_udp = print_flow_tracking_for_specified_protocol(conntrack_element.in_udp, client_ip, INCOMING);
+    std::string in_tcp = print_flow_tracking_for_specified_protocol(conntrack_element.in_tcp, client_ip, INCOMING);
+    std::string in_udp = print_flow_tracking_for_specified_protocol(conntrack_element.in_udp, client_ip, INCOMING);
 
     bool we_have_incoming_flows = in_tcp.length() > 0 or in_udp.length() > 0;
     if (we_have_incoming_flows) {
@@ -3170,8 +3169,8 @@ std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element,
 
     }
 
-    string out_tcp = print_flow_tracking_for_specified_protocol(conntrack_element.out_tcp, client_ip, OUTGOING);
-    string out_udp = print_flow_tracking_for_specified_protocol(conntrack_element.out_udp, client_ip, OUTGOING);
+    std::string out_tcp = print_flow_tracking_for_specified_protocol(conntrack_element.out_tcp, client_ip, OUTGOING);
+    std::string out_udp = print_flow_tracking_for_specified_protocol(conntrack_element.out_udp, client_ip, OUTGOING);
 
     bool we_have_outgoing_flows = out_tcp.length() > 0 or out_udp.length() > 0;
 
@@ -3195,8 +3194,8 @@ std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element,
     return buffer.str();
 }
 
-string print_ban_thresholds() {
-    stringstream output_buffer;
+std::string print_ban_thresholds() {
+    std::stringstream output_buffer;
 
     output_buffer<<"Configuration params:\n";
     if (we_do_real_ban) {
@@ -3234,13 +3233,13 @@ string print_ban_thresholds() {
     return output_buffer.str();
 }
 
-void print_attack_details_to_file(string details, string client_ip_as_string,  attack_details current_attack) { 
-    ofstream my_attack_details_file;
+void print_attack_details_to_file(std::string details, std::string client_ip_as_string,  attack_details current_attack) { 
+    std::ofstream my_attack_details_file;
 
-    string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack.ban_timestamp); 
-    string attack_dump_path = attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string;
+    std::string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack.ban_timestamp); 
+    std::string attack_dump_path = attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string;
 
-    my_attack_details_file.open(attack_dump_path.c_str(), ios::app);
+    my_attack_details_file.open(attack_dump_path.c_str(), std::ios::app);
 
     if (my_attack_details_file.is_open()) {
         my_attack_details_file << details << "\n\n"; 
@@ -3251,7 +3250,7 @@ void print_attack_details_to_file(string details, string client_ip_as_string,  a
 }
 
 #ifdef PF_RING  
-string get_pf_ring_stats() {
+std::string get_pf_ring_stats() {
     std::stringstream output_buffer;
 
     if (pf_ring_zc_api_mode) {
