@@ -28,7 +28,11 @@
 // Plugins
 #include "sflow_plugin/sflow_collector.h"
 #include "netflow_plugin/netflow_collector.h"
+#include "pcap_plugin/pcap_collector.h"
+
+// Yes, maybe it's not an good idea but with this we can guarantee working code in example plugin
 #include "example_plugin/example_collector.h"
+
 
 #include <algorithm>
 #include <iostream>
@@ -60,10 +64,6 @@
 #include "GeoIP.h"
 #endif
 
-#ifdef PCAP
-#include <pcap.h>
-#endif
-
 #ifdef REDIS
 #include <hiredis/hiredis.h>
 #endif
@@ -75,16 +75,6 @@
 #endif
 
 using namespace std;
-
-/* 802.1Q VLAN tags are 4 bytes long. */
-#define VLAN_HDRLEN 4
-
-/* Complete list of ethertypes: http://en.wikipedia.org/wiki/EtherType */
-/* This is the decimal equivalent of the VLAN tag's ether frame type */
-#define VLAN_ETHERTYPE 0x8100
-#define IP_ETHERTYPE 0x0800
-#define IP6_ETHERTYPE 0x86dd
-#define ARP_ETHERTYPE 0x0806
 
 // Interface name or interface list (delimitered by comma)
 string work_on_interfaces = "";
@@ -116,6 +106,9 @@ bool pf_ring_zc_api_mode = false;
 
 u_int32_t zc_num_threads = 0;
 
+// Global map with parsed config file
+map<string, std::string> configuration_map;
+
 /* Configuration block, we must move it to configuration file  */
 #ifdef REDIS
 unsigned int redis_port = 6379;
@@ -131,10 +124,9 @@ bool enable_ban_for_flows_per_second = false;
 bool enable_conection_tracking = true;
 
 bool enable_data_collection_from_mirror = true;
-
 bool enable_sflow_collection = false;
-
 bool enable_netflow_collection = false;
+bool enable_pcap_collection = false;
 
 // Time consumed by reaclculation for all IPs
 struct timeval speed_calculation_time;
@@ -168,11 +160,6 @@ double average_calculation_amount = 15;
 
 // Show average or absolute value of speed 
 bool print_average_traffic_counts = true;
-
-#ifdef PCAP
-// Enlarge receive buffer for PCAP for minimize packet drops
-unsigned int pcap_buffer_size_mbytes = 10;
-#endif
 
 // Key used for sorting clients in output.  Allowed sort params: packets/bytes
 string sort_parameter = "packets";
@@ -361,11 +348,6 @@ boost::mutex flow_counter;
 redisContext *redis_context = NULL;
 #endif
 
-#ifdef PCAP
-// pcap handler, we want it as global variable beacuse it used in singnal handler
-pcap_t* descr = NULL;
-#endif
-
 #ifdef PF_RING
 struct thread_stats {
     u_int64_t __padding_0[8];
@@ -403,9 +385,6 @@ map_for_counters GeoIpCounter;
 map<uint32_t, banlist_item> ban_list;
 map<uint32_t, vector<simple_packet> > ban_list_details;
 
-// Standard shift for type DLT_EN10MB, Ethernet
-unsigned int DATA_SHIFT_VALUE = 14;
-
 vector<subnet> our_networks;
 vector<subnet> whitelist_networks;
 
@@ -417,7 +396,6 @@ bool we_do_real_ban = true;
 void block_all_traffic_with_82599_hardware_filtering(string client_ip_as_string);
 #endif
 
-string get_pcap_stats();
 string get_pf_ring_stats();
 bool zc_main_loop(const char* device);
 unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp);
@@ -455,9 +433,7 @@ void copy_networks_from_string_form_to_binary(vector<string> networks_list_as_st
 
 bool file_exists(string path);
 void traffic_draw_programm();
-void pcap_main_loop(const char* dev);
 bool pf_ring_main_loop(const char* dev);
-void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *packetptr);
 void ulog_main_loop();
 void signal_handler(int signal_number);
 uint32_t convert_cidr_to_binary_netmask(unsigned int cidr);
@@ -774,8 +750,6 @@ bool load_configuration_file() {
     ifstream config_file (global_config_path.c_str());
     string line;
 
-    map<string, std::string> configuration_map;
-    
     if (!config_file.is_open()) {
         logger<< log4cpp::Priority::ERROR<<"Can't open config file";
         return false;
@@ -857,6 +831,14 @@ bool load_configuration_file() {
             enable_data_collection_from_mirror = true;
         } else {
             enable_data_collection_from_mirror = false;
+        }
+    }
+
+    if (configuration_map.count("pcap") != 0) {
+        if (configuration_map["pcap"] == "on") {
+            enable_pcap_collection = true;
+        } else {
+            enable_pcap_collection = false;
         }
     }
 
@@ -1259,68 +1241,6 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
     */
 }
 #endif
-
-// We do not use this function now! It's buggy!
-void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *packetptr) {
-    struct ip* iphdr;
-    struct tcphdr* tcphdr;
-    struct udphdr* udphdr;
-
-    struct ether_header *eptr;    /* net/ethernet.h */
-    eptr = (struct ether_header* )packetptr;
-
-    if ( ntohs(eptr->ether_type) ==  VLAN_ETHERTYPE ) {
-        // It's tagged traffic we should sjoft for 4 bytes for getting the data
-        packetptr += DATA_SHIFT_VALUE + VLAN_HDRLEN;
-    } else if (ntohs(eptr->ether_type) == IP_ETHERTYPE) {
-        // Skip the datalink layer header and get the IP header fields.
-        packetptr += DATA_SHIFT_VALUE;
-    } else if (ntohs(eptr->ether_type) == IP6_ETHERTYPE or ntohs(eptr->ether_type) == ARP_ETHERTYPE) {
-        // we know about it but does't not care now
-    } else  {
-        // printf("Packet with non standard ethertype found: 0x%x\n", ntohs(eptr->ether_type));
-    }
-
-    iphdr = (struct ip*)packetptr;
-
-    // src/dst UO is an in_addr, http://man7.org/linux/man-pages/man7/ip.7.html
-    uint32_t src_ip = iphdr->ip_src.s_addr;
-    uint32_t dst_ip = iphdr->ip_dst.s_addr;
-
-    // The ntohs() function converts the unsigned short integer netshort from network byte order to host byte order
-    unsigned int packet_length = ntohs(iphdr->ip_len); 
-
-    simple_packet current_packet;
-
-    // Advance to the transport layer header then parse and display
-    // the fields based on the type of hearder: tcp, udp or icmp
-    packetptr += 4*iphdr->ip_hl;
-    switch (iphdr->ip_p) {
-        case IPPROTO_TCP: 
-            tcphdr = (struct tcphdr*)packetptr;
-            current_packet.source_port = ntohs(tcphdr->source);
-            current_packet.destination_port = ntohs(tcphdr->dest);
-            break;
-        case IPPROTO_UDP:
-            udphdr = (struct udphdr*)packetptr;
-            current_packet.source_port = ntohs(udphdr->source);
-            current_packet.destination_port = ntohs(udphdr->dest);
-            break;
-        case IPPROTO_ICMP:
-            // there are no port for ICMP
-            current_packet.source_port = 0;
-            current_packet.destination_port = 0;
-            break;
-    }
-
-    current_packet.protocol = iphdr->ip_p;
-    current_packet.src_ip = src_ip;
-    current_packet.dst_ip = dst_ip;
-    current_packet.length = packet_length;
-    
-    // Do packet processing
-    process_packet(current_packet);
-}
 
 /* Process simple unified packet */
 void process_packet(simple_packet& current_packet) { 
@@ -1844,9 +1764,10 @@ void traffic_draw_programm() {
 
     output_buffer<<endl;
 
-#ifdef PCAP
-    output_buffer<<get_pcap_stats();
-#endif
+    if (enable_pcap_collection) {
+        output_buffer<<get_pcap_stats()<<"\n";
+    }
+
     // Application statistics
     output_buffer<<"Screen updated in:\t\t"<< drawing_thread_execution_time.tv_sec<<" sec "<<drawing_thread_execution_time.tv_usec<<" microseconds\n";
     output_buffer<<"Traffic calculated in:\t\t"<< speed_calculation_time.tv_sec<<" sec "<<speed_calculation_time.tv_usec<<" microseconds\n";
@@ -1976,11 +1897,6 @@ int main(int argc,char **argv) {
         exit(1);
     }
  
-#ifdef PCAP
-    char errbuf[PCAP_ERRBUF_SIZE]; 
-    struct pcap_pkthdr hdr;
-#endif 
-
     logger<<log4cpp::Priority::INFO<<"Read configuration file";
 
     bool load_config_result = load_configuration_file();
@@ -2056,6 +1972,11 @@ int main(int argc,char **argv) {
         netflow_process_collector_thread = boost::thread(start_netflow_collection, process_packet);
     }
 
+    boost::thread pcap_process_collector_thread;
+    if (enable_pcap_collection) {
+        pcap_process_collector_thread = boost::thread(start_pcap_collection, process_packet);
+    }
+
     if (enable_sflow_collection) {
         sflow_process_collector_thread.join();
     }
@@ -2075,10 +1996,6 @@ int main(int argc,char **argv) {
 // Main worker thread for packet handling
 void main_packet_process_task() {
     const char* device_name = work_on_interfaces.c_str();
-
-#ifdef PCAP
-    pcap_main_loop(device_name);
-#endif
 
 #ifdef PF_RING
     bool pf_ring_init_result = false;   
@@ -2518,72 +2435,12 @@ bool pf_ring_main_loop(const char* dev) {
 }
 #endif
  
-#ifdef PCAP 
-void pcap_main_loop(const char* dev) {
-    char errbuf[PCAP_ERRBUF_SIZE];
-    /* open device for reading in promiscuous mode */
-    int promisc = 1;
-
-    bpf_u_int32 maskp; /* subnet mask */
-    bpf_u_int32 netp;  /* ip */ 
-
-    logger<< log4cpp::Priority::INFO<<"Start listening on "<<dev;
-
-    /* Get the network address and mask */
-    pcap_lookupnet(dev, &netp, &maskp, errbuf);
-
-    descr = pcap_create(dev, errbuf);
-
-    if (descr == NULL) {
-        logger<< log4cpp::Priority::ERROR<<"pcap_create was failed with error: "<<errbuf;
-        exit(0);
-    }
-
-    // Setting up 1MB buffer
-    int set_buffer_size_res = pcap_set_buffer_size(descr, pcap_buffer_size_mbytes * 1024 * 1024);
-    if (set_buffer_size_res != 0 ) {
-        if (set_buffer_size_res == PCAP_ERROR_ACTIVATED) {
-            logger<< log4cpp::Priority::ERROR<<"Can't set buffer size because pcap already activated\n";
-            exit(1);
-        } else {
-            logger<< log4cpp::Priority::ERROR<<"Can't set buffer size due to error: "<<set_buffer_size_res;
-            exit(1);
-        }   
-    } 
-
-    if (pcap_set_promisc(descr, promisc) != 0) {
-        logger<< log4cpp::Priority::ERROR<<"Can't activate promisc mode for interface: "<<dev;
-        exit(1);
-    }
-
-    if (pcap_activate(descr) != 0) {
-        logger<< log4cpp::Priority::ERROR<<"Call pcap_activate was failed: "<<pcap_geterr(descr);
-        exit(1);
-    }
-
-    // man pcap-linktype
-    int link_layer_header_type = pcap_datalink(descr);
-
-    if (link_layer_header_type == DLT_EN10MB) {
-        DATA_SHIFT_VALUE = 14;
-    } else if (link_layer_header_type == DLT_LINUX_SLL) {
-        DATA_SHIFT_VALUE = 16;
-    } else {
-        logger<< log4cpp::Priority::INFO<<"We did not support link type:", link_layer_header_type;
-        exit(0);
-    }
-   
-    pcap_loop(descr, -1, (pcap_handler)parse_packet, NULL);
-}
-#endif
-
 // For correct programm shutdown by CTRL+C
 void signal_handler(int signal_number) {
 
-#ifdef PCAP
-    // Stop PCAP loop
-    pcap_breakloop(descr);
-#endif
+    if (enable_pcap_collection) {
+        stop_pcap_collection();
+    }
 
 #ifdef PF_RING
     pfring_breakloop(pf_ring_descr);
@@ -3480,20 +3337,4 @@ string get_pf_ring_stats() {
     return output_buffer.str();
 }
 #endif 
-
-#ifdef PCAP
-string get_pcap_stats() {
-    stringstream output_buffer;
-
-    struct pcap_stat current_pcap_stats;
-    if (pcap_stats(descr, &current_pcap_stats) == 0) { 
-        output_buffer<<"PCAP statistics"<<endl<<"Received packets: "<<current_pcap_stats.ps_recv<<endl
-            <<"Dropped packets: "<<current_pcap_stats.ps_drop
-            <<" ("<<int((double)current_pcap_stats.ps_drop/current_pcap_stats.ps_recv*100)<<"%)"<<endl
-             <<"Dropped by driver or interface: "<<current_pcap_stats.ps_ifdrop<<endl;
-    }    
-
-    return output_buffer.str();   
-}
-#endif
 
