@@ -10,7 +10,10 @@
 
 // For support uint32_t, uint16_t
 #include <sys/types.h>
-//#include <inttypes.h>
+
+// For config map operations
+#include <string>
+#include <map>
 
 // For support: IPPROTO_TCP, IPPROTO_ICMP, IPPROTO_UDP
 #include <sys/types.h>
@@ -22,12 +25,21 @@
 // Get log4cpp logger from main programm
 extern log4cpp::Category& logger;
 
+// Global configuration map 
+extern std::map<std::string, std::string> configuration_map;
+
 // This variable name should be uniq for every plugin!
 process_packet_pointer example_process_func_ptr = NULL;
 
 void start_example_collection(process_packet_pointer func_ptr) {
     logger<< log4cpp::Priority::INFO<<"Example plugin started";
     example_process_func_ptr = func_ptr;
+
+    std::string example_plugin_config_param = "";
+
+    if (configuration_map.count("some_plugin_param_from_global_config") != 0) {
+        example_plugin_config_param = configuration_map[ "some_plugin_param_from_global_config" ];
+    }
 
     // We should fill this structure for passing to FastNetMon
     simple_packet current_packet;
