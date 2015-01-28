@@ -51,9 +51,10 @@ int process_netflow_v9_template(u_int8_t *pkt, size_t len, u_int32_t source_id) 
         return 1;
     }
 
-    // TODO: what does it mean?
     if (ntohs(template_header->flowset_id) != NF9_TEMPLATE_FLOWSET_ID) {
-        logger<< log4cpp::Priority::ERROR<<"Confused template, we expect NF9_TEMPLATE_FLOWSET_ID but got "<<ntohs(template_header->flowset_id);
+        logger<< log4cpp::Priority::ERROR
+            <<"Function process_netflow_v9_template expects only NF9_TEMPLATE_FLOWSET_ID but got another id: "
+            <<ntohs(template_header->flowset_id);
         return 1;
     }
 
@@ -63,45 +64,48 @@ int process_netflow_v9_template(u_int8_t *pkt, size_t len, u_int32_t source_id) 
         u_int template_id = ntohs(tmplh->template_id);
         u_int count = ntohs(tmplh->count);
         offset += sizeof(*tmplh);
-    
-        logger<< log4cpp::Priority::INFO<<"Template template_id is:"<<template_id;  
+
+        //logger<< log4cpp::Priority::INFO<<"Template template_id is:"<<template_id;  
  
         u_int total_size = 0;
 
-        u_int i = 0;
-        for (i = 0; i < count; i++) { 
+        netflow9_template_records_map template_records_map;
+        for (u_int i = 0; i < count; i++) { 
             if (offset >= len) {
                 logger<< log4cpp::Priority::ERROR<<"short netflow v.9 flowset  template";
                 return 1;
             }
 
-
             struct NF9_TEMPLATE_FLOWSET_RECORD *tmplr = (struct NF9_TEMPLATE_FLOWSET_RECORD *)(pkt + offset);
-            struct peer_nf9_record current_record;
 
-            current_record.type = ntohs(tmplr->type);
-            current_record.len  = ntohs(tmplr->length);
-           
-            field_template.records.push_back(current_record);
+            u_int record_type   = ntohs(tmplr->type);
+            u_int record_length = ntohs(tmplr->length);
+
+            template_records_map[record_type] = record_length;
+
+            //logger<< log4cpp::Priority::INFO<<"type: "<<ntohs(tmplr->type)<<" length:"<<ntohs(tmplr->length);
  
             offset += sizeof(*tmplr);
-            total_size += current_record.len;
-
-            //if (total_size > peers->max_template_len) {
-            //   logger<< log4cpp::Priority::ERROR<<"Template too large!";
-            //    return 1;
-            //}
+            total_size += record_length;
 
             // TODO: introduce nf9_check_rec_len
         } 
 
-        field_template.num_records = i;
+        field_template.num_records = count;
         field_template.total_len = total_size; 
-    
-        global_templates_array[ template_id ] = field_template;
+  
+        field_template.records = template_records_map;
+ 
+        // TODO: update time to time template data
+        if (peer_nf9_find_template(source_id, template_id) != NULL) {
+            logger<< log4cpp::Priority::INFO<<"We already have information about this template with id:"<<template_id;
+            continue;
+        } else {
+            global_templates_array[ template_id ] = field_template;
+        }
     }
 
-    return 1;
+    return 0;
 }
 
 int process_netflow_v9_data(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr, u_int32_t source_id) {
@@ -175,7 +179,7 @@ void process_netflow_packet_v9(u_int len, u_int8_t *packet) {
 
         flowset = (struct NF9_FLOWSET_HEADER_COMMON *)(packet + offset);
 
-        flowset_id = ntohs(flowset->flowset_id);
+        flowset_id  = ntohs(flowset->flowset_id);
         flowset_len = ntohs(flowset->length);
 
         /*
