@@ -29,8 +29,7 @@ struct peer_nf9_record {
         u_int len;
 };
 
-
-typedef std::map <u_int, u_int> netflow9_template_records_map;
+typedef std::vector <struct peer_nf9_record> netflow9_template_records_map;
 
 /* A NetFlow v.9 template record */
 struct peer_nf9_template {
@@ -38,7 +37,6 @@ struct peer_nf9_template {
         u_int num_records;
         u_int total_len;
         netflow9_template_records_map records;
-        //std::vector <struct peer_nf9_record> records;
 };
 
 

@@ -84,9 +84,13 @@ int process_netflow_v9_template(u_int8_t *pkt, size_t len, u_int32_t source_id) 
             u_int record_type   = ntohs(tmplr->type);
             u_int record_length = ntohs(tmplr->length);
 
-            template_records_map[record_type] = record_length;
+            struct peer_nf9_record current_record;
+            current_record.type = record_type;
+            current_record.len  = record_length;
 
-            //logger<< log4cpp::Priority::INFO<<"type: "<<ntohs(tmplr->type)<<" length:"<<ntohs(tmplr->length);
+            template_records_map.push_back(current_record);
+
+            logger<< log4cpp::Priority::INFO<<"Learn new template type: "<<ntohs(tmplr->type)<<" length:"<<ntohs(tmplr->length);
  
             offset += sizeof(*tmplr);
             total_size += record_length;
@@ -172,8 +176,8 @@ int nf9_flowset_to_store(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr, 
 
     // We should iterate over all available template fields
     for (netflow9_template_records_map::iterator iter = template_records.begin(); iter != template_records.end(); iter++) {
-        u_int record_type   = iter->first;
-        u_int record_length = iter->second;
+        u_int record_type   = iter->type;
+        u_int record_length = iter->len;
 
         nf9_rec_to_flow(record_type, record_length, pkt + offset, packet);
         logger<< log4cpp::Priority::INFO<<"Read data with type: "<<record_type<<" and length:"<<record_length;
