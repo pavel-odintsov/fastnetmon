@@ -32,6 +32,9 @@ process_packet_pointer netflow_process_func_ptr = NULL;
 
 std::map<u_int, struct peer_nf9_template> global_templates_array;
 
+/* Prototypes */
+int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simple_packet& packet, netflow9_template_records_map& template_records);
+
 struct peer_nf9_template* peer_nf9_find_template(u_int32_t source_id, u_int flowset_id) {
     // TODO: we ignore source_id !!! FIX IT
 
@@ -117,23 +120,22 @@ int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simp
 
 #define V9_FIELD(v9_field, store_field, flow_field) \
         case v9_field: \
-                BE_COPY(flow->flow_field); \
+                BE_COPY(packet.flow_field); \
                 break
 #define V9_FIELD_ADDR(v9_field, store_field, flow_field) \
         case v9_field: \
                 memcpy(&packet.flow_field, data, record_length); \
                 break
-/*
-        V9_FIELD(NF9_IN_BYTES, OCTETS, octets.flow_octets);
-        V9_FIELD(NF9_IN_PACKETS, PACKETS, packets.flow_packets);
-        V9_FIELD(NF9_IN_PROTOCOL, PROTO_FLAGS_TOS, pft.protocol);
-        V9_FIELD(NF9_TCP_FLAGS, PROTO_FLAGS_TOS, pft.tcp_flags);
-        V9_FIELD(NF9_L4_SRC_PORT, SRCDST_PORT, ports.src_port);
-        V9_FIELD(NF9_L4_DST_PORT, SRCDST_PORT, ports.dst_port);
-*/  
+        V9_FIELD(NF9_IN_BYTES,    OCTETS,           length);
+        V9_FIELD(NF9_IN_PACKETS,  PACKETS,          number_of_packets);
+        V9_FIELD(NF9_IN_PROTOCOL, PROTO_FLAGS_TOS,  protocol);
+        V9_FIELD(NF9_TCP_FLAGS,   PROTO_FLAGS_TOS,  flags);
+        V9_FIELD(NF9_L4_SRC_PORT, SRCDST_PORT,      source_port);
+        V9_FIELD(NF9_L4_DST_PORT, SRCDST_PORT,      destination_port);
       
         V9_FIELD_ADDR(NF9_IPV4_SRC_ADDR, SRC_ADDR4, src_ip);
         V9_FIELD_ADDR(NF9_IPV4_DST_ADDR, DST_ADDR4, dst_ip);
+
         //V9_FIELD(NF9_SRC_TOS, PROTO_FLAGS_TOS, pft.tos);
         //V9_FIELD(NF9_SRC_MASK, AS_INFO, asinf.src_mask);
         //V9_FIELD(NF9_INPUT_SNMP, IF_INDICES, ifndx.if_index_in);
@@ -159,8 +161,32 @@ int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simp
         return 0;
 }
 
-int nf9_flowset_to_store(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr) {
-    
+int nf9_flowset_to_store(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr, netflow9_template_records_map& template_records) {
+    //if (template->total_len > len)
+    //    return 1;
+
+    u_int offset = 0;
+
+    simple_packet packet;
+    packet.ts.tv_sec = ntohl(nf9_hdr->time_sec);
+
+    // We should iterate over all available template fields
+    for (netflow9_template_records_map::iterator iter = template_records.begin(); iter != template_records.end(); iter++) {
+        u_int record_type   = iter->first;
+        u_int record_length = iter->second;
+
+        nf9_rec_to_flow(record_type, record_length, pkt + offset, packet);
+        logger<< log4cpp::Priority::INFO<<"Read data with type: "<<record_type<<" and length:"<<record_length;
+
+        offset += record_length;
+    }
+
+    // decode data in network byte order to host byte order
+    packet.length            = ntohl(packet.length);
+    packet.number_of_packets = ntohl(packet.number_of_packets);
+
+    // pass data to FastNetMon
+    netflow_process_func_ptr(packet);
 }
 
 int process_netflow_v9_data(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr, u_int32_t source_id) {
@@ -197,7 +223,7 @@ int process_netflow_v9_data(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hd
 
     for (u_int i = 0; i < num_flowsets; i++) {
         // process whole flowset
-        nf9_flowset_to_store(pkt + offset, flowset_template->total_len, nf9_hdr);
+        nf9_flowset_to_store(pkt + offset, flowset_template->total_len, nf9_hdr, flowset_template->records);
 
         offset += flowset_template->total_len;
     }
