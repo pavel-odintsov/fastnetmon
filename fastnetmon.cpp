@@ -390,6 +390,9 @@ std::vector<subnet> whitelist_networks;
 // Ban enable/disable flag
 bool we_do_real_ban = true;
 
+bool process_incoming_traffic = true;
+bool process_outgoing_traffic = true;
+
 // Prototypes
 #ifdef HWFILTER_LOCKING
 void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_string);
@@ -825,6 +828,14 @@ bool load_configuration_file() {
         }
     }
 
+    if (configuration_map.count("process_incoming_traffic") != 0) {
+        process_incoming_traffic = configuration_map[ "process_incoming_traffic" ] == "on" ? true : false;
+    }
+
+    if (configuration_map.count("process_outgoing_traffic") != 0) {
+        process_outgoing_traffic = configuration_map[ "process_outgoing_traffic" ] == "on" ? true : false;
+    }
+
     if (configuration_map.count("mirror") != 0) { 
         if (configuration_map["mirror"] == "on") {
             enable_data_collection_from_mirror = true;
@@ -1254,6 +1265,11 @@ void process_packet(simple_packet& current_packet) {
     // Subnet for found IPs
     unsigned long subnet = 0;
     direction packet_direction = get_packet_direction(current_packet.src_ip, current_packet.dst_ip, subnet);
+
+    // Skip processing of specific traffic direction
+    if ( (packet_direction == INCOMING && !process_incoming_traffic) or (packet_direction == OUTGOING && !process_outgoing_traffic) ) {
+        return;
+    }
 
     uint32_t subnet_in_host_byte_order = 0;
     // We operate in host bytes order and need to convert subnet
