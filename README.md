@@ -23,7 +23,7 @@ Features:
 - L2TP decapsulation of nested packets
 - PF_RING ZC/DNA support (wire speed processing on tens of MPPS but need [license](http://www.ntop.org/products/pf_ring/))
 - Can process ![sFLOW](http://sflow.org/images/sflowlogo.gif) v5
-- Can process NetFlow v5
+- Can process NetFlow v5 and v9
 - Can use PCAP for packet sniffing
 - Can work on mirror/SPAN ports
 - Can work on server/soft-router
