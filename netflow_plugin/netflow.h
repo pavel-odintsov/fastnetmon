@@ -248,5 +248,32 @@ struct NF10_DATA_FLOWSET_HEADER {
 /* ... */
 #define NF10_IPV6_NEXT_HOP		62
 
+// copy & paste from store.h
+
+/*
+ * Optional flow fields, specify what is stored for the flow
+ * NB - the flow records appear in this order on disk
+ */
+#define STORE_FIELD_TAG                 (1U)
+#define STORE_FIELD_RECV_TIME           (1U<<1)
+#define STORE_FIELD_PROTO_FLAGS_TOS     (1U<<2)
+#define STORE_FIELD_AGENT_ADDR4         (1U<<3)
+#define STORE_FIELD_AGENT_ADDR6         (1U<<4)
+#define STORE_FIELD_SRC_ADDR4           (1U<<5)
+#define STORE_FIELD_SRC_ADDR6           (1U<<6)
+#define STORE_FIELD_DST_ADDR4           (1U<<7)
+#define STORE_FIELD_DST_ADDR6           (1U<<8)
+#define STORE_FIELD_GATEWAY_ADDR4       (1U<<9)
+#define STORE_FIELD_GATEWAY_ADDR6       (1U<<10)
+#define STORE_FIELD_SRCDST_PORT         (1U<<11)
+#define STORE_FIELD_PACKETS             (1U<<12)
+#define STORE_FIELD_OCTETS              (1U<<13)
+#define STORE_FIELD_IF_INDICES          (1U<<14)
+#define STORE_FIELD_AGENT_INFO          (1U<<15)
+#define STORE_FIELD_FLOW_TIMES          (1U<<16)
+#define STORE_FIELD_AS_INFO             (1U<<17)
+#define STORE_FIELD_FLOW_ENGINE_INFO    (1U<<18)
+
+
 #endif /* _NETFLOW_H */
 

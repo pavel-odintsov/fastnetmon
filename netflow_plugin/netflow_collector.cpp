@@ -108,6 +108,61 @@ int process_netflow_v9_template(u_int8_t *pkt, size_t len, u_int32_t source_id) 
     return 0;
 }
 
+int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simple_packet& packet) {
+        /* XXX: use a table-based interpreter */
+        switch (record_type) {
+
+/* Copy an int (possibly shorter than the target) keeping their LSBs aligned */
+#define BE_COPY(a) memcpy((u_char*)&a + (sizeof(a) - record_length), data, record_length);
+
+#define V9_FIELD(v9_field, store_field, flow_field) \
+        case v9_field: \
+                BE_COPY(flow->flow_field); \
+                break
+#define V9_FIELD_ADDR(v9_field, store_field, flow_field) \
+        case v9_field: \
+                memcpy(&packet.flow_field, data, record_length); \
+                break
+/*
+        V9_FIELD(NF9_IN_BYTES, OCTETS, octets.flow_octets);
+        V9_FIELD(NF9_IN_PACKETS, PACKETS, packets.flow_packets);
+        V9_FIELD(NF9_IN_PROTOCOL, PROTO_FLAGS_TOS, pft.protocol);
+        V9_FIELD(NF9_TCP_FLAGS, PROTO_FLAGS_TOS, pft.tcp_flags);
+        V9_FIELD(NF9_L4_SRC_PORT, SRCDST_PORT, ports.src_port);
+        V9_FIELD(NF9_L4_DST_PORT, SRCDST_PORT, ports.dst_port);
+*/  
+      
+        V9_FIELD_ADDR(NF9_IPV4_SRC_ADDR, SRC_ADDR4, src_ip);
+        V9_FIELD_ADDR(NF9_IPV4_DST_ADDR, DST_ADDR4, dst_ip);
+        //V9_FIELD(NF9_SRC_TOS, PROTO_FLAGS_TOS, pft.tos);
+        //V9_FIELD(NF9_SRC_MASK, AS_INFO, asinf.src_mask);
+        //V9_FIELD(NF9_INPUT_SNMP, IF_INDICES, ifndx.if_index_in);
+        //V9_FIELD(NF9_DST_MASK, AS_INFO, asinf.dst_mask);
+        //V9_FIELD(NF9_OUTPUT_SNMP, IF_INDICES, ifndx.if_index_out);
+        //V9_FIELD(NF9_SRC_AS, AS_INFO, asinf.src_as);
+        //V9_FIELD(NF9_DST_AS, AS_INFO, asinf.dst_as);
+        //V9_FIELD(NF9_LAST_SWITCHED, FLOW_TIMES, ftimes.flow_finish);
+        //V9_FIELD(NF9_FIRST_SWITCHED, FLOW_TIMES, ftimes.flow_start);
+        //V9_FIELD(NF9_IPV6_SRC_MASK, AS_INFO, asinf.src_mask);
+        //V9_FIELD(NF9_IPV6_DST_MASK, AS_INFO, asinf.dst_mask);
+        //V9_FIELD(NF9_ENGINE_TYPE, FLOW_ENGINE_INFO, finf.engine_type);
+        //V9_FIELD(NF9_ENGINE_ID, FLOW_ENGINE_INFO, finf.engine_id);
+        //V9_FIELD_ADDR(NF9_IPV4_NEXT_HOP, GATEWAY_ADDR4, gateway_addr, 4, INET);
+        //V9_FIELD_ADDR(NF9_IPV6_SRC_ADDR, SRC_ADDR6, src_addr, 6, INET6);
+        //V9_FIELD_ADDR(NF9_IPV6_DST_ADDR, DST_ADDR6, dst_addr, 6, INET6);
+        //V9_FIELD_ADDR(NF9_IPV6_NEXT_HOP, GATEWAY_ADDR6, gateway_addr, 6, INET6);
+
+#undef V9_FIELD
+#undef V9_FIELD_ADDR
+#undef BE_COPY
+        }
+        return 0;
+}
+
+int nf9_flowset_to_store(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr) {
+    
+}
+
 int process_netflow_v9_data(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr, u_int32_t source_id) {
     struct NF9_DATA_FLOWSET_HEADER *dath = (struct NF9_DATA_FLOWSET_HEADER *)pkt;
 
@@ -141,7 +196,8 @@ int process_netflow_v9_data(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hd
     }
 
     for (u_int i = 0; i < num_flowsets; i++) {
-        // Do processing
+        // process whole flowset
+        nf9_flowset_to_store(pkt + offset, flowset_template->total_len, nf9_hdr);
 
         offset += flowset_template->total_len;
     }
