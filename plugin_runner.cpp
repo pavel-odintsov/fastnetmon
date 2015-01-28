@@ -189,7 +189,7 @@ int main(int argc, char *argv[]) {
     init_logging(); 
     
     if (argc < 2) {
-        std::cout<<"Please specify sflow or netflow as param";
+        std::cout<<"Please specify sflow or netflow as param"<<std::endl;
         return 1;
     }
 
@@ -203,7 +203,7 @@ int main(int argc, char *argv[]) {
         std::cout<<"Starting pcap"<<std::endl;
         start_pcap_collection(process_packet);
     } else {
-        std::cout<<"Bad plugin name!";
+        std::cout<<"Bad plugin name!"<<std::endl;
     }
 }
 
