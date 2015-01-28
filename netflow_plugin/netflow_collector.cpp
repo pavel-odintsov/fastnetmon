@@ -28,6 +28,8 @@ extern log4cpp::Category& logger;
 #include "netflow_collector.h"
 #include "netflow.h"
 
+// TODO: add per source uniq templates support
+
 process_packet_pointer netflow_process_func_ptr = NULL;
 
 std::map<u_int, struct peer_nf9_template> global_templates_array;
@@ -90,7 +92,7 @@ int process_netflow_v9_template(u_int8_t *pkt, size_t len, u_int32_t source_id) 
 
             template_records_map.push_back(current_record);
 
-            logger<< log4cpp::Priority::INFO<<"Learn new template type: "<<ntohs(tmplr->type)<<" length:"<<ntohs(tmplr->length);
+            //logger<< log4cpp::Priority::INFO<<"Learn new template type: "<<ntohs(tmplr->type)<<" length:"<<ntohs(tmplr->length);
  
             offset += sizeof(*tmplr);
             total_size += record_length;
@@ -105,7 +107,7 @@ int process_netflow_v9_template(u_int8_t *pkt, size_t len, u_int32_t source_id) 
  
         // TODO: update time to time template data
         if (peer_nf9_find_template(source_id, template_id) != NULL) {
-            logger<< log4cpp::Priority::INFO<<"We already have information about this template with id:"<<template_id;
+            // logger<< log4cpp::Priority::INFO<<"We already have information about this template with id:"<<template_id;
             continue;
         } else {
             global_templates_array[ template_id ] = field_template;
@@ -180,7 +182,7 @@ int nf9_flowset_to_store(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr, 
         u_int record_length = iter->len;
 
         nf9_rec_to_flow(record_type, record_length, pkt + offset, packet);
-        logger<< log4cpp::Priority::INFO<<"Read data with type: "<<record_type<<" and length:"<<record_length;
+        //logger<< log4cpp::Priority::INFO<<"Read data with type: "<<record_type<<" and length:"<<record_length;
 
         offset += record_length;
     }
@@ -188,6 +190,29 @@ int nf9_flowset_to_store(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr, 
     // decode data in network byte order to host byte order
     packet.length            = ntohl(packet.length);
     packet.number_of_packets = ntohl(packet.number_of_packets);
+
+    packet.protocol = ntohl(packet.protocol);
+
+    // Set protocol
+    switch (packet.protocol) {
+        case 1: {
+            packet.protocol = IPPROTO_ICMP;
+            
+            packet.source_port = 0;
+            packet.destination_port = 0;
+        }
+        break;
+
+        case 6: {
+            packet.protocol = IPPROTO_TCP;
+        }
+        break;
+
+        case 17: {
+            packet.protocol = IPPROTO_UDP;
+        }
+        break;
+    }
 
     // pass data to FastNetMon
     netflow_process_func_ptr(packet);
@@ -202,13 +227,14 @@ int process_netflow_v9_data(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hd
     }
 
     u_int flowset_id = ntohs(dath->c.flowset_id);
-    logger<< log4cpp::Priority::INFO<<"We have data with flowset_id: "<<flowset_id;
+    //logger<< log4cpp::Priority::INFO<<"We have data with flowset_id: "<<flowset_id;
 
     // We should find template here
     struct peer_nf9_template *flowset_template = peer_nf9_find_template(source_id, flowset_id); 
     
     if (flowset_template == NULL) {
-        logger<< log4cpp::Priority::INFO<<"We haven't template for flowset_id: "<<flowset_id<<" but it's not an error if we got it shortly";
+        logger<< log4cpp::Priority::INFO<<"We haven't template for flowset_id: "<<flowset_id
+            <<" but it's not an error if this message go away in 5-10 seconds. We need some time to learn it!";
         return 0;
     }
 
@@ -236,7 +262,7 @@ int process_netflow_v9_data(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hd
 }
 
 void process_netflow_packet_v9(u_int len, u_int8_t *packet) {
-    logger<< log4cpp::Priority::INFO<<"We get v9 netflow packet!";
+    //logger<< log4cpp::Priority::INFO<<"We get v9 netflow packet!";
 
     struct NF9_HEADER *nf9_hdr = (struct NF9_HEADER*)packet;
     struct NF9_FLOWSET_HEADER_COMMON *flowset;
@@ -251,7 +277,7 @@ void process_netflow_packet_v9(u_int len, u_int8_t *packet) {
     count = ntohs(nf9_hdr->c.flows);
     source_id = ntohl(nf9_hdr->source_id);
 
-    logger<< log4cpp::Priority::INFO<<"Template source id: "<<source_id;
+    // logger<< log4cpp::Priority::INFO<<"Template source id: "<<source_id;
 
     offset = sizeof(*nf9_hdr);
     total_flows = 0;
@@ -282,7 +308,7 @@ void process_netflow_packet_v9(u_int len, u_int8_t *packet) {
 
         switch (flowset_id) {
             case NF9_TEMPLATE_FLOWSET_ID:
-                logger<< log4cpp::Priority::INFO<<"We read template";
+                // logger<< log4cpp::Priority::INFO<<"We read template";
                 if (process_netflow_v9_template(packet + offset, flowset_len, source_id) != 0) {
                     logger<<log4cpp::Priority::ERROR<<"Function process_netflow_v9_template executed with errors";
                     break;
@@ -297,7 +323,7 @@ void process_netflow_packet_v9(u_int len, u_int8_t *packet) {
                     break;
                 }
 
-                logger<< log4cpp::Priority::INFO<<"We read data";
+                // logger<< log4cpp::Priority::INFO<<"We read data";
 
                 if (process_netflow_v9_data(packet + offset, flowset_len, nf9_hdr, source_id) != 0) {
                     logger<< log4cpp::Priority::ERROR<<"Can't process function process_netflow_v9_data correctly";
