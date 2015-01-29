@@ -172,14 +172,14 @@ sub install {
 
     mkdir $fastnetmon_dir;
 
-    print "Install fastnetmon to dir $fastnetmon_dir";
+    print "Install fastnetmon to dir $fastnetmon_dir\n";
     `cp $fastnetmon_build_binary_path $fastnetmon_dir/fastnetmon`;
     `cp /usr/src/fastnetmon/build/fastnetmon_client $fastnetmon_dir/fastnetmon_client`;
 
     my $fastnetmon_config_path = "/etc/fastnetmon.conf";
     unless (-e $fastnetmon_config_path) {
         print "Create stub conif\n";
-        `cp fastnetmon.conf $fastnetmon_config_path`;
+        `cp /usr/src/fastnetmon/fastnetmon.conf $fastnetmon_config_path`;
     
         my @interfaces = get_active_network_interfaces();
         my $interfaces_as_list = join ',', @interfaces;
