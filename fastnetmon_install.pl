@@ -42,6 +42,8 @@ sub install {
     my $kernel_version = `uname -r`;
     chomp $kernel_version;
 
+    my $we_have_pfring_support = '';
+
     print "Install PF_RING dependency with package manager\n";
 
     if ($distro_type eq 'debian') {
@@ -85,30 +87,36 @@ sub install {
     
     if (scalar grep (/\[PF_RING\] Initialized correctly/, @dmesg) > 0) {
         print "PF_RING loaded correctly\n";
+
+        $we_have_pfring_support = 1;
     } else {
-        die "PF_RING load error!";
+        warn "PF_RING load error! We disable PF_RING plugin";
+
+        $we_have_pfring_support = '';
     }
 
-    print "Build PF_RING lib\n";
-    # Because we can't run configure from another folder because it can't find ZC dependency :(
-    chdir "$pf_ring_sources_path/userland/lib";
-    `./configure --prefix=/opt/pf_ring_$pf_ring_version`;
-    `make`;
-    `make install`; 
+    if ($we_have_pfring_support) {
+        print "Build PF_RING lib\n";
+        # Because we can't run configure from another folder because it can't find ZC dependency :(
+        chdir "$pf_ring_sources_path/userland/lib";
+        `./configure --prefix=/opt/pf_ring_$pf_ring_version`;
+        `make`;
+        `make install`; 
 
-    print "Create library symlink\n";
-    unlink "/opt/pf_ring";
-    `ln -s /opt/pf_ring_$pf_ring_version /opt/pf_ring`;
+        print "Create library symlink\n";
+        unlink "/opt/pf_ring";
+        `ln -s /opt/pf_ring_$pf_ring_version /opt/pf_ring`;
 
-    print "Add pf_ring to ld.so.conf\n";
-    my $pf_ring_ld_so_conf = "/etc/ld.so.conf.d/pf_ring.conf";
+        print "Add pf_ring to ld.so.conf\n";
+        my $pf_ring_ld_so_conf = "/etc/ld.so.conf.d/pf_ring.conf";
     
-    open my $pf_ring_ld_so_conf_handle, ">", $pf_ring_ld_so_conf or die "Can't open $! for writing\n";
-    print {$pf_ring_ld_so_conf_handle} "/opt/pf_ring/lib";
-    close $pf_ring_ld_so_conf_handle;
+        open my $pf_ring_ld_so_conf_handle, ">", $pf_ring_ld_so_conf or die "Can't open $! for writing\n";
+        print {$pf_ring_ld_so_conf_handle} "/opt/pf_ring/lib";
+        close $pf_ring_ld_so_conf_handle;
 
-    print "Run ldconfig\n";
-    `ldconfig`; 
+        print "Run ldconfig\n";
+        `ldconfig`; 
+    }
 
     print "Install FastNetMon dependency list\n";
 
@@ -141,12 +149,17 @@ sub install {
     `mkdir /usr/src/fastnetmon/build`;
     chdir "/usr/src/fastnetmon/build";
 
-    if ($distro_type eq 'centos' && $distro_version >= 7) {
-        `cmake .. -DWE_USE_CUSTOM_LOG4CPP=on`;
-    } else {
-        `cmake ..`;
+    my $cmake_params = "";
+
+    unless ($we_have_pfring_support) {
+        $cmake_params .= " -DDISABLE_PF_RING_SUPPORT=ON";
     }
 
+    if ($distro_type eq 'centos' && $distro_version >= 7) {
+        $cmake_params .= " -DWE_USE_CUSTOM_LOG4CPP=on";
+    }
+
+    `cmake .. $cmake_params`;
     `make`;
 
     my $fastnetmon_dir = "/opt/fastnetmon";
