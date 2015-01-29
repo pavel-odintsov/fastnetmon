@@ -41,6 +41,11 @@ if (ENABLE_PFRING_SUPPORT)
     add_definitions(-DPF_RING)
 endif()
 
+if (WE_USE_CUSTOM_LOG4CPP) 
+    set(LOG4CPP_INCLUDE_DIRS /opt/log4cpp1.1.1/include)
+    set(LOG4CPPLIBRARIES /opt/log4cpp1.1.1/lib/liblog4cpp.so)	
+endif()
+
 # If you need hardware locking features
 # add_definitions(-DHWFILTER_LOCKING)
 
@@ -88,7 +93,13 @@ if(CURSES_FOUND)
 endif()
 
 # External libs
-target_link_libraries(fastnetmon log4cpp)
+if (WE_USE_CUSTOM_LOG4CPP)
+    include_directories(${LOG4CPP_INCLUDE_DIRS})
+    target_link_libraries(fastnetmon ${LOG4CPPLIBRARIES})
+else()
+    target_link_libraries(fastnetmon log4cpp)
+endif()
+
 target_link_libraries(fastnetmon numa)
 target_link_libraries(fastnetmon pthread)
 # For PF_RING and pcap plugin
