@@ -2221,17 +2221,18 @@ void *zc_packet_consumer_thread(void *_id) {
 }
 
 int max_packet_len(const char *device) { 
-    int max_len;
-    pfring *ring;
+    int max_len = 0;
 
-    ring = pfring_open(device, 1536, PF_RING_PROMISC);
+    pfring* ring = pfring_open(device, 1536, PF_RING_PROMISC);
 
     if (ring == NULL)
         return 1536;
 
-// pfring_get_max_packet_size added in 6.0.3
+// pfring_get_card_settings have added in 6.0.3
 #if RING_VERSION_NUM >= 0x060003
-    max_len = pfring_get_max_packet_size(ring);
+    pfring_card_settings settings;
+    pfring_get_card_settings(ring, &settings);
+    max_len = settings.max_packet_size;
 #else
     if (ring->dna.dna_mapped_device) {
         max_len = ring->dna.dna_dev.mem_info.rx.packet_memory_slot_len;
