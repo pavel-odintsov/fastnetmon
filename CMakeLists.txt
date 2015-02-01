@@ -77,7 +77,7 @@ set(Boost_NO_BOOST_CMAKE ON)
 # Enable detailed errors
 set(Boost_DETAILED_FAILURE_MSG ON)
 
-find_package(Boost COMPONENTS thread regex REQUIRED)
+find_package(Boost COMPONENTS thread regex system REQUIRED)
 
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
