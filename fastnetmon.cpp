@@ -1920,7 +1920,7 @@ int main(int argc,char **argv) {
     bool load_config_result = load_configuration_file();
 
     if (!load_config_result) {
-        fprintf(stderr, "Can't open config file %s, please create it!", global_config_path.c_str());
+        fprintf(stderr, "Can't open config file %s, please create it!\n", global_config_path.c_str());
         exit(1);
     }
 
