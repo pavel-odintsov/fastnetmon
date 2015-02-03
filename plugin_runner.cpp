@@ -14,6 +14,7 @@
 #include "netflow_plugin/netflow_collector.h"
 #include "sflow_plugin/sflow_collector.h"
 #include "pcap_plugin/pcap_collector.h"
+#include "pfring_plugin/pfring_collector.h"
 
 // log4cpp logging facility
 #include "log4cpp/Category.hh"
@@ -202,6 +203,9 @@ int main(int argc, char *argv[]) {
     } else if (strstr(argv[1], "pcap") != NULL) {
         std::cout<<"Starting pcap"<<std::endl;
         start_pcap_collection(process_packet);
+    } else if (strstr(argv[1], "pfring") != NULL) {
+        std::cout<<"Starting pf_ring"<<std::endl;
+        start_pfring_collection(process_packet);
     } else {
         std::cout<<"Bad plugin name!"<<std::endl;
     }
