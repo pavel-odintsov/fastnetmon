@@ -18,14 +18,12 @@ Features:
 - Can trigger block script if certain IP load network with big amount of packets per second
 - Can trigger block script if certain IP load network with big amount of bytes per second
 - Can trigger block script if certain IP load network with big amount of flows per second
-- VLAN untagging
-- MPLS traffic processing
-- L2TP decapsulation of nested packets
 - PF_RING ZC/DNA support (wire speed processing on tens of MPPS but need [license](http://www.ntop.org/products/pf_ring/))
 - Can process ![sFLOW](http://sflow.org/images/sflowlogo.gif) v5
 - Can process NetFlow v5 and v9
 - Can use PCAP for packet sniffing
 - Can work on mirror/SPAN ports
+- Support L2TP decapsulation, VLAN untagging and MPLS processing in mirror mode 
 - Can work on server/soft-router
 - Can detect DoS/DDoS in 1-2 seconds
 - Tested up to 10GE with 5-6 Mpps on Intel i7 2600 with Intel Nic 82599
