@@ -2805,7 +2805,6 @@ std::string print_time_t_in_fastnetmon_format(time_t current_time) {
     timeinfo = localtime (&current_time);
 
     strftime (buffer, sizeof(buffer), "%d_%m_%y_%H:%M:%S", timeinfo);
-    puts (buffer);
 
     return std::string(buffer);
 }
