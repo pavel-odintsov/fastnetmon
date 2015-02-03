@@ -39,6 +39,8 @@ if (ENABLE_PFRING_SUPPORT)
     set(PFRING_INCLUDE_DIRS /opt/pf_ring/include)
     set(PFRING_LIBRARIES /opt/pf_ring/lib/libpfring.so)
     add_definitions(-DPF_RING)
+
+    include_directories(${PFRING_INCLUDE_DIRS})
 endif()
 
 if (WE_USE_CUSTOM_LOG4CPP) 
@@ -61,6 +63,13 @@ add_library(netflow_plugin STATIC netflow_plugin/netflow_collector.cpp)
 # pcap plugin
 add_library(pcap_plugin STATIC pcap_plugin/pcap_collector.cpp)
 target_link_libraries(pcap_plugin pcap)
+
+if (ENABLE_PFRING_SUPPORT) 
+    add_library(pfring_plugin STATIC pfring_plugin/pfring_collector.cpp)
+    target_link_libraries(pfring_plugin ${PFRING_LIBRARIES})
+    target_link_libraries(pfring_plugin numa)
+    target_link_libraries(pfring_plugin pthread)
+endif()
 
 # example plugin
 add_library(example_plugin STATIC example_plugin/example_collector.cpp)
@@ -103,20 +112,18 @@ endif()
 
 target_link_libraries(fastnetmon numa)
 target_link_libraries(fastnetmon pthread)
-# For PF_RING and pcap plugin
-target_link_libraries(fastnetmon pcap)
 
 # Our libs
 target_link_libraries(fastnetmon patricia)
 
 # Our plugins
 target_link_libraries(fastnetmon sflow_plugin)
+
+if (ENABLE_PFRING_SUPPORT)
+target_link_libraries(fastnetmon pfring_plugin)
+endif()
+
 target_link_libraries(fastnetmon netflow_plugin)
 target_link_libraries(fastnetmon pcap_plugin)
 target_link_libraries(fastnetmon example_plugin)
 
-if (ENABLE_PFRING_SUPPORT)
-    # Custom PF_RING
-    include_directories(${PFRING_INCLUDE_DIRS})
-endif()
-target_link_libraries(fastnetmon ${PFRING_LIBRARIES})
