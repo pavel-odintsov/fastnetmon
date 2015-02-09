@@ -167,7 +167,7 @@ int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simp
         return 0;
 }
 
-int nf9_flowset_to_store(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr, netflow9_template_records_map& template_records) {
+void nf9_flowset_to_store(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr, netflow9_template_records_map& template_records) {
     //if (template->total_len > len)
     //    return 1;
 

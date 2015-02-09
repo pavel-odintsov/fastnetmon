@@ -215,7 +215,7 @@ void pcap_main_loop(const char* dev) {
     } else if (link_layer_header_type == DLT_LINUX_SLL) {
         DATA_SHIFT_VALUE = 16;
     } else {
-        logger<< log4cpp::Priority::INFO<<"We did not support link type:", link_layer_header_type;
+        logger<< log4cpp::Priority::INFO<<"We did not support link type:"<<link_layer_header_type;
         exit(0);
     }
    
