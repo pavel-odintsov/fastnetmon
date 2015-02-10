@@ -106,9 +106,15 @@ if (WE_USE_CUSTOM_LOG4CPP)
     include_directories(/opt/log4cpp1.1.1/include) 
 endif()
 
+# Try to find log4cpp library where it installed by mac ports
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-    # Try to find log4cpp library where it installed by mac ports
     FIND_LIBRARY(LOG4_CPP_LIRBARY_FOUNDER log4cpp /opt/local/lib REQUIRED)
+    set(LOG4CPP_LIBRARY_PATH ${LOG4_CPP_LIRBARY_FOUNDER}) 
+endif()
+
+# Try to find log4cpp library where it installed by FreeBSD's pkg
+if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
+    FIND_LIBRARY(LOG4_CPP_LIRBARY_FOUNDER log4cpp /usr/local/lib REQUIRED)
     set(LOG4CPP_LIBRARY_PATH ${LOG4_CPP_LIRBARY_FOUNDER}) 
 endif()
 
