@@ -21,17 +21,6 @@ make install
 modprobe pf_ring
 ```
 
-You can use precompiled and statically linced version of this tool without any compiling:
-```bash
-mkdir /root/fastnetmon
-cd /root/fastnetmon
-wget  https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/fastnetmon -Ofastnetmon
-chmod +x fastnetmon
-./fastnetmon eth0
-```
-
-If you want to use static version you can skip this guide to part about "networks_list".
-
 Build lib:
 ```bash
 # Debian
