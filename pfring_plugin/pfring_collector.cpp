@@ -593,9 +593,9 @@ bool zc_main_loop(const char* device) {
         if (!pf_ring_license_state) {
             logger<< log4cpp::Priority::ERROR<<"PF_RING ZC haven't license for device"<<device
                 <<" and running in trial mode and will work only 5 minutes! Please buy license or switch to vanilla PF_RING";
-        }  
+        } 
+#endif 
     }
-#endif
 
     for (int i = 0; i < zc_num_threads; i++) { 
         outzq[i] = pfring_zc_create_queue(zc, QUEUE_LEN);
