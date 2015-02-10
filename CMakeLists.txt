@@ -110,7 +110,6 @@ else()
     target_link_libraries(fastnetmon log4cpp)
 endif()
 
-target_link_libraries(fastnetmon numa)
 target_link_libraries(fastnetmon pthread)
 
 # Our libs
