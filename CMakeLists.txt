@@ -107,8 +107,9 @@ if (WE_USE_CUSTOM_LOG4CPP)
 endif()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-    # This path is default when log4cpp installed from ports
-    set(LOG4CPP_LIBRARY_PATH /opt/local/lib/liblog4cpp.dylib)
+    # Try to find log4cpp library where it installed by mac ports
+    FIND_LIBRARY(LOG4_CPP_LIRBARY_FOUNDER log4cpp /opt/local/lib REQUIRED)
+    set(LOG4CPP_LIBRARY_PATH ${LOG4_CPP_LIRBARY_FOUNDER}) 
 endif()
 
 target_link_libraries(fastnetmon ${LOG4CPP_LIBRARY_PATH})
