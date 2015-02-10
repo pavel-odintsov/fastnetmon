@@ -11,7 +11,7 @@ Why we write it? Because we can't find any software for solving this problem not
 
 - [Install manual for any Linux](INSTALL.md)
 - [Install manual for Mac OS X](MAC_OS_INSTALL.md)
-- [INstall manual for Slackware](SLACKWARE_INSTALL.md)
+- [Install manual for Slackware](SLACKWARE_INSTALL.md)
 
 [![Build Status](https://travis-ci.org/FastVPSEestiOu/fastnetmon.svg?branch=master)](https://travis-ci.org/FastVPSEestiOu/fastnetmon) [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/FastVPSEestiOu/fastnetmon?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
