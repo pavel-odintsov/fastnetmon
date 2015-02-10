@@ -5,7 +5,7 @@ Install dependencies:
 pkg install cmake git ncurses boost-all log4cpp
 ```
 
-Update liker paths:
+Update linker paths:
 ```
 /etc/rc.d/ldconfig restart
 ```
