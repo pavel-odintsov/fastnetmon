@@ -43,11 +43,6 @@ if (ENABLE_PFRING_SUPPORT)
     include_directories(${PFRING_INCLUDE_DIRS})
 endif()
 
-if (WE_USE_CUSTOM_LOG4CPP) 
-    set(LOG4CPP_INCLUDE_DIRS /opt/log4cpp1.1.1/include)
-    set(LOG4CPPLIBRARIES /opt/log4cpp1.1.1/lib/liblog4cpp.so)	
-endif()
-
 # If you need hardware locking features
 # add_definitions(-DHWFILTER_LOCKING)
 
@@ -102,13 +97,21 @@ if(CURSES_FOUND)
     target_link_libraries(fastnetmon_client ${CURSES_LIBRARIES})
 endif()
 
-# External libs
-if (WE_USE_CUSTOM_LOG4CPP)
-    include_directories(${LOG4CPP_INCLUDE_DIRS})
-    target_link_libraries(fastnetmon ${LOG4CPPLIBRARIES})
-else()
-    target_link_libraries(fastnetmon log4cpp)
+# Standard path for Linux
+set(LOG4CPP_LIBRARY_PATH log4cpp)
+
+# Non standard path on platforms where we compile log4cpp from sources
+if (WE_USE_CUSTOM_LOG4CPP) 
+    set(LOG4CPP_LIBRARY_PATH /opt/log4cpp1.1.1/lib/liblog4cpp.so)
+    include_directories(/opt/log4cpp1.1.1/include) 
 endif()
+
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    # This path is default when log4cpp installed from ports
+    set(LOG4CPP_LIBRARY_PATH /opt/local/lib/liblog4cpp.dylib)
+endif()
+
+target_link_libraries(fastnetmon ${LOG4CPP_LIBRARY_PATH})
 
 target_link_libraries(fastnetmon pthread)
 
