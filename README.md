@@ -10,6 +10,7 @@ What we do? We can detect hosts in OUR network with big amount of packets per se
 Why we write it? Because we can't find any software for solving this problem not in proprietary world not in open source. NetFlow based solutions has some [critical limitations](NETFLOW_DISADVANTAGES.md) for this task.
 
 [Install manual](INSTALL.md)
+[Install manual for Mac OS X](MAC_OS_INSTALL.md)
 
 [![Build Status](https://travis-ci.org/FastVPSEestiOu/fastnetmon.svg?branch=master)](https://travis-ci.org/FastVPSEestiOu/fastnetmon) [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/FastVPSEestiOu/fastnetmon?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
@@ -30,8 +31,9 @@ Features:
 - Complete plugin support
 
 Supported platforms:
-- Linux (Debian 6+, CentOS 6+, Ubuntu 12+)
-- FreeBSD 10+ (without PF_RING support, only sFLOW)
+- Linux (Debian 6/7, CentOS 6/7, Ubuntu 12+)
+- FreeBSD 10+
+- Mac OS X Yosemite 
 
 What is "flow" in FastNetMon terms? It's one or multiple connection udp, tcp, icmp with unique src IP, dst IP, src port, dst port and protocol.
 
