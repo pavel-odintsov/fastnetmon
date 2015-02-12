@@ -12,7 +12,8 @@ Update linker paths:
 
 
 ```bash
-cd /usr/src/
+mkdir /usr/local/src
+cd /usr/local/src
 git clone https://github.com/FastVPSEestiOu/fastnetmon.git
 cd fastnetmon
 mkdir build
