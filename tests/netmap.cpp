@@ -4,17 +4,23 @@
 #define NETMAP_WITH_LIBS
 #include <net/netmap_user.h>
 
+#include <boost/thread.hpp>
+
 // For pooling operations
 #include <poll.h>
 
-// Compilation on FreeBSD 10: clang++ netmap.cpp
+// How to compile: 
+// clang++ netmap.cpp -I /usr/local/include -L/usr/local/lib -lboost_thread -lboost_system
+
+int number_of_packets = 0;
 
 void consume_pkt(u_char* buffer, int len) {
-    printf("Got packet with length: %d", len);
+    //printf("Got packet with length: %d\n", len);
+    __sync_fetch_and_add(&number_of_packets, 1);
 }
 
 void receiver(void) {
-    struct  nm_desc *netmap_descriptor;
+    struct  nm_desc	*netmap_descriptor;
     struct  pollfd fds;
     struct  nm_pkthdr h;
     u_char* buf;
@@ -28,11 +34,11 @@ void receiver(void) {
     }
 
 
-    fds.fd  = NETMAP_FD(netmap_descriptor);
+    fds.fd     = NETMAP_FD(netmap_descriptor);
     fds.events = POLLIN;
 
     for (;;) {
-        poll(&fds,  1, -1);
+        poll(&fds,	1, -1);
         
         while ( (buf = nm_nextpkt(netmap_descriptor, &h)) )
             consume_pkt(buf, h.len);
@@ -42,7 +48,13 @@ void receiver(void) {
 }
 
 int main() {
-    printf("Hello\n");
-    receiver();
-}
+    boost::thread netmap_thread(receiver);
 
+    for (;;) {
+        sleep(1);
+        printf("We received %d packets in 1 second\n", number_of_packets);
+	number_of_packets = 0;
+    }
+  
+    netmap_thread.join();
+}
