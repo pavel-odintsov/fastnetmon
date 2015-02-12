@@ -14,6 +14,11 @@ KLD netmap.ko: depends on kernel - not available or version mismatch
 linker_load_file: Unsupported file type
 ```
 
+Enable netmap startup on server load:
+```bash
+echo 'netmap_load="YES"' >> /boot/loader.conf
+```
+
 And should rebuild kernel manually.
 
 Install SVN:
