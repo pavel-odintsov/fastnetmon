@@ -3,11 +3,11 @@ FastNetMon
 Author: [Pavel Odintsov](http://ru.linkedin.com/in/podintsov/) pavel.odintsov at gmail.com
 License: GPLv2
 
-FastNetMon - high performance DoS/DDoS and load analyzer builded on top of PF_RING.
+FastNetMon - high performance DoS/DDoS and netflowk load analyzer builded on top of multiple packet capture engines (PF_RING, sFLOW, Netflow, PCAP).
 
-What we do? We can detect hosts in OUR network with big amount of packets per second/bytes per second or flow per second incoming or outgoing from certain host. And we can call external script which can send notify, switch off server or blackhole this client.
+What we do? We can detect hosts in our own network with big amount of packets per second/bytes per second or flow per second incoming or outgoing from certain host. And we can call external script which can send notify, switch off server or blackhole this client.
 
-Why we write it? Because we can't find any software for solving this problem not in proprietary world not in open source. NetFlow based solutions has some [critical limitations](NETFLOW_DISADVANTAGES.md) for this task.
+Why we write it? Because we can't find any software for solving this problem not in proprietary world not in open source.
 
 - [Install manual for any Linux](INSTALL.md)
 - [Install manual for FreeBSD](FreeBSD_INSTALL.md)
