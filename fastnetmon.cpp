@@ -1160,13 +1160,13 @@ void process_packet(simple_packet& current_packet) {
     
     // Incerementi main and per protocol packet counters
     if (packet_direction == OUTGOING) {
-        uint32_t shift_in_vector = ntohl(current_packet.src_ip) - subnet_in_host_byte_order;
+        int64_t shift_in_vector = (int64_t)ntohl(current_packet.src_ip) - (int64_t)subnet_in_host_byte_order;
 
-        if (shift_in_vector >= itr->second.size()) {
+        if (shift_in_vector < 0 or shift_in_vector >= itr->second.size()) {
             logger<< log4cpp::Priority::ERROR<<"We tried to access to element with index "<<shift_in_vector
                 <<" which located outside allocated vector with size "<<itr->second.size();
             
-            logger<< log4cpp::Priority::INFO<<"We expect issues with this packet in OUTGOING direction: "<<print_simple_packet(current_packet);
+            logger<< log4cpp::Priority::ERROR<<"We expect issues with this packet in OUTGOING direction: "<<print_simple_packet(current_packet);
 
             return;
         } 
@@ -1238,9 +1238,9 @@ void process_packet(simple_packet& current_packet) {
         } 
 
     } else if (packet_direction == INCOMING) {
-        uint32_t shift_in_vector = ntohl(current_packet.dst_ip) - subnet_in_host_byte_order;
+        int64_t shift_in_vector = (int64_t)ntohl(current_packet.dst_ip) - (int64_t)subnet_in_host_byte_order;
 
-        if (shift_in_vector >= itr->second.size()) {
+        if (shift_in_vector < 0 or shift_in_vector >= itr->second.size()) {
             logger<< log4cpp::Priority::ERROR<<"We tried to access to element with index "<<shift_in_vector
                 <<" which located outside allocated vector with size "<<itr->second.size();
 
