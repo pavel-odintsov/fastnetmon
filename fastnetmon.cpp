@@ -355,6 +355,7 @@ bool process_outgoing_traffic = true;
 void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_string);
 #endif
 
+std::string get_net_address_from_network_as_string(std::string network_cidr_format);
 unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp);
 std::string get_printable_protocol_name(unsigned int protocol);
 void print_attack_details_to_file(std::string details, std::string client_ip_as_string,  attack_details current_attack);
@@ -715,7 +716,7 @@ bool load_configuration_file() {
         if (parsed_config.size() == 2) {
             configuration_map[ parsed_config[0] ] = parsed_config[1];
         } else {
-            logger<< log4cpp::Priority::ERROR<<"Can't parse config line: "<<line;
+            logger<< log4cpp::Priority::ERROR<<"Can't parse config line: '"<<line<<"'";
         }
     }
 
@@ -986,17 +987,41 @@ bool load_our_networks_list() {
     assert( convert_ip_as_string_to_uint("255.255.255.0")   == convert_cidr_to_binary_netmask(24) );
     assert( convert_ip_as_string_to_uint("255.255.255.255") == convert_cidr_to_binary_netmask(32) );
 
-    for( std::vector<std::string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) { 
-        if (ii->length() > 0 && is_cidr_subnet(ii->c_str())) { 
-            unsigned int cidr_mask = get_cidr_mask_from_network_as_string(*ii);
-
-            double base = 2;
-            total_number_of_hosts_in_our_networks += pow(base, 32-cidr_mask);
-
-            make_and_lookup(lookup_tree, const_cast<char*>(ii->c_str()));
-        } else {
-            logger<<log4cpp::Priority::ERROR<<"Can't parse line from subnet list: "<<*ii;
+    for ( std::vector<std::string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) {
+        if (ii->length() == 0) {
+            // Skip blank lines in subnet list file silently
+            continue;
         }
+
+        if (!is_cidr_subnet(ii->c_str())) { 
+            logger<<log4cpp::Priority::ERROR<<"Can't parse line from subnet list: '"<<*ii<<"'";
+            continue;
+        }
+       
+        std::string network_address_in_cidr_form = *ii;
+  
+        unsigned int cidr_mask = get_cidr_mask_from_network_as_string(network_address_in_cidr_form);
+        std::string network_address = get_net_address_from_network_as_string(network_address_in_cidr_form);
+
+        double base = 2;
+        total_number_of_hosts_in_our_networks += pow(base, 32-cidr_mask);
+
+        // Make sure it's "subnet address" and not an host address
+        uint32_t subnet_address_as_uint = convert_ip_as_string_to_uint(network_address);            
+        uint32_t subnet_address_netmask_binary = convert_cidr_to_binary_netmask(cidr_mask); 
+        uint32_t generated_subnet_address = subnet_address_as_uint & subnet_address_netmask_binary;
+
+        if (subnet_address_as_uint != generated_subnet_address) {
+            std::string new_network_address_as_string
+                = convert_ip_as_uint_to_string(generated_subnet_address) + "/" + convert_int_to_string(cidr_mask); 
+
+            logger<<log4cpp::Priority::WARN<<"We will use "<<new_network_address_as_string
+                <<" instead of "<<network_address_in_cidr_form<<" because it's host address";
+    
+            network_address_in_cidr_form = new_network_address_as_string;
+        }
+
+        make_and_lookup(lookup_tree, const_cast<char*>(network_address_in_cidr_form.c_str()));
     }    
 
     /* Preallocate data structures */
@@ -1005,7 +1030,7 @@ bool load_our_networks_list() {
 
     logger<<log4cpp::Priority::INFO<<"We start total zerofication of counters";
     zeroify_all_counters();
-    logger<<log4cpp::Priority::INFO<<"We finished it";
+    logger<<log4cpp::Priority::INFO<<"We finished zerofication";
 
     logger<<log4cpp::Priority::INFO<<"We loaded "<<networks_list_as_string.size()<<" subnets to our in-memory list of networks";
     logger<<log4cpp::Priority::INFO<<"Total number of monitored hosts (total size of all networks): "
@@ -1024,6 +1049,18 @@ unsigned int get_cidr_mask_from_network_as_string(std::string network_cidr_forma
     }
 
     return convert_string_to_integer(subnet_as_string[1]);
+}
+
+// extract 192.168.1.1 from 192.168.1.1/24
+std::string get_net_address_from_network_as_string(std::string network_cidr_format) {
+    std::vector<std::string> subnet_as_string;
+    split( subnet_as_string, network_cidr_format, boost::is_any_of("/"), boost::token_compress_on );
+
+    if (subnet_as_string.size() != 2) {
+        return 0;
+    }
+
+    return subnet_as_string[0];
 }
 
 void copy_networks_from_string_form_to_binary(std::vector<std::string> networks_list_as_string, std::vector<subnet>& our_networks ) {
