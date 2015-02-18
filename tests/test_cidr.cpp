@@ -28,7 +28,6 @@ uint32_t convert_ip_as_string_to_uint(std::string ip) {
 int main() {
     uint32_t network_zero = convert_ip_as_string_to_uint("10.10.10.0");
     uint32_t network_200 = convert_ip_as_string_to_uint("10.10.10.200"); 
-
     uint32_t binary_netmask = convert_cidr_to_binary_netmask(24);
 
     uint32_t generated_subnet_address = network_200 & binary_netmask; 

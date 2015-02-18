@@ -591,7 +591,7 @@ bool zc_main_loop(const char* device) {
         int pf_ring_license_state = pfring_zc_check_license();
 
         if (!pf_ring_license_state) {
-            logger<< log4cpp::Priority::ERROR<<"PF_RING ZC haven't license for device"<<device
+            logger<< log4cpp::Priority::WARN<<"PF_RING ZC haven't license for device"<<device
                 <<" and running in trial mode and will work only 5 minutes! Please buy license or switch to vanilla PF_RING";
         } 
 #endif 
