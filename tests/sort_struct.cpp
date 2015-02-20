@@ -9,6 +9,11 @@ bool compare_min(unsigned int a, unsigned int b) {
 	return a > b;  
 }
 
+
+bool compare_max(unsigned int a, unsigned int b) {
+	return a < b;  
+}
+
 template <class order_by_template_type>
 class priority_queue {
 	public:
@@ -39,11 +44,20 @@ class priority_queue {
 			return internal_list.front();
 		}
 		void print() {
-			// Sort will not damage heap
-			std::sort_heap (internal_list.begin(), internal_list.end(), compare_min);
+			// Create new list for sort because 
+			std::vector <order_by_template_type> sorted_internal_list;
 
-			for (unsigned i = 0; i<internal_list.size(); i++) {
-				std::cout<<internal_list[i]<<std::endl;
+			// Allocate enough space
+			sorted_internal_list.reserve(sorted_internal_list.size());
+
+			// Copy ti new vector
+			std::copy (internal_list.begin(), internal_list.end(), sorted_internal_list.begin() );
+
+			// Execute heap sort because array paritally sorted
+			std::sort_heap (sorted_internal_list.begin(), sorted_internal_list.end(), compare_max);
+
+			for (unsigned i = 0; i < sorted_internal_list.size(); i++) {
+				std::cout<<sorted_internal_list[i]<<std::endl;
 			}
 		}
 	private:
@@ -61,7 +75,7 @@ int main() {
 	std::cout<<"Hello"<<std::endl;
 
 	for (int i = 0; i < 100; i++) {
-		int current_value = rand() % (RAND_MAX / 100000);
+		int current_value = rand() % 100;
 		//std::cout<<current_value<<std::endl;
 
 		if (current_value > my_priority_queue.get_min_element()) {
