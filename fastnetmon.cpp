@@ -31,6 +31,9 @@
 #include "netflow_plugin/netflow_collector.h"
 #include "pcap_plugin/pcap_collector.h"
 
+// Our structires
+// #include "fast_priority_queue.h"
+
 #ifdef PF_RING
 #include "pfring_plugin/pfring_collector.h"
 #endif
@@ -595,10 +598,12 @@ std::string draw_table(map_for_counters& my_map_packets, direction data_directio
     if (data_direction == INCOMING or data_direction == OUTGOING) {
         std::sort( vector_for_sort.begin(), vector_for_sort.end(), TrafficComparatorClass(data_direction, sort_item));
     } else {
-        logger<< log4cpp::Priority::INFO<<"Unexpected bahaviour on sort function";
+        logger<< log4cpp::Priority::ERROR<<"Unexpected bahaviour on sort function";
+        return "Internal error";
     }
 
     unsigned int element_number = 0;
+    // TODO: fix this code because iteraton over over millions of IPs is very CPU intensive
     for( std::vector<pair_of_map_elements>::iterator ii=vector_for_sort.begin(); ii!=vector_for_sort.end(); ++ii) {
         uint32_t client_ip = (*ii).first;
         std::string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
