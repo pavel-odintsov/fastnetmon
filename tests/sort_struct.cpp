@@ -15,9 +15,9 @@ bool compare_max(unsigned int a, unsigned int b) {
 }
 
 template <class order_by_template_type>
-class priority_queue {
+class fast_priority_queue {
     public:
-        priority_queue(unsigned int queue_size) {
+        fast_priority_queue(unsigned int queue_size) {
             this->queue_size = queue_size;
             internal_list.reserve(queue_size);
         }
@@ -76,7 +76,7 @@ class priority_queue {
 
 
 int main() {
-    priority_queue<unsigned int> my_priority_queue(10);
+    fast_priority_queue<unsigned int> my_priority_queue(10);
 
     for (int i = 0; i < 100; i++) {
         int current_value = rand() % 100;
