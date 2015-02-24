@@ -40,6 +40,14 @@ if (ENABLE_PFRING_SUPPORT)
     set(PFRING_LIBRARIES /opt/pf_ring/lib/libpfring.so)
     add_definitions(-DPF_RING)
 
+    if (EXISTS "/opt/pf_ring/include/pfring_zc.h")
+        message("We found PF_RING ZC headers and will build PF_RING ZC support")
+        # Enable ZC support
+        add_definitions(-DPF_RING_ZC)
+    else()
+        message("We can't find PF_RING ZC header pfring_zc.h in folder /opt/pf_ring/include. Will not compile ZC support") 
+    endif()
+
     include_directories(${PFRING_INCLUDE_DIRS})
 endif()
 

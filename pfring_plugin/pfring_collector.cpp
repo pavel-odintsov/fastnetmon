@@ -26,7 +26,11 @@
 #include "pfring_collector.h"
 
 #include "pfring.h"
+
+#ifdef PF_RING_ZC
 #include "pfring_zc.h"
+#endif
+
 #include <numa.h>
 
 // Get log4cpp logger from main programm
@@ -39,7 +43,6 @@ extern std::map<std::string, std::string> configuration_map;
 
 // Interface name or interface list (delimitered by comma)
 std::string work_on_interfaces = "";
-
 
 // This variable name should be uniq for every plugin!
 process_packet_pointer pfring_process_func_ptr = NULL;
@@ -79,8 +82,8 @@ pfring* pf_ring_descr = NULL;
 // We can use ZC api
 bool pf_ring_zc_api_mode = false;
 
+#ifdef PF_RING_ZC
 u_int32_t zc_num_threads = 0;
-
 pthread_t *zc_threads;
 pfring_zc_cluster *zc;
 pfring_zc_worker *zw;
@@ -89,10 +92,13 @@ pfring_zc_queue **outzq;
 pfring_zc_multi_queue *outzmq; /* fanout */
 pfring_zc_buffer_pool *wsp;
 pfring_zc_pkt_buff **buffers;
-
+#endif
 
 // Prototypes
+#ifdef PF_RING_ZC
 bool zc_main_loop(const char* device);
+#endif
+
 bool pf_ring_main_loop(const char* dev);
 bool pf_ring_main_loop_multi_channel(const char* dev);
 void* pf_ring_packet_consumer_thread(void* _id);
@@ -102,6 +108,7 @@ void start_pfring_collection(process_packet_pointer func_ptr) {
     logger<< log4cpp::Priority::INFO<<"Example plugin started";
     pfring_process_func_ptr = func_ptr;
 
+#ifdef PF_RING_ZC
     if (configuration_map.count("enable_pf_ring_zc_mode")) {
         if (configuration_map["enable_pf_ring_zc_mode"] == "on") {
             pf_ring_zc_api_mode = true;
@@ -109,6 +116,7 @@ void start_pfring_collection(process_packet_pointer func_ptr) {
             pf_ring_zc_api_mode = false;
         }
     }
+#endif
 
     if (configuration_map.count("interfaces") != 0) {
         work_on_interfaces = configuration_map[ "interfaces" ];
@@ -236,7 +244,11 @@ void pfring_main_packet_process_task() {
     bool pf_ring_init_result = false;
 
     if (pf_ring_zc_api_mode) {
+#ifdef PF_RING_ZC
         pf_ring_init_result = zc_main_loop((char*)device_name);
+#else
+        logger<< log4cpp::Priority::ERROR<<"PF_RING library hasn't ZC support, please try SVN version";
+#endif
     } else {
         if (enable_pfring_multi_channel_mode) {
             pf_ring_init_result = pf_ring_main_loop_multi_channel(device_name);
@@ -258,6 +270,7 @@ std::string get_pf_ring_stats() {
     std::stringstream output_buffer;
 
     if (pf_ring_zc_api_mode) {
+#ifdef PF_RING_ZC
         pfring_zc_stat stats;
         // We have elements in insq for every hardware device! We shoulw add ability to configure ot
         int stats_res = pfring_zc_stats(inzq[0], &stats);
@@ -308,6 +321,7 @@ std::string get_pf_ring_stats() {
         output_buffer<<"Sent:\t\t"<<total_sent<<"\n";
         output_buffer<<"Dropped:\t"<<total_drop<<"\n";
         output_buffer<<"Dropped:\t"<<std::fixed << std::setprecision(2)<<total_drop_percent<<" %\n";
+#endif
     }
     
     // Getting stats for multi channel mode is so complex task
@@ -438,8 +452,8 @@ void* pf_ring_packet_consumer_thread(void* _id) {
    return NULL;
 }
 
+#ifdef PF_RING_ZC
 int rr = -1;
-
 int32_t rr_distribution_func(pfring_zc_pkt_buff *pkt_handle, pfring_zc_queue *in_queue, void *user) {
     long num_out_queues = (long) user;
 
@@ -449,8 +463,9 @@ int32_t rr_distribution_func(pfring_zc_pkt_buff *pkt_handle, pfring_zc_queue *in
 
     return rr;
 }
+#endif
 
-
+#ifdef PF_RING_ZC
 int bind2core(int core_id) {
     cpu_set_t cpuset;
     int s;
@@ -467,7 +482,9 @@ int bind2core(int core_id) {
         return 0;
     }
 }
+#endif
 
+#ifdef PF_RING_ZC
 void *zc_packet_consumer_thread(void *_id) {
     long id = (long) _id;
     pfring_zc_pkt_buff *b = buffers[id];
@@ -498,6 +515,7 @@ void *zc_packet_consumer_thread(void *_id) {
         
     return NULL;
 }
+#endif
 
 int max_packet_len(const char *device) { 
     int max_len = 0;
@@ -531,6 +549,7 @@ int max_packet_len(const char *device) {
 #define PREFETCH_BUFFERS        8
 #define QUEUE_LEN            8192
 
+#ifdef PF_RING_ZC
 bool zc_main_loop(const char* device) {
     u_int32_t cluster_id = 0;
     int bind_core = -1;
@@ -654,6 +673,7 @@ bool zc_main_loop(const char* device) {
     
     return true;
 }
+#endif
  
 bool pf_ring_main_loop(const char* dev) {
     // We could pool device in multiple threads
