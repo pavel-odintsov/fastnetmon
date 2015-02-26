@@ -64,18 +64,28 @@ int bind2core(int core_id) {
     }
 }
 
-// !!!!!!
-// TODO: fix it to compile on 6.0.2 PF_RING!!!!!
-int max_packet_len(char *device) {
-    int max_len;
-    pfring *ring;
+int max_packet_len(const char *device) { 
+    int max_len = 0;
 
-    ring = pfring_open(device, 1536, PF_RING_PROMISC);
+    pfring* ring = pfring_open(device, 1536, PF_RING_PROMISC);
 
     if (ring == NULL)
         return 1536;
 
-    max_len = pfring_get_max_packet_size(ring);
+// pfring_get_card_settings have added in 6.0.3
+#if RING_VERSION_NUM >= 0x060003
+    pfring_card_settings settings;
+    pfring_get_card_settings(ring, &settings);
+    max_len = settings.max_packet_size;
+#else
+    if (ring->dna.dna_mapped_device) {
+        max_len = ring->dna.dna_dev.mem_info.rx.packet_memory_slot_len;
+    } else {
+        max_len = pfring_get_mtu_size(ring);
+        if (max_len == 0) max_len = 9000 /* Jumbo */;
+            max_len += 14 /* Eth */ + 4 /* VLAN */;
+    }
+#endif
 
     pfring_close(ring);
 
