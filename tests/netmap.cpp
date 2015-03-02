@@ -17,7 +17,7 @@
     clang++ netmap.cpp -I /usr/local/include -L/usr/local/lib -lboost_thread -lboost_system
 
     Linux:
-    g++ netmap.cpp -I/usr/src/fastnetmon/tests/netmap_includes
+    g++ netmap.cpp -I/usr/src/fastnetmon/tests/netmap_includes -lboost_thread -lboost_system
 */
 
 int number_of_packets = 0;
