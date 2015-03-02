@@ -33,29 +33,42 @@ void receiver(void) {
     struct  nm_pkthdr h;
     u_char* buf;
 
-    std::string interface = "netmap:em0"; 
+    std::string interface = "netmap:eth4"; 
     netmap_descriptor = nm_open(interface.c_str(), NULL, 0, 0);
 
     if (netmap_descriptor == NULL) {
-        printf("Can't open netmap device %s", interface.c_str());
+        printf("Can't open netmap device %s\n", interface.c_str());
+        exit(1);
         return;
     }
-
 
     fds.fd     = NETMAP_FD(netmap_descriptor);
     fds.events = POLLIN;
 
     for (;;) {
-        poll(&fds,	1, -1);
-        
-        while ( (buf = nm_nextpkt(netmap_descriptor, &h)) )
+        // We will wait 1000 microseconds for retry, for infinite timeout please use -1
+        int poll_result = poll(&fds, 1, 1000);
+       
+        if (poll_result == 0) {
+            printf("poll return 0 return code\n");
+            continue;
+        }
+
+        if (poll_result == -1) {
+            printf("poll failed with return code -1\n");
+        }
+ 
+        while ( (buf = nm_nextpkt(netmap_descriptor, &h)) ) {
             consume_pkt(buf, h.len);
         }
+    }
 
      nm_close(netmap_descriptor);
 }
 
 int main() {
+    //receiver();
+
     boost::thread netmap_thread(receiver);
 
     for (;;) {
