@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #define NETMAP_WITH_LIBS
+
 #include <net/netmap_user.h>
 
 #include <boost/thread.hpp>
@@ -9,8 +10,15 @@
 // For pooling operations
 #include <poll.h>
 
-// How to compile: 
-// clang++ netmap.cpp -I /usr/local/include -L/usr/local/lib -lboost_thread -lboost_system
+/*
+    How to compile
+
+    FreeBSD:
+    clang++ netmap.cpp -I /usr/local/include -L/usr/local/lib -lboost_thread -lboost_system
+
+    Linux:
+    g++ netmap.cpp -I/usr/src/fastnetmon/tests/netmap_includes
+*/
 
 int number_of_packets = 0;
 
