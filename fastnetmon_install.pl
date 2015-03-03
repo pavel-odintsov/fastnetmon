@@ -76,7 +76,7 @@ sub install {
     `make -C $pf_ring_sources_path/kernel`;
     `make -C $pf_ring_sources_path/kernel install`;
 
-    print "Unloade PF_RING if it was installed earlier\n";
+    print "Unload PF_RING if it was installed earlier\n";
     `rmmod pf_ring`;
 
     print "Load PF_RING module into kernel\n";
