@@ -178,7 +178,7 @@ sub install {
 
     my $fastnetmon_config_path = "/etc/fastnetmon.conf";
     unless (-e $fastnetmon_config_path) {
-        print "Create stub conif\n";
+        print "Create stub configuration file\n";
         `cp /usr/src/fastnetmon/fastnetmon.conf $fastnetmon_config_path`;
     
         my @interfaces = get_active_network_interfaces();
