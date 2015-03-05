@@ -4,11 +4,12 @@
 #define NETMAP_WITH_LIBS
 
 #include <net/netmap_user.h>
-
 #include <boost/thread.hpp>
 
 // For pooling operations
 #include <poll.h>
+
+#include <pfring.h>
 
 /*
     How to compile
@@ -23,7 +24,22 @@
 int number_of_packets = 0;
 
 void consume_pkt(u_char* buffer, int len) {
+    //static char packet_data[2000];
     //printf("Got packet with length: %d\n", len);
+    //memcpy(packet_data, buffer, len);
+    struct pfring_pkthdr l2tp_header;
+    memset(&l2tp_header, 0, sizeof(l2tp_header));
+    l2tp_header.len = len;
+    l2tp_header.caplen = len;
+   
+    pfring_parse_pkt((u_char*)buffer, &l2tp_header, 4, 1, 0);
+
+    /*
+    char print_buffer[512];
+    pfring_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &l2tp_header);
+    printf("%s\n", print_buffer);
+    */ 
+
     __sync_fetch_and_add(&number_of_packets, 1);
 }
 
