@@ -1809,8 +1809,6 @@ int main(int argc,char **argv) {
         exit(1);
     }
 
-    logger<< log4cpp::Priority::INFO<<"I need few seconds for collecting data, please wait. Thank you!";
-
     load_our_networks_list();
 
     // Setup CTRL+C handler
