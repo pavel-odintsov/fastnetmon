@@ -76,7 +76,7 @@ sub install {
     `make -C $pf_ring_sources_path/kernel`;
     `make -C $pf_ring_sources_path/kernel install`;
 
-    print "Unloade PF_RING if it was installed earlier\n";
+    print "Unload PF_RING if it was installed earlier\n";
     `rmmod pf_ring`;
 
     print "Load PF_RING module into kernel\n";
@@ -178,7 +178,7 @@ sub install {
 
     my $fastnetmon_config_path = "/etc/fastnetmon.conf";
     unless (-e $fastnetmon_config_path) {
-        print "Create stub conif\n";
+        print "Create stub configuration file\n";
         `cp /usr/src/fastnetmon/fastnetmon.conf $fastnetmon_config_path`;
     
         my @interfaces = get_active_network_interfaces();

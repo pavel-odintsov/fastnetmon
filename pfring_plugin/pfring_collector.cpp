@@ -105,7 +105,7 @@ void* pf_ring_packet_consumer_thread(void* _id);
 void pfring_main_packet_process_task();
 
 void start_pfring_collection(process_packet_pointer func_ptr) {
-    logger<< log4cpp::Priority::INFO<<"Example plugin started";
+    logger<< log4cpp::Priority::INFO<<"PF_RING plugin started";
     pfring_process_func_ptr = func_ptr;
 
 #ifdef PF_RING_ZC
