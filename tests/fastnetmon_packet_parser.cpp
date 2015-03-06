@@ -12,6 +12,10 @@
 #include <stdio.h>
 #include <arpa/inet.h> // inet_ntop
 
+#if defined(__FreeBSD__) || defined(__APPLE__)
+#include <sys/socket.h> // AF_INET6
+#endif
+
 // Fake fields
 #define ipv4_tos     ip_tos
 #define ipv6_tos     ip_tos
