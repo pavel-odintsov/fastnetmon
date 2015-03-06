@@ -214,7 +214,6 @@ char *proto2str(u_short proto);
 
 #if defined(__FreeBSD__) || defined(__APPLE__)
 /* This code from /usr/includes/linux/if_ether.h Linus file */
-
 #define ETH_ALEN        6               /* Octets in one ethernet addr   */
 #define ETH_P_IP        0x0800          /* Internet Protocol packet     */
 #define ETH_P_IPV6      0x86DD          /* IPv6 over bluebook           */
@@ -230,6 +229,11 @@ struct ethhdr {
         __be16          h_proto;                /* packet type ID field */
 } __attribute__((packed));
 
+#endif
+
+#if defined(__FreeBSD__) || defined(__APPLE__)
+/usr/includes/linux/types.h
+typedef __u16 __bitwise __be16;
 #endif
 
 #if defined(__FreeBSD__) || defined(__APPLE__)
