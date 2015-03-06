@@ -226,7 +226,7 @@ char *proto2str(u_short proto);
 struct ethhdr {
         unsigned char   h_dest[ETH_ALEN];       /* destination eth addr */
         unsigned char   h_source[ETH_ALEN];     /* source ether addr    */
-        __u16           h_proto;                /* packet type ID field */
+        u_int16_t       h_proto;                /* packet type ID field */
 } __attribute__((packed));
 
 #endif
