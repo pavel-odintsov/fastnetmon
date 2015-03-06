@@ -9,7 +9,8 @@
 // For pooling operations
 #include <poll.h>
 
-#include <pfring.h>
+#include "pf_ring_packet_parser.h"
+
 
 /*
     How to compile
@@ -34,11 +35,11 @@ void consume_pkt(u_char* buffer, int len) {
    
     pfring_parse_pkt((u_char*)buffer, &l2tp_header, 4, 1, 0);
 
-    /*
+    
     char print_buffer[512];
     pfring_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &l2tp_header);
     printf("%s\n", print_buffer);
-    */ 
+     
 
     __sync_fetch_and_add(&number_of_packets, 1);
 }
