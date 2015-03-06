@@ -226,14 +226,9 @@ char *proto2str(u_short proto);
 struct ethhdr {
         unsigned char   h_dest[ETH_ALEN];       /* destination eth addr */
         unsigned char   h_source[ETH_ALEN];     /* source ether addr    */
-        __be16          h_proto;                /* packet type ID field */
+        __u16           h_proto;                /* packet type ID field */
 } __attribute__((packed));
 
-#endif
-
-#if defined(__FreeBSD__) || defined(__APPLE__)
-/usr/includes/linux/types.h
-typedef __u16 __bitwise __be16;
 #endif
 
 #if defined(__FreeBSD__) || defined(__APPLE__)
