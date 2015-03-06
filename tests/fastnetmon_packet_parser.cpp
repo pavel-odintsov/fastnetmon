@@ -214,27 +214,27 @@ u_int32_t pfring_hash_pkt(struct pfring_pkthdr *hdr) {
     return
       hdr->extended_hdr.parsed_pkt.vlan_id +
       hdr->extended_hdr.parsed_pkt.l3_proto +
-      hdr->extended_hdr.parsed_pkt.ip_src.v6.__u6_addr32[0] +
-      hdr->extended_hdr.parsed_pkt.ip_src.v6.__u6_addr32[1] +
-      hdr->extended_hdr.parsed_pkt.ip_src.v6.__u6_addr32[2] +
-      hdr->extended_hdr.parsed_pkt.ip_src.v6.__u6_addr32[3] +
-      hdr->extended_hdr.parsed_pkt.ip_dst.v6.__u6_addr32[0] +
-      hdr->extended_hdr.parsed_pkt.ip_dst.v6.__u6_addr32[1] +
-      hdr->extended_hdr.parsed_pkt.ip_dst.v6.__u6_addr32[2] +
-      hdr->extended_hdr.parsed_pkt.ip_dst.v6.__u6_addr32[3] +
+      hdr->extended_hdr.parsed_pkt.ip_src.v6.__u6_addr.__u6_addr32[0] +
+      hdr->extended_hdr.parsed_pkt.ip_src.v6.__u6_addr.__u6_addr32[1] +
+      hdr->extended_hdr.parsed_pkt.ip_src.v6.__u6_addr.__u6_addr32[2] +
+      hdr->extended_hdr.parsed_pkt.ip_src.v6.__u6_addr.__u6_addr32[3] +
+      hdr->extended_hdr.parsed_pkt.ip_dst.v6.__u6_addr.__u6_addr32[0] +
+      hdr->extended_hdr.parsed_pkt.ip_dst.v6.__u6_addr.__u6_addr32[1] +
+      hdr->extended_hdr.parsed_pkt.ip_dst.v6.__u6_addr.__u6_addr32[2] +
+      hdr->extended_hdr.parsed_pkt.ip_dst.v6.__u6_addr.__u6_addr32[3] +
       hdr->extended_hdr.parsed_pkt.l4_src_port +
       hdr->extended_hdr.parsed_pkt.l4_dst_port;
   } else {
     return
       hdr->extended_hdr.parsed_pkt.vlan_id +
       hdr->extended_hdr.parsed_pkt.tunnel.tunneled_proto +
-      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_src.v6.__u6_addr32[1] +
-      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_src.v6.__u6_addr32[2] +
-      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_src.v6.__u6_addr32[3] +
-      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_dst.v6.__u6_addr32[0] +
-      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_dst.v6.__u6_addr32[1] +
-      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_dst.v6.__u6_addr32[2] +
-      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_dst.v6.__u6_addr32[3] +
+      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_src.v6.__u6_addr.__u6_addr32[1] +
+      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_src.v6.__u6_addr.__u6_addr32[2] +
+      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_src.v6.__u6_addr.__u6_addr32[3] +
+      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_dst.v6.__u6_addr.__u6_addr32[0] +
+      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_dst.v6.__u6_addr.__u6_addr32[1] +
+      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_dst.v6.__u6_addr.__u6_addr32[2] +
+      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_dst.v6.__u6_addr.__u6_addr32[3] +
       hdr->extended_hdr.parsed_pkt.tunnel.tunneled_l4_src_port +
       hdr->extended_hdr.parsed_pkt.tunnel.tunneled_l4_dst_port;
   }
