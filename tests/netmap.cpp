@@ -9,7 +9,7 @@
 // For pooling operations
 #include <poll.h>
 
-#include "pf_ring_packet_parser.h"
+#include "fastnetmon_packet_parser.h"
 
 
 /*
