@@ -33,11 +33,10 @@ void consume_pkt(u_char* buffer, int len) {
     l2tp_header.len = len;
     l2tp_header.caplen = len;
    
-    pfring_parse_pkt((u_char*)buffer, &l2tp_header, 4, 1, 0);
-
+    fastnetmon_parse_pkt((u_char*)buffer, &l2tp_header, 4, 1, 0);
     
     char print_buffer[512];
-    pfring_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &l2tp_header);
+    fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &l2tp_header);
     printf("%s\n", print_buffer);
      
 
