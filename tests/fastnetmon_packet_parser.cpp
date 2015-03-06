@@ -209,6 +209,26 @@ static char *in6toa(struct in6_addr addr6);
 char *proto2str(u_short proto);
 
 #if defined(__FreeBSD__) || defined(__APPLE__)
+/* This code from /usr/includes/linux/if_ether.h Linus file */
+
+#define ETH_ALEN        6               /* Octets in one ethernet addr   */
+#define ETH_P_IP        0x0800          /* Internet Protocol packet     */
+#define ETH_P_IPV6      0x86DD          /* IPv6 over bluebook           */
+
+
+/*
+ *      This is an Ethernet frame header.
+ */
+
+struct ethhdr {
+        unsigned char   h_dest[ETH_ALEN];       /* destination eth addr */
+        unsigned char   h_source[ETH_ALEN];     /* source ether addr    */
+        __be16          h_proto;                /* packet type ID field */
+} __attribute__((packed));
+
+#endif
+
+#if defined(__FreeBSD__) || defined(__APPLE__)
 u_int32_t pfring_hash_pkt(struct pfring_pkthdr *hdr) {
   if (hdr->extended_hdr.parsed_pkt.tunnel.tunnel_id == NO_TUNNEL_ID) {
     return
