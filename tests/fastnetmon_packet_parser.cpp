@@ -208,6 +208,38 @@ char *_intoa(unsigned int addr, char* buf, u_short bufLen);
 static char *in6toa(struct in6_addr addr6);
 char *proto2str(u_short proto);
 
+#if defined(__FreeBSD__) || defined(__APPLE__)
+u_int32_t pfring_hash_pkt(struct pfring_pkthdr *hdr) {
+  if (hdr->extended_hdr.parsed_pkt.tunnel.tunnel_id == NO_TUNNEL_ID) {
+    return
+      hdr->extended_hdr.parsed_pkt.vlan_id +
+      hdr->extended_hdr.parsed_pkt.l3_proto +
+      hdr->extended_hdr.parsed_pkt.ip_src.v6.__u6_addr32[0] +
+      hdr->extended_hdr.parsed_pkt.ip_src.v6.__u6_addr32[1] +
+      hdr->extended_hdr.parsed_pkt.ip_src.v6.__u6_addr32[2] +
+      hdr->extended_hdr.parsed_pkt.ip_src.v6.__u6_addr32[3] +
+      hdr->extended_hdr.parsed_pkt.ip_dst.v6.__u6_addr32[0] +
+      hdr->extended_hdr.parsed_pkt.ip_dst.v6.__u6_addr32[1] +
+      hdr->extended_hdr.parsed_pkt.ip_dst.v6.__u6_addr32[2] +
+      hdr->extended_hdr.parsed_pkt.ip_dst.v6.__u6_addr32[3] +
+      hdr->extended_hdr.parsed_pkt.l4_src_port +
+      hdr->extended_hdr.parsed_pkt.l4_dst_port;
+  } else {
+    return
+      hdr->extended_hdr.parsed_pkt.vlan_id +
+      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_proto +
+      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_src.v6.__u6_addr32[1] +
+      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_src.v6.__u6_addr32[2] +
+      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_src.v6.__u6_addr32[3] +
+      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_dst.v6.__u6_addr32[0] +
+      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_dst.v6.__u6_addr32[1] +
+      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_dst.v6.__u6_addr32[2] +
+      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_dst.v6.__u6_addr32[3] +
+      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_l4_src_port +
+      hdr->extended_hdr.parsed_pkt.tunnel.tunneled_l4_dst_port;
+  }
+}
+#else
 u_int32_t pfring_hash_pkt(struct pfring_pkthdr *hdr) {
   if (hdr->extended_hdr.parsed_pkt.tunnel.tunnel_id == NO_TUNNEL_ID) {
     return
@@ -238,7 +270,7 @@ u_int32_t pfring_hash_pkt(struct pfring_pkthdr *hdr) {
       hdr->extended_hdr.parsed_pkt.tunnel.tunneled_l4_dst_port;
   }
 }
-
+#endif
 static int __pfring_parse_tunneled_pkt(u_char *pkt, struct pfring_pkthdr *hdr, u_int16_t ip_version, u_int16_t tunnel_offset) {
   u_int32_t ip_len = 0;
   u_int16_t fragment_offset = 0;
