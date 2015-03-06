@@ -1,4 +1,5 @@
 #!/bin/bash
 
-g++ netmap.cpp -I/usr/src/fastnetmon/tests/netmap_includes -I/opt/pf_ring/include/ -L/opt/pf_ring/lib -lpfring -lboost_thread -lboost_system
+clang++ pf_ring_packet_parser.cpp -c -opf_ring_packet_parser.o
+g++ netmap.cpp -I/usr/src/fastnetmon/tests/netmap_includes -lboost_thread -lboost_system pf_ring_packet_parser.o
 
