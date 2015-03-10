@@ -62,8 +62,15 @@ void receiver(void) {
     u_int num_cpus = sysconf( _SC_NPROCESSORS_ONLN );
     printf("We have %d cpus\n", num_cpus);
 
+    struct nmreq base_nmd;
+    bzero(&base_nmd, sizeof(base_nmd));
+
+    // Magic from pkt-gen.c
+    base_nmd.nr_tx_rings = base_nmd.nr_rx_rings = 0;
+    base_nmd.nr_tx_slots = base_nmd.nr_rx_slots = 0;
+
     std::string interface = "netmap:eth4"; 
-    netmap_descriptor = nm_open(interface.c_str(), NULL, 0, 0);
+    netmap_descriptor = nm_open(interface.c_str(), &base_nmd, 0, NULL);
 
     if (netmap_descriptor == NULL) {
         printf("Can't open netmap device %s\n", interface.c_str());
@@ -87,6 +94,9 @@ void receiver(void) {
     boost::thread* boost_threads_array[num_cpus]; 
     for (int i = 0; i < num_cpus; i++) {
         struct nm_desc nmd = *netmap_descriptor;
+        // This operation is VERY important!
+        nmd.self = &nmd;
+
         uint64_t nmd_flags = 0;
 
         if (nmd.req.nr_flags != NR_REG_ALL_NIC) {
@@ -105,6 +115,8 @@ void receiver(void) {
             printf("Can't open netmap descripto for netmap\n");
             exit(1);
         }
+
+        printf("My first ring is %d and last ring id is %d I'm thread %d\n", new_nmd->first_rx_ring, new_nmd->last_rx_ring, i);
 
         printf("Start new thread %d\n", i);
         // Start thread and pass netmap descriptor to it 
@@ -129,14 +141,13 @@ void netmap_thread(struct nm_desc* netmap_descriptor, int thread_number) {
     struct netmap_if *nifp = netmap_descriptor->nifp;
 
     printf("Reading from fd %d thread id: %d\n", netmap_descriptor->fd, thread_number);
-    printf("I assume bug here! My first ring is %d and last ring id is %d I'm thread %d\n", netmap_descriptor->first_rx_ring, netmap_descriptor->last_rx_ring, thread_number);
 
     for (;;) {
         // We will wait 1000 microseconds for retry, for infinite timeout please use -1
         int poll_result = poll(&fds, 1, 1000);
        
         if (poll_result == 0) {
-            printf("poll return 0 return code\n");
+            // printf("poll return 0 return code\n");
             continue;
         }
 
