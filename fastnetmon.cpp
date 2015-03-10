@@ -2187,6 +2187,11 @@ void cleanup_ban_list() {
     // Every X seconds we will run ban list cleaner thread
     int iteration_sleep_time = 600;
 
+    // If we use very small ban time we should call ban_cleanup thread more often 
+    if (iteration_sleep_time > standard_ban_time) {
+        iteration_sleep_time = int(standard_ban_time / 2);
+    }
+
     logger<<log4cpp::Priority::INFO<<"Run banlist cleanup thread";
 
     while (true) {
