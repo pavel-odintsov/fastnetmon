@@ -451,9 +451,10 @@ nm_open(const char *ifname, const struct nmreq *req,
 			d->req.nr_rx_rings = parent->req.nr_rx_rings;
 		}
 		if (new_flags & NM_OPEN_IFNAME) {
-			NETMAP_DEBUG("overriding ifname %s ringid 0x%x flags 0x%x",
-				parent->req.nr_name, parent->req.nr_ringid,
-				parent->req.nr_flags);
+                        // Commented by Pavel Odintsov
+			//NETMAP_DEBUG("overriding ifname %s ringid 0x%x flags 0x%x",
+			//	parent->req.nr_name, parent->req.nr_ringid,
+			//	parent->req.nr_flags);
 			memcpy(d->req.nr_name, parent->req.nr_name,
 				sizeof(d->req.nr_name));
 			d->req.nr_ringid = parent->req.nr_ringid;
