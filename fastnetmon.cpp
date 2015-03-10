@@ -30,6 +30,7 @@
 #include "sflow_plugin/sflow_collector.h"
 #include "netflow_plugin/netflow_collector.h"
 #include "pcap_plugin/pcap_collector.h"
+#include "netmap_plugin/netmap_collector.h"
 
 // Our structires
 // #include "fast_priority_queue.h"
@@ -103,6 +104,7 @@ bool enable_ban_for_flows_per_second = false;
 bool enable_conection_tracking = true;
 
 bool enable_data_collection_from_mirror = true;
+bool enable_netmap_collection = false;
 bool enable_sflow_collection = false;
 bool enable_netflow_collection = false;
 bool enable_pcap_collection = false;
@@ -791,6 +793,19 @@ bool load_configuration_file() {
         } else {
             enable_data_collection_from_mirror = false;
         }
+    }
+
+    if (configuration_map.count("mirror_netmap") != 0) { 
+        if (configuration_map["mirror_netmap"] == "on") {
+            enable_netmap_collection = true;
+        } else {
+            enable_netmap_collection = false;
+        }    
+    } 
+    
+    if (enable_netmap_collection && enable_data_collection_from_mirror) {
+        logger<< log4cpp::Priority::ERROR<<"You have enabled pfring and netmap data collection from mirror which strictly prohibited, please select one";
+        exit(1);
     }
 
     if (configuration_map.count("pcap") != 0) {
@@ -1851,6 +1866,12 @@ int main(int argc,char **argv) {
     }
 #endif
 
+    // netmap processing
+    boost::thread netmap_process_collector_thread;
+    if (enable_netmap_collection) {
+        netmap_process_collector_thread = boost::thread(start_netmap_collection, process_packet);
+    }
+
     boost::thread sflow_process_collector_thread; 
     if (enable_sflow_collection) {
         sflow_process_collector_thread = boost::thread(start_sflow_collection, process_packet);
@@ -1874,6 +1895,10 @@ int main(int argc,char **argv) {
 #ifdef PF_RING
         pfring_process_collector_thread.join();
 #endif
+    }
+
+    if (enable_netmap_collection) {
+        netmap_process_collector_thread.join();
     }
 
     recalculate_speed_thread.join();
