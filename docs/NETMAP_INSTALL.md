@@ -1,0 +1,40 @@
+Build netmap on Debian 7 Wheezy with ixgbe 10GE NIC (82599):
+
+Get kernel sources:
+```bash
+cd /usr/src
+apt-get source  linux-image-3.2.0-4-amd64
+```
+
+Download netmap kernel module code:
+```bash
+cd /usr/src
+git clone https://code.google.com/p/netmap/ 
+cd netmap/LINUX/
+```
+
+Build netmap with drivers:
+```
+./configure --kernel-sources=/usr/src/linux-3.2.65 --drivers=ixgbe
+make
+make install
+```
+
+Load modules:
+```
+insmod ./netmap.ko
+modprobe mdio
+modprobe ptp
+modprobe dca 
+insmod ixgbe/ixgbe.ko
+```
+
+Add to /etc/rc.local:
+```bash
+rmmod ixgbe
+insmod /usr/src/netmap/LINUX/netmap.ko
+modprobe mdio
+modprobe ptp
+modprobe dca 
+insmod /usr/src/netmap/LINUX/ixgbe/ixgbe.ko
+```
