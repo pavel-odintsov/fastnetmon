@@ -84,7 +84,7 @@ add_library(example_plugin STATIC example_plugin/example_collector.cpp)
 set(NETMAP_INCLUDE_DIRS "netmap_plugin/netmap_includes")
 include_directories(${NETMAP_INCLUDE_DIRS})
 add_library(netmap_plugin STATIC netmap_plugin/netmap_collector.cpp)
-target_link_libraries(pfring_plugin fastnetmon_packet_parser)
+target_link_libraries(netmap_plugin fastnetmon_packet_parser)
 
 # Main tool
 add_executable(fastnetmon fastnetmon.cpp)
