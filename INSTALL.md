@@ -3,6 +3,7 @@ For Debian 6, 7 and CentOS 6 and 7 you should use the automatic installer:
 wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/fastnetmon_install.pl
 perl fastnetmon_install.pl
 ```
+If you want to use netmap module, please install it: [netmap install](docs/NETMAP_INSTALL.md) 
 
 It's REQUIRED to add all of your networks in CIDR notation (11.22.33.0/24) to the file /etc/networks_list in the form of one prefix per line. If you are running this software on an OpenVZ node, you may not need to specify networks explicitly, as we can read them from /proc/vz/veip.
 
