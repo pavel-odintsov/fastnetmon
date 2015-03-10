@@ -134,6 +134,12 @@ void receiver(void) {
     logger.info("Mapped %dKB memory at %p", netmap_descriptor->req.nr_memsize>>10, netmap_descriptor->mem);
     logger.info("We have %d tx and %d rx rings", netmap_descriptor->req.nr_tx_rings, netmap_descriptor->req.nr_rx_rings);
 
+    if (num_cpus > netmap_descriptor->req.nr_rx_rings) {
+        num_cpus = netmap_descriptor->req.nr_rx_rings;
+
+        logger.info("We have number of CPUs bigger than number of NIC RX queues. Set number of CPU's to number of threads");
+    }
+
     /*
         protocol stack and may cause a reset of the card,
         which in turn may take some time for the PHY to
@@ -165,7 +171,7 @@ void receiver(void) {
         struct nm_desc* new_nmd = nm_open(interface.c_str(), NULL, nmd_flags | NM_OPEN_IFNAME | NM_OPEN_NO_MMAP, &nmd);
 
         if (new_nmd == NULL) {
-            logger.error("Can't open netmap descriptor for netmap");
+            logger.error("Can't open netmap descriptor for netmap per nardware queue thread");
             exit(1);
         }
 
