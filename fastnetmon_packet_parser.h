@@ -4,6 +4,11 @@
 #include <sys/types.h>
 #include <netinet/in.h> // in6_addr
 
+#if defined(__APPLE__)
+// For Mac OS X here we can find definition of "struct timeval"
+#include <sys/time.h>
+#endif
+
 #define ETH_ALEN  6
 
 /*
