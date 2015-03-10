@@ -80,7 +80,7 @@ void consume_pkt(u_char* buffer, int len) {
     
     //char print_buffer[512];
     //fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
-    //printf("%s", print_buffer);
+    //logger.info("%s", print_buffer);
    
     // We should fill this structure for passing to FastNetMon
     simple_packet packet;
@@ -224,13 +224,9 @@ void netmap_thread(struct nm_desc* netmap_descriptor, int thread_number) {
 
             int m = receive_packets(rxring);
         }
-
-        //while ( (buf = nm_nextpkt(netmap_descriptor, &h)) ) {
-        //    consume_pkt(buf, h.len);
-        //}
     }
 
-     //nm_close(netmap_descriptor);
+    //nm_close(netmap_descriptor);
 }
 
 void start_netmap_collection(process_packet_pointer func_ptr) {
