@@ -57,6 +57,9 @@ endif()
 # Our LPM library
 add_library(patricia STATIC libpatricia/patricia.c)
 
+# Our packet parser
+add_library(fastnetmon_packet_parser STATIC fastnetmon_packet_parser.cpp)
+
 # sFLOW plugin
 add_library(sflow_plugin STATIC sflow_plugin/sflow_collector.cpp) 
 
@@ -76,6 +79,12 @@ endif()
 
 # example plugin
 add_library(example_plugin STATIC example_plugin/example_collector.cpp)
+
+# Netmap plugin
+set(NETMAP_INCLUDE_DIRS "netmap_plugin/netmap_includes")
+include_directories(${NETMAP_INCLUDE_DIRS})
+add_library(netmap_plugin STATIC netmap_plugin/netmap_collector.cpp)
+target_link_libraries(pfring_plugin fastnetmon_packet_parser)
 
 # Main tool
 add_executable(fastnetmon fastnetmon.cpp)
@@ -143,4 +152,4 @@ endif()
 target_link_libraries(fastnetmon netflow_plugin)
 target_link_libraries(fastnetmon pcap_plugin)
 target_link_libraries(fastnetmon example_plugin)
-
+target_link_libraries(fastnetmon netmap_plugin)
