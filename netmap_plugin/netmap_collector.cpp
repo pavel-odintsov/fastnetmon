@@ -79,7 +79,7 @@ void consume_pkt(u_char* buffer, int len) {
     fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, 1, 0);
     
     //char print_buffer[512];
-    //fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &l2tp_header);
+    //fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
     //printf("%s", print_buffer);
    
     // We should fill this structure for passing to FastNetMon
@@ -234,10 +234,6 @@ void netmap_thread(struct nm_desc* netmap_descriptor, int thread_number) {
 }
 
 void start_netmap_collection(process_packet_pointer func_ptr) {
-    // remove IT
-    struct pfring_pkthdr l2tp_header;
-    fastnetmon_parse_pkt((u_char*)NULL, &l2tp_header, 4, 1, 0);
-
     logger<< log4cpp::Priority::INFO<<"Netmap plugin started";
     netmap_process_func_ptr = func_ptr;
 
