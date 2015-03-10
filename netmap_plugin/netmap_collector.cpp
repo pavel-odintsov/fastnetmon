@@ -165,7 +165,7 @@ void receiver(void) {
         struct nm_desc* new_nmd = nm_open(interface.c_str(), NULL, nmd_flags | NM_OPEN_IFNAME | NM_OPEN_NO_MMAP, &nmd);
 
         if (new_nmd == NULL) {
-            logger.error("Can't open netmap descripto for netmap");
+            logger.error("Can't open netmap descriptor for netmap");
             exit(1);
         }
 
