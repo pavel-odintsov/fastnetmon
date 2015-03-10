@@ -3,7 +3,7 @@ FastNetMon
 Author: [Pavel Odintsov](http://ru.linkedin.com/in/podintsov/) pavel.odintsov at gmail.com
 License: GPLv2
 
-FastNetMon - high performance DoS/DDoS and netflowk load analyzer builded on top of multiple packet capture engines (PF_RING, sFLOW, Netflow, PCAP).
+FastNetMon - high performance DoS/DDoS and netflowk load analyzer builded on top of multiple packet capture engines (netmap, PF_RING, sFLOW, Netflow, PCAP).
 
 What we do? We can detect hosts in our own network with big amount of packets per second/bytes per second or flow per second incoming or outgoing from certain host. And we can call external script which can send notify, switch off server or blackhole this client.
 
@@ -21,6 +21,7 @@ Features:
 - Can trigger block script if certain IP load network with big amount of packets per second
 - Can trigger block script if certain IP load network with big amount of bytes per second
 - Can trigger block script if certain IP load network with big amount of flows per second
+- netmap support (open source; wire speed processing; only Intel NICs)
 - PF_RING ZC/DNA support (wire speed processing on tens of MPPS but need [license](http://www.ntop.org/products/pf_ring/))
 - Can process ![sFLOW](http://sflow.org/images/sflowlogo.gif) v5
 - Can process NetFlow v5 and v9
