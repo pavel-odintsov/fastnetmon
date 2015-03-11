@@ -42,6 +42,9 @@ void consume_pkt(u_char* buffer, int len);
 // Get log4cpp logger from main programm
 extern log4cpp::Category& logger;
 
+// Pass unparsed packets number to main programm
+extern uint64_t total_unparsed_packets;
+
 // Global configuration map 
 extern std::map<std::string, std::string> configuration_map;
 
@@ -106,6 +109,8 @@ void consume_pkt(u_char* buffer, int len) {
         }
 
         netmap_process_func_ptr(packet); 
+    } else {
+        total_unparsed_packets++;
     }
 }
 
