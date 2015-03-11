@@ -29,6 +29,12 @@ modprobe dca
 insmod ixgbe/ixgbe.ko
 ```
 
+Enable interfaces:
+```bash
+ifconfig eth0 up
+ifconfig eth0 promisc
+```
+
 Add to /etc/rc.local:
 ```bash
 rmmod ixgbe
@@ -37,4 +43,6 @@ modprobe mdio
 modprobe ptp
 modprobe dca 
 insmod /usr/src/netmap/LINUX/ixgbe/ixgbe.ko
+ifconfig eth0 up
+ifconfig eth0 promisc
 ```

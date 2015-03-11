@@ -1,6 +1,7 @@
 FastNetMon
 ===========
-Author: [Pavel Odintsov](http://ru.linkedin.com/in/podintsov/) pavel.odintsov at gmail.com
+Author: [Pavel Odintsov](http://ru.linkedin.com/in/podintsov/) pavel.odintsov at gmail.com [My Twitter](https://twitter.com/odintsov_pavel)
+
 License: GPLv2
 
 FastNetMon - high performance DoS/DDoS and netflowk load analyzer builded on top of multiple packet capture engines (netmap, PF_RING, sFLOW, Netflow, PCAP).
