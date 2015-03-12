@@ -4,11 +4,11 @@ Author: [Pavel Odintsov](http://ru.linkedin.com/in/podintsov/) pavel.odintsov at
 
 License: GPLv2
 
-FastNetMon - high performance DoS/DDoS and netflowk load analyzer builded on top of multiple packet capture engines (netmap, PF_RING, sFLOW, Netflow, PCAP).
+FastNetMon - A high performance DoS/DDoS and netflowk load analyzer built on top of multiple packet capture engines (netmap, PF_RING, sFLOW, Netflow, PCAP).
 
-What we do? We can detect hosts in our own network with big amount of packets per second/bytes per second or flow per second incoming or outgoing from certain host. And we can call external script which can send notify, switch off server or blackhole this client.
+What can we do? We can detect hosts in our own network with a large amount of packets per second/bytes per second or flow per second incoming or outgoing from certain hosts. And we can call an external script which can notify you, switch off a server or blackhole the client.
 
-Why we write it? Because we can't find any software for solving this problem not in proprietary world not in open source.
+Why did we write this? Because we can't find any software for solving this problem in the open source world! 
 
 - [Install manual for any Linux](INSTALL.md)
 - [Install manual for FreeBSD](FreeBSD_INSTALL.md)
@@ -19,16 +19,16 @@ Why we write it? Because we can't find any software for solving this problem not
 
 Features:
 - Can process incoming and outgoing traffic
-- Can trigger block script if certain IP load network with big amount of packets per second
-- Can trigger block script if certain IP load network with big amount of bytes per second
-- Can trigger block script if certain IP load network with big amount of flows per second
+- Can trigger block script if certain IP loads network with a large amount of packets per second
+- Can trigger block script if certain IP loads network with a large amount of bytes per second
+- Can trigger block script if certain IP loads network with a large amount of flows per second
 - netmap support (open source; wire speed processing; only Intel NICs)
-- PF_RING ZC/DNA support (wire speed processing on tens of MPPS but need [license](http://www.ntop.org/products/pf_ring/))
+- PF_RING ZC/DNA support (wire speed processing on tens of MPPS but needs [license](http://www.ntop.org/products/pf_ring/))
 - Can process ![sFLOW](http://sflow.org/images/sflowlogo.gif) v5
 - Can process NetFlow v5 and v9
 - Can use PCAP for packet sniffing
 - Can work on mirror/SPAN ports
-- Support L2TP decapsulation, VLAN untagging and MPLS processing in mirror mode 
+- Supports L2TP decapsulation, VLAN untagging and MPLS processing in mirror mode 
 - Can work on server/soft-router
 - Can detect DoS/DDoS in 1-2 seconds
 - Tested up to 10GE with 5-6 Mpps on Intel i7 2600 with Intel Nic 82599
@@ -39,13 +39,13 @@ Supported platforms:
 - FreeBSD 9, 10, 11
 - Mac OS X Yosemite 
 
-What is "flow" in FastNetMon terms? It's one or multiple connection udp, tcp, icmp with unique src IP, dst IP, src port, dst port and protocol.
+What is "flow" in FastNetMon terms? It's one or multiple udp, tcp, icmp connections with unique src IP, dst IP, src port, dst port and protocol.
 
-Main programm screen image:
+Main program screen image:
 
 ![Main screen image](images/fastnetmon_screen.png)
 
-Example for cpu load for Intel i7 2600 with Intel X540/82599 NIC on 400 kpps load:
+Example for cpu load on Intel i7 2600 with Intel X540/82599 NIC on 400 kpps load:
 ![Cpu consumption](images/fastnetmon_stats.png)
 
 Example deployment scheme:
@@ -133,4 +133,4 @@ IP: xx.zz.xx.1
 2014-11-21 08:01:11.419963 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
 ```
 
-How to enable sFLOW? Please specify IP of server with installed FastNetMon and specify 6343 port. 
+To enable sFLOW simply specify IP of server with installed FastNetMon and specify port 6343. 
