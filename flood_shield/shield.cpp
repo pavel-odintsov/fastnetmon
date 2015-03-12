@@ -4,10 +4,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
+#include <string>
+#include <map>
 
+/* Prototypes */
 void parse_packet_pf_ring(const struct pfring_pkthdr *packet_header, const u_char *packetptr, const u_char *user_bytes);
 int shield();
 int extract_bit_value(uint8_t num, int bit);
+std::string convert_ip_as_integer_to_string(uint32_t ip_in_host_byte_order);
 
 int main() {
     shield();
@@ -52,7 +56,9 @@ int shield() {
     pfring_loop(pf_ring_descr, parse_packet_pf_ring, (u_char*)NULL, wait_for_packet);
 }
 
-int parse_http_request(const u_char* buf, int packet_len) {
+int parse_http_request(const u_char* buf, int packet_len, uint32_t client_ip_as_integer) {
+    std::string client_ip = convert_ip_as_integer_to_string(client_ip_as_integer);
+
     const char *method, *path;
     int pret, minor_version;
     struct phr_header headers[100];
@@ -74,19 +80,50 @@ int parse_http_request(const u_char* buf, int packet_len) {
         return 1;
     }
 
-    /*
-    printf("request is %d bytes long\n", pret);
-    printf("method is %.*s\n", (int)method_len, method);
-    printf("path is %.*s\n", (int)path_len, path);
-    printf("HTTP version is 1.%d\n", minor_version);
-    printf("headers:\n");
-    for (int i = 0; i != num_headers; ++i) {
-        printf("%.*s: %.*s\n", (int)headers[i].name_len, headers[i].name,
-            (int)headers[i].value_len, headers[i].value);
-    }
-    */
+    typedef struct leaf_struct {
+        time_t* last_modified_time;
+    } leaf_struct;
 
+    typedef std::map<std::string, int> map_struct_for_counters_t;
+    map_struct_for_counters_t hashmap_for_counters;
+
+    std::string host_string = "";
+    std::string method_string = std::string(method, method_len);
+    std::string path_string = std::string(path, (int)path_len);
+
+    // You could find examples for parser here: https://github.com/h2o/picohttpparser/blob/master/test.c
+    for (int i = 0; i != num_headers; ++i) {
+        if (strstr(headers[i].name, "Host") != NULL) {
+            host_string = std::string(headers[i].value, (int)headers[i].value_len);
+        }
+
+        //printf("%.*s: %.*s\n", (int)headers[i].name_len, headers[i].name,
+        //    (int)headers[i].value_len, headers[i].value);
+    }
+
+    std::string hash_key = client_ip + ":" + host_string + ":" + method_string + ":" + path_string; 
+    //printf("key: %s\n", hash_key.c_str());
+    
+    map_struct_for_counters_t::iterator itr = hashmap_for_counters.find(hash_key);
+
+    if (itr == hashmap_for_counters.end()) {
+        // not found, new record
+        hashmap_for_counters[hash_key] = 1;
+    } else {
+        hashmap_for_counters[hash_key]++;
+    }
+    
     return 0;
+}
+
+std::string convert_ip_as_integer_to_string(uint32_t ip_in_host_byte_order) {
+    struct sockaddr_in sa; 
+    // convert host byte order to network byte order
+    sa.sin_addr.s_addr = htonl(ip_in_host_byte_order);
+    char str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(sa.sin_addr), str, INET_ADDRSTRLEN);
+    
+    return std::string(str);
 }
 
 void parse_packet_pf_ring(const struct pfring_pkthdr *packet_header, const u_char *packetptr, const u_char *user_bytes) {
@@ -119,7 +156,10 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *packet_header, const u_cha
     //printf("We got request to 80 port\n");
     //printf("payload shift: %d\n", packet_header.extended_hdr.parsed_pkt.offset.payload_offset);
 
-    int result = parse_http_request(packetptr + packet_header->extended_hdr.parsed_pkt.offset.payload_offset, packet_header->len);    
+    int result = parse_http_request(packetptr + packet_header->extended_hdr.parsed_pkt.offset.payload_offset,
+        packet_header->len,
+        packet_header->extended_hdr.parsed_pkt.ip_src.v4
+    ); 
     
     if (result != 0) {
         char print_buffer[512];
