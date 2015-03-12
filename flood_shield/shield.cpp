@@ -8,14 +8,24 @@
 
 void process_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *packetptr);
 int shield();
+int extract_bit_value(uint8_t num, int bit);
 
 int main() {
     shield();
 }
 
+// http://stackoverflow.com/questions/14528233/bit-masking-in-c-how-to-get-first-bit-of-a-byte
+int extract_bit_value(uint8_t num, int bit) {
+    if (bit > 0 && bit <= 8) {
+        return ( (num >> (bit-1)) & 1 );
+    } else {
+        return 0;
+    }
+}
+
 int shield() {
     char errbuf[PCAP_ERRBUF_SIZE];
-    pcap_t* descr = pcap_create("eth0", errbuf);
+    pcap_t* descr = pcap_create("eth4", errbuf);
 
     if (descr == NULL) {
         printf("Can't create pcap descriptor\n");
@@ -31,14 +41,14 @@ int shield() {
     } 
 
     if (pcap_activate(descr) != 0) {
-        printf("Call pcap_activate was failed");
+        printf("Call pcap_activate was failed\n");
         exit(1);
     }
 
     pcap_loop(descr, -1, (pcap_handler)process_packet, NULL);
 }
 
-void parse_http_request(const u_char* buf, int packet_len) {
+int parse_http_request(const u_char* buf, int packet_len) {
     const char *method, *path;
     int pret, minor_version;
     struct phr_header headers[100];
@@ -56,8 +66,8 @@ void parse_http_request(const u_char* buf, int packet_len) {
     if (pret > 0) {
         printf("We successfully parsed the request\n");
     } else {
-        printf("Parser failed");
-        return;
+        printf("Parser failed\n");
+        return 1;
     }
 
     printf("request is %d bytes long\n", pret);
@@ -69,6 +79,8 @@ void parse_http_request(const u_char* buf, int packet_len) {
         printf("%.*s: %.*s\n", (int)headers[i].name_len, headers[i].name,
             (int)headers[i].value_len, headers[i].value);
     }
+
+    return 0;
 }
 
 void process_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *packetptr) {
@@ -78,12 +90,38 @@ void process_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *p
     packet_header.caplen = packethdr->caplen;
 
     fastnetmon_parse_pkt((u_char*)packetptr, &packet_header, 4, 1, 0);
+    
+    // Ignore tcp handshake requests
+    if (extract_bit_value(packet_header.extended_hdr.parsed_pkt.tcp.flags, 2) or // SYN
+        extract_bit_value(packet_header.extended_hdr.parsed_pkt.tcp.flags, 1)    // FIN
+    ) {
+        // printf("!!! skip syn/fin !!!\n");
+        return;
+    }
+
+    // Skip zero length packets (also part of tcp/ip handshake)
+    if (packet_header.len == packet_header.extended_hdr.parsed_pkt.offset.payload_offset) {
+        // printf("Skip zero length packet\n");
+        return;
+    }
 
     // We process only packets arrives at 80 port
     // TBD: add SNI support
     if (packet_header.extended_hdr.parsed_pkt.l4_dst_port != 80) {
+        //char print_buffer[512];
+        //fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)packetptr, &packet_header);
+        //printf("%s", print_buffer);
         return;
-    }
+    } 
 
-    parse_http_request(packetptr, packethdr->len);    
+    //printf("We got request to 80 port\n");
+    //printf("payload shift: %d\n", packet_header.extended_hdr.parsed_pkt.offset.payload_offset);
+
+    int result = parse_http_request(packetptr + packet_header.extended_hdr.parsed_pkt.offset.payload_offset, packethdr->len);    
+    
+    if (result != 0) {
+        char print_buffer[512];
+        fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)packetptr, &packet_header);
+        printf("%s", print_buffer);
+    }
 }
