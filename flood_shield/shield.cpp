@@ -6,6 +6,8 @@
 #include <iostream>
 #include <string>
 #include <map>
+#include <vector>
+#include <list>
 
 /* Prototypes */
 void parse_packet_pf_ring(const struct pfring_pkthdr *packet_header, const u_char *packetptr, const u_char *user_bytes);
@@ -56,6 +58,13 @@ int shield() {
     pfring_loop(pf_ring_descr, parse_packet_pf_ring, (u_char*)NULL, wait_for_packet);
 }
 
+typedef struct leaf_struct {
+    time_t* last_modified_time;
+} leaf_struct;
+
+typedef std::map<std::string, std::vector<time_t> > map_struct_for_counters_t;
+map_struct_for_counters_t hashmap_for_counters;
+
 int parse_http_request(const u_char* buf, int packet_len, uint32_t client_ip_as_integer) {
     std::string client_ip = convert_ip_as_integer_to_string(client_ip_as_integer);
 
@@ -80,13 +89,6 @@ int parse_http_request(const u_char* buf, int packet_len, uint32_t client_ip_as_
         return 1;
     }
 
-    typedef struct leaf_struct {
-        time_t* last_modified_time;
-    } leaf_struct;
-
-    typedef std::map<std::string, int> map_struct_for_counters_t;
-    map_struct_for_counters_t hashmap_for_counters;
-
     std::string host_string = "";
     std::string method_string = std::string(method, method_len);
     std::string path_string = std::string(path, (int)path_len);
@@ -106,11 +108,27 @@ int parse_http_request(const u_char* buf, int packet_len, uint32_t client_ip_as_
     
     map_struct_for_counters_t::iterator itr = hashmap_for_counters.find(hash_key);
 
+    unsigned int recalculation_time = 60;
+    time_t current_time;
+    time(&current_time);
+    unsigned int current_second = 55;
+
     if (itr == hashmap_for_counters.end()) {
-        // not found, new record
-        hashmap_for_counters[hash_key] = 1;
+        // not found, create new record
+        hashmap_for_counters[hash_key] = std::vector<time_t>();
+        hashmap_for_counters[hash_key].reserve(recalculation_time);
+
+        hashmap_for_counters[hash_key][current_second]++;
+
+        // We could use current second of minute from current time as index!
     } else {
-        hashmap_for_counters[hash_key]++;
+        // Iterate over all list and count number of request arrived in last 60 seconds
+        // append to already created list
+        // TBD: we could allocate X cages for every second and add data to they
+
+        //hashmap_for_counters[hash_key].push_back(current_time);
+        // TODO:
+        //itr.[current_second]++;
     }
     
     return 0;
