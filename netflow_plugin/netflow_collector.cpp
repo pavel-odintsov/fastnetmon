@@ -145,6 +145,10 @@ int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simp
         V9_FIELD_ADDR(NF9_IPV4_SRC_ADDR, SRC_ADDR4, src_ip);
         V9_FIELD_ADDR(NF9_IPV4_DST_ADDR, DST_ADDR4, dst_ip);
 
+	// Sampling rate
+	// We use NULL as second argument because it's suelles for us
+	V9_FIELD(NF9_SAMPLING_INTERVAL, NULL, sample_ratio);
+
         //V9_FIELD(NF9_SRC_TOS, PROTO_FLAGS_TOS, pft.tos);
         //V9_FIELD(NF9_SRC_MASK, AS_INFO, asinf.src_mask);
         //V9_FIELD(NF9_INPUT_SNMP, IF_INDICES, ifndx.if_index_in);

@@ -184,6 +184,10 @@ struct NF9_DATA_FLOWSET_HEADER {
 #define NF9_IPV6_DST_ADDR		28
 #define NF9_IPV6_SRC_MASK		29
 #define NF9_IPV6_DST_MASK		30
+
+/* Added by Odintsov Pavel */
+#define NF9_SAMPLING_INTERVAL           34
+
 /* ... */
 #define NF9_ENGINE_TYPE			38
 #define NF9_ENGINE_ID			39
