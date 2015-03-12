@@ -22,5 +22,5 @@ cmake ..
 make
 ```
 
-
+For netmap support you may need compile kernel manually with this [manual](BUILDING_FREEBSD_KERNEL_FOR_NETMAP.md).
 
