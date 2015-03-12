@@ -147,7 +147,8 @@ int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simp
 
 	// Sampling rate
 	// We use NULL as second argument because it's suelles for us
-	V9_FIELD(NF9_SAMPLING_INTERVAL, NULL, sample_ratio);
+	// It did not help us because looks like sampling rate moved to commercial fields
+	// V9_FIELD(NF9_SAMPLING_INTERVAL, NULL, sample_ratio);
 
         //V9_FIELD(NF9_SRC_TOS, PROTO_FLAGS_TOS, pft.tos);
         //V9_FIELD(NF9_SRC_MASK, AS_INFO, asinf.src_mask);
