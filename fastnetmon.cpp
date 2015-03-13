@@ -2720,15 +2720,15 @@ void print_attack_details_to_file(std::string details, std::string client_ip_as_
 }
 
 // Return true when we should ban this IP
-bool we_should_ban_this_ip(map_element* current_average_speed_element) {
-    uint64_t in_pps_average  = current_average_speed_element->in_packets;
-    uint64_t out_pps_average = current_average_speed_element->out_packets;
+bool we_should_ban_this_ip(map_element* average_speed_element) {
+    uint64_t in_pps_average  = average_speed_element->in_packets;
+    uint64_t out_pps_average = average_speed_element->out_packets;
 
-    uint64_t in_bps_average  = current_average_speed_element->in_bytes;
-    uint64_t out_bps_average = current_average_speed_element->out_bytes; 
+    uint64_t in_bps_average  = average_speed_element->in_bytes;
+    uint64_t out_bps_average = average_speed_element->out_bytes; 
 
-    uint64_t in_flows_average  = current_average_speed_element->in_flows;
-    uint64_t out_flows_average = current_average_speed_element->out_flows;
+    uint64_t in_flows_average  = average_speed_element->in_flows;
+    uint64_t out_flows_average = average_speed_element->out_flows;
 
     // we detect overspeed by packets
     bool attack_detected_by_pps = false;
