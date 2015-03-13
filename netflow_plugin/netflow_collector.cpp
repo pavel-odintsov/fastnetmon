@@ -25,6 +25,9 @@
 // Get it from main programm
 extern log4cpp::Category& logger;
 
+// Global configuration map 
+extern std::map<std::string, std::string> configuration_map;
+
 #include "netflow_collector.h"
 #include "netflow.h"
 
@@ -141,6 +144,11 @@ int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simp
       
         V9_FIELD_ADDR(NF9_IPV4_SRC_ADDR, SRC_ADDR4, src_ip);
         V9_FIELD_ADDR(NF9_IPV4_DST_ADDR, DST_ADDR4, dst_ip);
+
+	// Sampling rate
+	// We use NULL as second argument because it's suelles for us
+	// It did not help us because looks like sampling rate moved to commercial fields
+	// V9_FIELD(NF9_SAMPLING_INTERVAL, NULL, sample_ratio);
 
         //V9_FIELD(NF9_SRC_TOS, PROTO_FLAGS_TOS, pft.tos);
         //V9_FIELD(NF9_SRC_MASK, AS_INFO, asinf.src_mask);
@@ -431,9 +439,17 @@ void process_netflow_packet(u_int len, u_int8_t *packet) {
     }
 }
 
+unsigned int netflow_port = 2055;
+
 void start_netflow_collection(process_packet_pointer func_ptr) {
     logger<< log4cpp::Priority::INFO<<"netflow plugin started";
     netflow_process_func_ptr = func_ptr;
+
+    if (configuration_map.count("netflow_port") != 0) {
+        netflow_port = convert_string_to_integer(configuration_map["netflow_port"]);
+    }
+
+    logger<< log4cpp::Priority::INFO<<"netflow plugin will listen on "<<netflow_port<< " udp port"; 
 
     unsigned int udp_buffer_size = 65536;
     char udp_buffer[udp_buffer_size];
@@ -443,8 +459,6 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
     struct sockaddr_in servaddr;
     memset(&servaddr, 0, sizeof(servaddr));
    
-    unsigned int netflow_port = 2055;
- 
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(netflow_port);
