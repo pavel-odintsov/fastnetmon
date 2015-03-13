@@ -41,4 +41,4 @@ chmod 755 /usr/local/bin/notify_about_attack.sh
 ```
 After copying the file, you need to open it and configure the 'email_notify' option as required.
 
-Guide for manual install (for unsupported platforms): [link](docs/MANUAL_INSTALL.md)
+Guide for manual install (for unsupported platforms): [link](MANUAL_INSTALL.md)
