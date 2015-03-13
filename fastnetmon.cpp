@@ -385,7 +385,7 @@ std::string convert_timeval_to_date(struct timeval tv);
 void free_up_all_resources();
 unsigned int get_cidr_mask_from_network_as_string(std::string network_cidr_format);
 std::string print_ddos_attack_details();
-void execute_ip_ban(uint32_t client_ip, map_element new_speed_element, uint64_t in_pps, uint64_t out_pps, uint64_t in_bps, uint64_t out_bps, uint64_t in_flows, uint64_t out_flows, std::string flow_attack_details);
+void execute_ip_ban(uint32_t client_ip, map_element new_speed_element, map_element current_speed_element, std::string flow_attack_details);
 direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet);
 void recalculate_speed();
 std::string print_channel_speed(std::string traffic_type, direction packet_direction);
@@ -1549,16 +1549,6 @@ void recalculate_speed() {
 
             /* Moving average recalculation end */
 
-            // TODO: remove this useless variables!
-            uint64_t in_pps_average  = current_average_speed_element->in_packets;
-            uint64_t out_pps_average = current_average_speed_element->out_packets;
-
-            uint64_t in_bps_average  = current_average_speed_element->in_bytes;
-            uint64_t out_bps_average = current_average_speed_element->out_bytes; 
-
-            uint64_t in_flows_average  = current_average_speed_element->in_flows;
-            uint64_t out_flows_average = current_average_speed_element->out_flows;
-
             if (we_should_ban_this_ip(current_average_speed_element)) {
                 std::string flow_attack_details = "";
                 
@@ -1567,7 +1557,7 @@ void recalculate_speed() {
                 }
         
                 // TODO: we should pass type of ddos ban source (pps, flowd, bandwidth)!
-                execute_ip_ban(client_ip, new_speed_element, in_pps_average, out_pps_average, in_bps_average, out_bps_average, in_flows_average, out_flows_average, flow_attack_details);
+                execute_ip_ban(client_ip, new_speed_element, *current_average_speed_element, flow_attack_details);
             }
     
             speed_counters_mutex.lock();
@@ -1995,9 +1985,16 @@ unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp) {
     return 0;
 }
 
-void execute_ip_ban(uint32_t client_ip, map_element speed_element, uint64_t in_pps, uint64_t out_pps, uint64_t in_bps, uint64_t out_bps, uint64_t in_flows, uint64_t out_flows, std::string flow_attack_details) {
+void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element average_speed_element, std::string flow_attack_details) {
     struct attack_details current_attack;
     uint64_t pps = 0;
+
+    uint64_t in_pps = average_speed_element.in_packets; 
+    uint64_t out_pps = average_speed_element.out_packets;
+    uint64_t in_bps = average_speed_element.in_bytes;
+    uint64_t out_bps = average_speed_element.out_bytes;
+    uint64_t in_flows = average_speed_element.in_flows;
+    uint64_t out_flows = average_speed_element.out_flows;
 
     direction data_direction;
 
