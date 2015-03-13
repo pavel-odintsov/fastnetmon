@@ -29,8 +29,11 @@
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
-// Get it from main programm
+// Get logger from main programm
 extern log4cpp::Category& logger;
+
+// Global configuration map 
+extern std::map<std::string, std::string> configuration_map;
 
 /* same for tcp */
 struct mytcphdr {
@@ -249,8 +252,15 @@ void print_simple_packet(struct simple_packet& packet);
 
 process_packet_pointer process_func_ptr = NULL;
 
+unsigned int sflow_port = 6343; 
 void start_sflow_collection(process_packet_pointer func_ptr) {
     logger<< log4cpp::Priority::INFO<<"sflow plugin started";
+
+    if (configuration_map.count("sflow_port") != 0) {
+        sflow_port = convert_string_to_integer(configuration_map["sflow_port"]);
+    }
+
+    logger<< log4cpp::Priority::INFO<<"sflow plugin will listen on "<<sflow_port<< " udp port"; 
  
     process_func_ptr = func_ptr;
 
@@ -262,8 +272,6 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
     struct sockaddr_in servaddr;
     memset(&servaddr, 0, sizeof(servaddr));
     
-    unsigned int sflow_port = 6343;
-
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr=htonl(INADDR_ANY);
     servaddr.sin_port = htons(sflow_port);
