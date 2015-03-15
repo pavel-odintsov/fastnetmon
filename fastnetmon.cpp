@@ -238,7 +238,7 @@ public:
 class attack_details : public map_element {
     public:
     attack_details() :
-        attack_protocol(0), attack_power(0), max_attack_power(0), average_in_bytes(0), average_out_bytes(0), average_in_packets(0), average_out_packets(0), average_in_flows(0), average_out_flows(0) {
+        attack_protocol(0), attack_power(0), max_attack_power(0), average_in_bytes(0), average_out_bytes(0), average_in_packets(0), average_out_packets(0), average_in_flows(0), average_out_flows(0), ban_time(standard_ban_time), attack_direction(OTHER) {
     }    
     direction attack_direction;
     // first attackpower detected
@@ -488,7 +488,6 @@ std::vector<std::string> exec(std::string cmd) {
     if (!pipe) return output_list;
 
     char buffer[256];
-    std::string result = "";
     while(!feof(pipe)) {
         if(fgets(buffer, 256, pipe) != NULL) {
             size_t newbuflen = strlen(buffer);
@@ -926,7 +925,7 @@ void zeroify_all_counters() {
     map_element zero_map_element;
     memset(&zero_map_element, 0, sizeof(zero_map_element));
 
-    for (map_of_vector_counters::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); itr++) {
+    for (map_of_vector_counters::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); ++itr) {
         //logger<< log4cpp::Priority::INFO<<"Zeroify "<<itr->first;
         std::fill(itr->second.begin(), itr->second.end(), zero_map_element); 
     }
@@ -937,9 +936,9 @@ void zeroify_all_flow_counters() {
     conntrack_main_struct zero_conntrack_main_struct;
 
     // Iterate over map
-    for (map_of_vector_counters_for_flow::iterator itr = SubnetVectorMapFlow.begin(); itr != SubnetVectorMapFlow.end(); itr++) {
+    for (map_of_vector_counters_for_flow::iterator itr = SubnetVectorMapFlow.begin(); itr != SubnetVectorMapFlow.end(); ++itr) {
         // Iterate over vector
-        for (vector_of_flow_counters::iterator vector_iterator = itr->second.begin(); vector_iterator != itr->second.end(); vector_iterator++) {
+        for (vector_of_flow_counters::iterator vector_iterator = itr->second.begin(); vector_iterator != itr->second.end(); ++vector_iterator) {
             // TODO: rewrite this monkey code
             vector_iterator->in_tcp.clear();
             vector_iterator->in_udp.clear();
@@ -1240,7 +1239,7 @@ void process_packet(simple_packet& current_packet) {
         }
 
         // Collect data when ban client
-        if  (ban_list_details.size() > 0 && ban_list_details.count(current_packet.src_ip) > 0 &&
+        if  (!ban_list_details.empty() && ban_list_details.count(current_packet.src_ip) > 0 &&
             ban_list_details[current_packet.src_ip].size() < ban_details_records_count) {
 
             ban_list_details_mutex.lock();
@@ -1330,7 +1329,7 @@ void process_packet(simple_packet& current_packet) {
         }
 
         // Collect attack details
-        if  (ban_list_details.size() > 0 && ban_list_details.count(current_packet.dst_ip) > 0 &&
+        if  (!ban_list_details.empty() && ban_list_details.count(current_packet.dst_ip) > 0 &&
             ban_list_details[current_packet.dst_ip].size() < ban_details_records_count) {
 
             ban_list_details_mutex.lock();
@@ -2244,7 +2243,7 @@ void cleanup_ban_list() {
 
                 ban_list_mutex.lock();
                 std::map<uint32_t,banlist_item>::iterator itr_to_erase = itr;
-                itr++;
+                ++itr;
 
                 ban_list.erase(itr_to_erase);
                 ban_list_mutex.unlock();
@@ -2262,7 +2261,7 @@ void cleanup_ban_list() {
                     logger<<log4cpp::Priority::INFO<<"Script for unban client is finished: "<<client_ip_as_string;
                 }
             } else {
-               itr++; 
+               ++itr; 
             } 
         }
     }
@@ -2286,7 +2285,6 @@ std::string print_ddos_attack_details() {
         uint32_t client_ip = (*ii).first; 
 
         std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
-        std::string pps_as_string = convert_int_to_string(((*ii).second).attack_power);
         std::string max_pps_as_string = convert_int_to_string(((*ii).second).max_attack_power);
         std::string attack_direction = get_direction_name(((*ii).second).attack_direction);
 
