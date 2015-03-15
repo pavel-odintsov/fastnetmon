@@ -360,6 +360,7 @@ bool process_outgoing_traffic = true;
 void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_string);
 #endif
 
+bool we_should_ban_this_ip(map_element* current_average_speed_element);
 std::string get_net_address_from_network_as_string(std::string network_cidr_format);
 unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp);
 std::string get_printable_protocol_name(unsigned int protocol);
@@ -384,7 +385,7 @@ std::string convert_timeval_to_date(struct timeval tv);
 void free_up_all_resources();
 unsigned int get_cidr_mask_from_network_as_string(std::string network_cidr_format);
 std::string print_ddos_attack_details();
-void execute_ip_ban(uint32_t client_ip, map_element new_speed_element, uint64_t in_pps, uint64_t out_pps, uint64_t in_bps, uint64_t out_bps, uint64_t in_flows, uint64_t out_flows, std::string flow_attack_details);
+void execute_ip_ban(uint32_t client_ip, map_element new_speed_element, map_element current_speed_element, std::string flow_attack_details);
 direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet);
 void recalculate_speed();
 std::string print_channel_speed(std::string traffic_type, direction packet_direction);
@@ -1545,36 +1546,9 @@ void recalculate_speed() {
             current_average_speed_element->in_flows = uint64_t(new_speed_element.in_flows + exp_value *
                 ((double)current_average_speed_element->in_flows -  (double)new_speed_element.in_flows));
 
-            uint64_t in_pps_average  = current_average_speed_element->in_packets;
-            uint64_t out_pps_average = current_average_speed_element->out_packets;
-
-            uint64_t in_bps_average  = current_average_speed_element->in_bytes;
-            uint64_t out_bps_average = current_average_speed_element->out_bytes; 
-
-            uint64_t in_flows_average  = current_average_speed_element->in_flows;
-            uint64_t out_flows_average = current_average_speed_element->out_flows;
-
             /* Moving average recalculation end */
 
-            // we detect overspeed by packets
-            bool attack_detected_by_pps = false;
-            bool attack_detected_by_bandwidth = false;
-            bool attack_detected_by_flow = false;
-
-            if (enable_ban_for_pps && (in_pps_average > ban_threshold_pps or out_pps_average > ban_threshold_pps)) {
-                attack_detected_by_pps = true;
-            }
-
-            // we detect overspeed by bandwidth
-            if (enable_ban_for_bandwidth && (convert_speed_to_mbps(in_bps_average) > ban_threshold_mbps or convert_speed_to_mbps(out_bps_average) > ban_threshold_mbps)) {
-                attack_detected_by_bandwidth = true;
-            }
-
-            if (enable_ban_for_flows_per_second && (in_flows_average > ban_threshold_flows or out_flows_average > ban_threshold_flows)) {
-                attack_detected_by_flow = true; 
-            } 
-
-            if (attack_detected_by_pps or attack_detected_by_bandwidth or attack_detected_by_flow) {
+            if (we_should_ban_this_ip(current_average_speed_element)) {
                 std::string flow_attack_details = "";
                 
                 if (enable_conection_tracking) {
@@ -1582,7 +1556,7 @@ void recalculate_speed() {
                 }
         
                 // TODO: we should pass type of ddos ban source (pps, flowd, bandwidth)!
-                execute_ip_ban(client_ip, new_speed_element, in_pps_average, out_pps_average, in_bps_average, out_bps_average, in_flows_average, out_flows_average, flow_attack_details);
+                execute_ip_ban(client_ip, new_speed_element, *current_average_speed_element, flow_attack_details);
             }
     
             speed_counters_mutex.lock();
@@ -2010,9 +1984,16 @@ unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp) {
     return 0;
 }
 
-void execute_ip_ban(uint32_t client_ip, map_element speed_element, uint64_t in_pps, uint64_t out_pps, uint64_t in_bps, uint64_t out_bps, uint64_t in_flows, uint64_t out_flows, std::string flow_attack_details) {
+void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element average_speed_element, std::string flow_attack_details) {
     struct attack_details current_attack;
     uint64_t pps = 0;
+
+    uint64_t in_pps = average_speed_element.in_packets; 
+    uint64_t out_pps = average_speed_element.out_packets;
+    uint64_t in_bps = average_speed_element.in_bytes;
+    uint64_t out_bps = average_speed_element.out_bytes;
+    uint64_t in_flows = average_speed_element.in_flows;
+    uint64_t out_flows = average_speed_element.out_flows;
 
     direction data_direction;
 
@@ -2736,4 +2717,33 @@ void print_attack_details_to_file(std::string details, std::string client_ip_as_
     }    
 }
 
+// Return true when we should ban this IP
+bool we_should_ban_this_ip(map_element* average_speed_element) {
+    uint64_t in_pps_average  = average_speed_element->in_packets;
+    uint64_t out_pps_average = average_speed_element->out_packets;
 
+    uint64_t in_bps_average  = average_speed_element->in_bytes;
+    uint64_t out_bps_average = average_speed_element->out_bytes; 
+
+    uint64_t in_flows_average  = average_speed_element->in_flows;
+    uint64_t out_flows_average = average_speed_element->out_flows;
+
+    // we detect overspeed by packets
+    bool attack_detected_by_pps = false;
+    bool attack_detected_by_bandwidth = false;
+    bool attack_detected_by_flow = false;
+    if (enable_ban_for_pps && (in_pps_average > ban_threshold_pps or out_pps_average > ban_threshold_pps)) {
+        attack_detected_by_pps = true;
+    }    
+
+    // we detect overspeed by bandwidth
+    if (enable_ban_for_bandwidth && (convert_speed_to_mbps(in_bps_average) > ban_threshold_mbps or convert_speed_to_mbps(out_bps_average) > ban_threshold_mbps)) {
+        attack_detected_by_bandwidth = true;
+    }
+
+    if (enable_ban_for_flows_per_second && (in_flows_average > ban_threshold_flows or out_flows_average > ban_threshold_flows)) {
+        attack_detected_by_flow = true;
+    }
+
+    return attack_detected_by_pps or attack_detected_by_bandwidth or attack_detected_by_flow;
+}
