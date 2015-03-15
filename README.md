@@ -22,7 +22,7 @@ Features:
 - Can trigger block script if certain IP loads network with a large amount of packets per second
 - Can trigger block script if certain IP loads network with a large amount of bytes per second
 - Can trigger block script if certain IP loads network with a large amount of flows per second
-- netmap support (open source; wire speed processing; only Intel NICs)
+- netmap support (open source; wire speed processing; only Intel hardware NICs or any hypervisor VM type)
 - PF_RING ZC/DNA support (wire speed processing on tens of MPPS but needs [license](http://www.ntop.org/products/pf_ring/))
 - Can process ![sFLOW](http://sflow.org/images/sflowlogo.gif) v5
 - Can process NetFlow v5 and v9
