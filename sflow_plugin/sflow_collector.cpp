@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <arpa/inet.h>
 
 // UDP server
 #include <sys/socket.h>
@@ -255,12 +256,17 @@ process_packet_pointer process_func_ptr = NULL;
 unsigned int sflow_port = 6343; 
 void start_sflow_collection(process_packet_pointer func_ptr) {
     logger<< log4cpp::Priority::INFO<<"sflow plugin started";
+    std::string interface_for_binding = "0.0.0.0";
 
     if (configuration_map.count("sflow_port") != 0) {
         sflow_port = convert_string_to_integer(configuration_map["sflow_port"]);
     }
 
-    logger<< log4cpp::Priority::INFO<<"sflow plugin will listen on "<<sflow_port<< " udp port"; 
+    if (configuration_map.count("sflow_host") != 0) {
+        interface_for_binding = configuration_map["sflow_host"];
+    }
+
+    logger<< log4cpp::Priority::INFO<<"sflow plugin will listen on "<<interface_for_binding<<":"<<sflow_port<< " udp port"; 
  
     process_func_ptr = func_ptr;
 
@@ -273,7 +279,13 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
     memset(&servaddr, 0, sizeof(servaddr));
     
     servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr=htonl(INADDR_ANY);
+  
+    if (interface_for_binding == "0.0.0.0") {
+        servaddr.sin_addr.s_addr=htonl(INADDR_ANY);
+    } else {
+        servaddr.sin_addr.s_addr = inet_addr(interface_for_binding.c_str());
+    }
+
     servaddr.sin_port = htons(sflow_port);
     int bind_result = bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
 
