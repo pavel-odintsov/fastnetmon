@@ -8,6 +8,8 @@
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
+#include <boost/algorithm/string.hpp>
+
 // For support uint32_t, uint16_t
 #include <sys/types.h>
 
@@ -47,8 +49,6 @@ extern uint64_t total_unparsed_packets;
 
 // Global configuration map 
 extern std::map<std::string, std::string> configuration_map;
-
-std::string interface_for_listening = "";
 
 // This variable name should be uniq for every plugin!
 process_packet_pointer netmap_process_func_ptr = NULL;
@@ -114,7 +114,7 @@ void consume_pkt(u_char* buffer, int len) {
     }
 }
 
-void receiver(void) {
+void receiver(std::string interface_for_listening) {
     struct  nm_desc *netmap_descriptor;
 
     u_int num_cpus = sysconf( _SC_NPROCESSORS_ONLN );
@@ -238,12 +238,28 @@ void start_netmap_collection(process_packet_pointer func_ptr) {
     logger<< log4cpp::Priority::INFO<<"Netmap plugin started";
     netmap_process_func_ptr = func_ptr;
 
+    std::string interfaces_list = "";
+
     if (configuration_map.count("interfaces") != 0) {
-        interface_for_listening = configuration_map[ "interfaces" ];
+        interfaces_list = configuration_map[ "interfaces" ];
     }
 
-    logger<< log4cpp::Priority::INFO<<"netmap will sniff interface: "<<interface_for_listening;
+    std::vector<std::string> interfaces_for_listen; 
+    boost::split( interfaces_for_listen, interfaces_list, boost::is_any_of(","), boost::token_compress_on );
 
-    boost::thread netmap_plugin_main_thread(receiver);
-    netmap_plugin_main_thread.join();
+    logger<< log4cpp::Priority::INFO<<"netmap will listen on "<<interfaces_for_listen.size()<<" interfaces";
+
+    boost::thread* netmap_main_threads[ interfaces_for_listen.size() ];
+
+    unsigned int threads_index = 0;
+
+    for (std::vector<std::string>::iterator interface = interfaces_for_listen.begin();
+        interface != interfaces_for_listen.end(); ++interface) {
+        logger<< log4cpp::Priority::INFO<<"netmap will sniff interface: "<<*interface;
+        netmap_main_threads[ threads_index++ ] = new boost::thread(receiver, *interface);
+    }
+
+    for (int thread_id = 0; thread_id < interfaces_for_listen.size(); thread_id++) {
+        netmap_main_threads[thread_id]->join();
+    }
 }

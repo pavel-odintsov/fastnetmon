@@ -10,10 +10,10 @@ What can we do? We can detect hosts in our own network with a large amount of pa
 
 Why did we write this? Because we can't find any software for solving this problem in the open source world! 
 
-- [Install manual for any Linux](INSTALL.md)
-- [Install manual for FreeBSD](FreeBSD_INSTALL.md)
-- [Install manual for Mac OS X](MAC_OS_INSTALL.md)
-- [Install manual for Slackware](SLACKWARE_INSTALL.md)
+- [Install manual for any Linux](docs/INSTALL.md)
+- [Install manual for FreeBSD](docs/FreeBSD_INSTALL.md)
+- [Install manual for Mac OS X](docs/MAC_OS_INSTALL.md)
+- [Install manual for Slackware](docs/SLACKWARE_INSTALL.md)
 
 [![Build Status](https://travis-ci.org/FastVPSEestiOu/fastnetmon.svg?branch=master)](https://travis-ci.org/FastVPSEestiOu/fastnetmon) [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/FastVPSEestiOu/fastnetmon?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
