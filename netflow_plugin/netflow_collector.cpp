@@ -35,7 +35,8 @@ extern std::map<std::string, std::string> configuration_map;
 
 process_packet_pointer netflow_process_func_ptr = NULL;
 
-std::map<u_int, struct peer_nf9_template> global_templates_array;
+std::map<u_int, struct peer_nf9_template>  global_netflow9_templates_array;
+std::map<u_int, struct peer_nf10_template> global_netflow10_templates_array;
 
 /* Prototypes */
 int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simple_packet& packet, netflow9_template_records_map& template_records);
@@ -43,10 +44,84 @@ int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simp
 struct peer_nf9_template* peer_nf9_find_template(u_int32_t source_id, u_int flowset_id) {
     // TODO: we ignore source_id !!! FIX IT
 
-    if (global_templates_array.count(flowset_id) > 0) {
-        return &global_templates_array[flowset_id];  
+    if (global_netflow9_templates_array.count(flowset_id) > 0) {
+        return &global_netflow9_templates_array[flowset_id];  
     } else {
         return NULL;
+    }
+}
+
+struct peer_nf10_template* peer_nf10_find_template(u_int32_t source_id, u_int flowset_id) {
+    // TODO: we ignore source_id !!! FIX IT
+
+    if (global_netflow10_templates_array.count(flowset_id) > 0) {
+        return &global_netflow10_templates_array[flowset_id];  
+    } else {
+        return NULL;
+    }   
+}
+
+int process_netflow_v10_template(u_int8_t *pkt, size_t len, u_int32_t source_id) {
+    struct NF10_FLOWSET_HEADER_COMMON *template_header = (struct NF10_FLOWSET_HEADER_COMMON *)pkt;
+    struct peer_nf10_template field_template;
+
+    if (len < sizeof(*template_header)) {
+        logger<< log4cpp::Priority::ERROR<<"Short netflow ipfix flowset template header";
+        return 1;
+    }
+
+    if (ntohs(template_header->flowset_id) != NF10_TEMPLATE_FLOWSET_ID) {
+        logger<< log4cpp::Priority::ERROR
+            <<"Function process_netflow_v10_template expects only NF10_TEMPLATE_FLOWSET_ID but got another id: "
+            <<ntohs(template_header->flowset_id);
+        return 1;
+    }
+
+    for (u_int offset = sizeof(*template_header); offset < len;) {
+        struct NF10_TEMPLATE_FLOWSET_HEADER* tmplh = (struct NF10_TEMPLATE_FLOWSET_HEADER*)(pkt + offset);
+
+        u_int template_id = ntohs(tmplh->template_id);
+        u_int count = ntohs(tmplh->count);
+        offset += sizeof(*tmplh);
+
+        netflow9_template_records_map template_records_map;
+        u_int total_size = 0;
+        for (u_int i = 0; i < count; i++) { 
+            if (offset >= len) {
+                logger<< log4cpp::Priority::ERROR<<"short netflow v.10 flowset  template";
+                return 1;
+            }
+
+            struct NF10_TEMPLATE_FLOWSET_RECORD *tmplr =  (struct NF10_TEMPLATE_FLOWSET_RECORD *)(pkt + offset);
+            u_int record_type   = ntohs(tmplr->type);
+            u_int record_length = ntohs(tmplr->length);
+
+            struct peer_nf9_record current_record;
+            current_record.type = record_type;
+            current_record.len  = record_length;
+
+            template_records_map.push_back(current_record);            
+
+            offset += sizeof(*tmplr);
+            if (record_type & NF10_ENTERPRISE) {
+                 offset += sizeof(u_int32_t);    /* XXX -- ? */
+            }
+
+            total_size += record_length;
+        }
+    
+        field_template.num_records = count;
+        field_template.total_len = total_size; 
+
+        field_template.records = template_records_map;
+
+        // TODO: update time to time template data
+        if (peer_nf10_find_template(source_id, template_id) != NULL) {
+            // logger<< log4cpp::Priority::INFO<<"We already have information about this template with id:"<<template_id;
+            continue;
+        } else {
+            global_netflow10_templates_array[ template_id ] = field_template;
+        } 
     }
 }
 
@@ -113,7 +188,7 @@ int process_netflow_v9_template(u_int8_t *pkt, size_t len, u_int32_t source_id) 
             // logger<< log4cpp::Priority::INFO<<"We already have information about this template with id:"<<template_id;
             continue;
         } else {
-            global_templates_array[ template_id ] = field_template;
+            global_netflow9_templates_array[ template_id ] = field_template;
         }
     }
 
