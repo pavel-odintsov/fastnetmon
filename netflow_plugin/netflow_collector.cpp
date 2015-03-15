@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -445,11 +446,17 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
     logger<< log4cpp::Priority::INFO<<"netflow plugin started";
     netflow_process_func_ptr = func_ptr;
 
+    std::string interface_for_binding = "0.0.0.0";
+
     if (configuration_map.count("netflow_port") != 0) {
         netflow_port = convert_string_to_integer(configuration_map["netflow_port"]);
     }
 
-    logger<< log4cpp::Priority::INFO<<"netflow plugin will listen on "<<netflow_port<< " udp port"; 
+    if (configuration_map.count("netflow_host") != 0) {
+        interface_for_binding = configuration_map["netflow_host"];
+    }
+
+    logger<< log4cpp::Priority::INFO<<"netflow plugin will listen on "<<interface_for_binding<<":"<<netflow_port<< " udp port"; 
 
     unsigned int udp_buffer_size = 65536;
     char udp_buffer[udp_buffer_size];
@@ -458,9 +465,15 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
 
     struct sockaddr_in servaddr;
     memset(&servaddr, 0, sizeof(servaddr));
-   
+
     servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    if (interface_for_binding == "0.0.0.0") {
+        servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    } else {
+        servaddr.sin_addr.s_addr = inet_addr(interface_for_binding.c_str());
+    }
+
     servaddr.sin_port = htons(netflow_port);
     
     int bind_result = bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
