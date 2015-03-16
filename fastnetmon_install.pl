@@ -144,10 +144,20 @@ sub install {
 
     print "Clone FastNetMon repo\n";
     chdir "/usr/src";
-    `git clone $fastnetmon_git_path`;
 
-    `mkdir /usr/src/fastnetmon/build`;
-    chdir "/usr/src/fastnetmon/build";
+    my $fastnetmon_code_dir = "/usr/src/fastnetmon";
+
+    if (-e $fastnetmon_code_dir) {
+        # Code already downloaded
+        chdir $fastnetmon_code_dir;
+        `git pull`;
+    } else {
+        # Update code
+        `git clone $fastnetmon_git_path`;
+    }
+
+    `mkdir -p $fastnetmon_code_dir/build`;
+    chdir "$fastnetmon_code_dir/build";
 
     my $cmake_params = "";
 
@@ -164,7 +174,7 @@ sub install {
 
     my $fastnetmon_dir = "/opt/fastnetmon";
 
-    my $fastnetmon_build_binary_path = "/usr/src/fastnetmon/build/fastnetmon";
+    my $fastnetmon_build_binary_path = "$fastnetmon_code_dir/build/fastnetmon";
 
     unless (-e $fastnetmon_build_binary_path) {
         die "Can't build fastnetmon!";
@@ -174,12 +184,12 @@ sub install {
 
     print "Install fastnetmon to dir $fastnetmon_dir\n";
     `cp $fastnetmon_build_binary_path $fastnetmon_dir/fastnetmon`;
-    `cp /usr/src/fastnetmon/build/fastnetmon_client $fastnetmon_dir/fastnetmon_client`;
+    `cp $fastnetmon_code_dir/build/fastnetmon_client $fastnetmon_dir/fastnetmon_client`;
 
     my $fastnetmon_config_path = "/etc/fastnetmon.conf";
     unless (-e $fastnetmon_config_path) {
         print "Create stub configuration file\n";
-        `cp /usr/src/fastnetmon/fastnetmon.conf $fastnetmon_config_path`;
+        `cp $fastnetmon_code_dir/fastnetmon.conf $fastnetmon_config_path`;
     
         my @interfaces = get_active_network_interfaces();
         my $interfaces_as_list = join ',', @interfaces;
@@ -194,7 +204,7 @@ sub install {
 }
 
 sub get_active_network_interfaces {
-    my @interfaces = `netstat -i|egrep -v 'lo|Iface|Kernel'|awk '{print \$1}'`;
+    my @interfaces = `LANG=C netstat -i|egrep -v 'lo|Iface|Kernel'|awk '{print \$1}'`;
     chomp @interfaces;
 
     my @clean_interfaces = ();
