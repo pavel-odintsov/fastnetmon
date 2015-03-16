@@ -62,6 +62,24 @@ struct peer_nf9_template* peer_nf10_find_template(u_int32_t source_id, u_int flo
     }   
 }
 
+std::string print_peer_nf9_template(struct peer_nf9_template& field_template) {
+    std::stringstream buffer;
+
+    buffer
+        <<"template_id: "<<field_template.template_id<<"\n"
+        <<"num records: "<<field_template.num_records<<"\n"
+        <<"total len: "  <<field_template.total_len<<"\n";
+
+    for (netflow9_template_records_map::iterator itr = field_template.records.begin(); itr != field_template.records.end(); ++itr) {
+        buffer<<"Records\n";
+
+        buffer<<"type: "<<itr->type<<"\n";
+        buffer<<"len: "<<itr->len<<"\n\n";
+    } 
+
+    return buffer.str();
+}
+
 int process_netflow_v10_template(u_int8_t *pkt, size_t len, u_int32_t source_id) {
     struct NF10_FLOWSET_HEADER_COMMON *template_header = (struct NF10_FLOWSET_HEADER_COMMON *)pkt;
     // We use same struct as netflow v9 because netflow v9 and v10 (ipfix) is compatible
@@ -122,9 +140,12 @@ int process_netflow_v10_template(u_int8_t *pkt, size_t len, u_int32_t source_id)
             // TODO: update time to time template data
             continue;
         } else {
+            // logger<< log4cpp::Priority::INFO<<print_peer_nf9_template(field_template);
             global_netflow10_templates_array[ template_id ] = field_template;
         } 
     }
+
+    return 0;
 }
 
 int process_netflow_v9_template(u_int8_t *pkt, size_t len, u_int32_t source_id) {
@@ -346,6 +367,80 @@ int process_netflow_v9_data(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hd
     return 0;
 }
 
+void process_netflow_packet_v10(u_int len, u_int8_t *packet) {
+    struct NF10_HEADER *nf10_hdr = (struct NF10_HEADER *)packet;
+    struct NF10_FLOWSET_HEADER_COMMON *flowset; 
+
+    u_int32_t i, pktlen, flowset_id, flowset_len, flowset_flows;
+    u_int32_t offset, source_id, total_flows;
+
+    if (len < sizeof(*nf10_hdr)) {
+        logger<< log4cpp::Priority::ERROR<<"Short netflow v10 header";
+        return;
+    }
+
+    /* v10 uses pkt length, not # of flows */
+    pktlen = ntohs(nf10_hdr->c.flows);
+    source_id = ntohl(nf10_hdr->source_id);
+
+    offset = sizeof(*nf10_hdr);
+    total_flows = 0;
+
+    for (i = 0;; i++) {
+        if (offset >= len) {
+            logger<< log4cpp::Priority::ERROR<<"We tried to read from address outside netflow packet";
+            return;
+        }
+
+        flowset = (struct NF10_FLOWSET_HEADER_COMMON *)(packet + offset);
+        flowset_id = ntohs(flowset->flowset_id);
+        flowset_len = ntohs(flowset->length);
+
+        /*
+         * Yes, this is a near duplicate of the short packet check
+         * above, but this one validates the flowset length from in
+         * the packet before we pass it to the flowset-specific
+         * handlers below.
+         */
+    
+        if (offset + flowset_len > len) {
+            logger<< log4cpp::Priority::ERROR<<"We tried to read from address outside netflow's packet flowset";
+            return;
+        }
+
+        switch (flowset_id) {
+            case NF10_TEMPLATE_FLOWSET_ID:
+                if (process_netflow_v10_template(packet + offset, flowset_len, source_id) != 0) {
+                    logger<<log4cpp::Priority::ERROR<<"Function process_netflow_v10_template executed with errors";
+                    break;
+                }
+                break;
+            case NF9_OPTIONS_FLOWSET_ID:
+                /* Not implemented yet */
+                break;
+            default:
+                if (flowset_id < NF10_MIN_RECORD_FLOWSET_ID) {
+                    logger<< log4cpp::Priority::ERROR<<"Received unknown netflow v10 reserved flowset type "<<flowset_id;
+                    break;
+                }
+
+                /*
+                if (process_netflow_v10_data(packet + offset, flowset_len, nf9_hdr, source_id) != 0) { 
+                    logger<< log4cpp::Priority::ERROR<<"Can't process function process_netflow_v10_data correctly";
+                    return;
+                }
+                */
+
+                break;
+        }
+
+        offset += flowset_len;
+        if (offset == len) {
+            break;
+        }
+    }
+}
+
 void process_netflow_packet_v9(u_int len, u_int8_t *packet) {
     //logger<< log4cpp::Priority::INFO<<"We get v9 netflow packet!";
 
@@ -509,6 +604,9 @@ void process_netflow_packet(u_int len, u_int8_t *packet) {
             break;
         case 9:
             process_netflow_packet_v9(len, packet);
+            break;
+        case 10:
+            process_netflow_packet_v10(len, packet);
             break;
         default:
             logger<< log4cpp::Priority::ERROR<<"We did not support this version of netflow "<<ntohs(hdr->version);
