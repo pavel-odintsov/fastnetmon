@@ -273,6 +273,10 @@ int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simp
         return 0;
 }
 
+void nf10_flowset_to_store(u_int8_t *pkt, size_t len, struct NF10_HEADER *nf10_hdr, netflow9_template_records_map& template_records) {
+    // do nothing
+}
+
 void nf9_flowset_to_store(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr, netflow9_template_records_map& template_records) {
     //if (template->total_len > len)
     //    return 1;
@@ -324,6 +328,48 @@ void nf9_flowset_to_store(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr,
     netflow_process_func_ptr(packet);
 }
 
+int process_netflow_v10_data(u_int8_t *pkt, size_t len, struct NF10_HEADER *nf10_hdr, u_int32_t source_id) {
+    struct NF10_DATA_FLOWSET_HEADER *dath = (struct NF10_DATA_FLOWSET_HEADER *)pkt;
+
+    if (len < sizeof(*dath)) {
+        logger<< log4cpp::Priority::INFO<<"Short netflow v10 data flowset header";
+        return 1;
+    }
+
+    u_int flowset_id = ntohs(dath->c.flowset_id);
+
+    struct peer_nf9_template *flowset_template = peer_nf9_find_template(source_id, flowset_id);
+
+    if (flowset_template == NULL) {
+        logger<< log4cpp::Priority::INFO<<"We haven't template for flowset_id: "<<flowset_id
+            <<" but it's not an error if this message go away in 5-10 seconds. We need some time to learn it!";
+
+        return 1;
+    }
+
+    if (flowset_template->records.empty()) {
+        logger<< log4cpp::Priority::ERROR<<"Blank records in template"; 
+        return 1;
+    }
+
+    u_int offset = sizeof(*dath);
+    u_int num_flowsets = (len - offset) / flowset_template->total_len;
+
+    if (num_flowsets == 0 || num_flowsets > 0x4000) {
+        logger<< log4cpp::Priority::ERROR<<"Invalid number of data flowset, strange number of flows: "<<num_flowsets;
+        return 1;
+    }
+
+    for (u_int i = 0; i < num_flowsets; i++) {
+        // process whole flowset
+        nf10_flowset_to_store(pkt + offset, flowset_template->total_len, nf10_hdr, flowset_template->records);
+
+        offset += flowset_template->total_len; 
+    }  
+
+    return 0;
+}
+
 int process_netflow_v9_data(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr, u_int32_t source_id) {
     struct NF9_DATA_FLOWSET_HEADER *dath = (struct NF9_DATA_FLOWSET_HEADER *)pkt;
 
@@ -344,7 +390,7 @@ int process_netflow_v9_data(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hd
         return 0;
     }
 
-    if (flowset_template->records.size() == 0) {
+    if (flowset_template->records.empty()) {
         logger<< log4cpp::Priority::ERROR<<"Blank records in template"; 
         return 1;
     }
@@ -415,7 +461,7 @@ void process_netflow_packet_v10(u_int len, u_int8_t *packet) {
                     break;
                 }
                 break;
-            case NF9_OPTIONS_FLOWSET_ID:
+            case NF10_OPTIONS_FLOWSET_ID:
                 /* Not implemented yet */
                 break;
             default:
@@ -424,12 +470,10 @@ void process_netflow_packet_v10(u_int len, u_int8_t *packet) {
                     break;
                 }
 
-                /*
-                if (process_netflow_v10_data(packet + offset, flowset_len, nf9_hdr, source_id) != 0) { 
+                if (process_netflow_v10_data(packet + offset, flowset_len, nf10_hdr, source_id) != 0) { 
                     logger<< log4cpp::Priority::ERROR<<"Can't process function process_netflow_v10_data correctly";
                     return;
                 }
-                */
 
                 break;
         }
