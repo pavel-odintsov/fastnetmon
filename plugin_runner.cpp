@@ -5,7 +5,7 @@
 #include <iterator>
 #include <sstream>
 #include <netinet/ip.h>
-
+#include <stdlib.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -28,11 +28,18 @@
 
 using namespace std;
 
+uint64_t total_unparsed_packets = 0;
+
 std::string log_file_path = "/tmp/fastnetmon_plugin_tester.log";
 log4cpp::Category& logger = log4cpp::Category::getRoot();
 
 // Global map with parsed config file
 std::map<std::string, std::string> configuration_map;
+
+// convert string to integer
+int convert_string_to_integer(std::string line) {
+    return atoi(line.c_str());
+}
 
 void init_logging() {
     log4cpp::PatternLayout* layout = new log4cpp::PatternLayout(); 
