@@ -39,14 +39,6 @@ struct peer_nf9_template {
         netflow9_template_records_map records;
 };
 
-/* A NetFlow ipfix v10 template record */
-struct peer_nf10_template {
-        u_int16_t template_id;
-        u_int num_records;
-        u_int total_len;
-        netflow9_template_records_map records;
-};
-
 // TODO: clean up!!! 
 #if defined(__GNUC__)
 # ifndef __dead
