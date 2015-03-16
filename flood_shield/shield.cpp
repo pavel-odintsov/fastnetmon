@@ -1,8 +1,11 @@
 #include "picohttpparser.h"
 #include "pfring.h"
+#include <sys/time.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+
 #include <iostream>
 #include <string>
 #include <map>
@@ -14,6 +17,55 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *packet_header, const u_cha
 int shield();
 int extract_bit_value(uint8_t num, int bit);
 std::string convert_ip_as_integer_to_string(uint32_t ip_in_host_byte_order);
+
+// https://www.mppmu.mpg.de/~huber/util/timevaldiff.c
+double timevaldiff(struct timeval *starttime, struct timeval *finishtime) {
+    double microsec = 0;
+
+    microsec =  (finishtime->tv_sec -  starttime->tv_sec)  * 1000000;
+    microsec += (finishtime->tv_usec - starttime->tv_usec);
+
+    return microsec;
+}
+
+class moving_average_irregular_time_series {
+    public:
+        moving_average_irregular_time_series() {
+            gettimeofday(&last_sample_time, NULL);
+            moving_average = 0;
+            
+            // 5 seconds, calculated in microseconds
+            tau = 5 * 1000 * 1000;
+        }
+        struct timeval last_sample_time;
+        double moving_average; 
+        double tau;        
+
+        double increment() {
+            return add_sample(1.0);
+        }
+
+        // http://www.eckner.com/papers/ts_alg.pdf
+        // ts_alg_moving_average_with_time.pdf at DropBox
+        // EMAeq
+        double add_sample(double sample) {
+            // Get current time
+            struct timeval current_time;
+            gettimeofday(&current_time, NULL);
+
+            double difference_microsec = timevaldiff(&this->last_sample_time, &current_time);
+            // std::cout<<"diff time: "<<difference_msec<<std::endl; 
+            double w = exp( -difference_microsec / tau);
+
+            std::cout<<"w:"<<w<<std::endl;
+
+            moving_average = moving_average * w + sample * (1.0 - w);
+
+            this->last_sample_time = current_time;
+
+            return moving_average; 
+        }
+};
 
 int main() {
     shield();
@@ -62,7 +114,7 @@ typedef struct leaf_struct {
     time_t* last_modified_time;
 } leaf_struct;
 
-typedef std::map<std::string, std::vector<time_t> > map_struct_for_counters_t;
+typedef std::map<std::string, moving_average_irregular_time_series> map_struct_for_counters_t;
 map_struct_for_counters_t hashmap_for_counters;
 
 int parse_http_request(const u_char* buf, int packet_len, uint32_t client_ip_as_integer) {
@@ -109,26 +161,15 @@ int parse_http_request(const u_char* buf, int packet_len, uint32_t client_ip_as_
     map_struct_for_counters_t::iterator itr = hashmap_for_counters.find(hash_key);
 
     unsigned int recalculation_time = 60;
-    time_t current_time;
-    time(&current_time);
     unsigned int current_second = 55;
 
     if (itr == hashmap_for_counters.end()) {
         // not found, create new record
-        hashmap_for_counters[hash_key] = std::vector<time_t>();
-        hashmap_for_counters[hash_key].reserve(recalculation_time);
-
-        hashmap_for_counters[hash_key][current_second]++;
-
-        // We could use current second of minute from current time as index!
+        hashmap_for_counters[hash_key] = moving_average_irregular_time_series();
+        hashmap_for_counters[hash_key].increment();
     } else {
-        // Iterate over all list and count number of request arrived in last 60 seconds
-        // append to already created list
-        // TBD: we could allocate X cages for every second and add data to they
-
-        //hashmap_for_counters[hash_key].push_back(current_time);
-        // TODO:
-        //itr.[current_second]++;
+        double average = hashmap_for_counters[hash_key].increment();
+        std::cout<<"Average: "<<average<<std::endl;
     }
     
     return 0;
