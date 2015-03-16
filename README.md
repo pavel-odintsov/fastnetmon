@@ -25,7 +25,7 @@ Features:
 - netmap support (open source; wire speed processing; only Intel hardware NICs or any hypervisor VM type)
 - PF_RING ZC/DNA support (wire speed processing on tens of MPPS but needs [license](http://www.ntop.org/products/pf_ring/))
 - Can process ![sFLOW](http://sflow.org/images/sflowlogo.gif) v5
-- Can process NetFlow v5 and v9
+- Can process NetFlow v5, v9, ipfix
 - Can use PCAP for packet sniffing
 - Can work on mirror/SPAN ports
 - Supports L2TP decapsulation, VLAN untagging and MPLS processing in mirror mode 
