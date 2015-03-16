@@ -218,6 +218,10 @@ int process_netflow_v9_template(u_int8_t *pkt, size_t len, u_int32_t source_id) 
     return 0;
 }
 
+int nf10_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simple_packet& packet) {
+    // TBD
+}
+
 int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simple_packet& packet) {
         /* XXX: use a table-based interpreter */
         switch (record_type) {
@@ -273,11 +277,61 @@ int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simp
         return 0;
 }
 
-void nf10_flowset_to_store(u_int8_t *pkt, size_t len, struct NF10_HEADER *nf10_hdr, netflow9_template_records_map& template_records) {
-    // do nothing
+
+// We should rewrite nf9_flowset_to_store accroding to fixes here
+void nf10_flowset_to_store(u_int8_t *pkt, size_t len, struct NF10_HEADER *nf10_hdr, struct peer_nf9_template* field_template) {
+    u_int offset = 0;
+
+    if (len < field_template->total_len) {
+        logger<< log4cpp::Priority::ERROR<<"Total len from template bigger than packet len";
+        return;
+    }
+
+    simple_packet packet;
+    packet.ts.tv_sec = ntohl(nf10_hdr->time_sec);
+
+    for (netflow9_template_records_map::iterator iter = field_template->records.begin(); iter != field_template->records.end(); iter++) {
+        u_int record_type   = iter->type;
+        u_int record_length = iter->len;
+
+        nf10_rec_to_flow(record_type, record_length, pkt + offset, packet);
+
+        offset += record_length;
+    }
+
+    // decode data in network byte order to host byte order
+    packet.length            = ntohl(packet.length);
+    packet.number_of_packets = ntohl(packet.number_of_packets);
+
+    packet.protocol = ntohl(packet.protocol);
+
+    // Set protocol
+    switch (packet.protocol) {
+        case 1: {
+            packet.protocol = IPPROTO_ICMP;
+            
+            packet.source_port = 0;
+            packet.destination_port = 0;
+        }
+        break;
+
+        case 6: {
+            packet.protocol = IPPROTO_TCP;
+        }
+        break;
+
+        case 17: {
+            packet.protocol = IPPROTO_UDP;
+        }
+        break;
+    }
+
+    // pass data to FastNetMon
+    netflow_process_func_ptr(packet);
 }
 
 void nf9_flowset_to_store(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr, netflow9_template_records_map& template_records) {
+    // Should be done accoring to https://github.com/FastVPSEestiOu/fastnetmon/issues/147
     //if (template->total_len > len)
     //    return 1;
 
@@ -362,7 +416,7 @@ int process_netflow_v10_data(u_int8_t *pkt, size_t len, struct NF10_HEADER *nf10
 
     for (u_int i = 0; i < num_flowsets; i++) {
         // process whole flowset
-        nf10_flowset_to_store(pkt + offset, flowset_template->total_len, nf10_hdr, flowset_template->records);
+        nf10_flowset_to_store(pkt + offset, flowset_template->total_len, nf10_hdr, flowset_template);
 
         offset += flowset_template->total_len; 
     }  
