@@ -37,7 +37,7 @@ extern std::map<std::string, std::string> configuration_map;
 process_packet_pointer netflow_process_func_ptr = NULL;
 
 std::map<u_int, struct peer_nf9_template>  global_netflow9_templates_array;
-std::map<u_int, struct peer_nf9_template> global_netflow10_templates_array;
+std::map<u_int, struct peer_nf9_template>  global_netflow10_templates_array;
 
 /* Prototypes */
 int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simple_packet& packet, netflow9_template_records_map& template_records);
@@ -128,7 +128,7 @@ int process_netflow_v10_template(u_int8_t *pkt, size_t len, u_int32_t source_id)
             }
 
             total_size += record_length;
-            // add check: if (total_size > peers->max_template_len) {
+            // add check: if (total_size > peers->max_template_len)
         }
     
         field_template.num_records = count;
@@ -136,11 +136,11 @@ int process_netflow_v10_template(u_int8_t *pkt, size_t len, u_int32_t source_id)
         field_template.records = template_records_map;
 
         if (peer_nf10_find_template(source_id, template_id) != NULL) {
-            // logger<< log4cpp::Priority::INFO<<"We already have information about this template with id:"<<template_id;
+            //logger<< log4cpp::Priority::INFO<<"We already have information about this template with id:"<<template_id;
             // TODO: update time to time template data
             continue;
         } else {
-            // logger<< log4cpp::Priority::INFO<<print_peer_nf9_template(field_template);
+            //logger<< log4cpp::Priority::INFO<<print_peer_nf9_template(field_template);
             global_netflow10_templates_array[ template_id ] = field_template;
         } 
     }
@@ -218,10 +218,6 @@ int process_netflow_v9_template(u_int8_t *pkt, size_t len, u_int32_t source_id) 
     return 0;
 }
 
-int nf10_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simple_packet& packet) {
-    // TBD
-}
-
 int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simple_packet& packet) {
         /* XXX: use a table-based interpreter */
         switch (record_type) {
@@ -270,13 +266,28 @@ int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simp
         //V9_FIELD_ADDR(NF9_IPV6_DST_ADDR, DST_ADDR6, dst_addr, 6, INET6);
         //V9_FIELD_ADDR(NF9_IPV6_NEXT_HOP, GATEWAY_ADDR6, gateway_addr, 6, INET6);
 
-#undef V9_FIELD
-#undef V9_FIELD_ADDR
-#undef BE_COPY
+//#undef V9_FIELD
+//#undef V9_FIELD_ADDR
+//#undef BE_COPY
         }
         return 0;
 }
 
+
+int nf10_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simple_packet& packet) { 
+    /* XXX: use a table-based interpreter */
+    switch (record_type) {
+        V9_FIELD(NF10_IN_BYTES,    OCTETS,           length);
+        V9_FIELD(NF10_IN_PACKETS,  PACKETS,          number_of_packets);
+        V9_FIELD(NF10_IN_PROTOCOL, PROTO_FLAGS_TOS,  protocol);
+        V9_FIELD(NF10_TCP_FLAGS,   PROTO_FLAGS_TOS,  flags);
+        V9_FIELD(NF10_L4_SRC_PORT, SRCDST_PORT,      source_port);
+        V9_FIELD(NF10_L4_DST_PORT, SRCDST_PORT,      destination_port);
+      
+        V9_FIELD_ADDR(NF10_IPV4_SRC_ADDR, SRC_ADDR4, src_ip);
+        V9_FIELD_ADDR(NF10_IPV4_DST_ADDR, DST_ADDR4, dst_ip);
+    }
+}
 
 // We should rewrite nf9_flowset_to_store accroding to fixes here
 void nf10_flowset_to_store(u_int8_t *pkt, size_t len, struct NF10_HEADER *nf10_hdr, struct peer_nf9_template* field_template) {
@@ -392,7 +403,7 @@ int process_netflow_v10_data(u_int8_t *pkt, size_t len, struct NF10_HEADER *nf10
 
     u_int flowset_id = ntohs(dath->c.flowset_id);
 
-    struct peer_nf9_template *flowset_template = peer_nf9_find_template(source_id, flowset_id);
+    struct peer_nf9_template *flowset_template = peer_nf10_find_template(source_id, flowset_id);
 
     if (flowset_template == NULL) {
         logger<< log4cpp::Priority::INFO<<"We haven't template for flowset_id: "<<flowset_id
