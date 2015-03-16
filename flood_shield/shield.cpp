@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include <numeric>
 #include <iostream>
 #include <string>
 #include <map>
@@ -114,7 +115,9 @@ typedef struct leaf_struct {
     time_t* last_modified_time;
 } leaf_struct;
 
-typedef std::map<std::string, moving_average_irregular_time_series> map_struct_for_counters_t;
+
+//typedef std::map<std::string, moving_average_irregular_time_series> map_struct_for_counters_t;
+typedef std::map<std::string, std::vector<unsigned int> > map_struct_for_counters_t;
 map_struct_for_counters_t hashmap_for_counters;
 
 int parse_http_request(const u_char* buf, int packet_len, uint32_t client_ip_as_integer) {
@@ -160,16 +163,35 @@ int parse_http_request(const u_char* buf, int packet_len, uint32_t client_ip_as_
     
     map_struct_for_counters_t::iterator itr = hashmap_for_counters.find(hash_key);
 
-    unsigned int recalculation_time = 60;
-    unsigned int current_second = 55;
+    // We will ban on 5 request per second
+    unsigned int ban_limit = 10; 
+    unsigned int recalculation_time = 5;
+
+    struct timeval current_time;
+    gettimeofday(&current_time, NULL);
+
+    unsigned int current_second = current_time.tv_sec % recalculation_time;
 
     if (itr == hashmap_for_counters.end()) {
         // not found, create new record
-        hashmap_for_counters[hash_key] = moving_average_irregular_time_series();
-        hashmap_for_counters[hash_key].increment();
+        hashmap_for_counters[hash_key] = std::vector<unsigned int>();
+        hashmap_for_counters[hash_key].resize(recalculation_time);
+        std::fill(hashmap_for_counters[hash_key].begin(), hashmap_for_counters[hash_key].end(), 0);
+        hashmap_for_counters[hash_key][current_second] = 1;
     } else {
-        double average = hashmap_for_counters[hash_key].increment();
-        std::cout<<"Average: "<<average<<std::endl;
+        int index_for_nullify = abs(recalculation_time - current_second);
+        itr->second[index_for_nullify] = 0;        
+
+        // std::cout<<"I process "<<current_second<<" and will zero: "<<index_for_nullify<<std::endl;
+        itr->second[current_second]++;
+    
+        unsigned long requests_per_calculation_period = std::accumulate(itr->second.begin(), itr->second.end(), 0);
+        //std::cout<<"rps: "<<requests_per_minute<<std::endl;
+        double request_per_second = (double)requests_per_calculation_period / (double)recalculation_time;
+
+        if (request_per_second > ban_limit) {
+            std::cout<<"We will ban this IP: "<<client_ip<<std::endl;
+        }        
     }
     
     return 0;
