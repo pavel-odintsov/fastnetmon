@@ -54,4 +54,6 @@ int ban_ip(char* blacklist_name, char* ip_addr) {
     }
 
     ipset_session_fini(session);
+
+    return 0;
 }
