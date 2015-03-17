@@ -1,5 +1,12 @@
-#include "picohttpparser.h"
-#include "pfring.h"
+/*
+
+ Toolkit for http flood detection and prevention
+ License: GPLv2
+ Author: Pavel Odintsov
+ Company: FastVPS Eesti OU @ FastVPS.host
+
+*/
+
 #include <sys/time.h>
 #include <string.h>
 #include <stdio.h>
@@ -8,16 +15,49 @@
 
 #include <numeric>
 #include <iostream>
-#include <string>
+#include <algorithm>
+#include <iterator>
+
 #include <map>
 #include <vector>
 #include <list>
+#include <string>
+
+#include "picohttpparser.h"
+#include "pfring.h"
+
+/* Configuration */
+std::string sniffed_interface = "eth4";
+// You could specify multuple ports here: 80, 8080, 1500
+unsigned int ports_list[] = { 80 };
+
+// We will ban on 5 request per second
+unsigned int rps_ban_limit = 10;
+
+// We how much data we will collect for calculating average
+// Bigger value here means longer reaction to flood
+unsigned int recalculation_time = 5;
+
+/* Data structures */
+std::vector<unsigned int> ports_for_listening_for_http_traffic(ports_list, ports_list + sizeof(ports_list) / sizeof(unsigned int));
+
+typedef struct leaf_struct {
+    time_t* last_modified_time;
+} leaf_struct;
+
+typedef std::map<std::string, std::vector<unsigned int> > map_struct_for_counters_t;
+map_struct_for_counters_t hashmap_for_counters;
+
 
 /* Prototypes */
 void parse_packet_pf_ring(const struct pfring_pkthdr *packet_header, const u_char *packetptr, const u_char *user_bytes);
 int shield();
 int extract_bit_value(uint8_t num, int bit);
 std::string convert_ip_as_integer_to_string(uint32_t ip_in_host_byte_order);
+
+int main() {
+    shield();
+}
 
 // https://www.mppmu.mpg.de/~huber/util/timevaldiff.c
 double timevaldiff(struct timeval *starttime, struct timeval *finishtime) {
@@ -27,49 +67,6 @@ double timevaldiff(struct timeval *starttime, struct timeval *finishtime) {
     microsec += (finishtime->tv_usec - starttime->tv_usec);
 
     return microsec;
-}
-
-class moving_average_irregular_time_series {
-    public:
-        moving_average_irregular_time_series() {
-            gettimeofday(&last_sample_time, NULL);
-            moving_average = 0;
-            
-            // 5 seconds, calculated in microseconds
-            tau = 5 * 1000 * 1000;
-        }
-        struct timeval last_sample_time;
-        double moving_average; 
-        double tau;        
-
-        double increment() {
-            return add_sample(1.0);
-        }
-
-        // http://www.eckner.com/papers/ts_alg.pdf
-        // ts_alg_moving_average_with_time.pdf at DropBox
-        // EMAeq
-        double add_sample(double sample) {
-            // Get current time
-            struct timeval current_time;
-            gettimeofday(&current_time, NULL);
-
-            double difference_microsec = timevaldiff(&this->last_sample_time, &current_time);
-            // std::cout<<"diff time: "<<difference_msec<<std::endl; 
-            double w = exp( -difference_microsec / tau);
-
-            std::cout<<"w:"<<w<<std::endl;
-
-            moving_average = moving_average * w + sample * (1.0 - w);
-
-            this->last_sample_time = current_time;
-
-            return moving_average; 
-        }
-};
-
-int main() {
-    shield();
 }
 
 // http://stackoverflow.com/questions/14528233/bit-masking-in-c-how-to-get-first-bit-of-a-byte
@@ -89,7 +86,7 @@ int shield() {
     flags |= PF_RING_PROMISC;
     flags |= PF_RING_DO_NOT_PARSE; 
     
-    pfring* pf_ring_descr = pfring_open("eth4", snaplen, flags); 
+    pfring* pf_ring_descr = pfring_open(sniffed_interface.c_str(), snaplen, flags); 
 
     if (pf_ring_descr == NULL) {
         printf("Can't create PF_RING descriptor: %s\n", strerror(errno));
@@ -111,15 +108,6 @@ int shield() {
     pfring_loop(pf_ring_descr, parse_packet_pf_ring, (u_char*)NULL, wait_for_packet);
 }
 
-typedef struct leaf_struct {
-    time_t* last_modified_time;
-} leaf_struct;
-
-
-//typedef std::map<std::string, moving_average_irregular_time_series> map_struct_for_counters_t;
-typedef std::map<std::string, std::vector<unsigned int> > map_struct_for_counters_t;
-map_struct_for_counters_t hashmap_for_counters;
-
 int parse_http_request(const u_char* buf, int packet_len, uint32_t client_ip_as_integer) {
     std::string client_ip = convert_ip_as_integer_to_string(client_ip_as_integer);
 
@@ -127,7 +115,6 @@ int parse_http_request(const u_char* buf, int packet_len, uint32_t client_ip_as_
     int pret, minor_version;
     struct phr_header headers[100];
     size_t buflen = 0, prevbuflen = 0, method_len, path_len, num_headers;
-    ssize_t rret;
 
     prevbuflen = buflen;
     buflen += packet_len;
@@ -144,6 +131,7 @@ int parse_http_request(const u_char* buf, int packet_len, uint32_t client_ip_as_
         return 1;
     }
 
+    /* Collect useful fields */
     std::string host_string = "";
     std::string method_string = std::string(method, method_len);
     std::string path_string = std::string(path, (int)path_len);
@@ -153,20 +141,13 @@ int parse_http_request(const u_char* buf, int packet_len, uint32_t client_ip_as_
         if (strstr(headers[i].name, "Host") != NULL) {
             host_string = std::string(headers[i].value, (int)headers[i].value_len);
         }
-
-        //printf("%.*s: %.*s\n", (int)headers[i].name_len, headers[i].name,
-        //    (int)headers[i].value_len, headers[i].value);
     }
 
+    /* Build lookup hash */
     std::string hash_key = client_ip + ":" + host_string + ":" + method_string + ":" + path_string; 
-    //printf("key: %s\n", hash_key.c_str());
-    
     map_struct_for_counters_t::iterator itr = hashmap_for_counters.find(hash_key);
 
-    // We will ban on 5 request per second
-    unsigned int ban_limit = 10; 
-    unsigned int recalculation_time = 5;
-
+    /* Get current time because all our data structs are time based */
     struct timeval current_time;
     gettimeofday(&current_time, NULL);
 
@@ -186,10 +167,9 @@ int parse_http_request(const u_char* buf, int packet_len, uint32_t client_ip_as_
         itr->second[current_second]++;
     
         unsigned long requests_per_calculation_period = std::accumulate(itr->second.begin(), itr->second.end(), 0);
-        //std::cout<<"rps: "<<requests_per_minute<<std::endl;
         double request_per_second = (double)requests_per_calculation_period / (double)recalculation_time;
 
-        if (request_per_second > ban_limit) {
+        if (request_per_second > rps_ban_limit) {
             std::cout<<"We will ban this IP: "<<client_ip<<std::endl;
         }        
     }
@@ -210,32 +190,28 @@ std::string convert_ip_as_integer_to_string(uint32_t ip_in_host_byte_order) {
 void parse_packet_pf_ring(const struct pfring_pkthdr *packet_header, const u_char *packetptr, const u_char *user_bytes) {
     memset((void*)&packet_header->extended_hdr.parsed_pkt, 0, sizeof(packet_header->extended_hdr.parsed_pkt));
     pfring_parse_pkt((u_char*)packetptr, (struct pfring_pkthdr*)packet_header, 4, 1, 0);
-    
+   
+    bool this_packet_part_of_tcp_handshake = extract_bit_value(packet_header->extended_hdr.parsed_pkt.tcp.flags, 2) or // SYN
+        extract_bit_value(packet_header->extended_hdr.parsed_pkt.tcp.flags, 1) or // FIN
+        packet_header->len == packet_header->extended_hdr.parsed_pkt.offset.payload_offset; // maybe ACK 
+ 
     // Ignore tcp handshake requests
-    if (extract_bit_value(packet_header->extended_hdr.parsed_pkt.tcp.flags, 2) or // SYN
-        extract_bit_value(packet_header->extended_hdr.parsed_pkt.tcp.flags, 1)    // FIN
-    ) {
-        // printf("!!! skip syn/fin !!!\n");
+    if (this_packet_part_of_tcp_handshake) {
         return;
     }
 
-    // Skip zero length packets (also part of tcp/ip handshake)
-    if (packet_header->len == packet_header->extended_hdr.parsed_pkt.offset.payload_offset) {
-        // printf("Skip zero length packet\n");
-        return;
-    }
+    // Look for our port in list of monitored ports 
+    bool we_should_check_this_packet = std::find(
+        ports_for_listening_for_http_traffic.begin(),
+        ports_for_listening_for_http_traffic.end(),
+        (unsigned int)packet_header->extended_hdr.parsed_pkt.l4_dst_port) != ports_for_listening_for_http_traffic.end();
 
-    // We process only packets arrives at 80 port
-    // TBD: add SNI support
-    if (packet_header->extended_hdr.parsed_pkt.l4_dst_port != 80) {
+    if (!we_should_check_this_packet) {
         //char print_buffer[512];
         //pfring_print_parsed_pkt(print_buffer, 512, (u_char*)packetptr, &packet_header);
         //printf("%s", print_buffer);
         return;
     } 
-
-    //printf("We got request to 80 port\n");
-    //printf("payload shift: %d\n", packet_header.extended_hdr.parsed_pkt.offset.payload_offset);
 
     int result = parse_http_request(packetptr + packet_header->extended_hdr.parsed_pkt.offset.payload_offset,
         packet_header->len,
@@ -245,6 +221,6 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *packet_header, const u_cha
     if (result != 0) {
         char print_buffer[512];
         pfring_print_parsed_pkt(print_buffer, 512, (u_char*)packetptr, packet_header);
-        printf("%s", print_buffer);
+        printf("Can't parse this packet\n:%s", print_buffer);
     }
 }
