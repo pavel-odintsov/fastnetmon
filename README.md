@@ -133,4 +133,12 @@ IP: xx.zz.xx.1
 2014-11-21 08:01:11.419963 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
 ```
 
-To enable sFLOW simply specify IP of server with installed FastNetMon and specify port 6343. 
+To enable sFLOW simply specify IP of server with installed FastNetMon and specify port 6343.
+To enable netflow simply specify IP of server with installed FastNetMon and specify port 2055.
+
+How I can help project?
+- Test it! 
+- Share your experience
+- Share your improvements
+- Test it with different equpment
+- Create feature requests
