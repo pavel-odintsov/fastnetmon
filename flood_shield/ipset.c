@@ -1,13 +1,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-// #include <libipset/debug.h>             /* D() */
-#include <libipset/data.h>              /* enum ipset_data */
-#include <libipset/parse.h>             /* ipset_parse_* */
-#include <libipset/session.h>           /* ipset_session_* */
-#include <libipset/types.h>             /* struct ipset_type */
-#include <libipset/ui.h>                /* core options, commands */
-#include <libipset/utils.h>             /* STREQ */
+
+extern "C" {
+    // #include <libipset/debug.h>             /* D() */
+    #include <libipset/data.h>              /* enum ipset_data */
+    #include <libipset/parse.h>             /* ipset_parse_* */
+    #include <libipset/session.h>           /* ipset_session_* */
+    #include <libipset/types.h>             /* struct ipset_type */
+    #include <libipset/ui.h>                /* core options, commands */
+    #include <libipset/utils.h>             /* STREQ */
+}
 
 int ban_ip(char* blacklist_name, char* ip_addr);
 
