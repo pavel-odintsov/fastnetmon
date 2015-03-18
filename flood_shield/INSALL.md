@@ -17,14 +17,16 @@ perl fastnetmon_install.pl
 
 Install dependency of Flood Shield:
 ```bash
+# Debian
 apt-get install -y ipset libipset-dev libipset2
+# CentOS6 +
+yum install -y ipset-devel
 ```
 
 Build Flood Shield:
 ```
 cd /usr/src
-git clone https://github.com/FastVPSEestiOu/fastnetmon.git
-cd flood_shield
+cd fastnetmon/flood_shield
 ./build_shield.sh
 ```
 
