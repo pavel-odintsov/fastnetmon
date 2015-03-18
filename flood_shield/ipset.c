@@ -14,10 +14,13 @@ extern "C" {
 int ban_ip(const char* blacklist_name, const char* ip_addr);
 
 int main() {
-    ban_ip("blacklist", "10.10.10.1");
+    ban_ip("blacklist", "7.7.7.7");
 }
 
 int ban_ip(const char* blacklist_name, const char* ip_addr) {
+    /* Load set types */
+    ipset_load_types();
+
     struct ipset_session *session = ipset_session_init(printf);
 
     if (session == NULL) {
@@ -39,7 +42,7 @@ int ban_ip(const char* blacklist_name, const char* ip_addr) {
         exit(1);
     }
 
-    printf("bool value:%d\n", type->last_elem_optional);
+    // We should convert second argument to enum because bug in ipset, it fixed in upstream
     int ipset_parse_elem_ret = ipset_parse_elem(session, (ipset_opt)type->last_elem_optional, ip_addr);
 
     if (ipset_parse_elem_ret < 0) {
@@ -54,7 +57,18 @@ int ban_ip(const char* blacklist_name, const char* ip_addr) {
 
     if (ret < 0) {
         printf("Can't ipset_cmd");
+
+        exit(1);
     }
+
+    int commit_ret = ipset_commit(session);
+
+    if (commit_ret < 0) {
+        printf("ipset_commit failed\n");
+        exit(1);
+    }
+
+    printf("Executed correctly\n");
 
     ipset_session_fini(session);
 
