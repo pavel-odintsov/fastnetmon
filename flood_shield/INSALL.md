@@ -1,6 +1,13 @@
 # Flood Shield is a very fast http flood blocker
 
-We sniff and parse all incoming http requests. If any IP made more than XX requests per second we will trigger ipset ban immediately. 
+Please be aware! It's first beta realease of tool!
+
+We sniff and parse all incoming http requests. If any IP made more than XX requests per second (with same method and URI) we will trigger ipset ban immediately. 
+
+You could override standard hash algorithm with follofing line on code:
+```C++
+std::string hash_key = client_ip + ":" + host_string + ":" + method_string + ":" + path_string
+```
 
 Install FastNetMon (it will build and install all required libs):
 ```bash
@@ -32,4 +39,4 @@ Run it:
 ./shield
 ```
 
-By default we will ban any IP which exceed 20 requests per second. If you want to change it, please fix in code and recompile. We sniff only 80 port by default.
+By default we will ban any IP which exceed 20 requests per second with same METHOD and URI. If you want to change it, please fix in code and recompile. We sniff only 80 port by default.
