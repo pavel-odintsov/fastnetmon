@@ -33,16 +33,17 @@ int ban_ip(char* blacklist_name, char* ip_addr) {
     const struct ipset_type *type = ipset_type_get(session, IPSET_CMD_ADD);
 
     if (type == NULL) {
-        printf("ipset type get failed");
+        printf("ipset type get failed: %s\n", ipset_session_error(session));
         exit(1);
     }
 
-
     printf("bool value:%d\n", type->last_elem_optional);
-    int ipset_parse_elem_ret = ipset_parse_elem(session, (ipset_opt)0, ip_addr);
+    int ipset_parse_elem_ret = ipset_parse_elem(session, type->last_elem_optional, ip_addr);
 
     if (ipset_parse_elem_ret < 0) {
-        printf("Can't call ipset_parse_elem");
+        printf("Can't call ipset_parse_elem, error: %d\n", ipset_parse_elem_ret);
+        printf("Error: %s", ipset_session_error(session));
+
         exit(1);
     }
 
