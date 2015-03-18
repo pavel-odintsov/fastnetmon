@@ -28,7 +28,7 @@
 #include "pfring.h"
 
 /* Configuration */
-std::string sniffed_interface = "eth4";
+std::string sniffed_interface = "any";
 // You could specify multuple ports here: 80, 8080, 1500
 unsigned int ports_list[] = { 80 };
 

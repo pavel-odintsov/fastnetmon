@@ -32,6 +32,8 @@ cd ipset-6.24
 ./configure --prefix=/opt/ipset  --with-kmod=no
 yum install -y libmnl-devel
 make install
+echo "/opt/ipset/lib" >> /etc/ld.so.conf.d/ipset.conf
+ldconfig
 ```
 
 Build Flood Shield:
