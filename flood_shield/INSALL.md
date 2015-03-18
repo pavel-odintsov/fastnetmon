@@ -4,6 +4,8 @@ Please be aware! It's first beta realease of tool!
 
 We sniff and parse all incoming http requests. If any IP made more than XX requests per second (with same method and URI) we will trigger ipset ban immediately. 
 
+Compatibility: only Linux, Debian 7+, CentOS 6+
+
 You could override standard hash algorithm with follofing line on code:
 ```C++
 std::string hash_key = client_ip + ":" + host_string + ":" + method_string + ":" + path_string
