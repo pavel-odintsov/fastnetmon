@@ -24,6 +24,7 @@
 #include <string>
 
 #include "picohttpparser.h"
+#include "ipset_management.h"
 #include "pfring.h"
 
 /* Configuration */
@@ -31,14 +32,16 @@ std::string sniffed_interface = "eth4";
 // You could specify multuple ports here: 80, 8080, 1500
 unsigned int ports_list[] = { 80 };
 
-// We will ban on 5 request per second
-unsigned int rps_ban_limit = 10;
+// We will ban on X request per second
+unsigned int rps_ban_limit = 20;
 
 // We how much data we will collect for calculating average
 // Bigger value here means longer reaction to flood
 unsigned int recalculation_time = 5;
 
 /* Data structures */
+typedef std::map<std::string, unsigned int> ban_list_t;
+ban_list_t ban_list;
 std::vector<unsigned int> ports_for_listening_for_http_traffic(ports_list, ports_list + sizeof(ports_list) / sizeof(unsigned int));
 
 typedef struct leaf_struct {
@@ -170,7 +173,26 @@ int parse_http_request(const u_char* buf, int packet_len, uint32_t client_ip_as_
         double request_per_second = (double)requests_per_calculation_period / (double)recalculation_time;
 
         if (request_per_second > rps_ban_limit) {
-            std::cout<<"We will ban this IP: "<<client_ip<<std::endl;
+            ban_list_t::iterator ban_list_itr = ban_list.find(client_ip);
+
+            if (ban_list_itr != ban_list.end()) {
+                // printf("Already banned\n");
+                return 0;
+            }
+
+            std::cout<<"I will ban this IP: "<<client_ip<<" because it exceed limit of rps with "
+                <<request_per_second<<" requests"<<std::endl;
+    
+            // Block it with ipset
+            int ban_result = manage_ip_ban("blacklist", client_ip.c_str(), IPSET_BLOCK);
+            
+            if (ban_result == 0) {
+                ban_list[client_ip] = request_per_second;
+            } else {
+                printf("Ban failed\n");
+            }
+
+            // IPSET_UNBLOCK 
         }        
     }
     
