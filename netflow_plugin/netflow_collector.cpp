@@ -287,6 +287,8 @@ int nf10_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, sim
         V9_FIELD_ADDR(NF10_IPV4_SRC_ADDR, SRC_ADDR4, src_ip);
         V9_FIELD_ADDR(NF10_IPV4_DST_ADDR, DST_ADDR4, dst_ip);
     }
+
+    return 0;
 }
 
 // We should rewrite nf9_flowset_to_store accroding to fixes here
