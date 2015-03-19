@@ -114,6 +114,14 @@ if(CURSES_FOUND)
     target_link_libraries(fastnetmon_client ${CURSES_LIBRARIES})
 endif()
 
+# apt-get install -y libhiredis-dev 
+#find_package(Hiredis REQUIRED)
+#if (HIREDIS_FOUND)
+#    add_definitions(-DREDIS)
+#    include_directories(${HIREDIS_INCLUDE_DIRS})
+#    target_link_libraries (fastnetmon ${HIREDIS_LIBRARIES})
+#endif()
+
 # Standard path for Linux
 set(LOG4CPP_LIBRARY_PATH log4cpp)
 
