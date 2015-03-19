@@ -42,21 +42,21 @@ std::map<u_int, struct peer_nf9_template>  global_netflow10_templates_array;
 /* Prototypes */
 int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simple_packet& packet, netflow9_template_records_map& template_records);
 
-struct peer_nf9_template* peer_nf9_find_template(u_int32_t source_id, u_int flowset_id) {
+struct peer_nf9_template* peer_nf9_find_template(u_int32_t source_id, u_int template_id) {
     // TODO: we ignore source_id !!! FIX IT
 
-    if (global_netflow9_templates_array.count(flowset_id) > 0) {
-        return &global_netflow9_templates_array[flowset_id];  
+    if (global_netflow9_templates_array.count(template_id) > 0) {
+        return &global_netflow9_templates_array[template_id];  
     } else {
         return NULL;
     }
 }
 
-struct peer_nf9_template* peer_nf10_find_template(u_int32_t source_id, u_int flowset_id) {
+struct peer_nf9_template* peer_nf10_find_template(u_int32_t source_id, u_int template_id) {
     // TODO: we ignore source_id !!! FIX IT
 
-    if (global_netflow10_templates_array.count(flowset_id) > 0) {
-        return &global_netflow10_templates_array[flowset_id];  
+    if (global_netflow10_templates_array.count(template_id) > 0) {
+        return &global_netflow10_templates_array[template_id];  
     } else {
         return NULL;
     }   
