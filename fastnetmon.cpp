@@ -665,7 +665,7 @@ std::string draw_table(map_for_counters& my_map_packets, direction data_directio
    
 #ifdef REDIS 
         if (redis_enabled && do_redis_update) {
-            update_traffic_in_redis( (*ii).first, (*ii).second.in_packets, INCOMING);
+            update_traffic_in_redis( (*ii).first, (*ii).second.in_packets,  INCOMING);
             update_traffic_in_redis( (*ii).first, (*ii).second.out_packets, OUTGOING);
         }
 #endif
