@@ -38,9 +38,10 @@ int pcap_reader(const char* pcap_file_path) {
         return -2;
     }
 
+    printf("Max length of captured packets for this file: %d bytes\n", pcap_header.snaplen);
+
     // Buffer for packets
-    int buffer_size = 1024*1024;
-    char packet_bufer[buffer_size];
+    char packet_bufer[pcap_header.snaplen];
 
     unsigned int read_packets = 0; 
     while (1) {
@@ -54,9 +55,9 @@ int pcap_reader(const char* pcap_file_path) {
 
         printf("packet header read. snap len: %d bytes\n", pcap_packet_header.caplen);
 
-        if (pcap_packet_header.caplen > buffer_size) {
+        if (pcap_packet_header.caplen > pcap_header.snaplen) {
             printf("Please enlarge packet buffer! We got packet with size: %d but our buffer is %d bytes\n",
-                pcap_packet_header.caplen, buffer_size);
+                pcap_packet_header.caplen, pcap_header.snaplen);
             return -4;
         }
 
@@ -78,5 +79,6 @@ int pcap_reader(const char* pcap_file_path) {
 }
 
 int main() {
-    pcap_reader("/Users/pavel-odintsov/Dropbox/ipfix_example_ipt_netflow_syn_flood.pcap");
+    pcap_reader("/root/ipfix_example_ipt_netflow_syn_flood.pcap");
+    //pcap_reader("/Users/pavel-odintsov/Dropbox/ipfix_example_ipt_netflow_syn_flood.pcap");
 }
