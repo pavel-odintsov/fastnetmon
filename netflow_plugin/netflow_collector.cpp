@@ -140,6 +140,7 @@ int process_netflow_v10_template(u_int8_t *pkt, size_t len, u_int32_t source_id)
             // TODO: update time to time template data
             continue;
         } else {
+            logger<< log4cpp::Priority::INFO<<"We got new template with ID: "<<template_id;
             //logger<< log4cpp::Priority::INFO<<print_peer_nf9_template(field_template);
             global_netflow10_templates_array[ template_id ] = field_template;
         } 
@@ -529,6 +530,7 @@ void process_netflow_packet_v10(u_int len, u_int8_t *packet) {
                 }
                 break;
             case NF10_OPTIONS_FLOWSET_ID:
+                logger<< log4cpp::Priority::INFO<<"I received ipfix options flowset id but I haven't support for it";
                 /* Not implemented yet */
                 break;
             default:
@@ -538,7 +540,7 @@ void process_netflow_packet_v10(u_int len, u_int8_t *packet) {
                 }
 
                 if (process_netflow_v10_data(packet + offset, flowset_len, nf10_hdr, source_id) != 0) { 
-                    logger<< log4cpp::Priority::ERROR<<"Can't process function process_netflow_v10_data correctly";
+                    //logger<< log4cpp::Priority::ERROR<<"Can't process function process_netflow_v10_data correctly";
                     return;
                 }
 
@@ -606,6 +608,7 @@ void process_netflow_packet_v9(u_int len, u_int8_t *packet) {
                 }
                 break;
             case NF9_OPTIONS_FLOWSET_ID:
+                logger<< log4cpp::Priority::INFO<<"I received netflow v9 options flowset id but I haven't support for it";
                 /* Not implemented yet */
                 break;
             default:
@@ -617,7 +620,7 @@ void process_netflow_packet_v9(u_int len, u_int8_t *packet) {
                 // logger<< log4cpp::Priority::INFO<<"We read data";
 
                 if (process_netflow_v9_data(packet + offset, flowset_len, nf9_hdr, source_id) != 0) {
-                    logger<< log4cpp::Priority::ERROR<<"Can't process function process_netflow_v9_data correctly";
+                    //logger<< log4cpp::Priority::ERROR<<"Can't process function process_netflow_v9_data correctly";
                     return;
                 }
 
