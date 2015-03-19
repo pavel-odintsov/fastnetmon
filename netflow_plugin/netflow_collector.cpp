@@ -246,7 +246,7 @@ int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simp
 
 	// Sampling rate
 	// We use NULL as second argument because it's suelles for us
-	// It did not help us because looks like sampling rate moved to commercial fields
+	// It did not help us because looks like sampling rate implemented with OPTIONS flowset
 	// V9_FIELD(NF9_SAMPLING_INTERVAL, NULL, sample_ratio);
 
         //V9_FIELD(NF9_SRC_TOS, PROTO_FLAGS_TOS, pft.tos);
@@ -672,7 +672,7 @@ void process_netflow_packet_v5(u_int len, u_int8_t *packet) {
         current_packet.length            = ntohl(nf5_flow->flow_octets);
         current_packet.number_of_packets = ntohl(nf5_flow->flow_packets);
 
-        // netflow did not support sampling
+        // We did not support sampling for netflow :(
         current_packet.sample_ratio = 1;
 
         switch (nf5_flow->protocol) {
