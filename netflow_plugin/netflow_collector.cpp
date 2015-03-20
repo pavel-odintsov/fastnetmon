@@ -122,6 +122,8 @@ int process_netflow_v10_options_template(u_int8_t *pkt, size_t len, u_int32_t so
     u_int16_t scope_field_count = ntohs(options_nested_header->scope_field_count);
 
     logger<< log4cpp::Priority::INFO<<"Options template id: "<<template_id<<" field_count: "<<field_count<<" scope_field_count: "<<scope_field_count;
+    
+    return 0;
 }
 
 int process_netflow_v10_template(u_int8_t *pkt, size_t len, u_int32_t source_id) {
@@ -525,7 +527,7 @@ int process_netflow_v9_data(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hd
     return 0;
 }
 
-void process_netflow_packet_v10(u_int len, u_int8_t *packet) {
+void process_netflow_packet_v10(u_int8_t *packet, u_int len) {
     struct NF10_HEADER *nf10_hdr = (struct NF10_HEADER *)packet;
     struct NF10_FLOWSET_HEADER_COMMON *flowset; 
 
@@ -599,7 +601,7 @@ void process_netflow_packet_v10(u_int len, u_int8_t *packet) {
     }
 }
 
-void process_netflow_packet_v9(u_int len, u_int8_t *packet) {
+void process_netflow_packet_v9(u_int8_t *packet, u_int len) {
     //logger<< log4cpp::Priority::INFO<<"We get v9 netflow packet!";
 
     struct NF9_HEADER *nf9_hdr = (struct NF9_HEADER*)packet;
@@ -679,7 +681,7 @@ void process_netflow_packet_v9(u_int len, u_int8_t *packet) {
     } 
 }
 
-void process_netflow_packet_v5(u_int len, u_int8_t *packet) {
+void process_netflow_packet_v5(u_int8_t *packet, u_int len) {
     //logger<< log4cpp::Priority::INFO<<"We get v5 netflow packet!";
     
     struct NF5_HEADER* nf5_hdr = (struct NF5_HEADER*)packet;
@@ -754,18 +756,18 @@ void process_netflow_packet_v5(u_int len, u_int8_t *packet) {
     }
 }
 
-void process_netflow_packet(u_int len, u_int8_t *packet) {
+void process_netflow_packet(u_int8_t *packet, u_int len) {
     struct NF_HEADER_COMMON *hdr = (struct NF_HEADER_COMMON *)packet;
 
     switch (ntohs(hdr->version)) {
         case 5:
-            process_netflow_packet_v5(len, packet);
+            process_netflow_packet_v5(packet, len);
             break;
         case 9:
-            process_netflow_packet_v9(len, packet);
+            process_netflow_packet_v9(packet, len);
             break;
         case 10:
-            process_netflow_packet_v10(len, packet);
+            process_netflow_packet_v10(packet, len);
             break;
         default:
             logger<< log4cpp::Priority::ERROR<<"We did not support this version of netflow "<<ntohs(hdr->version);
@@ -827,7 +829,7 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
 
         if (received_bytes > 0) {
             // printf("We receive %d\n", received_bytes);
-            process_netflow_packet(received_bytes, (u_int8_t*)udp_buffer);
+            process_netflow_packet((u_int8_t*)udp_buffer, received_bytes);
         } else {
             logger<< log4cpp::Priority::ERROR<<"netflow data receive failed";
         }
