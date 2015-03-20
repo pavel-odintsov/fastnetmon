@@ -80,6 +80,50 @@ std::string print_peer_nf9_template(struct peer_nf9_template& field_template) {
     return buffer.str();
 }
 
+struct NF10_OPTIONS_HEADER_COMMON {
+    u_int16_t flowset_id;
+    u_int16_t length;
+};
+
+struct NF10_OPTIONS_HEADER {
+    u_int16_t template_id;
+    u_int16_t field_count;
+    u_int16_t scope_field_count;
+};
+
+// https://tools.ietf.org/html/rfc5101#page-18
+int process_netflow_v10_options_template(u_int8_t *pkt, size_t len, u_int32_t source_id) {
+    struct NF10_OPTIONS_HEADER_COMMON* options_template_header = (struct NF10_OPTIONS_HEADER_COMMON*)pkt;
+
+    if (len < sizeof(*options_template_header)) {
+        logger<< log4cpp::Priority::ERROR<<"Short netflow ipfix options template header";
+        return 1;
+    }
+
+    if (ntohs(options_template_header->flowset_id) != NF10_OPTIONS_FLOWSET_ID) {
+        logger<< log4cpp::Priority::ERROR
+            <<"Function process_netflow_v10_options_template expects only NF10_OPTIONS_FLOWSET_ID but got another id: "
+            <<ntohs(options_template_header->flowset_id); 
+        return 1;
+    }
+
+    struct NF10_OPTIONS_HEADER* options_nested_header = (struct NF10_OPTIONS_HEADER*)(pkt + sizeof(struct NF10_OPTIONS_HEADER_COMMON*));
+
+    // Yes, I should convert it to host byter order but it broke it!
+    // WTF?? 
+    u_int16_t template_id = options_nested_header->template_id;
+
+    if (template_id <= 255) {
+        logger<< log4cpp::Priority::ERROR<<"Template ID for options template should be bigger then 255";
+        return 1;
+    }
+
+    u_int16_t field_count = ntohs(options_nested_header->field_count);
+    u_int16_t scope_field_count = ntohs(options_nested_header->scope_field_count);
+
+    logger<< log4cpp::Priority::INFO<<"Options template id: "<<template_id<<" field_count: "<<field_count<<" scope_field_count: "<<scope_field_count;
+}
+
 int process_netflow_v10_template(u_int8_t *pkt, size_t len, u_int32_t source_id) {
     struct NF10_FLOWSET_HEADER_COMMON *template_header = (struct NF10_FLOWSET_HEADER_COMMON *)pkt;
     // We use same struct as netflow v9 because netflow v9 and v10 (ipfix) is compatible
@@ -530,6 +574,7 @@ void process_netflow_packet_v10(u_int len, u_int8_t *packet) {
                 }
                 break;
             case NF10_OPTIONS_FLOWSET_ID:
+                //process_netflow_v10_options_template(packet + offset, flowset_len, source_id);
                 logger<< log4cpp::Priority::INFO<<"I received ipfix options flowset id but I haven't support for it";
                 /* Not implemented yet */
                 break;

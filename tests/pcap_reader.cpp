@@ -98,6 +98,7 @@ int pcap_reader(const char* pcap_file_path) {
 
     unsigned int read_packets = 0; 
     while (1) {
+        printf("Start packet %d processing\n", read_packets);
         struct fastnetmon_pcap_pkthdr pcap_packet_header;
         ssize_t packet_header_readed_bytes = read(filedesc, &pcap_packet_header, sizeof(struct fastnetmon_pcap_pkthdr));
       
@@ -122,6 +123,7 @@ int pcap_reader(const char* pcap_file_path) {
         // printf("packet payload read\n");
         pcap_parse_packet(packet_buffer, pcap_packet_header.incl_len);
 
+        printf("Process packet %d\n", read_packets);
         read_packets++;
     }
 
@@ -191,8 +193,9 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
 }
 
 int main() {
-    //init_logging();
-    pcap_reader("/root/flow_dump_ipfix_issue_with_fixed_to_2055.pcap");
-    // pcap_reader("/root/ipfix_example_ipt_netflow_syn_flood.pcap");
+    init_logging();
+    //pcap_reader("/root/netflowexample2_netflow9_cisco_sampling_issue.pcap");
+    //pcap_reader("/root/flow_dump_ipfix_issue_with_fixed_to_2055.pcap");
+    pcap_reader("/root/ipfix_example_ipt_netflow_syn_flood.pcap");
     //pcap_reader("/Users/pavel-odintsov/Dropbox/ipfix_example_ipt_netflow_syn_flood.pcap");
 }
