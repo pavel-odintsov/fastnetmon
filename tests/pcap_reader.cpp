@@ -98,7 +98,7 @@ int pcap_reader(const char* pcap_file_path) {
 
     unsigned int read_packets = 0; 
     while (1) {
-        printf("Start packet %d processing\n", read_packets);
+        //printf("Start packet %d processing\n", read_packets);
         struct fastnetmon_pcap_pkthdr pcap_packet_header;
         ssize_t packet_header_readed_bytes = read(filedesc, &pcap_packet_header, sizeof(struct fastnetmon_pcap_pkthdr));
       
@@ -123,7 +123,7 @@ int pcap_reader(const char* pcap_file_path) {
         // printf("packet payload read\n");
         pcap_parse_packet(packet_buffer, pcap_packet_header.incl_len);
 
-        printf("Process packet %d\n", read_packets);
+        //printf("Process packet %d\n", read_packets);
         read_packets++;
     }
 
@@ -167,8 +167,7 @@ std::string print_simple_packet(simple_packet packet) {
 }
 
 void my_fastnetmon_packet_handler(simple_packet& current_packet) {
-    printf("handler colled\n");
-    std::cout<<print_simple_packet(current_packet)<<std::endl;
+    std::cout<<print_simple_packet(current_packet);
 }
 
 extern process_packet_pointer netflow_process_func_ptr;
