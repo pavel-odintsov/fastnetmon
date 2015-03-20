@@ -188,14 +188,20 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
     //logger.info("%s", print_buffer);
 
     char* payload_ptr = packet_header.extended_hdr.parsed_pkt.offset.payload_offset + buffer;
-        
-    process_netflow_packet(len, (u_int8_t*)payload_ptr); 
+
+    if (packet_header.len <= packet_header.extended_hdr.parsed_pkt.offset.payload_offset) {
+        printf("Something goes wrong! Offset if bigger than total packet length");
+        return;
+    }
+       
+    unsigned int payload_length = packet_header.len - packet_header.extended_hdr.parsed_pkt.offset.payload_offset;
+    process_netflow_packet((u_int8_t*)payload_ptr, payload_length); 
 }
 
 int main() {
     init_logging();
     //pcap_reader("/root/netflowexample2_netflow9_cisco_sampling_issue.pcap");
-    //pcap_reader("/root/flow_dump_ipfix_issue_with_fixed_to_2055.pcap");
-    pcap_reader("/root/ipfix_example_ipt_netflow_syn_flood.pcap");
+    pcap_reader("/root/flow_dump_ipfix_issue_with_fixed_to_2055.pcap");
+    //pcap_reader("/root/ipfix_example_ipt_netflow_syn_flood.pcap");
     //pcap_reader("/Users/pavel-odintsov/Dropbox/ipfix_example_ipt_netflow_syn_flood.pcap");
 }
