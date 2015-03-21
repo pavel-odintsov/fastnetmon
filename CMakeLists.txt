@@ -57,6 +57,9 @@ endif()
 # Our LPM library
 add_library(patricia STATIC libpatricia/patricia.c)
 
+# Our tools library
+add_library(fast_library STATIC fast_library.cpp)
+
 # Our packet parser
 add_library(fastnetmon_packet_parser STATIC fastnetmon_packet_parser.cpp)
 
@@ -149,6 +152,9 @@ target_link_libraries(fastnetmon pthread)
 
 # Our libs
 target_link_libraries(fastnetmon patricia)
+
+# Link to our functions
+target_link_libraries(fastnetmon fast_library)
 
 # Our plugins
 target_link_libraries(fastnetmon sflow_plugin)
