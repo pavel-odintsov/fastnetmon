@@ -61,7 +61,7 @@ add_library(patricia STATIC libpatricia/patricia.c)
 add_library(fast_library STATIC fast_library.cpp)
 
 # Our packet parser
-add_library(fastnetmon_packet_parser STATIC fastnetmon_packet_parser.cpp)
+add_library(fastnetmon_packet_parser STATIC fastnetmon_packet_parser.c)
 
 # sFLOW plugin
 add_library(sflow_plugin STATIC sflow_plugin/sflow_collector.cpp) 
