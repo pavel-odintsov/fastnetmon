@@ -18,6 +18,7 @@
 #include "../netflow_plugin/netflow_collector.h"
 #include "../fastnetmon_packet_parser.h"
 #include "../fastnetmon_types.h"
+#include "../fast_library.h"
 
 #include "log4cpp/Category.hh"
 #include "log4cpp/Appender.hh"
@@ -63,11 +64,6 @@ void init_logging() {
     logger.setPriority(log4cpp::Priority::INFO);
     logger.addAppender(appender);
     logger.info("Logger initialized!");
-}
-
-// Copy & Paste
-int convert_string_to_integer(std::string line) {
-    return atoi(line.c_str());
 }
 
 int pcap_reader(const char* pcap_file_path) {
@@ -130,40 +126,6 @@ int pcap_reader(const char* pcap_file_path) {
     printf("I correctly read %d packets from this dump\n", read_packets);
 
     return 0;
-}
-
-
-
-// Ugly copy & paste
-std::string convert_ip_as_uint_to_string(uint32_t ip_as_integer) {
-    struct in_addr ip_addr;
-    ip_addr.s_addr = ip_as_integer;
-    return (std::string)inet_ntoa(ip_addr);
-}
-
-// Reduce function version
-std::string print_simple_packet(simple_packet packet) {
-    std::stringstream buffer;
-
-    /// buffer<<convert_timeval_to_date(packet.ts)<<" ";
-
-    buffer
-        <<convert_ip_as_uint_to_string(packet.src_ip)<<":"<<packet.source_port
-        <<" > "
-        <<convert_ip_as_uint_to_string(packet.dst_ip)<<":"<<packet.destination_port;
-        //<<" protocol: "<<get_printable_protocol_name(packet.protocol);
-   
-    // Print flags only for TCP 
-    //if (packet.protocol == IPPROTO_TCP) { 
-    //    buffer<<" flags: "<<print_tcp_flags(packet.flags);
-    //}
-
-    buffer<<" packets: "<<packet.number_of_packets<<" ";
-    buffer<<"size: "   <<packet.length<<" bytes"<<" ";
-    buffer<<"sample ratio: "<<packet.sample_ratio<<" ";
-    buffer<<"\n";
-    
-    return buffer.str();
 }
 
 void my_fastnetmon_packet_handler(simple_packet& current_packet) {
