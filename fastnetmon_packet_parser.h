@@ -96,8 +96,16 @@ struct pfring_pkthdr {
   struct pfring_extended_pkthdr extended_hdr; /* PF_RING extended header */
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Prototypes
 int fastnetmon_print_parsed_pkt(char *buff, u_int buff_len, const u_char *p, const struct pfring_pkthdr *h);
 int fastnetmon_parse_pkt(unsigned char *pkt, struct pfring_pkthdr *hdr, u_int8_t level /* L2..L4, 5 (tunnel) */,u_int8_t add_timestamp /* 0,1 */, u_int8_t add_hash /* 0,1 */);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
