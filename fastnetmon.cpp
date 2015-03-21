@@ -476,10 +476,6 @@ std::string convert_int_to_string(int value) {
     return out.str();
 }
 
-// convert string to integer
-int convert_string_to_integer(std::string line) {
-    return atoi(line.c_str());
-}
 
 // exec command in shell
 std::vector<std::string> exec(std::string cmd) {

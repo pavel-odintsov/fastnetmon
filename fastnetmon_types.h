@@ -22,8 +22,6 @@ public:
 
 typedef void (*process_packet_pointer)(simple_packet&);
 
-// Poor way to use functions from main programm from plugins
-#include <string>
-int convert_string_to_integer(std::string line);
+#include "fast_library.h"
 
-#endif 
+#endif
