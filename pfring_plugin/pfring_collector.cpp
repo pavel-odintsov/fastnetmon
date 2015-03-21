@@ -8,6 +8,8 @@
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
+#include "../fast_library.h"
+
 // For support uint32_t, uint16_t
 #include <sys/types.h>
 

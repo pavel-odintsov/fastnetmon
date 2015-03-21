@@ -13,6 +13,8 @@
 #include <vector>
 #include <map>
 
+#include "../fast_library.h"
+
 // log4cpp logging facility
 #include "log4cpp/Category.hh"
 #include "log4cpp/Appender.hh"
