@@ -107,6 +107,7 @@ find_package(Boost COMPONENTS thread regex system REQUIRED)
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
     target_link_libraries(fastnetmon ${Boost_LIBRARIES})
+    target_link_libraries(fast_library ${Boost_LIBRARIES})
 endif()
 
 # Try to find ncurses library
