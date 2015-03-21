@@ -1,6 +1,9 @@
 #ifndef _FASTNETMON_TYPES_H
 #define _FASTNETMON_TYPES_H
 
+#include <utility> // std::pair
+#include <stdint.h> // uint32_t
+
 // simplified packet struct for lightweight save into memory
 class simple_packet {
 public:
@@ -20,8 +23,7 @@ public:
     struct       timeval ts;
 };
 
+typedef std::pair<uint32_t, uint32_t> subnet;
 typedef void (*process_packet_pointer)(simple_packet&);
-
-#include "fast_library.h"
 
 #endif

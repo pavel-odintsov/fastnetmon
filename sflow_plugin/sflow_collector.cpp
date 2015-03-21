@@ -7,6 +7,8 @@
 // sflowtool-3.32
 #include "sflow.h"
 
+#include "../fast_library.h"
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

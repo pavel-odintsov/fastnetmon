@@ -10,6 +10,8 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include "../fast_library.h"
+
 // For support uint32_t, uint16_t
 #include <sys/types.h>
 

@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <signal.h>
 #include <time.h>
-
 #include <math.h> 
 
 #include <sys/socket.h>
@@ -21,10 +20,10 @@
 #include <netinet/ip_icmp.h>
 #include <netinet/if_ether.h>
 #include <netinet/in.h>
-#include <netdb.h>
 
 #include "libpatricia/patricia.h"
 #include "fastnetmon_types.h"
+#include "fast_library.h"
 
 // Plugins
 #include "sflow_plugin/sflow_collector.h"
@@ -78,8 +77,6 @@
 #endif
 
 std::string global_config_path = "/etc/fastnetmon.conf";
-
-boost::regex regular_expression_cidr_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+\\/\\d+$");
 
 time_t last_call_of_traffic_recalculation;
 
@@ -199,8 +196,6 @@ uint64_t total_unparsed_packets = 0;
 
 uint64_t incoming_total_flows_speed = 0;
 uint64_t outgoing_total_flows_speed = 0;
-
-typedef std::pair<uint32_t, uint32_t> subnet;
 
 // main data structure for storing traffic and speed data for all our IPs
 class map_element {
@@ -361,42 +356,25 @@ void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_st
 #endif
 
 bool we_should_ban_this_ip(map_element* current_average_speed_element);
-std::string get_net_address_from_network_as_string(std::string network_cidr_format);
 unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp);
-std::string get_printable_protocol_name(unsigned int protocol);
 void print_attack_details_to_file(std::string details, std::string client_ip_as_string,  attack_details current_attack);
-bool folder_exists(std::string path);
-std::string print_time_t_in_fastnetmon_format(time_t current_time);
 std::string print_ban_thresholds();
 bool load_configuration_file();
 std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, std::string client_ip);
 void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_data, packed_conntrack_hash* unpacked_data);
 uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash* struct_value);
-int timeval_subtract (struct timeval * result, struct timeval * x,  struct timeval * y);
-bool is_cidr_subnet(const char* subnet);
-uint64_t MurmurHash64A (const void * key, int len, uint64_t seed);
 void cleanup_ban_list();
-std::string print_tcp_flags(uint8_t flag_value);
-int extract_bit_value(uint8_t num, int bit);
 std::string get_attack_description(uint32_t client_ip, attack_details& current_attack);
-uint64_t convert_speed_to_mbps(uint64_t speed_in_bps);
 void send_attack_details(uint32_t client_ip, attack_details current_attack_details);
-std::string convert_timeval_to_date(struct timeval tv);
 void free_up_all_resources();
-unsigned int get_cidr_mask_from_network_as_string(std::string network_cidr_format);
 std::string print_ddos_attack_details();
 void execute_ip_ban(uint32_t client_ip, map_element new_speed_element, map_element current_speed_element, std::string flow_attack_details);
 direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet);
 void recalculate_speed();
 std::string print_channel_speed(std::string traffic_type, direction packet_direction);
 void process_packet(simple_packet& current_packet);
-void copy_networks_from_string_form_to_binary(std::vector<std::string> networks_list_as_string, std::vector<subnet>& our_networks);
-
-bool file_exists(std::string path);
 void traffic_draw_programm();
-void ulog_main_loop();
 void signal_handler(int signal_number);
-uint32_t convert_cidr_to_binary_netmask(unsigned int cidr);
 
 /* Class for custom comparison fields by different fields */
 class TrafficComparatorClass {
@@ -452,54 +430,6 @@ std::string get_direction_name(direction direction_value) {
     }   
 
     return direction_name;
-}
-
-uint32_t convert_ip_as_string_to_uint(std::string ip) {
-    struct in_addr ip_addr;
-    inet_aton(ip.c_str(), &ip_addr);
-
-    // in network byte order
-    return ip_addr.s_addr;
-}
-
-std::string convert_ip_as_uint_to_string(uint32_t ip_as_integer) {
-    struct in_addr ip_addr;
-    ip_addr.s_addr = ip_as_integer;
-    return (std::string)inet_ntoa(ip_addr);
-}
-
-// convert integer to string
-std::string convert_int_to_string(int value) {
-    std::stringstream out;
-    out << value;
-
-    return out.str();
-}
-
-
-// exec command in shell
-std::vector<std::string> exec(std::string cmd) {
-    std::vector<std::string> output_list;
-
-    FILE* pipe = popen(cmd.c_str(), "r");
-    if (!pipe) return output_list;
-
-    char buffer[256];
-    while(!feof(pipe)) {
-        if(fgets(buffer, 256, pipe) != NULL) {
-            size_t newbuflen = strlen(buffer);
-            
-            // remove newline at the end
-            if (buffer[newbuflen - 1] == '\n') {
-                buffer[newbuflen - 1] = '\0';
-            }
-
-            output_list.push_back(buffer);
-        }
-    }
-
-    pclose(pipe);
-    return output_list;
 }
 
 // exec command and pass data to it stdin
@@ -672,17 +602,7 @@ std::string draw_table(map_for_counters& my_map_packets, direction data_directio
     return output_buffer.str(); 
 }
 
-// check file existence
-bool file_exists(std::string path) {
-    FILE* check_file = fopen(path.c_str(), "r");
-    if (check_file) {
-        fclose(check_file);
-        return true;
-    } else {
-        return false;
-    }
-}
-
+// TODO: move to lirbary
 // read whole file to vector
 std::vector<std::string> read_file_to_vector(std::string file_name) {
     std::vector<std::string> data;
@@ -1053,102 +973,6 @@ bool load_our_networks_list() {
         <<total_number_of_hosts_in_our_networks;
 
     return true;
-}
-
-// extract 24 from 192.168.1.1/24
-unsigned int get_cidr_mask_from_network_as_string(std::string network_cidr_format) {
-    std::vector<std::string> subnet_as_string; 
-    split( subnet_as_string, network_cidr_format, boost::is_any_of("/"), boost::token_compress_on );
-
-    if (subnet_as_string.size() != 2) {
-        return 0;
-    }
-
-    return convert_string_to_integer(subnet_as_string[1]);
-}
-
-// extract 192.168.1.1 from 192.168.1.1/24
-std::string get_net_address_from_network_as_string(std::string network_cidr_format) {
-    std::vector<std::string> subnet_as_string;
-    split( subnet_as_string, network_cidr_format, boost::is_any_of("/"), boost::token_compress_on );
-
-    if (subnet_as_string.size() != 2) {
-        return 0;
-    }
-
-    return subnet_as_string[0];
-}
-
-void copy_networks_from_string_form_to_binary(std::vector<std::string> networks_list_as_string, std::vector<subnet>& our_networks ) {
-    for( std::vector<std::string>::iterator ii=networks_list_as_string.begin(); ii!=networks_list_as_string.end(); ++ii) {
-        std::vector<std::string> subnet_as_string; 
-        split( subnet_as_string, *ii, boost::is_any_of("/"), boost::token_compress_on );
-        unsigned int cidr = convert_string_to_integer(subnet_as_string[1]);
-
-        uint32_t subnet_as_int  = convert_ip_as_string_to_uint(subnet_as_string[0]);
-        uint32_t netmask_as_int = convert_cidr_to_binary_netmask(cidr);
-
-        subnet current_subnet = std::make_pair(subnet_as_int, netmask_as_int);
-
-        our_networks.push_back(current_subnet);
-    }  
-} 
-
-uint32_t convert_cidr_to_binary_netmask(unsigned int cidr) {
-    uint32_t binary_netmask = 0xFFFFFFFF; 
-    binary_netmask = binary_netmask << ( 32 - cidr );
-    // htonl from host byte order to network
-    // ntohl from network byte order to host
-
-    // We need network byte order at output 
-    return htonl(binary_netmask);
-}
-
-std::string get_printable_protocol_name(unsigned int protocol) {
-    std::string proto_name;
-
-    switch (protocol) {
-        case IPPROTO_TCP:
-            proto_name = "tcp";
-            break;
-        case IPPROTO_UDP:
-            proto_name = "udp";
-            break;
-        case IPPROTO_ICMP:
-            proto_name = "icmp";
-            break;
-        default:
-            proto_name = "unknown";
-            break;
-    } 
-
-    return proto_name;
-}
-
-std::string print_simple_packet(simple_packet packet) {
-    std::stringstream buffer;
-
-    buffer<<convert_timeval_to_date(packet.ts)<<" ";
-
-    buffer
-        <<convert_ip_as_uint_to_string(packet.src_ip)<<":"<<packet.source_port
-        <<" > "
-        <<convert_ip_as_uint_to_string(packet.dst_ip)<<":"<<packet.destination_port
-        <<" protocol: "<<get_printable_protocol_name(packet.protocol);
-   
-    // Print flags only for TCP 
-    if (packet.protocol == IPPROTO_TCP) { 
-        buffer<<" flags: "<<print_tcp_flags(packet.flags);
-    }
-
-    buffer<<" ";
-    buffer<<"packets: "     <<packet.number_of_packets  <<" ";
-    buffer<<"size: "        <<packet.length             <<" bytes ";
-    buffer<<"sample ratio: "<<packet.sample_ratio       <<" ";
-
-    buffer<<" \n";
-    
-    return buffer.str();
 }
 
 /* Process simple unified packet */
@@ -1718,10 +1542,6 @@ std::string print_channel_speed(std::string traffic_type, direction packet_direc
     return stream.str();
 }    
 
-uint64_t convert_speed_to_mbps(uint64_t speed_in_bps) {
-    return uint64_t((double)speed_in_bps / 1024 / 1024 * 8);
-}
-
 void init_logging() {
     log4cpp::PatternLayout* layout = new log4cpp::PatternLayout(); 
     layout->setConversionPattern ("%d [%p] %m%n"); 
@@ -1732,19 +1552,6 @@ void init_logging() {
     logger.setPriority(log4cpp::Priority::INFO);
     logger.addAppender(appender);
     logger.info("Logger initialized!");
-}
-
-bool folder_exists(std::string path) {
-    if (access(path.c_str(), 0) == 0) {
-        struct stat status;
-        stat(path.c_str(), &status);
-
-        if (status.st_mode & S_IFDIR) {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 int main(int argc,char **argv) {
@@ -2244,17 +2051,6 @@ void cleanup_ban_list() {
     }
 }
 
-std::string print_time_t_in_fastnetmon_format(time_t current_time) {
-    struct tm* timeinfo;
-    char buffer[80];
-
-    timeinfo = localtime (&current_time);
-
-    strftime (buffer, sizeof(buffer), "%d_%m_%y_%H:%M:%S", timeinfo);
-
-    return std::string(buffer);
-}
-
 std::string print_ddos_attack_details() {
     std::stringstream output_buffer;
 
@@ -2317,12 +2113,6 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
     return attack_description.str();
 }    
 
-std::string get_protocol_name_by_number(unsigned int proto_number) {
-    struct protoent* proto_ent = getprotobynumber( proto_number );
-    std::string proto_name = proto_ent->p_name;
-    return proto_name;
-}       
-
 void send_attack_details(uint32_t client_ip, attack_details current_attack_details) {
     std::string pps_as_string = convert_int_to_string(current_attack_details.attack_power);
     std::string attack_direction = get_direction_name(current_attack_details.attack_direction);
@@ -2368,177 +2158,6 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
         // Remove key and prevent collection new data about this attack
         ban_list_details.erase(client_ip);
     } 
-}
-
-
-std::string convert_timeval_to_date(struct timeval tv) {
-    time_t nowtime = tv.tv_sec;
-    struct tm *nowtm = localtime(&nowtime);
-    
-    char tmbuf[64];
-    char buf[64];
-
-    strftime(tmbuf, sizeof(tmbuf), "%Y-%m-%d %H:%M:%S", nowtm);
-
-    snprintf(buf, sizeof(buf), "%s.%06ld", tmbuf, tv.tv_usec); 
-
-    return std::string(buf);
-}
-
-// http://stackoverflow.com/questions/14528233/bit-masking-in-c-how-to-get-first-bit-of-a-byte
-int extract_bit_value(uint8_t num, int bit) {
-    if (bit > 0 && bit <= 8) {
-        return ( (num >> (bit-1)) & 1 );
-    } else {
-        return 0;
-    }
-}
-
-std::string print_tcp_flags(uint8_t flag_value) {
-    if (flag_value == 0) {
-        return "-";
-    }
-
-    // cod from pfring.h
-    // (tcp->fin * TH_FIN_MULTIPLIER) + (tcp->syn * TH_SYN_MULTIPLIER) +
-    // (tcp->rst * TH_RST_MULTIPLIER) + (tcp->psh * TH_PUSH_MULTIPLIER) +
-    // (tcp->ack * TH_ACK_MULTIPLIER) + (tcp->urg * TH_URG_MULTIPLIER);
-
-    /*
-        // Required for decoding tcp flags
-        #define TH_FIN_MULTIPLIER   0x01
-        #define TH_SYN_MULTIPLIER   0x02
-        #define TH_RST_MULTIPLIER   0x04
-        #define TH_PUSH_MULTIPLIER  0x08
-        #define TH_ACK_MULTIPLIER   0x10
-        #define TH_URG_MULTIPLIER   0x20
-    */
-
-    std::vector<std::string> all_flags;
-
-    if (extract_bit_value(flag_value, 1)) {
-        all_flags.push_back("fin");
-    }
-    
-    if (extract_bit_value(flag_value, 2)) {
-        all_flags.push_back("syn");
-    }   
-
-    if (extract_bit_value(flag_value, 3)) {
-        all_flags.push_back("rst");
-    }   
-
-    if (extract_bit_value(flag_value, 4)) {
-        all_flags.push_back("psh");
-    }   
-
-    if (extract_bit_value(flag_value, 5)) {
-        all_flags.push_back("ack");
-    }    
-
-    if (extract_bit_value(flag_value, 6)) {
-        all_flags.push_back("urg");
-    }   
-
-    
-    std::ostringstream flags_as_string;
-
-    if (all_flags.empty()) {
-        return "-";
-    }
-
-    // concatenate all vector elements with comma
-    std::copy(all_flags.begin(), all_flags.end() - 1, std::ostream_iterator<std::string>(flags_as_string, ","));
-
-    // add last element
-    flags_as_string << all_flags.back();
-    
-    return flags_as_string.str();
-}
-
-#define BIG_CONSTANT(x) (x##LLU)
-
-/*
-
-    // calculate hash
-    unsigned int seed = 11;
-    uint64_t hash = MurmurHash64A(&current_packet, sizeof(current_packet), seed);
-
-*/
-
-// https://code.google.com/p/smhasher/source/browse/trunk/MurmurHash2.cpp
-// 64-bit hash for 64-bit platforms
-uint64_t MurmurHash64A ( const void * key, int len, uint64_t seed ) {
-    const uint64_t m = BIG_CONSTANT(0xc6a4a7935bd1e995);
-    const int r = 47;
-
-    uint64_t h = seed ^ (len * m);
-
-    const uint64_t * data = (const uint64_t *)key;
-    const uint64_t * end = data + (len/8);
-
-    while(data != end) {
-        uint64_t k = *data++;
-
-        k *= m; 
-        k ^= k >> r; 
-        k *= m; 
-    
-        h ^= k;
-        h *= m; 
-    }
-
-    const unsigned char * data2 = (const unsigned char*)data;
-
-    switch(len & 7) {
-        case 7: h ^= uint64_t(data2[6]) << 48;
-        case 6: h ^= uint64_t(data2[5]) << 40;
-        case 5: h ^= uint64_t(data2[4]) << 32;
-        case 4: h ^= uint64_t(data2[3]) << 24;
-        case 3: h ^= uint64_t(data2[2]) << 16;
-        case 2: h ^= uint64_t(data2[1]) << 8;
-        case 1: h ^= uint64_t(data2[0]);
-            h *= m;
-    };
- 
-    h ^= h >> r;
-    h *= m;
-    h ^= h >> r;
-
-    return h;
-} 
-
-bool is_cidr_subnet(const char* subnet) {
-    boost::cmatch what;
-    if (regex_match(subnet, what, regular_expression_cidr_pattern)) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-
-// http://www.gnu.org/software/libc/manual/html_node/Elapsed-Time.html
-int timeval_subtract (struct timeval * result, struct timeval * x,  struct timeval * y) {
-    /* Perform the carry for the later subtraction by updating y. */
-    if (x->tv_usec < y->tv_usec) {
-        int nsec = (y->tv_usec - x->tv_usec) / 1000000 + 1;
-        y->tv_usec -= 1000000 * nsec;
-        y->tv_sec += nsec;
-    }
-
-    if (x->tv_usec - y->tv_usec > 1000000) {
-        int nsec = (x->tv_usec - y->tv_usec) / 1000000;
-        y->tv_usec += 1000000 * nsec;
-        y->tv_sec -= nsec;
-    }
-
-    /* Compute the time remaining to wait. tv_usec is certainly positive. */
-    result->tv_sec = x->tv_sec - y->tv_sec;
-    result->tv_usec = x->tv_usec - y->tv_usec;
-
-    /* Return 1 if result is negative. */
-    return x->tv_sec < y->tv_sec;
 }
 
 uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash* struct_value) {
