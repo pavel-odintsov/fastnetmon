@@ -18,8 +18,8 @@ public:
     uint16_t     source_port;
     uint16_t     destination_port;
     unsigned     int protocol;
-    unsigned     int length;
-    unsigned     int number_of_packets; /* for netflow */
+    uint64_t     length;
+    uint64_t     number_of_packets; /* for netflow */
     uint8_t      flags; /* tcp flags */
     struct       timeval ts;
 };
