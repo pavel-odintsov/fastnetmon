@@ -43,13 +43,13 @@ What is "flow" in FastNetMon terms? It's one or multiple udp, tcp, icmp connecti
 
 Main program screen image:
 
-![Main screen image](images/fastnetmon_screen.png)
+![Main screen image](docs/images/fastnetmon_screen.png)
 
 Example for cpu load on Intel i7 2600 with Intel X540/82599 NIC on 400 kpps load:
-![Cpu consumption](images/fastnetmon_stats.png)
+![Cpu consumption](docs/images/fastnetmon_stats.png)
 
 Example deployment scheme:
-![Network diagramm](images/network_map.png)
+![Network diagramm](docs/images/network_map.png)
 
 Example of first notification:
 ```bash
