@@ -1029,8 +1029,8 @@ void process_packet(simple_packet& current_packet) {
         - Another combinations of this three options
     */ 
      
-    uint32_t sampled_number_of_packets = current_packet.number_of_packets * current_packet.sample_ratio;
-    uint32_t sampled_number_of_bytes   = current_packet.length            * current_packet.sample_ratio;
+    uint64_t sampled_number_of_packets = current_packet.number_of_packets * current_packet.sample_ratio;
+    uint64_t sampled_number_of_bytes   = current_packet.length            * current_packet.sample_ratio;
 
     __sync_fetch_and_add(&total_counters[packet_direction].packets, sampled_number_of_packets);
     __sync_fetch_and_add(&total_counters[packet_direction].bytes,   sampled_number_of_bytes);
