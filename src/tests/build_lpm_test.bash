@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 COMPILER=clang
 CPP_COMPILER=clang++

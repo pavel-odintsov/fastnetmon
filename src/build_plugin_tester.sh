@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 g++ fast_library.cpp -c -ofast_library.o
 g++ netflow_plugin/netflow_collector.cpp -c -onetflow_collector.o
