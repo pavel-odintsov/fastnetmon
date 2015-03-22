@@ -7,6 +7,9 @@ cmake_minimum_required (VERSION 2.8)
 
 project(FastNetMon)
 
+# Enable it and fix all warnigns!
+# add_definitions ("-Wall")
+
 set (Tutorial_VERSION_MAJOR 1)
 set (Tutorial_VERSION_MINOR 1)
 
