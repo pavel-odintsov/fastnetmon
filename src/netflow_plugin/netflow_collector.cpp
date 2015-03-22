@@ -32,6 +32,8 @@ extern log4cpp::Category& logger;
 // Global configuration map 
 extern std::map<std::string, std::string> configuration_map;
 
+ipfix_information_database ipfix_db_instance;
+
 #include "netflow_collector.h"
 #include "netflow.h"
 
@@ -67,7 +69,6 @@ struct peer_nf9_template* peer_nf10_find_template(u_int32_t source_id, u_int tem
 
 std::string print_peer_nf9_template(struct peer_nf9_template& field_template) {
     std::stringstream buffer;
-    ipfix_information_database ipfix_db_instance;
 
     buffer
         <<"template_id: "<<field_template.template_id<<"\n"
@@ -333,7 +334,6 @@ int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simp
         return 0;
 }
 
-
 int nf10_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simple_packet& packet) { 
     /* XXX: use a table-based interpreter */
     switch (record_type) {
@@ -351,6 +351,19 @@ int nf10_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, sim
     return 0;
 }
 
+// We use maximum possible variable langth
+// But devices can send shoretr data to us 
+typedef struct netflow_ipfix_struct {
+    uint32_t sourceIPv4Address;
+    uint32_t destinationIPv4Address;
+    uint16_t sourceTransportPort;
+    uint16_t destinationTransportPort;
+    uint16_t tcpControlBits;
+    uint8_t  protocolIdentifier;
+    uint64_t octetDeltaCount;
+    uint64_t packetDeltaCount;
+} netflow_ipfix_struct;
+
 // We should rewrite nf9_flowset_to_store accroding to fixes here
 void nf10_flowset_to_store(u_int8_t *pkt, size_t len, struct NF10_HEADER *nf10_hdr, struct peer_nf9_template* field_template) {
     u_int offset = 0;
@@ -361,22 +374,60 @@ void nf10_flowset_to_store(u_int8_t *pkt, size_t len, struct NF10_HEADER *nf10_h
     }
 
     simple_packet packet;
+    // We use shifted values and should process only zeroed values
+    // because we are working with little and big endian data in same time
+    packet.number_of_packets = 0;
     packet.ts.tv_sec = ntohl(nf10_hdr->time_sec);
+
+    netflow_ipfix_struct data_in_ipfix_format;
+    memset(&data_in_ipfix_format, sizeof(netflow_ipfix_struct), 0);
+
+    // printf("number of packets before any operations: %lx\n", packet.number_of_packets);
 
     for (netflow9_template_records_map::iterator iter = field_template->records.begin(); iter != field_template->records.end(); iter++) {
         u_int record_type   = iter->type;
         u_int record_length = iter->len;
 
         nf10_rec_to_flow(record_type, record_length, pkt + offset, packet);
+    
+        // New code
+        /*
+        unsigned int field_id = record_type;
+        std::string field_name = ipfix_db_instance.get_name_by_id(field_id);
+
+        if (field_name == "octetDeltaCount") {
+            unsigned int reference_field_length = sizeof(data_in_ipfix_format.octetDeltaCount);
+
+            if (reference_field_length == record_length) {
+                // We use standard copy
+                memcpy(&data_in_ipfix_format.octetDeltaCount, pkt + offset, record_length);
+
+                // Convert to host byte order
+                data_in_ipfix_format.octetDeltaCount = fast_ntoh(data_in_ipfix_format.octetDeltaCount);
+            } else if (record_length < reference_field_length) {
+                logger<< log4cpp::Priority::ERROR<<"We can't copy data because magic memcpy is not implemented yet";
+                // We use copy memcpy for netfowrk byte order
+            } else {
+                // Holy cow! It's impossible!
+                logger<< log4cpp::Priority::ERROR<<"We can't copy data because receiver data is bigger than our storage.";
+                return;           
+            }
+            
+            logger<< log4cpp::Priority::INFO<<"We received packet size with new parser: "<<data_in_ipfix_format.octetDeltaCount;
+        }
+        */
 
         offset += record_length;
     }
 
     // decode data in network byte order to host byte order
-    packet.length            = ntohl(packet.length);
-    packet.number_of_packets = ntohl(packet.number_of_packets);
+    packet.length            = fast_ntoh(packet.length);
 
-    packet.protocol = ntohl(packet.protocol);
+    // printf("number of packets before conversion to host byte order: %lx\n", packet.number_of_packets);
+    packet.number_of_packets = fast_ntoh(packet.number_of_packets);
+    // printf("number of packets after conversion to host byte order: %lx\n", packet.number_of_packets);
+
+    packet.protocol = fast_ntoh(packet.protocol);
 
     // Set protocol
     switch (packet.protocol) {
@@ -404,13 +455,17 @@ void nf10_flowset_to_store(u_int8_t *pkt, size_t len, struct NF10_HEADER *nf10_h
 }
 
 void nf9_flowset_to_store(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr, netflow9_template_records_map& template_records) {
-    // Should be done accoring to https://github.com/FastVPSEestiOu/fastnetmon/issues/147
+    // Should be done according to https://github.com/FastVPSEestiOu/fastnetmon/issues/147
     //if (template->total_len > len)
     //    return 1;
 
     u_int offset = 0;
 
     simple_packet packet;
+    // We use shifted values and should process only zeroed values
+    // because we are working with little and big endian data in same time
+    packet.number_of_packets = 0;
+
     packet.ts.tv_sec = ntohl(nf9_hdr->time_sec);
 
     // We should iterate over all available template fields
