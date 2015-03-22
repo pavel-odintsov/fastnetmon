@@ -24,6 +24,11 @@ uint32_t fast_ntoh(uint32_t value) {
     return ntohl(value);
 }
 
+// network (big endian) byte order to host byte order
+uint64_t fast_ntoh (uint64_t value) {
+    return be64toh(value);
+}
+
 // Type safe version of htonl, htons
 uint16_t fast_hton(uint16_t value) {
     return htons(value);
@@ -32,6 +37,12 @@ uint16_t fast_hton(uint16_t value) {
 uint32_t fast_hton(uint32_t value) {
     return htonl(value);
 }
+
+uint64_t fast_hton(uint64_t value) {
+    // host to big endian (network byte order)
+    return htobe64(value);
+}
+
 
 uint32_t convert_ip_as_string_to_uint(std::string ip) {
     struct in_addr ip_addr;

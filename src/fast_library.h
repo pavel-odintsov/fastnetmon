@@ -45,7 +45,10 @@ int convert_string_to_integer(std::string line);
 // Byte order type safe converters
 uint16_t fast_ntoh(uint16_t value);
 uint32_t fast_ntoh(uint32_t value);
+uint64_t fast_ntoh (uint64_t value);
+
 uint16_t fast_hton(uint16_t value);
 uint32_t fast_hton(uint32_t value);
+uint64_t fast_hton(uint64_t value);
 
 #endif
