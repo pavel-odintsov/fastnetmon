@@ -1,8 +1,9 @@
 #ifndef _FASTNETMON_TYPES_H
 #define _FASTNETMON_TYPES_H
 
-#include <utility> // std::pair
-#include <stdint.h> // uint32_t
+#include <utility>    // std::pair
+#include <stdint.h>   // uint32_t
+#include <sys/time.h> // struct timeval
 
 // simplified packet struct for lightweight save into memory
 class simple_packet {
