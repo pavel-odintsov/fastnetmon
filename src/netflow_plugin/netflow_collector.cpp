@@ -14,6 +14,7 @@
 #include <map>
 
 #include "../fast_library.h"
+#include "../ipfix_rfc.h"
 
 // log4cpp logging facility
 #include "log4cpp/Category.hh"
@@ -66,6 +67,7 @@ struct peer_nf9_template* peer_nf10_find_template(u_int32_t source_id, u_int tem
 
 std::string print_peer_nf9_template(struct peer_nf9_template& field_template) {
     std::stringstream buffer;
+    ipfix_information_database ipfix_db_instance;
 
     buffer
         <<"template_id: "<<field_template.template_id<<"\n"
@@ -74,9 +76,18 @@ std::string print_peer_nf9_template(struct peer_nf9_template& field_template) {
 
     for (netflow9_template_records_map::iterator itr = field_template.records.begin(); itr != field_template.records.end(); ++itr) {
         buffer<<"Records\n";
+        unsigned int length_from_database = ipfix_db_instance.get_length_by_id(itr->type);
 
         buffer<<"type: "<<itr->type<<"\n";
-        buffer<<"len: "<<itr->len<<"\n\n";
+        buffer<<"len: "<<itr->len<<"\n";
+        buffer<<"name from database: "<<ipfix_db_instance.get_name_by_id(itr->type)<<"\n";
+        buffer<<"length from database: "<<length_from_database<<"\n";
+
+        if (length_from_database != itr->len) {
+            buffer<<"ATTENTION!!!! Length from database is not equal to length from received from the device\n";
+        }
+        
+        buffer<<"\n";
     } 
 
     return buffer.str();
