@@ -140,5 +140,5 @@ How I can help project?
 - Test it! 
 - Share your experience
 - Share your improvements
-- Test it with different equpment
+- Test it with different equipment
 - Create feature requests
