@@ -18,6 +18,11 @@ ipfix_information_element_t::ipfix_information_element_t(std::string name, unsig
     this->length = length;
 }
 
+ipfix_information_element_t::ipfix_information_element_t() {
+    this->name = std::string("");
+    this->length = 0;
+}
+
 std::string ipfix_information_database::get_name_by_id(unsigned int field_id) {
     ipfix_database_t::iterator itr = database.find(field_id);
 

@@ -60,6 +60,9 @@ add_library(patricia STATIC libpatricia/patricia.c)
 # Our tools library
 add_library(fast_library STATIC fast_library.cpp)
 
+# Our ipfix database library
+add_library(ipfix_rfc STATIC ipfix_rfc.cpp)
+
 # Our packet parser
 add_library(fastnetmon_packet_parser STATIC fastnetmon_packet_parser.c)
 
@@ -68,6 +71,7 @@ add_library(sflow_plugin STATIC sflow_plugin/sflow_collector.cpp)
 
 # netflow plugin
 add_library(netflow_plugin STATIC netflow_plugin/netflow_collector.cpp)
+target_link_libraries(netflow_plugin ipfix_rfc)
 
 # pcap plugin
 add_library(pcap_plugin STATIC pcap_plugin/pcap_collector.cpp)
@@ -153,6 +157,8 @@ target_link_libraries(fastnetmon pthread)
 
 # Our libs
 target_link_libraries(fastnetmon patricia)
+
+target_link_libraries(fastnetmon ipfix_rfc)
 
 # Link to our functions
 target_link_libraries(fastnetmon fast_library)
