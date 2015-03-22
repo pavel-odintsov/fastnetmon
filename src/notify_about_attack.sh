@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # $1 client_ip_as_string
 # $2 data_direction
