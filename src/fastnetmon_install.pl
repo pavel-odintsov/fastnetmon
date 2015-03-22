@@ -150,7 +150,7 @@ sub install {
     print "Clone FastNetMon repo\n";
     chdir "/usr/src";
 
-    my $fastnetmon_code_dir = "/usr/src/fastnetmon";
+    my $fastnetmon_code_dir = "/usr/src/fastnetmon/src";
 
     if (-e $fastnetmon_code_dir) {
         # Code already downloaded
