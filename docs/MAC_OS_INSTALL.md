@@ -10,7 +10,7 @@ Build fastnetmon:
 ```bash
 cd ~
 git clone https://github.com/FastVPSEestiOu/fastnetmon.git
-cd fastnetmon
+cd fastnetmon/src
 mkdir build
 cd build
 cmake ..

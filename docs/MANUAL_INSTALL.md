@@ -45,12 +45,12 @@ Install FastNetMon:
 
    cd /usr/src
    git clone https://github.com/FastVPSEestiOu/fastnetmon.git
-   cd fastnetmon
+   cd fastnetmon/src
 ```
 
 Build FastNetMon with cmake:
 ```bash
-cd /usr/src/fastnetmon
+cd /usr/src/fastnetmon/cmake
 mkdir build
 cd build
 cmake ..
