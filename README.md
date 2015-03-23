@@ -17,17 +17,17 @@ Why did we write this? Because we can't find any software for solving this probl
 
 [![Build Status](https://travis-ci.org/FastVPSEestiOu/fastnetmon.svg?branch=master)](https://travis-ci.org/FastVPSEestiOu/fastnetmon) [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/FastVPSEestiOu/fastnetmon?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
+Supported protocols:
+- NetFlow v5, v9, ipfix
+- ![sFLOW](http://sflow.org/images/sflowlogo.gif) v5
+- Port mirror/SPAN capture with PF_RING (with ZC/DNA mode support [need license](http://www.ntop.org/products/pf_ring/)), NETMAP, PCAP
+
 Features:
 - Can process incoming and outgoing traffic
 - Can trigger block script if certain IP loads network with a large amount of packets per second
 - Can trigger block script if certain IP loads network with a large amount of bytes per second
 - Can trigger block script if certain IP loads network with a large amount of flows per second
 - netmap support (open source; wire speed processing; only Intel hardware NICs or any hypervisor VM type)
-- PF_RING ZC/DNA support (wire speed processing on tens of MPPS but needs [license](http://www.ntop.org/products/pf_ring/))
-- Can process ![sFLOW](http://sflow.org/images/sflowlogo.gif) v5
-- Can process NetFlow v5, v9, ipfix
-- Can use PCAP for packet sniffing
-- Can work on mirror/SPAN ports
 - Supports L2TP decapsulation, VLAN untagging and MPLS processing in mirror mode 
 - Can work on server/soft-router
 - Can detect DoS/DDoS in 1-2 seconds
