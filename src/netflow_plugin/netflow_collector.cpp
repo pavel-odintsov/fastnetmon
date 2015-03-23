@@ -479,10 +479,14 @@ void nf9_flowset_to_store(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr,
     }
 
     // decode data in network byte order to host byte order
-    packet.length            = ntohl(packet.length);
-    packet.number_of_packets = ntohl(packet.number_of_packets);
+    packet.length            = fast_ntoh(packet.length);
+    packet.number_of_packets = fast_ntoh(packet.number_of_packets);
 
-    packet.protocol = ntohl(packet.protocol);
+    packet.protocol = fast_ntoh(packet.protocol);
+
+    // We should convert ports to host byte order too
+    packet.source_port      = fast_ntoh(packet.source_port);
+    packet.destination_port = fast_ntoh(packet.destination_port);
 
     // Set protocol
     switch (packet.protocol) {
