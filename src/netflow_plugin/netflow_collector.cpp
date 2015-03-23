@@ -382,8 +382,6 @@ void nf10_flowset_to_store(u_int8_t *pkt, size_t len, struct NF10_HEADER *nf10_h
     netflow_ipfix_struct data_in_ipfix_format;
     memset(&data_in_ipfix_format, sizeof(netflow_ipfix_struct), 0);
 
-    // printf("number of packets before any operations: %lx\n", packet.number_of_packets);
-
     for (netflow9_template_records_map::iterator iter = field_template->records.begin(); iter != field_template->records.end(); iter++) {
         u_int record_type   = iter->type;
         u_int record_length = iter->len;
@@ -423,11 +421,12 @@ void nf10_flowset_to_store(u_int8_t *pkt, size_t len, struct NF10_HEADER *nf10_h
     // decode data in network byte order to host byte order
     packet.length            = fast_ntoh(packet.length);
 
-    // printf("number of packets before conversion to host byte order: %lx\n", packet.number_of_packets);
     packet.number_of_packets = fast_ntoh(packet.number_of_packets);
-    // printf("number of packets after conversion to host byte order: %lx\n", packet.number_of_packets);
-
     packet.protocol = fast_ntoh(packet.protocol);
+
+    // We should convert ports to host byte order too
+    packet.source_port      = fast_ntoh(packet.source_port);
+    packet.destination_port = fast_ntoh(packet.destination_port);
 
     // Set protocol
     switch (packet.protocol) {
