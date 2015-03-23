@@ -4,7 +4,7 @@ Author: [Pavel Odintsov](http://ru.linkedin.com/in/podintsov/) pavel.odintsov at
 
 License: GPLv2
 
-FastNetMon - A high performance DoS/DDoS and netflowk load analyzer built on top of multiple packet capture engines (netmap, PF_RING, sFLOW, Netflow, PCAP).
+FastNetMon - A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
 
 What can we do? We can detect hosts in our own network with a large amount of packets per second/bytes per second or flow per second incoming or outgoing from certain hosts. And we can call an external script which can notify you, switch off a server or blackhole the client.
 
@@ -18,9 +18,10 @@ Why did we write this? Because we can't find any software for solving this probl
 [![Build Status](https://travis-ci.org/FastVPSEestiOu/fastnetmon.svg?branch=master)](https://travis-ci.org/FastVPSEestiOu/fastnetmon) [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/FastVPSEestiOu/fastnetmon?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 Supported protocols:
-- NetFlow v5, v9, ipfix
+- NetFlow v5, v9
+- IPFIX
 - ![sFLOW](http://sflow.org/images/sflowlogo.gif) v5
-- Port mirror/SPAN capture with PF_RING (with ZC/DNA mode support [need license](http://www.ntop.org/products/pf_ring/)), NETMAP, PCAP
+- Port mirror/SPAN capture with PF_RING (with ZC/DNA mode support [need license](http://www.ntop.org/products/pf_ring/)), NETMAP and PCAP
 
 Features:
 - Can process incoming and outgoing traffic
