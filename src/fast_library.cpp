@@ -3,6 +3,7 @@
 #include "fast_library.h"
 #include <arpa/inet.h>
 #include <stdlib.h> // atoi
+#include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
