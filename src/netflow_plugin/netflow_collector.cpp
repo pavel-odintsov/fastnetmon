@@ -787,11 +787,14 @@ void process_netflow_packet_v5(u_int8_t *packet, u_int len) {
         // TODO: we should pass data about "flow" structure of this data
     
         // htobe64 removed
-        current_packet.length            = ntohl(nf5_flow->flow_octets);
-        current_packet.number_of_packets = ntohl(nf5_flow->flow_packets);
+        current_packet.length            = fast_ntoh(nf5_flow->flow_octets);
+        current_packet.number_of_packets = fast_ntoh(nf5_flow->flow_packets);
 
         // We did not support sampling for netflow :(
         current_packet.sample_ratio = 1;
+
+        current_packet.source_port      = fast_ntoh(nf5_flow->src_port);
+        current_packet.destination_port = fast_ntoh(nf5_flow->dest_port);
 
         switch (nf5_flow->protocol) {
             case 1: {
@@ -804,9 +807,6 @@ void process_netflow_packet_v5(u_int8_t *packet, u_int len) {
                 // TCP
                 current_packet.protocol = IPPROTO_TCP;
 
-                current_packet.source_port      = nf5_flow->src_port;
-                current_packet.destination_port = nf5_flow->dest_port;
-
                 // TODO: flags can be in another format!
                 current_packet.flags = nf5_flow->tcp_flags;
             }
@@ -815,9 +815,6 @@ void process_netflow_packet_v5(u_int8_t *packet, u_int len) {
             case 17: {
                 // UDP
                 current_packet.protocol = IPPROTO_UDP;
-
-                current_packet.source_port      = nf5_flow->src_port;
-                current_packet.destination_port = nf5_flow->dest_port;
             }
             break;
         }
