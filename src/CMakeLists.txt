@@ -177,3 +177,6 @@ target_link_libraries(fastnetmon netflow_plugin)
 target_link_libraries(fastnetmon pcap_plugin)
 target_link_libraries(fastnetmon example_plugin)
 target_link_libraries(fastnetmon netmap_plugin)
+
+install(TARGETS fastnetmon DESTINATION bin)
+install(TARGETS fastnetmon_client DESTINATION bin)
