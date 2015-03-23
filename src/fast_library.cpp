@@ -3,10 +3,18 @@
 #include "fast_library.h"
 #include <arpa/inet.h>
 #include <stdlib.h> // atoi
+#include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <netdb.h>
+
+#if defined(__APPLE__)
+#include <libkern/OSByteOrder.h>
+// Source: https://gist.github.com/pavel-odintsov/d13684600423d1c5e64e
+#define be64toh(x) OSSwapBigToHostInt64(x)
+#define htobe64(x) OSSwapHostToBigInt64(x)
+#endif
 
 boost::regex regular_expression_cidr_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+\\/\\d+$");
 
