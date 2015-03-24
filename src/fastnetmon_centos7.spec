@@ -107,7 +107,7 @@ fi
 %files
 #%doc LICENSE CHANGES README
 # init.d script
-%{_initrddir}/fastnetmon
+%{_sysconfdir}/systemd/system
 
 # binary daemon
 %{_sbindir}/fastnetmon
