@@ -39,9 +39,9 @@ endif()
 
 if (ENABLE_PFRING_SUPPORT)
     # work around for broken 6.0.3 (which in reality very old 6.0.3) from ntop packages
-    if (WE_USE_PFRING_FROM_NTOP)
-        add_definitions(-DWE_USE_PFRING_FROM_NTOP) 
-    endif()
+    #if (WE_USE_PFRING_FROM_NTOP)
+    #    add_definitions(-DWE_USE_PFRING_FROM_NTOP) 
+    #endif()
 
     if (WE_USE_PFRING_FROM_NTOP)
         # Because ntop will add libs and headers to global paths
