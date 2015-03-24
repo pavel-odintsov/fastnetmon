@@ -39,13 +39,13 @@ endif()
 
 if (ENABLE_PFRING_SUPPORT)
     # work around for broken 6.0.3 (which in reality very old 6.0.3) from ntop packages
-    if (WE_USE_PFRING_FROM_NTOP)
-        add_definitions(-DWE_USE_PFRING_FROM_NTOP) 
-    endif()
+    #if (WE_USE_PFRING_FROM_NTOP)
+    #    add_definitions(-DWE_USE_PFRING_FROM_NTOP) 
+    #endif()
 
     if (WE_USE_PFRING_FROM_NTOP)
         # Because ntop will add libs and headers to global paths
-        PFRING_LIBRARIES(libpfring) 
+        set(PFRING_LIBRARIES pfring) 
     else() 
         # Set path to manually compiled PF_RING
         set(PFRING_INCLUDE_DIRS /opt/pf_ring/include)
@@ -54,7 +54,7 @@ if (ENABLE_PFRING_SUPPORT)
 
     add_definitions(-DPF_RING)
 
-    if (EXISTS "/opt/pf_ring/include/pfring_zc.h")
+    if (EXISTS "/opt/pf_ring/include/pfring_zc.h" OR EXISTS "/usr/local/include/pfring_zc.h")
         message("We found PF_RING ZC headers and will build PF_RING ZC support")
         # Enable ZC support
         add_definitions(-DPF_RING_ZC)

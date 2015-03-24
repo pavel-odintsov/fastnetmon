@@ -6,20 +6,20 @@ First of all, please install Epel repo:
 
 Enable ntop repo (need for PF_RING kernel module and library): ```vim /etc/yum.repos.d/ntop.repo```
 
-Repo file:
+Repo file (it's nightbuild version. Stable did not work correctly and haven't headers for ZC version):
 ```bash
 [ntop]
 name=ntop packages
-baseurl=http://www.nmon.net/centos-stable/$releasever/$basearch/
+baseurl=http://www.nmon.net/centos/$releasever/$basearch/
 enabled=1
 gpgcheck=1
-gpgkey=http://www.nmon.net/centos-stable/RPM-GPG-KEY-deri
+gpgkey=http://www.nmon.net/centos/RPM-GPG-KEY-deri
 [ntop-noarch]
 name=ntop packages
-baseurl=http://www.nmon.net/centos-stable/$releasever/noarch/
+baseurl=http://www.nmon.net/centos/$releasever/noarch/
 enabled=1
 gpgcheck=1
-gpgkey=http://www.nmon.net/centos-stable/RPM-GPG-KEY-deri
+gpgkey=http://www.nmon.net/centos/RPM-GPG-KEY-deri
 ```
 
 And install pfring kernel module and libs:
