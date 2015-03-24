@@ -9,16 +9,12 @@
 
 Name:              fastnetmon
 Version:           1.1.1
-Release:           1
-# %{?dist}
+Release:           1%{?dist}
 
 Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
 Group:             System Environment/Daemons
 License:           GPLv2
 URL:               https://github.com/FastVPSEestiOu/fastnetmon
-
-# disable debug package
-%define debug_package %{nil}
 
 # Top level fodler inside archive should be named as "fastnetmon-1.1.1" 
 #Source0:           https://github.com/FastVPSEestiOu/fastnetmon/archive/v%{version}.tar.gz
@@ -26,9 +22,9 @@ Source0:            https://github.com/FastVPSEestiOu/fastnetmon/archive/fastnet
 
 # Yes, it's bad idea to specify fixed version of PF_RING but they have strange issue when we use another library version 
 
-BuildRequires:      git, make, gcc, gcc-c++, boost-devel, GeoIP-devel, log4cpp-devel
-BuildRequires:      ncurses-devel, boost-thread, boost-regex, libpcap-devel, gpm-devel, clang, cmake
-BuildRequires:      pfring >= 6.0.3-9154
+BuildRequires:     git, make, gcc, gcc-c++, boost-devel, GeoIP-devel, log4cpp-devel
+BuildRequires:     ncurses-devel, boost-thread, boost-regex, libpcap-devel, gpm-devel, clang, cmake
+BuildRequires:     pfring >= 6.0.3-9154
 
 Requires:          pfring >= 6.0.3-9154
 Requires:          log4cpp, daemonize, libpcap, boost-thread, boost-thread, boost-regex
@@ -39,7 +35,8 @@ Requires(postun):  initscripts
 Provides:          fastnetmon
 
 %description
-A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
+A high performance DoS/DDoS load analyzer built on top of multiple packet capture
+engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
 
 %prep
 # For production
