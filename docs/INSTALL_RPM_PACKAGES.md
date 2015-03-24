@@ -27,9 +27,20 @@ And install pfring kernel module and libs:
 yum install -y pfring
 ```
 
+Install log4cpp from RPM on CentOS 7 (this package will be in EPEL 7 soon):
+```bash
+yum install -y https://github.com/FastVPSEestiOu/fastnetmon/raw/master/packages/CentOS7/log4cpp-1.1.1-1.el7.x86_64.rpm
+yum install -y https://github.com/FastVPSEestiOu/fastnetmon/raw/master/packages/CentOS7/log4cpp-devel-1.1.1-1.el7.x86_64.rpm
+```
+
 Install FastNetMon on CentOS 6:
 ```bash
 yum install -y https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/packages/CentOS6/fastnetmon-1.1.1-1.x86_64.rpm
+```
+
+Install FastNetMon on CentOS 7:
+```bash
+yum install -y https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/packages/CentOS7/
 ```
 
 If you want build rpm package manually please use script [build_rpm.sh](https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/build_rpm.sh). Please build on same Linux distro version as target platform for best results.
