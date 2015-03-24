@@ -4,7 +4,7 @@
 # http://www.stableit.ru/2009/12/rpm-centos-5.html
 
 # yum install -y rpmdevtools yum-utils 
-# Build deps: yum install -y boost-devel GeoIP-devel log4cpp-devel ncurses-devel boost-thread boost-regex libpcap-devel gpm-devel clang
+# Build deps: yum install -y boost-devel GeoIP-devel log4cpp-devel ncurses-devel boost-thread boost-regex libpcap-devel gpm-devel clang log4cpp-devel
 
 VERSION=1.1.1
 mkdir vzapi-$VERSION
