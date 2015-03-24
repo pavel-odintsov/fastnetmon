@@ -1,0 +1,15 @@
+[Unit]
+Description=FastNetMon - DoS/DDoS analyzer with sflow/netflow/mirror support
+After=syslog.target network.target remote-fs.target
+ 
+[Service]
+Type=simple
+ExecStart=/usr/sbin/fastnetmon
+
+#Type=forking
+#PIDFile=/run/nginx.pid
+#ExecReload=/bin/kill -s HUP $MAINPID
+#ExecStop=/bin/kill -s QUIT $MAINPID
+ 
+[Install]
+WantedBy=multi-user.target
