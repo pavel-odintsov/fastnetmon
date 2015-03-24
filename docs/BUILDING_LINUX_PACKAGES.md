@@ -1,1 +1,1 @@
-If you want build rpm package manually please use script build_rpm.sh from https://github.com/FastVPSEestiOu/fastnetmon/tree/master/src. 
+If you want build rpm package manually please use script [build_rpm.sh](https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/build_rpm.sh).
