@@ -38,7 +38,11 @@ Provides:          fastnetmon
 A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
 
 %prep
-%setup -q
+# For production
+# %setup -n fastnetmon-%{version}
+# Testing
+# Specify name of folder inside rpm package
+%setup -n fastnetmon-master
 
 %build
 cd src
