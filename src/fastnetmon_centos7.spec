@@ -99,9 +99,9 @@ fi
 %systemd_preun fastnetmon.service
 
 # Pre remove
-if [ $1 -eq 0 ]; then
+#if [ $1 -eq 0 ]; then
     # Uninstall
-fi
+#fi
 
 %postun
 %systemd_postun_with_restart fastnetmon.service 
