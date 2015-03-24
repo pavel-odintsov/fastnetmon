@@ -54,7 +54,7 @@ if (ENABLE_PFRING_SUPPORT)
 
     add_definitions(-DPF_RING)
 
-    if (EXISTS "/opt/pf_ring/include/pfring_zc.h")
+    if (EXISTS "/opt/pf_ring/include/pfring_zc.h" OR EXISTS "/usr/local/include/pfring_zc.h")
         message("We found PF_RING ZC headers and will build PF_RING ZC support")
         # Enable ZC support
         add_definitions(-DPF_RING_ZC)
