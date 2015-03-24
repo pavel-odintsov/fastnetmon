@@ -80,6 +80,8 @@ exit 0
 
 if [ $1 -eq 1 ]; then
     # It's install
+    # Enable autostart
+    /usr/bin/systemctl enable fastnetmon.service
 
     # Fix pfring issue with library path
     echo "/usr/local/lib" > /etc/ld.so.conf.d/pfring.conf
