@@ -24,12 +24,6 @@ URL:               https://github.com/FastVPSEestiOu/fastnetmon
 #Source0:           https://github.com/FastVPSEestiOu/fastnetmon/archive/v%{version}.tar.gz
 Source0:            https://github.com/FastVPSEestiOu/fastnetmon/archive/fastnetmon-%{version}.tar.gz
 
-# init.d script for CentOS 5/6
-# TBD
-#Source1:           init_scripts/fastnetmon
-
-# Patch0:     no.patch
-
 BuildRequires:      git, make, gcc, gcc-c++, boost-devel, GeoIP-devel, log4cpp-devel
 BuildRequires:      ncurses-devel, boost-thread, boost-regex, libpcap-devel, gpm-devel, clang, cmake
 
@@ -55,8 +49,7 @@ make
 
 %install
 # install init script
-### TBD
-### install -p -D -m 0755 init_scripts/fastnetmon %{buildroot}%{_initrddir}/fastnetmon
+install -p -D -m 0755 src/fastnetmon_init_script_centos6 %{buildroot}%{_initrddir}/fastnetmon
 
 # install daemon binary file
 install -p -D -m 0755 src/build/fastnetmon %{buildroot}%{_sbindir}/fastnetmon
@@ -77,12 +70,9 @@ exit 0
 %post
 if [ $1 -eq 1 ]; then
     # It's install
-    # Generate certificates
-
-    # TBD
-    #/sbin/chkconfig --add %{name}
-    #/sbin/chkconfig %{name} on
-    #/sbin/service %{name} start
+    /sbin/chkconfig --add %{name}
+    /sbin/chkconfig %{name} on
+    /sbin/service %{name} start
 fi
 
 
@@ -96,11 +86,10 @@ fi
 
 # Pre remove
 if [ $1 -eq 0 ]; then
-    # TBD
     # Uninstall
     # Stops fastnetmon and disable it loading at startup
-    #/sbin/service %{name} stop >/dev/null 2>&1
-    #/sbin/chkconfig --del %{name}
+    /sbin/service %{name} stop >/dev/null 2>&1
+    /sbin/chkconfig --del %{name}
 fi
 
 %postun
@@ -109,9 +98,7 @@ fi
 %files
 #%doc LICENSE CHANGES README
 # init.d script
-
-### TBD
-#%{_initrddir}/fastnetmon
+%{_initrddir}/fastnetmon
 
 # binary daemon
 %{_sbindir}/fastnetmon
