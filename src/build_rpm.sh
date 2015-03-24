@@ -11,8 +11,8 @@ mkdir vzapi-$VERSION
 
 mkdir -p /root/rpmbuild/SOURCES
 # Folder inside archive should be named as "fastnetmon-1.1.1"
-#wget https://github.com/FastVPSEestiOu/fastnetmon/archive/master.zip -O"/root/rpmbuild/SOURCES/fastnetmon-$VERSION.tar.gz"
-wget https://github.com/FastVPSEestiOu/fastnetmon/archive/v1.1.1.tar.gz -O"/root/rpmbuild/SOURCES/fastnetmon-$VERSION.tar.gz"
+wget https://github.com/FastVPSEestiOu/fastnetmon/archive/master.zip -O"/root/rpmbuild/SOURCES/fastnetmon-$VERSION.tar.gz"
+#wget https://github.com/FastVPSEestiOu/fastnetmon/archive/v1.1.1.tar.gz -O"/root/rpmbuild/SOURCES/fastnetmon-$VERSION.tar.gz"
 
 # Download spec file 
 wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon.spec -Ofastnetmon.spec
