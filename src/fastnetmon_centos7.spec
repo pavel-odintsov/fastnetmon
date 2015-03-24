@@ -57,7 +57,7 @@ make
 
 %install
 # install init script
-install -p -D -m 0755 src/fastnetmon.service %{buildroot}%{_sysconfdir}/systemd/system
+install -p -D -m 0755 src/fastnetmon.service %{buildroot}%{_sysconfdir}/systemd/system/fastnetmon.service
 
 # install daemon binary file
 install -p -D -m 0755 src/build/fastnetmon %{buildroot}%{_sbindir}/fastnetmon
