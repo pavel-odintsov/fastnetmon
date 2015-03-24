@@ -10,7 +10,7 @@ What can we do? We can detect hosts in our own network with a large amount of pa
 
 Why did we write this? Because we can't find any software for solving this problem in the open source world! 
 
-- [RPM packages for CentOS 6](docs/INSTALL_RPM_PACKAGES.md)
+- [RPM packages for CentOS 6/7](docs/INSTALL_RPM_PACKAGES.md)
 - [Install manual for any Linux](docs/INSTALL.md)
 - [Install manual for FreeBSD](docs/FreeBSD_INSTALL.md)
 - [Install manual for Mac OS X](docs/MAC_OS_INSTALL.md)

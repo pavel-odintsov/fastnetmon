@@ -40,7 +40,7 @@ yum install -y https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/maste
 
 Install FastNetMon on CentOS 7:
 ```bash
-yum install -y https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/packages/CentOS7/
+yum install -y https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/packages/CentOS7/fastnetmon-1.1.1-1.el7.centos.x86_64.rpm
 ```
 
 If you want build rpm package manually please use script [build_rpm.sh](https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/build_rpm.sh). Please build on same Linux distro version as target platform for best results.
