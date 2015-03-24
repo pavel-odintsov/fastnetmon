@@ -528,7 +528,8 @@ int max_packet_len(const char *device) {
         return 1536;
 
 // pfring_get_card_settings have added in 6.0.3
-#if RING_VERSION_NUM >= 0x060003
+// We should not use 6.0.3 API for PF_RING library from ntop because it announces "6.0.3" but lack of many 6.0.3 features
+#if RING_VERSION_NUM >= 0x060003 and !defined(WE_USE_PFRING_FROM_NTOP)
     pfring_card_settings settings;
     pfring_get_card_settings(ring, &settings);
     max_len = settings.max_packet_size;
