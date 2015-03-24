@@ -37,6 +37,11 @@ if (NOT DISABLE_PF_RING_SUPPORT)
     endif() 
 endif()
 
+# work around for broken 6.0.3 (which in reality very old 6.0.3) from ntop packages
+if (WE_USE_PFRING_FROM_NTOP)
+    add_definitions(-DWE_USE_PFRING_FROM_NTOP)
+endif()
+
 if (ENABLE_PFRING_SUPPORT)
     # Set path to home compiled PF_RING
     set(PFRING_INCLUDE_DIRS /opt/pf_ring/include)
