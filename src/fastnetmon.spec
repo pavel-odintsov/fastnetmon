@@ -24,9 +24,13 @@ URL:               https://github.com/FastVPSEestiOu/fastnetmon
 #Source0:           https://github.com/FastVPSEestiOu/fastnetmon/archive/v%{version}.tar.gz
 Source0:            https://github.com/FastVPSEestiOu/fastnetmon/archive/fastnetmon-%{version}.tar.gz
 
+# Yes, it's bad idea to specify fixed version of PF_RING but they have strange issue when we use another library version 
+
 BuildRequires:      git, make, gcc, gcc-c++, boost-devel, GeoIP-devel, log4cpp-devel
 BuildRequires:      ncurses-devel, boost-thread, boost-regex, libpcap-devel, gpm-devel, clang, cmake
+BuildRequires:      pfring = 6.0.3-8637
 
+Requires:          pfring = 6.0.3-8637
 Requires:          log4cpp, daemonize, libpcap, boost-thread, boost-thread, boost-regex
 Requires(pre):     shadow-utils
 Requires(post):    chkconfig
@@ -48,7 +52,8 @@ A high performance DoS/DDoS load analyzer built on top of multiple packet captur
 cd src
 mkdir build
 cd build
-cmake .. -DDISABLE_PF_RING_SUPPORT=ON
+# You could disable PF_RING support with param: -DDISABLE_PF_RING_SUPPORT=ON
+cmake .. -DWE_USE_PFRING_FROM_NTOP=ON
 make
 
 %install
