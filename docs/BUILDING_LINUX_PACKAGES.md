@@ -6,7 +6,7 @@ First of all, please install Epel repo:
 
 Enable ntop repo: ```vim /etc/yum.repos.d/ntop.repo```
 
-Repo file (it's nightbuild version. Stable did not work correctly):
+Repo file (it's nightbuild version. Stable did not work correctly and haven't headers for ZC version):
 ```bash
 [ntop]
 name=ntop packages
