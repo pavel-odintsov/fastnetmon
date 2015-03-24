@@ -28,7 +28,7 @@ BuildRequires:     pfring >= 6.0.3-9154
 BuildRequires:     systemd
 
 Requires:          pfring >= 6.0.3-9154
-Requires:          log4cpp, daemonize, libpcap, boost-thread, boost-thread, boost-regex
+Requires:          log4cpp, libpcap, boost-thread, boost-thread, boost-regex
 Requires(pre):     shadow-utils
 Requires(post):    systemd
 Requires(preun):   systemd
