@@ -22,3 +22,19 @@ wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fast
 # http://www.stableit.ru/2013/11/how-to-build-rpm-package-for-rhel5-on.html
 rpmbuild -bb fastnetmon.spec
 
+# For CentOS 7 we should build log4cpp library
+# Prepare log4cpp spec file:
+
+# yum install -y automake libtool
+# cd /usr/src
+# wget 'http://sourceforge.net/projects/log4cpp/files/latest/download?source=files' -O/usr/src/log4cpp-1.1.1.tar.gz
+# tar -xf log4cpp-1.1.1.tar.gz
+# cd log4cpp
+# ./configure --prefix=/opt/log4cpp
+
+# In current folder we will get log4cpp file log4cpp.spec
+# But it's buggy and pelase get log4cpp.spec from FastNetMon repo 
+
+# Build log4cpp rpm package:
+# wget 'http://sourceforge.net/projects/log4cpp/files/latest/download?source=files' -O/root/rpmbuild/SOURCES/log4cpp-1.1.1.tar.gz
+# rpmbuild -bb log4cpp.spec 
