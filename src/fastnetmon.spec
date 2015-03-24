@@ -28,9 +28,9 @@ Source0:            https://github.com/FastVPSEestiOu/fastnetmon/archive/fastnet
 
 BuildRequires:      git, make, gcc, gcc-c++, boost-devel, GeoIP-devel, log4cpp-devel
 BuildRequires:      ncurses-devel, boost-thread, boost-regex, libpcap-devel, gpm-devel, clang, cmake
-BuildRequires:      pfring = 6.0.3-8637
+BuildRequires:      pfring >= 6.0.3-9154
 
-Requires:          pfring = 6.0.3-8637
+Requires:          pfring >= 6.0.3-9154
 Requires:          log4cpp, daemonize, libpcap, boost-thread, boost-thread, boost-regex
 Requires(pre):     shadow-utils
 Requires(post):    chkconfig
@@ -82,6 +82,10 @@ if [ $1 -eq 1 ]; then
     /sbin/chkconfig --add %{name}
     /sbin/chkconfig %{name} on
     /sbin/service %{name} start
+
+    # Fix pfring issue with library path
+    echo "/usr/local/lib" > /etc/ld.so.conf.d/pfring.conf
+    /sbin/ldconfig
 fi
 
 
