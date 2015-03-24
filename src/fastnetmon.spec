@@ -82,6 +82,10 @@ if [ $1 -eq 1 ]; then
     /sbin/chkconfig --add %{name}
     /sbin/chkconfig %{name} on
     /sbin/service %{name} start
+
+    # Fix pfring issue with library path
+    echo "/usr/local/lib" > /etc/ld.so.conf.d/pfring.conf
+    /sbin/ldconfig
 fi
 
 
