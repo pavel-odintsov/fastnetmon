@@ -45,7 +45,7 @@ if (ENABLE_PFRING_SUPPORT)
 
     if (WE_USE_PFRING_FROM_NTOP)
         # Because ntop will add libs and headers to global paths
-        PFRING_LIBRARIES(libpfring) 
+        set(PFRING_LIBRARIES libpfring) 
     else() 
         # Set path to manually compiled PF_RING
         set(PFRING_INCLUDE_DIRS /opt/pf_ring/include)
