@@ -28,9 +28,9 @@ Source0:            https://github.com/FastVPSEestiOu/fastnetmon/archive/fastnet
 
 BuildRequires:      git, make, gcc, gcc-c++, boost-devel, GeoIP-devel, log4cpp-devel
 BuildRequires:      ncurses-devel, boost-thread, boost-regex, libpcap-devel, gpm-devel, clang, cmake
-BuildRequires:      pfring = 6.0.3-8637
+BuildRequires:      pfring >= 6.0.3-9154
 
-Requires:          pfring = 6.0.3-8637
+Requires:          pfring >= 6.0.3-9154
 Requires:          log4cpp, daemonize, libpcap, boost-thread, boost-thread, boost-regex
 Requires(pre):     shadow-utils
 Requires(post):    chkconfig
