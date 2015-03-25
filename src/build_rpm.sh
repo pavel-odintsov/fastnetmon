@@ -4,7 +4,9 @@
 # http://www.stableit.ru/2009/12/rpm-centos-5.html
 
 # yum install -y rpmdevtools yum-utils 
-# Build deps: yum install -y boost-devel GeoIP-devel log4cpp-devel ncurses-devel boost-thread boost-regex libpcap-devel gpm-devel clang log4cpp-devel
+# Build deps:
+# yum install -y boost-devel GeoIP-devel log4cpp-devel ncurses-devel boost-thread boost-regex libpcap-devel gpm-devel 
+# yum install -y clang log4cpp-devel cmake gcc git gcc-c++ 
 
 VERSION=1.1.1
 mkdir vzapi-$VERSION
@@ -15,7 +17,8 @@ wget https://github.com/FastVPSEestiOu/fastnetmon/archive/master.zip -O"/root/rp
 #wget https://github.com/FastVPSEestiOu/fastnetmon/archive/v1.1.1.tar.gz -O"/root/rpmbuild/SOURCES/fastnetmon-$VERSION.tar.gz"
 
 # Download spec file 
-wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon.spec -Ofastnetmon.spec
+wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon_centos6.spec -Ofastnetmon_centos6.spec
+wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon_centos7.spec -Ofastnetmon_centos7.spec
 
 # http://www.stableit.ru/2013/11/how-to-build-rpm-package-for-rhel5-on.html
 rpmbuild -bb fastnetmon.spec
