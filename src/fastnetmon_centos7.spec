@@ -92,7 +92,6 @@ fi
 
 if [ $1 -eq 2 ]; then
     # upgrade
-    #/sbin/service %{name} restart >/dev/null 2>&1
     chmod 700 %{fastnetmon_attackdir}
 fi
 
