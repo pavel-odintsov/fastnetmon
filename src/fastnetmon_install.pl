@@ -27,6 +27,7 @@ if (-e "/etc/redhat-release") {
     # CentOS release 6.6 (Final)
     # CentOS 7:
     # CentOS Linux release 7.0.1406 (Core) 
+    # Fedora release 21 (Twenty One)
     if ($distro_version_raw =~ /(\d+)/) {
         $distro_version = $1;
     }    
@@ -65,12 +66,19 @@ sub install {
     my $pf_ring_archive_path = "/usr/src/PF_RING-$pf_ring_version.tar.gz";
     my $pf_ring_sources_path = "/usr/src/PF_RING-$pf_ring_version";
 
-    `wget $pf_ring_url -O$pf_ring_archive_path`;
+    if ($distro_type eq 'centos' && $distro_version >= 21) {
+        print "6.0.2 version of PF_RING is not compatible with Fedora 21 and we should use svn version\n";
+        `yum install -y subversion`;
+
+        `svn co https://svn.ntop.org/svn/ntop/trunk/PF_RING/ $pf_ring_sources_path`; 
+    } else {
+        `wget $pf_ring_url -O$pf_ring_archive_path`;
     
-    print "Unpack PF_RING\n";
-    mkdir $pf_ring_sources_path;
-    `tar -xf $pf_ring_archive_path -C /usr/src`;
-    
+        print "Unpack PF_RING\n";
+        mkdir $pf_ring_sources_path;
+        `tar -xf $pf_ring_archive_path -C /usr/src`;
+    }    
+
     print "Build PF_RING kernel module\n";
     `make -C $pf_ring_sources_path/kernel clean`;
     `make -C $pf_ring_sources_path/kernel`;
@@ -137,7 +145,7 @@ sub install {
         `yum install -y $fastnetmon_deps_as_string`;
     }
 
-    if ($distro_type eq 'centos' && $distro_version >= 7) {
+    if ($distro_type eq 'centos' && $distro_version == 7) {
         # CentOS 7 has not log4cpp in repo and we should build it manually
         `wget 'http://sourceforge.net/projects/log4cpp/files/latest/download?source=files' -O/usr/src/log4cpp-1.1.1.tar.gz`;
 	chdir "/usr/src";
@@ -170,7 +178,7 @@ sub install {
         $cmake_params .= " -DDISABLE_PF_RING_SUPPORT=ON";
     }
 
-    if ($distro_type eq 'centos' && $distro_version >= 7) {
+    if ($distro_type eq 'centos' && $distro_version == 7) {
         $cmake_params .= " -DWE_USE_CUSTOM_LOG4CPP=on";
     }
 
