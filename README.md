@@ -2,7 +2,7 @@ FastNetMon
 ===========
 Author: [Pavel Odintsov](http://ru.linkedin.com/in/podintsov/) pavel.odintsov at gmail.com [Follow my Twitter](https://twitter.com/odintsov_pavel)
 
-Join to [maillist](https://groups.google.com/forum/#!forum/fastnetmon)
+Join to [maillist](https://groups.google.com/forum/#!forum/fastnetmon) Look at [road map](docs/ROADMAP.md)
 
 License: GPLv2
 
