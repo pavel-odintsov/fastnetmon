@@ -15,6 +15,7 @@ What can we do? We can detect hosts in our own network with a large amount of pa
 - [Install from FreeBSD port](docs/FreeBSD_INSTALL.md)
 - [Manual install on Mac OS X](docs/MAC_OS_INSTALL.md)
 - [Manual install on Slackware](docs/SLACKWARE_INSTALL.md)
+- You could order VPS with preinstalled FastNetMon: http://vps2fast.com/vds/
 
 [![Build Status](https://travis-ci.org/FastVPSEestiOu/fastnetmon.svg?branch=master)](https://travis-ci.org/FastVPSEestiOu/fastnetmon) [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/FastVPSEestiOu/fastnetmon?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
