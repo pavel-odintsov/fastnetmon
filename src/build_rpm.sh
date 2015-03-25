@@ -17,8 +17,6 @@ wget https://github.com/FastVPSEestiOu/fastnetmon/archive/master.zip -O"/root/rp
 # Download spec file 
 wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon.spec -Ofastnetmon.spec
 
-# TODO: drop CentOS 5 support
-# Cross build for Centos5/centos6:
 # http://www.stableit.ru/2013/11/how-to-build-rpm-package-for-rhel5-on.html
 rpmbuild -bb fastnetmon.spec
 
