@@ -1,6 +1,6 @@
 FastNetMon
 ===========
-Author: [Pavel Odintsov](http://ru.linkedin.com/in/podintsov/) pavel.odintsov at gmail.com [My Twitter](https://twitter.com/odintsov_pavel)
+Author: [Pavel Odintsov](http://ru.linkedin.com/in/podintsov/) pavel.odintsov at gmail.com [Follow my Twitter](https://twitter.com/odintsov_pavel) [Join to maillist](https://groups.google.com/forum/#!forum/fastnetmon)
 
 License: GPLv2
 
