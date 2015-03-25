@@ -1,6 +1,6 @@
-We have precompiled packages for CentOS 6 and CentOS 7 (soon!).
+We have precompiled packages for CentOS 6, CentOS 7 and Fedora 21 (unfortunately without PF_RING support).
 
-First of all, please install Epel repo:
+First of all, please install Epel repo for CentOS 6 and 7:
 - CentOS 6: ```rpm -ihv http://fedora-mirror01.rbc.ru/pub/epel/6/i386/epel-release-6-8.noarch.rpm```
 - CentOS 7: ```yum install -y epel-release```
 
