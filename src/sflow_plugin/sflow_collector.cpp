@@ -640,8 +640,7 @@ void decodeIPLayer4(SFSample *sample, uint8_t *ptr) {
     current_packet.dst_ip = sample->ipdst.address.ip_v4.addr;
 
     // Because sFLOW data is near real time we could get current time
-    current_packet.ts.tv_sec = time(NULL); 
-    current_packet.ts.tv_usec = 0;
+    gettimeofday(&current_packet.ts, NULL);
 
     current_packet.flags = 0;
     current_packet.number_of_packets = 1;
