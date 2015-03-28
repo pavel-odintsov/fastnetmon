@@ -3,7 +3,7 @@ compiler:
   - gcc
   - clang
 before_install:
-  - sudo apt-get update
+  - sudo apt-get update; true
   - sudo apt-get install -y libboost-all-dev libgpm-dev libncurses5-dev liblog4cpp5-dev libnuma-dev libgeoip-dev libpcap-dev clang cmake
 before_script:
   - pwd > /tmp/old_current_path
