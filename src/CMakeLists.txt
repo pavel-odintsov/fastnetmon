@@ -137,6 +137,7 @@ if(CURSES_FOUND)
 endif()
 
 # apt-get install -y libhiredis-dev 
+# Please uncomment this lines if you want enable Redis support
 #find_package(Hiredis REQUIRED)
 #if (HIREDIS_FOUND)
 #    add_definitions(-DREDIS)
