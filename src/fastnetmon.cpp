@@ -320,10 +320,6 @@ boost::mutex ban_list_details_mutex;
 boost::mutex ban_list_mutex;
 boost::mutex flow_counter;
 
-#ifdef REDIS
-redisContext *redis_context = NULL;
-#endif
-
 // map for flows
 std::map<uint64_t, int> FlowCounter;
 
@@ -464,12 +460,12 @@ bool geoip_init() {
 #endif
 
 #ifdef REDIS
-bool redis_init_connection() {
+redisContext* redis_init_connection() {
     struct timeval timeout = { 1, 500000 }; // 1.5 seconds
-    redis_context = redisConnectWithTimeout(redis_host.c_str(), redis_port, timeout);
+    redisContext* redis_context = redisConnectWithTimeout(redis_host.c_str(), redis_port, timeout);
     if (redis_context->err) {
         logger<<log4cpp::Priority::INFO<<"Connection error:"<<redis_context->errstr;
-        return false;
+        return NULL;
     }
 
     // We should check connection with ping because redis do not check connection
@@ -477,23 +473,24 @@ bool redis_init_connection() {
     if (reply) {
         freeReplyObject(reply);
     } else {
-        return false;
+        return NULL;
     }
 
-    return true;
+    return redis_context;
 }
+#endif
 
-void update_traffic_in_redis(uint32_t ip, unsigned int traffic_bytes, direction my_direction) {
-    std::string ip_as_string = convert_ip_as_uint_to_string(ip);
-    redisReply *reply;
+#ifdef REDIS
+void store_data_in_redis(std::string key_name, std::string attack_details) {
+    redisReply *reply = NULL;
+    redisContext *redis_context = redis_init_connection();
 
     if (!redis_context) {
-        logger<< log4cpp::Priority::INFO<<"Please initialize Redis handle";
+        logger<< log4cpp::Priority::INFO<<"Could not initiate connection to Redis";
         return;
     }
 
-    std::string key_name = ip_as_string + "_" + get_direction_name(my_direction);
-    reply = (redisReply *)redisCommand(redis_context, "INCRBY %s %s", key_name.c_str(), convert_int_to_string(traffic_bytes).c_str());
+    reply = (redisReply *)redisCommand(redis_context, "SET %s %s", key_name.c_str(), attack_details.c_str());
 
     // If we store data correctly ...
     if (!reply) {
@@ -501,12 +498,14 @@ void update_traffic_in_redis(uint32_t ip, unsigned int traffic_bytes, direction 
    
         // Handle redis server restart corectly
         if (redis_context->err == 1 or redis_context->err == 3) {
-            // Connection refused            
-            redis_init_connection();
+            // Connection refused
+            logger.error("Unfortunately we can't store data in Redis because server reject connection");
         }
     } else {
         freeReplyObject(reply); 
     }
+
+    redisFree(redis_context);
 }
 #endif
 
@@ -589,13 +588,6 @@ std::string draw_table(map_for_counters& my_map_packets, direction data_directio
             output_buffer<< is_banned << std::endl;
         }  
    
-#ifdef REDIS 
-        if (redis_enabled && do_redis_update) {
-            update_traffic_in_redis( (*ii).first, (*ii).second.in_packets,  INCOMING);
-            update_traffic_in_redis( (*ii).first, (*ii).second.out_packets, OUTGOING);
-        }
-#endif
-        
         element_number++;
     }
 
@@ -1605,16 +1597,6 @@ int main(int argc,char **argv) {
     // Setup CTRL+C handler
     signal(SIGINT, signal_handler);
 
-#ifdef REDIS
-    // Init redis connection
-    if (redis_enabled) {
-        if (!redis_init_connection()) {
-            logger<< log4cpp::Priority::ERROR<<"Can't establish connection to the redis";
-            exit(1);
-        }
-    }
-#endif
-
 #ifdef GEOIP
     // Init GeoIP
     if(!geoip_init()) {
@@ -1706,11 +1688,6 @@ void signal_handler(int signal_number) {
     stop_pfring_collection();
 #endif
 
-#ifdef REDIS
-    if (redis_enabled) {
-        redisFree(redis_context);
-    }
-#endif
     exit(1); 
 }
 
@@ -1925,7 +1902,8 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element a
     block_all_traffic_with_82599_hardware_filtering(client_ip_as_string);
 #endif
 
-    std::string full_attack_description = get_attack_description(client_ip, current_attack) + flow_attack_details;
+    std::string basic_attack_information = get_attack_description(client_ip, current_attack);
+    std::string full_attack_description = basic_attack_information + flow_attack_details;
     print_attack_details_to_file(full_attack_description, client_ip_as_string, current_attack);
 
     if (file_exists(notify_script_path)) {
@@ -1937,7 +1915,28 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element a
         exec_thread.detach();
 
         logger<<log4cpp::Priority::INFO<<"Script for ban client is finished: "<<client_ip_as_string;
-    }    
+    }   
+ 
+#ifdef REDIS 
+    if (redis_enabled) {
+        std::string redis_key_name = client_ip_as_string + "_information";
+
+        logger<<log4cpp::Priority::INFO<<"Start data save in redis in key: "<<redis_key_name;
+        boost::thread redis_store_thread(store_data_in_redis, redis_key_name, basic_attack_information);
+        redis_store_thread.detach();
+        logger<<log4cpp::Priority::INFO<<"Finish data save in redis in key: "<<redis_key_name;
+    }
+
+    // If we have flow dump put in redis too
+    if (redis_enabled && !flow_attack_details.empty()) {
+        std::string redis_key_name = client_ip_as_string + "_flow_dump";
+
+        logger<<log4cpp::Priority::INFO<<"Start data save in redis in key: "<<redis_key_name;
+        boost::thread redis_store_thread(store_data_in_redis, redis_key_name, flow_attack_details);
+        redis_store_thread.detach();
+        logger<<log4cpp::Priority::INFO<<"Finish data save in redis in key: "<<redis_key_name;
+    }
+#endif
 }
 
 #ifdef HWFILTER_LOCKING
@@ -2154,7 +2153,21 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
             exec_with_params_thread.detach();
 
             logger<<log4cpp::Priority::INFO<<"Script for notify about attack details is finished: "<<client_ip_as_string;
-        } 
+        }
+
+#ifdef REDIS 
+        if (redis_enabled) {
+            std::string redis_key_name = client_ip_as_string + "_packets_dump";
+
+            logger<<log4cpp::Priority::INFO<<"Start data save in redis for key: "<<redis_key_name;
+            boost::thread redis_store_thread(store_data_in_redis, redis_key_name, attack_details.str());
+            redis_store_thread.detach();
+            logger<<log4cpp::Priority::INFO<<"Finish data save in redis for key: "<<redis_key_name;
+        }    
+#endif
+ 
+        // TODO: here we have definitely RACE CONDITION!!! FIX IT
+
         // Remove key and prevent collection new data about this attack
         ban_list_details.erase(client_ip);
     } 
