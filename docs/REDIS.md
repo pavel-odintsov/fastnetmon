@@ -17,7 +17,7 @@ Basic information about attack (stored immediately)
 Complete flow dump for attack if flow tracking enabled (stored immediately)
 ```get 10.10.10.200_flow_dump```
 
-# Complete per packet attack dump (stored with some delay; can be absent in some cases of slow attacks)
+Complete per packet attack dump (stored with some delay; can be absent in some cases of slow attacks)
 ```get 10.10.10.200_packets_dump```
 
 
