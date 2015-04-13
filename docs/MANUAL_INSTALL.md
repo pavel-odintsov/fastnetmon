@@ -2,9 +2,9 @@ At first you should install PF_RING (you can install any latest version
 
 ```bash
 cd /usr/src
-wget 'http://downloads.sourceforge.net/project/ntop/PF_RING/PF_RING-6.0.2.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fntop%2Ffiles%2FPF_RING%2F&ts=1402307916&use_mirror=cznic' -OPF_RING-6.0.2.tar.gz
-tar -xf PF_RING-6.0.2.tar.gz 
-cd PF_RING-6.0.2
+wget 'http://downloads.sourceforge.net/project/ntop/PF_RING/PF_RING-6.0.3.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fntop%2Ffiles%2FPF_RING%2F&ts=1402307916&use_mirror=cznic' -OPF_RING-6.0.3.tar.gz
+tar -xf PF_RING-6.0.3.tar.gz 
+cd PF_RING-6.0.3
 # Debian way
 apt-get install build-essential bison flex linux-headers-$(uname -r) libnuma-dev
 # CentOS
@@ -27,7 +27,7 @@ Build lib:
 apt-get install -y libnuma-dev
 # CentOS
 yum install -y numactl-devel
-cd /usr/src/PF_RING-6.0.2/userland/lib
+cd /usr/src/PF_RING-6.0.3/userland/lib
 ./configure --prefix=/opt/pf_ring
 make
 make install

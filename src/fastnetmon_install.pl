@@ -66,18 +66,11 @@ sub install {
     my $pf_ring_archive_path = "/usr/src/PF_RING-$pf_ring_version.tar.gz";
     my $pf_ring_sources_path = "/usr/src/PF_RING-$pf_ring_version";
 
-    if ($distro_type eq 'centos' && $distro_version >= 21) {
-        print "6.0.2 version of PF_RING is not compatible with Fedora 21 and we should use svn version\n";
-        `yum install -y subversion`;
-
-        `svn co https://svn.ntop.org/svn/ntop/trunk/PF_RING/ $pf_ring_sources_path`; 
-    } else {
-        `wget $pf_ring_url -O$pf_ring_archive_path`;
+    `wget $pf_ring_url -O$pf_ring_archive_path`;
     
-        print "Unpack PF_RING\n";
-        mkdir $pf_ring_sources_path;
-        `tar -xf $pf_ring_archive_path -C /usr/src`;
-    }    
+    print "Unpack PF_RING\n";
+    mkdir $pf_ring_sources_path;
+    `tar -xf $pf_ring_archive_path -C /usr/src`;
 
     print "Build PF_RING kernel module\n";
     `make -C $pf_ring_sources_path/kernel clean`;
