@@ -6,7 +6,7 @@ use warnings;
 my $distro_type = '';
 my $distro_version = '';
 
-my $pf_ring_version = '6.0.2';
+my $pf_ring_version = '6.0.3';
 my $pf_ring_url = "http://sourceforge.net/projects/ntop/files/PF_RING/PF_RING-$pf_ring_version.tar.gz/download";
 my $fastnetmon_git_path = 'https://github.com/FastVPSEestiOu/fastnetmon.git';
 
