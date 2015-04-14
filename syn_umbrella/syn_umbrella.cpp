@@ -17,6 +17,7 @@
 #include "pfring.h"
 #include "pfring_zc.h"
 
+#include <string>
 #include <crafter.h>
 
 // ./syn_umbrella -i zc:eth4 -c 1 -o zc:eth4 -g 0 -c 0 -v
@@ -24,6 +25,7 @@
 
 #define ALARM_SLEEP             1
 #define MAX_CARD_SLOTS      32768
+
 
 static struct timeval startTime;
 u_int8_t bidirectional = 0, wait_for_packet = 1, flush_packet = 0, do_shutdown = 0, verbose = 0;
@@ -219,15 +221,66 @@ void *packet_consumer_thread(void *_i) {
             //printf("Received\n\n");
             //recv_packet.Print();
 
-            Crafter::Ethernet*           recv_eth      = recv_packet.GetLayer<Crafter::Ethernet>();
-            Crafter::IP*                 recv_ip       = recv_packet.GetLayer<Crafter::IP>();
-            Crafter::TCP*                recv_tcp      = recv_packet.GetLayer<Crafter::TCP>();
-            Crafter::TCPOptionTimestamp* recv_timestamp_opt = recv_packet.GetLayer<Crafter::TCPOptionTimestamp>();         
+            Crafter::Ethernet* recv_eth = recv_packet.GetLayer<Crafter::Ethernet>();
     
+            if (recv_eth->GetType()  == 0x0806) {
+                Crafter::ARP* recv_arp = recv_packet.GetLayer<Crafter::ARP>();
+
+                //printf("We got ARP request\n");
+                std::string filter_local_ip = "10.10.10.200";
+                std::string filter_local_mac = "90:e2:ba:4a:d8:dc";                    
+
+                // It's request
+                // ARP, Request who-has 10.10.10.200 tell 10.10.10.100, length 46
+                if (recv_arp->GetOperation() == 1 && recv_arp->GetTargetIP() == filter_local_ip) {
+                    printf("We got request about us\n");    
+
+                    // ARP, Reply 10.10.10.200 is-at 90:e2:ba:4a:d8:dc (oui Unknown), length 28
+                    Crafter::Ethernet ether_header;
+                    ether_header.SetSourceMAC(filter_local_mac);
+                    ether_header.SetDestinationMAC(recv_arp->GetSenderMAC());
+
+    
+                    Crafter::ARP arp_header;
+                    arp_header.SetOperation(Crafter::ARP::Reply);
+                    arp_header.SetSenderIP(filter_local_ip);
+                    arp_header.SetSenderMAC(filter_local_mac);
+
+                    // Yes, we should put this data in packet twice: for ethernet and for ARP
+                    arp_header.SetTargetIP(recv_arp->GetSenderIP());
+                    arp_header.SetTargetMAC(recv_arp->GetSenderMAC());
+
+                    Crafter::Packet arp_answer_packet;
+                    arp_answer_packet.PushLayer(ether_header);
+                    arp_answer_packet.PushLayer(arp_header);
+
+                    const unsigned char* responce_data_perpared_for_send = arp_answer_packet.GetRawPtr();
+                    memcpy( pfring_zc_pkt_buff_data(i->tmpbuff, i->inzq), responce_data_perpared_for_send, arp_answer_packet.GetSize());
+
+                    while (unlikely(pfring_zc_send_pkt(i->outzq, &i->tmpbuff, flush_packet) < 0)) {
+                        if (wait_for_packet)
+                            usleep(1);
+                    }
+
+                    tx_queue_not_empty = 1;
+            
+                    continue;
+                }
+            }
+
+            // Process only IP
+            if (recv_eth->GetType() != 0x0800) {
+                continue;
+            }
+
+            Crafter::IP* recv_ip = recv_packet.GetLayer<Crafter::IP>();
             // We process only TCP
             if (recv_ip->GetProtocol() != 6) {
                 continue;
             }
+
+            Crafter::TCP*                recv_tcp           = recv_packet.GetLayer<Crafter::TCP>();
+            Crafter::TCPOptionTimestamp* recv_timestamp_opt = recv_packet.GetLayer<Crafter::TCPOptionTimestamp>();  
  
             Crafter::Ethernet reponse_eth_header;
             reponse_eth_header.SetDestinationMAC(recv_eth->GetSourceMAC());
