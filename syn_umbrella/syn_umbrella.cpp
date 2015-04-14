@@ -19,7 +19,7 @@
 
 #include <crafter.h>
 
-// ./umbrella -i zc:eth4 -c 1 -o zc:eth4 -g 0 -c 0 -v
+// ./syn_umbrella -i zc:eth4 -c 1 -o zc:eth4 -g 0 -c 0 -v
 // Installing crafter: http://www.stableit.ru/2014/12/c-crafter.html
 
 #define ALARM_SLEEP             1
@@ -206,9 +206,9 @@ void *packet_consumer_thread(void *_i) {
             if (unlikely(verbose)) {
                 u_char* packet_pointer = pfring_zc_pkt_buff_data(i->tmpbuff, i->inzq);
 
-                //char bigbuf[4096];
-                //pfring_print_pkt(bigbuf, sizeof(bigbuf), packet_pointer, i->tmpbuff->len, i->tmpbuff->len);
-                //fputs(bigbuf, stdout);
+                char bigbuf[4096];
+                pfring_print_pkt(bigbuf, sizeof(bigbuf), packet_pointer, i->tmpbuff->len, i->tmpbuff->len);
+                fputs(bigbuf, stdout);
             }
 
             u_char* packet_pointer = pfring_zc_pkt_buff_data(i->tmpbuff, i->inzq);
@@ -223,6 +223,11 @@ void *packet_consumer_thread(void *_i) {
             Crafter::IP*                 recv_ip       = recv_packet.GetLayer<Crafter::IP>();
             Crafter::TCP*                recv_tcp      = recv_packet.GetLayer<Crafter::TCP>();
             Crafter::TCPOptionTimestamp* recv_timestamp_opt = recv_packet.GetLayer<Crafter::TCPOptionTimestamp>();         
+    
+            // We process only TCP
+            if (recv_ip->GetProtocol() != 6) {
+                continue;
+            }
  
             Crafter::Ethernet reponse_eth_header;
             reponse_eth_header.SetDestinationMAC(recv_eth->GetSourceMAC());
