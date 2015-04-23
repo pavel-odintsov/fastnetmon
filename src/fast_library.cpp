@@ -16,6 +16,11 @@
 #define htobe64(x) OSSwapHostToBigInt64(x)
 #endif
 
+// For be64toh and htobe64
+#if defined(__FreeBSD__)
+#include <sys/endian.h>
+#endif
+
 boost::regex regular_expression_cidr_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+\\/\\d+$");
 
 // convert string to integer
