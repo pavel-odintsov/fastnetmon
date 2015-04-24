@@ -12,7 +12,7 @@ What can we do? We can detect hosts in our own network with a large amount of pa
 
 - [Binary rpm packages for CentOS 6/7 and Fedora 21](docs/INSTALL_RPM_PACKAGES.md)
 - [Automatic install script for Debian/Ubuntu/CentOS/Fedora](docs/INSTALL.md)
-- [Install from FreeBSD port](docs/FreeBSD_INSTALL.md)
+- [Manual install on FreeBSD and Dragonfly BSD](docs/FreeBSD_INSTALL.md)
 - [Manual install on Mac OS X](docs/MAC_OS_INSTALL.md)
 - [Manual install on Slackware](docs/SLACKWARE_INSTALL.md)
 - You could order VPS with preinstalled FastNetMon: http://vps2fast.com/vds/
