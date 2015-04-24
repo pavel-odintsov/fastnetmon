@@ -1,4 +1,4 @@
-FreeBSD 9, 10, 11
+FreeBSD 9, 10, 11 and Dragonfly BSD 4.0
 
 Install dependencies:
 ```bash
