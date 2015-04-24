@@ -160,8 +160,8 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     set(LOG4CPP_LIBRARY_PATH ${LOG4_CPP_LIRBARY_FOUNDER}) 
 endif()
 
-# Try to find log4cpp library where it installed by FreeBSD's pkg
-if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
+# Try to find log4cpp library where it installed by FreeBSD's and Dragonfly's pkg
+if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" OR ${CMAKE_SYSTEM_NAME} STREQUAL "DragonFly")
     FIND_LIBRARY(LOG4_CPP_LIRBARY_FOUNDER log4cpp /usr/local/lib REQUIRED)
     set(LOG4CPP_LIBRARY_PATH ${LOG4_CPP_LIRBARY_FOUNDER}) 
 endif()
