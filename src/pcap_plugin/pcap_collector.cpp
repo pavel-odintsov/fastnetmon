@@ -120,13 +120,13 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
         case IPPROTO_TCP: 
             tcphdr = (struct tcphdr*)packetptr;
 
-#if defined(__FreeBSD__) || defined(__APPLE__)
+#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__DragonFly__)
             current_packet.source_port = ntohs(tcphdr->th_sport);
 #else
             current_packet.source_port = ntohs(tcphdr->source);
 #endif
 
-#if defined(__FreeBSD__) || defined(__APPLE__)
+#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__DragonFly__)
             current_packet.destination_port = ntohs(tcphdr->th_dport);
 #else
             current_packet.destination_port = ntohs(tcphdr->dest);
@@ -135,13 +135,13 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, const u_char *pac
         case IPPROTO_UDP:
             udphdr = (struct udphdr*)packetptr;
 
-#if defined(__FreeBSD__) || defined(__APPLE__)
+#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__DragonFly__)
             current_packet.source_port = ntohs(udphdr->uh_sport);
 #else
             current_packet.source_port = ntohs(udphdr->source);
 #endif
 
-#if defined(__FreeBSD__) || defined(__APPLE__)
+#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__DragonFly__)
             current_packet.destination_port = ntohs(udphdr->uh_dport);
 #else
             current_packet.destination_port = ntohs(udphdr->dest);

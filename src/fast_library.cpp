@@ -17,7 +17,7 @@
 #endif
 
 // For be64toh and htobe64
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__DragonFly__)
 #include <sys/endian.h>
 #endif
 
