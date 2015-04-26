@@ -343,6 +343,11 @@ std::vector<subnet> whitelist_networks;
 // Ban enable/disable flag
 bool we_do_real_ban = true;
 
+// ExaBGP support flag
+bool exabgp_enabled = false;
+std::string exabgp_community = "";
+std::string exabgp_command_pipe  = "";
+
 bool process_incoming_traffic = true;
 bool process_outgoing_traffic = true;
 
@@ -670,6 +675,36 @@ bool load_configuration_file() {
             we_do_real_ban = false;
         }
     }
+
+    if (configuration_map.count("exabgp") != 0) {
+        if (configuration_map["exabgp"] == "on") {
+            exabgp_enabled = true;
+        } else {
+            exabgp_enabled = false;
+        }
+    }
+
+    if (exabgp_enabled) {
+        //TODO: add community format validation
+        exabgp_community = configuration_map["exabgp_community"];
+        if (exabgp_community.empty()) {
+            logger<< log4cpp::Priority::ERROR<<"You enabled exabgp but not specified community, we disable exabgp support";
+            exabgp_enabled = false; 
+        } 
+    }
+
+    if (exabgp_enabled) {
+        exabgp_command_pipe = configuration_map["exabgp_command_pipe"];
+
+        if (exabgp_command_pipe.empty()) {
+            logger<< log4cpp::Priority::ERROR
+                <<"You enabled exabgp but not specified exabgp_command_pipe, so we disable exabgp support";
+
+            exabgp_enabled = false;
+        } 
+    }
+
+    logger<< log4cpp::Priority::INFO<<"ExaBGP support initialized correctly";
 
     if (configuration_map.count("sflow") != 0) {
         if (configuration_map[ "sflow" ] == "on") {
