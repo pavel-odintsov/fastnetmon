@@ -39,7 +39,7 @@ Features:
 - Complete plugin support
 
 Supported platforms:
-- Linux (Debian 6/7, CentOS 6/7, Ubuntu 12+)
+- Linux (Debian 6/7/8, CentOS 6/7, Ubuntu 12+)
 - FreeBSD 9, 10, 11
 - Mac OS X Yosemite 
 
