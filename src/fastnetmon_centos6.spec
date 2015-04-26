@@ -50,7 +50,9 @@ cd src
 mkdir build
 cd build
 # You could disable PF_RING support with param: -DDISABLE_PF_RING_SUPPORT=ON
-cmake .. -DWE_USE_PFRING_FROM_NTOP=ON
+# WE have broken cmake library with Boost on CentOS 6 and should use library from cmake
+# http://public.kitware.com/Bug/view.php?id=15270
+cmake .. -DWE_USE_PFRING_FROM_NTOP=ON  -DBoost_NO_BOOST_CMAKE=BOOL:ON
 make
 
 %install
