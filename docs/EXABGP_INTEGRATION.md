@@ -65,4 +65,4 @@ Run ExaBGP:
 env exabgp.daemon.user=root exabgp.daemon.daemonize=true exabgp.daemon.pid=/var/run/exabgp.pid exabgp.log.destination=/var/log/exabgp.log exabgp /etc/exabgp_blackhole.conf
 ```
 
-You could read my articles about ExaBGP configuration too: [](http://www.stableit.ru/2015/04/quagga-bgp-and-exabgp-work-together-for.html) and [this](http://www.stableit.ru/2015/04/how-to-control-exabgp-from-external-tool.html)
+You could read my articles about ExaBGP configuration too: [first](http://www.stableit.ru/2015/04/quagga-bgp-and-exabgp-work-together-for.html) and [second](http://www.stableit.ru/2015/04/how-to-control-exabgp-from-external-tool.html)
