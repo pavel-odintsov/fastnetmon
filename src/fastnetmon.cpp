@@ -2118,6 +2118,15 @@ void cleanup_ban_list() {
 
                     logger<<log4cpp::Priority::INFO<<"Script for unban client is finished: "<<client_ip_as_string;
                 }
+
+                if (exabgp_enabled) {
+                    logger<<log4cpp::Priority::INFO<<"Call ExaBGP for unban client started: "<<client_ip_as_string;
+
+                    boost::thread exabgp_thread(exabgp_ban_manage, "unban", client_ip_as_string);
+                    exabgp_thread.detach();
+
+                    logger<<log4cpp::Priority::INFO<<"Call to ExaBGP for unban client is finished: "<<client_ip_as_string;
+                }
             } else {
                ++itr; 
             } 
@@ -2228,6 +2237,15 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
             exec_with_params_thread.detach();
 
             logger<<log4cpp::Priority::INFO<<"Script for notify about attack details is finished: "<<client_ip_as_string;
+        }
+
+        if (exabgp_enabled) {
+            logger<<log4cpp::Priority::INFO<<"Call ExaBGP for ban client started: "<<client_ip_as_string;
+
+            boost::thread exabgp_thread(exabgp_ban_manage, "ban", client_ip_as_string);
+            exabgp_thread.detach();
+
+            logger<<log4cpp::Priority::INFO<<"Call to ExaBGP for ban client is finished: "<<client_ip_as_string;
         }
 
 #ifdef REDIS 
