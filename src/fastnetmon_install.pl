@@ -175,6 +175,12 @@ sub install {
         $cmake_params .= " -DWE_USE_CUSTOM_LOG4CPP=on";
     }
 
+    if ($distro_type eq 'centos' && $distro_version == 6) {
+        # Disable cmake script from Boost package because it's broken:
+        # http://public.kitware.com/Bug/view.php?id=15270
+        $cmake_params .= " -DBoost_NO_BOOST_CMAKE=BOOL:ON";
+    }
+
     `cmake .. $cmake_params`;
     `make`;
 
