@@ -210,6 +210,17 @@ sub install {
         `sed -i 's/interfaces.*/interfaces = $interfaces_as_list/' $fastnetmon_config_path`;
     }
 
+    # If we are on systemd distro
+    if ( ($distro_type eq 'debian' && $distro_version >= 7) or ($distro_type eq 'centos' && $distro_version >= 7) ) {
+        my $systemd_service_path = "/etc/systemd/system/fastnetmon.service";
+        `cp $fastnetmon_code_dir/fastnetmon.service $systemd_service_path`;
+ 
+        `sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $systemd_service_path`;
+
+        print "We found systemd enabled distro and created service: fastnetmon.service\n";
+        print "You could run it with command: systemctl start fastnetmon.service\n";        
+    }
+
     print "Please add your subnets in /etc/networks_list in CIDR format one subnet per line\n";
     print "You can run fastnetmon with command: $fastnetmon_dir/fastnetmon\n";
 }
