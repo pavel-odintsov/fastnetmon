@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
-g++ syn_umbrella.cpp -I/opt/crafter/include -I/opt/pf_ring/include -lpthread -l/opt/pf_ring/lib/libpfring.so -lnuma -l/opt/crafter/lib/libcrafter.so -o syn_umbrella
+g++ syn_umbrella.cpp -I/opt/crafter/include -I/opt/pf_ring/include -lpthread -L/opt/pf_ring/lib/ -lpfring -lnuma -L/opt/crafter/lib -lcrafter -o syn_umbrella
+
 
 # ./umbrella -i zc:eth4 -c 1 -o zc:eth4 -g 0 -v 
