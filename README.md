@@ -30,6 +30,7 @@ Features:
 - Can trigger block script if certain IP loads network with a large amount of packets per second
 - Can trigger block script if certain IP loads network with a large amount of bytes per second
 - Can trigger block script if certain IP loads network with a large amount of flows per second
+- Could [announce blocked IPs](docs/EXABGP_INTEGRATION.md) to BGP router with [ExaBGP](https://github.com/Exa-Networks/exabgp)
 - netmap support (open source; wire speed processing; only Intel hardware NICs or any hypervisor VM type)
 - Supports L2TP decapsulation, VLAN untagging and MPLS processing in mirror mode 
 - Can work on server/soft-router
