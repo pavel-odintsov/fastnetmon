@@ -115,8 +115,6 @@ add_executable(fastnetmon_client fastnetmon_client.cpp)
 
 # Find boost: http://www.cmake.org/cmake/help/v3.0/module/FindBoost.html
 
-# Disable cmake script from Boost package becaus it is broken: http://public.kitware.com/Bug/view.php?id=15270
-set(Boost_NO_BOOST_CMAKE ON)
 # Enable detailed errors
 set(Boost_DETAILED_FAILURE_MSG ON)
 
