@@ -345,8 +345,9 @@ bool we_do_real_ban = true;
 
 // ExaBGP support flag
 bool exabgp_enabled = false;
-std::string exabgp_community = "";
-std::string exabgp_command_pipe  = "";
+std::string exabgp_community    = "";
+std::string exabgp_command_pipe = "";
+std::string exabgp_next_hop     = "";
 
 bool process_incoming_traffic = true;
 bool process_outgoing_traffic = true;
@@ -702,6 +703,17 @@ bool load_configuration_file() {
 
             exabgp_enabled = false;
         } 
+    }
+
+    if (exabgp_enabled) {
+        exabgp_next_hop = configuration_map["exabgp_next_hop"];
+
+        if (exabgp_next_hop.empty()) {
+            logger<< log4cpp::Priority::ERROR
+                <<"You enabled exabgp but not specified exabgp_next_hop, so we disable exabgp support";
+    
+            exabgp_enabled = false;
+        }
     }
 
     logger<< log4cpp::Priority::INFO<<"ExaBGP support initialized correctly";
@@ -1797,6 +1809,34 @@ unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp) {
     }
 
     return 0;
+}
+
+void exabgp_ban_manage(std::string action, std::string ip_as_string) {
+    /* Buffer for BGP message */
+    char bgp_message[256];
+    std::string ip_as_string_with_mask = ip_as_string + "/32";
+
+    int exabgp_pipe = open(exabgp_command_pipe.c_str(), O_WRONLY);
+
+    if (exabgp_pipe <= 0) { 
+        logger<<log4cpp::Priority::ERROR<<"Can't open ExaBGP pipe. Ban is not executed";
+        return;
+    }    
+
+    if (action == "ban") {
+        sprintf(bgp_message, "announce route %s next-hop %s community %s\n",
+            ip_as_string_with_mask.c_str(), exabgp_next_hop.c_str(), exabgp_community.c_str());
+    } else {
+        sprintf(bgp_message, "withdraw route %s\n", ip_as_string_with_mask.c_str());
+    }
+    
+    int wrote_bytes = write(exabgp_pipe, bgp_message, strlen(bgp_message));
+
+    if (wrote_bytes != strlen(bgp_message)) {
+        logger<<log4cpp::Priority::ERROR<<"Can't write message to ExaBGP pipe";
+    }
+
+    close(exabgp_pipe);
 }
 
 void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element average_speed_element, std::string flow_attack_details) {
