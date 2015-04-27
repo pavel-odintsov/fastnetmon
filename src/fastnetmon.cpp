@@ -2262,7 +2262,9 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
         // TODO: here we have definitely RACE CONDITION!!! FIX IT
 
         // Remove key and prevent collection new data about this attack
+        ban_list_details_mutex.lock();
         ban_list_details.erase(client_ip);
+        ban_list_details_mutex.unlock();
     } 
 }
 
