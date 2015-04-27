@@ -145,6 +145,12 @@ std::string sort_parameter = "packets";
 // Path to notify script 
 std::string notify_script_path = "/usr/local/bin/notify_about_attack.sh";
 
+// Path to file with networks for whitelising
+std::string white_list_path = "/etc/networks_whitelist";
+
+// Path to file with all networks listing
+std::string networks_list_path = "/etc/networks_list";
+
 // Number of lines in programm output
 unsigned int max_ips_in_list = 7;
 
@@ -925,8 +931,8 @@ void zeroify_all_flow_counters() {
 }
 
 bool load_our_networks_list() {
-    if (file_exists("/etc/networks_whitelist")) {
-        std::vector<std::string> network_list_from_config = read_file_to_vector("/etc/networks_whitelist");
+    if (file_exists(white_list_path)) {
+        std::vector<std::string> network_list_from_config = read_file_to_vector(white_list_path);
 
         for( std::vector<std::string>::iterator ii=network_list_from_config.begin(); ii!=network_list_from_config.end(); ++ii) {
             if (ii->length() > 0 && is_cidr_subnet(ii->c_str())) {
@@ -966,7 +972,7 @@ bool load_our_networks_list() {
         logger<<log4cpp::Priority::INFO<<"We loaded "<<networks_list_as_string.size()<< " networks from /proc/vz/version";
     } 
 
-    if (file_exists("/etc/networks_list")) { 
+    if (file_exists(networks_list_path)) { 
         std::vector<std::string> network_list_from_config = read_file_to_vector("/etc/networks_list");
         networks_list_as_string.insert(networks_list_as_string.end(), network_list_from_config.begin(), network_list_from_config.end());
 
