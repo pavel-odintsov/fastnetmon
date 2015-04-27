@@ -129,7 +129,14 @@ void receiver(std::string interface_for_listening) {
     base_nmd.nr_tx_rings = base_nmd.nr_rx_rings = 0;
     base_nmd.nr_tx_slots = base_nmd.nr_rx_slots = 0;
 
-    std::string interface = "netmap:" + interface_for_listening; 
+    std::string interface = "";
+    // If we haven't netmap: prefix in interface name we will append it 
+    if (interface_for_listening.find("netmap:") == std::string::npos) {
+        interface = "netmap:" + interface_for_listening;
+    } else {
+        interface = interface_for_listening;
+    } 
+
     netmap_descriptor = nm_open(interface.c_str(), &base_nmd, 0, NULL);
 
     if (netmap_descriptor == NULL) {
