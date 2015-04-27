@@ -376,7 +376,7 @@ void recalculate_speed();
 std::string print_channel_speed(std::string traffic_type, direction packet_direction);
 void process_packet(simple_packet& current_packet);
 void traffic_draw_programm();
-void signal_handler(int signal_number);
+void interruption_signal_handler(int signal_number);
 
 /* Class for custom comparison fields by different fields */
 class TrafficComparatorClass {
@@ -434,6 +434,13 @@ std::string get_direction_name(direction direction_value) {
     return direction_name;
 }
 
+void sigpipe_handler_for_popen(int signo) {
+    logger<<log4cpp::Priority::ERROR<<"Sorry but we experienced error with popen. "
+        <<"Please check your scripts. It should receive data on stdin!";
+
+    exit(1);
+}
+
 // exec command and pass data to it stdin
 bool exec_with_stdin_params(std::string cmd, std::string params) {
     FILE* pipe = popen(cmd.c_str(), "w");
@@ -442,12 +449,14 @@ bool exec_with_stdin_params(std::string cmd, std::string params) {
         return false;
     }
 
-    if (fputs(params.c_str(), pipe)) {
-        fclose(pipe);
+    int fputs_ret = fputs(params.c_str(), pipe);
+
+    if (fputs_ret) {
+        pclose(pipe);
         return true;
     } else {
         logger<<log4cpp::Priority::ERROR<<"Can't pass data to stdin of programm "<<cmd;
-        fclose(pipe);
+        pclose(pipe);
         return false;
     }
 }
@@ -1648,7 +1657,10 @@ int main(int argc,char **argv) {
     load_our_networks_list();
 
     // Setup CTRL+C handler
-    signal(SIGINT, signal_handler);
+    signal(SIGINT, interruption_signal_handler);
+
+    /* Without this SIGPIPE error could shutdown toolkit on call of exec_with_stdin_params */
+    signal(SIGPIPE, sigpipe_handler_for_popen);
 
 #ifdef GEOIP
     // Init GeoIP
@@ -1731,7 +1743,7 @@ void free_up_all_resources() {
 }
 
 // For correct programm shutdown by CTRL+C
-void signal_handler(int signal_number) {
+void interruption_signal_handler(int signal_number) {
 
     if (enable_pcap_collection) {
         stop_pcap_collection();
