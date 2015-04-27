@@ -772,6 +772,8 @@ void process_netflow_packet_v5(u_int8_t *packet, u_int len) {
         size_t offset = NF5_PACKET_SIZE(i);
         struct NF5_FLOW* nf5_flow = (struct NF5_FLOW *)(packet + offset);
 
+        // TODO: add check for sure "packet+offset + sizeof(struct NF5_FLOW) is not more than len"
+
         // convert netflow to simple packet form
         simple_packet current_packet;
   
