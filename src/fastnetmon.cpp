@@ -631,7 +631,13 @@ bool load_configuration_file() {
     }
 
     while ( getline(config_file, line) ) {
-        std::vector<std::string> parsed_config; 
+        std::vector<std::string> parsed_config;
+        
+        if (line.find("#") == 0 or line.empty()) {
+            // Ignore comments line
+            continue;
+        }
+ 
         boost::split( parsed_config, line, boost::is_any_of(" ="), boost::token_compress_on );
 
         if (parsed_config.size() == 2) {
