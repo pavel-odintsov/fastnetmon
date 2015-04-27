@@ -816,6 +816,14 @@ bool load_configuration_file() {
         }    
     }    
 
+    if (configuration_map.count("white_list_path") != 0) {
+        white_list_path = configuration_map["white_list_path"];
+    }
+
+    if (configuration_map.count("networks_list_path") != 0) {
+        networks_list_path = configuration_map["networks_list_path"];
+    }
+    
 #ifdef REDIS
     if (configuration_map.count("redis_port") != 0) { 
         redis_port = convert_string_to_integer(configuration_map[ "redis_port" ] );
