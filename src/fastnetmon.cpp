@@ -170,7 +170,7 @@ std::string attack_details_folder = "/var/log/fastnetmon_attacks";
 
 /* Our data structs */
 
-// Enum with availible sort by field
+// Enum with available sort by field
 enum sort_type { PACKETS, BYTES, FLOWS };
 
 enum direction {
@@ -1271,7 +1271,7 @@ void calculation_thread() {
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 
     while (1) {
-        // Availible only from boost 1.54: boost::this_thread::sleep_for( boost::chrono::seconds(check_period) );
+        // Available only from boost 1.54: boost::this_thread::sleep_for( boost::chrono::seconds(check_period) );
         boost::this_thread::sleep(boost::posix_time::seconds(check_period));
         traffic_draw_programm();
     }
@@ -1280,7 +1280,7 @@ void calculation_thread() {
 void recalculate_speed_thread_handler() {
     while (1) {
         // recalculate data every one second
-        // Availible only from boost 1.54: boost::this_thread::sleep_for( boost::chrono::seconds(1) );
+        // Available only from boost 1.54: boost::this_thread::sleep_for( boost::chrono::seconds(1) );
         boost::this_thread::sleep(boost::posix_time::seconds(1));
         recalculate_speed();
     }
@@ -2262,7 +2262,9 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
         // TODO: here we have definitely RACE CONDITION!!! FIX IT
 
         // Remove key and prevent collection new data about this attack
+        ban_list_details_mutex.lock();
         ban_list_details.erase(client_ip);
+        ban_list_details_mutex.unlock();
     } 
 }
 
