@@ -2108,7 +2108,8 @@ void cleanup_ban_list() {
             double time_difference = difftime(current_time, ((*itr).second).ban_timestamp);
             int ban_time = ((*itr).second).ban_time;
 
-            if (time_difference > ban_time) {
+            // Zero value for ban_time means "no unban feature"
+            if (ban_time != 0 && time_difference > ban_time) {
                 // Cleanup all data related with this attack
                 std::string data_direction_as_string = get_direction_name((*itr).second.attack_direction);
                 std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
