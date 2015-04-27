@@ -139,7 +139,7 @@ double average_calculation_amount = 15;
 // Show average or absolute value of speed 
 bool print_average_traffic_counts = true;
 
-// Key used for sorting clients in output.  Allowed sort params: packets/bytes
+// Key used for sorting clients in output.  Allowed sort params: packets/bytes/flows
 std::string sort_parameter = "packets";
 
 // Path to notify script 
