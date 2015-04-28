@@ -19,11 +19,13 @@ What can we do? We can detect hosts in our own network with a large amount of pa
 
 [![Build Status](https://travis-ci.org/FastVPSEestiOu/fastnetmon.svg?branch=master)](https://travis-ci.org/FastVPSEestiOu/fastnetmon) [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/FastVPSEestiOu/fastnetmon?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-Supported protocols:
+Supported packet capture engines:
 - NetFlow v5, v9
 - IPFIX
 - ![sFLOW](http://sflow.org/images/sflowlogo.gif) v5
 - Port mirror/SPAN capture with PF_RING (with ZC/DNA mode support [need license](http://www.ntop.org/products/pf_ring/)), NETMAP and PCAP
+
+You could look [comparison table](https://github.com/FastVPSEestiOu/fastnetmon/blob/master/docs/CAPTURE_BACKENDS.md) for all available packet capture engines.
 
 Features:
 - Can process incoming and outgoing traffic
