@@ -1,4 +1,4 @@
-|Name | Capture speed |CPU load | Installation | Platforms | Cost |
+|Name | Capture speed |Installation | CPU load | Platforms | Cost |
 |-----|:-------------:|:-------:|:--:|:--:|:------:|
 |netmap | Up to wire speed (10GE, 14 MPPS) | Need kernel module and NIC driver patch [ixgbe provided](https://github.com/pavel-odintsov/ixgbe-linux-netmap)  |Normal |Linux, FreeBSD | BSD |
 |PF_RING | Up to 2-3 MPPS, 2-3 GE |Need kernel module install |Very big| Linux  only | GPLv2 |
