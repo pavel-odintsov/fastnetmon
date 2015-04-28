@@ -6,3 +6,4 @@
 | pcap | very slow, 10-100 mbps | Simple | huge | FreeBSD, Linux | GPL
 | sFLOW | Up to 40-100GE | Very simple | Small | Linux, FreeBSD, MacOS | Free | 
 | NetFlow | Up to 40-100GE | Very simple | Small | Linux, FreeBSD, MacOS | Free | 
+| AF_PACKET (not implemented yet) | Up to 5-10 MPPS/5-10GE | Very simple | Normal-huge | Linux (since 3.6 kernel) | GPLv2 |
