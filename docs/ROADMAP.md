@@ -5,7 +5,7 @@ Roadmap of FastNetMon project
 - Implement flow spec management for signaling to uplink (raw support, only protocols and src/dst ports)
 - Implement attack analyzer for detection of packets which belongs to attack 
 - Implement complete flow spec support for netmap-ipfw for thorough full wire-speed packet filtration
-- Implement solution for SYN flood mitigation based on syn-proxy ideas (prototype you could find [here](https://github.com/FastVPSEestiOu/fastnetmon/tree/master/syn_umbrella)) 
+- Implement solution for SYN flood mitigation based on syn-proxy ideas) 
 - Implement application level flood monitoring (http, dns, https)
 - Implement web interface
 - Implement API
