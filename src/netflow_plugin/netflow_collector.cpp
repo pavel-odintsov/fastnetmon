@@ -887,7 +887,7 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
     int bind_result = bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
 
     if (bind_result) {
-        logger<< log4cpp::Priority::ERROR<<"Can't listen port: "<<netflow_port;
+        logger<< log4cpp::Priority::ERROR<<"Can't listen port: "<<netflow_port<<" errno:"<<errno<< " error: "<<strerror(errno);
         return;
     }
 
