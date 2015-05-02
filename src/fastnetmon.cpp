@@ -1624,7 +1624,81 @@ void init_logging() {
     logger.info("Logger initialized!");
 }
 
+
+// Call fork function
+int do_fork() {
+    int status = 0; 
+
+    switch(fork()) {
+        case 0:
+            // It's child
+            break;
+        case -1:
+            /* fork failed */
+            status = -1;
+            break;
+        default:
+            // We should close master process with _exit(0)
+            // We should not call exit() because it will destroy all global variables for programm
+            _exit(0);
+    }    
+
+    return status;
+}
+
+
+void redirect_fds() {
+    // Close stdin, stdout and stderr 
+    close(0);
+    close(1);
+    close(2);
+
+    if (open("/dev/null", O_RDWR) != 0) {
+        // We can't notify anybody now
+        exit(1);
+    }
+
+    // Create copy of zero decriptor for 1 and 2 fd's
+    dup(0);
+    dup(0);
+}
+
 int main(int argc,char **argv) {
+    bool daemonize = false;
+
+    if (argc > 1) {    
+        if (strstr(argv[1], "--daemonize") != NULL) {
+            daemonize = true;
+        }
+    }
+
+    // We use ideas from here https://github.com/bmc/daemonize/blob/master/daemon.c
+
+    if (daemonize) {
+        int status = 0;
+
+        printf("We will run in daemonized mode\n");
+
+        if ((status = do_fork()) < 0 ) {
+            // fork failed
+            status = -1;
+        } else if (setsid() < 0) {
+            // Create new session
+            status = -1;
+        } else if ((status = do_fork()) < 0) {
+            status = -1;
+        } else { 
+            // Clear inherited umask
+            umask(0);
+
+            // Chdir to root
+            chdir("/");
+
+            // close all descriptors because we are daemon!
+            redirect_fds();
+        }
+    }
+
     lookup_tree = New_Patricia(32);
     whitelist_tree = New_Patricia(32);
 
