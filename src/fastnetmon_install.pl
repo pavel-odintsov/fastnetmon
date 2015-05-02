@@ -10,6 +10,33 @@ my $pf_ring_version = '6.0.3';
 my $pf_ring_url = "http://sourceforge.net/projects/ntop/files/PF_RING/PF_RING-$pf_ring_version.tar.gz/download";
 my $fastnetmon_git_path = 'https://github.com/FastVPSEestiOu/fastnetmon.git';
 
+# Used for VyOS and different appliances based on rpm/deb
+my $appliance_name = '';
+
+sub read_file {
+    my $file_name = shift;
+
+    my $res = open my $fl, "<", $file_name;
+
+    unless ($res) {
+        return "";
+    }
+
+    my $content = join '', <$fl>;
+    chomp $content;
+
+    return $content;
+}
+
+# Detect VyOS
+if (-e "/etc/issue") {
+    my $issue_content = read_file("/etc/issue");
+
+    if ($issue_content =~ /Welcome to VyOS/) {
+        $appliance_name = 'vyos';
+    }
+}
+
 if (-e "/etc/debian_version") {
     $distro_type = 'debian';
 
@@ -136,6 +163,11 @@ sub install {
         my @fastnetmon_deps = ("git", "g++", "gcc", "libboost-all-dev", "libgpm-dev", "libncurses5-dev",
             "liblog4cpp5-dev", "libnuma-dev", "libgeoip-dev","libpcap-dev", "clang", "cmake"
         );
+
+        # We add this dependencies because package libboost-all-dev is broken on VyOS
+        if ($appliance_name eq 'vyos') {
+            push @fastnetmon_deps, ('libboost-regex-dev', 'libboost-system-dev', 'libboost-thread-dev');
+        }
 
         # We install one package per apt-get call because installing multiple packages in one time could fail of one
         # package is broken
