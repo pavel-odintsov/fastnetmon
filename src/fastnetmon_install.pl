@@ -56,6 +56,10 @@ sub install {
         # pacakge broken
         for my $package (@debian_packages_for_pfring) {
             `apt-get install -y --force-yes $package`;
+
+            if ($? != 0) {
+                print "Package '$package' install failed with code $?\n"
+            }  
         }
     } elsif ($distro_type eq 'centos') {
         my $kernel_package_name = 'kernel-devel';
@@ -98,7 +102,7 @@ sub install {
 
         $we_have_pfring_support = 1;
     } else {
-        warn "PF_RING load error! We disable PF_RING plugin";
+        warn "PF_RING load error! We disable PF_RING plugin\n";
 
         $we_have_pfring_support = '';
     }
@@ -137,6 +141,10 @@ sub install {
         # package is broken
         for my $package (@fastnetmon_deps) {
             `apt-get install -y --force-yes $package`;
+
+            if ($? != 0) {
+                print "Package '$package' install failed with code $?\n"
+            }
         }
     } elsif ($distro_type eq 'centos') {
         my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++', 'boost-devel', 'GeoIP-devel', 'log4cpp-devel',
