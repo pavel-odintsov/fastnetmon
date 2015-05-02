@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/FastVPSEestiOu/fastnetmon.png?label=ready&title=Ready)](https://waffle.io/FastVPSEestiOu/fastnetmon)
 FastNetMon
 ===========
 Author: [Pavel Odintsov](http://ru.linkedin.com/in/podintsov/) pavel.odintsov at gmail.com [Follow my Twitter](https://twitter.com/odintsov_pavel)
