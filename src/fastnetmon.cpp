@@ -76,6 +76,7 @@
 #include <hiredis/hiredis.h>
 #endif
 
+std::string pid_path = "/var/run/fastnetmon.pid";
 std::string global_config_path = "/etc/fastnetmon.conf";
 
 time_t last_call_of_traffic_recalculation;
@@ -1699,6 +1700,39 @@ int main(int argc,char **argv) {
         }
     }
 
+    // enable core dumps
+    enable_core_dumps();
+
+    init_logging();
+
+    if (file_exists(pid_path)) {
+        pid_t pid_from_file = 0;
+
+        if (read_pid_from_file(pid_from_file, pid_path)) {
+            // We could read pid
+            if (pid_from_file > 0) {
+                // We use signal zero for check process existence
+                int kill_result = kill(pid_from_file, 0);
+
+                if (kill_result == 0) {
+                    logger<<log4cpp::Priority::ERROR<<"FastNetMon is already running with pid: "<<pid_from_file;
+                    exit(1);
+                } else {
+                    // Yes, we have pid with pid but it's zero 
+                } 
+            } else {
+                // pid from file is broken, we assume tool is not running
+            }
+        } else {
+            // We can't open file, let's assume it's broken and tool is not running 
+        }
+    } else {
+        // no pid file
+    }
+
+    // If we not failed in check steps we could run toolkit
+    print_pid_to_file(getpid(), pid_path);
+
     lookup_tree = New_Patricia(32);
     whitelist_tree = New_Patricia(32);
 
@@ -1710,11 +1744,6 @@ int main(int argc,char **argv) {
         total_speed_counters[index].bytes = 0;
         total_speed_counters[index].packets = 0; 
     } 
-
-    // enable core dumps
-    enable_core_dumps();
-
-    init_logging();
 
     /* Create folder for attack details */
     if (!folder_exists(attack_details_folder)) {

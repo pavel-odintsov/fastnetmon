@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 #include <sys/types.h>
+#include <unistd.h>
 #include <string>
 #include <iostream>
 #include <vector>
@@ -50,5 +51,8 @@ uint64_t fast_ntoh (uint64_t value);
 uint16_t fast_hton(uint16_t value);
 uint32_t fast_hton(uint32_t value);
 uint64_t fast_hton(uint64_t value);
+
+void print_pid_to_file(pid_t pid, std::string pid_path);
+bool read_pid_from_file(pid_t& pid, std::string pid_path);
 
 #endif
