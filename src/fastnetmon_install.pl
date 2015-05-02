@@ -42,6 +42,11 @@ if (-e "/etc/debian_version") {
 
     $distro_version = `cat /etc/debian_version`;
     chomp $distro_version;
+
+    # VyOS have strange version and we should fix it
+    if ($distro_version =~ /^(\d+)\.\d+\.\d+$/) {
+        $distro_version = $1;
+    }
 }
 
 if (-e "/etc/redhat-release") {
