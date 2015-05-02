@@ -49,7 +49,14 @@ sub install {
 
     if ($distro_type eq 'debian') {
         `apt-get update`;
-        `apt-get install -y --force-yes build-essential bison flex linux-headers-$kernel_version libnuma-dev wget tar make dpkg-dev dkms debhelper`;
+        my @debian_packages_for_pfring = ('build-essential', 'bison', 'flex', "linux-headers-$kernel_version",
+            'libnuma-dev', 'wget', 'tar', 'make', 'dpkg-dev', 'dkms', 'debhelper');
+
+        # We install one package per apt-get call because installing multiple packages in one time could fail of one
+        # pacakge broken
+        for my $package (@debian_packages_for_pfring) {
+            `apt-get install -y --force-yes $package`;
+        }
     } elsif ($distro_type eq 'centos') {
         my $kernel_package_name = 'kernel-devel';
 
@@ -126,8 +133,11 @@ sub install {
             "liblog4cpp5-dev", "libnuma-dev", "libgeoip-dev","libpcap-dev", "clang", "cmake"
         );
 
-        my $fastnetmon_deps_as_string = join " ", @fastnetmon_deps;
-        `apt-get install -y --force-yes $fastnetmon_deps_as_string`;
+        # We install one package per apt-get call because installing multiple packages in one time could fail of one
+        # package is broken
+        for my $package (@fastnetmon_deps) {
+            `apt-get install -y --force-yes $package`;
+        }
     } elsif ($distro_type eq 'centos') {
         my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++', 'boost-devel', 'GeoIP-devel', 'log4cpp-devel',
             'ncurses-devel', 'glibc-static', 'ncurses-static', 'boost-thread', 'libpcap-devel', 'gpm-static',
