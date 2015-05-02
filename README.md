@@ -20,6 +20,9 @@ What can we do? We can detect hosts in our own network with a large amount of pa
 
 [![Build Status](https://travis-ci.org/FastVPSEestiOu/fastnetmon.svg?branch=master)](https://travis-ci.org/FastVPSEestiOu/fastnetmon) [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/FastVPSEestiOu/fastnetmon?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
+[![Stories in Progress](https://badge.waffle.io/FastVPSEestiOu/fastnetmon.svg?label=ready&title=Progress)](http://waffle.io/FastVPSEestiOu/fastnetmon)
+
+
 Supported packet capture engines:
 - NetFlow v5, v9
 - IPFIX
