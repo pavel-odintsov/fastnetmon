@@ -735,9 +735,11 @@ bool load_configuration_file() {
     
             exabgp_enabled = false;
         }
-    }
 
-    logger<< log4cpp::Priority::INFO<<"ExaBGP support initialized correctly";
+        if (exabgp_enabled) {
+            logger<< log4cpp::Priority::INFO<<"ExaBGP support initialized correctly";
+        }    
+    }
 
     if (configuration_map.count("sflow") != 0) {
         if (configuration_map[ "sflow" ] == "on") {
