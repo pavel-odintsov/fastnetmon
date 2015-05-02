@@ -9,6 +9,9 @@
 #include <unistd.h>
 #include <netdb.h>
 
+#include <fstream>
+#include <iostream>
+
 #if defined(__APPLE__)
 #include <libkern/OSByteOrder.h>
 // Source: https://gist.github.com/pavel-odintsov/d13684600423d1c5e64e
@@ -420,3 +423,25 @@ std::vector<std::string> exec(std::string cmd) {
     return output_list;
 }
 
+void print_pid_to_file(pid_t pid, std::string pid_path) {
+    std::ofstream pid_file;
+
+    pid_file.open(pid_path.c_str(), std::ios::trunc);
+    if (pid_file.is_open()) {
+        pid_file<<pid<<"\n";
+        pid_file.close();
+    }
+}
+
+bool read_pid_from_file(pid_t& pid, std::string pid_path) {
+    std::fstream pid_file(pid_path.c_str(), std::ios_base::in);
+
+    if (pid_file.is_open()) {
+        pid_file>>pid;
+        pid_file.close();
+
+        return true;
+    } else {
+        return false;
+    }
+}
