@@ -8,4 +8,5 @@ Thanks file! For all peoples which helped this project :)
 - Andreas Begemann for debugging issue https://github.com/FastVPSEestiOu/fastnetmon/issues/90
 - t0ly for VM's with FreebSD 9, 10, 11
 - Cojacfar / https://github.com/Cojacfar help with documentation transaltion! 
-- Thomas Mangin for help with ExaBGP integration 
+- Thomas Mangin for help with ExaBGP integration
+- aabc for ipt_NETFLOW which was very useful for testing netflow plugin
