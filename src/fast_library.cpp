@@ -149,8 +149,8 @@ std::string get_printable_protocol_name(unsigned int protocol) {
             proto_name = "icmp";
             break;
         case 0:
-        	proto_name = "mixed";
-        	break;
+            proto_name = "mixed";
+            break;
         default:
             proto_name = "unknown";
             break;
