@@ -53,7 +53,7 @@ std::map<u_int, struct peer_nf9_template>  global_netflow10_templates_array;
 /* Prototypes */
 int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simple_packet& packet, netflow9_template_records_map& template_records);
 
-struct peer_nf9_template* peer_nf9_find_template(u_int32_t source_id, u_int template_id) {
+struct peer_nf9_template* peer_nf9_find_template(u_int32_t source_id, u_int template_id, std::string client_addres_in_string_format) {
     // TODO: we ignore source_id !!! FIX IT
 
     if (global_netflow9_templates_array.count(template_id) > 0) {
@@ -63,7 +63,7 @@ struct peer_nf9_template* peer_nf9_find_template(u_int32_t source_id, u_int temp
     }
 }
 
-struct peer_nf9_template* peer_nf10_find_template(u_int32_t source_id, u_int template_id) {
+struct peer_nf9_template* peer_nf10_find_template(u_int32_t source_id, u_int template_id, std::string client_addres_in_string_format) {
     // TODO: we ignore source_id !!! FIX IT
 
     if (global_netflow10_templates_array.count(template_id) > 0) {
@@ -146,7 +146,7 @@ int process_netflow_v10_options_template(u_int8_t *pkt, size_t len, u_int32_t so
     return 0;
 }
 
-int process_netflow_v10_template(u_int8_t *pkt, size_t len, u_int32_t source_id) {
+int process_netflow_v10_template(u_int8_t *pkt, size_t len, u_int32_t source_id, std::string client_addres_in_string_format) {
     struct NF10_FLOWSET_HEADER_COMMON *template_header = (struct NF10_FLOWSET_HEADER_COMMON *)pkt;
     // We use same struct as netflow v9 because netflow v9 and v10 (ipfix) is compatible
     struct peer_nf9_template field_template;
@@ -201,7 +201,7 @@ int process_netflow_v10_template(u_int8_t *pkt, size_t len, u_int32_t source_id)
         field_template.total_len = total_size; 
         field_template.records = template_records_map;
 
-        if (peer_nf10_find_template(source_id, template_id) != NULL) {
+        if (peer_nf10_find_template(source_id, template_id, client_addres_in_string_format) != NULL) {
             //logger<< log4cpp::Priority::INFO<<"We already have information about this template with id:"<<template_id;
             // TODO: update time to time template data
             continue;
@@ -215,7 +215,7 @@ int process_netflow_v10_template(u_int8_t *pkt, size_t len, u_int32_t source_id)
     return 0;
 }
 
-int process_netflow_v9_template(u_int8_t *pkt, size_t len, u_int32_t source_id) {
+int process_netflow_v9_template(u_int8_t *pkt, size_t len, u_int32_t source_id, std::string client_addres_in_string_format) {
     struct NF9_FLOWSET_HEADER_COMMON *template_header = (struct NF9_FLOWSET_HEADER_COMMON *)pkt;
     struct peer_nf9_template field_template;
 
@@ -273,7 +273,7 @@ int process_netflow_v9_template(u_int8_t *pkt, size_t len, u_int32_t source_id) 
   
         field_template.records = template_records_map;
  
-        if (peer_nf9_find_template(source_id, template_id) != NULL) {
+        if (peer_nf9_find_template(source_id, template_id, client_addres_in_string_format) != NULL) {
             // logger<< log4cpp::Priority::INFO<<"We already have information about this template with id:"<<template_id;
             // TODO: update time to time template data
             continue;
@@ -522,7 +522,9 @@ void nf9_flowset_to_store(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr,
     netflow_process_func_ptr(packet);
 }
 
-int process_netflow_v10_data(u_int8_t *pkt, size_t len, struct NF10_HEADER *nf10_hdr, u_int32_t source_id) {
+int process_netflow_v10_data(u_int8_t *pkt, size_t len, struct NF10_HEADER *nf10_hdr,
+    u_int32_t source_id, std::string client_addres_in_string_format) {
+
     struct NF10_DATA_FLOWSET_HEADER *dath = (struct NF10_DATA_FLOWSET_HEADER *)pkt;
 
     if (len < sizeof(*dath)) {
@@ -532,7 +534,7 @@ int process_netflow_v10_data(u_int8_t *pkt, size_t len, struct NF10_HEADER *nf10
 
     u_int flowset_id = ntohs(dath->c.flowset_id);
 
-    struct peer_nf9_template *flowset_template = peer_nf10_find_template(source_id, flowset_id);
+    struct peer_nf9_template *flowset_template = peer_nf10_find_template(source_id, flowset_id, client_addres_in_string_format);
 
     if (flowset_template == NULL) {
         logger<< log4cpp::Priority::INFO<<"We haven't template for flowset_id: "<<flowset_id
@@ -564,7 +566,7 @@ int process_netflow_v10_data(u_int8_t *pkt, size_t len, struct NF10_HEADER *nf10
     return 0;
 }
 
-int process_netflow_v9_data(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr, u_int32_t source_id) {
+int process_netflow_v9_data(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr, u_int32_t source_id, std::string client_addres_in_string_format) {
     struct NF9_DATA_FLOWSET_HEADER *dath = (struct NF9_DATA_FLOWSET_HEADER *)pkt;
 
     if (len < sizeof(*dath)) {
@@ -576,7 +578,7 @@ int process_netflow_v9_data(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hd
     //logger<< log4cpp::Priority::INFO<<"We have data with flowset_id: "<<flowset_id;
 
     // We should find template here
-    struct peer_nf9_template *flowset_template = peer_nf9_find_template(source_id, flowset_id); 
+    struct peer_nf9_template *flowset_template = peer_nf9_find_template(source_id, flowset_id, client_addres_in_string_format); 
     
     if (flowset_template == NULL) {
         logger<< log4cpp::Priority::INFO<<"We haven't template for flowset_id: "<<flowset_id
@@ -607,7 +609,7 @@ int process_netflow_v9_data(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hd
     return 0;
 }
 
-void process_netflow_packet_v10(u_int8_t *packet, u_int len) {
+void process_netflow_packet_v10(u_int8_t *packet, u_int len, std::string client_addres_in_string_format) {
     struct NF10_HEADER *nf10_hdr = (struct NF10_HEADER *)packet;
     struct NF10_FLOWSET_HEADER_COMMON *flowset; 
 
@@ -650,7 +652,7 @@ void process_netflow_packet_v10(u_int8_t *packet, u_int len) {
 
         switch (flowset_id) {
             case NF10_TEMPLATE_FLOWSET_ID:
-                if (process_netflow_v10_template(packet + offset, flowset_len, source_id) != 0) {
+                if (process_netflow_v10_template(packet + offset, flowset_len, source_id, client_addres_in_string_format) != 0) {
                     logger<<log4cpp::Priority::ERROR<<"Function process_netflow_v10_template executed with errors";
                     break;
                 }
@@ -666,7 +668,7 @@ void process_netflow_packet_v10(u_int8_t *packet, u_int len) {
                     break;
                 }
 
-                if (process_netflow_v10_data(packet + offset, flowset_len, nf10_hdr, source_id) != 0) { 
+                if (process_netflow_v10_data(packet + offset, flowset_len, nf10_hdr, source_id, client_addres_in_string_format) != 0) { 
                     //logger<< log4cpp::Priority::ERROR<<"Can't process function process_netflow_v10_data correctly";
                     return;
                 }
@@ -681,7 +683,7 @@ void process_netflow_packet_v10(u_int8_t *packet, u_int len) {
     }
 }
 
-void process_netflow_packet_v9(u_int8_t *packet, u_int len) {
+void process_netflow_packet_v9(u_int8_t *packet, u_int len, std::string client_addres_in_string_format) {
     //logger<< log4cpp::Priority::INFO<<"We get v9 netflow packet!";
 
     struct NF9_HEADER *nf9_hdr = (struct NF9_HEADER*)packet;
@@ -729,7 +731,7 @@ void process_netflow_packet_v9(u_int8_t *packet, u_int len) {
         switch (flowset_id) {
             case NF9_TEMPLATE_FLOWSET_ID:
                 // logger<< log4cpp::Priority::INFO<<"We read template";
-                if (process_netflow_v9_template(packet + offset, flowset_len, source_id) != 0) {
+                if (process_netflow_v9_template(packet + offset, flowset_len, source_id, client_addres_in_string_format) != 0) {
                     logger<<log4cpp::Priority::ERROR<<"Function process_netflow_v9_template executed with errors";
                     break;
                 }
@@ -746,7 +748,7 @@ void process_netflow_packet_v9(u_int8_t *packet, u_int len) {
 
                 // logger<< log4cpp::Priority::INFO<<"We read data";
 
-                if (process_netflow_v9_data(packet + offset, flowset_len, nf9_hdr, source_id) != 0) {
+                if (process_netflow_v9_data(packet + offset, flowset_len, nf9_hdr, source_id, client_addres_in_string_format) != 0) {
                     //logger<< log4cpp::Priority::ERROR<<"Can't process function process_netflow_v9_data correctly";
                     return;
                 }
@@ -837,7 +839,7 @@ void process_netflow_packet_v5(u_int8_t *packet, u_int len) {
     }
 }
 
-void process_netflow_packet(u_int8_t *packet, u_int len) {
+void process_netflow_packet(u_int8_t *packet, u_int len, std::string client_addres_in_string_format) {
     struct NF_HEADER_COMMON *hdr = (struct NF_HEADER_COMMON *)packet;
 
     switch (ntohs(hdr->version)) {
@@ -845,10 +847,10 @@ void process_netflow_packet(u_int8_t *packet, u_int len) {
             process_netflow_packet_v5(packet, len);
             break;
         case 9:
-            process_netflow_packet_v9(packet, len);
+            process_netflow_packet_v9(packet, len, client_addres_in_string_format);
             break;
         case 10:
-            process_netflow_packet_v10(packet, len);
+            process_netflow_packet_v10(packet, len, client_addres_in_string_format);
             break;
         default:
             logger<< log4cpp::Priority::ERROR<<"We did not support this version of netflow "<<ntohs(hdr->version);
@@ -945,7 +947,7 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
             // logger<< log4cpp::Priority::INFO<<"We receive packet from IP: "<<client_addres_in_string_format; 
 
             // printf("We receive %d\n", received_bytes);
-            process_netflow_packet((u_int8_t*)udp_buffer, received_bytes);
+            process_netflow_packet((u_int8_t*)udp_buffer, received_bytes, client_addres_in_string_format);
         } else {
             logger<< log4cpp::Priority::ERROR<<"netflow data receive failed";
         }
