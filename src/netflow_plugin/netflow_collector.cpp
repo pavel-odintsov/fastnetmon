@@ -293,8 +293,8 @@ void add_peer_template(global_template_storage_t& table_for_add, u_int32_t sourc
 
     std::string key = client_addres_in_string_format + "_" + convert_int_to_string(source_id);
 
-    logger<< log4cpp::Priority::INFO<<"It's new option template "<<template_id<<" for host: "<<client_addres_in_string_format
-        <<" with source id: "<<source_id; 
+    //logger<< log4cpp::Priority::INFO<<"It's new option template "<<template_id<<" for host: "<<client_addres_in_string_format
+    //    <<" with source id: "<<source_id; 
 
     global_template_storage_t::iterator itr = table_for_add.find(key); 
     
