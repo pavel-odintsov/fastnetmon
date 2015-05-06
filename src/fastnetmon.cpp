@@ -1258,7 +1258,7 @@ void process_packet(simple_packet& current_packet) {
             __sync_fetch_and_add(&current_element->icmp_in_packets, sampled_number_of_packets);
             __sync_fetch_and_add(&current_element->icmp_in_bytes,   sampled_number_of_bytes);
 
-             // no flow tarcking for icmp
+             // no flow tracking for icmp
         } else {
             // TBD
         }
