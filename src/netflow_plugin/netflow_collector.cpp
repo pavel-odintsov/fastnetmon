@@ -47,30 +47,46 @@ ipfix_information_database ipfix_db_instance;
 
 process_packet_pointer netflow_process_func_ptr = NULL;
 
-std::map<u_int, struct peer_nf9_template>  global_netflow9_templates_array;
-std::map<u_int, struct peer_nf9_template>  global_netflow10_templates_array;
+typedef std::map<u_int, struct peer_nf9_template> template_storage_t;
+typedef std::map<std::string, template_storage_t> global_template_storage_t;
+
+global_template_storage_t global_netflow9_templates;
+global_template_storage_t global_netflow10_templates; 
 
 /* Prototypes */
-int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simple_packet& packet, netflow9_template_records_map& template_records);
+void add_peer_template(global_template_storage_t& table_for_add, u_int32_t source_id,
+    u_int template_id, std::string client_addres_in_string_format, struct peer_nf9_template& field_template);
 
-struct peer_nf9_template* peer_nf9_find_template(u_int32_t source_id, u_int template_id, std::string client_addres_in_string_format) {
-    // TODO: we ignore source_id !!! FIX IT
+int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data,
+    simple_packet& packet, netflow9_template_records_map& template_records);
 
-    if (global_netflow9_templates_array.count(template_id) > 0) {
-        return &global_netflow9_templates_array[template_id];  
+struct peer_nf9_template* peer_find_template(global_template_storage_t& table_for_lookup, u_int32_t source_id,
+    u_int template_id, std::string client_addres_in_string_format) {
+
+    // We use source_id for distinguish multiple netflow agents with same IP
+    std::string key = client_addres_in_string_format + "_" + convert_int_to_string(source_id);  
+
+    global_template_storage_t::iterator itr = table_for_lookup.find(key);
+
+    if (itr == table_for_lookup.end()) {
+        return NULL;
+    }
+
+    // Well, we find it!
+    if (itr->second.count(template_id) > 0) {
+        return &itr->second[template_id];
     } else {
         return NULL;
     }
 }
 
-struct peer_nf9_template* peer_nf10_find_template(u_int32_t source_id, u_int template_id, std::string client_addres_in_string_format) {
-    // TODO: we ignore source_id !!! FIX IT
+// Wrapper functions
+struct peer_nf9_template* peer_nf9_find_template(u_int32_t source_id, u_int template_id, std::string client_addres_in_string_format) {
+    return peer_find_template(global_netflow9_templates, source_id, template_id, client_addres_in_string_format);
+}
 
-    if (global_netflow10_templates_array.count(template_id) > 0) {
-        return &global_netflow10_templates_array[template_id];  
-    } else {
-        return NULL;
-    }   
+struct peer_nf9_template* peer_nf10_find_template(u_int32_t source_id, u_int template_id, std::string client_addres_in_string_format) {
+     return peer_find_template(global_netflow10_templates, source_id, template_id, client_addres_in_string_format);
 }
 
 std::string print_peer_nf9_template(struct peer_nf9_template& field_template) {
@@ -201,15 +217,7 @@ int process_netflow_v10_template(u_int8_t *pkt, size_t len, u_int32_t source_id,
         field_template.total_len = total_size; 
         field_template.records = template_records_map;
 
-        if (peer_nf10_find_template(source_id, template_id, client_addres_in_string_format) != NULL) {
-            //logger<< log4cpp::Priority::INFO<<"We already have information about this template with id:"<<template_id;
-            // TODO: update time to time template data
-            continue;
-        } else {
-            logger<< log4cpp::Priority::INFO<<"We got new template with ID: "<<template_id;
-            //logger<< log4cpp::Priority::INFO<<print_peer_nf9_template(field_template);
-            global_netflow10_templates_array[ template_id ] = field_template;
-        } 
+        add_peer_template(global_netflow10_templates, source_id, template_id, client_addres_in_string_format, field_template);
     }
 
     return 0;
@@ -272,17 +280,43 @@ int process_netflow_v9_template(u_int8_t *pkt, size_t len, u_int32_t source_id, 
         field_template.total_len = total_size; 
   
         field_template.records = template_records_map;
- 
-        if (peer_nf9_find_template(source_id, template_id, client_addres_in_string_format) != NULL) {
-            // logger<< log4cpp::Priority::INFO<<"We already have information about this template with id:"<<template_id;
-            // TODO: update time to time template data
-            continue;
-        } else {
-            global_netflow9_templates_array[ template_id ] = field_template;
-        }
-    }
 
+        // Add/update template 
+        add_peer_template(global_netflow9_templates, source_id, template_id, client_addres_in_string_format, field_template);
+    }        
+    
     return 0;
+}
+
+void add_peer_template(global_template_storage_t& table_for_add, u_int32_t source_id,
+    u_int template_id, std::string client_addres_in_string_format, struct peer_nf9_template& field_template) { 
+
+    std::string key = client_addres_in_string_format + "_" + convert_int_to_string(source_id);
+
+    logger<< log4cpp::Priority::INFO<<"It's new option template "<<template_id<<" for host: "<<client_addres_in_string_format
+        <<" with source id: "<<source_id; 
+
+    global_template_storage_t::iterator itr = table_for_add.find(key); 
+    
+    if (itr != table_for_add.end()) {
+        if (itr->second.count(template_id) > 0) {
+            //logger<< log4cpp::Priority::INFO<<"We already have information about this template with id:"
+            //    <<template_id<<" for host: "<<client_addres_in_string_format;
+
+            // TODO: update time to time template data
+            itr->second[template_id] = field_template;
+        } else {
+            //logger<< log4cpp::Priority::INFO<<"It's new option template "<<template_id<<" for host: "<<client_addres_in_string_format;
+            itr->second[template_id] = field_template;    
+        }
+    } else {
+        template_storage_t temp_template_storage;
+        temp_template_storage[template_id] = field_template;
+
+        table_for_add[key] = temp_template_storage;   
+    }
+    
+    return;
 }
 
 int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t *data, simple_packet& packet) {
