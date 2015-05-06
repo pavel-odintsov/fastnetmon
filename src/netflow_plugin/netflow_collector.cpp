@@ -41,6 +41,8 @@ ipfix_information_database ipfix_db_instance;
 #include "netflow_collector.h"
 #include "netflow.h"
 
+// If we wan't listen on IPv4 and IPv6 i nsame time we need listen multiple sockets. Not good, right.
+
 // TODO: add per source uniq templates support
 
 process_packet_pointer netflow_process_func_ptr = NULL;
@@ -860,14 +862,15 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
     logger<< log4cpp::Priority::INFO<<"netflow plugin started";
     netflow_process_func_ptr = func_ptr;
 
-    std::string interface_for_binding = "0.0.0.0";
+    // By default we listen on IPv4
+    std::string netflow_host = "0.0.0.0";
 
     if (configuration_map.count("netflow_port") != 0) {
         netflow_port = convert_string_to_integer(configuration_map["netflow_port"]);
     }
 
     if (configuration_map.count("netflow_host") != 0) {
-        interface_for_binding = configuration_map["netflow_host"];
+        netflow_host = configuration_map["netflow_host"];
     }
 
     if (configuration_map.count("netflow_sampling_ratio") != 0) {
@@ -877,30 +880,44 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
     }
 
 
-    logger<< log4cpp::Priority::INFO<<"netflow plugin will listen on "<<interface_for_binding<<":"<<netflow_port<< " udp port"; 
+    logger<< log4cpp::Priority::INFO<<"netflow plugin will listen on "<<netflow_host<<":"<<netflow_port<< " udp port"; 
 
     unsigned int udp_buffer_size = 65536;
     char udp_buffer[udp_buffer_size];
 
-    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof hints);
 
-    struct sockaddr_in servaddr;
-    memset(&servaddr, 0, sizeof(servaddr));
+    // Could be AF_INET6 or AF_INET
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
+    // This flag will generate wildcard IP address if we not specified certain IP address for binding
+    hints.ai_flags = AI_PASSIVE | AI_NUMERICHOST;
 
-    servaddr.sin_family = AF_INET;
+    struct addrinfo *servinfo = NULL; 
 
-    if (interface_for_binding == "0.0.0.0") {
-        servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    } else {
-        servaddr.sin_addr.s_addr = inet_addr(interface_for_binding.c_str());
+    const char* address_for_binding = NULL;
+
+    if (!netflow_host.empty()) {
+        address_for_binding = netflow_host.c_str();
     }
 
-    servaddr.sin_port = htons(netflow_port);
+    char port_as_string[16];
+    sprintf(port_as_string, "%d", netflow_port); 
+   
+    int getaddrinfo_result =  getaddrinfo(address_for_binding, port_as_string, &hints, &servinfo);
+
+    if (getaddrinfo_result != 0) {
+        logger<< log4cpp::Priority::ERROR<<"Netflow getaddrinfo function failed with code: "<<getaddrinfo_result<<" please check netflow_host";
+        exit(1);
+    } 
     
-    int bind_result = bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
+    int sockfd = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol);
+ 
+    int bind_result = bind(sockfd, servinfo->ai_addr, servinfo->ai_addrlen);
 
     if (bind_result) {
-        logger<< log4cpp::Priority::ERROR<<"Can't listen port: "<<netflow_port<<" errno:"<<errno<< " error: "<<strerror(errno);
+        logger<< log4cpp::Priority::ERROR<<"Can't listen port: "<<netflow_port<<" on host "<<netflow_host<<" errno:"<<errno<< " error: "<<strerror(errno);
         return;
     }
 
@@ -925,7 +942,7 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
           
             // We sill store client's IP address as string for allowing IPv4 and IPv6 processing in same time
             std::string client_addres_in_string_format = std::string(host); 
-            //logger<< log4cpp::Priority::INFO<<"We receive packet from IP: "<<client_addres_in_string_format; 
+            // logger<< log4cpp::Priority::INFO<<"We receive packet from IP: "<<client_addres_in_string_format; 
 
             // printf("We receive %d\n", received_bytes);
             process_netflow_packet((u_int8_t*)udp_buffer, received_bytes);
@@ -933,5 +950,7 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
             logger<< log4cpp::Priority::ERROR<<"netflow data receive failed";
         }
     }
+
+    freeaddrinfo(servinfo);
 }
 
