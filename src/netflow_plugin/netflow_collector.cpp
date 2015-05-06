@@ -33,6 +33,9 @@ extern log4cpp::Category& logger;
 // Global configuration map 
 extern std::map<std::string, std::string> configuration_map;
 
+// Sampling rate for all netflow agents
+unsigned int sampling_rate = 1;
+
 ipfix_information_database ipfix_db_instance;
 
 #include "netflow_collector.h"
@@ -380,6 +383,8 @@ void nf10_flowset_to_store(u_int8_t *pkt, size_t len, struct NF10_HEADER *nf10_h
     packet.number_of_packets = 0;
     packet.ts.tv_sec = ntohl(nf10_hdr->time_sec);
 
+    packet.sample_ratio = sampling_rate;
+
     netflow_ipfix_struct data_in_ipfix_format;
     memset(&data_in_ipfix_format, sizeof(netflow_ipfix_struct), 0);
 
@@ -465,8 +470,9 @@ void nf9_flowset_to_store(u_int8_t *pkt, size_t len, struct NF9_HEADER *nf9_hdr,
     // We use shifted values and should process only zeroed values
     // because we are working with little and big endian data in same time
     packet.number_of_packets = 0;
-
     packet.ts.tv_sec = ntohl(nf9_hdr->time_sec);
+
+    packet.sample_ratio = sampling_rate;
 
     // We should iterate over all available template fields
     for (netflow9_template_records_map::iterator iter = template_records.begin(); iter != template_records.end(); iter++) {
@@ -796,8 +802,7 @@ void process_netflow_packet_v5(u_int8_t *packet, u_int len) {
         current_packet.length            = fast_ntoh(nf5_flow->flow_octets);
         current_packet.number_of_packets = fast_ntoh(nf5_flow->flow_packets);
 
-        // We did not support sampling for netflow :(
-        current_packet.sample_ratio = 1;
+        current_packet.sample_ratio = sampling_rate;
 
         current_packet.source_port      = fast_ntoh(nf5_flow->src_port);
         current_packet.destination_port = fast_ntoh(nf5_flow->dest_port);
@@ -864,6 +869,13 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
     if (configuration_map.count("netflow_host") != 0) {
         interface_for_binding = configuration_map["netflow_host"];
     }
+
+    if (configuration_map.count("netflow_sampling_ratio") != 0) {
+        sampling_rate = convert_string_to_integer(configuration_map["netflow_sampling_ratio"]);
+       
+        logger<< log4cpp::Priority::INFO<<"We use custom sampling ratio for netflow: "<<sampling_rate;
+    }
+
 
     logger<< log4cpp::Priority::INFO<<"netflow plugin will listen on "<<interface_for_binding<<":"<<netflow_port<< " udp port"; 
 
