@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <inttypes.h>
+#include <netdb.h>
 
 #include <vector>
 #include <map>
@@ -895,12 +896,25 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
     memset(&peer, 0, sizeof(peer));
 
     for (;;) {
-        struct sockaddr_in cliaddr;
-        socklen_t address_len = sizeof(cliaddr);
+        // This approach provide ability to store both IPv4 and IPv6 client's addresses
+        struct sockaddr_storage client_address;
+        // It's MUST
+        memset(&client_address, 0, sizeof(struct sockaddr_storage));
+        socklen_t address_len = sizeof(struct sockaddr_storage);
 
-        int received_bytes = recvfrom(sockfd, udp_buffer, udp_buffer_size, 0, (struct sockaddr *)&cliaddr, &address_len); 
+        int received_bytes = recvfrom(sockfd, udp_buffer, udp_buffer_size, 0, (struct sockaddr *)&client_address, &address_len); 
 
         if (received_bytes > 0) {
+            // Pass host and port as numbers without any conversion
+            int getnameinfo_flags = NI_NUMERICSERV | NI_NUMERICHOST;
+            char host[NI_MAXHOST];
+            char service[NI_MAXSERV];
+            int result = getnameinfo((struct sockaddr *) &client_address, address_len, host, NI_MAXHOST, service, NI_MAXSERV, getnameinfo_flags);
+          
+            // We sill store client's IP address as string for allowing IPv4 and IPv6 processing in same time
+            std::string client_addres_in_string_format = std::string(host); 
+            //logger<< log4cpp::Priority::INFO<<"We receive packet from IP: "<<client_addres_in_string_format; 
+
             // printf("We receive %d\n", received_bytes);
             process_netflow_packet((u_int8_t*)udp_buffer, received_bytes);
         } else {
