@@ -31,9 +31,6 @@
 #include "pcap_plugin/pcap_collector.h"
 #include "netmap_plugin/netmap_collector.h"
 
-// Our structires
-// #include "fast_priority_queue.h"
-
 #ifdef PF_RING
 #include "pfring_plugin/pfring_collector.h"
 #endif
@@ -175,24 +172,6 @@ std::string attack_details_folder = "/var/log/fastnetmon_attacks";
 
 /* Configuration block ends */
 
-/* Our data structs */
-
-// Enum with available sort by field
-enum sort_type { PACKETS, BYTES, FLOWS };
-
-enum direction {
-    INCOMING = 0,
-    OUTGOING,
-    INTERNAL,
-    OTHER
-};
-
-typedef struct {
-    uint64_t bytes;
-    uint64_t packets;
-    uint64_t flows;
-} total_counter_element;
-
 // We count total number of incoming/outgoing/internal and other traffic type packets/bytes
 // And initilize by 0 all fields
 total_counter_element total_counters[4];
@@ -204,133 +183,10 @@ uint64_t total_unparsed_packets = 0;
 uint64_t incoming_total_flows_speed = 0;
 uint64_t outgoing_total_flows_speed = 0;
 
-// main data structure for storing traffic and speed data for all our IPs
-class map_element {
-public:
-    map_element() :
-        in_bytes(0), out_bytes(0), in_packets(0), out_packets(0),
-        tcp_in_packets(0), tcp_out_packets(0), tcp_in_bytes(0), tcp_out_bytes(0),
-        tcp_syn_in_packets(0), tcp_syn_out_packets(0), tcp_syn_in_bytes(0), tcp_syn_out_bytes(0), 
-        udp_in_packets(0), udp_out_packets(0), udp_in_bytes(0), udp_out_bytes(0), in_flows(0), out_flows(0),
-        fragmented_in_packets(0), fragmented_out_packets(0), fragmented_in_bytes(0), fragmented_out_bytes(0),
-        icmp_in_packets(0), icmp_out_packets(0), icmp_in_bytes(0), icmp_out_bytes(0)
-     {}
-    uint64_t in_bytes;
-    uint64_t out_bytes;
-    uint64_t in_packets;
-    uint64_t out_packets;
-
-    // Fragmented traffic is so recently used for attacks 
-    uint64_t fragmented_in_packets;
-    uint64_t fragmented_out_packets;
-    uint64_t fragmented_in_bytes;
-    uint64_t fragmented_out_bytes;
-
-    // Additional data for correct attack protocol detection
-    uint64_t tcp_in_packets;
-    uint64_t tcp_out_packets;
-    uint64_t tcp_in_bytes;
-    uint64_t tcp_out_bytes;
-
-    // Additional details about one of most popular atatck type
-    uint64_t tcp_syn_in_packets;
-    uint64_t tcp_syn_out_packets;
-    uint64_t tcp_syn_in_bytes;
-    uint64_t tcp_syn_out_bytes;
-
-    uint64_t udp_in_packets;
-    uint64_t udp_out_packets;
-    uint64_t udp_in_bytes;
-    uint64_t udp_out_bytes;
-
-    uint64_t icmp_in_packets;
-    uint64_t icmp_out_packets;
-    uint64_t icmp_in_bytes;
-    uint64_t icmp_out_bytes;
-
-    uint64_t in_flows;
-    uint64_t out_flows;
-};
-
-// structure with attack details
-class attack_details : public map_element {
-    public:
-    attack_details() :
-        attack_protocol(0), attack_power(0), max_attack_power(0), average_in_bytes(0), average_out_bytes(0), average_in_packets(0), average_out_packets(0), average_in_flows(0), average_out_flows(0), ban_time(standard_ban_time), attack_direction(OTHER) {
-    }    
-    direction attack_direction;
-    // first attackpower detected
-    uint64_t attack_power;
-    // max attack power
-    uint64_t max_attack_power;
-    unsigned int attack_protocol;
-
-    // Average counters
-    uint64_t average_in_bytes;
-    uint64_t average_out_bytes;
-    uint64_t average_in_packets;
-    uint64_t average_out_packets;
-    uint64_t average_in_flows;
-    uint64_t average_out_flows;
-
-    // time when we but this user
-    time_t   ban_timestamp;
-    int      ban_time; // seconds of the ban
-};
-
-typedef attack_details banlist_item;
-
-
-// struct for save per direction and per protocol details for flow
-typedef struct {
-    uint64_t bytes;
-    uint64_t packets;
-    // will be used for Garbage Collection
-    time_t   last_update_time;
-} conntrack_key_struct;
-
-typedef uint64_t packed_session;
-// Main mega structure for storing conntracks
-// We should use class instead struct for correct std::map allocation
-typedef std::map<packed_session, conntrack_key_struct> contrack_map_type;
-
-class conntrack_main_struct {
-public:
-    contrack_map_type in_tcp;
-    contrack_map_type in_udp;
-    contrack_map_type in_icmp;
-    contrack_map_type in_other;
-
-    contrack_map_type out_tcp;
-    contrack_map_type out_udp;
-    contrack_map_type out_icmp;
-    contrack_map_type out_other;
-};
-
-typedef std::map <uint32_t, map_element> map_for_counters;
-typedef std::vector<map_element> vector_of_counters;
-
-typedef std::map <unsigned long int, vector_of_counters> map_of_vector_counters;
-
 map_of_vector_counters SubnetVectorMap;
 
 // Flow tracking structures
-typedef std::vector<conntrack_main_struct> vector_of_flow_counters;
-typedef std::map <unsigned long int, vector_of_flow_counters> map_of_vector_counters_for_flow;
 map_of_vector_counters_for_flow SubnetVectorMapFlow;
-
-class packed_conntrack_hash {
-public:
-    packed_conntrack_hash() : opposite_ip(0), src_port(0), dst_port(0) { } 
-    // src or dst IP 
-    uint32_t opposite_ip;
-    uint16_t src_port;
-    uint16_t dst_port;
-};
-
-
-// data structure for storing data in Vector
-typedef std::pair<uint32_t, map_element> pair_of_map_elements;
 
 /* End of our data structs */
 
