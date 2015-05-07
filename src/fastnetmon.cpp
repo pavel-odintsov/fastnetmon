@@ -236,6 +236,8 @@ bool process_outgoing_traffic = true;
 void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_string);
 #endif
 
+std::string get_printable_attack_name(attack_type_t attack);
+attack_type_t detect_attack_type(attack_details& current_attack);
 bool we_should_ban_this_ip(map_element* current_average_speed_element);
 unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp);
 void print_attack_details_to_file(std::string details, std::string client_ip_as_string,  attack_details current_attack);
@@ -2207,8 +2209,12 @@ std::string print_ddos_attack_details() {
 std::string get_attack_description(uint32_t client_ip, attack_details& current_attack) {
     std::stringstream attack_description;
 
+    attack_type_t attack_type = detect_attack_type(current_attack);
+    std::string printable_attack_type = get_printable_attack_name(attack_type);
+
     attack_description
         <<"IP: "<<convert_ip_as_uint_to_string(client_ip)<<"\n"
+        <<"Attack type: "<<printable_attack_type<<"\n"
         <<"Initial attack power: "  <<current_attack.attack_power<<" packets per second\n"
         <<"Peak attack power: "     <<current_attack.max_attack_power<< " packets per second\n"
         <<"Attack direction: "      <<get_direction_name(current_attack.attack_direction)<<"\n"
@@ -2551,4 +2557,46 @@ bool we_should_ban_this_ip(map_element* average_speed_element) {
     }
 
     return attack_detected_by_pps or attack_detected_by_bandwidth or attack_detected_by_flow;
+}
+
+attack_type_t detect_attack_type(attack_details& current_attack) {
+    double threshold_value = 0.9;
+    
+    if (current_attack.attack_direction == INCOMING) {
+        if (current_attack.tcp_syn_in_packets > threshold_value * current_attack.in_packets) {
+            return ATTACK_SYN_FLOOD;
+        } else if (current_attack.icmp_in_packets > threshold_value * current_attack.in_packets) {
+            return ATTACK_ICMP_FLOOD;
+        } else if (current_attack.fragmented_in_packets > threshold_value * current_attack.in_packets) {
+            return ATTACK_FRAGMENTATION_FLOOD;
+        } else if (current_attack.udp_in_packets > threshold_value * current_attack.in_packets) {
+            return ATTACK_UDP_FLOOD;
+        }
+    } else if (current_attack.attack_direction == OUTGOING) {
+        if (current_attack.tcp_syn_out_packets > threshold_value * current_attack.out_packets) {
+            return ATTACK_SYN_FLOOD;
+        } else if (current_attack.icmp_out_packets > threshold_value * current_attack.out_packets) {
+            return ATTACK_ICMP_FLOOD;
+        } else if (current_attack.fragmented_out_packets > threshold_value * current_attack.out_packets) { 
+            return ATTACK_FRAGMENTATION_FLOOD;
+        } else if (current_attack.udp_out_packets > threshold_value * current_attack.out_packets) {
+            return ATTACK_UDP_FLOOD;
+        }
+    }
+
+    return ATTACK_UNKNOWN;
+}
+
+std::string get_printable_attack_name(attack_type_t attack) {
+    if (attack == ATTACK_SYN_FLOOD) {
+        return "syn_flood";
+    } else if (attack == ATTACK_ICMP_FLOOD) {
+        return "icmp_flood";
+    } else if (attack == ATTACK_UDP_FLOOD) {
+        return "udp_flood";
+    } else if (attack == ATTACK_FRAGMENTATION_FLOOD) {
+        return "udp_fragmentation";
+    } else if (attack == ATTACK_UNKNOWN) {
+        return "unknown";
+    }
 }
