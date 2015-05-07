@@ -59,64 +59,7 @@ Example for cpu load on Intel i7 2600 with Intel X540/82599 NIC on 400 kpps load
 Example deployment scheme:
 ![Network diagramm](docs/images/network_map.png)
 
-Example of first notification:
-```bash
-subject: Myflower Guard: IP xx.xx.xx.xx blocked because incoming attack with power 120613 pps
-body:
-IP: XX.XX.XX.XX
-Initial attack power: 98285 packets per second
-Peak attack power: 98285 packets per second
-Attack direction: outgoing
-Incoming traffic: 62 mbps
-Outgoing traffic: 65 mbps
-Incoming pps: 66628 packets per second
-Outgoing pps: 98285 packets per second
-Incoming flows: 16
-Outgoing flows: 16
-Incoming
-
-UDP
-xx.xx.xx.xx:33611 < 216.239.32.109:53 729021 bytes 5927 packets
-xx.xx.xx.xx:33611 < 216.239.34.109:53 231609 bytes 1883 packets
-xx.xx.xx.xx:33611 < 216.239.36.109:53 728652 bytes 5924 packets
-xx.xx.xx.xx:33611 < 216.239.38.109:53 414387 bytes 3369 packets
-xx.xx.xx.xx:42279 < 216.239.34.109:53 248091 bytes 2017 packets
-xx.xx.xx.xx:42279 < 216.239.36.109:53 737508 bytes 5996 packets
-xx.xx.xx.xx:42279 < 216.239.38.109:53 321276 bytes 2612 packets
-xx.xx.xx.xx:51469 < 216.239.32.109:53 735663 bytes 5981 packets
-xx.xx.xx.xx:51469 < 216.239.34.109:53 237267 bytes 1929 packets
-xx.xx.xx.xx:51469 < 216.239.36.109:53 735663 bytes 5981 packets
-xx.xx.xx.xx:51469 < 216.239.38.109:53 318570 bytes 2590 packets
-
-
-Outgoing
-
-UDP
-xx.xx.xx.xx:33611 > 216.239.32.109:53 531309 bytes 6107 packets
-xx.xx.xx.xx:33611 > 216.239.34.109:53 531222 bytes 6106 packets
-xx.xx.xx.xx:33611 > 216.239.36.109:53 531222 bytes 6106 packets
-xx.xx.xx.xx:33611 > 216.239.38.109:53 531222 bytes 6106 packets
-xx.xx.xx.xx:51469 > 216.239.36.109:53 532701 bytes 6123 packets
-xx.xx.xx.xx:51469 > 216.239.38.109:53 532788 bytes 6124 packets
-```
-
-Example of second notification:
-```bash
-subject: Myflower Guard: IP xx.xx.xx.xx blocked because incoming attack with power 120613 pps
-body:
-IP: xx.zz.xx.1
-2014-11-21 08:01:11.419798 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
-2014-11-21 08:01:11.419799 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
-2014-11-21 08:01:11.419816 xx.xx.xx.xx:51469 > 216.239.36.109:53 protocol: udp flags:  size: 87 bytes
-2014-11-21 08:01:11.419837 216.239.38.109:53 > xx.xx.xx.xx:33611 protocol: udp flags:  size: 123 bytes
-2014-11-21 08:01:11.419838 216.239.34.109:53 > xx.xx.xx.xx:33611 protocol: udp flags:  size: 123 bytes
-2014-11-21 08:01:11.419859 216.239.38.109:53 > xx.xx.xx.xx:42279 protocol: udp flags:  size: 123 bytes
-2014-11-21 08:01:11.419929 216.239.38.109:53 > xx.xx.xx.xx:33611 protocol: udp flags:  size: 123 bytes
-2014-11-21 08:01:11.419961 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
-2014-11-21 08:01:11.419962 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
-2014-11-21 08:01:11.419963 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
-2014-11-21 08:01:11.419963 216.239.32.109:53 > xx.xx.xx.xx:38458 protocol: udp flags:  size: 123 bytes
-```
+Example of [notification email](docs/ATTACK_REPORT_EXAMPLE.md) about detected attack.
 
 To enable sFLOW simply specify IP of server with installed FastNetMon and specify port 6343.
 To enable netflow simply specify IP of server with installed FastNetMon and specify port 2055.
