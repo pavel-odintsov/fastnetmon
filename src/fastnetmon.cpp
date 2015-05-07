@@ -2317,6 +2317,12 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
         <<"Average incoming flows: "   << current_attack.average_in_flows                         <<" flows per second\n"
         <<"Average outgoing flows: "   << current_attack.average_out_flows                        <<" flows per second\n";
 
+    double average_packet_size_for_incoming_traffic = (double)current_attack.average_in_bytes  /
+        (double)current_attack.average_in_packets;
+    
+    double average_packet_size_for_outgoing_traffic = (double)current_attack.average_out_bytes /
+        (double)current_attack.average_out_packets;
+
     attack_description
         <<"Incoming tcp traffic: "      <<convert_speed_to_mbps(current_attack.tcp_in_bytes)<<" mbps\n"
         <<"Outgoing tcp traffic: "      <<convert_speed_to_mbps(current_attack.tcp_out_bytes)<<" mbps\n"
@@ -2330,6 +2336,12 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
         <<"Outgoing icmp traffic: "     <<convert_speed_to_mbps(current_attack.icmp_out_bytes)<<" mbps\n"
         <<"Incoming icmp pps: "         <<current_attack.icmp_in_packets<<" packets per second\n"
         <<"Outgoing icmp pps: "         <<current_attack.icmp_out_packets<<" packets per second\n";
+
+    // We do not need very accurate size
+    attack_description.precision(1);
+    attack_description
+        <<"Average packet size for incoming traffic: "<<std::fixed<<average_packet_size_for_incoming_traffic<<"bytes \n"
+        <<"Average packet size for outgoing traffic: "<<std::fixed<<average_packet_size_for_outgoing_traffic<<"bytes \n";
  
     return attack_description.str();
 }    
