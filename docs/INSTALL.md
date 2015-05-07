@@ -21,7 +21,7 @@ Start the client process in another console:
 
 To enable fastnetmon to start on server startup, please add the following line to /etc/rc.local:
 ```bash
-screen -S fastnetmon -d -m /opt/fastnetmon/fastnetmon
+/opt/fastnetmon/fastnetmon --daemonize
 ```
 If something goes wrong, please check logs:
 ```bash
@@ -36,7 +36,7 @@ The first time when threshold exceed (at this step we know IP, direction and pow
 
 A sample script is provided and can be installed as follows:
 ```bash
-cp /usr/src/fastnetmon/notify_about_attack.sh /usr/local/bin/notify_about_attack.sh
+cp /usr/src/fastnetmon/src/notify_about_attack.sh /usr/local/bin/notify_about_attack.sh
 chmod 755 /usr/local/bin/notify_about_attack.sh
 ```
 After copying the file, you need to open it and configure the 'email_notify' option as required.
