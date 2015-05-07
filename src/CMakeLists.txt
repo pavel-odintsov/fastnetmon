@@ -126,7 +126,7 @@ if(Boost_FOUND)
     target_link_libraries(fast_library ${Boost_LIBRARIES})
 endif()
 
-# Try to find ncurses library
+# Try to find ncurses librreary
 find_package(Curses REQUIRED)
 
 if(CURSES_FOUND) 
@@ -135,6 +135,7 @@ if(CURSES_FOUND)
 endif()
 
 # apt-get install -y libhiredis-dev 
+# yum install -y hiredis-devel
 # Please uncomment this lines if you want enable Redis support
 #find_package(Hiredis REQUIRED)
 #if (HIREDIS_FOUND)
