@@ -997,6 +997,10 @@ void process_packet(simple_packet& current_packet) {
         __sync_fetch_and_add(&current_element->out_packets, sampled_number_of_packets);
         __sync_fetch_and_add(&current_element->out_bytes,   sampled_number_of_bytes);
 
+        // Fragmented IP packets
+        __sync_fetch_and_add(&current_element->fragmented_out_packets, sampled_number_of_packets);
+        __sync_fetch_and_add(&current_element->fragmented_out_bytes,   sampled_number_of_bytes);
+
         conntrack_main_struct* current_element_flow = NULL;
         if (enable_conection_tracking) {
             current_element_flow = &itr_flow->second[shift_in_vector]; 
@@ -1079,6 +1083,10 @@ void process_packet(simple_packet& current_packet) {
         // Main packet/bytes counter 
         __sync_fetch_and_add(&current_element->in_packets, sampled_number_of_packets);
         __sync_fetch_and_add(&current_element->in_bytes,   sampled_number_of_bytes);
+
+        // Count fragmented IP packets
+        __sync_fetch_and_add(&current_element->fragmented_in_packets, sampled_number_of_packets);
+        __sync_fetch_and_add(&current_element->fragmented_in_bytes,   sampled_number_of_bytes);
 
         conntrack_main_struct* current_element_flow = NULL;
    
@@ -1250,6 +1258,13 @@ void recalculate_speed() {
 
             new_speed_element.in_bytes  = uint64_t((double)vector_itr->in_bytes  / speed_calc_period);
             new_speed_element.out_bytes = uint64_t((double)vector_itr->out_bytes / speed_calc_period);     
+
+            // Fragmented
+            new_speed_element.fragmented_in_packets  = uint64_t((double)vector_itr->fragmented_in_packets   / speed_calc_period);
+            new_speed_element.fragmented_out_packets = uint64_t((double)vector_itr->fragmented_out_packets  / speed_calc_period);
+
+            new_speed_element.fragmented_in_bytes  = uint64_t((double)vector_itr->fragmented_in_bytes  / speed_calc_period);  
+            new_speed_element.fragmented_out_bytes = uint64_t((double)vector_itr->fragmented_out_bytes / speed_calc_period);
 
             // By protocol counters
 
@@ -1960,21 +1975,26 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element a
     current_attack.in_flows = in_flows;
     current_attack.out_flows = out_flows;
 
+        
+    current_attack.fragmented_in_packets = speed_element.fragmented_in_packets;
     current_attack.tcp_in_packets  = speed_element.tcp_in_packets;
     current_attack.tcp_syn_in_packets  = speed_element.tcp_syn_in_packets;
     current_attack.udp_in_packets  = speed_element.udp_in_packets;
     current_attack.icmp_in_packets = speed_element.icmp_in_packets;
-    
+   
+    current_attack.fragmented_out_packets = speed_element.fragmented_out_packets; 
     current_attack.tcp_out_packets = speed_element.tcp_out_packets;
     current_attack.tcp_syn_out_packets = speed_element.tcp_syn_out_packets;
     current_attack.udp_out_packets = speed_element.udp_out_packets;
     current_attack.icmp_out_packets = speed_element.icmp_out_packets;
 
+    current_attack.fragmented_out_bytes = speed_element.fragmented_out_bytes;
     current_attack.tcp_out_bytes  = speed_element.tcp_out_bytes;
     current_attack.tcp_syn_out_bytes  = speed_element.tcp_syn_out_bytes;
     current_attack.udp_out_bytes  = speed_element.udp_out_bytes;
     current_attack.icmp_out_bytes = speed_element.icmp_out_bytes;
 
+    current_attack.fragmented_in_bytes = speed_element.fragmented_in_bytes;
     current_attack.tcp_in_bytes = speed_element.tcp_in_bytes;
     current_attack.tcp_syn_in_bytes = speed_element.tcp_syn_in_bytes;
     current_attack.udp_in_bytes = speed_element.udp_in_bytes;
@@ -2224,6 +2244,11 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
     }
 
     attack_description
+        <<"Incoming ip fragmented traffic: " <<convert_speed_to_mbps(current_attack.fragmented_in_bytes)<<" mbps\n"
+        <<"Outgoing ip fragmented traffic: " <<convert_speed_to_mbps(current_attack.fragmented_out_bytes)<<" mbps\n"
+        <<"Incoming ip fragmented pps: "     <<current_attack.fragmented_in_packets<<" packets per second\n"
+        <<"Outgoing ip fragmented pps: "     <<current_attack.fragmented_out_packets<<" packets per second\n"
+
         <<"Incoming tcp traffic: "      <<convert_speed_to_mbps(current_attack.tcp_in_bytes)<<" mbps\n"
         <<"Outgoing tcp traffic: "      <<convert_speed_to_mbps(current_attack.tcp_out_bytes)<<" mbps\n"
         <<"Incoming tcp pps: "          <<current_attack.tcp_in_packets<<" packets per second\n"
@@ -2238,6 +2263,7 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
         <<"Outgoing udp traffic: "      <<convert_speed_to_mbps(current_attack.udp_out_bytes)<<" mbps\n"
         <<"Incoming udp pps: "          <<current_attack.udp_in_packets<<" packets per second\n"
         <<"Outgoing udp pps: "          <<current_attack.udp_out_packets<<" packets per second\n"
+
         <<"Incoming icmp traffic: "     <<convert_speed_to_mbps(current_attack.icmp_in_bytes)<<" mbps\n"
         <<"Outgoing icmp traffic: "     <<convert_speed_to_mbps(current_attack.icmp_out_bytes)<<" mbps\n"
         <<"Incoming icmp pps: "         <<current_attack.icmp_in_packets<<" packets per second\n"
