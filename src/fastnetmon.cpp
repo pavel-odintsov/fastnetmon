@@ -1562,7 +1562,7 @@ void traffic_draw_programm() {
 #endif
 
     // Print thresholds
-    output_buffer<<"\n\n"<<print_ban_thresholds();
+    output_buffer<<"\n"<<print_ban_thresholds();
 
     if (!ban_list.empty()) {
         output_buffer<<std::endl<<"Ban list:"<<std::endl;  
@@ -2317,11 +2317,18 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
         <<"Average incoming flows: "   << current_attack.average_in_flows                         <<" flows per second\n"
         <<"Average outgoing flows: "   << current_attack.average_out_flows                        <<" flows per second\n";
 
-    double average_packet_size_for_incoming_traffic = (double)current_attack.average_in_bytes  /
-        (double)current_attack.average_in_packets;
-    
-    double average_packet_size_for_outgoing_traffic = (double)current_attack.average_out_bytes /
-        (double)current_attack.average_out_packets;
+    double average_packet_size_for_incoming_traffic = 0;
+    double average_packet_size_for_outgoing_traffic = 0;
+
+    if (current_attack.average_in_packets > 0) {
+        average_packet_size_for_incoming_traffic = (double)current_attack.average_in_bytes  /
+            (double)current_attack.average_in_packets;
+    }    
+
+    if (current_attack.average_out_packets > 0) {
+        average_packet_size_for_outgoing_traffic =  (double)current_attack.average_out_bytes /
+            (double)current_attack.average_out_packets;
+    }
 
     attack_description
         <<"Incoming tcp traffic: "      <<convert_speed_to_mbps(current_attack.tcp_in_bytes)<<" mbps\n"
@@ -2340,8 +2347,8 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
     // We do not need very accurate size
     attack_description.precision(1);
     attack_description
-        <<"Average packet size for incoming traffic: "<<std::fixed<<average_packet_size_for_incoming_traffic<<"bytes \n"
-        <<"Average packet size for outgoing traffic: "<<std::fixed<<average_packet_size_for_outgoing_traffic<<"bytes \n";
+        <<"Average packet size for incoming traffic: "<<std::fixed<<average_packet_size_for_incoming_traffic<<" bytes \n"
+        <<"Average packet size for outgoing traffic: "<<std::fixed<<average_packet_size_for_outgoing_traffic<<" bytes \n";
  
     return attack_description.str();
 }    
