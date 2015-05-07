@@ -1,3 +1,4 @@
+```bash
 IP: 10.10.10.221
 Attack type: syn_flood
 Initial attack power: 99059 packets per second
@@ -38,8 +39,8 @@ Incoming icmp pps: 0 packets per second
 Outgoing icmp pps: 0 packets per second
 Average packet size for incoming traffic: 60.0 bytes 
 Average packet size for outgoing traffic: 0.0 bytes 
-Incoming
 
+Incoming
 TCP
 10.10.10.221:1024 < 10.138.0.0:1025 60 bytes 1 packets
 10.10.10.221:1024 < 10.149.0.0:1025 60 bytes 1 packets
@@ -96,4 +97,4 @@ TCP
 10.10.10.221:1024 < 10.156.3.0:1025 60 bytes 1 packets
 10.10.10.221:1024 < 10.160.3.0:1025 60 bytes 1 packets
 10.10.10.221:1024 < 10.210.3.0:1025 60 bytes 1 packets
-
+```
