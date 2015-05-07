@@ -453,6 +453,23 @@ int fastnetmon_parse_pkt(unsigned char *pkt, struct pfring_pkthdr *hdr, u_int8_t
     fragment_offset = ip->frag_off & htons(IP_OFFSET); /* fragment, but not the first */
     ip_len  = ip->ihl*4;
 
+    // Parse fragmentation info:
+    // Very good examples about IPv4 flags: http://lwn.net/Articles/136319/
+    hdr->extended_hdr.parsed_pkt.ip_fragmented = 0;
+
+    int fast_frag_off = ntohs(ip->frag_off);
+    int fast_offset   = (fast_frag_off & IP_OFFSET);
+
+    if (fast_frag_off & IP_MF) {
+        //printf("Packet with MF flag\n");
+        hdr->extended_hdr.parsed_pkt.ip_fragmented = 1;
+    }
+
+    if (fast_offset != 0) {
+        //printf("Packet with non zero offset\n");
+        hdr->extended_hdr.parsed_pkt.ip_fragmented = 1;
+    }
+
   } else if (hdr->extended_hdr.parsed_pkt.eth_type == 0x86DD /* IPv6 */) {
     struct kcompact_ipv6_hdr *ipv6;
 
@@ -697,6 +714,8 @@ int fastnetmon_print_parsed_pkt(char *buff, u_int buff_len, const u_char *p, con
           h->extended_hdr.parsed_pkt.tunnel.tunneled_l4_dst_port);
       }
     }
+
+    buff_used += snprintf(&buff[buff_used], buff_len - buff_used, "[ip_fragmented: %d]", h->extended_hdr.parsed_pkt.ip_fragmented);
 
     buff_used += snprintf(&buff[buff_used], buff_len - buff_used,
       "[hash=%u][tos=%d][tcp_seq_num=%u]",
