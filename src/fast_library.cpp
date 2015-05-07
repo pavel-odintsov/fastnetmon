@@ -361,7 +361,9 @@ std::string print_simple_packet(simple_packet packet) {
     // Print flags only for TCP 
     if (packet.protocol == IPPROTO_TCP) { 
         buffer<<" flags: "<<print_tcp_flags(packet.flags);
-    }    
+    }
+
+    buffer<<" frag: "<<packet.ip_fragmented<<" ";
 
     buffer<<" ";
     buffer<<"packets: "     <<packet.number_of_packets  <<" ";

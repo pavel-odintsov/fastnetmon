@@ -103,6 +103,8 @@ void consume_pkt(u_char* buffer, int len) {
         packet.protocol = packet_header.extended_hdr.parsed_pkt.l3_proto;
         packet.ts       = packet_header.ts;
 
+        packet.ip_fragmented = packet_header.extended_hdr.parsed_pkt.ip_fragmented; 
+    
         // Copy flags from PF_RING header to our pseudo header
         if (packet.protocol == IPPROTO_TCP) {
             packet.flags = packet_header.extended_hdr.parsed_pkt.tcp.flags;
@@ -264,6 +266,7 @@ void start_netmap_collection(process_packet_pointer func_ptr) {
 
     for (std::vector<std::string>::iterator interface = interfaces_for_listen.begin();
         interface != interfaces_for_listen.end(); ++interface) {
+        
         logger<< log4cpp::Priority::INFO<<"netmap will sniff interface: "<<*interface;
         netmap_main_threads[ threads_index++ ] = new boost::thread(receiver, *interface);
     }

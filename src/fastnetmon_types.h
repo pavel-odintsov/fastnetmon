@@ -11,7 +11,9 @@
 // simplified packet struct for lightweight save into memory
 class simple_packet {
 public:
-    simple_packet() : sample_ratio(1), src_ip(0), dst_ip(0), source_port(0), destination_port(0), protocol(0), length(0), flags(0), number_of_packets(1) { 
+    simple_packet() : sample_ratio(1), src_ip(0), dst_ip(0), source_port(0), destination_port(0), protocol(0), length(0),
+        flags(0), number_of_packets(1), ip_fragmented(false) {
+ 
         ts.tv_usec = 0;
         ts.tv_sec = 0;
     }
@@ -24,6 +26,7 @@ public:
     uint64_t     length;
     uint64_t     number_of_packets; /* for netflow */
     uint8_t      flags; /* tcp flags */
+    bool         ip_fragmented; /* If IP packet fragmented */
     struct       timeval ts;
 };
 
