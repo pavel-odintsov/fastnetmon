@@ -19,6 +19,13 @@
 // Boost libs
 #include <boost/algorithm/string.hpp>
 
+#define TCP_FIN_FLAG_SHIFT 1
+#define TCP_SYN_FLAG_SHIFT 2
+#define TCP_RST_FLAG_SHIFT 3
+#define TCP_PSH_FLAG_SHIFT 4
+#define TCP_ACK_FLAG_SHIFT 5
+#define TCP_URG_FLAG_SHIFT 6
+
 std::string get_protocol_name_by_number(unsigned int proto_number);
 uint64_t convert_speed_to_mbps(uint64_t speed_in_bps);
 std::vector<std::string> exec(std::string cmd);

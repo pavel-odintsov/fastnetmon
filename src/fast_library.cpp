@@ -294,30 +294,30 @@ std::string print_tcp_flags(uint8_t flag_value) {
         #define TH_ACK_MULTIPLIER   0x10
         #define TH_URG_MULTIPLIER   0x20
     */
-
+    
     std::vector<std::string> all_flags;
 
-    if (extract_bit_value(flag_value, 1)) {
+    if (extract_bit_value(flag_value, TCP_FIN_FLAG_SHIFT)) {
         all_flags.push_back("fin");
     }
 
-    if (extract_bit_value(flag_value, 2)) {
+    if (extract_bit_value(flag_value, TCP_SYN_FLAG_SHIFT)) {
         all_flags.push_back("syn");
     }
 
-    if (extract_bit_value(flag_value, 3)) {
+    if (extract_bit_value(flag_value, TCP_RST_FLAG_SHIFT)) {
         all_flags.push_back("rst");
     }
 
-    if (extract_bit_value(flag_value, 4)) {
+    if (extract_bit_value(flag_value, TCP_PSH_FLAG_SHIFT)) {
         all_flags.push_back("psh");
     }
 
-    if (extract_bit_value(flag_value, 5)) {
+    if (extract_bit_value(flag_value, TCP_ACK_FLAG_SHIFT)) {
         all_flags.push_back("ack");
     }
 
-    if (extract_bit_value(flag_value, 6)) {
+    if (extract_bit_value(flag_value, TCP_URG_FLAG_SHIFT)) {
         all_flags.push_back("urg");
     }
 
