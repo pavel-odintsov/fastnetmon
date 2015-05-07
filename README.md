@@ -31,9 +31,7 @@ You could look [comparison table](https://github.com/FastVPSEestiOu/fastnetmon/b
 
 Features:
 - Can process incoming and outgoing traffic
-- Can trigger block script if certain IP loads network with a large amount of packets per second
-- Can trigger block script if certain IP loads network with a large amount of bytes per second
-- Can trigger block script if certain IP loads network with a large amount of flows per second
+- Can trigger block script if certain IP loads network with a large amount of packets/bytes/flows per second
 - Could [announce blocked IPs](docs/EXABGP_INTEGRATION.md) to BGP router with [ExaBGP](https://github.com/Exa-Networks/exabgp)
 - netmap support (open source; wire speed processing; only Intel hardware NICs or any hypervisor VM type)
 - Supports L2TP decapsulation, VLAN untagging and MPLS processing in mirror mode 
@@ -41,6 +39,7 @@ Features:
 - Can detect DoS/DDoS in 1-2 seconds
 - Tested up to 10GE with 5-6 Mpps on Intel i7 2600 with Intel Nic 82599
 - Complete plugin support
+- Could [complete support](docs/DETECTED_ATTACK_TYPES.md) for most popular attack types
 
 Supported platforms:
 - Linux (Debian 6/7/8, CentOS 6/7, Ubuntu 12+)
