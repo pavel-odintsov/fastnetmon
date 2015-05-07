@@ -207,20 +207,36 @@ uint64_t outgoing_total_flows_speed = 0;
 // main data structure for storing traffic and speed data for all our IPs
 class map_element {
 public:
-    map_element() : in_bytes(0), out_bytes(0), in_packets(0), out_packets(0), tcp_in_packets(0), tcp_out_packets(0), tcp_in_bytes(0), tcp_out_bytes(0),
+    map_element() :
+        in_bytes(0), out_bytes(0), in_packets(0), out_packets(0),
+        tcp_in_packets(0), tcp_out_packets(0), tcp_in_bytes(0), tcp_out_bytes(0),
+        tcp_syn_in_packets(0), tcp_syn_out_packets(0), tcp_syn_in_bytes(0), tcp_syn_out_bytes(0), 
         udp_in_packets(0), udp_out_packets(0), udp_in_bytes(0), udp_out_bytes(0), in_flows(0), out_flows(0),
+        fragmented_in_packets(0), fragmented_out_packets(0), fragmented_in_bytes(0), fragmented_out_bytes(0),
         icmp_in_packets(0), icmp_out_packets(0), icmp_in_bytes(0), icmp_out_bytes(0)
      {}
     uint64_t in_bytes;
     uint64_t out_bytes;
     uint64_t in_packets;
     uint64_t out_packets;
-    
+
+    // Fragmented traffic is so recently used for attacks 
+    uint64_t fragmented_in_packets;
+    uint64_t fragmented_out_packets;
+    uint64_t fragmented_in_bytes;
+    uint64_t fragmented_out_bytes;
+
     // Additional data for correct attack protocol detection
     uint64_t tcp_in_packets;
     uint64_t tcp_out_packets;
     uint64_t tcp_in_bytes;
     uint64_t tcp_out_bytes;
+
+    // Additional details about one of most popular atatck type
+    uint64_t tcp_syn_in_packets;
+    uint64_t tcp_syn_out_packets;
+    uint64_t tcp_syn_in_bytes;
+    uint64_t tcp_syn_out_bytes;
 
     uint64_t udp_in_packets;
     uint64_t udp_out_packets;
@@ -1155,6 +1171,11 @@ void process_packet(simple_packet& current_packet) {
             __sync_fetch_and_add(&current_element->tcp_out_packets, sampled_number_of_packets);
             __sync_fetch_and_add(&current_element->tcp_out_bytes,   sampled_number_of_bytes);    
 
+            if (extract_bit_value(current_packet.flags, TCP_SYN_FLAG_SHIFT)) {
+                __sync_fetch_and_add(&current_element->tcp_syn_out_packets, sampled_number_of_packets);
+                __sync_fetch_and_add(&current_element->tcp_syn_out_bytes,   sampled_number_of_bytes);
+            }    
+
             if (enable_conection_tracking) {
                 flow_counter.lock();
                 conntrack_key_struct* conntrack_key_struct_ptr = &current_element_flow->out_tcp[connection_tracking_hash];
@@ -1232,6 +1253,11 @@ void process_packet(simple_packet& current_packet) {
         if (current_packet.protocol == IPPROTO_TCP) {
             __sync_fetch_and_add(&current_element->tcp_in_packets, sampled_number_of_packets);
             __sync_fetch_and_add(&current_element->tcp_in_bytes,   sampled_number_of_bytes);
+
+            if (extract_bit_value(current_packet.flags, TCP_SYN_FLAG_SHIFT)) {
+                __sync_fetch_and_add(&current_element->tcp_syn_in_packets, sampled_number_of_packets);
+                __sync_fetch_and_add(&current_element->tcp_syn_in_bytes,   sampled_number_of_bytes);
+            }
 
             if (enable_conection_tracking) {
                 flow_counter.lock();
@@ -1377,6 +1403,13 @@ void recalculate_speed() {
 
             new_speed_element.tcp_in_bytes  = uint64_t((double)vector_itr->tcp_in_bytes  / speed_calc_period);
             new_speed_element.tcp_out_bytes = uint64_t((double)vector_itr->tcp_out_bytes / speed_calc_period);    
+
+            // TCP syn
+            new_speed_element.tcp_syn_in_packets  = uint64_t((double)vector_itr->tcp_syn_in_packets   / speed_calc_period);
+            new_speed_element.tcp_syn_out_packets = uint64_t((double)vector_itr->tcp_syn_out_packets  / speed_calc_period);
+
+            new_speed_element.tcp_syn_in_bytes  = uint64_t((double)vector_itr->tcp_syn_in_bytes  / speed_calc_period);
+            new_speed_element.tcp_syn_out_bytes = uint64_t((double)vector_itr->tcp_syn_out_bytes / speed_calc_period);    
 
             // UDP
             new_speed_element.udp_in_packets  = uint64_t((double)vector_itr->udp_in_packets   / speed_calc_period);
@@ -2072,18 +2105,22 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element a
     current_attack.out_flows = out_flows;
 
     current_attack.tcp_in_packets  = speed_element.tcp_in_packets;
+    current_attack.tcp_syn_in_packets  = speed_element.tcp_syn_in_packets;
     current_attack.udp_in_packets  = speed_element.udp_in_packets;
     current_attack.icmp_in_packets = speed_element.icmp_in_packets;
     
     current_attack.tcp_out_packets = speed_element.tcp_out_packets;
+    current_attack.tcp_syn_out_packets = speed_element.tcp_syn_out_packets;
     current_attack.udp_out_packets = speed_element.udp_out_packets;
     current_attack.icmp_out_packets = speed_element.icmp_out_packets;
 
     current_attack.tcp_out_bytes  = speed_element.tcp_out_bytes;
+    current_attack.tcp_syn_out_bytes  = speed_element.tcp_syn_out_bytes;
     current_attack.udp_out_bytes  = speed_element.udp_out_bytes;
     current_attack.icmp_out_bytes = speed_element.icmp_out_bytes;
 
     current_attack.tcp_in_bytes = speed_element.tcp_in_bytes;
+    current_attack.tcp_syn_in_bytes = speed_element.tcp_syn_in_bytes;
     current_attack.udp_in_bytes = speed_element.udp_in_bytes;
     current_attack.icmp_in_bytes = speed_element.icmp_in_bytes;
 
@@ -2335,6 +2372,12 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
         <<"Outgoing tcp traffic: "      <<convert_speed_to_mbps(current_attack.tcp_out_bytes)<<" mbps\n"
         <<"Incoming tcp pps: "          <<current_attack.tcp_in_packets<<" packets per second\n"
         <<"Outgoing tcp pps: "          <<current_attack.tcp_out_packets<<" packets per second\n"
+        
+        <<"Incoming syn tcp traffic: "  <<convert_speed_to_mbps(current_attack.tcp_syn_in_bytes)<<" mbps\n"
+        <<"Outgoing syn tcp traffic: "  <<convert_speed_to_mbps(current_attack.tcp_syn_out_bytes)<<" mbps\n"
+        <<"Incoming syn tcp pps: "      <<current_attack.tcp_syn_in_packets<<" packets per second\n"
+        <<"Outgoing syn tcp pps: "      <<current_attack.tcp_syn_out_packets<<" packets per second\n"        
+
         <<"Incoming udp traffic: "      <<convert_speed_to_mbps(current_attack.udp_in_bytes)<<" mbps\n"
         <<"Outgoing udp traffic: "      <<convert_speed_to_mbps(current_attack.udp_out_bytes)<<" mbps\n"
         <<"Incoming udp pps: "          <<current_attack.udp_in_packets<<" packets per second\n"
