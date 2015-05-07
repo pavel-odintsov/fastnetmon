@@ -187,11 +187,20 @@ void receiver(std::string interface_for_listening) {
         struct nm_desc* new_nmd = nm_open(interface.c_str(), NULL, nmd_flags | NM_OPEN_IFNAME | NM_OPEN_NO_MMAP, &nmd);
 
         if (new_nmd == NULL) {
-            logger.error("Can't open netmap descriptor for netmap per nardware queue thread");
+            logger.error("Can't open netmap descriptor for netmap per hardware queue thread");
             exit(1);
         }
 
         logger.info("My first ring is %d and last ring id is %d I'm thread %d", new_nmd->first_rx_ring, new_nmd->last_rx_ring, i);
+    
+
+        /* Bind to certain core */
+        // We could do this with: boost::thread::attributes attrs;
+        // http://www.boost.org/doc/libs/1_53_0/doc/html/thread/thread_management.html
+        // boost::thread::attributes attrs;
+        // #if defined(BOOST_THREAD_PLATFORM_PTHREAD)
+        // pthread_attr_setschedpolicy(attr.get_native_handle(), SCHED_RR);
+        // boost::thread th(attrs, find_the_question, 42);
 
         logger.info("Start new netmap thread %d", i);
         // Start thread and pass netmap descriptor to it 
