@@ -62,6 +62,9 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    // Required by Netmap and PF_RING plugins
+    configuration_map["interfaces"] = "eth0";
+
     if (strstr(argv[1], "sflow") != NULL) {
         std::cout<<"Starting sflow"<<std::endl;
         start_sflow_collection(process_packet);
@@ -75,7 +78,6 @@ int main(int argc, char *argv[]) {
         std::cout<<"Starting pf_ring"<<std::endl;
         start_pfring_collection(process_packet);
     } else if (strstr(argv[1], "netmap") != NULL) {
-        configuration_map["interfaces"] = "eth4";
         std::cout<<"Starting netmap"<<std::endl;
         start_netmap_collection(process_packet);
     } else {
