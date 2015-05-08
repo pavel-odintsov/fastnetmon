@@ -2377,7 +2377,7 @@ std::string print_flow_tracking_for_specified_protocol(contrack_map_type& protoc
     for (contrack_map_type::iterator itr = protocol_map.begin(); itr != protocol_map.end(); ++itr) {
         // We should limit number of records in flow dump because syn flood attacks produce thounsands of lines
         if (printed_records > ban_details_records_count) {
-            buffer<<"Flows are cropped due very long list\n";
+            buffer<<"Flows have cropped due to very long list.\n";
             break;
         }
 
@@ -2437,16 +2437,24 @@ std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element,
     std::string in_tcp = print_flow_tracking_for_specified_protocol(conntrack_element.in_tcp, client_ip, INCOMING);
     std::string in_udp = print_flow_tracking_for_specified_protocol(conntrack_element.in_udp, client_ip, INCOMING);
 
+    unsigned long long total_number_of_incoming_tcp_flows = conntrack_element.in_tcp.size();
+    unsigned long long total_number_of_incoming_udp_flows = conntrack_element.in_udp.size();
+
+    unsigned long long total_number_of_outgoing_tcp_flows = conntrack_element.out_tcp.size();
+    unsigned long long total_number_of_outgoing_udp_flows = conntrack_element.out_udp.size(); 
+
     bool we_have_incoming_flows = in_tcp.length() > 0 or in_udp.length() > 0;
     if (we_have_incoming_flows) {
         buffer<<"Incoming\n\n";
         
         if (in_tcp.length() > 0) {
-            buffer<<"TCP\n"<<in_tcp<<"\n";
+            buffer<<"TCP flows: "<<total_number_of_incoming_tcp_flows<<"\n";
+            buffer<<in_tcp<<"\n";
         }
 
         if (in_udp.length() > 0) {
-            buffer<<"UDP\n"<<in_udp<<"\n";
+            buffer<<"UDP flows: "<<total_number_of_incoming_udp_flows<<"\n";
+            buffer<<in_udp<<"\n";
         }
 
     }
@@ -2465,11 +2473,13 @@ std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element,
         buffer<<"Outgoing\n\n";
 
         if (out_tcp.length() > 0 ) {
-            buffer<<"TCP\n"<<out_tcp<<"\n";
+            buffer<<"TCP flows: "<<total_number_of_outgoing_tcp_flows<<"\n";
+            buffer<<out_tcp<<"\n";
         }
 
         if (out_udp.length() > 0) {
-            buffer<<"UDP\n"<<out_udp<<"\n";
+            buffer<<"UDP flows: "<<total_number_of_outgoing_udp_flows<<"\n"; 
+            buffer<<out_udp<<"\n";
         }
     }
 
