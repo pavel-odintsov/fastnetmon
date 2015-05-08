@@ -2568,7 +2568,7 @@ attack_type_t detect_attack_type(attack_details& current_attack) {
         } else if (current_attack.icmp_in_packets > threshold_value * current_attack.in_packets) {
             return ATTACK_ICMP_FLOOD;
         } else if (current_attack.fragmented_in_packets > threshold_value * current_attack.in_packets) {
-            return ATTACK_FRAGMENTATION_FLOOD;
+            return ATTACK_IP_FRAGMENTATION_FLOOD;
         } else if (current_attack.udp_in_packets > threshold_value * current_attack.in_packets) {
             return ATTACK_UDP_FLOOD;
         }
@@ -2578,7 +2578,7 @@ attack_type_t detect_attack_type(attack_details& current_attack) {
         } else if (current_attack.icmp_out_packets > threshold_value * current_attack.out_packets) {
             return ATTACK_ICMP_FLOOD;
         } else if (current_attack.fragmented_out_packets > threshold_value * current_attack.out_packets) { 
-            return ATTACK_FRAGMENTATION_FLOOD;
+            return ATTACK_IP_FRAGMENTATION_FLOOD;
         } else if (current_attack.udp_out_packets > threshold_value * current_attack.out_packets) {
             return ATTACK_UDP_FLOOD;
         }
@@ -2594,8 +2594,8 @@ std::string get_printable_attack_name(attack_type_t attack) {
         return "icmp_flood";
     } else if (attack == ATTACK_UDP_FLOOD) {
         return "udp_flood";
-    } else if (attack == ATTACK_FRAGMENTATION_FLOOD) {
-        return "udp_fragmentation";
+    } else if (attack == ATTACK_IP_FRAGMENTATION_FLOOD) {
+        return "ip_fragmentation";
     } else if (attack == ATTACK_UNKNOWN) {
         return "unknown";
     }
