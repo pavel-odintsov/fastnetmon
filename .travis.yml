@@ -7,7 +7,7 @@ before_install:
   - sudo apt-get install -y libboost-all-dev libgpm-dev libncurses5-dev liblog4cpp5-dev libnuma-dev libgeoip-dev libpcap-dev clang cmake
 before_script:
   - pwd > /tmp/old_current_path
-  - wget http://sourceforge.net/projects/ntop/files/PF_RING/PF_RING-6.0.3.tar.gz/download -OPF_RING-6.0.3.tar.gz
+  - wget https://github.com/ntop/PF_RING/archive/v6.0.3.tar.gz -OPF_RING-6.0.3.tar.gz
   - tar -xf PF_RING-6.0.3.tar.gz
   - sudo apt-get update
   - sudo apt-get install -y build-essential bison flex libnuma-dev wget tar make

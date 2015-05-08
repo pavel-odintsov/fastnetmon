@@ -7,7 +7,8 @@ my $distro_type = '';
 my $distro_version = '';
 
 my $pf_ring_version = '6.0.3';
-my $pf_ring_url = "http://sourceforge.net/projects/ntop/files/PF_RING/PF_RING-$pf_ring_version.tar.gz/download";
+
+my $pf_ring_url = "https://github.com/ntop/PF_RING/archive/v$pf_ring_version.tar.gz";
 my $fastnetmon_git_path = 'https://github.com/FastVPSEestiOu/fastnetmon.git';
 
 # Used for VyOS and different appliances based on rpm/deb
