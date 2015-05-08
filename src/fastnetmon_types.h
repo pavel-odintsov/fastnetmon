@@ -49,7 +49,7 @@ enum attack_type_t {
      ATTACK_SYN_FLOOD = 2,
      ATTACK_ICMP_FLOOD = 3,
      ATTACK_UDP_FLOOD  = 4,
-     ATTACK_FRAGMENTATION_FLOOD = 5,
+     ATTACK_IP_FRAGMENTATION_FLOOD = 5,
 };
 
 typedef struct {
