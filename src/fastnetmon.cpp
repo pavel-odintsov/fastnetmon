@@ -1000,8 +1000,10 @@ void process_packet(simple_packet& current_packet) {
         __sync_fetch_and_add(&current_element->out_bytes,   sampled_number_of_bytes);
 
         // Fragmented IP packets
-        __sync_fetch_and_add(&current_element->fragmented_out_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element->fragmented_out_bytes,   sampled_number_of_bytes);
+        if (current_packet.ip_fragmented) {
+            __sync_fetch_and_add(&current_element->fragmented_out_packets, sampled_number_of_packets);
+            __sync_fetch_and_add(&current_element->fragmented_out_bytes,   sampled_number_of_bytes);
+        }
 
         conntrack_main_struct* current_element_flow = NULL;
         if (enable_conection_tracking) {
@@ -1087,8 +1089,10 @@ void process_packet(simple_packet& current_packet) {
         __sync_fetch_and_add(&current_element->in_bytes,   sampled_number_of_bytes);
 
         // Count fragmented IP packets
-        __sync_fetch_and_add(&current_element->fragmented_in_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element->fragmented_in_bytes,   sampled_number_of_bytes);
+        if (current_packet.ip_fragmented) {
+            __sync_fetch_and_add(&current_element->fragmented_in_packets, sampled_number_of_packets);
+            __sync_fetch_and_add(&current_element->fragmented_in_bytes,   sampled_number_of_bytes);
+        }
 
         conntrack_main_struct* current_element_flow = NULL;
    
@@ -1977,7 +1981,6 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element a
     current_attack.in_flows = in_flows;
     current_attack.out_flows = out_flows;
 
-        
     current_attack.fragmented_in_packets = speed_element.fragmented_in_packets;
     current_attack.tcp_in_packets  = speed_element.tcp_in_packets;
     current_attack.tcp_syn_in_packets  = speed_element.tcp_syn_in_packets;
