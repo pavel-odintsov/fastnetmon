@@ -1,7 +1,7 @@
 For Debian 6, 7, 8 and CentOS 6 and 7 you should use the automatic installer:
 ```bash
 wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl 
-perl fastnetmon_install.pl
+sudo perl fastnetmon_install.pl
 ```
 If you want to use netmap module, please install it: [netmap install](NETMAP_INSTALL.md) 
 
