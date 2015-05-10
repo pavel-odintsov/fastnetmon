@@ -447,3 +447,40 @@ bool read_pid_from_file(pid_t& pid, std::string pid_path) {
         return false;
     }
 }
+
+typedef std::vector< std::pair<std::string, uint64_t> > graphite_data_t;
+bool store_data_to_graphite(unsigned short int graphite_port, std::string graphite_host, graphite_data_t graphite_data) {
+    int client_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (client_sockfd < 0) {
+        return false;
+    }
+ 
+    struct sockaddr_in serv_addr; 
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(graphite_port);
+
+    int pton_result = inet_pton(AF_INET, graphite_host.c_str(), &serv_addr.sin_addr);
+
+    if (pton_result <= 0) {
+        return false;
+    }
+    
+    int connect_result = connect(client_sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+
+    if (connect_result < 0) {
+        return false;
+    }
+   
+    // TODO: unify code: add vector join to string 
+    unsigned long long pps = 10000778;
+    char buffer[256];
+    sprintf(buffer, "client.ip.in.udp %ld %ld\n", pps, time(NULL));    
+    int write_result = write(client_sockfd, buffer, strlen(buffer));    
+
+    close(client_sockfd);
+
+    return true;
+}
+
