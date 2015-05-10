@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <string>
 #include <iostream>
+#include <map>
 #include <vector>
 #include <utility>
 #include <sstream>
@@ -26,6 +27,9 @@
 #define TCP_ACK_FLAG_SHIFT 5
 #define TCP_URG_FLAG_SHIFT 6
 
+typedef std::map<std::string, uint64_t> graphite_data_t;
+
+bool store_data_to_graphite(unsigned short int graphite_port, std::string graphite_host, graphite_data_t graphite_data);
 std::string get_protocol_name_by_number(unsigned int proto_number);
 uint64_t convert_speed_to_mbps(uint64_t speed_in_bps);
 std::vector<std::string> exec(std::string cmd);
