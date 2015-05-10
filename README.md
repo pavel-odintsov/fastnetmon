@@ -39,7 +39,7 @@ Features:
 - Can detect DoS/DDoS in 1-2 seconds
 - Tested up to 10GE with 5-6 Mpps on Intel i7 2600 with Intel Nic 82599
 - Complete plugin support
-- Could [complete support](docs/DETECTED_ATTACK_TYPES.md) for most popular attack types
+- Have [complete support](docs/DETECTED_ATTACK_TYPES.md) for most popular attack types
 
 Supported platforms:
 - Linux (Debian 6/7/8, CentOS 6/7, Ubuntu 12+)
