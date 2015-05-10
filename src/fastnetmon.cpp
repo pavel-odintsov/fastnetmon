@@ -228,6 +228,12 @@ std::string exabgp_community    = "";
 std::string exabgp_command_pipe = "";
 std::string exabgp_next_hop     = "";
 
+// Graphite monitoring
+bool graphite_enabled = false;
+std::string graphite_host = "127.0.0.1";
+unsigned short int graphite_port = 2003;
+std::string graphite_prefix = "fastnetmon.";
+
 bool process_incoming_traffic = true;
 bool process_outgoing_traffic = true;
 
@@ -425,6 +431,8 @@ std::string draw_table(map_for_counters& my_map_packets, direction data_directio
         return "Internal error";
     }
 
+    graphite_data_t graphite_data;
+
     unsigned int element_number = 0;
     // TODO: fix this code because iteraton over over millions of IPs is very CPU intensive
     for( std::vector<pair_of_map_elements>::iterator ii=vector_for_sort.begin(); ii!=vector_for_sort.end(); ++ii) {
@@ -471,6 +479,24 @@ std::string draw_table(map_for_counters& my_map_packets, direction data_directio
             // We use setw for alignment
             output_buffer<<client_ip_as_string << "\t\t";
 
+            if (graphite_enabled) {
+                std::string direction_as_string;
+
+                if (data_direction == INCOMING) {
+                    direction_as_string = "incoming";
+                } else if (data_direction == OUTGOING) { 
+                    direction_as_string = "outgoing";
+                }
+
+                std::string ip_as_string_with_dash_delimiters = client_ip_as_string;
+                // Replace dots by dashes
+                std::replace( ip_as_string_with_dash_delimiters.begin(), ip_as_string_with_dash_delimiters.end(), '.', '_'); 
+
+                graphite_data[ graphite_prefix + ip_as_string_with_dash_delimiters + "." + direction_as_string + ".pps" ]   = pps;
+                graphite_data[ graphite_prefix + ip_as_string_with_dash_delimiters + "." + direction_as_string + ".mbps" ]  = mbps;
+                graphite_data[ graphite_prefix + ip_as_string_with_dash_delimiters + "." + direction_as_string + ".flows" ] = flows;
+            }
+
             if (print_average_traffic_counts) {
                 output_buffer<<std::setw(6)<<pps_average   << " pps ";
                 output_buffer<<std::setw(6)<<mbps_average  << " mbps ";
@@ -485,6 +511,12 @@ std::string draw_table(map_for_counters& my_map_packets, direction data_directio
         }  
    
         element_number++;
+    }
+
+    bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
+
+    if (!graphite_put_result) {
+        logger<< log4cpp::Priority::ERROR<<"Can't store data to Graphite";
     }
 
     return output_buffer.str(); 
@@ -630,6 +662,19 @@ bool load_configuration_file() {
         } else {
             enable_netflow_collection = false;
         }
+    }
+
+    // Graphite
+    if (configuration_map.count("graphite") != 0) {
+        graphite_enabled = configuration_map["graphite"] == "on" ? true : false;
+    }
+
+    if (configuration_map.count("graphite_host") != 0) {
+        graphite_host = configuration_map["graphite_host"];
+    }
+
+    if (configuration_map.count("graphite_port") != 0) {
+        graphite_port = convert_string_to_integer(configuration_map["graphite_port"]);
     }
 
     if (configuration_map.count("process_incoming_traffic") != 0) {
@@ -1518,8 +1563,33 @@ std::string print_channel_speed(std::string traffic_type, direction packet_direc
         } else if (packet_direction == OUTGOING) {
             stream<<" "<<std::setw(6)<<outgoing_total_flows_speed<<" flows";
         }
+
+        if (graphite_enabled) {
+            graphite_data_t graphite_data;
+
+            std::string direction_as_string;
+
+            if (packet_direction == INCOMING) {
+                direction_as_string = "incoming";
+               
+                graphite_data[ graphite_prefix + direction_as_string + "flows"]  = incoming_total_flows_speed; 
+            } else if (packet_direction == OUTGOING) {
+                direction_as_string = "outgoing";
+                
+                graphite_data[ graphite_prefix + direction_as_string + "flows"]  = outgoing_total_flows_speed;    
+            }    
+
+            graphite_data[ graphite_prefix + direction_as_string + ".pps"]  = speed_in_pps;
+            graphite_data[ graphite_prefix + direction_as_string + ".mbps"] = speed_in_mbps;
+        
+            bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
+
+            if (!graphite_put_result) {
+                logger<< log4cpp::Priority::ERROR<<"Can't store data to Graphite";
+            }
+        } 
     }
- 
+
     return stream.str();
 }    
 

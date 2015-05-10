@@ -448,7 +448,6 @@ bool read_pid_from_file(pid_t& pid, std::string pid_path) {
     }
 }
 
-typedef std::vector< std::pair<std::string, uint64_t> > graphite_data_t;
 bool store_data_to_graphite(unsigned short int graphite_port, std::string graphite_host, graphite_data_t graphite_data) {
     int client_sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -458,6 +457,7 @@ bool store_data_to_graphite(unsigned short int graphite_port, std::string graphi
  
     struct sockaddr_in serv_addr; 
     memset(&serv_addr, 0, sizeof(serv_addr));
+
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(graphite_port);
 
@@ -472,15 +472,23 @@ bool store_data_to_graphite(unsigned short int graphite_port, std::string graphi
     if (connect_result < 0) {
         return false;
     }
-   
-    // TODO: unify code: add vector join to string 
-    unsigned long long pps = 10000778;
-    char buffer[256];
-    sprintf(buffer, "client.ip.in.udp %ld %ld\n", pps, time(NULL));    
-    int write_result = write(client_sockfd, buffer, strlen(buffer));    
+ 
+    std::stringstream buffer; 
+    time_t current_time = time(NULL);
+    for (graphite_data_t::iterator itr = graphite_data.begin(); itr != graphite_data.end(); ++itr) {
+        buffer<<itr->first<<" "<<itr->second<<" "<<current_time<<"\n";
+    }
+
+    std::string buffer_as_string = buffer.str();
+ 
+    int write_result = write(client_sockfd, buffer_as_string.c_str(), buffer_as_string.size()); 
 
     close(client_sockfd);
 
-    return true;
+    if (write_result > 0) {
+        return true;
+    }   else {
+        return false;
+    }
 }
 
