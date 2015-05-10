@@ -1,6 +1,6 @@
 ### Graphite integration
 
-Example screen: ![Graphite](docs/images/fastnetmon_graphite.png)
+Example screen: ![Graphite](images/fastnetmon_graphite.png)
 
 We could store pps/bps/flow number for top 7 (could be configured) host in incoming and outgoung directions. In addition to this we export total pps/bps/flow number which flow over FastNetMon.
 
