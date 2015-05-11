@@ -4,6 +4,8 @@
 #include <string>
 #include <unistd.h>
 #include <ncurses.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 int main() {
     // Init ncurses screen 
@@ -15,10 +17,21 @@ int main() {
     // hide cursor
     curs_set(0);
 
+    // Do not wait for getch
+    timeout(0);
+
     while (true) {
         sleep(1);
+        
         // clean up screen
         clear();
+
+        int c = getch();
+
+        if (c == 'q') {
+            endwin();
+            exit(0);
+        }
 
         std::ifstream reading_file;
         reading_file.open("/tmp/fastnetmon.dat", std::ifstream::in);

@@ -492,3 +492,85 @@ bool store_data_to_graphite(unsigned short int graphite_port, std::string graphi
     }
 }
 
+
+// Get list of all available interfaces on the server
+interfaces_list_t get_interfaces_list() {
+    interfaces_list_t interfaces_list;
+
+    // Format: 1: eth0: < ....
+    boost::regex interface_name_pattern("^\\d+:\\s+(\\w+):.*?$");
+
+    std::vector<std::string> output_list = exec("ip -o link show");
+   
+    if (output_list.empty()) {
+        return interfaces_list;
+    }
+ 
+    for (std::vector<std::string>::iterator iter = output_list.begin(); iter != output_list.end(); ++iter) {
+        boost::match_results<std::string::const_iterator> regex_results;
+    
+        if (boost::regex_match(*iter, regex_results, interface_name_pattern)) {
+            //std::cout<<"Interface: "<<regex_results[1]<<std::endl;
+            interfaces_list.push_back(regex_results[1]);
+        } 
+    }
+
+    return interfaces_list;
+}
+
+// Get all IPs for interface: main IP and aliases
+ip_addresses_list_t get_ip_list_for_interface(std::string interface) {
+    ip_addresses_list_t ip_list;
+
+    std::vector<std::string> output_list = exec("ip address show dev " + interface);
+ 
+    if (output_list.empty()) {
+        return ip_list;
+    } 
+
+    boost::regex interface_alias_pattern("^\\s+inet\\s+(\\d+\\.\\d+\\.\\d+\\.\\d+).*?$");
+    // inet 188.40.35.142 
+
+    for (std::vector<std::string>::iterator iter = output_list.begin(); iter != output_list.end(); ++iter) {
+        boost::match_results<std::string::const_iterator> regex_results;
+
+        if (boost::regex_match(*iter, regex_results, interface_alias_pattern)) {
+            ip_list.push_back(regex_results[1]);
+            // std::cout<<"IP: "<<regex_results[1]<<std::endl;
+        }
+    }
+
+    return ip_list;
+}
+
+ip_addresses_list_t get_local_ip_addresses_list() {
+    ip_addresses_list_t ip_list;
+
+    std::vector<std::string> list_of_ignored_interfaces;
+    list_of_ignored_interfaces.push_back("lo");
+    list_of_ignored_interfaces.push_back("venet0");
+
+    interfaces_list_t interfaces_list = get_interfaces_list(); 
+
+    if (interfaces_list.empty()) {
+        return ip_list;
+    }
+
+    for (interfaces_list_t::iterator iter = interfaces_list.begin(); iter != interfaces_list.end(); ++iter) {
+    std::vector<std::string>::iterator iter_exclude_list = std::find(
+            list_of_ignored_interfaces.begin(), list_of_ignored_interfaces.end(), *iter);
+
+        // Skip ignored interface
+        if (iter_exclude_list != list_of_ignored_interfaces.end()) {
+            continue;
+        }
+
+        // std::cout<<*iter<<std::endl;
+        ip_addresses_list_t ip_list_on_interface = get_ip_list_for_interface(*iter);
+    
+        // Append list
+        ip_list.insert(ip_list.end(), ip_list_on_interface.begin(), ip_list_on_interface.end());
+    }
+
+    return ip_list;
+}
