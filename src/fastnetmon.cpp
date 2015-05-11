@@ -513,12 +513,14 @@ std::string draw_table(map_for_counters& my_map_packets, direction data_directio
         element_number++;
     }
 
-    bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
+    if (graphite_enabled) {
+        bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
 
-    if (!graphite_put_result) {
-        logger<< log4cpp::Priority::ERROR<<"Can't store data to Graphite";
+        if (!graphite_put_result) {
+            logger<< log4cpp::Priority::ERROR<<"Can't store data to Graphite";
+        }
     }
-
+    
     return output_buffer.str(); 
 }
 
@@ -899,7 +901,19 @@ bool load_our_networks_list() {
             networks_list_as_string.push_back(openvz_subnet);
         }
 
-        logger<<log4cpp::Priority::INFO<<"We loaded "<<networks_list_as_string.size()<< " networks from /proc/vz/version";
+        logger<<log4cpp::Priority::INFO<<"We loaded "<<networks_list_as_string.size()<< " networks from /proc/vz/veip";
+    }
+
+    if (file_exists("/sbin/ip")) {
+        logger<< log4cpp::Priority::INFO<<"We are working on Linux and could use ip tool for detecting local IP's";
+    
+        ip_addresses_list_t ip_list = get_local_ip_addresses_list();
+
+        logger<< log4cpp::Priority::INFO<<"We found "<<ip_list.size()<< " local IP addresses and will monitor they";
+
+        for (ip_addresses_list_t::iterator iter = ip_list.begin(); iter != ip_list.end(); ++iter) {
+            networks_list_as_string.push_back(*iter + "/32");
+        }
     } 
 
     if (file_exists(networks_list_path)) { 
@@ -2680,6 +2694,8 @@ std::string get_printable_attack_name(attack_type_t attack) {
     } else if (attack == ATTACK_IP_FRAGMENTATION_FLOOD) {
         return "ip_fragmentation";
     } else if (attack == ATTACK_UNKNOWN) {
+        return "unknown";
+    } else {
         return "unknown";
     }
 }

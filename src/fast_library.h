@@ -28,6 +28,12 @@
 #define TCP_URG_FLAG_SHIFT 6
 
 typedef std::map<std::string, uint64_t> graphite_data_t;
+typedef std::vector<std::string> interfaces_list_t;
+typedef std::vector<std::string> ip_addresses_list_t;
+
+ip_addresses_list_t get_local_ip_addresses_list();
+ip_addresses_list_t get_ip_list_for_interface(std::string interface);
+interfaces_list_t get_interfaces_list();
 
 bool store_data_to_graphite(unsigned short int graphite_port, std::string graphite_host, graphite_data_t graphite_data);
 std::string get_protocol_name_by_number(unsigned int proto_number);
