@@ -225,7 +225,7 @@ bool we_do_real_ban = true;
 // ExaBGP support flag
 bool exabgp_enabled = false;
 std::string exabgp_community    = "";
-std::string exabgp_command_pipe = "";
+std::string exabgp_command_pipe = "/var/run/exabgp.cmd";
 std::string exabgp_next_hop     = "";
 
 // Graphite monitoring
@@ -1936,7 +1936,7 @@ void exabgp_ban_manage(std::string action, std::string ip_as_string) {
     int exabgp_pipe = open(exabgp_command_pipe.c_str(), O_WRONLY);
 
     if (exabgp_pipe <= 0) { 
-        logger<<log4cpp::Priority::ERROR<<"Can't open ExaBGP pipe. Ban is not executed";
+        logger<<log4cpp::Priority::ERROR<<"Can't open ExaBGP pipe "<<exabgp_command_pipe<<" Ban is not executed";
         return;
     }    
 
@@ -2116,6 +2116,15 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element a
 
         logger<<log4cpp::Priority::INFO<<"Script for ban client is finished: "<<client_ip_as_string;
     }   
+
+    if (exabgp_enabled) {
+        logger<<log4cpp::Priority::INFO<<"Call ExaBGP for ban client started: "<<client_ip_as_string;
+
+        boost::thread exabgp_thread(exabgp_ban_manage, "ban", client_ip_as_string);
+        exabgp_thread.detach();
+
+        logger<<log4cpp::Priority::INFO<<"Call to ExaBGP for ban client is finished: "<<client_ip_as_string;
+    }    
  
 #ifdef REDIS 
     if (redis_enabled) {
@@ -2398,15 +2407,6 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
             exec_with_params_thread.detach();
 
             logger<<log4cpp::Priority::INFO<<"Script for notify about attack details is finished: "<<client_ip_as_string;
-        }
-
-        if (exabgp_enabled) {
-            logger<<log4cpp::Priority::INFO<<"Call ExaBGP for ban client started: "<<client_ip_as_string;
-
-            boost::thread exabgp_thread(exabgp_ban_manage, "ban", client_ip_as_string);
-            exabgp_thread.detach();
-
-            logger<<log4cpp::Priority::INFO<<"Call to ExaBGP for ban client is finished: "<<client_ip_as_string;
         }
 
 #ifdef REDIS 
