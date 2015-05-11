@@ -513,12 +513,14 @@ std::string draw_table(map_for_counters& my_map_packets, direction data_directio
         element_number++;
     }
 
-    bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
+    if (graphite_enabled) {
+        bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
 
-    if (!graphite_put_result) {
-        logger<< log4cpp::Priority::ERROR<<"Can't store data to Graphite";
+        if (!graphite_put_result) {
+            logger<< log4cpp::Priority::ERROR<<"Can't store data to Graphite";
+        }
     }
-
+    
     return output_buffer.str(); 
 }
 
