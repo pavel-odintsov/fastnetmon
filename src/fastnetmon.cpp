@@ -2683,5 +2683,7 @@ std::string get_printable_attack_name(attack_type_t attack) {
         return "ip_fragmentation";
     } else if (attack == ATTACK_UNKNOWN) {
         return "unknown";
+    } else {
+        return "unknown";
     }
 }
