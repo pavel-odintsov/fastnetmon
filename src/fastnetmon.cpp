@@ -901,7 +901,19 @@ bool load_our_networks_list() {
             networks_list_as_string.push_back(openvz_subnet);
         }
 
-        logger<<log4cpp::Priority::INFO<<"We loaded "<<networks_list_as_string.size()<< " networks from /proc/vz/version";
+        logger<<log4cpp::Priority::INFO<<"We loaded "<<networks_list_as_string.size()<< " networks from /proc/vz/veip";
+    }
+
+    if (file_exists("/sbin/ip")) {
+        logger<< log4cpp::Priority::INFO<<"We are working on Linux and could use ip tool for detecting local IP's";
+    
+        ip_addresses_list_t ip_list = get_local_ip_addresses_list();
+
+        logger<< log4cpp::Priority::INFO<<"We found "<<ip_list.size()<< " local IP addresses and will monitor they";
+
+        for (ip_addresses_list_t::iterator iter = ip_list.begin(); iter != ip_list.end(); ++iter) {
+            networks_list_as_string.push_back(*iter + "/32");
+        }
     } 
 
     if (file_exists(networks_list_path)) { 
