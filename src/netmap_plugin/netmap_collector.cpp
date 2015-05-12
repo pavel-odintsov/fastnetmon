@@ -55,6 +55,8 @@ extern std::map<std::string, std::string> configuration_map;
 // This variable name should be uniq for every plugin!
 process_packet_pointer netmap_process_func_ptr = NULL;
 
+bool execute_strict_cpu_affinity = true;
+
 int receive_packets(struct netmap_ring *ring) {
     u_int cur, rx, n;
 
@@ -195,16 +197,33 @@ void receiver(std::string interface_for_listening) {
     
 
         /* Bind to certain core */
-        // We could do this with: boost::thread::attributes attrs;
-        // http://www.boost.org/doc/libs/1_53_0/doc/html/thread/thread_management.html
-        // boost::thread::attributes attrs;
-        // #if defined(BOOST_THREAD_PLATFORM_PTHREAD)
-        // pthread_attr_setschedpolicy(attr.get_native_handle(), SCHED_RR);
-        // boost::thread th(attrs, find_the_question, 42);
+        boost::thread::attributes thread_attrs;
+
+        if (execute_strict_cpu_affinity) {
+#if defined(BOOST_THREAD_PLATFORM_PTHREAD)
+            cpu_set_t current_cpu_set;
+
+            int cpu_to_bind = i % num_cpus;
+        
+            CPU_ZERO(&current_cpu_set);
+            // We count cpus from zero
+            CPU_SET(cpu_to_bind, &current_cpu_set);
+
+            logger.info("I will bind this thread to logical CPU: %d", cpu_to_bind);
+
+            int set_affinity_result = pthread_attr_setaffinity_np(thread_attrs.native_handle(), sizeof(cpu_set_t), &current_cpu_set);
+
+            if (set_affinity_result != 0) {
+                logger.error("Can't specify CPU affinity for netmap thread");
+            }   
+#else
+            logger.error("Sorry but CPU affinity did not supported for your platform");
+#endif
+        }
 
         logger.info("Start new netmap thread %d", i);
         // Start thread and pass netmap descriptor to it 
-        boost_threads_array[i] = new boost::thread(netmap_thread, new_nmd, i);
+        boost_threads_array[i] = new boost::thread(thread_attrs, boost::bind(netmap_thread, new_nmd, i) );
     }
 
     //printf("Wait for thread finish");
