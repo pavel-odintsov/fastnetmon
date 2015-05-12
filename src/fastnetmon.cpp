@@ -110,6 +110,9 @@ struct timeval speed_calculation_time;
 // Time consumed by drawing stats for all IPs
 struct timeval drawing_thread_execution_time;
 
+// Global thread group for packet capture threads
+boost::thread_group packet_capture_plugin_thread_group;
+
 // Total number of hosts in our networks
 // We need this as global variable because it's very important value for configuring data structures
 unsigned int total_number_of_hosts_in_our_networks = 0;
@@ -1795,47 +1798,30 @@ int main(int argc,char **argv) {
     boost::thread cleanup_ban_list_thread(cleanup_ban_list);
 
 #ifdef PF_RING
-    // pf_ring processing
-    boost::thread pfring_process_collector_thread;
     if (enable_data_collection_from_mirror) {
-        pfring_process_collector_thread = boost::thread(start_pfring_collection, process_packet);   
+        packet_capture_plugin_thread_group.add_thread(new boost::thread(start_pfring_collection, process_packet)); 
     }
 #endif
 
     // netmap processing
-    boost::thread netmap_process_collector_thread;
     if (enable_netmap_collection) {
-        netmap_process_collector_thread = boost::thread(start_netmap_collection, process_packet);
+        packet_capture_plugin_thread_group.add_thread(new boost::thread(start_netmap_collection, process_packet));
     }
 
-    boost::thread sflow_process_collector_thread; 
     if (enable_sflow_collection) {
-        sflow_process_collector_thread = boost::thread(start_sflow_collection, process_packet);
+        packet_capture_plugin_thread_group.add_thread(new boost::thread(start_sflow_collection, process_packet));
     }
 
-    boost::thread netflow_process_collector_thread;
     if (enable_netflow_collection) {
-        netflow_process_collector_thread = boost::thread(start_netflow_collection, process_packet);
+        packet_capture_plugin_thread_group.add_thread(new boost::thread(start_netflow_collection, process_packet));
     }
 
-    boost::thread pcap_process_collector_thread;
     if (enable_pcap_collection) {
-        pcap_process_collector_thread = boost::thread(start_pcap_collection, process_packet);
+        packet_capture_plugin_thread_group.add_thread(new boost::thread(start_pcap_collection, process_packet));
     }
 
-    if (enable_sflow_collection) {
-        sflow_process_collector_thread.join();
-    }
-
-    if (enable_data_collection_from_mirror) {
-#ifdef PF_RING
-        pfring_process_collector_thread.join();
-#endif
-    }
-
-    if (enable_netmap_collection) {
-        netmap_process_collector_thread.join();
-    }
+    // Wait for all threads in capture thread group
+    packet_capture_plugin_thread_group.join_all();
 
     recalculate_speed_thread.join();
     calc_thread.join();
@@ -1865,6 +1851,10 @@ void interruption_signal_handler(int signal_number) {
 #ifdef PF_RING
     stop_pfring_collection();
 #endif
+
+    // packet_capture_plugin_thread_group.interrupt_all();
+    // Wait some time for threads finishing
+    // sleep 3;
 
     exit(1); 
 }
