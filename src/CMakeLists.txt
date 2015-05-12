@@ -14,8 +14,8 @@ set (Tutorial_VERSION_MAJOR 1)
 set (Tutorial_VERSION_MINOR 1)
 
 # It's pretty safe and provide big speedup for our packet processor and patricia code
-set(CMAKE_C_FLAGS "-O2")
-set(CMAKE_CXX_FLAGS "-O2")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -std=c++11")
 
 set(FASTNETMON_PROFILER OFF)
 
