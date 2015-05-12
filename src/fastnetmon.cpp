@@ -1920,13 +1920,17 @@ unsigned int detect_attack_protocol(map_element& speed_element, direction attack
 #define my_max_on_defines(a, b) (a > b ? a : b)
 unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp) {
     unsigned int max = my_max_on_defines(my_max_on_defines(udp, tcp), icmp);
+    unsigned int sum = udp + tcp + icmp;
 
-    if (max == tcp) {
-        return IPPROTO_TCP;
-    } else if (max == udp) {
-        return IPPROTO_UDP;
-    } else if (max == icmp) {
-        return IPPROTO_ICMP;
+    if(sum * 0.7 <= max) {
+
+        if (max == tcp) {
+            return IPPROTO_TCP;
+        } else if (max == udp) {
+            return IPPROTO_UDP;
+        } else if (max == icmp) {
+            return IPPROTO_ICMP;
+        }
     }
 
     return 0;
