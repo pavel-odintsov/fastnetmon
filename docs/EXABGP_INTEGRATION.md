@@ -17,6 +17,12 @@ Install ExaBGP:
 pip install exabgp
 ```
 
+Install socat (if you haven't socat for your platform, please check this [manual](EXABGP_INTEGRATION_WITHOUT_SOCAT.md)):
+```bash
+apt-get install -y socat
+yum install -y socat
+```
+
 Create example configuration: ```vim /etc/exabgp_blackhole.conf```
 
 Example here (please fix this configuration to your network):
@@ -28,11 +34,6 @@ group Core_v4 {
     router-id 10.0.3.114;
     graceful-restart 1200;
 
-    # Static announce is not used
-    # static {
-    #     route 10.10.10.1/32 next-hop 10.0.3.114 community 65001:666;
-    # }   
-
     neighbor 10.0.3.115 {
         local-address 10.0.3.114;
         description "Quagga";
@@ -40,25 +41,10 @@ group Core_v4 {
 
     # Add this line for process management
     process service-dynamic {
-        run /etc/exabgp/exabgp_pipe_provider.sh;
+        run /usr/bin/socat stdout pipe:/var/run/exabgp.cmd;
     }   
 }
 ```
-
-For PIPE API we need create this script: ```vim /etc/exabgp/exabgp_pipe_provider.sh```
-
-Script code here:
-```bash
-
-```#!/bin/sh
-FIFO="/var/run/exabgp.cmd"
-
-rm -f $FIFO
-mkfifo $FIFO
-tail -f $FIFO
-```
-
-Set exec flag for script: ```chmod +x /etc/exabgp/exabgp_pipe_provider.sh```
 
 Run ExaBGP:
 ```bash
