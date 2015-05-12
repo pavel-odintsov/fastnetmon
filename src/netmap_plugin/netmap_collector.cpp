@@ -8,6 +8,7 @@
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
+#include <boost/version.hpp>
 #include <boost/algorithm/string.hpp>
 
 #include "../fast_library.h"
@@ -197,11 +198,22 @@ void receiver(std::string interface_for_listening) {
         logger.info("My first ring is %d and last ring id is %d I'm thread %d", new_nmd->first_rx_ring, new_nmd->last_rx_ring, i);
     
 
+        /* 
+        logger<< log4cpp::Priority::INFO<< "We are using Boost "     
+            << BOOST_VERSION / 100000     << "."  // major version
+            << BOOST_VERSION / 100 % 1000 << "."  // minior version
+            << BOOST_VERSION % 100; 
+        */
+
+        logger.info("Start new netmap thread %d", i);
+
+        // Well, we have thread attributes from Boost 1.50
+
+#if defined(BOOST_THREAD_PLATFORM_PTHREAD) && BOOST_VERSION / 100 % 1000 >= 50
         /* Bind to certain core */
         boost::thread::attributes thread_attrs;
 
-        if (execute_strict_cpu_affinity) {
-#if defined(BOOST_THREAD_PLATFORM_PTHREAD)
+        if (execute_strict_cpu_affinity) { 
             cpu_set_t current_cpu_set;
 
             int cpu_to_bind = i % num_cpus;
@@ -217,14 +229,14 @@ void receiver(std::string interface_for_listening) {
             if (set_affinity_result != 0) {
                 logger.error("Can't specify CPU affinity for netmap thread");
             }   
-#else
-            logger.error("Sorry but CPU affinity did not supported for your platform");
-#endif
         }
 
-        logger.info("Start new netmap thread %d", i);
         // Start thread and pass netmap descriptor to it
-        packet_receiver_thread_group.add_thread( new boost::thread(thread_attrs, boost::bind(netmap_thread, new_nmd, i) ) ); 
+        packet_receiver_thread_group.add_thread( new boost::thread(thread_attrs, boost::bind(netmap_thread, new_nmd, i) ) );
+#else
+        logger.error("Sorry but CPU affinity did not supported for your platform");
+        packet_receiver_thread_group.add_thread( new boost::thread(netmap_thread, new_nmd, i));
+#endif
     }
 
     // Wait all threads for completion
