@@ -168,7 +168,8 @@ void receiver(std::string interface_for_listening) {
     logger.info("Wait %d seconds for NIC reset", wait_link);
     sleep(wait_link);
   
-    boost::thread* boost_threads_array[num_cpus]; 
+    boost::thread_group packet_receiver_thread_group;
+ 
     for (int i = 0; i < num_cpus; i++) {
         struct nm_desc nmd = *netmap_descriptor;
         // This operation is VERY important!
@@ -222,15 +223,12 @@ void receiver(std::string interface_for_listening) {
         }
 
         logger.info("Start new netmap thread %d", i);
-        // Start thread and pass netmap descriptor to it 
-        boost_threads_array[i] = new boost::thread(thread_attrs, boost::bind(netmap_thread, new_nmd, i) );
+        // Start thread and pass netmap descriptor to it
+        packet_receiver_thread_group.add_thread( new boost::thread(thread_attrs, boost::bind(netmap_thread, new_nmd, i) ) ); 
     }
 
-    //printf("Wait for thread finish");
     // Wait all threads for completion
-    for (int i = 0; i < num_cpus; i++) {
-        boost_threads_array[i]->join();
-    }
+    packet_receiver_thread_group.join_all();
 } 
 
 void netmap_thread(struct nm_desc* netmap_descriptor, int thread_number) {
