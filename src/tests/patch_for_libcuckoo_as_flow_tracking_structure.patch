@@ -1,0 +1,75 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index dfbe8c1..a84d696 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -10,6 +10,10 @@ project(FastNetMon)
+ # Enable it and fix all warnigns!
+ # add_definitions ("-Wall")
+ 
++include_directories("/opt/libcuckoo/include/")
++# We need C++11 support for libcuckoo
++set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
++
+ set (Tutorial_VERSION_MAJOR 1)
+ set (Tutorial_VERSION_MINOR 1)
+ 
+@@ -189,5 +193,7 @@ target_link_libraries(fastnetmon pcap_plugin)
+ target_link_libraries(fastnetmon example_plugin)
+ target_link_libraries(fastnetmon netmap_plugin)
+ 
++target_link_libraries(fastnetmon /opt/libcuckoo/lib/libcityhash.so) 
++
+ install(TARGETS fastnetmon DESTINATION bin)
+ install(TARGETS fastnetmon_client DESTINATION bin)
+diff --git a/src/fastnetmon.cpp b/src/fastnetmon.cpp
+index 5308244..cd9e9dc 100644
+--- a/src/fastnetmon.cpp
++++ b/src/fastnetmon.cpp
+@@ -268,6 +268,8 @@ void process_packet(simple_packet& current_packet);
+ void traffic_draw_programm();
+ void interruption_signal_handler(int signal_number);
+ 
++cuckoohash_map<std::string, map_element, CityHasher<std::string> > flow_tracking_table_new_generation;
++
+ /* Class for custom comparison fields by different fields */
+ class TrafficComparatorClass {
+     private:
+@@ -1029,6 +1031,24 @@ void process_packet(simple_packet& current_packet) {
+         }
+     }
+ 
++
++    if (packet_direction == OUTGOING or packet_direction == INCOMING) {
++        std::string connection_tracking_hash_string = convert_ip_as_uint_to_string(current_packet.dst_ip) + "_" + convert_ip_as_uint_to_string(current_packet.src_ip) + "_" +
++            convert_ip_as_uint_to_string(current_packet.source_port) + "_" + convert_ip_as_uint_to_string(current_packet.destination_port) + "_" + convert_ip_as_uint_to_string(current_packet.protocol) + "_";
++            get_direction_name(packet_direction);
++
++        map_element temp_element;
++
++        if (flow_tracking_table_new_generation.find(connection_tracking_hash_string, temp_element)) {
++            // found!
++             
++        } else {
++            // not found, create it
++            flow_tracking_table_new_generation.insert(connection_tracking_hash_string, temp_element);       
++        }
++    }
++
++
+     /* Because we support mirroring, sflow and netflow we should support different cases:
+         - One packet passed for processing (mirror)
+         - Multiple packets ("flows") passed for processing (netflow)
+diff --git a/src/fastnetmon_types.h b/src/fastnetmon_types.h
+index 8263645..6e098ca 100644
+--- a/src/fastnetmon_types.h
++++ b/src/fastnetmon_types.h
+@@ -5,6 +5,9 @@
+ #include <stdint.h>   // uint32_t
+ #include <sys/time.h> // struct timeval
+ 
++#include <libcuckoo/cuckoohash_map.hh>
++#include <libcuckoo/city_hasher.hh>
++
+ #include <map>
+ #include <vector>
+ 
