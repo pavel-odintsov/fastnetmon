@@ -165,7 +165,12 @@ void parse_packet_pf_ring(const struct pfring_pkthdr *h, const u_char *p, const 
 
             // We should zeroify packet header because PFRING ZC did not do this!
             memset((void*)&h->extended_hdr.parsed_pkt, 0, sizeof(h->extended_hdr.parsed_pkt));
-            pfring_parse_pkt((u_char*)p, (struct pfring_pkthdr*)h, 4, 1, 0);
+
+	    // We do not calculate timestamps here because it's useless and consumes so much cpu
+            // https://github.com/ntop/PF_RING/issues/9
+            u_int8_t timestamp = 0;
+            u_int8_t add_hash = 0;
+            pfring_parse_pkt((u_char*)p, (struct pfring_pkthdr*)h, 4, timestamp, add_hash);
         }
     }
 

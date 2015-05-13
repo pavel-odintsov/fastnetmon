@@ -83,9 +83,13 @@ void consume_pkt(u_char* buffer, int len) {
     memset(&packet_header, 0, sizeof(packet_header));
     packet_header.len = len;
     packet_header.caplen = len;
-   
-    fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, 1, 0);
-    
+
+    // We do not calculate timestamps because timestamping is very CPU intensive operation:
+    // https://github.com/ntop/PF_RING/issues/9 
+    u_int8_t timestamp = 0;
+    u_int8_t add_hash = 0;
+    fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, timestamp, add_hash);
+  
     //char print_buffer[512];
     //fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
     //logger.info("%s", print_buffer);
