@@ -1,5 +1,5 @@
-#ifndef _PCAP_PLUGIN_H
-#define _PCAP_PLUGIN_H
+#ifndef PCAP_PLUGIN_H
+#define PCAP_PLUGIN_H
 
 #include "../fastnetmon_types.h"
 #include <iostream>

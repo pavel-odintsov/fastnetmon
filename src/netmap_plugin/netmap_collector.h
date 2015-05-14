@@ -1,5 +1,5 @@
-#ifndef _NETMAP_PLUGIN_H
-#define _NETMAP_PLUGIN_H
+#ifndef NETMAP_PLUGIN_H
+#define NETMAP_PLUGIN_H
 
 #include "../fastnetmon_types.h"
 

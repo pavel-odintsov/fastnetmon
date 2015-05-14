@@ -1,5 +1,5 @@
-#ifndef _SFLOW_PLUGIN_H
-#define _SFLOW_PLUGIN_H
+#ifndef SFLOW_PLUGIN_H
+#define SFLOW_PLUGIN_H
 
 #include "../fastnetmon_types.h"
 

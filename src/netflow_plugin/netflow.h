@@ -18,8 +18,8 @@
 
 /* NetFlow packet definitions */
 
-#ifndef _NETFLOW_H
-#define _NETFLOW_H
+#ifndef NETFLOW_H
+#define NETFLOW_H
 
 #include <map>
 
