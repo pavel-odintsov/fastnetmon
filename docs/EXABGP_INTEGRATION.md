@@ -30,12 +30,17 @@ Example here (please fix this configuration to your network):
 ```bash
 group Core_v4 {
     hold-time 180;
+    # local AS number
     local-as 65001;
+    # Remote AS number
     peer-as 1234;
+    # ID for this ExaBGP router
     router-id 10.0.3.114;
     graceful-restart 1200;
 
+    # Remote peer
     neighbor 10.0.3.115 {
+        # Local IP addess which used for connections to this peer
         local-address 10.0.3.114;
         description "Quagga";
     }   
