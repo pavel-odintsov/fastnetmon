@@ -1,5 +1,5 @@
-#ifndef _PFRING_PACKET_PARSER_H
-#define _PFRING_PACKET_PARSER_H
+#ifndef PFRING_PACKET_PARSER_H
+#define PFRING_PACKET_PARSER_H
 
 #include <sys/types.h>
 #include <netinet/in.h> // in6_addr

@@ -1,5 +1,5 @@
-#ifndef _FAST_LIBRARY_H
-#define _FAST_LIBRARY_H
+#ifndef FAST_LIBRARY_H
+#define FAST_LIBRARY_H
 
 #include "fastnetmon_types.h"
 
