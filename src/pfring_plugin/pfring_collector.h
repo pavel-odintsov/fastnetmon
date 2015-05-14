@@ -1,5 +1,5 @@
-#ifndef _PFRING_PLUGIN_H
-#define _PFRING_PLUGIN_H
+#ifndef PFRING_PLUGIN_H
+#define PFRING_PLUGIN_H
 
 #include "../fastnetmon_types.h"
 
