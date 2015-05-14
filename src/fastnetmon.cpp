@@ -1775,11 +1775,13 @@ int main(int argc,char **argv) {
     // Setup CTRL+C handler
     if (signal(SIGINT, interruption_signal_handler) == SIG_ERR) {
         logger<< log4cpp::Priority::ERROR<<"Can't setup SIGINT handler";
+        exit(1);
     }
 
     /* Without this SIGPIPE error could shutdown toolkit on call of exec_with_stdin_params */
     if (signal(SIGPIPE, sigpipe_handler_for_popen) == SIG_ERR) {
         logger<< log4cpp::Priority::ERROR<<"Can't setup SIGPIPE handler"; 
+        exit(1);
     }
 
 #ifdef GEOIP
