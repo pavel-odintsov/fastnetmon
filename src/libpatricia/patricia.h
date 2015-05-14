@@ -16,8 +16,8 @@ extern "C" {
  * some other things it could be used as a standalone API.
  */
 
-#ifndef _PATRICIA_H
-#define _PATRICIA_H
+#ifndef PATRICIA_H
+#define PATRICIA_H
 
 #define HAVE_IPV6
 
@@ -153,7 +153,7 @@ do { \
         } \
     } while (0)
 
-#endif /* _PATRICIA_H */
+#endif /* PATRICIA_H */
 
 #ifdef __cplusplus
 }

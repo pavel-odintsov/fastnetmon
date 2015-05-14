@@ -1,5 +1,5 @@
-#ifndef _NETFLOW_PLUGIN_H
-#define _NETFLOW_PLUGIN_H
+#ifndef NETFLOW_PLUGIN_H
+#define NETFLOW_PLUGIN_H
 
 /* netflow plugin header */
 

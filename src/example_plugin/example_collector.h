@@ -1,5 +1,5 @@
-#ifndef _EXAMPLE_PLUGIN_H
-#define _EXAMPLE_PLUGIN_H
+#ifndef EXAMPLE_PLUGIN_H
+#define EXAMPLE_PLUGIN_H
 
 #include "../fastnetmon_types.h"
 

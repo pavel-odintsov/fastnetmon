@@ -1,5 +1,5 @@
-#ifndef _FASTNETMON_TYPES_H
-#define _FASTNETMON_TYPES_H
+#ifndef FASTNETMON_TYPES_H
+#define FASTNETMON_TYPES_H
 
 #include <utility>    // std::pair
 #include <stdint.h>   // uint32_t
