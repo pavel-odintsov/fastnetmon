@@ -46,3 +46,5 @@ insmod /usr/src/netmap/LINUX/ixgbe/ixgbe.ko
 ifconfig eth0 up
 ifconfig eth0 promisc
 ```
+
+If you want driver with all modern features, please take a look [here](http://www.stableit.ru/2014/10/netmap-debian-7-wheezy-intel-82599.html)
