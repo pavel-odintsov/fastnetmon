@@ -14,6 +14,7 @@ Secondly, you should install, configure and run ExaBGP toolkit.
 
 Install ExaBGP:
 ```bash
+apt-get install python-pip
 pip install exabgp
 ```
 
