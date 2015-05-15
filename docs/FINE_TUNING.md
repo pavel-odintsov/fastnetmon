@@ -15,32 +15,28 @@ su fastnetmon
 
 Please keep in mind when run tool on OpenVZ because without root permissions tool can't get all VE ips and you should pass it explicitly.
 
-
 Debugging flags.
 
 DUMP_ALL_PACKETS will enable all packets dumping to console. It's very useful for testing tool on non standard platforms.
 
 ```bash
-DUMP_ALL_PACKETS=yes ./fastnetmon eth3,eth4
+DUMP_ALL_PACKETS=yes ./fastnetmon
 ```
 
-Recommended configuration options for ixgbe Intel X540 driver:
+Recommended configuration options for ixgbe Intel X540 driver (netmap mode):
 ```bash
 cat /etc/modprobe.d/ixgbe.conf
 options ixgbe IntMode=2,2 MQ=1,1 DCA=2,2 RSS=8,8 VMDQ=0,0 max_vfs=0,0 L2LBen=0,0 InterruptThrottleRate=1,1 FCoE=0,0 LRO=1,1 allow_unsupported_sfp=0,0
 ```
 
-I got very big packet size (more than mtu) in attack log? This issue will be related with offload features of NIC. For INtel 82599 I recommend disable all offload:
+I got very big packet size (more than mtu) in attack log? In PF_RING this behaviour will be related with offload features of NIC. For INtel 82599 I recommend disable all offload:
 ```bash
 ethtool -K eth0 gro off gso off tso off
 ```
 
-
-How I can enable hardware filtration for Intel 82599 NIC? Install patched ixgbe driver from PF_RING distro and apply this patch to Makefile and recompile tool:
+How I can enable hardware filtration for Intel 82599 NIC? Install patched ixgbe driver from PF_RING distro and apply this patch to CMakeLists.txt and recompile tool:
 ```bash
-fastnetmon.o: fastnetmon.cpp
--       $(COMPILER) $(STATIC) $(DEFINES) $(HEADERS) -c fastnetmon.cpp -o fastnetmon.o $(BUILD_FLAGS)
-+       $(COMPILER) $(STATIC) $(DEFINES) $(HEADERS) -c fastnetmon.cpp -o fastnetmon.o $(BUILD_FLAGS) -DHWFILTER_LOCKING
+add_definitions(-DHWFILTER_LOCKING)
 ```
 
 How I can compile FastNetMon without PF_RING support?
@@ -63,12 +59,25 @@ If tou want build tool with debug info:
 cmake -DCMAKE_BUILD_TYPE=Debug  ..
 ```
 
+If you want speedup build process please build with ninja instead of make:
+```bash
+apt-get install -y ninja-build
+cd build
+cmake -GNinja ..
+```
+
+Ninja use all CPUs for build process:
+```bash
+1  [||||||||||||||||||||||||||||||||||||||||||||||100.0%]     Tasks: 53, 103 thr, 64 kthr; 6 running
+2  [||||||||||||||||||||||||||||||||||||||||||||||100.0%]     Load average: 1.32 0.45 0.19 
+3  [||||||||||||||||||||||||||||||||||||||||||||||100.0%]     Uptime: 1 day, 12:58:40
+4  [||||||||||||||||||||||||||||||||||||||||||||||100.0%]
+```
+
 Performance tuning:
 - Do not use short prefixes (lesser then /24)
 - Do not use extremely big prefixes (/8, /16) because memory consumption will be very big
 
-How I can enable ZC support? Please install DNA/ZC dreivers, load they and add interface name with zc prefix in config file (i.e. zc:eth3)
-
-How I can optimally use ZC mode? You should enable number of NIC queues as number of logical cores in load_driver.sh 
+How I can enable ZC support for PF_RING? Please install DNA/ZC dreivers, load they and add interface name with zc prefix in config file (i.e. zc:eth3)
 
 You can find more info and graphics [here](http://forum.nag.ru/forum/index.php?showtopic=89703)
