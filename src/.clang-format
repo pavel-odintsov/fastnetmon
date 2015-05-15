@@ -46,4 +46,6 @@ SpacesInParentheses: false
 Standard: Cpp03
 TabWidth: 4
 UseTab: Never
+# Sopported only from clang 3.7
+# AlignConsecutiveAssignments: false
 ...
