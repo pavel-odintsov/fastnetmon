@@ -50,7 +50,7 @@ extern log4cpp::Category& logger;
 // Pass unparsed packets number to main programm
 extern uint64_t total_unparsed_packets;
 
-// Global configuration map 
+// Global configuration map
 extern std::map<std::string, std::string> configuration_map;
 
 // This variable name should be uniq for every plugin!
@@ -58,15 +58,15 @@ process_packet_pointer netmap_process_func_ptr = NULL;
 
 bool execute_strict_cpu_affinity = true;
 
-int receive_packets(struct netmap_ring *ring) {
+int receive_packets(struct netmap_ring* ring) {
     u_int cur, rx, n;
 
     cur = ring->cur;
     n = nm_ring_space(ring);
-    
+
     for (rx = 0; rx < n; rx++) {
-        struct netmap_slot *slot = &ring->slot[cur];
-        char *p = NETMAP_BUF(ring, slot->buf_idx);
+        struct netmap_slot* slot = &ring->slot[cur];
+        char* p = NETMAP_BUF(ring, slot->buf_idx);
 
         // process data
         consume_pkt((u_char*)p, slot->len);
@@ -85,33 +85,33 @@ void consume_pkt(u_char* buffer, int len) {
     packet_header.caplen = len;
 
     // We do not calculate timestamps because timestamping is very CPU intensive operation:
-    // https://github.com/ntop/PF_RING/issues/9 
+    // https://github.com/ntop/PF_RING/issues/9
     u_int8_t timestamp = 0;
     u_int8_t add_hash = 0;
     fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, timestamp, add_hash);
-  
-    //char print_buffer[512];
-    //fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
-    //logger.info("%s", print_buffer);
-   
+
+    // char print_buffer[512];
+    // fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
+    // logger.info("%s", print_buffer);
+
     // We should fill this structure for passing to FastNetMon
     simple_packet packet;
- 
+
     /* We handle only IPv4 */
     if (packet_header.extended_hdr.parsed_pkt.ip_version == 4) {
         /* PF_RING stores data in host byte order but we use network byte order */
-        packet.src_ip = htonl( packet_header.extended_hdr.parsed_pkt.ip_src.v4 ); 
-        packet.dst_ip = htonl( packet_header.extended_hdr.parsed_pkt.ip_dst.v4 );
+        packet.src_ip = htonl(packet_header.extended_hdr.parsed_pkt.ip_src.v4);
+        packet.dst_ip = htonl(packet_header.extended_hdr.parsed_pkt.ip_dst.v4);
 
-        packet.source_port      = packet_header.extended_hdr.parsed_pkt.l4_src_port;
+        packet.source_port = packet_header.extended_hdr.parsed_pkt.l4_src_port;
         packet.destination_port = packet_header.extended_hdr.parsed_pkt.l4_dst_port;
 
-        packet.length   = packet_header.len;
+        packet.length = packet_header.len;
         packet.protocol = packet_header.extended_hdr.parsed_pkt.l3_proto;
-        packet.ts       = packet_header.ts;
+        packet.ts = packet_header.ts;
 
-        packet.ip_fragmented = packet_header.extended_hdr.parsed_pkt.ip_fragmented; 
-    
+        packet.ip_fragmented = packet_header.extended_hdr.parsed_pkt.ip_fragmented;
+
         // Copy flags from PF_RING header to our pseudo header
         if (packet.protocol == IPPROTO_TCP) {
             packet.flags = packet_header.extended_hdr.parsed_pkt.tcp.flags;
@@ -119,16 +119,16 @@ void consume_pkt(u_char* buffer, int len) {
             packet.flags = 0;
         }
 
-        netmap_process_func_ptr(packet); 
+        netmap_process_func_ptr(packet);
     } else {
         total_unparsed_packets++;
     }
 }
 
 void receiver(std::string interface_for_listening) {
-    struct  nm_desc *netmap_descriptor;
+    struct nm_desc* netmap_descriptor;
 
-    u_int num_cpus = sysconf( _SC_NPROCESSORS_ONLN );
+    u_int num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
     logger.info("We have %d cpus", num_cpus);
 
     struct nmreq base_nmd;
@@ -139,12 +139,12 @@ void receiver(std::string interface_for_listening) {
     base_nmd.nr_tx_slots = base_nmd.nr_rx_slots = 0;
 
     std::string interface = "";
-    // If we haven't netmap: prefix in interface name we will append it 
+    // If we haven't netmap: prefix in interface name we will append it
     if (interface_for_listening.find("netmap:") == std::string::npos) {
         interface = "netmap:" + interface_for_listening;
     } else {
         interface = interface_for_listening;
-    } 
+    }
 
     netmap_descriptor = nm_open(interface.c_str(), &base_nmd, 0, NULL);
 
@@ -154,13 +154,15 @@ void receiver(std::string interface_for_listening) {
         return;
     }
 
-    logger.info("Mapped %dKB memory at %p", netmap_descriptor->req.nr_memsize>>10, netmap_descriptor->mem);
-    logger.info("We have %d tx and %d rx rings", netmap_descriptor->req.nr_tx_rings, netmap_descriptor->req.nr_rx_rings);
+    logger.info("Mapped %dKB memory at %p", netmap_descriptor->req.nr_memsize >> 10, netmap_descriptor->mem);
+    logger.info("We have %d tx and %d rx rings", netmap_descriptor->req.nr_tx_rings,
+                netmap_descriptor->req.nr_rx_rings);
 
     if (num_cpus > netmap_descriptor->req.nr_rx_rings) {
         num_cpus = netmap_descriptor->req.nr_rx_rings;
 
-        logger.info("We have number of CPUs bigger than number of NIC RX queues. Set number of CPU's to number of threads");
+        logger.info("We have number of CPUs bigger than number of NIC RX queues. Set number of "
+                    "CPU's to number of threads");
     }
 
     /*
@@ -172,9 +174,9 @@ void receiver(std::string interface_for_listening) {
     int wait_link = 2;
     logger.info("Wait %d seconds for NIC reset", wait_link);
     sleep(wait_link);
-  
+
     boost::thread_group packet_receiver_thread_group;
- 
+
     for (int i = 0; i < num_cpus; i++) {
         struct nm_desc nmd = *netmap_descriptor;
         // This operation is VERY important!
@@ -192,77 +194,81 @@ void receiver(std::string interface_for_listening) {
         /* Only touch one of the rings (rx is already ok) */
         nmd_flags |= NETMAP_NO_TX_POLL;
 
-        struct nm_desc* new_nmd = nm_open(interface.c_str(), NULL, nmd_flags | NM_OPEN_IFNAME | NM_OPEN_NO_MMAP, &nmd);
+        struct nm_desc* new_nmd =
+        nm_open(interface.c_str(), NULL, nmd_flags | NM_OPEN_IFNAME | NM_OPEN_NO_MMAP, &nmd);
 
         if (new_nmd == NULL) {
             logger.error("Can't open netmap descriptor for netmap per hardware queue thread");
             exit(1);
         }
 
-        logger.info("My first ring is %d and last ring id is %d I'm thread %d", new_nmd->first_rx_ring, new_nmd->last_rx_ring, i);
-    
+        logger.info("My first ring is %d and last ring id is %d I'm thread %d",
+                    new_nmd->first_rx_ring, new_nmd->last_rx_ring, i);
 
-        /* 
-        logger<< log4cpp::Priority::INFO<< "We are using Boost "     
+
+        /*
+        logger<< log4cpp::Priority::INFO<< "We are using Boost "
             << BOOST_VERSION / 100000     << "."  // major version
             << BOOST_VERSION / 100 % 1000 << "."  // minior version
-            << BOOST_VERSION % 100; 
+            << BOOST_VERSION % 100;
         */
 
         logger.info("Start new netmap thread %d", i);
 
-        // Well, we have thread attributes from Boost 1.50
+// Well, we have thread attributes from Boost 1.50
 
 #if defined(BOOST_THREAD_PLATFORM_PTHREAD) && BOOST_VERSION / 100 % 1000 >= 50 && !defined(__APPLE__)
         /* Bind to certain core */
         boost::thread::attributes thread_attrs;
 
-        if (execute_strict_cpu_affinity) { 
+        if (execute_strict_cpu_affinity) {
             cpu_set_t current_cpu_set;
 
             int cpu_to_bind = i % num_cpus;
-        
+
             CPU_ZERO(&current_cpu_set);
             // We count cpus from zero
             CPU_SET(cpu_to_bind, &current_cpu_set);
 
             logger.info("I will bind this thread to logical CPU: %d", cpu_to_bind);
 
-            int set_affinity_result = pthread_attr_setaffinity_np(thread_attrs.native_handle(), sizeof(cpu_set_t), &current_cpu_set);
+            int set_affinity_result =
+            pthread_attr_setaffinity_np(thread_attrs.native_handle(), sizeof(cpu_set_t), &current_cpu_set);
 
             if (set_affinity_result != 0) {
                 logger.error("Can't specify CPU affinity for netmap thread");
-            }   
+            }
         }
 
         // Start thread and pass netmap descriptor to it
-        packet_receiver_thread_group.add_thread( new boost::thread(thread_attrs, boost::bind(netmap_thread, new_nmd, i) ) );
+        packet_receiver_thread_group.add_thread(
+        new boost::thread(thread_attrs, boost::bind(netmap_thread, new_nmd, i)));
 #else
         logger.error("Sorry but CPU affinity did not supported for your platform");
-        packet_receiver_thread_group.add_thread( new boost::thread(netmap_thread, new_nmd, i));
+        packet_receiver_thread_group.add_thread(new boost::thread(netmap_thread, new_nmd, i));
 #endif
     }
 
     // Wait all threads for completion
     packet_receiver_thread_group.join_all();
-} 
+}
 
 void netmap_thread(struct nm_desc* netmap_descriptor, int thread_number) {
-    struct  nm_pkthdr h;
+    struct nm_pkthdr h;
     u_char* buf;
-    struct  pollfd fds;
-    fds.fd     = netmap_descriptor->fd;//NETMAP_FD(netmap_descriptor);
+    struct pollfd fds;
+    fds.fd = netmap_descriptor->fd; // NETMAP_FD(netmap_descriptor);
     fds.events = POLLIN;
 
-    struct netmap_ring *rxring = NULL;
-    struct netmap_if *nifp = netmap_descriptor->nifp;
+    struct netmap_ring* rxring = NULL;
+    struct netmap_if* nifp = netmap_descriptor->nifp;
 
-    //printf("Reading from fd %d thread id: %d", netmap_descriptor->fd, thread_number);
+    // printf("Reading from fd %d thread id: %d", netmap_descriptor->fd, thread_number);
 
     for (;;) {
         // We will wait 1000 microseconds for retry, for infinite timeout please use -1
         int poll_result = poll(&fds, 1, 1000);
-       
+
         if (poll_result == 0) {
             // printf("poll return 0 return code");
             continue;
@@ -271,10 +277,10 @@ void netmap_thread(struct nm_desc* netmap_descriptor, int thread_number) {
         if (poll_result == -1) {
             logger.error("Netmap plugin: poll failed with return code -1");
         }
- 
+
         for (int i = netmap_descriptor->first_rx_ring; i <= netmap_descriptor->last_rx_ring; i++) {
-            //printf("Check ring %d from thread %d", i, thread_number);
-            rxring = NETMAP_RXRING(nifp, i); 
+            // printf("Check ring %d from thread %d", i, thread_number);
+            rxring = NETMAP_RXRING(nifp, i);
 
             if (nm_ring_empty(rxring)) {
                 continue;
@@ -284,33 +290,33 @@ void netmap_thread(struct nm_desc* netmap_descriptor, int thread_number) {
         }
     }
 
-    //nm_close(netmap_descriptor);
+    // nm_close(netmap_descriptor);
 }
 
 void start_netmap_collection(process_packet_pointer func_ptr) {
-    logger<< log4cpp::Priority::INFO<<"Netmap plugin started";
+    logger << log4cpp::Priority::INFO << "Netmap plugin started";
     netmap_process_func_ptr = func_ptr;
 
     std::string interfaces_list = "";
 
     if (configuration_map.count("interfaces") != 0) {
-        interfaces_list = configuration_map[ "interfaces" ];
+        interfaces_list = configuration_map["interfaces"];
     }
 
-    std::vector<std::string> interfaces_for_listen; 
-    boost::split( interfaces_for_listen, interfaces_list, boost::is_any_of(","), boost::token_compress_on );
+    std::vector<std::string> interfaces_for_listen;
+    boost::split(interfaces_for_listen, interfaces_list, boost::is_any_of(","), boost::token_compress_on);
 
-    logger<< log4cpp::Priority::INFO<<"netmap will listen on "<<interfaces_for_listen.size()<<" interfaces";
+    logger << log4cpp::Priority::INFO << "netmap will listen on " << interfaces_for_listen.size() << " interfaces";
 
-    boost::thread* netmap_main_threads[ interfaces_for_listen.size() ];
+    boost::thread* netmap_main_threads[interfaces_for_listen.size()];
 
     unsigned int threads_index = 0;
 
     for (std::vector<std::string>::iterator interface = interfaces_for_listen.begin();
-        interface != interfaces_for_listen.end(); ++interface) {
-        
-        logger<< log4cpp::Priority::INFO<<"netmap will sniff interface: "<<*interface;
-        netmap_main_threads[ threads_index++ ] = new boost::thread(receiver, *interface);
+         interface != interfaces_for_listen.end(); ++interface) {
+
+        logger << log4cpp::Priority::INFO << "netmap will sniff interface: " << *interface;
+        netmap_main_threads[threads_index++] = new boost::thread(receiver, *interface);
     }
 
     for (int thread_id = 0; thread_id < interfaces_for_listen.size(); thread_id++) {

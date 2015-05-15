@@ -36,29 +36,31 @@ std::string log_file_path = "/tmp/fastnetmon_pcap_reader.log";
 log4cpp::Category& logger = log4cpp::Category::getRoot();
 
 
-/* It's prototype for moc testing of FastNetMon, it's very useful for netflow or direct packet parsers debug */
+/* It's prototype for moc testing of FastNetMon, it's very useful for netflow or direct packet
+ * parsers debug */
 
-/* 
+/*
    pcap dump format:
     global header: struct pcap_file_header
     packet header: struct fastnetmon_pcap_pkthdr
 */
 
-// We can't use pcap_pkthdr from upstream because it uses 16 bytes timeval instead of 8 byte and broke everything
+// We can't use pcap_pkthdr from upstream because it uses 16 bytes timeval instead of 8 byte and
+// broke everything
 struct fastnetmon_pcap_pkthdr {
-    uint32_t ts_sec;         /* timestamp seconds */
-    uint32_t ts_usec;        /* timestamp microseconds */
-    uint32_t incl_len;       /* number of octets of packet saved in file */
-    uint32_t orig_len;       /* actual length of packet */
+    uint32_t ts_sec; /* timestamp seconds */
+    uint32_t ts_usec; /* timestamp microseconds */
+    uint32_t incl_len; /* number of octets of packet saved in file */
+    uint32_t orig_len; /* actual length of packet */
 };
 
 void pcap_parse_packet(char* buffer, uint32_t len);
 
 void init_logging() {
-    log4cpp::PatternLayout* layout = new log4cpp::PatternLayout(); 
-    layout->setConversionPattern ("%d [%p] %m%n"); 
+    log4cpp::PatternLayout* layout = new log4cpp::PatternLayout();
+    layout->setConversionPattern("%d [%p] %m%n");
 
-    log4cpp::Appender *appender = new log4cpp::FileAppender("default", log_file_path);
+    log4cpp::Appender* appender = new log4cpp::FileAppender("default", log_file_path);
     appender->setLayout(layout);
 
     logger.setPriority(log4cpp::Priority::INFO);
@@ -72,7 +74,7 @@ int pcap_reader(const char* pcap_file_path) {
     if (filedesc <= 0) {
         printf("Can't open dump file");
         return -1;
-    } 
+    }
 
     struct pcap_file_header pcap_header;
     ssize_t file_header_readed_bytes = read(filedesc, &pcap_header, sizeof(struct pcap_file_header));
@@ -92,25 +94,27 @@ int pcap_reader(const char* pcap_file_path) {
     // Buffer for packets
     char packet_buffer[pcap_header.snaplen];
 
-    unsigned int read_packets = 0; 
+    unsigned int read_packets = 0;
     while (1) {
-        //printf("Start packet %d processing\n", read_packets);
+        // printf("Start packet %d processing\n", read_packets);
         struct fastnetmon_pcap_pkthdr pcap_packet_header;
-        ssize_t packet_header_readed_bytes = read(filedesc, &pcap_packet_header, sizeof(struct fastnetmon_pcap_pkthdr));
-      
+        ssize_t packet_header_readed_bytes =
+        read(filedesc, &pcap_packet_header, sizeof(struct fastnetmon_pcap_pkthdr));
+
         if (packet_header_readed_bytes != sizeof(struct fastnetmon_pcap_pkthdr)) {
-            // We haven't any packets 
+            // We haven't any packets
             break;
         }
 
         if (pcap_packet_header.incl_len > pcap_header.snaplen) {
-            printf("Please enlarge packet buffer! We got packet with size: %d but our buffer is %d bytes\n",
-                pcap_packet_header.incl_len, pcap_header.snaplen);
+            printf("Please enlarge packet buffer! We got packet with size: %d but our buffer is %d "
+                   "bytes\n",
+                   pcap_packet_header.incl_len, pcap_header.snaplen);
             return -4;
         }
 
         ssize_t packet_payload_readed_bytes = read(filedesc, packet_buffer, pcap_packet_header.incl_len);
- 
+
         if (pcap_packet_header.incl_len != packet_payload_readed_bytes) {
             printf("I read packet header but can't read packet payload\n");
             return -3;
@@ -119,7 +123,7 @@ int pcap_reader(const char* pcap_file_path) {
         // printf("packet payload read\n");
         pcap_parse_packet(packet_buffer, pcap_packet_header.incl_len);
 
-        //printf("Process packet %d\n", read_packets);
+        // printf("Process packet %d\n", read_packets);
         read_packets++;
     }
 
@@ -129,7 +133,7 @@ int pcap_reader(const char* pcap_file_path) {
 }
 
 void my_fastnetmon_packet_handler(simple_packet& current_packet) {
-    std::cout<<print_simple_packet(current_packet);
+    std::cout << print_simple_packet(current_packet);
 }
 
 extern process_packet_pointer netflow_process_func_ptr;
@@ -142,11 +146,11 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
 
     netflow_process_func_ptr = my_fastnetmon_packet_handler;
 
-    fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, 1, 0); 
-    
-    //char print_buffer[512];
-    //fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
-    //logger.info("%s", print_buffer);
+    fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, 1, 0);
+
+    // char print_buffer[512];
+    // fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
+    // logger.info("%s", print_buffer);
 
     char* payload_ptr = packet_header.extended_hdr.parsed_pkt.offset.payload_offset + buffer;
 
@@ -154,15 +158,15 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
         printf("Something goes wrong! Offset if bigger than total packet length");
         return;
     }
-       
+
     unsigned int payload_length = packet_header.len - packet_header.extended_hdr.parsed_pkt.offset.payload_offset;
-    process_netflow_packet((u_int8_t*)payload_ptr, payload_length); 
+    process_netflow_packet((u_int8_t*)payload_ptr, payload_length);
 }
 
 int main() {
     init_logging();
-    //pcap_reader("/root/netflowexample2_netflow9_cisco_sampling_issue.pcap");
+    // pcap_reader("/root/netflowexample2_netflow9_cisco_sampling_issue.pcap");
     pcap_reader("/root/flow_dump_ipfix_issue_with_fixed_to_2055.pcap");
-    //pcap_reader("/root/ipfix_example_ipt_netflow_syn_flood.pcap");
-    //pcap_reader("/Users/pavel-odintsov/Dropbox/ipfix_example_ipt_netflow_syn_flood.pcap");
+    // pcap_reader("/root/ipfix_example_ipt_netflow_syn_flood.pcap");
+    // pcap_reader("/Users/pavel-odintsov/Dropbox/ipfix_example_ipt_netflow_syn_flood.pcap");
 }

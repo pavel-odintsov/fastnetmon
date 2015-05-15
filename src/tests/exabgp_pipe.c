@@ -38,13 +38,13 @@ int unban_ip() {
     if (exabgp_pipe <= 0) {
         printf("Can't open exabgp PIPE");
         exit(1);
-    }   
+    }
 
-    char* action = "withdraw"; 
+    char* action = "withdraw";
     sprintf(bgp_message, "%s route %s\n", action, ip_cidr_form);
     int wrote_bytes = write(exabgp_pipe, bgp_message, strlen(bgp_message));
     printf("We wrote %d bytes\n", wrote_bytes);
-    close(exabgp_pipe);   
+    close(exabgp_pipe);
 }
 
 int main() {
