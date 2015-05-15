@@ -8,8 +8,9 @@ from rq import Queue
 
 # apt-get install -y python-redis python-pip
 # pip install rq
-# worker:
-# rqworker
+
+# Run worker:
+# rqworker  --path /usr/src/fastnetmon/src/scripts
 exabgp_log = open("/tmp/exabgp.log", "a")
 
 import firewall_queue
