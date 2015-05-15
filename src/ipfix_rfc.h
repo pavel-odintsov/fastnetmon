@@ -9,22 +9,23 @@
 
 class ipfix_information_element_t {
     public:
-        ipfix_information_element_t(std::string name, unsigned int length);
-        ipfix_information_element_t();
-        std::string get_name();
-        unsigned int get_length();
-        std::string name; 
-        unsigned int length;
+    ipfix_information_element_t(std::string name, unsigned int length);
+    ipfix_information_element_t();
+    std::string get_name();
+    unsigned int get_length();
+    std::string name;
+    unsigned int length;
 };
 
 typedef std::map<unsigned int, ipfix_information_element_t> ipfix_database_t;
 class ipfix_information_database {
-public:
+    public:
     ipfix_information_database();
     bool add_element(unsigned int field_id, std::string name, unsigned int length);
     std::string get_name_by_id(unsigned int field_id);
     unsigned int get_length_by_id(unsigned int field_id);
-private:
+
+    private:
     ipfix_database_t database;
 };
 

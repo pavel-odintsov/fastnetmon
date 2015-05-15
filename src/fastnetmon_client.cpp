@@ -8,10 +8,10 @@
 #include <stdlib.h>
 
 int main() {
-    // Init ncurses screen 
+    // Init ncurses screen
     initscr();
 
-    // disable any character output 
+    // disable any character output
     noecho();
 
     // hide cursor
@@ -22,7 +22,7 @@ int main() {
 
     while (true) {
         sleep(1);
-        
+
         // clean up screen
         clear();
 
@@ -37,18 +37,18 @@ int main() {
         reading_file.open("/tmp/fastnetmon.dat", std::ifstream::in);
 
         if (!reading_file.is_open()) {
-            std::cout<<"Can't open fastnetmon stats file";
+            std::cout << "Can't open fastnetmon stats file";
         }
-        
+
         std::string line = "";
         std::stringstream screen_buffer;
-        while ( getline(reading_file, line) ) {
-            screen_buffer<<line<<"\n";
+        while (getline(reading_file, line)) {
+            screen_buffer << line << "\n";
         }
 
         reading_file.close();
 
-        printw( screen_buffer.str().c_str() );
+        printw(screen_buffer.str().c_str());
         // update screen
         refresh();
     }

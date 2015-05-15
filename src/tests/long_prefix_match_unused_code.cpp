@@ -1,4 +1,5 @@
-// Этот код не используется, но почти работоспособен. Нужно для быстрой проверки принадлежности пакета диапазонам провайдера
+// Этот код не используется, но почти работоспособен. Нужно для быстрой проверки принадлежности
+// пакета диапазонам провайдера
 /*
 void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask) {
    uint32_t netmask_as_int = convert_ip_as_string_to_uint(subnet);
@@ -15,11 +16,12 @@ void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask) {
     for (int i= 31; i >= 32 - cidr_mask; i--) {
         uint32_t result_bit = netmask_as_int & (1 << i);
         bool bit = result_bit == 0 ? false : true;
-        //cout<<"Insert: "<<bit<<" from position "<<i<<endl;      
- 
+        //cout<<"Insert: "<<bit<<" from position "<<i<<endl;
+
         // условимся, что слева - нули, справа - единицы
 
-        // теперь индекс может быть, а может и отсутствовать, смотрим мы только дочерние листья корня, корень не трогаем
+        // теперь индекс может быть, а может и отсутствовать, смотрим мы только дочерние листья
+корня, корень не трогаем
         if (bit) {
             // проверяем правое поддерево
             if (temp_root->right != NULL)  {
@@ -34,11 +36,11 @@ void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask) {
                 temp_root->right = new_leaf;
 
                 temp_root = new_leaf;
-            }    
-       
+            }
+
         } else {
             // проверим левое поддерево
-            if (temp_root->left != NULL)  { 
+            if (temp_root->left != NULL)  {
                 // ок, элемент уже есть, просто переключаем указатель на левый
                 temp_root = temp_root->left;
             } else {
@@ -46,11 +48,11 @@ void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask) {
                 tree_leaf* new_leaf = new tree_leaf;
                 new_leaf->right = new_leaf->left = NULL;
                 new_leaf->bit = bit;
-    
+
                 temp_root->left = new_leaf;
 
                 temp_root = new_leaf;
-            } 
+            }
         }
     }
 
@@ -58,6 +60,7 @@ void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask) {
     // std::cout<<bitset<32>(netmask_as_int)<<endl;
 }
 */
+
 
 /*
 bool belongs_to_networks(tree_leaf* root, uint32_t ip) {

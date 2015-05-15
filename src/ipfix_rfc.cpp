@@ -45,8 +45,8 @@ unsigned int ipfix_information_database::get_length_by_id(unsigned int field_id)
 
 bool ipfix_information_database::add_element(unsigned int field_id, std::string name, unsigned int length) {
     ipfix_database_t::iterator itr = database.find(field_id);
-   
-    // Duplicate ID's strictly prohibited 
+
+    // Duplicate ID's strictly prohibited
     if (itr != database.end()) {
         return false;
     }
