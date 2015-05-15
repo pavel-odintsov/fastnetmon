@@ -64,6 +64,7 @@ If you want speedup build process please build with ninja instead of make:
 apt-get install -y ninja-build
 cd build
 cmake -GNinja ..
+ninja
 ```
 
 Ninja use all CPUs for build process:
