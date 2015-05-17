@@ -46,8 +46,10 @@ while True:
         io = StringIO(line)
         decoded_update = json.load(io) 
 
+        pp = pprint.PrettyPrinter(indent=4, stream=sys.stderr)
+        pp.pprint(decoded_update)
+
         try:
-                pp = pprint.PrettyPrinter(indent=4, stream=sys.stderr)
                 current_flow_announce = decoded_update["neighbor"]["message"]["update"]["announce"]["ipv4 flow"]
 
                 for next_hop in current_flow_announce:
