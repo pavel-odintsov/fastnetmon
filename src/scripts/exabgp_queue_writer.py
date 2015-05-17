@@ -47,17 +47,17 @@ while True:
         decoded_update = json.load(io) 
 
         pp = pprint.PrettyPrinter(indent=4, stream=sys.stderr)
-        pp.pprint(decoded_update)
+        # pp.pprint(decoded_update)
 
         try:
-                current_flow_announce = decoded_update["neighbor"]["message"]["update"]["announce"]["ipv4 flow"]
+            current_flow_announce = decoded_update["neighbor"]["message"]["update"]["announce"]["ipv4 flow"]
 
-                for next_hop in current_flow_announce:
-                    flow_announce_with_certain_hop = current_flow_announce[next_hop]
+            for next_hop in current_flow_announce:
+                flow_announce_with_certain_hop = current_flow_announce[next_hop]
 
-                    for flow in flow_announce_with_certain_hop: 
-                        # pp.pprint(flow_announce_with_certain_hop[flow])
-                        q.enqueue(firewall_queue.execute_ip_ban, flow_announce_with_certain_hop[flow])
+                for flow in flow_announce_with_certain_hop: 
+                    pp.pprint(flow_announce_with_certain_hop[flow])
+                    q.enqueue(firewall_queue.execute_ip_ban, flow_announce_with_certain_hop[flow])
         except KeyError:
             pass
 
