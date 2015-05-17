@@ -54,8 +54,8 @@ def ipfw_add_rule(action, protocol, source_host, source_port, target_host, targe
 
     # Add skip for multiple spaces to single
 
-    print "We generated this command: " + ipfw_command
-    print "We have following number of processors: " + multiprocessing.cpu_count()
+    print >> sys.stderr, "We generated this command: " + ipfw_command
+    print >> sys.stderr, "We have following number of processors: " + multiprocessing.cpu_count()
     return True 
 
 def execute_ip_ban(flow):
@@ -83,16 +83,22 @@ def execute_ip_ban(flow):
         target_host = flow["destination-ipv4"][0]
 
     if source_host == "any" and target_host == "any":
-        print "We can't process this rule because it will drop whole traffic to the network"
+        print >> sys.stderr, "We can't process this rule because it will drop whole traffic to the network"
         return False
    
+    if 'destination-port' in flow:
+        target_port = flow['destination-port'][0].lstrip('=')
+
+    if 'source-port' in flow:
+        source_port = flow['source-port'][0].lstrip('=');
+
     if 'fragment' in flow:
-        if 'is-fragment' in flow['fragment']:
+        if '=is-fragment' in flow['fragment']:
             flags = "frag" 
     
     if 'protocol' in flow:
         for current_protocol in flow['protocol']:
-            ipfw_add_rule(action, source_host, source_port, target_host, target_port, flags) 
+            ipfw_add_rule(action, current_protocol.lstrip('='), source_host, source_port, target_host, target_port, flags) 
 
     return True
 
