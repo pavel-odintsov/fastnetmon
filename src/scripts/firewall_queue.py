@@ -62,7 +62,70 @@ def ipfw_add_rule(action, protocol, source_host, source_port, target_host, targe
     logger.info( "We generated this command: " + ipfw_command )
     logger.info( "We have following number of processors: " + str(multiprocessing.cpu_count()) )
 
-    for cpu_number in range(0, multiprocessing.cpu_count() - 1):
+    execute_command_for_all_ipfw_backends(ipfw_command) 
+
+    return True 
+
+def manage_flow(action, peer_ip, flow):
+    if action == 'announce':
+        pp = pprint.PrettyPrinter(indent=4)
+        logger.info(pp.pformat(flow)) 
+
+        # ipfw_add_rule(action, protocol, source_host, source_port, target_host, target_port, flags)
+        action = 'deny' 
+        protocol = 'all'
+        source_port = ''
+        source_host = 'any'
+        target_port = ''
+        target_host = 'any'
+        flags = ''   
+  
+        # We support only one subnet for source and destination 
+        if 'source-ipv4' in flow:
+            source_host = flow["source-ipv4"][0]
+
+        if 'destination-ipv4' in flow:
+            target_host = flow["destination-ipv4"][0]
+
+        if source_host == "any" and target_host == "any":
+            logger.info( "We can't process this rule because it will drop whole traffic to the network" )
+            return False
+   
+        if 'destination-port' in flow:
+            target_port = flow['destination-port'][0].lstrip('=')
+
+        if 'source-port' in flow:
+            source_port = flow['source-port'][0].lstrip('=');
+
+        if 'fragment' in flow:
+            if '=is-fragment' in flow['fragment']:
+                flags = "fragmented" 
+    
+        if 'protocol' in flow:
+            global_result = True
+
+            for current_protocol in flow['protocol']:
+                logger.info("Call ipfw_add_rule")
+                result = ipfw_add_rule(action, current_protocol.lstrip('='), source_host, source_port, target_host, target_port, flags)
+
+                if result != True:
+                    global_result = False
+
+            return global_result 
+        else:
+            return ipfw_add_rule(action, "all", source_host, source_port, target_host, target_port, flags) 
+
+        return False
+    elif action == 'withdrawal':
+        logger.info("We will flush all rules from peer " + peer_ip)
+        execute_command_for_all_ipfw_backends("-f flush")
+        return True
+    else:
+        logger.info("Unknown action: " + action)
+        return False
+
+def execute_command_for_all_ipfw_backends(ipfw_command):
+    for cpu_number in range(0, multiprocessing.cpu_count() - 1): 
         port_for_current_cpu = 5550 + cpu_number
 
         args = [ '/usr/src/netmap-ipfw/ipfw/ipfw' ]
@@ -76,57 +139,3 @@ def ipfw_add_rule(action, protocol, source_host, source_port, target_host, targe
         new_env['IPFW_PORT'] = str(port_for_current_cpu)
 
         subprocess.Popen( args, env=new_env)
-
-    return True 
-
-def execute_ip_ban(flow):
-    pp = pprint.PrettyPrinter(indent=4)
-    logger.info(pp.pformat(flow)) 
-
-    # ipfw_add_rule(action, protocol, source_host, source_port, target_host, target_port, flags)
-    action = 'deny' 
-    protocol = 'all'
-    source_port = ''
-    source_host = 'any'
-    target_port = ''
-    target_host = 'any'
-    flags = ''   
-  
-    # We support only one subnet for source and destination 
-    if 'source-ipv4' in flow:
-        source_host = flow["source-ipv4"][0]
-
-    if 'destination-ipv4' in flow:
-        target_host = flow["destination-ipv4"][0]
-
-    if source_host == "any" and target_host == "any":
-        logger.info( "We can't process this rule because it will drop whole traffic to the network" )
-        return False
-   
-    if 'destination-port' in flow:
-        target_port = flow['destination-port'][0].lstrip('=')
-
-    if 'source-port' in flow:
-        source_port = flow['source-port'][0].lstrip('=');
-
-    if 'fragment' in flow:
-        if '=is-fragment' in flow['fragment']:
-            flags = "fragmented" 
-    
-    if 'protocol' in flow:
-        global_result = True
-
-        for current_protocol in flow['protocol']:
-            logger.info("Call ipfw_add_rule")
-            result = ipfw_add_rule(action, current_protocol.lstrip('='), source_host, source_port, target_host, target_port, flags)
-
-            if result != True:
-                global_result = False
-
-        return global_result 
-    else:
-        return ipfw_add_rule(action, "all", source_host, source_port, target_host, target_port, flags) 
-
-    return False
-
-
