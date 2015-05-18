@@ -45,7 +45,10 @@ Features:
 Supported platforms:
 - Linux (Debian 6/7/8, CentOS 6/7, Ubuntu 12+)
 - FreeBSD 9, 10, 11
-- Mac OS X Yosemite 
+- Mac OS X Yosemite
+
+Supported architecture:
+- x86_64
 
 What is "flow" in FastNetMon terms? It's one or multiple udp, tcp, icmp connections with unique src IP, dst IP, src port, dst port and protocol.
 
