@@ -2025,11 +2025,10 @@ unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp) {
     return 0;
 }
 
-void exabgp_ban_manage(std::string action, std::string ip_as_string) {
+void exabgp_ban_manage(std::string action, std::string ip_as_string_with_mask) {
     /* Buffer for BGP message */
     char bgp_message[256];
-    std::string ip_as_string_with_mask = ip_as_string + "/32";
-
+    
     int exabgp_pipe = open(exabgp_command_pipe.c_str(), O_WRONLY);
 
     if (exabgp_pipe <= 0) {
@@ -2226,7 +2225,7 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element a
     if (exabgp_enabled) {
         logger << log4cpp::Priority::INFO << "Call ExaBGP for ban client started: " << client_ip_as_string;
 
-        boost::thread exabgp_thread(exabgp_ban_manage, "ban", client_ip_as_string);
+        boost::thread exabgp_thread(exabgp_ban_manage, "ban", client_ip_as_string + "/32");
         exabgp_thread.detach();
 
         logger << log4cpp::Priority::INFO << "Call to ExaBGP for ban client is finished: " << client_ip_as_string;
@@ -2369,7 +2368,7 @@ void cleanup_ban_list() {
                     logger << log4cpp::Priority::INFO
                            << "Call ExaBGP for unban client started: " << client_ip_as_string;
 
-                    boost::thread exabgp_thread(exabgp_ban_manage, "unban", client_ip_as_string);
+                    boost::thread exabgp_thread(exabgp_ban_manage, "unban", client_ip_as_string + "/32");
                     exabgp_thread.detach();
 
                     logger << log4cpp::Priority::INFO
