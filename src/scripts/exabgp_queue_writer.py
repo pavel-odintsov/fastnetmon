@@ -26,12 +26,6 @@ while True:
         # print >> sys.stderr, "GOT A LINE"
 
         sys.stdout.flush()
-        if line == "":
-            counter += 1
-            if counter > 100:
-                break
-            continue
- 
         counter = 0
 
 # { "exabgp": "3.5.0", "time": 1431716393, "host" : "synproxied.fv.ee", "pid" : 2599, "ppid" : 2008, "counter": 1, "type": "update", "neighbor": { "address": { "local": "10.0.3.115", "peer": "10.0.3.114" }, "asn": { "local": "1234", "peer": "65001" }, "direction": "receive", "message": { "update": { "attribute": { "origin": "igp", "as-path": [ 65001 ], "confederation-path": [], "extended-community": [ 9225060886715039744 ] }, "announce": { "ipv4 flow": { "no-nexthop": { "flow-0": { "destination-ipv4": [ "10.0.0.2/32" ], "source-ipv4": [ "10.0.0.1/32" ], "protocol": [ "=tcp" ], "destination-port": [ "=3128" ], "string": "flow destination-ipv4 10.0.0.2/32 source-ipv4 10.0.0.1/32 protocol =tcp destination-port =3128" } } } } } } } }
@@ -49,7 +43,7 @@ while True:
         # Fix bug: https://github.com/Exa-Networks/exabgp/issues/269
         line = line.replace('0x800900000000000A', '"0x800900000000000A"')
         io = StringIO(line)
-        ### print >> sys.stderr, line
+        print >> sys.stderr, line
         decoded_update = json.load(io) 
 
         pp = pprint.PrettyPrinter(indent=4, stream=sys.stderr)
