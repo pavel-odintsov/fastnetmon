@@ -587,3 +587,29 @@ ip_addresses_list_t get_local_ip_addresses_list() {
 
     return ip_list;
 }
+
+std::string convert_prefix_to_string_representation(prefix_t* prefix) {
+    std::string address = convert_ip_as_uint_to_string(prefix->add.sin.s_addr);
+
+    return address + "/" + convert_int_to_string(prefix->bitlen);
+}
+
+std::string find_subnet_by_ip_in_string_format(patricia_tree_t* patricia_tree, std::string ip) {
+    patricia_node_t* found_patrica_node = NULL;
+
+    // Convert IP to integer
+    uint32_t client_ip = convert_ip_as_string_to_uint(ip);
+
+    prefix_t prefix_for_check_adreess;
+    prefix_for_check_adreess.add.sin.s_addr = client_ip;
+    prefix_for_check_adreess.family = AF_INET;
+    prefix_for_check_adreess.bitlen = 32;
+
+    found_patrica_node = patricia_search_best2(patricia_tree, &prefix_for_check_adreess, 1);
+
+    if (found_patrica_node != NULL) {
+       return convert_prefix_to_string_representation(found_patrica_node->prefix);
+    } else {
+       return "";
+    }
+}
