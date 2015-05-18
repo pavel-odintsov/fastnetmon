@@ -92,6 +92,9 @@ std::string redis_host = "127.0.0.1";
 bool redis_enabled = false;
 #endif
 
+// We will announce whole subnet instead single IP with BGP if this flag enabled
+bool exabgp_announce_whole_subnet = false;
+
 bool enable_ban_for_pps = false;
 bool enable_ban_for_bandwidth = false;
 bool enable_ban_for_flows_per_second = false;
@@ -695,6 +698,10 @@ bool load_configuration_file() {
         } else {
             enable_netflow_collection = false;
         }
+    }
+
+    if (configuration_map.count("exabgp_announce_whole_subnet") != 0) {
+        exabgp_announce_whole_subnet = configuration_map["exabgp_announce_whole_subnet"] == "on" ? true : false;
     }
 
     // Graphite
@@ -2025,23 +2032,38 @@ unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp) {
     return 0;
 }
 
-void exabgp_ban_manage(std::string action, std::string ip_as_string_with_mask) {
+void exabgp_ban_manage(std::string action, std::string ip_as_string) {
     /* Buffer for BGP message */
     char bgp_message[256];
+    std::string ip_as_string_with_mask = ip_as_string + "/32";
     
+    // We could use subnet instead 
+    if (exabgp_announce_whole_subnet) {
+        ip_as_string_with_mask = find_subnet_by_ip_in_string_format(lookup_tree, ip_as_string);
+
+        if (ip_as_string_with_mask.empty()) {
+            logger.warn("Can't find subnet for IP: " + ip_as_string);
+            return;
+        } else {
+            logger.info("We detected subnet for this IP: " + ip_as_string_with_mask);
+        }
+    }
+
+   if (action == "ban") {
+        sprintf(bgp_message, "announce route %s next-hop %s community %s\n",
+                ip_as_string_with_mask.c_str(), exabgp_next_hop.c_str(), exabgp_community.c_str());
+    } else {
+        sprintf(bgp_message, "withdraw route %s\n", ip_as_string_with_mask.c_str());
+    }    
+
+    logger.info("ExaBGP announce message: %s", bgp_message);
+ 
     int exabgp_pipe = open(exabgp_command_pipe.c_str(), O_WRONLY);
 
     if (exabgp_pipe <= 0) {
         logger << log4cpp::Priority::ERROR << "Can't open ExaBGP pipe " << exabgp_command_pipe
                << " Ban is not executed";
         return;
-    }
-
-    if (action == "ban") {
-        sprintf(bgp_message, "announce route %s next-hop %s community %s\n",
-                ip_as_string_with_mask.c_str(), exabgp_next_hop.c_str(), exabgp_community.c_str());
-    } else {
-        sprintf(bgp_message, "withdraw route %s\n", ip_as_string_with_mask.c_str());
     }
 
     int wrote_bytes = write(exabgp_pipe, bgp_message, strlen(bgp_message));
@@ -2225,7 +2247,7 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element a
     if (exabgp_enabled) {
         logger << log4cpp::Priority::INFO << "Call ExaBGP for ban client started: " << client_ip_as_string;
 
-        boost::thread exabgp_thread(exabgp_ban_manage, "ban", client_ip_as_string + "/32");
+        boost::thread exabgp_thread(exabgp_ban_manage, "ban", client_ip_as_string);
         exabgp_thread.detach();
 
         logger << log4cpp::Priority::INFO << "Call to ExaBGP for ban client is finished: " << client_ip_as_string;
@@ -2368,7 +2390,7 @@ void cleanup_ban_list() {
                     logger << log4cpp::Priority::INFO
                            << "Call ExaBGP for unban client started: " << client_ip_as_string;
 
-                    boost::thread exabgp_thread(exabgp_ban_manage, "unban", client_ip_as_string + "/32");
+                    boost::thread exabgp_thread(exabgp_ban_manage, "unban", client_ip_as_string);
                     exabgp_thread.detach();
 
                     logger << log4cpp::Priority::INFO
