@@ -587,3 +587,10 @@ ip_addresses_list_t get_local_ip_addresses_list() {
 
     return ip_list;
 }
+
+std::string convert_prefix_to_string_representation(prefix_t* prefix) {
+    std::string address = convert_ip_as_uint_to_string(prefix->add.sin.s_addr);
+
+    return address + "/" + convert_int_to_string(prefix->bitlen);
+}
+
