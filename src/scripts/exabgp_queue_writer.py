@@ -68,7 +68,7 @@ while True:
                 peer_ip = decoded_update['neighbor']['address']['peer']
                 print >> sys.stderr, "We received notification about peer down for: " + peer_ip 
 
-                q.enqueue(firewall_queue.manage_flow, 'withdrawal', peer_ip, {})
+                q.enqueue(firewall_queue.manage_flow, 'withdrawal', peer_ip, None)
 
         exabgp_log.write(line + "\n")
     except KeyboardInterrupt:
