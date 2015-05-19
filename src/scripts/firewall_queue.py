@@ -15,6 +15,56 @@ firewall_backend = 'netmap_ipfw'
 # u'source-ipv4': [u'10.0.0.1/32'],
 # u'string': u'flow destination-ipv4 10.0.0.2/32 source-ipv4 10.0.0.1/32 protocol =tcp destination-port =3128'}
 
+class AbstractFirewall:
+    pass
+
+# sport/dport suitable only for udp/tcp 
+# iptables -I FORWARD -p tcp/udp -s -d  --sport 80 --dport XXX --fragment -m comment --comment "peer"  -j DROP
+class Iptables(AbstractFirewall):
+    def __init__(self):
+        self.iptables_path = '/sbin/iptables'
+        # In some cases we could work on INPUT/OUTPUT
+        self.working_chain = 'FORWARD'      
+    def flush_rules(self, peer_ip):
+        execute_command_with_shell(self.iptables_path, [ '--flush', self.working_chain  ])
+    def add_rules(self, peer_ip, pyflow_list):
+        for pyflow_rule in pyflow_list:
+            flow_is_correct = check_pyflow_rule_correctness(pyflow_rule)
+
+            if not flow_is_correct:
+                return
+
+            iptables_arguments = ['-I', self.working_chain ]
+
+            if pyflow_rule['protocol'] != 'all':
+                iptables_arguments.extend(['-p', pyflow_rule['protocol']]) 
+
+            if pyflow_rule['source_host'] != 'any':
+                iptables_arguments.extend(['-s', pyflow_rule['source_host']])
+
+            if pyflow_rule['target_host'] != 'any':
+                iptables_arguments.extend(['-d', pyflow_rule['target_host']])
+
+            # We have ports only for udp and tcp protocol
+            if pyflow_rule['protocol'] == 'udp' or pyflow_rule['protocol'] == 'tcp':
+                if 'source_port' in pyflow_rule:
+                    iptables_arguments.extend(['--sport', pyflow_rule['source_port']])
+
+                if 'target_port' in pyflow_rule:
+                    iptables_arguments.extend(['--dport', pyflow_rule['target_port']])
+                
+
+            iptables_arguments.extend([ '-m', 'comment', '--comment', '"' + "Received from: " + str(peer_ip) + '"' ]) 
+
+            if pyflow_rule['fragmentation']:
+                iptables_arguments.extend(['--fragment'])
+          
+            pp = pprint.PrettyPrinter(indent=4)
+            logger.info("WIll run iptables command: " + pp.pformat(iptables_arguments))
+            execute_command_with_shell(self.iptables_path, iptables_arguments)
+
+            return True
+             
 # Ban specific protocol:
 # ipfw add deny udp from any to 10.10.10.221/32
 
@@ -30,13 +80,15 @@ firewall_backend = 'netmap_ipfw'
 # Block traffic to specific port:
 # ipfw add deny udp from any to 10.10.10.221/32 8080
 
-class AbstractFirewall:
-    pass
+# command_name - is absolute path to binary
+# arguments - array of arguments, one argument per element 
+def execute_command_with_shell(command_name, arguments):
+    args = [ command_name ]
 
-class Iptables(AbstractFirewall):
-    def __init__(self):
-        self_iptables_path = '/sbin/iptables'
-        
+    if arguments != None:
+        args.extend( arguments )
+
+    subprocess.Popen( args );
 
 class Ipfw(AbstractFirewall):
     def __init__(self):
@@ -44,12 +96,15 @@ class Ipfw(AbstractFirewall):
 
         self.number_of_netmap_instances = multiprocessing.cpu_count()
         self.netmap_path = '/usr/src/netmap-ipfw/ipfw/ipfw'
+        self.netmap_initial_port = 5550
+        self.netmap_env_port_name = 'IPFW_PORT'
 
     def execute_command_for_all_ipfw_backends(self, ipfw_command):
         for instance_number in range(0, self.number_of_netmap_instances - 1): 
-            port_for_current_instance = 5550 + instance_number
+            port_for_current_instance = self.netmap_initial_port + instance_number
 
             args = [ self.netmap_path ]
+            # split interpret multiple spaces as single
             args.extend( ipfw_command.split() )
 
             pp = pprint.PrettyPrinter(indent=4)
@@ -57,7 +112,7 @@ class Ipfw(AbstractFirewall):
             new_env = os.environ.copy()
             # Will fail without explicit conversion:
             #  TypeError: execve() arg 3 contains a non-string value 
-            new_env['IPFW_PORT'] = str(port_for_current_instance)
+            new_env[ self.netmap_env_port_name ] = str(port_for_current_instance)
 
             subprocess.Popen( args, env=new_env)
     def flush_rules(self, peer_ip):
@@ -65,34 +120,19 @@ class Ipfw(AbstractFirewall):
         logger.info("We will flush all rules from peer " + peer_ip)
         # TODO: switch to another code parser
         self.execute_command_for_all_ipfw_backends("-f flush") 
-    def add_rules(self, pyflow_list):
-        allowed_actions = [ 'allow', 'deny' ]
-        allowed_protocols = [ 'udp', 'tcp', 'all', 'icmp' ]
-        allowed_flags = ['fragmented']
-
+    def add_rules(self, peer_ip, pyflow_list):
         for pyflow_rule in pyflow_list:
-            if not pyflow_rule['action'] in allowed_actions:
-                logger.info("Bad action")
-                return False
+            flow_is_correct = check_pyflow_rule_correctness(pyflow_rule)
 
-            if not pyflow_rule['protocol'] in allowed_protocols:
-                logger.info("Bad protocol")
-                return False 
-
-            if len(pyflow_rule['flags']) > 0 and not pyflow_rule['flags'] in allowed_flags:
-                logger.info("Bad flags")
-                return False
-
-            if len (pyflow_rule['source_port']) > 0 and not pyflow_rule['source_port'].isdigit():
-                return "Bad source port"
-                return False
-
-            if len (pyflow_rule['target_port']) > 0 and not pyflow_rule['target_port'].isdigit():
-                return "Bad target port: " + pyflow_rule['target_port']
-                return False
-
+            if not flow_is_correct:
+                return
+    
             # Add validity check for IP for source and target hosts
-            ipfw_command = "add %(action) %(protocol) from %(source_host) %(source_port) to %(target_host) %(target_port) %(flags)".format(pyflow_rule)
+            ipfw_command = "add %(action) %(protocol) from %(source_host) %(source_port) to %(target_host) %(target_port)".format(pyflow_rule)
+
+            if pyflow_rule['fragmentation']:
+                ipfw_command = ipfw_command + " frag"
+
             # Add skip for multiple spaces to single
             logger.info( "We generated this command: " + ipfw_command )
 
@@ -100,7 +140,7 @@ class Ipfw(AbstractFirewall):
 
         return True 
 
-firewall = Ipfw()
+firewall = Iptables()
 
 def manage_flow(action, peer_ip, flow):
     allowed_actions = [ 'withdrawal', 'announce' ]
@@ -118,19 +158,19 @@ def manage_flow(action, peer_ip, flow):
 
     py_flow_list = convert_exabgp_to_pyflow(flow)
     logger.info("Call add_rules") 
-    return firewall.add_rules(py_flow_list)
+    return firewall.add_rules(peer_ip, py_flow_list)
 
 def convert_exabgp_to_pyflow(flow):
     # Flow in python format, here
     # We use customer formate because ExaBGP output is not so friendly for firewall generation
     current_flow = {
-        'action'      : 'deny', 
-        'protocol'    : 'all',
-        'source_port' : '',
-        'source_host' : 'any',
-        'target_port' : '',
-        'target_host' : 'any',
-        'flags'       : '',
+        'action'        : 'deny', 
+        'protocol'      : 'all',
+        'source_port'   : '',
+        'source_host'   : 'any',
+        'target_port'   : '',
+        'target_host'   : 'any',
+        'fragmentation' : False,
     }
  
     # We support only one subnet for source and destination 
@@ -152,7 +192,7 @@ def convert_exabgp_to_pyflow(flow):
 
     if 'fragment' in flow:
         if '=is-fragment' in flow['fragment']:
-            current_flow['flags'] = "fragmented" 
+            current_flow['fragmentation'] = True 
    
     pyflow_list = []
  
@@ -167,3 +207,27 @@ def convert_exabgp_to_pyflow(flow):
         pyflow_list.append(current_flow)
 
     return pyflow_list
+
+def check_pyflow_rule_correctness(pyflow_rule):
+    allowed_actions = [ 'allow', 'deny' ]
+    allowed_protocols = [ 'udp', 'tcp', 'all', 'icmp' ]
+
+    if not pyflow_rule['action'] in allowed_actions:
+        logger.info("Bad action")
+        return False
+
+    if not pyflow_rule['protocol'] in allowed_protocols:
+        logger.info("Bad protocol")
+        return False 
+
+    if len (pyflow_rule['source_port']) > 0 and not pyflow_rule['source_port'].isdigit():
+        logger.warning("Bad source port")
+        return False
+
+    if len (pyflow_rule['target_port']) > 0 and not pyflow_rule['target_port'].isdigit():
+        return "Bad target port: " + pyflow_rule['target_port']
+        return False
+
+    return True
+
+
