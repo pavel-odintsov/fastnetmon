@@ -171,7 +171,12 @@ def convert_exabgp_to_pyflow(flow):
         'target_port'   : '',
         'target_host'   : 'any',
         'fragmentation' : False,
+        'packet_length' : 'any',
     }
+
+    # But we definitely could have MULTIPLE ports here
+    if 'packet-length' in flow:
+        current_flow['packet_length'] = flow['packet-length'][0]
  
     # We support only one subnet for source and destination 
     if 'source-ipv4' in flow:
