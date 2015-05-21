@@ -146,6 +146,9 @@ int standard_ban_time = 1800;
 // We calc average pps/bps for this time
 double average_calculation_amount = 15;
 
+// We calc average pps/bps for subnets with this time, we use longer value for calculation average network traffic
+double average_calculation_amount_for_subnets = 30;
+
 // Show average or absolute value of speed
 bool print_average_traffic_counts = true;
 
@@ -203,6 +206,8 @@ map_for_subnet_counters PerSubnetCountersMap;
 // Here we store traffic speed per subnet
 map_for_subnet_counters PerSubnetSpeedMap;
 
+// Here we store average speed per subnet
+map_for_subnet_counters PerSubnetAverageSpeedMap;
 
 // Flow tracking structures
 map_of_vector_counters_for_flow SubnetVectorMapFlow;
@@ -631,6 +636,11 @@ bool load_configuration_file() {
     if (configuration_map.count("average_calculation_time") != 0) {
         average_calculation_amount =
         convert_string_to_integer(configuration_map["average_calculation_time"]);
+    }
+
+    if (configuration_map.count("average_calculation_time_for_subnets") != 0) {
+        average_calculation_amount_for_subnets =
+        convert_string_to_integer(configuration_map["average_calculation_time_for_subnets"]);
     }
 
     if (configuration_map.count("threshold_pps") != 0) {
@@ -1449,6 +1459,25 @@ void recalculate_speed() {
 
             new_speed_element.out_packets = uint64_t((double)subnet_traffic->out_packets / speed_calc_period);
             new_speed_element.out_bytes   = uint64_t((double)subnet_traffic->out_bytes   / speed_calc_period);   
+
+            /* Moving average recalculation for subnets */
+            /* http://en.wikipedia.org/wiki/Moving_average#Application_to_measuring_computer_performance */
+            double exp_power = -speed_calc_period / average_calculation_amount_for_subnets;
+            double exp_value = exp(exp_power);
+
+            map_element* current_average_speed_element = &PerSubnetAverageSpeedMap[current_subnet];
+
+            current_average_speed_element->in_bytes = uint64_t(new_speed_element.in_bytes +
+                exp_value * ((double)current_average_speed_element->in_bytes - (double)new_speed_element.in_bytes));
+
+            current_average_speed_element->out_bytes = uint64_t(new_speed_element.out_bytes +
+                exp_value * ((double)current_average_speed_element->out_bytes - (double)new_speed_element.out_bytes));
+
+            current_average_speed_element->in_packets = uint64_t(new_speed_element.in_packets +
+                exp_value * ((double)current_average_speed_element->in_packets - (double)new_speed_element.in_packets));
+
+            current_average_speed_element->out_packets = uint64_t(new_speed_element.out_packets +
+                exp_value * ((double)current_average_speed_element->out_packets - (double)new_speed_element.out_packets));
 
             // Update speed calculation structure
             PerSubnetSpeedMap[current_subnet] = new_speed_element;
@@ -2552,6 +2581,7 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
         // Got subnet tracking structure
         // TODO: we suppose case "no key exists" is not possible
         map_element network_speed_meter = PerSubnetSpeedMap[ current_attack.customer_network ];
+        map_element average_network_speed_meter = PerSubnetAverageSpeedMap[ current_attack.customer_network ];
 
         attack_description
         <<"Network: " << convert_subnet_to_string(current_attack.customer_network) << "\n"
@@ -2559,6 +2589,12 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
         <<"Network outgoing traffic: "<< convert_speed_to_mbps(network_speed_meter.out_bytes) << " mbps\n"
         <<"Network incoming pps: "<< network_speed_meter.in_packets << " packets per second\n"
         <<"Network outgoing pps: "<< network_speed_meter.out_packets << " packets per second\n"; 
+
+        attack_description
+        <<"Average network incoming traffic: "<< convert_speed_to_mbps(average_network_speed_meter.in_bytes) << " mbps\n"
+        <<"Average network outgoing traffic: "<< convert_speed_to_mbps(average_network_speed_meter.out_bytes) << " mbps\n"
+        <<"Average network incoming pps: "<< average_network_speed_meter.in_packets << " packets per second\n"
+        <<"Average network outgoing pps: "<< average_network_speed_meter.out_packets << " packets per second\n";
     }
 
     attack_description
