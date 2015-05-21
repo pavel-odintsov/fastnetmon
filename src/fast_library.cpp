@@ -83,7 +83,7 @@ std::string convert_int_to_string(int value) {
 }
 
 void copy_networks_from_string_form_to_binary(std::vector<std::string> networks_list_as_string,
-                                              std::vector<subnet>& our_networks) {
+                                              std::vector<subnet_t>& our_networks) {
     for (std::vector<std::string>::iterator ii = networks_list_as_string.begin();
          ii != networks_list_as_string.end(); ++ii) {
         std::vector<std::string> subnet_as_string;
@@ -93,13 +93,13 @@ void copy_networks_from_string_form_to_binary(std::vector<std::string> networks_
         uint32_t subnet_as_int = convert_ip_as_string_to_uint(subnet_as_string[0]);
         uint32_t netmask_as_int = convert_cidr_to_binary_netmask(cidr);
 
-        subnet current_subnet = std::make_pair(subnet_as_int, netmask_as_int);
+        subnet_t current_subnet = std::make_pair(subnet_as_int, netmask_as_int);
 
         our_networks.push_back(current_subnet);
     }
 }
 
-std::string convert_subnet_to_string(subnet my_subnet) {
+std::string convert_subnet_to_string(subnet_t my_subnet) {
     std::stringstream buffer;
 
     buffer<<convert_ip_as_uint_to_string(my_subnet.first)<<"/"<<my_subnet.second;
