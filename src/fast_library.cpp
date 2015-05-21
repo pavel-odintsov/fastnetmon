@@ -99,6 +99,14 @@ void copy_networks_from_string_form_to_binary(std::vector<std::string> networks_
     }
 }
 
+std::string convert_subnet_to_string(subnet my_subnet) {
+    std::stringstream buffer;
+
+    buffer<<convert_ip_as_uint_to_string(my_subnet.first)<<"/"<<my_subnet.second;
+
+    return buffer.str();
+}
+
 // extract 24 from 192.168.1.1/24
 unsigned int get_cidr_mask_from_network_as_string(std::string network_cidr_format) {
     std::vector<std::string> subnet_as_string;

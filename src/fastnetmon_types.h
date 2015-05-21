@@ -169,6 +169,9 @@ typedef std::map<unsigned long int, vector_of_counters> map_of_vector_counters;
 typedef std::vector<conntrack_main_struct> vector_of_flow_counters;
 typedef std::map<unsigned long int, vector_of_flow_counters> map_of_vector_counters_for_flow;
 
+typedef map_element subnet_counter_t;
+typedef std::map<subnet, subnet_counter_t> map_for_subnet_counters;
+
 class packed_conntrack_hash {
     public:
     packed_conntrack_hash() : opposite_ip(0), src_port(0), dst_port(0) {

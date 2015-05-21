@@ -92,6 +92,12 @@ std::string redis_host = "127.0.0.1";
 bool redis_enabled = false;
 #endif
 
+// This flag could enable print of ban actions and thresholds on the client's screen 
+bool print_configuration_params_on_the_screen = false;
+
+// Trigger for enable or disable traffic counting for whole subnets
+bool enable_subnet_counters = false;
+
 // We will announce whole subnet instead single IP with BGP if this flag enabled
 bool exabgp_announce_whole_subnet = false;
 
@@ -191,6 +197,13 @@ uint64_t outgoing_total_flows_speed = 0;
 
 map_of_vector_counters SubnetVectorMap;
 
+// Here we store taffic per subnet
+map_for_subnet_counters PerSubnetCountersMap;
+
+// Here we store traffic speed per subnet
+map_for_subnet_counters PerSubnetSpeedMap;
+
+
 // Flow tracking structures
 map_of_vector_counters_for_flow SubnetVectorMapFlow;
 
@@ -248,6 +261,7 @@ bool process_outgoing_traffic = true;
 void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_string);
 #endif
 
+std::string print_subnet_load();
 std::string get_printable_attack_name(attack_type_t attack);
 attack_type_t detect_attack_type(attack_details& current_attack);
 bool we_should_ban_this_ip(map_element* current_average_speed_element);
@@ -268,7 +282,7 @@ void execute_ip_ban(uint32_t client_ip,
                     map_element new_speed_element,
                     map_element current_speed_element,
                     std::string flow_attack_details);
-direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet);
+direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet, unsigned int& subnet_cidr_mask);
 void recalculate_speed();
 std::string print_channel_speed(std::string traffic_type, direction packet_direction);
 void process_packet(simple_packet& current_packet);
@@ -704,6 +718,10 @@ bool load_configuration_file() {
         exabgp_announce_whole_subnet = configuration_map["exabgp_announce_whole_subnet"] == "on" ? true : false;
     }
 
+    if (configuration_map.count("enable_subnet_counters") != 0) {
+        enable_subnet_counters = configuration_map["enable_subnet_counters"] == "on" ? true : false;
+    }
+
     // Graphite
     if (configuration_map.count("graphite") != 0) {
         graphite_enabled = configuration_map["graphite"] == "on" ? true : false;
@@ -872,6 +890,12 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
     conntrack_main_struct zero_conntrack_main_struct;
     std::fill(SubnetVectorMapFlow[subnet_as_integer].begin(),
               SubnetVectorMapFlow[subnet_as_integer].end(), zero_conntrack_main_struct);
+
+    // Initilize per subnet speed and packet counters
+    subnet current_subnet = std::make_pair(subnet_as_integer, bitlen);
+
+    PerSubnetCountersMap[current_subnet] = zero_map_element;
+    PerSubnetSpeedMap[current_subnet] = zero_map_element;
 }
 
 void zeroify_all_counters() {
@@ -1044,7 +1068,8 @@ void process_packet(simple_packet& current_packet) {
 
     // Subnet for found IPs
     unsigned long subnet = 0;
-    direction packet_direction = get_packet_direction(current_packet.src_ip, current_packet.dst_ip, subnet);
+    unsigned int subnet_cidr_mask = 0;
+    direction packet_direction = get_packet_direction(current_packet.src_ip, current_packet.dst_ip, subnet, subnet_cidr_mask);
 
     // Skip processing of specific traffic direction
     if ((packet_direction == INCOMING && !process_incoming_traffic) or
@@ -1061,12 +1086,30 @@ void process_packet(simple_packet& current_packet) {
     // Try to find map key for this subnet
     map_of_vector_counters::iterator itr;
 
+    // Iterator for subnet counter
+    subnet_counter_t* subnet_counter = NULL;
+
     if (packet_direction == OUTGOING or packet_direction == INCOMING) {
+        // Find element in map of vectors
         itr = SubnetVectorMap.find(subnet);
 
         if (itr == SubnetVectorMap.end()) {
             logger << log4cpp::Priority::ERROR << "Can't find vector address in subnet map";
             return;
+        }
+
+        if (enable_subnet_counters) {
+            map_for_subnet_counters::iterator subnet_iterator;
+
+            // Find element in map of subnet counters
+            subnet_iterator = PerSubnetCountersMap.find(std::make_pair(subnet, subnet_cidr_mask));
+
+            if (subnet_iterator == PerSubnetCountersMap.end()) {
+                logger << log4cpp::Priority::ERROR << "Can't find counter structure for subnet";
+                return;
+            }
+
+            subnet_counter = &subnet_iterator->second;
         }
     }
 
@@ -1122,6 +1165,12 @@ void process_packet(simple_packet& current_packet) {
         if (current_packet.ip_fragmented) {
             __sync_fetch_and_add(&current_element->fragmented_out_packets, sampled_number_of_packets);
             __sync_fetch_and_add(&current_element->fragmented_out_bytes, sampled_number_of_bytes);
+        }
+
+        // TODO: add another counters
+        if (enable_subnet_counters) {
+            __sync_fetch_and_add(&subnet_counter->out_packets, sampled_number_of_packets);
+            __sync_fetch_and_add(&subnet_counter->out_bytes,   sampled_number_of_bytes);
         }
 
         conntrack_main_struct* current_element_flow = NULL;
@@ -1209,6 +1258,11 @@ void process_packet(simple_packet& current_packet) {
         // Main packet/bytes counter
         __sync_fetch_and_add(&current_element->in_packets, sampled_number_of_packets);
         __sync_fetch_and_add(&current_element->in_bytes, sampled_number_of_bytes);
+
+        if (enable_subnet_counters) {
+            __sync_fetch_and_add(&subnet_counter->in_packets, sampled_number_of_packets);
+            __sync_fetch_and_add(&subnet_counter->in_bytes,   sampled_number_of_bytes);
+        }
 
         // Count fragmented IP packets
         if (current_packet.ip_fragmented) {
@@ -1372,6 +1426,36 @@ void recalculate_speed() {
     uint64_t incoming_total_flows = 0;
     uint64_t outgoing_total_flows = 0;
 
+    if (enable_subnet_counters) {
+        for (map_for_subnet_counters::iterator itr = PerSubnetSpeedMap.begin(); itr != PerSubnetSpeedMap.end(); ++itr) {
+            subnet current_subnet = itr->first;
+
+            map_for_subnet_counters::iterator iter_subnet = PerSubnetCountersMap.find(current_subnet);
+
+            if (iter_subnet == PerSubnetCountersMap.end()) {
+                logger << log4cpp::Priority::INFO<<"Can't find traffic counters for subnet";
+                break;
+            }
+
+            subnet_counter_t* subnet_traffic = &iter_subnet->second; 
+
+            subnet_counter_t new_speed_element;
+
+            new_speed_element.in_packets = uint64_t((double)subnet_traffic->in_packets / speed_calc_period);
+            new_speed_element.in_bytes   = uint64_t((double)subnet_traffic->in_bytes   / speed_calc_period); 
+
+            new_speed_element.out_packets = uint64_t((double)subnet_traffic->out_packets / speed_calc_period);
+            new_speed_element.out_bytes   = uint64_t((double)subnet_traffic->out_bytes   / speed_calc_period);   
+
+            // Update speed calculation structure
+            PerSubnetSpeedMap[current_subnet] = new_speed_element;
+            *subnet_traffic = zero_map_element;
+
+            //logger << log4cpp::Priority::INFO<<convert_subnet_to_string(current_subnet)
+            //    << "in pps: " << new_speed_element.in_packets << " out pps: " << new_speed_element.out_packets;
+        }
+    }
+
     for (map_of_vector_counters::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); ++itr) {
         for (vector_of_counters::iterator vector_itr = itr->second.begin();
              vector_itr != itr->second.end(); ++vector_itr) {
@@ -1387,6 +1471,10 @@ void recalculate_speed() {
             // covnert to our standard network byte order
             uint32_t client_ip = htonl(client_ip_in_host_bytes_order);
 
+            // Calculate speed for IP or whole subnet
+            // calculate_speed_for_certain_entity(map_element* new_speed_element, map_element* traffic_counter_element);
+
+            // calculate_speed(new_speed_element speed_element, vector_itr* );
             new_speed_element.in_packets = uint64_t((double)vector_itr->in_packets / speed_calc_period);
             new_speed_element.out_packets = uint64_t((double)vector_itr->out_packets / speed_calc_period);
 
@@ -1624,11 +1712,18 @@ void traffic_draw_programm() {
 #endif
 
     // Print thresholds
-    output_buffer << "\n" << print_ban_thresholds();
+    if (print_configuration_params_on_the_screen) {
+        output_buffer << "\n" << print_ban_thresholds();
+    }
 
     if (!ban_list.empty()) {
         output_buffer << std::endl << "Ban list:" << std::endl;
         output_buffer << print_ddos_attack_details();
+    }
+
+    if (enable_subnet_counters) {
+        output_buffer << std::endl << "Subnet load:" << std::endl;
+        output_buffer << print_subnet_load() << "\n";
     }
 
     screen_data_stats = output_buffer.str();
@@ -1958,7 +2053,7 @@ void interruption_signal_handler(int signal_number) {
 }
 
 /* Get traffic type: check it belongs to our IPs */
-direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet) {
+direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet, unsigned int& subnet_cidr_mask) {
     direction packet_direction;
 
     bool our_ip_is_destination = false;
@@ -1972,22 +2067,26 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& 
     prefix_for_check_adreess.add.sin.s_addr = dst_ip;
 
     unsigned long destination_subnet = 0;
+    unsigned int  destination_subnet_cidr_mask = 0;
     found_patrica_node = patricia_search_best2(lookup_tree, &prefix_for_check_adreess, 1);
 
     if (found_patrica_node) {
         our_ip_is_destination = true;
         destination_subnet = found_patrica_node->prefix->add.sin.s_addr;
+        destination_subnet_cidr_mask = found_patrica_node->prefix->bitlen;
     }
 
     found_patrica_node = NULL;
     prefix_for_check_adreess.add.sin.s_addr = src_ip;
 
     unsigned long source_subnet = 0;
+    unsigned int source_subnet_cidr_mask = 0;
     found_patrica_node = patricia_search_best2(lookup_tree, &prefix_for_check_adreess, 1);
 
     if (found_patrica_node) {
         our_ip_is_source = true;
         source_subnet = found_patrica_node->prefix->add.sin.s_addr;
+        source_subnet_cidr_mask = found_patrica_node->prefix->bitlen;
     }
 
     subnet = 0;
@@ -1995,9 +2094,13 @@ direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& 
         packet_direction = INTERNAL;
     } else if (our_ip_is_source) {
         subnet = source_subnet;
+        subnet_cidr_mask = source_subnet_cidr_mask;
+
         packet_direction = OUTGOING;
     } else if (our_ip_is_destination) {
         subnet = destination_subnet;
+        subnet_cidr_mask = destination_subnet_cidr_mask;
+
         packet_direction = INCOMING;
     } else {
         packet_direction = OTHER;
@@ -2711,6 +2814,29 @@ std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element,
             buffer << "UDP flows: " << total_number_of_outgoing_udp_flows << "\n";
             buffer << out_udp << "\n";
         }
+    }
+
+    return buffer.str();
+}
+
+std::string print_subnet_load() {
+    std::stringstream buffer;
+
+    for (map_for_subnet_counters::iterator itr = PerSubnetSpeedMap.begin(); itr != PerSubnetSpeedMap.end(); ++itr) {
+        map_element* speed = &itr->second; 
+
+        buffer
+            << std::setw(18)
+            << std::left
+            << convert_subnet_to_string(itr->first);
+            
+        buffer
+            << "\t"
+            << "pps in: " << speed->in_packets
+            << " out: "    << speed->out_packets
+            << " mbps in: " << convert_speed_to_mbps(speed->in_bytes)
+            << " out: "    << convert_speed_to_mbps(speed->out_bytes)
+            << "\n";
     }
 
     return buffer.str();
