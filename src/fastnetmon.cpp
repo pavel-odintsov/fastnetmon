@@ -281,7 +281,8 @@ std::string print_ddos_attack_details();
 void execute_ip_ban(uint32_t client_ip,
                     map_element new_speed_element,
                     map_element current_speed_element,
-                    std::string flow_attack_details);
+                    std::string flow_attack_details,
+                    subnet_t client_subnet);
 direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet, unsigned int& subnet_cidr_mask);
 void recalculate_speed();
 std::string print_channel_speed(std::string traffic_type, direction packet_direction);
@@ -875,24 +876,23 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
     logger << log4cpp::Priority::INFO << "I will allocate " << network_size_in_ips
            << " records for subnet " << subnet_as_integer << " cidr mask: " << bitlen;
 
+    subnet_t current_subnet = std::make_pair(subnet_as_integer, bitlen);
+
     // Initialize map element
-    SubnetVectorMap[subnet_as_integer] = vector_of_counters(network_size_in_ips);
+    SubnetVectorMap[current_subnet] = vector_of_counters(network_size_in_ips);
 
     // Zeroify all vector elements
     map_element zero_map_element;
     memset(&zero_map_element, 0, sizeof(zero_map_element));
-    std::fill(SubnetVectorMap[subnet_as_integer].begin(), SubnetVectorMap[subnet_as_integer].end(), zero_map_element);
+    std::fill(SubnetVectorMap[current_subnet].begin(), SubnetVectorMap[current_subnet].end(), zero_map_element);
 
     // Initilize map element
-    SubnetVectorMapFlow[subnet_as_integer] = vector_of_flow_counters(network_size_in_ips);
+    SubnetVectorMapFlow[current_subnet] = vector_of_flow_counters(network_size_in_ips);
 
     // On creating it initilizes by zeros
     conntrack_main_struct zero_conntrack_main_struct;
-    std::fill(SubnetVectorMapFlow[subnet_as_integer].begin(),
-              SubnetVectorMapFlow[subnet_as_integer].end(), zero_conntrack_main_struct);
-
-    // Initilize per subnet speed and packet counters
-    subnet_t current_subnet = std::make_pair(subnet_as_integer, bitlen);
+    std::fill(SubnetVectorMapFlow[current_subnet].begin(),
+              SubnetVectorMapFlow[current_subnet].end(), zero_conntrack_main_struct);
 
     PerSubnetCountersMap[current_subnet] = zero_map_element;
     PerSubnetSpeedMap[current_subnet] = zero_map_element;
@@ -1069,6 +1069,7 @@ void process_packet(simple_packet& current_packet) {
     // Subnet for found IPs
     unsigned long subnet = 0;
     unsigned int subnet_cidr_mask = 0;
+
     direction packet_direction = get_packet_direction(current_packet.src_ip, current_packet.dst_ip, subnet, subnet_cidr_mask);
 
     // Skip processing of specific traffic direction
@@ -1077,10 +1078,12 @@ void process_packet(simple_packet& current_packet) {
         return;
     }
 
+    subnet_t current_subnet = std::make_pair(subnet, subnet_cidr_mask); 
+
     uint32_t subnet_in_host_byte_order = 0;
     // We operate in host bytes order and need to convert subnet
     if (subnet != 0) {
-        subnet_in_host_byte_order = ntohl(subnet);
+        subnet_in_host_byte_order = ntohl(current_subnet.first);
     }
 
     // Try to find map key for this subnet
@@ -1091,7 +1094,7 @@ void process_packet(simple_packet& current_packet) {
 
     if (packet_direction == OUTGOING or packet_direction == INCOMING) {
         // Find element in map of vectors
-        itr = SubnetVectorMap.find(subnet);
+        itr = SubnetVectorMap.find(current_subnet);
 
         if (itr == SubnetVectorMap.end()) {
             logger << log4cpp::Priority::ERROR << "Can't find vector address in subnet map";
@@ -1102,7 +1105,7 @@ void process_packet(simple_packet& current_packet) {
             map_for_subnet_counters::iterator subnet_iterator;
 
             // Find element in map of subnet counters
-            subnet_iterator = PerSubnetCountersMap.find(std::make_pair(subnet, subnet_cidr_mask));
+            subnet_iterator = PerSubnetCountersMap.find(current_subnet);
 
             if (subnet_iterator == PerSubnetCountersMap.end()) {
                 logger << log4cpp::Priority::ERROR << "Can't find counter structure for subnet";
@@ -1117,7 +1120,7 @@ void process_packet(simple_packet& current_packet) {
 
     if (enable_conection_tracking) {
         if (packet_direction == OUTGOING or packet_direction == INCOMING) {
-            itr_flow = SubnetVectorMapFlow.find(subnet);
+            itr_flow = SubnetVectorMapFlow.find(current_subnet);
 
             if (itr_flow == SubnetVectorMapFlow.end()) {
                 logger << log4cpp::Priority::ERROR
@@ -1465,7 +1468,7 @@ void recalculate_speed() {
             map_element new_speed_element;
 
             // convert to host order for math operations
-            uint32_t subnet_ip = ntohl(itr->first);
+            uint32_t subnet_ip = ntohl(itr->first.first);
             uint32_t client_ip_in_host_bytes_order = subnet_ip + current_index;
 
             // covnert to our standard network byte order
@@ -1592,7 +1595,7 @@ void recalculate_speed() {
                 }
 
                 // TODO: we should pass type of ddos ban source (pps, flowd, bandwidth)!
-                execute_ip_ban(client_ip, new_speed_element, *current_average_speed_element, flow_attack_details);
+                execute_ip_ban(client_ip, new_speed_element, *current_average_speed_element, flow_attack_details, itr->first);
             }
 
             speed_counters_mutex.lock();
@@ -2178,7 +2181,7 @@ void exabgp_ban_manage(std::string action, std::string ip_as_string) {
     close(exabgp_pipe);
 }
 
-void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element average_speed_element, std::string flow_attack_details) {
+void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element average_speed_element, std::string flow_attack_details, subnet_t customer_subnet) {
     struct attack_details current_attack;
     uint64_t pps = 0;
 
@@ -2256,6 +2259,9 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element a
 
     std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
     std::string pps_as_string = convert_int_to_string(pps);
+
+    // Store information about subnet
+    current_attack.customer_network = customer_subnet;
 
     // Store ban time
     time(&current_attack.ban_timestamp);
@@ -2535,6 +2541,7 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
 
     attack_description
     << "IP: " << convert_ip_as_uint_to_string(client_ip) << "\n"
+    << "Network: " << convert_subnet_to_string(current_attack.customer_network) << "\n"
     << "Attack type: " << printable_attack_type << "\n"
     << "Initial attack power: " << current_attack.attack_power << " packets per second\n"
     << "Peak attack power: " << current_attack.max_attack_power << " packets per second\n"
