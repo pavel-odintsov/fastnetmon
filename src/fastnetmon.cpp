@@ -2539,15 +2539,29 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
     attack_type_t attack_type = detect_attack_type(current_attack);
     std::string printable_attack_type = get_printable_attack_name(attack_type);
 
+
     attack_description
     << "IP: " << convert_ip_as_uint_to_string(client_ip) << "\n"
-    << "Network: " << convert_subnet_to_string(current_attack.customer_network) << "\n"
     << "Attack type: " << printable_attack_type << "\n"
     << "Initial attack power: " << current_attack.attack_power << " packets per second\n"
     << "Peak attack power: " << current_attack.max_attack_power << " packets per second\n"
     << "Attack direction: " << get_direction_name(current_attack.attack_direction) << "\n"
-    << "Attack protocol: " << get_printable_protocol_name(current_attack.attack_protocol) << "\n"
+    << "Attack protocol: " << get_printable_protocol_name(current_attack.attack_protocol) << "\n";
 
+    if (enable_subnet_counters) {
+        // Got subnet tracking structure
+        // TODO: we suppose case "no key exists" is not possible
+        map_element network_speed_meter = PerSubnetSpeedMap[ current_attack.customer_network ];
+
+        attack_description
+        <<"Network: " << convert_subnet_to_string(current_attack.customer_network) << "\n"
+        <<"Network incoming traffic: "<< convert_speed_to_mbps(network_speed_meter.in_bytes) << " mbps\n"
+        <<"Network outgoing traffic: "<< convert_speed_to_mbps(network_speed_meter.out_bytes) << " mbps\n"
+        <<"Network incoming pps: "<< network_speed_meter.in_packets << " packets per second\n"
+        <<"Network outgoing pps: "<< network_speed_meter.out_packets << " packets per second\n"; 
+    }
+
+    attack_description
     << "Total incoming traffic: " << convert_speed_to_mbps(current_attack.in_bytes) << " mbps\n"
     << "Total outgoing traffic: " << convert_speed_to_mbps(current_attack.out_bytes) << " mbps\n"
     << "Total incoming pps: " << current_attack.in_packets << " packets per second\n"
