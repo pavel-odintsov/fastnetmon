@@ -235,8 +235,8 @@ map_for_counters GeoIpCounter;
 std::map<uint32_t, banlist_item> ban_list;
 std::map<uint32_t, std::vector<simple_packet> > ban_list_details;
 
-std::vector<subnet> our_networks;
-std::vector<subnet> whitelist_networks;
+std::vector<subnet_t> our_networks;
+std::vector<subnet_t> whitelist_networks;
 
 // Ban enable/disable flag
 bool we_do_real_ban = true;
@@ -892,7 +892,7 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
               SubnetVectorMapFlow[subnet_as_integer].end(), zero_conntrack_main_struct);
 
     // Initilize per subnet speed and packet counters
-    subnet current_subnet = std::make_pair(subnet_as_integer, bitlen);
+    subnet_t current_subnet = std::make_pair(subnet_as_integer, bitlen);
 
     PerSubnetCountersMap[current_subnet] = zero_map_element;
     PerSubnetSpeedMap[current_subnet] = zero_map_element;
@@ -1428,7 +1428,7 @@ void recalculate_speed() {
 
     if (enable_subnet_counters) {
         for (map_for_subnet_counters::iterator itr = PerSubnetSpeedMap.begin(); itr != PerSubnetSpeedMap.end(); ++itr) {
-            subnet current_subnet = itr->first;
+            subnet_t current_subnet = itr->first;
 
             map_for_subnet_counters::iterator iter_subnet = PerSubnetCountersMap.find(current_subnet);
 

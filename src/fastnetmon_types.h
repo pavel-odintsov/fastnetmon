@@ -31,7 +31,7 @@ class simple_packet {
     struct timeval ts;
 };
 
-typedef std::pair<uint32_t, uint32_t> subnet;
+typedef std::pair<uint32_t, uint32_t> subnet_t;
 typedef void (*process_packet_pointer)(simple_packet&);
 
 // Enum with available sort by field
@@ -110,6 +110,9 @@ class attack_details : public map_element {
     : attack_protocol(0), attack_power(0), max_attack_power(0), average_in_bytes(0),
       average_out_bytes(0), average_in_packets(0), average_out_packets(0), average_in_flows(0),
       average_out_flows(0), ban_time(0), attack_direction(OTHER) {
+
+        customer_network.first = 0;
+        customer_network.second = 0;
     }
     direction attack_direction;
     // first attackpower detected
@@ -129,6 +132,8 @@ class attack_details : public map_element {
     // time when we but this user
     time_t ban_timestamp;
     int ban_time; // seconds of the ban
+
+    subnet_t customer_network;
 };
 
 
@@ -170,7 +175,7 @@ typedef std::vector<conntrack_main_struct> vector_of_flow_counters;
 typedef std::map<unsigned long int, vector_of_flow_counters> map_of_vector_counters_for_flow;
 
 typedef map_element subnet_counter_t;
-typedef std::map<subnet, subnet_counter_t> map_for_subnet_counters;
+typedef std::map<subnet_t, subnet_counter_t> map_for_subnet_counters;
 
 class packed_conntrack_hash {
     public:
