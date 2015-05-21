@@ -77,5 +77,6 @@ bool read_pid_from_file(pid_t& pid, std::string pid_path);
 
 std::string convert_prefix_to_string_representation(prefix_t* prefix);
 std::string find_subnet_by_ip_in_string_format(patricia_tree_t* patricia_tree, std::string ip);
+std::string convert_subnet_to_string(subnet my_subnet);
 
 #endif
