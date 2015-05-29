@@ -160,13 +160,24 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
     }
 
     unsigned int payload_length = packet_header.len - packet_header.extended_hdr.parsed_pkt.offset.payload_offset;
-    process_netflow_packet((u_int8_t*)payload_ptr, payload_length);
+    std::string fake_peer_ip = "10.0.1.2";
+    process_netflow_packet((u_int8_t*)payload_ptr, payload_length, fake_peer_ip);
 }
 
-int main() {
+int main(int argc, char** argv) {
     init_logging();
+
+    if (argc != 2) {
+        printf("Please provide path to pcap dump\n");
+        exit(1);
+    }
+
+    printf("We will process file: %s\n", argv[1]);
+    pcap_reader(argv[1]);
+
+
     // pcap_reader("/root/netflowexample2_netflow9_cisco_sampling_issue.pcap");
-    pcap_reader("/root/flow_dump_ipfix_issue_with_fixed_to_2055.pcap");
+    //pcap_reader("/root/flow_dump_ipfix_issue_with_fixed_to_2055.pcap");
     // pcap_reader("/root/ipfix_example_ipt_netflow_syn_flood.pcap");
     // pcap_reader("/Users/pavel-odintsov/Dropbox/ipfix_example_ipt_netflow_syn_flood.pcap");
 }
