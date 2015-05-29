@@ -177,17 +177,28 @@ target_link_libraries(fastnetmon ipfix_rfc)
 # Link to our functions
 target_link_libraries(fastnetmon fast_library)
 
-# Our plugins
-target_link_libraries(fastnetmon sflow_plugin)
-
 if (ENABLE_PFRING_SUPPORT)
 target_link_libraries(fastnetmon pfring_plugin)
 endif()
 
-target_link_libraries(fastnetmon netflow_plugin)
-target_link_libraries(fastnetmon pcap_plugin)
-target_link_libraries(fastnetmon example_plugin)
-target_link_libraries(fastnetmon netmap_plugin)
+target_link_libraries(fastnetmon sflow_plugin netflow_plugin pcap_plugin example_plugin netmap_plugin)
+
+# cmake .. -DBUILD_PLUGIN_RUNNER=ON
+if (BUILD_PLUGIN_RUNNER)
+    add_executable(fastnetmon_plugin_runner plugin_runner.cpp)
+
+    target_link_libraries(fastnetmon_plugin_runner patricia)
+    target_link_libraries(fastnetmon_plugin_runner ${LOG4CPP_LIBRARY_PATH})
+    target_link_libraries(fastnetmon_plugin_runner fast_library)
+
+    # Add all plugins
+    target_link_libraries(fastnetmon_plugin_runner sflow_plugin netflow_plugin pcap_plugin example_plugin netmap_plugin)
+
+    if (ENABLE_PFRING_SUPPORT)
+        target_link_libraries(fastnetmon_plugin_runner ${PFRING_LIBRARIES})
+        target_link_libraries(fastnetmon_plugin_runner pfring_plugin)
+    endif()
+endif()
 
 install(TARGETS fastnetmon DESTINATION bin)
 install(TARGETS fastnetmon_client DESTINATION bin)
