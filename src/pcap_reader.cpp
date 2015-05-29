@@ -15,10 +15,10 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include "../netflow_plugin/netflow_collector.h"
-#include "../fastnetmon_packet_parser.h"
-#include "../fastnetmon_types.h"
-#include "../fast_library.h"
+#include "netflow_plugin/netflow_collector.h"
+#include "fastnetmon_packet_parser.h"
+#include "fastnetmon_types.h"
+#include "fast_library.h"
 
 #include "log4cpp/Category.hh"
 #include "log4cpp/Appender.hh"

@@ -200,5 +200,15 @@ if (BUILD_PLUGIN_RUNNER)
     endif()
 endif()
 
+# cmake .. -DBUILD_PCAP_READER=ON
+if (BUILD_PCAP_READER)
+    add_executable(fastnetmon_pcap_reader pcap_reader.cpp)
+
+    target_link_libraries(fastnetmon_pcap_reader patricia)
+    target_link_libraries(fastnetmon_pcap_reader fast_library)
+    target_link_libraries(fastnetmon_pcap_reader ${LOG4CPP_LIBRARY_PATH})
+    target_link_libraries(fastnetmon_pcap_reader netflow_plugin)    
+endif()
+
 install(TARGETS fastnetmon DESTINATION bin)
 install(TARGETS fastnetmon_client DESTINATION bin)
