@@ -863,6 +863,10 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len) {
         return;
     }
 
+    // Yes, but we whould zeroify two bits where sampling type stored
+    //uint16_t netflow5_sampling_ratio = fast_ntoh(nf5_hdr->sampling_rate);
+    uint16_t netflow5_sampling_ratio = sampling_rate;
+
     for (u_int i = 0; i < nflows; i++) {
         size_t offset = NF5_PACKET_SIZE(i);
         struct NF5_FLOW* nf5_flow = (struct NF5_FLOW*)(packet + offset);
@@ -891,14 +895,8 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len) {
         current_packet.number_of_packets = fast_ntoh(nf5_flow->flow_packets);
 
         // TODO: use sampling data from packet, disable customization here
-        // accoring to https://www.plixer.com/support/netflow_v5.html
-        // fields: reserved1, reserved2 
-        // should be implemented as single 16 byte value which consist os 2 byte (mode)
-        // and 14 byte integer representation of sampling rate
-        // "First two bits hold the sampling mode; remaining 14 bits hold value of sampling interval"
-
         // Wireshark dump approves this idea
-        current_packet.sample_ratio = sampling_rate;
+        current_packet.sample_ratio = netflow5_sampling_ratio;
 
         current_packet.source_port = fast_ntoh(nf5_flow->src_port);
         current_packet.destination_port = fast_ntoh(nf5_flow->dest_port);
