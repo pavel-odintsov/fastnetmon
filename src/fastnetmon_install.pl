@@ -82,9 +82,18 @@ sub install {
 
     if ($distro_type eq 'debian') {
         `apt-get update`;
-        my @debian_packages_for_pfring = ('build-essential', 'bison', 'flex', "linux-headers-$kernel_version",
+        my @debian_packages_for_pfring = ('build-essential', 'bison', 'flex',
             'libnuma-dev', 'wget', 'tar', 'make', 'dpkg-dev', 'dkms', 'debhelper');
+   
+        my $kernel_headers_package_name = "linux-headers-$kernel_version";
+  
+        if ($appliance_name eq 'vyos') { 
+            # VyOS uses another name for package for building kernel modules
+            $kernel_headers_package_name = 'linux-vyatta-kbuild';
+        }
 
+        push @debian_packages_for_pfring, $kernel_headers_package_name;
+    
         # We install one package per apt-get call because installing multiple packages in one time could fail of one
         # pacakge broken
         for my $package (@debian_packages_for_pfring) {
@@ -93,6 +102,12 @@ sub install {
             if ($? != 0) {
                 print "Package '$package' install failed with code $?\n"
             }  
+        }
+
+
+        if ($appliance_name eq 'vyos') {
+            # By default we waven't this symlink and should add it manually
+            `ln -s /usr/src/linux-image/debian/build/build-amd64-none-amd64-vyos/ /lib/modules/$kernel_version/build`;
         }
     } elsif ($distro_type eq 'centos') {
         my $kernel_package_name = 'kernel-devel';
