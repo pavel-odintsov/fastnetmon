@@ -28,6 +28,14 @@
 #include <net/netmap_user.h>
 #include <boost/thread.hpp>
 
+#if defined(__FreeBSD__)
+// On FreeBSD function pthread_attr_setaffinity_np declared here
+#include <pthread_np.h>
+
+// Also we have different type name for cpu set's store
+typedef cpuset_t cpu_set_t;
+#endif
+
 #include "../fastnetmon_packet_parser.h"
 
 // For pooling operations
