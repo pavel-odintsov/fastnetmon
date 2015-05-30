@@ -191,3 +191,23 @@ target_link_libraries(fastnetmon netmap_plugin)
 
 install(TARGETS fastnetmon DESTINATION bin)
 install(TARGETS fastnetmon_client DESTINATION bin)
+
+# Configure cpack package builder
+# Run it with: cd build; cpack -G DEB ..
+set(CPACK_PACKAGE_NAME "fastnetmon")
+set(CPACK_PACKAGE_VENDOR "vps2fast.com")
+set(CPACK_PACKAGE_CONTACT "pavel.odintsov@gmail.com")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "FastNetMon - very fast DDoS analyzer with sflow/netflow/mirror support")
+set(CPACK_PACKAGE_VERSION "1.1.2")
+set(CPACK_PACKAGE_VERSION_MAJOR "1")
+set(CPACK_PACKAGE_VERSION_MINOR "1")
+set(CPACK_PACKAGE_VERSION_PATCH "2")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "")
+# set(CPACK_PACKAGE_INSTALL_DIRECTORY "CPack Component Example")
+
+# Specify config for deb package
+# http://www.cmake.org/Wiki/CMake:CPackPackageGenerators#DEB_.28UNIX_only.29
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-thread-dev, libboost-system-dev, libboost-regex-dev, libpcap-dev, libnuma-dev, liblog4cpp5-dev")
+
+# This must always be last!
+include(CPack)
