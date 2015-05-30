@@ -89,7 +89,11 @@ struct NF1_FLOW {
 struct NF5_HEADER {
     struct NF_HEADER_COMMON c;
     u_int32_t uptime_ms, time_sec, time_nanosec, flow_sequence;
-    u_int8_t engine_type, engine_id, reserved1, reserved2;
+    u_int8_t engine_type, engine_id;
+    // "First two bits hold the sampling mode; remaining 14 bits hold value of sampling interval"
+    // accoring to https://www.plixer.com/support/netflow_v5.html
+    // http://www.cisco.com/c/en/us/td/docs/net_mgmt/netflow_collection_engine/3-6/user/guide/format.html 
+    u_int16_t sampling_rate;
 } __packed;
 struct NF5_FLOW {
     u_int32_t src_ip, dest_ip, nexthop_ip;

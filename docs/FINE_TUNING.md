@@ -75,6 +75,26 @@ Ninja use all CPUs for build process:
 4  [||||||||||||||||||||||||||||||||||||||||||||||100.0%]
 ```
 
+Build script for reading Netflow (v5, v9, ipfix) data from pcap dump:
+```bash
+cmake .. -DBUILD_PCAP_READER=ON
+```
+
+Run pcap data:
+```bash
+./fastnetmon_pcap_reader dump.pcap
+```
+
+Build script for running packet capture plugins without analyzer backend:
+```bash
+cmake .. -DBUILD_PLUGIN_RUNNER=ON
+```
+
+Examples for different plugins (plugin name could be netflow, netmap, sflow, pfring, pcap):
+```bash
+./fastnetmon_plugin_runner netflow
+```
+
 Performance tuning:
 - Do not use short prefixes (lesser then /24)
 - Do not use extremely big prefixes (/8, /16) because memory consumption will be very big
