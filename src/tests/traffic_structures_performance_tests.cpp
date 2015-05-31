@@ -192,7 +192,7 @@ int run_tests(void (*tested_function)(void)) {
     double ops_per_second = total_operations / used_time;;
     double mega_ops_per_second = ops_per_second / 1000 / 1000;
 
-    printf("%'.1lf mega ops per second\n", mega_ops_per_second);
+    printf("%'.1f mega ops per second\n", mega_ops_per_second);
 }
 
 int main() {
