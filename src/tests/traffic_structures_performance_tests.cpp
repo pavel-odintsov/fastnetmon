@@ -9,6 +9,7 @@
 #include <boost/thread/mutex.hpp>
 
 // apt-get install -y libtbb-dev
+// g++ traffic_structures_performance_tests.cpp -std=c++11 -lboost_system  -lboost_thread -ltbb 
 #include "tbb/concurrent_unordered_map.h"
 
 typedef struct {
@@ -42,14 +43,22 @@ using namespace std;
 int number_of_ips = 100000;
 int number_of_retries = 100;
 
+// #define enable_mutexex_in_test
+unsigned int number_of_threads = 1;
+
 // 83 seconds
 // without mutexes segmentation fault
 void packet_collector_thread_std_map() {
     for (int iteration = 0; iteration < number_of_retries; iteration++) {
         for (uint32_t i = 0; i < number_of_ips; i++) {
+#ifdef enable_mutexex_in_test
             data_counter_mutex.lock();
+#endif
             DataCounter[i].udp_in_bytes++;
+
+#ifdef enable_mutexex_in_test
             data_counter_mutex.unlock();
+#endif
         }
     }
 }
@@ -59,9 +68,13 @@ void packet_collector_thread_std_map() {
 void packet_collector_thread_unordered_map() {
     for (int iteration = 0; iteration < number_of_retries; iteration++) {
         for (uint32_t i = 0; i < number_of_ips; i++) {
+#ifdef enable_mutexex_in_test
             data_counter_mutex.lock();
+#endif
             DataCounterUnordered[i].udp_in_bytes++;
+#ifdef enable_mutexex_in_test
             data_counter_mutex.unlock();
+#endif
         }
     }
 }
@@ -78,16 +91,16 @@ int run_tests(void (*tested_function)(void)) {
     timespec start_time;
     clock_gettime(CLOCK_REALTIME, &start_time);
 
-    std::cout << "Run threads" << endl;
-    boost::thread* threads[8];
-    for (int i = 0; i < 9; i++) {
+    std::cout << "Run "<< number_of_threads <<" threads" << endl;
+    boost::thread* threads[number_of_threads];
+    for (int i = 0; i < number_of_threads; i++) {
         threads[i] = new boost::thread(tested_function);
     }
 
     std::cout << "All threads started" << endl;
 
     std::cout << "Wait for finishing" << endl;
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < number_of_threads; i++) {
         threads[i]->join();
     }
     cout << "All threads finished" << endl;
