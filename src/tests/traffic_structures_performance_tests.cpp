@@ -9,6 +9,7 @@
 
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/unordered_map.hpp>
 
 // apt-get install -y libtbb-dev
 // g++ traffic_structures_performance_tests.cpp -std=c++11 -lboost_system  -lboost_thread -ltbb 
@@ -38,6 +39,9 @@ boost::mutex data_counter_mutex;
 
 std::unordered_map<uint32_t, map_element> DataCounterUnordered;
 std::unordered_map<uint32_t, map_element> DataCounterUnorderedPreallocated;
+
+boost::unordered_map<uint32_t, map_element> DataCounterBoostUnordered;
+
 tbb::concurrent_unordered_map<uint32_t, map_element> DataCounterUnorderedConcurrent;
 std::vector<map_element> DataCounterVector;
 
@@ -66,8 +70,20 @@ void packet_collector_thread_std_map() {
     }
 }
 
-// 52 seconds
-// without mutexes segmentation fault
+void packet_collector_thread_boost_unordered_map() {
+    for (int iteration = 0; iteration < number_of_retries; iteration++) {
+        for (uint32_t i = 0; i < number_of_ips; i++) {
+#ifdef enable_mutexex_in_test
+            data_counter_mutex.lock();
+#endif
+            DataCounterBoostUnordered[i].udp_in_bytes++;
+#ifdef enable_mutexex_in_test
+            data_counter_mutex.unlock();
+#endif
+        }   
+    }   
+}
+
 void packet_collector_thread_unordered_map() {
     for (int iteration = 0; iteration < number_of_retries; iteration++) {
         for (uint32_t i = 0; i < number_of_ips; i++) {
@@ -188,16 +204,19 @@ int main() {
     run_tests(packet_collector_thread_unordered_concurrent_map);
     DataCounterUnorderedConcurrent.clear();
 
+    // Boost unordered map
+    std::cout << "boost::unordered_map: ";
+    run_tests(packet_collector_thread_boost_unordered_map);
+    DataCounterBoostUnordered.clear();
+
     std::cout << "std::unordered_map C++11: ";
     run_tests(packet_collector_thread_unordered_map);
     DataCounterUnordered.clear();
 
     // Preallocate hash buckets
     DataCounterUnorderedPreallocated.reserve( number_of_ips );
-
     std::cout << "std::unordered_map C++11 preallocated: ";
     run_tests(packet_collector_thread_unordered_map_preallocated);
- 
     DataCounterUnorderedPreallocated.clear();
 
     // Preallocate vector
