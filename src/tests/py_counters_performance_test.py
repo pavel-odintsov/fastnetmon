@@ -4,8 +4,8 @@ import time
 my_dict = {}
 
 
-# Intel(R) Core(TM) i7-3635QM CPU @ 2.40GHz
-# 4.8 MOPS
+# Intel(R) Core(TM) i7-3635QM CPU @ 2.40GHz: 4.8 MOPS
+# Intel(R) Core(TM) i7-3820 CPU @ 3.60GHz: 7.0 MOPS
 
 iterations = 10**6*14
 
