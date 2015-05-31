@@ -181,13 +181,15 @@ sub install {
     print "Install FastNetMon dependency list\n";
 
     if ($distro_type eq 'debian') {
-        my @fastnetmon_deps = ("git", "g++", "gcc", "libboost-all-dev", "libgpm-dev", "libncurses5-dev",
+        my @fastnetmon_deps = ("git", "g++", "gcc", "libgpm-dev", "libncurses5-dev",
             "liblog4cpp5-dev", "libnuma-dev", "libgeoip-dev","libpcap-dev", "clang", "cmake"
         );
 
         # We add this dependencies because package libboost-all-dev is broken on VyOS
         if ($appliance_name eq 'vyos') {
             push @fastnetmon_deps, ('libboost-regex-dev', 'libboost-system-dev', 'libboost-thread-dev');
+        } else {
+            push @fastnetmon_deps, "libboost-all-dev";
         }
 
         # We install one package per apt-get call because installing multiple packages in one time could fail of one
