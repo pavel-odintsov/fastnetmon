@@ -92,6 +92,8 @@ std::string redis_host = "127.0.0.1";
 bool redis_enabled = false;
 #endif
 
+bool monitor_local_ip_addresses = true;
+
 // This flag could enable print of ban actions and thresholds on the client's screen 
 bool print_configuration_params_on_the_screen = false;
 
@@ -663,6 +665,10 @@ bool load_configuration_file() {
         }
     }
 
+    if (configuration_map.count("monitor_local_ip_addresses") != 0) {
+        monitor_local_ip_addresses = configuration_map["monitor_local_ip_addresses"] == "on" ? true : false;
+    }
+
     if (configuration_map.count("exabgp") != 0) {
         if (configuration_map["exabgp"] == "on") {
             exabgp_enabled = true;
@@ -987,7 +993,7 @@ bool load_our_networks_list() {
                << " networks from /proc/vz/veip";
     }
 
-    if (file_exists("/sbin/ip")) {
+    if (monitor_local_ip_addresses && file_exists("/sbin/ip")) {
         logger << log4cpp::Priority::INFO
                << "We are working on Linux and could use ip tool for detecting local IP's";
 
