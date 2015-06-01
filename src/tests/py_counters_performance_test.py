@@ -17,6 +17,7 @@ for index in range(0, iterations):
     my_dict[index] = index
 
 stop = time.time()
+interval = stop - start
 
-print iterations / (stop - start) / 10**6, "millions of iterations per second"
+print iterations / interval / 10**6, "millions of iterations per second"
 
