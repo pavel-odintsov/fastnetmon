@@ -14,7 +14,7 @@ start = time.time()
 
 # Emulate 14.6 mpps
 for index in range(0, iterations):
-    my_dict[index] = index
+    my_dict[index] = { "udp": 0 } 
 
 stop = time.time()
 interval = stop - start
