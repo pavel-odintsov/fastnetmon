@@ -7,8 +7,9 @@ Thanks file! For all peoples which helped this project :)
 - waszi for testing DNA/ZC mode
 - Martin Stoyanov for guides for Slackware
 - Andreas Begemann for debugging issue https://github.com/FastVPSEestiOu/fastnetmon/issues/90
-- t0ly for VM's with FreebSD 9, 10, 11
+- t0ly for VMs with FreebSD 9, 10, 11
 - Cojacfar / https://github.com/Cojacfar help with documentation transaltion! 
 - Thomas Mangin for help with ExaBGP integration
 - aabc for ipt_NETFLOW very useful tool for testing netflow plugin
 - Denis Denisov for FreeBSD rc script
+- Alexei Takaseev for AltLinux packages
