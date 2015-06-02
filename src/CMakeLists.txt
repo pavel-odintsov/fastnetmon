@@ -91,11 +91,13 @@ target_link_libraries(netflow_plugin ipfix_rfc)
 add_library(pcap_plugin STATIC pcap_plugin/pcap_collector.cpp)
 target_link_libraries(pcap_plugin pcap)
 
+find_package(Threads)
+
 if (ENABLE_PFRING_SUPPORT) 
     add_library(pfring_plugin STATIC pfring_plugin/pfring_collector.cpp)
     target_link_libraries(pfring_plugin ${PFRING_LIBRARIES})
     target_link_libraries(pfring_plugin numa)
-    target_link_libraries(pfring_plugin pthread)
+    target_link_libraries(pfring_plugin ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
 # example plugin
@@ -169,7 +171,7 @@ endif()
 
 target_link_libraries(fastnetmon ${LOG4CPP_LIBRARY_PATH})
 
-target_link_libraries(fastnetmon pthread)
+target_link_libraries(fastnetmon ${CMAKE_THREAD_LIBS_INIT})
 
 # Our libs
 target_link_libraries(fastnetmon patricia)
