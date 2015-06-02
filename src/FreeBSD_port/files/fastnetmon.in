@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# PROVIDE: fastnetmon
+# REQUIRE: NETWORKING SERVERS LOGIN
+# BEFORE:  securelevel
+# KEYWORD: shutdown
+
+# Add the following line to /etc/rc.conf to enable `fastnetmon':
+#
+# fastnetmon_enable="YES"
+#
+
+. /etc/rc.subr
+
+name="fastnetmon"
+rcvar="${name}_enable"
+
+command="%%PREFIX%%/bin/fastnetmon"
+pidfile="/var/run/fastnetmon/$name.pid"
+
+load_rc_config "$name"
+
+: ${fastnetmon_enable:="NO"}
+# TODO: enable this after updating /usr/ports/{UIDs,GIDs}
+#: ${fastnetmon_user:="fastnetmon"}
+: ${fastnetmon_flags:="--daemonize"}
+
+run_rc_command "$1"
