@@ -217,6 +217,8 @@ endif()
 install(TARGETS fastnetmon DESTINATION bin)
 install(TARGETS fastnetmon_client DESTINATION bin)
 
+install(FILES fastnetmon.conf DESTINATION etc)
+
 # Configure cpack package builder
 # Run it with: cd build; cpack -G DEB ..
 set(CPACK_PACKAGE_NAME "fastnetmon")
