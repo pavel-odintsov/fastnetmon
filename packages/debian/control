@@ -9,4 +9,4 @@ Package: fastnetmon
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, libboost-thread-dev, libboost-system-dev, libboost-regex-dev, libpcap-dev, libnuma-dev, liblog4cpp5-dev 
 Description: Very fast DDoS analyzer with sflow/netflow/mirror support
-FastNetMon - A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
+ FastNetMon - A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines.
