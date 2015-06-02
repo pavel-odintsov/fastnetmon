@@ -1,2 +1,5 @@
 bin/fastnetmon
 bin/fastnetmon_client
+@sample etc/fastnetmon.conf.sample
+@dir /var/run/fastnetmon
+@dir /var/log/fastnetmon
