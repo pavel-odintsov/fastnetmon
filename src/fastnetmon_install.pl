@@ -283,6 +283,11 @@ sub install {
         `sed -i 's/interfaces.*/interfaces = $interfaces_as_list/' $fastnetmon_config_path`;
     }
 
+    print "If you have any issues, please check /var/log/fastnetmon.log file contents\n";
+    print "Please add your subnets in /etc/networks_list in CIDR format one subnet per line\n";
+
+    my $we_have_init_script_for_this_machine = '';    
+
     # Init file for any systemd aware distro
     if ( ($distro_type eq 'debian' && $distro_version >= 7) or ($distro_type eq 'centos' && $distro_version >= 7) ) {
         my $systemd_service_path = "/etc/systemd/system/fastnetmon.service";
@@ -291,7 +296,9 @@ sub install {
         `sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $systemd_service_path`;
 
         print "We found systemd enabled distro and created service: fastnetmon.service\n";
-        print "You could run it with command: systemctl start fastnetmon.service\n";        
+        print "You could run it with command: systemctl start fastnetmon.service\n";
+
+        $we_have_init_script_for_this_machine = 1; 
     }
 
     # Init file for CentOS 6
@@ -302,11 +309,14 @@ sub install {
         `sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $system_init_path`;
 
         print "We created service fastnetmon for you\n";
-        print "You could run it with command: /etc/init.d/fastnetmon start\n"; 
+        print "You could run it with command: /etc/init.d/fastnetmon start\n";
+
+        $we_have_init_script_for_this_machine = 1; 
     }
 
-    print "Please add your subnets in /etc/networks_list in CIDR format one subnet per line\n";
-    print "You can run fastnetmon with command: $fastnetmon_dir/fastnetmon\n";
+    unless ($we_have_init_script_for_this_machine) {
+        print "You can run fastnetmon with command: $fastnetmon_dir/fastnetmon\n";
+    }
 }
 
 sub get_active_network_interfaces {
@@ -326,3 +336,4 @@ sub get_active_network_interfaces {
 
     return  @clean_interfaces;
 }
+
