@@ -1,0 +1,46 @@
+--- src/CMakeLists.txt.orig	2015-06-02 16:43:16 UTC
++++ src/CMakeLists.txt
+@@ -14,8 +14,8 @@ set (Tutorial_VERSION_MAJOR 1)
+ set (Tutorial_VERSION_MINOR 1)
+ 
+ # It's pretty safe and provide big speedup for our packet processor and patricia code
+-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 ")
+-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
++set(CMAKE_C_FLAGS_RELEASE "-O2")
++set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+ 
+ set(FASTNETMON_PROFILER OFF)
+ 
+@@ -91,11 +91,13 @@ target_link_libraries(netflow_plugin ipf
+ add_library(pcap_plugin STATIC pcap_plugin/pcap_collector.cpp)
+ target_link_libraries(pcap_plugin pcap)
+ 
++find_package(Threads)
++
+ if (ENABLE_PFRING_SUPPORT) 
+     add_library(pfring_plugin STATIC pfring_plugin/pfring_collector.cpp)
+     target_link_libraries(pfring_plugin ${PFRING_LIBRARIES})
+     target_link_libraries(pfring_plugin numa)
+-    target_link_libraries(pfring_plugin pthread)
++    target_link_libraries(pfring_plugin ${CMAKE_THREAD_LIBS_INIT})
+ endif()
+ 
+ # example plugin
+@@ -169,7 +171,7 @@ endif()
+ 
+ target_link_libraries(fastnetmon ${LOG4CPP_LIBRARY_PATH})
+ 
+-target_link_libraries(fastnetmon pthread)
++target_link_libraries(fastnetmon ${CMAKE_THREAD_LIBS_INIT})
+ 
+ # Our libs
+ target_link_libraries(fastnetmon patricia)
+@@ -217,6 +219,8 @@ endif()
+ install(TARGETS fastnetmon DESTINATION bin)
+ install(TARGETS fastnetmon_client DESTINATION bin)
+ 
++install(FILES fastnetmon.conf DESTINATION etc)
++
+ # Configure cpack package builder
+ # Run it with: cd build; cpack -G DEB ..
+ set(CPACK_PACKAGE_NAME "fastnetmon")
