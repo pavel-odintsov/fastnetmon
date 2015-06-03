@@ -30,17 +30,17 @@
 #include "fast_platform.h"
 
 // Plugins
-#include "sflow_plugin/sflow_collector.h"
-#include "netflow_plugin/netflow_collector.h"
-#include "pcap_plugin/pcap_collector.h"
-#include "netmap_plugin/netmap_collector.h"
+#include "plugins/sflow/sflow_collector.h"
+#include "plugins/netflow/netflow_collector.h"
+#include "plugins/pcap/pcap_collector.h"
+#include "plugins/netmap/netmap_collector.h"
 
 #ifdef PF_RING
-#include "pfring_plugin/pfring_collector.h"
+#include "plugins/pfring/pfring_collector.h"
 #endif
 
 // Yes, maybe it's not an good idea but with this we can guarantee working code in example plugin
-#include "example_plugin/example_collector.h"
+#include "plugins/example/example_collector.h"
 
 
 #include <algorithm>

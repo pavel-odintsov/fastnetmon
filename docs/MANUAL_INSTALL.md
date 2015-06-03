@@ -2,14 +2,14 @@ At first you should install PF_RING (you can install any latest version
 
 ```bash
 cd /usr/src
-wget 'http://downloads.sourceforge.net/project/ntop/PF_RING/PF_RING-6.0.3.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fntop%2Ffiles%2FPF_RING%2F&ts=1402307916&use_mirror=cznic' -OPF_RING-6.0.3.tar.gz
-tar -xf PF_RING-6.0.3.tar.gz 
+wget 'https://github.com/ntop/PF_RING/archive/v6.0.3.tar.gz' -OPF_RING-6.0.3.tar.gz
+tar -xf PF_RING-6.0.3.tar.gz
 cd PF_RING-6.0.3
 # Debian way
 apt-get install build-essential bison flex linux-headers-$(uname -r) libnuma-dev
 # CentOS
 yum install -y make bison flex kernel-devel gcc gcc-c++
-# CentOS openvz case 
+# CentOS openvz case
 yum install -y make bison flex vzkernel-devel gcc gcc-c++
 ```
 
@@ -87,4 +87,4 @@ Enable programm start on server startup, please add to /etc/rc.local this lines:
 screen -S fastnetmon -d -m /root/fastnetmon/fastnetmon
 ```
 
-When incoming or outgoing attack arrives programm call bash script (when it exists): /usr/local/bin/notify_about_attack.sh two times. First time when threshold exceed (at this step we know IP, direction and power of attack). Second when we collect 100 packets for detailed audit what did happens.
+When incoming or outgoing attack arrives programm call bash script (when it exists): /usr/local/bin/notify_fastnetmon_attack.sh two times. First time when threshold exceed (at this step we know IP, direction and power of attack). Second when we collect 100 packets for detailed audit what did happens.

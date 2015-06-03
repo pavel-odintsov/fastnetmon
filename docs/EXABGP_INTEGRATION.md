@@ -43,12 +43,12 @@ group Core_v4 {
         # Local IP addess which used for connections to this peer
         local-address 10.0.3.114;
         description "Quagga";
-    }   
+    }
 
     # Add this line for process management
     process service-dynamic {
         run /usr/bin/socat stdout pipe:/var/run/exabgp.cmd;
-    }   
+    }
 }
 ```
 

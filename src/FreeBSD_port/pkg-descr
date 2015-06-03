@@ -1,5 +1,0 @@
-FastNetMon - A high performance DoS/DDoS load analyzer built on top
-of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap,
-PF_RING, PCAP).
-
-WWW: https://github.com/FastVPSEestiOu/fastnetmon

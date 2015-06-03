@@ -14,17 +14,17 @@ group Core_v4 {
     # Static announce is not used
     # static {
     #     route 10.10.10.1/32 next-hop 10.0.3.114 community 65001:666;
-    # }   
+    # }
 
     neighbor 10.0.3.115 {
         local-address 10.0.3.114;
         description "Quagga";
-    }   
+    }
 
     # Add this line for process management
     process service-dynamic {
         run /etc/exabgp/exabgp_pipe_provider.sh;
-    }   
+    }
 }
 ```
 

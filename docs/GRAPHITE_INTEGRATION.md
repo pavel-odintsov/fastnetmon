@@ -12,21 +12,21 @@ graphite_port = 2003
 graphite_prefix = fastnetmon
 ```
 
-### Install Graphite Debian 8 Jessie 
+### Install Graphite Debian 8 Jessie
 
 First of all, please install all packages:
 ```bash
 apt-get install python-whisper graphite-carbon
 ```
 
-Whisper - it's database for data. Graphite - service for storing and retrieving data from database. 
+Whisper - it's database for data. Graphite - service for storing and retrieving data from database.
 
 Install web frontend:
 ```bash
 apt-get install -y graphite-web
 ```
 
-Create database, specify login/password and email here: 
+Create database, specify login/password and email here:
 ```bash
 graphite-manage syncdb
 ```
@@ -50,7 +50,7 @@ systemctl enable apache2.service
 systemctl restart apache2.service
 ```
 
-Open site: 
+Open site:
 http://ip.ad.dr.es
 
 Put test data to Graphite:
