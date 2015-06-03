@@ -212,16 +212,6 @@ sub install {
         `yum install -y $fastnetmon_deps_as_string`;
     }
 
-    if ($distro_type eq 'centos' && $distro_version == 7) {
-        # CentOS 7 has not log4cpp in repo and we should build it manually
-        `wget 'http://sourceforge.net/projects/log4cpp/files/latest/download?source=files' -O/usr/src/log4cpp-1.1.1.tar.gz`;
-	chdir "/usr/src";
-	`tar -xf log4cpp-1.1.1.tar.gz`;
-	chdir "/usr/src/log4cpp";
-	`./configure --prefix=/opt/log4cpp1.1.1`;
-	`make install`; 
-    }
-
     print "Clone FastNetMon repo\n";
     chdir "/usr/src";
 
@@ -243,10 +233,6 @@ sub install {
 
     unless ($we_have_pfring_support) {
         $cmake_params .= " -DDISABLE_PF_RING_SUPPORT=ON";
-    }
-
-    if ($distro_type eq 'centos' && $distro_version == 7) {
-        $cmake_params .= " -DWE_USE_CUSTOM_LOG4CPP=on";
     }
 
     if ($distro_type eq 'centos' && $distro_version == 6) {
