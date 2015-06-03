@@ -36,7 +36,7 @@ start() {
         echo -n $"Starting $PROGNAME: "
         $FASTNETMON $ARGS > /dev/null 2>&1 && echo_success || echo_failure
         RETVAL=$?
-        echo "" 
+        echo ""
         return $RETVAL
 }
 
