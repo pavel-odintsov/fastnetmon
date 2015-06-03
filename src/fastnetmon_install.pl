@@ -314,7 +314,7 @@ sub install {
         $we_have_init_script_for_this_machine = 1; 
     }
 
-    # For Debian Jessie 
+    # For Debian Squeeze and Wheezy 
     if ($distro_type eq 'debian' && ($distro_version == 6 or $distro_version == 7)) {
         my $init_path_in_src = "$fastnetmon_code_dir/fastnetmon_init_script_debian_6_7";
         my $system_init_path = '/etc/init.d/fastnetmon';
