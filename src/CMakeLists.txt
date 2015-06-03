@@ -21,6 +21,11 @@ set(FASTNETMON_PROFILER OFF)
 
 set(FASTNETMON_PROFILE_FLAGS "-g -pg")
 
+if (NOT CMAKE_BUILD_TYPE) 
+    message(STATUS "Setting build type to Release as none was specified.")
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
 if (FASTNETMON_PROFILER) 
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FASTNETMON_PROFILE_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FASTNETMON_PROFILE_FLAGS}")
@@ -30,10 +35,10 @@ endif()
 # With this flag we can diable PF_RING build via console: cmake .. -DDISABLE_PF_RING_SUPPORT=ON
 if (NOT DISABLE_PF_RING_SUPPORT) 
     if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-        message("You are running Linux and we can build PF_RING support")
+        message(STATUS "You are running Linux and we can build PF_RING support")
         set (ENABLE_PFRING_SUPPORT ON)
     else()
-        message("You are running not an Linux and we can't build PF_RING support")
+        message(WARNING "You are running not an Linux and we can't build PF_RING support")
     endif() 
 endif()
 
@@ -55,11 +60,11 @@ if (ENABLE_PFRING_SUPPORT)
     add_definitions(-DPF_RING)
 
     if (EXISTS "/opt/pf_ring/include/pfring_zc.h" OR EXISTS "/usr/local/include/pfring_zc.h")
-        message("We found PF_RING ZC headers and will build PF_RING ZC support")
+        message(STATUS "We found PF_RING ZC headers and will build PF_RING ZC support")
         # Enable ZC support
         add_definitions(-DPF_RING_ZC)
     else()
-        message("We can't find PF_RING ZC header pfring_zc.h in folder /opt/pf_ring/include. Will not compile ZC support") 
+        message(WARNING "We can't find PF_RING ZC header pfring_zc.h in folder /opt/pf_ring/include. Will not compile ZC support") 
     endif()
 
     include_directories(${PFRING_INCLUDE_DIRS})
