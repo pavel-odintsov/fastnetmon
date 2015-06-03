@@ -314,6 +314,24 @@ sub install {
         $we_have_init_script_for_this_machine = 1; 
     }
 
+    # For Debian Squeeze and Wheezy 
+    if ($distro_type eq 'debian' && ($distro_version == 6 or $distro_version == 7)) {
+        my $init_path_in_src = "$fastnetmon_code_dir/fastnetmon_init_script_debian_6_7";
+        my $system_init_path = '/etc/init.d/fastnetmon';
+
+        # Checker for source code version, will work only for 1.1.3+ versions
+        if (-e $init_path_in_src) {
+           `cp $init_path_in_src $system_init_path`;
+
+            `sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $system_init_path`;
+
+            print "We created service fastnetmon for you\n";
+            print "You could run it with command: /etc/init.d/fastnetmon start\n";
+
+            $we_have_init_script_for_this_machine = 1; 
+        }
+    } 
+
     unless ($we_have_init_script_for_this_machine) {
         print "You can run fastnetmon with command: $fastnetmon_dir/fastnetmon\n";
     }
