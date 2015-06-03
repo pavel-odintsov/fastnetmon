@@ -30,25 +30,18 @@ FASTNETMON=/usr/sbin/fastnetmon
 PROGNAME="fastnetmon"
 PIDFILE=/var/run/fastnetmon.pid
 RETVAL=0
-LOGDIR=/var/log
+ARGS="--daemonize"
 
-# Go can't daemonize by yourself, we must use external daemonization tool
 start() {
         echo -n $"Starting $PROGNAME: "
-        daemonize -a -o $LOGDIR/fastnetmon_stdout.log -e $LOGDIR/fastnetmon_stderr.log -p $PIDFILE $FASTNETMON
+        $FASTNETMON $ARGS > /dev/null 2>&1 && echo_success || echo_failure
         RETVAL=$?
-        # add pretty error messages 
-        if [ $RETVAL = 0 ]; then
-            echo_success
-        else 
-            echo_failure
-        fi
-        echo ""
+        echo "" 
         return $RETVAL
 }
 
 stop() {
-    echo -n $"Stopping $PROGNAME: "
+        echo -n $"Stopping $PROGNAME: "
         killproc -p $PIDFILE $FASTNETMON
         RETVAL=$?
         echo ""
