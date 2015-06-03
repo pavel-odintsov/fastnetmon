@@ -83,7 +83,7 @@ sub install {
 
     if ($distro_type eq 'debian') {
         `apt-get update`;
-        my @debian_packages_for_pfring = ('build-essential', 'bison', 'flex',
+        my @debian_packages_for_pfring = ('build-essential', 'bison', 'flex', 'subversion',
             'libnuma-dev', 'wget', 'tar', 'make', 'dpkg-dev', 'dkms', 'debhelper');
    
         my $kernel_headers_package_name = "linux-headers-$kernel_version";
@@ -118,7 +118,7 @@ sub install {
             $kernel_package_name = "vzkernel-devel-$kernel_version";
         }
 
-        `yum install -y make bison flex $kernel_package_name gcc gcc-c++ dkms numactl-devel`;
+        `yum install -y make bison flex $kernel_package_name gcc gcc-c++ dkms numactl-devel subversion`;
     }
 
     print "Download PF_RING $pf_ring_version sources\n";
