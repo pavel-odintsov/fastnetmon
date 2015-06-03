@@ -368,7 +368,8 @@ void sigpipe_handler_for_popen(int signo) {
     logger << log4cpp::Priority::ERROR << "Sorry but we experienced error with popen. "
            << "Please check your scripts. It should receive data on stdin!";
 
-    exit(1);
+    // Well, we do not need exit here because we have another options to notifying about atatck
+    // exit(1);
 }
 
 // exec command and pass data to it stdin
