@@ -79,7 +79,7 @@ sub install {
 
     my $we_have_pfring_support = '';
 
-    print "Install PF_RING dependency with package manager\n";
+    print "Install PF_RING dependencies with package manager\n";
 
     if ($distro_type eq 'debian') {
         `apt-get update`;
@@ -232,7 +232,11 @@ sub install {
         `git pull`;
     } else {
         # Update code
-        `git clone $fastnetmon_git_path --branch $stable_branch_name`;
+        `git clone $fastnetmon_git_path --branch $stable_branch_name --quiet 2>/dev/null`;
+
+        if ($? != 0) {
+            die "Can't clone source code\n";
+        }
     }
 
     `mkdir -p $fastnetmon_code_dir/build`;
