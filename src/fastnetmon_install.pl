@@ -126,35 +126,39 @@ sub install {
     my $pf_ring_archive_path = "/usr/src/PF_RING-$pf_ring_version.tar.gz";
     my $pf_ring_sources_path = "/usr/src/PF_RING-$pf_ring_version";
 
-    `wget $pf_ring_url -O$pf_ring_archive_path`;
+    `wget --quiet $pf_ring_url -O$pf_ring_archive_path`;
+   
+    if ($? == 0) {
+        print "Unpack PF_RING\n";
+        mkdir $pf_ring_sources_path;
+        `tar -xf $pf_ring_archive_path -C /usr/src`;
+
+        print "Build PF_RING kernel module\n";
+        `make -C $pf_ring_sources_path/kernel clean`;
+        `make -C $pf_ring_sources_path/kernel`;
+        `make -C $pf_ring_sources_path/kernel install`;
+
+        print "Unload PF_RING if it was installed earlier\n";
+        `rmmod pf_ring 2>/dev/null`;
+
+        print "Load PF_RING module into kernel\n";
+        `modprobe pf_ring`;
+
+        my @dmesg = `dmesg`;
+        chomp @dmesg;
     
-    print "Unpack PF_RING\n";
-    mkdir $pf_ring_sources_path;
-    `tar -xf $pf_ring_archive_path -C /usr/src`;
+        if (scalar grep (/\[PF_RING\] Initialized correctly/, @dmesg) > 0) {
+            print "PF_RING loaded correctly\n";
 
-    print "Build PF_RING kernel module\n";
-    `make -C $pf_ring_sources_path/kernel clean`;
-    `make -C $pf_ring_sources_path/kernel`;
-    `make -C $pf_ring_sources_path/kernel install`;
+            $we_have_pfring_support = 1;
+        } else {
+            warn "PF_RING load error! We disable PF_RING plugin\n";
 
-    print "Unload PF_RING if it was installed earlier\n";
-    `rmmod pf_ring`;
-
-    print "Load PF_RING module into kernel\n";
-    `modprobe pf_ring`;
-
-    my @dmesg = `dmesg`;
-    chomp @dmesg;
-    
-    if (scalar grep (/\[PF_RING\] Initialized correctly/, @dmesg) > 0) {
-        print "PF_RING loaded correctly\n";
-
-        $we_have_pfring_support = 1;
+            $we_have_pfring_support = '';
+        }
     } else {
-        warn "PF_RING load error! We disable PF_RING plugin\n";
-
-        $we_have_pfring_support = '';
-    }
+        warn "Can't download PF_RING source code. Disable support of PF_RING\n";
+    } 
 
     if ($we_have_pfring_support) {
         print "Build PF_RING lib\n";
@@ -210,6 +214,10 @@ sub install {
 
         my $fastnetmon_deps_as_string = join " ", @fastnetmon_deps;
         `yum install -y $fastnetmon_deps_as_string`;
+
+        if ($distro_version == 7) {
+            print "Your distro haven't log4cpp in stable EPEL packages and we install log4cpp from testing of EPEL\n";
+            `yum install -y https://kojipkgs.fedoraproject.org//packages/log4cpp/1.1.1/1.el7/x86_64/log4cpp-devel-1.1.1-1.el7.x86_64.rpm https://kojipkgs.fedoraproject.org//packages/log4cpp/1.1.1/1.el7/x86_64/log4cpp-1.1.1-1.el7.x86_64.rpm`;
     }
 
     print "Clone FastNetMon repo\n";
