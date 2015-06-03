@@ -13,3 +13,4 @@ Thanks file! For all peoples which helped this project :)
 - aabc for ipt_NETFLOW very useful tool for testing netflow plugin
 - Denis Denisov for FreeBSD rc script
 - Alexei Takaseev for AltLinux packages
+- Ben Agricola for fixed CentOS 6 init script without daemonize option
