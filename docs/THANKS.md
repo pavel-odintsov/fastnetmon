@@ -14,3 +14,4 @@ Thanks file! For all peoples which helped this project :)
 - Denis Denisov for FreeBSD rc script
 - Alexei Takaseev for AltLinux packages
 - Ben Agricola for fixed CentOS 6 init script without daemonize option
+- Dmitry Marakasov for FreeBSD port
