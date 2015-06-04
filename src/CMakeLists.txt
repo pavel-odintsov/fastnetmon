@@ -7,8 +7,10 @@ cmake_minimum_required (VERSION 2.8)
 
 project(FastNetMon)
 
+# Unfortunately, Debian Squeeze haven't support for this feature
+# It added in 2.8.5 release: http://www.cmake.org/cmake/help/v2.8.5/cmake.html
 # Get convinient paths for all system folders: http://www.cmake.org/gitweb?p=cmake.git;a=commitdiff;h=a262fe09
-include(GNUInstallDirs)
+# include(GNUInstallDirs)
 
 # Enable it and fix all warnigns!
 # add_definitions ("-Wall")
@@ -249,8 +251,8 @@ else()
 endif()
 
 # man pages
-install(FILES man/fastnetmon.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
-install(FILES man/fastnetmon_client.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
+install(FILES man/fastnetmon.1 DESTINATION /usr/share/man/man1)
+install(FILES man/fastnetmon_client.1 DESTINATION /usr/share/man/man1)
 
 # Configure cpack package builder
 # Run it with: cd build; cpack -G DEB ..
