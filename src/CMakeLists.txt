@@ -7,6 +7,9 @@ cmake_minimum_required (VERSION 2.8)
 
 project(FastNetMon)
 
+# Get convinient paths for all system folders: http://www.cmake.org/gitweb?p=cmake.git;a=commitdiff;h=a262fe09
+include(GNUInstallDirs)
+
 # Enable it and fix all warnigns!
 # add_definitions ("-Wall")
 
@@ -232,6 +235,10 @@ install(FILES fastnetmon.conf DESTINATION etc)
 # Install blank files for networks list and whitelist
 install(FILES networks_list DESTINATION etc)
 install(FILES networks_whitelist DESTINATION etc)
+
+# man pages
+install(FILES man/fastnetmon.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
+install(FILES man/fastnetmon_client.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
 
 # Configure cpack package builder
 # Run it with: cd build; cpack -G DEB ..
