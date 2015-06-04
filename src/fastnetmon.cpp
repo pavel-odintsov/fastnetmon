@@ -159,9 +159,6 @@ bool print_average_traffic_counts = true;
 // Key used for sorting clients in output.  Allowed sort params: packets/bytes/flows
 std::string sort_parameter = "packets";
 
-// Path to notify script
-std::string notify_script_path = "/usr/local/bin/notify_about_attack.sh";
-
 // Number of lines in programm output
 unsigned int max_ips_in_list = 7;
 
