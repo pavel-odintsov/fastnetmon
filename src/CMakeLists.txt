@@ -227,14 +227,26 @@ if (BUILD_PCAP_READER)
     target_link_libraries(fastnetmon_pcap_reader netflow_plugin)    
 endif()
 
-install(TARGETS fastnetmon DESTINATION bin)
-install(TARGETS fastnetmon_client DESTINATION bin)
+if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" OR ${CMAKE_SYSTEM_NAME} STREQUAL "DragonFly")
+    install(TARGETS fastnetmon DESTINATION bin)
+    install(TARGETS fastnetmon_client DESTINATION bin)
 
-install(FILES fastnetmon.conf DESTINATION etc)
+    install(FILES fastnetmon.conf DESTINATION etc)
 
-# Install blank files for networks list and whitelist
-install(FILES networks_list DESTINATION etc)
-install(FILES networks_whitelist DESTINATION etc)
+    # Install blank files for networks list and whitelist
+    install(FILES networks_list DESTINATION etc)
+    install(FILES networks_whitelist DESTINATION etc)
+else()
+    # Linux
+    install(TARGETS fastnetmon DESTINATION /usr/sbin)
+    install(TARGETS fastnetmon_client DESTINATION /usr/bin)
+
+    install(FILES fastnetmon.conf DESTINATION /etc)
+
+    # Install blank files for networks list and whitelist
+    install(FILES networks_list DESTINATION /etc)
+    install(FILES networks_whitelist DESTINATION /etc) 
+endif()
 
 # man pages
 install(FILES man/fastnetmon.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
