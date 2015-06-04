@@ -40,6 +40,9 @@ case "$1" in
         sleep 2
         $0 start
         ;;
+  force-reload)
+        $0 restart
+        ;;
 # no support of status on Debian squeeze
 #  status)
 #   start-stop-daemon $STATUS_OPTS
