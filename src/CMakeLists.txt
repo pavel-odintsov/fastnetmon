@@ -226,6 +226,10 @@ install(TARGETS fastnetmon_client DESTINATION bin)
 
 install(FILES fastnetmon.conf DESTINATION etc)
 
+# Install blank files for networks list and whitelist
+install(FILES networks_list DESTINATION etc)
+install(FILES networks_whitelist DESTINATION etc)
+
 # Configure cpack package builder
 # Run it with: cd build; cpack -G DEB ..
 set(CPACK_PACKAGE_NAME "fastnetmon")
