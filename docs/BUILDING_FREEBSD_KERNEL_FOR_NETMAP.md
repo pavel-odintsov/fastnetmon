@@ -18,6 +18,8 @@ Enable netmap startup on server load:
 ```bash
 echo 'netmap_load="YES"' >> /boot/loader.conf
 ```
+To activate Netmap on your server you have to turn your interface on promiscuous mode:
+ifconfig <interface> promisc
 
 And should rebuild kernel manually.
 
