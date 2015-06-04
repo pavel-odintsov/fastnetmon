@@ -15,7 +15,7 @@ ln -s ../src/fastnetmon.service debian/fastnetmon.service
 # We need this for Debian https://lintian.debian.org/tags/systemd-service-file-refers-to-obsolete-target.html
 # But RHEL7 still uses it
 sed -i 's/syslog.target //' src/fastnetmon.service
-dpkg-source --commit
+dpkg-source --commit . fix_systemd_service
 # enter any patch name
 debuild -us -uc
 ```
