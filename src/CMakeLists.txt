@@ -32,6 +32,9 @@ if (FASTNETMON_PROFILER)
     set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${FASTNETMON_PROFILE_FLAGS}")
 endif()
 
+set(FASTNETMON_APPLICATION_VERSION "1.1.3 master")
+configure_file(fast_platform.h.template "${PROJECT_SOURCE_DIR}/fast_platform.h")
+
 # With this flag we can diable PF_RING build via console: cmake .. -DDISABLE_PF_RING_SUPPORT=ON
 if (NOT DISABLE_PF_RING_SUPPORT) 
     if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")

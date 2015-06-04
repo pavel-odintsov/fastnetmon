@@ -25,6 +25,9 @@
 #include "fastnetmon_types.h"
 #include "fast_library.h"
 
+// Here we store variables which differs for different paltforms
+#include "fast_platform.h"
+
 // Plugins
 #include "sflow_plugin/sflow_collector.h"
 #include "netflow_plugin/netflow_collector.h"
@@ -62,6 +65,7 @@
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
+
 // Boost libs
 #include <boost/algorithm/string.hpp>
 
@@ -72,9 +76,6 @@
 #ifdef REDIS
 #include <hiredis/hiredis.h>
 #endif
-
-std::string pid_path = "/var/run/fastnetmon.pid";
-std::string global_config_path = "/etc/fastnetmon.conf";
 
 time_t last_call_of_traffic_recalculation;
 
@@ -92,8 +93,6 @@ std::string redis_host = "127.0.0.1";
 // because it's additional and very specific feature we should disable it by default
 bool redis_enabled = false;
 #endif
-
-std::string fastnetmon_version = "1.1.3 master";
 
 bool monitor_local_ip_addresses = true;
 
@@ -163,12 +162,6 @@ std::string sort_parameter = "packets";
 // Path to notify script
 std::string notify_script_path = "/usr/local/bin/notify_about_attack.sh";
 
-// Path to file with networks for whitelising
-std::string white_list_path = "/etc/networks_whitelist";
-
-// Path to file with all networks listing
-std::string networks_list_path = "/etc/networks_list";
-
 // Number of lines in programm output
 unsigned int max_ips_in_list = 7;
 
@@ -187,8 +180,6 @@ unsigned int ban_details_records_count = 500;
 
 // log file
 log4cpp::Category& logger = log4cpp::Category::getRoot();
-std::string log_file_path = "/var/log/fastnetmon.log";
-std::string attack_details_folder = "/var/log/fastnetmon_attacks";
 
 /* Configuration block ends */
 
@@ -1013,7 +1004,7 @@ bool load_our_networks_list() {
 
     if (file_exists(networks_list_path)) {
         std::vector<std::string> network_list_from_config =
-        read_file_to_vector("/etc/networks_list");
+        read_file_to_vector(networks_list_path);
         networks_list_as_string.insert(networks_list_as_string.end(), network_list_from_config.begin(),
                                        network_list_from_config.end());
 
