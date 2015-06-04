@@ -88,9 +88,12 @@ std::map<std::string, std::string> configuration_map;
 #ifdef REDIS
 unsigned int redis_port = 6379;
 std::string redis_host = "127.0.0.1";
+
 // because it's additional and very specific feature we should disable it by default
 bool redis_enabled = false;
 #endif
+
+std::string fastnetmon_version = "1.1.3 master";
 
 bool monitor_local_ip_addresses = true;
 
@@ -1711,7 +1714,8 @@ void traffic_draw_programm() {
         sorter = PACKETS;
     }
 
-    output_buffer << "FastNetMon v1.0 FastVPS Eesti OU (c) VPS and dedicated: http://FastVPS.host"
+    output_buffer << "FastNetMon " << fastnetmon_version
+                  << " FastVPS Eesti OU (c) VPS and dedicated: http://FastVPS.host"
                   << "\n"
                   << "IPs ordered by: " << sort_parameter << "\n";
 
