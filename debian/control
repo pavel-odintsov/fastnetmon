@@ -3,7 +3,8 @@ Maintainer: Pavel Odintsov <pavel.odintsov@gmail.com>
 Section: misc
 Priority: optional
 Standards-Version: 3.9.6
-Build-Depends: debhelper (>= 9), cmake, libboost-thread-dev,  libboost-system-dev, libboost-regex-dev, libpcap-dev, libnuma-dev, liblog4cpp5-dev, libboost-all-dev, libgpm-dev, libncurses5-dev, libgeoip-dev, clang, cmake
+# debhelper 8 - squeeze, 9 - wheezy/jessie 
+Build-Depends: debhelper (>= 8), cmake, libboost-thread-dev,  libboost-system-dev, libboost-regex-dev, libpcap-dev, libnuma-dev, liblog4cpp5-dev, libboost-all-dev, libgpm-dev, libncurses5-dev, libgeoip-dev, clang, cmake
 
 Package: fastnetmon
 Architecture: any
