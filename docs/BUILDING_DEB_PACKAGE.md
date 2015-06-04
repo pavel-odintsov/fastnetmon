@@ -12,5 +12,10 @@ cp packages/debian/ -R .
 # Create symlinks for init files for systev and systemd
 ln -s ../src/fastnetmon_init_script_debian_6_7 debian/fastnetmon.init
 ln -s ../src/fastnetmon.service debian/fastnetmon.service
+# We need this for Debian https://lintian.debian.org/tags/systemd-service-file-refers-to-obsolete-target.html
+# But RHEL7 still uses it
+sed -i 's/syslog.target //' src/fastnetmon.service
+dpkg-source --commit
+# enter any patch name
 debuild -us -uc
 ```
