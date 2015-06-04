@@ -1,0 +1,17 @@
+.\" Manpage for fastnetmon_client.
+.\" Contact pavel.odintsov@gmail.com to correct errors or typos.
+.TH man 8 "04 Jun 2015" "1.1.2" "fastnetmon_client man page"
+.SH NAME
+fastnetmon_client \- show information about top talkers and detected DDoS attacks 
+.SH SYNOPSIS
+fastnetmon_client
+.SH DESCRIPTION
+It's client interface for monitoring fastnetmon(8) DDoS detection toolkit.
+.SH OPTIONS
+No options here
+.SH SEE ALSO
+fastnetmon(8)
+.SH BUGS
+No known bugs.
+.SH AUTHOR
+Pavel Odintsov (pavel.odintsov@gmail.com)
