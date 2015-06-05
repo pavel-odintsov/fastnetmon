@@ -15,3 +15,4 @@ Thanks file! For all peoples which helped this project :)
 - Alexei Takaseev for AltLinux packages
 - Ben Agricola for fixed CentOS 6 init script without daemonize option
 - Dmitry Marakasov for FreeBSD port
+- Dmitry Baturin for huge help with building iso image with VyOS
