@@ -1,4 +1,4 @@
-# This guide fill describe how build iso image of VyOS with bundled FastNetMon
+### This guide fill describe how build iso image of VyOS with bundled FastNetMon
 
 First af all, you need _only_ Debian Squeeze for building this image!
 
@@ -42,7 +42,14 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, libboost-thread1.42.0, libboost-sys
 ```
 
 ```bash
+cd pkgs/fastnetmon
+ln -s ../src/fastnetmon_init_script_debian_6_7 debian/fastnetmon.init
+ln -s ../src/fastnetmon.service debian/fastnetmon.service
+cd ..
+cd ..
 make fastnetmon
+
+
 cd pkgs
 wget http://ftp.us.debian.org/debian/pool/main/b/boost1.42/libboost-regex1.42.0_1.42.0-4_amd64.deb
 wget http://ftp.us.debian.org/debian/pool/main/b/boost1.42/libboost-thread1.42.0_1.42.0-4_amd64.deb
