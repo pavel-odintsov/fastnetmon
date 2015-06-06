@@ -9,8 +9,18 @@ my $distro_version = '';
 my $pf_ring_version = '6.0.3';
 
 my $pf_ring_url = "https://github.com/ntop/PF_RING/archive/v$pf_ring_version.tar.gz";
+my $pf_ring_archive_path = "/usr/src/PF_RING-$pf_ring_version.tar.gz";
+my $pf_ring_sources_path = "/usr/src/PF_RING-$pf_ring_version";
+
 my $fastnetmon_git_path = 'https://github.com/FastVPSEestiOu/fastnetmon.git';
 my $stable_branch_name = 'v1.1.2';
+
+my $we_could_install_kernel_modules = 1;
+
+if (-e "/.dockerinit") {
+    # On Docker we can't build kernel modules
+    $we_could_install_kernel_modules = 0;
+}
 
 # Used for VyOS and different appliances based on rpm/deb
 my $appliance_name = '';
@@ -136,44 +146,43 @@ sub install {
         `yum install -y make bison flex $kernel_package_name gcc gcc-c++ dkms numactl-devel subversion`;
     }
 
-    print "Download PF_RING $pf_ring_version sources\n";
+    if ($we_could_install_kernel_modules) {
+        print "Download PF_RING $pf_ring_version sources\n";
 
-    my $pf_ring_archive_path = "/usr/src/PF_RING-$pf_ring_version.tar.gz";
-    my $pf_ring_sources_path = "/usr/src/PF_RING-$pf_ring_version";
-
-    `wget --quiet $pf_ring_url -O$pf_ring_archive_path`;
+        `wget --quiet $pf_ring_url -O$pf_ring_archive_path`;
    
-    if ($? == 0) {
-        print "Unpack PF_RING\n";
-        mkdir $pf_ring_sources_path;
-        `tar -xf $pf_ring_archive_path -C /usr/src`;
+        if ($? == 0) {
+            print "Unpack PF_RING\n";
+            mkdir $pf_ring_sources_path;
+            `tar -xf $pf_ring_archive_path -C /usr/src`;
 
-        print "Build PF_RING kernel module\n";
-        `make -C $pf_ring_sources_path/kernel clean`;
-        `make -C $pf_ring_sources_path/kernel`;
-        `make -C $pf_ring_sources_path/kernel install`;
+            print "Build PF_RING kernel module\n";
+            `make -C $pf_ring_sources_path/kernel clean`;
+            `make -C $pf_ring_sources_path/kernel`;
+            `make -C $pf_ring_sources_path/kernel install`;
 
-        print "Unload PF_RING if it was installed earlier\n";
-        `rmmod pf_ring 2>/dev/null`;
+            print "Unload PF_RING if it was installed earlier\n";
+            `rmmod pf_ring 2>/dev/null`;
 
-        print "Load PF_RING module into kernel\n";
-        `modprobe pf_ring`;
+            print "Load PF_RING module into kernel\n";
+            `modprobe pf_ring`;
 
-        my @dmesg = `dmesg`;
-        chomp @dmesg;
+            my @dmesg = `dmesg`;
+            chomp @dmesg;
     
-        if (scalar grep (/\[PF_RING\] Initialized correctly/, @dmesg) > 0) {
-            print "PF_RING loaded correctly\n";
+            if (scalar grep (/\[PF_RING\] Initialized correctly/, @dmesg) > 0) {
+                print "PF_RING loaded correctly\n";
 
-            $we_have_pfring_support = 1;
+                $we_have_pfring_support = 1;
+            } else {
+                warn "PF_RING load error! We disable PF_RING plugin\n";
+
+                $we_have_pfring_support = '';
+            }
         } else {
-            warn "PF_RING load error! We disable PF_RING plugin\n";
-
-            $we_have_pfring_support = '';
-        }
-    } else {
-        warn "Can't download PF_RING source code. Disable support of PF_RING\n";
-    } 
+            warn "Can't download PF_RING source code. Disable support of PF_RING\n";
+        } 
+    }
 
     if ($we_have_pfring_support) {
         print "Build PF_RING lib\n";
