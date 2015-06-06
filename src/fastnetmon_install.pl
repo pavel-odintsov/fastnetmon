@@ -43,15 +43,15 @@ if (-e "/etc/debian_version") {
     # Debian GNU/Linux 8 \n \l
     # Ubuntu 14.04.2 LTS \n \l
     # Welcome to VyOS - \n \l 
-    if ($issue_first_line ~= m/Debian/) {
+    if ($issue_first_line =~ m/Debian/) {
         $distro_type = 'debian';
 
         $distro_version = `cat /etc/debian_version`;
         chomp $distro_version;
-    } elsif ($issue_first_line ~= m/Ubuntu (\d+)/) {
+    } elsif ($issue_first_line =~ m/Ubuntu (\d+)/) {
         $distro_type = 'ubuntu';
         $distro_version = $1;
-    } elsif ($issue_first_line ~= m/VyOS/) {
+    } elsif ($issue_first_line =~ m/VyOS/) {
         # Yes, VyOS is a Debian
         $distro_type = 'debian';
         $appliance_name = 'vyos';
@@ -200,7 +200,7 @@ sub install {
 
     print "Install FastNetMon dependency list\n";
 
-    if ($distro_type eq 'debian' or $disto_type eq 'ubuntu') {
+    if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
         my @fastnetmon_deps = ("git", "g++", "gcc", "libgpm-dev", "libncurses5-dev",
             "liblog4cpp5-dev", "libnuma-dev", "libgeoip-dev","libpcap-dev", "clang", "cmake"
         );
