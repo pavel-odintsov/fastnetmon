@@ -35,5 +35,17 @@ make makesum
 make install 
 ```
 
+And please switch capture interface to promisc mode.
+
+Add into /etc/rc.conf following line (for applying this option at boot time):
+```bash
+ifconfig_ix1="up promisc"
+```
+
+And switch it with ifconfig for already running system:
+```bash
+ifconfig ix1 promisc
+```
+
 For netmap support you may need compile kernel manually with this [manual](BUILDING_FREEBSD_KERNEL_FOR_NETMAP.md).
 
