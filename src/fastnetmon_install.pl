@@ -30,24 +30,39 @@ sub read_file {
     return $content;
 }
 
-# Detect VyOS
-if (-e "/etc/issue") {
-    my $issue_content = read_file("/etc/issue");
-
-    if ($issue_content =~ /Welcome to VyOS/) {
-        $appliance_name = 'vyos';
-    }
-}
-
 if (-e "/etc/debian_version") {
-    $distro_type = 'debian';
+    # Well, on this step it could be Ubuntu or Debian
 
-    $distro_version = `cat /etc/debian_version`;
-    chomp $distro_version;
+    # We need check issue for more details 
+    my @issue = `cat /etc/issue`;
+    chomp @issue;
 
-    # VyOS have strange version and we should fix it
-    if ($distro_version =~ /^(\d+)\.\d+\.\d+$/) {
+    my $issue_first_line = $issue[0];
+
+    # Possible /etc/issue contents: 
+    # Debian GNU/Linux 8 \n \l
+    # Ubuntu 14.04.2 LTS \n \l
+    # Welcome to VyOS - \n \l 
+    if ($issue_first_line ~= m/Debian/) {
+        $distro_type = 'debian';
+
+        $distro_version = `cat /etc/debian_version`;
+        chomp $distro_version;
+    } elsif ($issue_first_line ~= m/Ubuntu (\d+)/) {
+        $distro_type = 'ubuntu';
         $distro_version = $1;
+    } elsif ($issue_first_line ~= m/VyOS/) {
+        # Yes, VyOS is a Debian
+        $distro_type = 'debian';
+        $appliance_name = 'vyos';
+
+        my $vyos_distro_version = `cat /etc/debian_version`;
+        chomp $vyos_distro_version;
+
+        # VyOS have strange version and we should fix it
+        if ($vyos_distro_version =~ /^(\d+)\.\d+\.\d+$/) {
+            $distro_version = $1;
+        }
     }
 }
 
@@ -81,7 +96,7 @@ sub install {
 
     print "Install PF_RING dependencies with package manager\n";
 
-    if ($distro_type eq 'debian') {
+    if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
         `apt-get update`;
         my @debian_packages_for_pfring = ('build-essential', 'bison', 'flex', 'subversion',
             'libnuma-dev', 'wget', 'tar', 'make', 'dpkg-dev', 'dkms', 'debhelper');
@@ -185,7 +200,7 @@ sub install {
 
     print "Install FastNetMon dependency list\n";
 
-    if ($distro_type eq 'debian') {
+    if ($distro_type eq 'debian' or $disto_type eq 'ubuntu') {
         my @fastnetmon_deps = ("git", "g++", "gcc", "libgpm-dev", "libncurses5-dev",
             "liblog4cpp5-dev", "libnuma-dev", "libgeoip-dev","libpcap-dev", "clang", "cmake"
         );
@@ -315,7 +330,8 @@ sub install {
     }
 
     # For Debian Squeeze and Wheezy 
-    if ($distro_type eq 'debian' && ($distro_version == 6 or $distro_version == 7)) {
+    # And any stable Ubuntu version
+    if ( ($distro_type eq 'debian' && ($distro_version == 6 or $distro_version == 7)) or $distro_type eq 'ubuntu') {
         my $init_path_in_src = "$fastnetmon_code_dir/fastnetmon_init_script_debian_6_7";
         my $system_init_path = '/etc/init.d/fastnetmon';
 
