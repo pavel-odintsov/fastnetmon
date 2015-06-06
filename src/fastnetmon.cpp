@@ -85,6 +85,10 @@ std::string screen_data_stats = "";
 // Global map with parsed config file
 std::map<std::string, std::string> configuration_map;
 
+// Every X seconds we will run ban list cleaner thread
+// If customer uses ban_time smaller than this value we will use ban_time/2 as unban_iteration_sleep_time
+int unban_iteration_sleep_time = 60;
+
 /* Configuration block, we must move it to configuration file  */
 #ifdef REDIS
 unsigned int redis_port = 6379;
@@ -2467,19 +2471,19 @@ void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_st
 
 /* Thread for cleaning up ban list */
 void cleanup_ban_list() {
-    // Every X seconds we will run ban list cleaner thread
-    int iteration_sleep_time = 600;
-
     // If we use very small ban time we should call ban_cleanup thread more often
-    if (iteration_sleep_time > standard_ban_time) {
-        iteration_sleep_time = int(standard_ban_time / 2);
+    if (unban_iteration_sleep_time > standard_ban_time) {
+        unban_iteration_sleep_time = int(standard_ban_time / 2);
+
+        logger << log4cpp::Priority::INFO << "You are using enough small ban time " << standard_ban_time
+            << " we need reduce unban_iteration_sleep_time twices to " << unban_iteration_sleep_time << " seconds";
     }
 
-    logger << log4cpp::Priority::INFO << "Run banlist cleanup thread";
+    logger << log4cpp::Priority::INFO << "Run banlist cleanup thread, we will awake every " << unban_iteration_sleep_time << " seconds";
 
     while (true) {
         // Sleep for ten minutes
-        boost::this_thread::sleep(boost::posix_time::seconds(iteration_sleep_time));
+        boost::this_thread::sleep(boost::posix_time::seconds(unban_iteration_sleep_time));
 
         time_t current_time;
         time(&current_time);
