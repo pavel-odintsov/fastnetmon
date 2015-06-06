@@ -1873,8 +1873,9 @@ void redirect_fds() {
     }
 
     // Create copy of zero decriptor for 1 and 2 fd's
-    dup(0);
-    dup(0);
+    // We do not need return codes here we need do it for suppresing complains from compiler
+    int first_dup_result  = dup(0);
+    int second_dup_result = dup(0);
 }
 
 int main(int argc, char** argv) {
@@ -1906,7 +1907,7 @@ int main(int argc, char** argv) {
             umask(0);
 
             // Chdir to root
-            chdir("/");
+            int chdir_result = chdir("/");
 
             // close all descriptors because we are daemon!
             redirect_fds();
