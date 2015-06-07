@@ -79,6 +79,9 @@
 
 time_t last_call_of_traffic_recalculation;
 
+// Send or not any details about attack for ban script call over stdin
+bool notify_script_pass_details = true;
+
 // Variable with all data from main screen
 std::string screen_data_stats = "";
 
@@ -856,6 +859,10 @@ bool load_configuration_file() {
 
     if (configuration_map.count("notify_script_path") != 0) {
         notify_script_path = configuration_map["notify_script_path"];
+    }
+
+    if (configuration_map.count("notify_script_pass_details") != 0) {
+        notify_script_pass_details = configuration_map["notify_script_pass_details"] == "on" ? true : false;
     }
 
     return true;
@@ -2380,8 +2387,16 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element a
 
         // We should execute external script in separate thread because any lag in this code will be
         // very distructive
-        boost::thread exec_thread(exec_with_stdin_params, script_call_params, full_attack_description);
-        exec_thread.detach();
+
+        if (notify_script_pass_details) {
+            // We will pass attack details over stdin
+            boost::thread exec_thread(exec_with_stdin_params, script_call_params, full_attack_description);
+            exec_thread.detach();
+        } else {
+            // Do not pass anything to script
+            boost::thread exec_thread(exec, script_call_params);
+            exec_thread.detach();
+        }
 
         logger << log4cpp::Priority::INFO << "Script for ban client is finished: " << client_ip_as_string;
     }
