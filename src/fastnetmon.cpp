@@ -364,7 +364,7 @@ std::string get_direction_name(direction direction_value) {
 
 void sigpipe_handler_for_popen(int signo) {
     logger << log4cpp::Priority::ERROR << "Sorry but we experienced error with popen. "
-           << "Please check your scripts. It should receive data on stdin!";
+           << "Please check your scripts. They should receive data on stdin! Optionally you could disable passing any details with configuration param: notify_script_pass_details = no";
 
     // Well, we do not need exit here because we have another options to notifying about atatck
     // exit(1);
