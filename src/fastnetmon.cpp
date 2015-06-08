@@ -256,7 +256,9 @@ std::string exabgp_next_hop = "";
 bool graphite_enabled = false;
 std::string graphite_host = "127.0.0.1";
 unsigned short int graphite_port = 2003;
-std::string graphite_prefix = "fastnetmon.";
+
+// Default graphite namespace
+std::string graphite_prefix = "fastnetmon";
 
 bool process_incoming_traffic = true;
 bool process_outgoing_traffic = true;
@@ -540,11 +542,11 @@ std::string draw_table(map_for_counters& my_map_packets, direction data_directio
                 std::replace(ip_as_string_with_dash_delimiters.begin(),
                              ip_as_string_with_dash_delimiters.end(), '.', '_');
 
-                graphite_data[graphite_prefix + ip_as_string_with_dash_delimiters + "." + direction_as_string + ".pps"] =
+                graphite_data[graphite_prefix + "." + ip_as_string_with_dash_delimiters + "." + direction_as_string + ".pps"] =
                 pps;
-                graphite_data[graphite_prefix + ip_as_string_with_dash_delimiters + "." + direction_as_string + ".mbps"] =
+                graphite_data[graphite_prefix + "." + ip_as_string_with_dash_delimiters + "." + direction_as_string + ".mbps"] =
                 mbps;
-                graphite_data[graphite_prefix + ip_as_string_with_dash_delimiters + "." + direction_as_string + ".flows"] =
+                graphite_data[graphite_prefix + "." + ip_as_string_with_dash_delimiters + "." + direction_as_string + ".flows"] =
                 flows;
             }
 
@@ -632,6 +634,10 @@ bool load_configuration_file() {
 
     if (configuration_map.count("ban_time") != 0) {
         standard_ban_time = convert_string_to_integer(configuration_map["ban_time"]);
+    }
+
+    if(configuration_map.count("graphite_prefix") != 0) {
+        graphite_prefix = configuration_map["graphite_prefix"];
     }
 
     if (configuration_map.count("average_calculation_time") != 0) {
@@ -1074,6 +1080,8 @@ bool load_our_networks_list() {
            << " subnets to our in-memory list of networks";
     logger << log4cpp::Priority::INFO
            << "Total number of monitored hosts (total size of all networks): " << total_number_of_hosts_in_our_networks;
+
+    logger << log4cpp::Priority::INFO << "element size: " << sizeof(map_element);
 
     // 3 - speed counter, average speed counter and data counter
     uint64_t memory_requirements = 3 * sizeof(map_element) * total_number_of_hosts_in_our_networks / 1024 / 1024;
@@ -1822,15 +1830,15 @@ std::string print_channel_speed(std::string traffic_type, direction packet_direc
             if (packet_direction == INCOMING) {
                 direction_as_string = "incoming";
 
-                graphite_data[graphite_prefix + direction_as_string + "flows"] = incoming_total_flows_speed;
+                graphite_data[graphite_prefix + "." + direction_as_string + "flows"] = incoming_total_flows_speed;
             } else if (packet_direction == OUTGOING) {
                 direction_as_string = "outgoing";
 
-                graphite_data[graphite_prefix + direction_as_string + "flows"] = outgoing_total_flows_speed;
+                graphite_data[graphite_prefix + "." + direction_as_string + "flows"] = outgoing_total_flows_speed;
             }
 
-            graphite_data[graphite_prefix + direction_as_string + ".pps"] = speed_in_pps;
-            graphite_data[graphite_prefix + direction_as_string + ".mbps"] = speed_in_mbps;
+            graphite_data[graphite_prefix + "." + direction_as_string + ".pps"] = speed_in_pps;
+            graphite_data[graphite_prefix + "." + direction_as_string + ".mbps"] = speed_in_mbps;
 
             bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
 
