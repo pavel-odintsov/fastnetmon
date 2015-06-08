@@ -1075,6 +1075,12 @@ bool load_our_networks_list() {
     logger << log4cpp::Priority::INFO
            << "Total number of monitored hosts (total size of all networks): " << total_number_of_hosts_in_our_networks;
 
+    // 3 - speed counter, average speed counter and data counter
+    uint64_t memory_requirements = 3 * sizeof(map_element) * total_number_of_hosts_in_our_networks / 1024 / 1024;
+
+    logger << log4cpp::Priority::INFO
+        << "We need " << memory_requirements << " MB of memory for storing counters for your networks";
+
     return true;
 }
 
