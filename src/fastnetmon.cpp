@@ -1068,16 +1068,6 @@ bool load_our_networks_list() {
         make_and_lookup(lookup_tree, const_cast<char*>(network_address_in_cidr_form.c_str()));
     }
 
-    /* Preallocate data structures */
-
-    patricia_process(lookup_tree, (void_fn_t)subnet_vectors_allocator);
-
-    logger << log4cpp::Priority::INFO << "We start total zerofication of counters";
-    zeroify_all_counters();
-    logger << log4cpp::Priority::INFO << "We finished zerofication";
-
-    logger << log4cpp::Priority::INFO << "We loaded " << networks_list_as_string.size()
-           << " subnets to our in-memory list of networks";
     logger << log4cpp::Priority::INFO
            << "Total number of monitored hosts (total size of all networks): " << total_number_of_hosts_in_our_networks;
 
@@ -1087,6 +1077,16 @@ bool load_our_networks_list() {
     logger << log4cpp::Priority::INFO
         << "We need " << memory_requirements << " MB of memory for storing counters for your networks";
 
+    /* Preallocate data structures */
+    patricia_process(lookup_tree, (void_fn_t)subnet_vectors_allocator);
+
+    logger << log4cpp::Priority::INFO << "We start total zerofication of counters";
+    zeroify_all_counters();
+    logger << log4cpp::Priority::INFO << "We finished zerofication";
+
+    logger << log4cpp::Priority::INFO << "We loaded " << networks_list_as_string.size()
+           << " subnets to our in-memory list of networks";
+    
     return true;
 }
 
