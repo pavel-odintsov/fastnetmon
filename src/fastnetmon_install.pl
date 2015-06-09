@@ -9,8 +9,18 @@ my $distro_version = '';
 my $pf_ring_version = '6.0.3';
 
 my $pf_ring_url = "https://github.com/ntop/PF_RING/archive/v$pf_ring_version.tar.gz";
+my $pf_ring_archive_path = "/usr/src/PF_RING-$pf_ring_version.tar.gz";
+my $pf_ring_sources_path = "/usr/src/PF_RING-$pf_ring_version";
+
 my $fastnetmon_git_path = 'https://github.com/FastVPSEestiOu/fastnetmon.git';
 my $stable_branch_name = 'v1.1.2';
+
+my $we_could_install_kernel_modules = 1;
+
+if (-e "/.dockerinit") {
+    # On Docker we can't build kernel modules
+    $we_could_install_kernel_modules = 0;
+}
 
 # Used for VyOS and different appliances based on rpm/deb
 my $appliance_name = '';
@@ -100,16 +110,19 @@ sub install {
         `apt-get update`;
         my @debian_packages_for_pfring = ('build-essential', 'bison', 'flex', 'subversion',
             'libnuma-dev', 'wget', 'tar', 'make', 'dpkg-dev', 'dkms', 'debhelper');
-   
-        my $kernel_headers_package_name = "linux-headers-$kernel_version";
   
-        if ($appliance_name eq 'vyos') { 
-            # VyOS uses another name for package for building kernel modules
-            $kernel_headers_package_name = 'linux-vyatta-kbuild';
-        }
+        # Install kernel headers only when we could compile kernel modules there
+        if ($we_could_install_kernel_modules) {
+            my $kernel_headers_package_name = "linux-headers-$kernel_version";
+  
+            if ($appliance_name eq 'vyos') { 
+                # VyOS uses another name for package for building kernel modules
+                $kernel_headers_package_name = 'linux-vyatta-kbuild';
+            }
 
-        push @debian_packages_for_pfring, $kernel_headers_package_name;
-    
+            push @debian_packages_for_pfring, $kernel_headers_package_name;
+        }    
+
         # We install one package per apt-get call because installing multiple packages in one time could fail of one
         # pacakge broken
         for my $package (@debian_packages_for_pfring) {
@@ -121,7 +134,7 @@ sub install {
         }
 
 
-        if ($appliance_name eq 'vyos') {
+        if ($appliance_name eq 'vyos' && $we_could_install_kernel_modules) {
             # By default we waven't this symlink and should add it manually
             `ln -s /usr/src/linux-image/debian/build/build-amd64-none-amd64-vyos/ /lib/modules/$kernel_version/build`;
         }
@@ -136,44 +149,43 @@ sub install {
         `yum install -y make bison flex $kernel_package_name gcc gcc-c++ dkms numactl-devel subversion`;
     }
 
-    print "Download PF_RING $pf_ring_version sources\n";
+    if ($we_could_install_kernel_modules) {
+        print "Download PF_RING $pf_ring_version sources\n";
 
-    my $pf_ring_archive_path = "/usr/src/PF_RING-$pf_ring_version.tar.gz";
-    my $pf_ring_sources_path = "/usr/src/PF_RING-$pf_ring_version";
-
-    `wget --quiet $pf_ring_url -O$pf_ring_archive_path`;
+        `wget --quiet $pf_ring_url -O$pf_ring_archive_path`;
    
-    if ($? == 0) {
-        print "Unpack PF_RING\n";
-        mkdir $pf_ring_sources_path;
-        `tar -xf $pf_ring_archive_path -C /usr/src`;
+        if ($? == 0) {
+            print "Unpack PF_RING\n";
+            mkdir $pf_ring_sources_path;
+            `tar -xf $pf_ring_archive_path -C /usr/src`;
 
-        print "Build PF_RING kernel module\n";
-        `make -C $pf_ring_sources_path/kernel clean`;
-        `make -C $pf_ring_sources_path/kernel`;
-        `make -C $pf_ring_sources_path/kernel install`;
+            print "Build PF_RING kernel module\n";
+            `make -C $pf_ring_sources_path/kernel clean`;
+            `make -C $pf_ring_sources_path/kernel`;
+            `make -C $pf_ring_sources_path/kernel install`;
 
-        print "Unload PF_RING if it was installed earlier\n";
-        `rmmod pf_ring 2>/dev/null`;
+            print "Unload PF_RING if it was installed earlier\n";
+            `rmmod pf_ring 2>/dev/null`;
 
-        print "Load PF_RING module into kernel\n";
-        `modprobe pf_ring`;
+            print "Load PF_RING module into kernel\n";
+            `modprobe pf_ring`;
 
-        my @dmesg = `dmesg`;
-        chomp @dmesg;
+            my @dmesg = `dmesg`;
+            chomp @dmesg;
     
-        if (scalar grep (/\[PF_RING\] Initialized correctly/, @dmesg) > 0) {
-            print "PF_RING loaded correctly\n";
+            if (scalar grep (/\[PF_RING\] Initialized correctly/, @dmesg) > 0) {
+                print "PF_RING loaded correctly\n";
 
-            $we_have_pfring_support = 1;
+                $we_have_pfring_support = 1;
+            } else {
+                warn "PF_RING load error! We disable PF_RING plugin\n";
+
+                $we_have_pfring_support = '';
+            }
         } else {
-            warn "PF_RING load error! We disable PF_RING plugin\n";
-
-            $we_have_pfring_support = '';
-        }
-    } else {
-        warn "Can't download PF_RING source code. Disable support of PF_RING\n";
-    } 
+            warn "Can't download PF_RING source code. Disable support of PF_RING\n";
+        } 
+    }
 
     if ($we_have_pfring_support) {
         print "Build PF_RING lib\n";
