@@ -79,11 +79,18 @@
 
 time_t last_call_of_traffic_recalculation;
 
+// Send or not any details about attack for ban script call over stdin
+bool notify_script_pass_details = true;
+
 // Variable with all data from main screen
 std::string screen_data_stats = "";
 
 // Global map with parsed config file
 std::map<std::string, std::string> configuration_map;
+
+// Every X seconds we will run ban list cleaner thread
+// If customer uses ban_time smaller than this value we will use ban_time/2 as unban_iteration_sleep_time
+int unban_iteration_sleep_time = 60;
 
 /* Configuration block, we must move it to configuration file  */
 #ifdef REDIS
@@ -249,7 +256,9 @@ std::string exabgp_next_hop = "";
 bool graphite_enabled = false;
 std::string graphite_host = "127.0.0.1";
 unsigned short int graphite_port = 2003;
-std::string graphite_prefix = "fastnetmon.";
+
+// Default graphite namespace
+std::string graphite_prefix = "fastnetmon";
 
 bool process_incoming_traffic = true;
 bool process_outgoing_traffic = true;
@@ -357,7 +366,7 @@ std::string get_direction_name(direction direction_value) {
 
 void sigpipe_handler_for_popen(int signo) {
     logger << log4cpp::Priority::ERROR << "Sorry but we experienced error with popen. "
-           << "Please check your scripts. It should receive data on stdin!";
+           << "Please check your scripts. They should receive data on stdin! Optionally you could disable passing any details with configuration param: notify_script_pass_details = no";
 
     // Well, we do not need exit here because we have another options to notifying about atatck
     // exit(1);
@@ -533,11 +542,11 @@ std::string draw_table(map_for_counters& my_map_packets, direction data_directio
                 std::replace(ip_as_string_with_dash_delimiters.begin(),
                              ip_as_string_with_dash_delimiters.end(), '.', '_');
 
-                graphite_data[graphite_prefix + ip_as_string_with_dash_delimiters + "." + direction_as_string + ".pps"] =
+                graphite_data[graphite_prefix + "." + ip_as_string_with_dash_delimiters + "." + direction_as_string + ".pps"] =
                 pps;
-                graphite_data[graphite_prefix + ip_as_string_with_dash_delimiters + "." + direction_as_string + ".mbps"] =
+                graphite_data[graphite_prefix + "." + ip_as_string_with_dash_delimiters + "." + direction_as_string + ".mbps"] =
                 mbps;
-                graphite_data[graphite_prefix + ip_as_string_with_dash_delimiters + "." + direction_as_string + ".flows"] =
+                graphite_data[graphite_prefix + "." + ip_as_string_with_dash_delimiters + "." + direction_as_string + ".flows"] =
                 flows;
             }
 
@@ -625,6 +634,10 @@ bool load_configuration_file() {
 
     if (configuration_map.count("ban_time") != 0) {
         standard_ban_time = convert_string_to_integer(configuration_map["ban_time"]);
+    }
+
+    if(configuration_map.count("graphite_prefix") != 0) {
+        graphite_prefix = configuration_map["graphite_prefix"];
     }
 
     if (configuration_map.count("average_calculation_time") != 0) {
@@ -854,6 +867,10 @@ bool load_configuration_file() {
         notify_script_path = configuration_map["notify_script_path"];
     }
 
+    if (configuration_map.count("notify_script_pass_details") != 0) {
+        notify_script_pass_details = configuration_map["notify_script_pass_details"] == "on" ? true : false;
+    }
+
     return true;
 }
 
@@ -1051,8 +1068,16 @@ bool load_our_networks_list() {
         make_and_lookup(lookup_tree, const_cast<char*>(network_address_in_cidr_form.c_str()));
     }
 
-    /* Preallocate data structures */
+    logger << log4cpp::Priority::INFO
+           << "Total number of monitored hosts (total size of all networks): " << total_number_of_hosts_in_our_networks;
 
+    // 3 - speed counter, average speed counter and data counter
+    uint64_t memory_requirements = 3 * sizeof(map_element) * total_number_of_hosts_in_our_networks / 1024 / 1024;
+
+    logger << log4cpp::Priority::INFO
+        << "We need " << memory_requirements << " MB of memory for storing counters for your networks";
+
+    /* Preallocate data structures */
     patricia_process(lookup_tree, (void_fn_t)subnet_vectors_allocator);
 
     logger << log4cpp::Priority::INFO << "We start total zerofication of counters";
@@ -1061,9 +1086,7 @@ bool load_our_networks_list() {
 
     logger << log4cpp::Priority::INFO << "We loaded " << networks_list_as_string.size()
            << " subnets to our in-memory list of networks";
-    logger << log4cpp::Priority::INFO
-           << "Total number of monitored hosts (total size of all networks): " << total_number_of_hosts_in_our_networks;
-
+    
     return true;
 }
 
@@ -1805,15 +1828,15 @@ std::string print_channel_speed(std::string traffic_type, direction packet_direc
             if (packet_direction == INCOMING) {
                 direction_as_string = "incoming";
 
-                graphite_data[graphite_prefix + direction_as_string + "flows"] = incoming_total_flows_speed;
+                graphite_data[graphite_prefix + "." + direction_as_string + "flows"] = incoming_total_flows_speed;
             } else if (packet_direction == OUTGOING) {
                 direction_as_string = "outgoing";
 
-                graphite_data[graphite_prefix + direction_as_string + "flows"] = outgoing_total_flows_speed;
+                graphite_data[graphite_prefix + "." + direction_as_string + "flows"] = outgoing_total_flows_speed;
             }
 
-            graphite_data[graphite_prefix + direction_as_string + ".pps"] = speed_in_pps;
-            graphite_data[graphite_prefix + direction_as_string + ".mbps"] = speed_in_mbps;
+            graphite_data[graphite_prefix + "." + direction_as_string + ".pps"] = speed_in_pps;
+            graphite_data[graphite_prefix + "." + direction_as_string + ".mbps"] = speed_in_mbps;
 
             bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
 
@@ -1873,8 +1896,9 @@ void redirect_fds() {
     }
 
     // Create copy of zero decriptor for 1 and 2 fd's
-    dup(0);
-    dup(0);
+    // We do not need return codes here but we need do it for suppressing complaints from compiler
+    int first_dup_result  = dup(0);
+    int second_dup_result = dup(0);
 }
 
 int main(int argc, char** argv) {
@@ -1906,7 +1930,7 @@ int main(int argc, char** argv) {
             umask(0);
 
             // Chdir to root
-            chdir("/");
+            int chdir_result = chdir("/");
 
             // close all descriptors because we are daemon!
             redirect_fds();
@@ -2375,8 +2399,16 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element a
 
         // We should execute external script in separate thread because any lag in this code will be
         // very distructive
-        boost::thread exec_thread(exec_with_stdin_params, script_call_params, full_attack_description);
-        exec_thread.detach();
+
+        if (notify_script_pass_details) {
+            // We will pass attack details over stdin
+            boost::thread exec_thread(exec_with_stdin_params, script_call_params, full_attack_description);
+            exec_thread.detach();
+        } else {
+            // Do not pass anything to script
+            boost::thread exec_thread(exec, script_call_params);
+            exec_thread.detach();
+        }
 
         logger << log4cpp::Priority::INFO << "Script for ban client is finished: " << client_ip_as_string;
     }
@@ -2466,19 +2498,19 @@ void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_st
 
 /* Thread for cleaning up ban list */
 void cleanup_ban_list() {
-    // Every X seconds we will run ban list cleaner thread
-    int iteration_sleep_time = 600;
-
     // If we use very small ban time we should call ban_cleanup thread more often
-    if (iteration_sleep_time > standard_ban_time) {
-        iteration_sleep_time = int(standard_ban_time / 2);
+    if (unban_iteration_sleep_time > standard_ban_time) {
+        unban_iteration_sleep_time = int(standard_ban_time / 2);
+
+        logger << log4cpp::Priority::INFO << "You are using enough small ban time " << standard_ban_time
+            << " we need reduce unban_iteration_sleep_time twices to " << unban_iteration_sleep_time << " seconds";
     }
 
-    logger << log4cpp::Priority::INFO << "Run banlist cleanup thread";
+    logger << log4cpp::Priority::INFO << "Run banlist cleanup thread, we will awake every " << unban_iteration_sleep_time << " seconds";
 
     while (true) {
         // Sleep for ten minutes
-        boost::this_thread::sleep(boost::posix_time::seconds(iteration_sleep_time));
+        boost::this_thread::sleep(boost::posix_time::seconds(unban_iteration_sleep_time));
 
         time_t current_time;
         time(&current_time);
