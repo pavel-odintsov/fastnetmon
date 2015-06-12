@@ -14,6 +14,7 @@ set system package repository squeeze-lts distribution 'squeeze-lts'
 set system package repository squeeze-lts url 'http://mirrors.kernel.org/debian'
 commit
 save
+exit
 ```
 
 Update packages list:```sudo apt-get update```
