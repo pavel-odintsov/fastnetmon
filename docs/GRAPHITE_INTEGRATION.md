@@ -6,7 +6,7 @@ We could store pps/bps/flow number for top 7 (could be configured) host in incom
 
 Configuration from FastNetMon side is very simple, please put following fields to /etc/fastnetmon.conf:
 ```bash
-graphite = off
+graphite = on
 graphite_host = 127.0.0.1
 graphite_port = 2003
 ```
