@@ -441,14 +441,13 @@ void store_data_in_redis(std::string key_name, std::string attack_details) {
 
     // If we store data correctly ...
     if (!reply) {
-        logger.error("Can't increment traffic in redis error_code: %d error_string: %s",
-                     redis_context->err, redis_context->errstr);
+        logger << log4cpp::Priority::ERROR << "Can't increment traffic in redis error_code: " << redis_context->err
+            << " error_string: " << redis_context->errstr;
 
         // Handle redis server restart corectly
         if (redis_context->err == 1 or redis_context->err == 3) {
             // Connection refused
-            logger.error(
-            "Unfortunately we can't store data in Redis because server reject connection");
+            logger << log4cpp::Priority::ERROR << "Unfortunately we can't store data in Redis because server reject connection";
         }
     } else {
         freeReplyObject(reply);
@@ -1858,7 +1857,8 @@ void init_logging() {
 
     logger.setPriority(log4cpp::Priority::INFO);
     logger.addAppender(appender);
-    logger.info("Logger initialized!");
+
+    logger << log4cpp::Priority::INFO << "Logger initialized!";
 }
 
 
@@ -2200,10 +2200,10 @@ void exabgp_ban_manage(std::string action, std::string ip_as_string) {
         ip_as_string_with_mask = find_subnet_by_ip_in_string_format(lookup_tree, ip_as_string);
 
         if (ip_as_string_with_mask.empty()) {
-            logger.warn("Can't find subnet for IP: " + ip_as_string);
+            logger << log4cpp::Priority::WARN << "Can't find subnet for IP: " << ip_as_string;
             return;
         } else {
-            logger.info("We detected subnet for this IP: " + ip_as_string_with_mask);
+            logger << log4cpp::Priority::INFO << "We detected subnet for this IP: " << ip_as_string_with_mask;
         }
     }
 
@@ -2214,7 +2214,7 @@ void exabgp_ban_manage(std::string action, std::string ip_as_string) {
         sprintf(bgp_message, "withdraw route %s\n", ip_as_string_with_mask.c_str());
     }    
 
-    logger.info("ExaBGP announce message: %s", bgp_message);
+    logger << log4cpp::Priority::INFO << "ExaBGP announce message: " << bgp_message;
  
     int exabgp_pipe = open(exabgp_command_pipe.c_str(), O_WRONLY);
 
@@ -2305,9 +2305,12 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element a
 
     std::string data_direction_as_string = get_direction_name(data_direction);
 
-    logger.info("We run execute_ip_ban code with following params in_pps: %d out_pps: %d in_bps: "
-                "%d out_bps: %d and we decide it's %s attack",
-                in_pps, out_pps, in_bps, out_bps, data_direction_as_string.c_str());
+    logger << log4cpp::Priority::INFO << "We run execute_ip_ban code with following params "
+        << " in_pps: "  << in_pps
+        << " out_pps: " << out_pps
+        << " in_bps: "  << in_bps
+        << " out_bps: " << out_bps
+        << " and we decide it's " << data_direction_as_string << " attack";
 
     std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
     std::string pps_as_string = convert_int_to_string(pps);
