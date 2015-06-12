@@ -9,6 +9,7 @@ Configuration from FastNetMon side is very simple, please put following fields t
 graphite = on
 graphite_host = 127.0.0.1
 graphite_port = 2003
+graphite_prefix = fastnetmon
 ```
 
 ### Install Graphite Debian 8 Jessie 
