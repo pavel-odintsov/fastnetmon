@@ -647,7 +647,9 @@ bool zc_main_loop(const char* device) {
     u_int8_t wait_for_packet = 1;
 
     // We run balancer at last thread
-    int32_t bind_worker_core = 3;
+    int32_t bind_worker_core = zc_num_threads;
+
+    logger << log4cpp::Priority::INFO << "We will run balancer on core: " << bind_worker_core;
 
     zw = pfring_zc_run_balancer(inzq, outzq, num_devices, zc_num_threads, wsp,
                                 round_robin_bursts_policy, NULL /* idle callback */, func,

@@ -6,7 +6,7 @@ We could store pps/bps/flow number for top 7 (could be configured) host in incom
 
 Configuration from FastNetMon side is very simple, please put following fields to /etc/fastnetmon.conf:
 ```bash
-graphite = off
+graphite = on
 graphite_host = 127.0.0.1
 graphite_port = 2003
 ```
@@ -20,8 +20,9 @@ apt-get install python-whisper graphite-carbon
 
 Whisper - it's database for data. Graphite - service for storing and retrieving data from database. 
 
-Install web frontend: ```bash
-apt-get install:  graphite-web
+Install web frontend:
+```bash
+apt-get install -y graphite-web
 ```
 
 Create database, specify login/password and email here: 
@@ -49,7 +50,7 @@ systemctl restart apache2.service
 ```
 
 Open site: 
-http://10.0.3.114
+http://ip.ad.dr.es
 
 Put test data to Graphite:
 ```echo "test.bash.stats 42 `date +%s`" | nc 127.0.0.1 2003```
