@@ -136,7 +136,17 @@ sub install {
 
         if ($appliance_name eq 'vyos' && $we_could_install_kernel_modules) {
             # By default we waven't this symlink and should add it manually
-            `ln -s /usr/src/linux-image/debian/build/build-amd64-none-amd64-vyos/ /lib/modules/$kernel_version/build`;
+
+            # x86_64 or i686
+            my $server_architecture = `uname -m`;
+            chomp $server_architecture;
+
+            if ($server_architecture eq 'x86_64') {  
+                `ln -s /usr/src/linux-image/debian/build/build-amd64-none-amd64-vyos/ /lib/modules/$kernel_version/build`;
+            } else {
+                # i686
+                `ln -s /usr/src/linux-image/debian/build/build-i386-none-586-vyos/ /lib/modules/$kernel_version/build`;
+            }
         }
     } elsif ($distro_type eq 'centos') {
         my $kernel_package_name = 'kernel-devel';
