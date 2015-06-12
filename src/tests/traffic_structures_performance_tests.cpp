@@ -12,8 +12,13 @@
 #include <boost/unordered_map.hpp>
 
 // apt-get install -y libtbb-dev
-// g++ traffic_structures_performance_tests.cpp -std=c++11 -lboost_system  -lboost_thread -ltbb 
+// g++ traffic_structures_performance_tests.cpp -std=c++11 -lboost_system  -lboost_thread -ltbb -I/opt/local/include -L/opt/local/lib
+// Mac OS:
+// g++ traffic_structures_performance_tests.cpp -std=c++11 -lboost_system_mt -lboost_thread_mt -ltbb -I/opt/local/include -L/opt/local/lib -g -pg
+
+#ifndef __APPLE__
 #include "tbb/concurrent_unordered_map.h"
+#endif
 
 typedef struct {
     unsigned int in_bytes;
@@ -42,7 +47,10 @@ std::unordered_map<uint32_t, map_element> DataCounterUnorderedPreallocated;
 
 boost::unordered_map<uint32_t, map_element> DataCounterBoostUnordered;
 
+#ifndef __APPLE__
 tbb::concurrent_unordered_map<uint32_t, map_element> DataCounterUnorderedConcurrent;
+#endif
+
 std::vector<map_element> DataCounterVector;
 
 using namespace std;
@@ -122,6 +130,7 @@ void packet_collector_thread_vector() {
 }
 
 
+#ifndef __APPLE__
 void packet_collector_thread_unordered_concurrent_map() {
     for (int iteration = 0; iteration < number_of_retries; iteration++) {
         for (uint32_t i = 0; i < number_of_ips; i++) {
@@ -129,6 +138,7 @@ void packet_collector_thread_unordered_concurrent_map() {
         }
     }
 }
+#endif
 
 // http://www.gnu.org/software/libc/manual/html_node/Elapsed-Time.html
 int timeval_subtract(struct timeval* result, struct timeval* x, struct timeval* y) {
@@ -200,9 +210,11 @@ int main() {
     run_tests(packet_collector_thread_std_map);
     DataCounter.clear();
 
+#ifndef __APPLE__
     std::cout << "tbb::concurrent_unordered_map: ";
     run_tests(packet_collector_thread_unordered_concurrent_map);
     DataCounterUnorderedConcurrent.clear();
+#endif
 
     // Boost unordered map
     std::cout << "boost::unordered_map: ";
