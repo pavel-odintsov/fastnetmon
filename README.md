@@ -48,9 +48,9 @@ Supported platforms:
 - FreeBSD 9, 10, 11
 - Mac OS X Yosemite
 
-Supported architecture:
-- x86_64
-- x86 (but there could be some troubles due to usage of 64 bit counters, please test and share experience)
+Supported architectures:
+- x86 64 bit (recommended)
+- x86 32 bit
 
 What is "flow" in FastNetMon terms? It's one or multiple udp, tcp, icmp connections with unique src IP, dst IP, src port, dst port and protocol.
 
