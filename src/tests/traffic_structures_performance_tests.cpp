@@ -11,6 +11,8 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/unordered_map.hpp>
 
+#include "../fastnetmon_types.h"
+
 // apt-get install -y libtbb-dev
 // g++ traffic_structures_performance_tests.cpp -std=c++11 -lboost_system  -lboost_thread -ltbb -I/opt/local/include -L/opt/local/lib
 // Mac OS:
@@ -19,25 +21,6 @@
 #ifndef __APPLE__
 #include "tbb/concurrent_unordered_map.h"
 #endif
-
-typedef struct {
-    unsigned int in_bytes;
-    unsigned int out_bytes;
-    unsigned int in_packets;
-    unsigned int out_packets;
-
-    // Additional data for correct attack protocol detection
-    unsigned int tcp_in_packets;
-    unsigned int tcp_out_packets;
-    unsigned int tcp_in_bytes;
-    unsigned int tcp_out_bytes;
-
-    unsigned int udp_in_packets;
-    unsigned int udp_out_packets;
-
-    unsigned int udp_in_bytes;
-    unsigned int udp_out_bytes;
-} map_element;
 
 std::map<uint32_t, map_element> DataCounter;
 boost::mutex data_counter_mutex;
@@ -206,6 +189,8 @@ int run_tests(void (*tested_function)(void)) {
 }
 
 int main() {
+    std::cout << "Element size: " << sizeof(map_element) << std::endl;
+
     std::cout << "std::map: ";
     run_tests(packet_collector_thread_std_map);
     DataCounter.clear();
