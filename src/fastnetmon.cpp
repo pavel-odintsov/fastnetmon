@@ -1754,8 +1754,14 @@ void traffic_draw_programm() {
     // Application statistics
     output_buffer << "Screen updated in:\t\t" << drawing_thread_execution_time.tv_sec << " sec "
                   << drawing_thread_execution_time.tv_usec << " microseconds\n";
+
     output_buffer << "Traffic calculated in:\t\t" << speed_calculation_time.tv_sec << " sec "
                   << speed_calculation_time.tv_usec << " microseconds\n";
+
+    if (speed_calculation_time.tv_sec > 0) {
+        output_buffer << "ALERT! Toolkit working incorrectly! We should calculate speed in ~1 second\n";
+    }
+
     output_buffer << "Total amount of not processed packets: " << total_unparsed_packets << "\n";
 
 #ifdef PF_RING
