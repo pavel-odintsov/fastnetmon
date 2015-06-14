@@ -22,6 +22,9 @@ set (Tutorial_VERSION_MINOR 1)
 set(CMAKE_C_FLAGS_RELEASE "-O2")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
+# If you want C++ 11 support, please uncomment it
+# set(CMAKE_CXX_FLAGS_RELEASE "-std=c++11")
+
 set(FASTNETMON_PROFILER OFF)
 
 set(FASTNETMON_PROFILE_FLAGS "-g -pg")
