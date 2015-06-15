@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <sys/time.h>
 #include <unordered_map>
+#include <iomanip> 
 #include <locale.h>
 #include <vector>
 
@@ -15,6 +16,7 @@
 
 // apt-get install -y libtbb-dev
 // g++ traffic_structures_performance_tests.cpp -std=c++11 -lboost_system  -lboost_thread -ltbb -I/opt/local/include -L/opt/local/lib
+//  clang traffic_structures_performance_tests.cpp -std=c++11 -lboost_system  -lboost_thread -ltbb -I/opt/local/include -L/opt/local/lib -lstdc++ -lm
 // Mac OS:
 // g++ traffic_structures_performance_tests.cpp -std=c++11 -lboost_system_mt -lboost_thread_mt -ltbb -I/opt/local/include -L/opt/local/lib -g -pg
 
@@ -185,7 +187,7 @@ int run_tests(void (*tested_function)(void)) {
     double ops_per_second = total_operations / used_time;;
     double mega_ops_per_second = ops_per_second / 1000 / 1000;
 
-    printf("%'.1f mega ops per second\n", mega_ops_per_second);
+    std::cout << std::setprecision(1) << mega_ops_per_second << " mega ops per second" << std::endl; 
 }
 
 int main() {
