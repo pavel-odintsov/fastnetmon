@@ -187,7 +187,9 @@ int run_tests(void (*tested_function)(void)) {
     double ops_per_second = total_operations / used_time;;
     double mega_ops_per_second = ops_per_second / 1000 / 1000;
 
-    std::cout << std::setprecision(1) << mega_ops_per_second << " mega ops per second" << std::endl; 
+    printf("%'.1f mega ops per second\n", mega_ops_per_second);
+
+    return 0;
 }
 
 int main() {
