@@ -1401,9 +1401,8 @@ unsigned int get_asn_for_ip(uint32_t ip) {
 }
 #endif
 
-// void* void* data
-// It's not an calculation thread, it's vizualization thread :)
-void calculation_thread() {
+// It's vizualization thread :)
+void screen_draw_thread() {
     // we need wait one second for calculating speed by recalculate_speed
 
     //#include <sys/prctl.h>
@@ -2047,7 +2046,7 @@ int main(int argc, char** argv) {
     time(&last_call_of_traffic_recalculation);
 
     // Run screen draw thread
-    boost::thread calc_thread(calculation_thread);
+    boost::thread calc_thread(screen_draw_thread);
 
     // start thread for recalculating speed in realtime
     boost::thread recalculate_speed_thread(recalculate_speed_thread_handler);
