@@ -1750,10 +1750,6 @@ void traffic_draw_programm() {
 
     output_buffer << std::endl;
 
-    if (enable_pcap_collection) {
-        output_buffer << get_pcap_stats() << "\n";
-    }
-
     // Application statistics
     output_buffer << "Screen updated in:\t\t" << drawing_thread_execution_time.tv_sec << " sec "
                   << drawing_thread_execution_time.tv_usec << " microseconds\n";
@@ -1766,6 +1762,11 @@ void traffic_draw_programm() {
     }
 
     output_buffer << "Total amount of not processed packets: " << total_unparsed_packets << "\n";
+
+    // Print backend stats
+    if (enable_pcap_collection) {
+        output_buffer << get_pcap_stats() << "\n";
+    }  
 
 #ifdef PF_RING
     if (enable_data_collection_from_mirror) {
