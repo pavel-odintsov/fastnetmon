@@ -867,18 +867,8 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len) {
 
     // In first two bits we store sampling type. 
     // We are not interested in it and should zeroify it for getting correct value of sampling rate
-    //set_bit_value(netflow5_sampling_ratio, 15);
-    //set_bit_value(netflow5_sampling_ratio, 16);
-
     clear_bit_value(netflow5_sampling_ratio, 15);
     clear_bit_value(netflow5_sampling_ratio, 16);
-
-    /*
-    printf("Sampling rate: %d\n", netflow5_sampling_ratio);
-
-    #include <bitset>
-    std::cout << std::bitset<16>(netflow5_sampling_ratio) << std::endl;
-    */
 
     for (u_int i = 0; i < nflows; i++) {
         size_t offset = NF5_PACKET_SIZE(i);
