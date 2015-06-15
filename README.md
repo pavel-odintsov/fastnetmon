@@ -4,6 +4,8 @@ Author: [Pavel Odintsov](http://ru.linkedin.com/in/podintsov/) pavel.odintsov at
 
 Join to [maillist](https://groups.google.com/forum/#!forum/fastnetmon) Look at [road map](docs/ROADMAP.md)
 
+Chat: #fastnetmon at irc.freenode.net [web client](https://webchat.freenode.net/)
+
 License: GPLv2
 
 FastNetMon - A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
