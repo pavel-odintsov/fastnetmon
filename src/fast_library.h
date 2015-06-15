@@ -46,7 +46,16 @@ std::string convert_ip_as_uint_to_string(uint32_t ip_as_integer);
 std::string convert_int_to_string(int value);
 std::string print_simple_packet(simple_packet packet);
 std::string convert_timeval_to_date(struct timeval tv);
+
 int extract_bit_value(uint8_t num, int bit);
+int extract_bit_value(uint16_t num, int bit);
+
+int clear_bit_value(uint8_t& num, int bit);
+int clear_bit_value(uint16_t& num, int bit);
+
+int set_bit_value(uint8_t& num, int bit);
+int set_bit_value(uint16_t& num, int bit);
+
 std::string print_tcp_flags(uint8_t flag_value);
 uint64_t MurmurHash64A(const void* key, int len, uint64_t seed);
 std::string print_tcp_flags(uint8_t flag_value);
