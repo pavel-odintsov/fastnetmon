@@ -372,6 +372,47 @@ int extract_bit_value(uint16_t num, int bit) {
     }
 }
 
+int set_bit_value(uint8_t& num, int bit) {
+    if (bit > 0 && bit <= 8) {
+        num = num | 1 << (bit - 1);
+
+        return 1; 
+    } else {
+        return 0;
+    }   
+}
+
+int set_bit_value(uint16_t& num, int bit) {
+    if (bit > 0 && bit <= 16) { 
+        num = num | 1 << (bit - 1);
+
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+int clear_bit_value(uint8_t& num, int bit) {
+    if (bit > 0 && bit <= 8) { 
+        num = num & ~(1 << (bit - 1) );
+
+        return 1;
+    } else {
+        return 0;
+    }   
+}
+
+// http://stackoverflow.com/questions/47981/how-do-you-set-clear-and-toggle-a-single-bit-in-c-c
+int clear_bit_value(uint16_t& num, int bit) {
+    if (bit > 0 && bit <= 16) {
+        num = num & ~(1 << (bit - 1) );
+
+        return 1;
+    } else {
+        return 0;
+    }   
+}
+
 std::string print_simple_packet(simple_packet packet) {
     std::stringstream buffer;
 
