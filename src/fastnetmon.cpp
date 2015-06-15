@@ -496,27 +496,36 @@ std::string draw_table(map_for_counters& my_map_packets, direction data_directio
         uint64_t bps_average = 0;
         uint64_t flows_average = 0;
 
-        // TODO: replace map by vector iteration
-        map_element* current_average_speed_element = &SpeedCounterAverage[client_ip];
         map_element* current_speed_element = &SpeedCounter[client_ip];
 
         // Create polymorphic pps, byte and flow counters
-        if (data_direction == INCOMING) {
-            pps = current_speed_element->in_packets;
-            bps = current_speed_element->in_bytes;
-            flows = current_speed_element->in_flows;
+        if (print_average_traffic_counts) {
+            map_element* current_average_speed_element = &SpeedCounterAverage[client_ip];
 
-            pps_average = current_average_speed_element->in_packets;
-            bps_average = current_average_speed_element->in_bytes;
-            flows_average = current_average_speed_element->in_flows;
-        } else if (data_direction == OUTGOING) {
-            pps = current_speed_element->out_packets;
-            bps = current_speed_element->out_bytes;
-            flows = current_speed_element->out_flows;
+            if (data_direction == INCOMING) {
+                pps_average = current_average_speed_element->in_packets;
+                bps_average = current_average_speed_element->in_bytes;
+                flows_average = current_average_speed_element->in_flows;
+            } else if (data_direction == OUTGOING) {
+                pps_average = current_average_speed_element->out_packets;
+                bps_average = current_average_speed_element->out_bytes;
+                flows_average = current_average_speed_element->out_flows;
+            }   
+        } 
 
-            pps_average = current_average_speed_element->out_packets;
-            bps_average = current_average_speed_element->out_bytes;
-            flows_average = current_average_speed_element->out_flows;
+        // If we want absolute counters or we use graphite (it uses absoulute counters)
+        if (graphite_enabled or !graphite_enabled) { 
+            map_element* current_speed_element = &SpeedCounter[client_ip];
+
+            if (data_direction == INCOMING) {
+                pps = current_speed_element->in_packets;
+                bps = current_speed_element->in_bytes;
+                flows = current_speed_element->in_flows;
+            } else if (data_direction == OUTGOING) {
+                pps = current_speed_element->out_packets;
+                bps = current_speed_element->out_bytes;
+                flows = current_speed_element->out_flows;
+            }
         }
 
         uint64_t mbps = convert_speed_to_mbps(bps);
@@ -525,6 +534,7 @@ std::string draw_table(map_for_counters& my_map_packets, direction data_directio
         // Print first max_ips_in_list elements in list, we will show top 20 "huge" channel loaders
         if (element_number < max_ips_in_list) {
             std::string is_banned = ban_list.count(client_ip) > 0 ? " *banned* " : "";
+
             // We use setw for alignment
             output_buffer << client_ip_as_string << "\t\t";
 
@@ -540,14 +550,12 @@ std::string draw_table(map_for_counters& my_map_packets, direction data_directio
                 std::string ip_as_string_with_dash_delimiters = client_ip_as_string;
                 // Replace dots by dashes
                 std::replace(ip_as_string_with_dash_delimiters.begin(),
-                             ip_as_string_with_dash_delimiters.end(), '.', '_');
+                    ip_as_string_with_dash_delimiters.end(), '.', '_');
 
-                graphite_data[graphite_prefix + "." + ip_as_string_with_dash_delimiters + "." + direction_as_string + ".pps"] =
-                pps;
-                graphite_data[graphite_prefix + "." + ip_as_string_with_dash_delimiters + "." + direction_as_string + ".mbps"] =
-                mbps;
-                graphite_data[graphite_prefix + "." + ip_as_string_with_dash_delimiters + "." + direction_as_string + ".flows"] =
-                flows;
+                std::string graphite_current_prefix = graphite_prefix + "." + ip_as_string_with_dash_delimiters + "." + direction_as_string;
+                graphite_data[ graphite_current_prefix + ".pps"   ] = pps;
+                graphite_data[ graphite_current_prefix + ".mbps"  ] = mbps;
+                graphite_data[ graphite_current_prefix + ".flows" ] = flows;
             }
 
             if (print_average_traffic_counts) {
