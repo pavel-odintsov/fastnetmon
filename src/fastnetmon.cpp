@@ -481,7 +481,8 @@ std::string draw_table(map_for_counters& my_map_packets, direction data_directio
     graphite_data_t graphite_data;
 
     unsigned int element_number = 0;
-    // TODO: fix this code because iteraton over over millions of IPs is very CPU intensive
+    
+    // In this loop we print only top X talkers in our subnet to screen buffer
     for (std::vector<pair_of_map_elements>::iterator ii = vector_for_sort.begin();
          ii != vector_for_sort.end(); ++ii) {
         uint32_t client_ip = (*ii).first;
@@ -560,6 +561,9 @@ std::string draw_table(map_for_counters& my_map_packets, direction data_directio
             }
 
             output_buffer << is_banned << std::endl;
+        } else {
+            // Well, we print all important information and could stop this crazy loop!
+            break; 
         }
 
         element_number++;
