@@ -1291,7 +1291,7 @@ void process_packet(simple_packet& current_packet) {
             logger << log4cpp::Priority::ERROR << "We tried to access to element with index " << shift_in_vector
                    << " which located outside allocated vector with size " << itr->second.size();
 
-            logger << log4cpp::Priority::INFO
+            logger << log4cpp::Priority::ERROR
                    << "We expect issues with this packet in INCOMING direction: "
                    << print_simple_packet(current_packet);
 
