@@ -363,6 +363,15 @@ int extract_bit_value(uint8_t num, int bit) {
     }
 }
 
+// Overloaded version with 16 bit integer support
+int extract_bit_value(uint16_t num, int bit) {
+    if (bit > 0 && bit <= 16) {
+        return ((num >> (bit - 1)) & 1);
+    } else {
+        return 0;
+    }
+}
+
 std::string print_simple_packet(simple_packet packet) {
     std::stringstream buffer;
 
