@@ -95,6 +95,16 @@ Examples for different plugins (plugin name could be netflow, netmap, sflow, pfr
 ./fastnetmon_plugin_runner netflow
 ```
 
+How to collect data for debugging netflow:
+```bash
+tcpdump -w /root/netflow_data.pcap -n 'udp dst port 2055' 
+```
+
+How to collect data for debugging sFLOW:
+```bash
+ tcpdump -w /root/sflow_data.pcap -n 'udp dst port 6343'
+```
+
 Performance tuning:
 - Do not use short prefixes (lesser then /24)
 - Do not use extremely big prefixes (/8, /16) because memory consumption will be very big
