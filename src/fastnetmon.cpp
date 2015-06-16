@@ -496,7 +496,16 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
     
     if (data_direction == INCOMING or data_direction == OUTGOING) {
         // Sort only first max_ips_in_list elements in this vector
-        std::partial_sort(vector_for_sort.begin(), vector_for_sort.begin() + max_ips_in_list, vector_for_sort.end(),
+        unsigned int shift_for_sort = max_ips_in_list;
+
+        // Because in another case we will got segmentation fault
+        unsigned int vector_size = vector_for_sort.size();
+
+        if (vector_size < shift_for_sort) {
+            shift_for_sort = vector_size;
+        }
+
+        std::partial_sort(vector_for_sort.begin(), vector_for_sort.begin() + shift_for_sort, vector_for_sort.end(),
                   TrafficComparatorClass(data_direction, sort_item));
     } else {
         logger << log4cpp::Priority::ERROR << "Unexpected bahaviour on sort function";
