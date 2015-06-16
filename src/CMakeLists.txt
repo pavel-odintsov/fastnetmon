@@ -207,6 +207,7 @@ target_link_libraries(fastnetmon sflow_plugin netflow_plugin pcap_plugin example
 if (BUILD_PLUGIN_RUNNER)
     add_executable(fastnetmon_plugin_runner plugin_runner.cpp)
 
+    target_link_libraries(fastnetmon_plugin_runner ${CMAKE_THREAD_LIBS_INIT})
     target_link_libraries(fastnetmon_plugin_runner patricia)
     target_link_libraries(fastnetmon_plugin_runner ${LOG4CPP_LIBRARY_PATH})
     target_link_libraries(fastnetmon_plugin_runner fast_library)
