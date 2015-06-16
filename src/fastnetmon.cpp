@@ -83,6 +83,8 @@ time_t last_call_of_traffic_recalculation;
 // Send or not any details about attack for ban script call over stdin
 bool notify_script_pass_details = true;
 
+bool unban_only_if_attack_finished = true;
+
 // Variable with all data from main screen
 std::string screen_data_stats = "";
 
@@ -2572,9 +2574,40 @@ void cleanup_ban_list() {
             double time_difference = difftime(current_time, ((*itr).second).ban_timestamp);
             int ban_time = ((*itr).second).ban_time;
 
+            // By default we assume 'attack finished'  
+            bool attack_finished = true;
+
+            if (unban_only_if_attack_finished && time_difference > ban_time) {
+                std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+                uint32_t subnet_in_host_byte_order = ntohl((*itr).second.customer_network.first); 
+                int64_t shift_in_vector = (int64_t)ntohl(client_ip) - (int64_t)subnet_in_host_byte_order;
+     
+                map_of_vector_counters::iterator itr_average_speed =
+                    SubnetVectorMapSpeedAverage.find((*itr).second.customer_network); 
+
+                if (itr_average_speed == SubnetVectorMapSpeedAverage.end()) {
+                    logger << log4cpp::Priority::ERROR << "Can't find vector address in subnet map for unban function";
+                    continue;
+                }    
+
+                if (shift_in_vector < 0 or shift_in_vector >= itr_average_speed->second.size()) {
+                    logger << log4cpp::Priority::ERROR << "We tried to access to element with index " << shift_in_vector
+                        << " which located outside allocated vector with size " << itr_average_speed->second.size();
+                }
+
+                map_element* average_speed_element = &itr_average_speed->second[shift_in_vector];  
+
+                if (we_should_ban_this_ip(average_speed_element)) {
+                    logger << log4cpp::Priority::ERROR << "Attack to IP" << client_ip_as_string
+                        << " still going! We should not unblock this host";
+                    attack_finished = false;
+                }
+            } 
+
             // Zero value for ban_time means "no unban feature"
-            if (ban_time != 0 && time_difference > ban_time) {
+            if (ban_time != 0 && time_difference > ban_time && attack_finished) {
                 // Cleanup all data related with this attack
+                    attack_finished = false;
                 std::string data_direction_as_string = get_direction_name((*itr).second.attack_direction);
                 std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
                 std::string pps_as_string = convert_int_to_string((*itr).second.attack_power);
