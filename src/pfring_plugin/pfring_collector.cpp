@@ -147,7 +147,7 @@ void stop_pfring_collection() {
 }
 
 void parse_packet_pf_ring(const struct pfring_pkthdr* h, const u_char* p, const u_char* user_bytes) {
-    // Описание всех полей: http://www.ntop.org/pfring_api/structpkt__parsing__info.html
+    // Description of all fields: http://www.ntop.org/pfring_api/structpkt__parsing__info.html
     simple_packet packet;
 
     // We pass only one packet to processing

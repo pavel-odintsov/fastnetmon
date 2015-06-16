@@ -89,7 +89,7 @@ uint32_t convert_cidr_to_binary_netmask(int cidr) {
     // htonl from host byte order to network
     // ntohl from network byte order to host
 
-    // поидее, на выходе тут нужен network byte order
+    // I suppose we need network byte order here
     return htonl(binary_netmask);
 }
 
@@ -108,29 +108,29 @@ void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask) {
 
     // std::cout<<std::bitset<32>(netmask_as_int)<<endl;
 
-    // ntogl: network byte order to host, htonl - наоборот
+    // ntogl: network byte order to host, htonl - host to network
     netmask_as_int = ntohl(netmask_as_int);
 
     // intruduce temporary pointer
     tree_leaf* temp_root = root;
 
-    // интерируем по значимым битам сети, остальные игнорируем, они нас не интересуют
+    // Iterate over significant subnet bits and ignore other
     for (int i = 31; i >= 32 - cidr_mask; i--) {
         uint32_t result_bit = netmask_as_int & (1 << i);
         bool bit = result_bit == 0 ? false : true;
         // cout<<"Insert: "<<bit<<" from position "<<i<<endl;
 
-        // условимся, что слева - нули, справа - единицы
+        // from the left - zeros, from the rigth - ones
 
-        // теперь индекс может быть, а может и отсутствовать, смотрим мы только дочерние листья
-        // корня, корень не трогаем
+        // We could have index or we could haven't indes. We check only child leafs of root,
+        // we do not check root
         if (bit) {
-            // проверяем правое поддерево
+            // check rigth subntree
             if (temp_root->right != NULL) {
-                // ок, элемент уже есть, просто переключаем указатель
+                // Elemelnt already there, just switch pointer
                 temp_root = temp_root->right;
             } else {
-                // элемента нету, его нужно создать
+                // No element here, we should create it
                 tree_leaf* new_leaf = new tree_leaf;
                 new_leaf->right = new_leaf->left = NULL;
                 new_leaf->bit = bit;
@@ -141,12 +141,12 @@ void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask) {
             }
 
         } else {
-            // проверим левое поддерево
+            // check left subtree
             if (temp_root->left != NULL) {
-                // ок, элемент уже есть, просто переключаем указатель на левый
+                // Elemelnt already there, just switch pointer
                 temp_root = temp_root->left;
             } else {
-                // элемента нету, его нужно создать
+                // No element here, we should create it
                 tree_leaf* new_leaf = new tree_leaf;
                 new_leaf->right = new_leaf->left = NULL;
                 new_leaf->bit = bit;
@@ -181,59 +181,54 @@ bool fast_ip_lookup(tree_leaf* root, uint32_t ip) {
         uint32_t result_bit = ip & (1 << i);
         bool bit = result_bit == 0 ? false : true;
 
-        // Текущий узел - терминальный
+        // Current node is terminal node
         if ((temp_root->left == NULL && temp_root->right == NULL)) {
             if (bits_matched > 0) {
-                // если более дочерних элементов нету (узел терминальный!) и совпадение хотя бы с
-                // одним битом - мы нашли маску
+                // if we havent child elemets (leaf is terinal) and we have match for single bit at lease
+                // thus, we found mask!
                 // std::cout<<"Bits matched: "<<bits_matched<<endl;
                 return true;
             } else {
-                // обход кончился и мы ничего не нашли
+                // traversal and we haven't found anything
                 return false;
             }
         }
 
         if (bit) {
-            // смотрим правое поддерево
             if (temp_root->right != NULL) {
-                // идем далее
                 temp_root = temp_root->right;
                 bits_matched++;
             } else {
-                // справа ничего нету, но может быть слева
                 if (temp_root->left != NULL) {
                     return false;
                 } else {
-                    // рассмотрено выше
+                    // already checked above
                 }
             }
         } else {
             if (temp_root->left != NULL) {
-                // идем влево
                 temp_root = temp_root->left;
                 bits_matched++;
             } else {
-                // слева ничего нету, но может быть спарва
                 if (temp_root->right != NULL) {
                     return false;
                 } else {
-                    // рассмотрено выше
+                    // already checked above
                 }
             }
         }
     }
 
-    // это повтор аналогичной проверки в начале цикла, но это требуется, так как мы можем пройти
-    // цикл и не налететь на вариант, что мы достигли терминала - оба потомка стали нулл
+    // We will repeat same checks as in begin of function. But we need it because 
+    // we could pass cycle and do not hit any terminals - both childs become zeroes
     if ((temp_root->left == NULL && temp_root->right == NULL)) {
         if (bits_matched > 0) {
-            // если более дочерних элементов нету (узел терминальный!) и совпадение хотя бы с одним
-            // битом - мы нашли маску
+            // if we havent child elemets (leaf is terinal) and we have match for single bit at lease
+            // thus, we found mask!
             // std::cout<<"Bits matched: "<<bits_matched<<endl;
             return true;
         } else {
-            // обход кончился и мы ничего не нашли
+            // traversal finished and we haven't found anything
             return false;
         }
     }
@@ -288,7 +283,6 @@ int main() {
 
     uint32_t my_ip = convert_ip_as_string_to_uint("192.0.0.192");
 
-    // ntogl: network byte order to host, htonl - наоборот
     // my_ip = ntohl(my_ip);
     // std::bitset<32> x(my_ip);
     // std::cout<<x;
