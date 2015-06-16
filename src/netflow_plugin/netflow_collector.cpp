@@ -870,6 +870,11 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len) {
     clear_bit_value(netflow5_sampling_ratio, 15);
     clear_bit_value(netflow5_sampling_ratio, 16);
 
+    // Sampling not enabled on device
+    if (netflow5_sampling_ratio == 0) {
+        netflow5_sampling_ratio = 1;
+    }
+
     for (u_int i = 0; i < nflows; i++) {
         size_t offset = NF5_PACKET_SIZE(i);
         struct NF5_FLOW* nf5_flow = (struct NF5_FLOW*)(packet + offset);
