@@ -251,6 +251,7 @@ std::string exabgp_next_hop = "";
 bool graphite_enabled = false;
 std::string graphite_host = "127.0.0.1";
 unsigned short int graphite_port = 2003;
+unsigned int graphite_number_of_ips = 20;
 
 // Default graphite namespace
 std::string graphite_prefix = "fastnetmon";
@@ -493,11 +494,16 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
             }
         }
     }
-    
-    if (data_direction == INCOMING or data_direction == OUTGOING) {
-        // Sort only first max_ips_in_list elements in this vector
-        unsigned int shift_for_sort = max_ips_in_list;
+   
+    // Sort only first X elements in this vector
+    unsigned int shift_for_sort = max_ips_in_list;
 
+    // Graphite could use bigger amount of TOP IP's
+    if (graphite_enabled && graphite_number_of_ips > shift_for_sort) {
+        shift_for_sort = graphite_number_of_ips;
+    }
+ 
+    if (data_direction == INCOMING or data_direction == OUTGOING) {
         // Because in another case we will got segmentation fault
         unsigned int vector_size = vector_for_sort.size();
 
@@ -553,40 +559,43 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
             // We use setw for alignment
             output_buffer << client_ip_as_string << "\t\t";
 
-            if (graphite_enabled) {
-                std::string direction_as_string;
-
-                if (data_direction == INCOMING) {
-                    direction_as_string = "incoming";
-                } else if (data_direction == OUTGOING) {
-                    direction_as_string = "outgoing";
-                }
-
-                std::string ip_as_string_with_dash_delimiters = client_ip_as_string;
-                // Replace dots by dashes
-                std::replace(ip_as_string_with_dash_delimiters.begin(),
-                    ip_as_string_with_dash_delimiters.end(), '.', '_');
-
-                std::string graphite_current_prefix = graphite_prefix + "." + ip_as_string_with_dash_delimiters + "." + direction_as_string;
-
-                if (print_average_traffic_counts) {
-                    graphite_current_prefix = graphite_current_prefix + ".average";
-                }
-
-                graphite_data[ graphite_current_prefix + ".pps"   ] = pps;
-                graphite_data[ graphite_current_prefix + ".mbps"  ] = mbps;
-                graphite_data[ graphite_current_prefix + ".flows" ] = flows;
-            }
-
             output_buffer << std::setw(6) << pps << " pps ";
             output_buffer << std::setw(6) << mbps << " mbps ";
             output_buffer << std::setw(6) << flows << " flows ";
-
+        
             output_buffer << is_banned << std::endl;
-        } else {
-            // Well, we print all important information and could stop this crazy loop!
-            break; 
+
         }
+
+        if (graphite_enabled && element_number < graphite_number_of_ips) {
+            std::string direction_as_string;
+
+            if (data_direction == INCOMING) {
+                direction_as_string = "incoming";
+            } else if (data_direction == OUTGOING) {
+                direction_as_string = "outgoing";
+            }
+
+            std::string ip_as_string_with_dash_delimiters = client_ip_as_string;
+            // Replace dots by dashes
+            std::replace(ip_as_string_with_dash_delimiters.begin(),
+                ip_as_string_with_dash_delimiters.end(), '.', '_');
+
+            std::string graphite_current_prefix = graphite_prefix + "." + ip_as_string_with_dash_delimiters + "." + direction_as_string;
+
+            if (print_average_traffic_counts) {
+                graphite_current_prefix = graphite_current_prefix + ".average";
+            }
+
+            graphite_data[ graphite_current_prefix + ".pps"   ] = pps;
+            graphite_data[ graphite_current_prefix + ".mbps"  ] = mbps;
+            graphite_data[ graphite_current_prefix + ".flows" ] = flows;
+        }
+
+        // If we achieved last sorted element, we should stop this loop
+        if (element_number > shift_for_sort) {
+            break;
+        } 
 
         element_number++;
     }
@@ -780,6 +789,10 @@ bool load_configuration_file() {
 
     if (configuration_map.count("graphite_port") != 0) {
         graphite_port = convert_string_to_integer(configuration_map["graphite_port"]);
+    }
+
+    if (configuration_map.count("graphite_number_of_ips") != 0) {
+        graphite_number_of_ips = convert_string_to_integer(configuration_map["graphite_number_of_ips"]);
     }
 
     if (configuration_map.count("process_incoming_traffic") != 0) {
