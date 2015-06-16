@@ -4,10 +4,10 @@
 #include <string.h>
 #include <iterator>
 #include <sstream>
-#include <netinet/ip.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/ip.h>
 #include <arpa/inet.h>
 
 #include "fastnetmon_types.h"
