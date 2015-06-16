@@ -4,7 +4,7 @@ Well, if you need update from stable branch to developer branch, please follow [
 
 Please be aware! Binary packages could be out of date. 
 
-Automatic [install script])https://github.com/FastVPSEestiOu/fastnetmon/blob/master/docs/INSTALL.md) could be used for fresh install and upgrade.
+Automatic [install script](https://github.com/FastVPSEestiOu/fastnetmon/blob/master/docs/INSTALL.md) could be used for fresh install and upgrade.
 
 Please consult [this page](https://github.com/FastVPSEestiOu/fastnetmon/releases) about new releases.
 
