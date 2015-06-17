@@ -40,6 +40,8 @@ extern log4cpp::Category& logger;
 
 extern uint64_t total_unparsed_packets;
 
+extern uint64_t total_ipv6_packets;
+
 // Global configuration map
 extern std::map<std::string, std::string> configuration_map;
 
@@ -235,6 +237,8 @@ void parse_packet_pf_ring(const struct pfring_pkthdr* h, const u_char* p, const 
         }
 
         pfring_process_func_ptr(packet);
+    } else if (h->extended_hdr.parsed_pkt.ip_version == 6) {
+        total_ipv6_packets++;
     } else {
         total_unparsed_packets++;
     }
