@@ -82,7 +82,8 @@ cmake .. -DBUILD_PCAP_READER=ON
 
 Run pcap data:
 ```bash
-./fastnetmon_pcap_reader dump.pcap
+./fastnetmon_pcap_reader sflow dump.pcap
+./fastnetmon_pcap_reader netflow dump.pcap
 ```
 
 Build script for running packet capture plugins without analyzer backend:
