@@ -80,6 +80,9 @@
 
 time_t last_call_of_traffic_recalculation;
 
+
+unsigned int recalculate_speed_timeout = 1;
+
 // Send or not any details about attack for ban script call over stdin
 bool notify_script_pass_details = true;
 
@@ -1469,7 +1472,7 @@ void recalculate_speed_thread_handler() {
         // recalculate data every one second
         // Available only from boost 1.54: boost::this_thread::sleep_for( boost::chrono::seconds(1)
         // );
-        boost::this_thread::sleep(boost::posix_time::seconds(1));
+        boost::this_thread::sleep(boost::posix_time::seconds(recalculate_speed_timeout));
         recalculate_speed();
     }
 }
@@ -1481,7 +1484,7 @@ void recalculate_speed() {
     struct timeval start_calc_time;
     gettimeofday(&start_calc_time, NULL);
 
-    double speed_calc_period = 1;
+    double speed_calc_period = recalculate_speed_timeout;
     time_t start_time;
     time(&start_time);
 
@@ -1493,7 +1496,7 @@ void recalculate_speed() {
         logger << log4cpp::Priority::INFO
                << "We skip one iteration of speed_calc because it runs so early!";
         return;
-    } else if (int(time_difference) == 1) {
+    } else if (int(time_difference) == int(speed_calc_period)) {
         // All fine, we run on time
     } else {
         logger << log4cpp::Priority::INFO
