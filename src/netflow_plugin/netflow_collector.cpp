@@ -36,6 +36,9 @@ extern std::map<std::string, std::string> configuration_map;
 // Sampling rate for all netflow agents
 unsigned int sampling_rate = 1;
 
+// Divide packets and bytes counters from the flow by interval length for more 'smoother' data
+bool netflow_divide_counters_on_interval_length = false;
+
 ipfix_information_database ipfix_db_instance;
 
 #include "netflow_collector.h"
@@ -897,11 +900,29 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len) {
         current_packet.destination_port = 0;
 
         // TODO: we should pass data about "flow" structure of this data
-
-        // htobe64 removed
         current_packet.length = fast_ntoh(nf5_flow->flow_octets);
         current_packet.number_of_packets = fast_ntoh(nf5_flow->flow_packets);
 
+        if (netflow_divide_counters_on_interval_length) {
+            int64_t interval_length = fast_ntoh(nf5_flow->flow_finish) - fast_ntoh(nf5_flow->flow_start);
+
+            printf("NetFlow v5 start %u finish %u interval length: %lld\n",
+                fast_ntoh(nf5_flow->flow_start), fast_ntoh(nf5_flow->flow_finish), interval_length);
+
+            if (interval_length == 0) {
+                // it's OK
+            } else if (interval_length < 0) {
+                // it's internal error
+                logger << log4cpp::Priority::ERROR << "We got negative interval length from netflow agent, something goes wrong!";
+            } else {
+                // OK, let's divide
+                // We will get integer result for this operation
+                current_packet.length = current_packet.length / interval_length;
+                current_packet.number_of_packets = current_packet.number_of_packets / interval_length;
+            }
+
+        }
+    
         // TODO: use sampling data from packet, disable customization here
         // Wireshark dump approves this idea
         current_packet.sample_ratio = netflow5_sampling_ratio;
@@ -977,6 +998,10 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
         logger << log4cpp::Priority::INFO << "We use custom sampling ratio for netflow: " << sampling_rate;
     }
 
+    if (configuration_map.count("netflow_divide_counters_on_interval_length") != 0) {
+        netflow_divide_counters_on_interval_length =
+            configuration_map["netflow_divide_counters_on_interval_length"] == "on" ? true : false;
+    }
 
     logger << log4cpp::Priority::INFO << "netflow plugin will listen on " << netflow_host << ":"
            << netflow_port << " udp port";
