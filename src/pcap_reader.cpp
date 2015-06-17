@@ -16,6 +16,11 @@
 #include <arpa/inet.h>
 
 #include "netflow_plugin/netflow_collector.h"
+#include "sflow_plugin/sflow_collector.h"
+
+#include "sflow_plugin/sflow_data.h"
+#include "sflow_plugin/sflow.h"
+
 #include "fastnetmon_packet_parser.h"
 #include "fastnetmon_types.h"
 #include "fast_library.h"
@@ -54,7 +59,7 @@ struct fastnetmon_pcap_pkthdr {
     uint32_t orig_len; /* actual length of packet */
 };
 
-void pcap_parse_packet(char* buffer, uint32_t len);
+void pcap_parse_packet(const char* flow_type, char* buffer, uint32_t len);
 
 void init_logging() {
     log4cpp::PatternLayout* layout = new log4cpp::PatternLayout();
@@ -68,7 +73,7 @@ void init_logging() {
     logger.info("Logger initialized!");
 }
 
-int pcap_reader(const char* pcap_file_path) {
+int pcap_reader(const char* flow_type, const char* pcap_file_path) {
     int filedesc = open(pcap_file_path, O_RDONLY);
 
     if (filedesc <= 0) {
@@ -121,7 +126,7 @@ int pcap_reader(const char* pcap_file_path) {
         }
 
         // printf("packet payload read\n");
-        pcap_parse_packet(packet_buffer, pcap_packet_header.incl_len);
+        pcap_parse_packet(flow_type, packet_buffer, pcap_packet_header.incl_len);
 
         // printf("Process packet %d\n", read_packets);
         read_packets++;
@@ -137,14 +142,13 @@ void my_fastnetmon_packet_handler(simple_packet& current_packet) {
 }
 
 extern process_packet_pointer netflow_process_func_ptr;
+extern process_packet_pointer sflow_process_func_ptr;
 
-void pcap_parse_packet(char* buffer, uint32_t len) {
+void pcap_parse_packet(const char* flow_type, char* buffer, uint32_t len) {
     struct pfring_pkthdr packet_header;
     memset(&packet_header, 0, sizeof(packet_header));
     packet_header.len = len;
     packet_header.caplen = len;
-
-    netflow_process_func_ptr = my_fastnetmon_packet_handler;
 
     fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, 1, 0);
 
@@ -160,24 +164,36 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
     }
 
     unsigned int payload_length = packet_header.len - packet_header.extended_hdr.parsed_pkt.offset.payload_offset;
-    std::string fake_peer_ip = "10.0.1.2";
-    process_netflow_packet((u_int8_t*)payload_ptr, payload_length, fake_peer_ip);
+
+    if (strcmp(flow_type, "netflow") == 0) {
+        netflow_process_func_ptr = my_fastnetmon_packet_handler;
+
+        std::string fake_peer_ip = "10.0.1.2";
+        process_netflow_packet((u_int8_t*)payload_ptr, payload_length, fake_peer_ip);
+    } else if (strcmp(flow_type, "sflow") == 0) {
+        sflow_process_func_ptr = my_fastnetmon_packet_handler;
+
+        SFSample sample;
+        memset(&sample, 0, sizeof(sample));
+
+        sample.rawSample = (uint8_t*)payload_ptr;
+        sample.rawSampleLen = payload_length;
+        sample.sourceIP.type = SFLADDRESSTYPE_IP_V4;
+
+        read_sflow_datagram(&sample);
+    } else {
+        printf("We do not support this flow type: %s\n", flow_type);
+    }
 }
 
 int main(int argc, char** argv) {
     init_logging();
 
-    if (argc != 2) {
-        printf("Please provide path to pcap dump\n");
+    if (argc != 3) {
+        printf("Please provide flow type: sflow or netflow and path to pcap dump\n");
         exit(1);
     }
 
-    printf("We will process file: %s\n", argv[1]);
-    pcap_reader(argv[1]);
-
-
-    // pcap_reader("/root/netflowexample2_netflow9_cisco_sampling_issue.pcap");
-    //pcap_reader("/root/flow_dump_ipfix_issue_with_fixed_to_2055.pcap");
-    // pcap_reader("/root/ipfix_example_ipt_netflow_syn_flood.pcap");
-    // pcap_reader("/Users/pavel-odintsov/Dropbox/ipfix_example_ipt_netflow_syn_flood.pcap");
+    printf("We will process file: %s as %s dump\n", argv[2], argv[1]);
+    pcap_reader(argv[1], argv[2]);
 }
