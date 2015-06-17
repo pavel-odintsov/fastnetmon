@@ -906,10 +906,12 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len) {
         if (netflow_divide_counters_on_interval_length) {
             int64_t interval_length = fast_ntoh(nf5_flow->flow_finish) - fast_ntoh(nf5_flow->flow_start);
 
-            logger << log4cpp::Priority::INFO << "NetFlow v5 start: " << fast_ntoh(nf5_flow->flow_start)
-                << " finish: " << fast_ntoh(nf5_flow->flow_finish) 
-                << " interval length:" << interval_length 
-                << "\n";
+            if (interval_length > 0) {
+                logger << log4cpp::Priority::INFO << "NetFlow v5 start: " << fast_ntoh(nf5_flow->flow_start)
+                    << " finish: " << fast_ntoh(nf5_flow->flow_finish) 
+                    << " interval length:" << interval_length 
+                    << "\n";
+            }
 
             if (interval_length == 0) {
                 // it's OK
