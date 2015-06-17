@@ -677,7 +677,7 @@ void decodeIPLayer4(SFSample* sample, uint8_t* ptr) {
 
         current_packet.source_port = sample->dcd_sport;
         current_packet.destination_port = sample->dcd_dport;
-        // TODO: флаги могут быть бажные!!! наш парсер флагов расчитан на формат, используемый в
+        // TODO: flags could be broken because our flags parser implemented with PF_RING style flags
         // PF_RING
         current_packet.flags = tcp.th_flags;
 

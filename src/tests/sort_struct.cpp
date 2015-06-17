@@ -84,7 +84,7 @@ int main() {
         // std::cout<<current_value<<std::endl;
 
         if (current_value > my_priority_queue.get_min_element()) {
-            // проверяем, нет ли такого элемента тут уже сейчас
+            // Check for existence of this element in struct already
             my_priority_queue.insert(current_value, 0);
         }
     }
