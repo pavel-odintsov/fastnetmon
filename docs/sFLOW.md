@@ -8,7 +8,7 @@ configure sflow collector 10.0.2.33 port 6343 vr "VR-Default" # add collector
 configure sflow agent 10.0.2.15 # agent address
 configure sflow poll-interval 1 # send data to collector once per second 
 configure sflow sample-rate 1024 # sampling rate
-enable sflow ports 1:39,1:40,2:39 # add ports to sFLOW monitoring
+enable sflow ports 1:39,1:40,2:39 both # add ports to sFLOW monitoring for egress and ingress traffic.
 enable sflow #  enable sflow globally
 ```
 
