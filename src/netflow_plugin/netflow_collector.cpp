@@ -907,8 +907,8 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len, std::string client_a
             int64_t interval_length = fast_ntoh(nf5_flow->flow_finish) - fast_ntoh(nf5_flow->flow_start);
 
             if (interval_length > 0) {
-                logger << log4cpp::Priority::INFO << "NetFlow v5 from" << client_addres_in_string_format
-                    << "start: " << fast_ntoh(nf5_flow->flow_start)
+                logger << log4cpp::Priority::INFO << "NetFlow v5 from: " << client_addres_in_string_format
+                    << " start: " << fast_ntoh(nf5_flow->flow_start)
                     << " finish: " << fast_ntoh(nf5_flow->flow_finish) 
                     << " interval length:" << interval_length 
                     << "\n";
