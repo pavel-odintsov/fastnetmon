@@ -41,8 +41,8 @@ extern log4cpp::Category& logger;
 extern std::map<std::string, std::string> configuration_map;
 
 uint32_t getData32(SFSample* sample);
-void skipTLVRecord(SFSample* sample, uint32_t tag, uint32_t len);
-void readFlowSample(SFSample* sample, int expanded);
+bool skipTLVRecord(SFSample* sample, uint32_t tag, uint32_t len);
+bool readFlowSample(SFSample* sample, int expanded);
 void readFlowSample_header(SFSample* sample);
 void decodeIPV4(SFSample* sample);
 void print_simple_packet(struct simple_packet& packet);
@@ -138,14 +138,17 @@ uint32_t getData32_nobswap(SFSample* sample) {
     return ans;
 }
 
-void skipBytes(SFSample* sample, uint32_t skip) {
+bool skipBytes(SFSample* sample, uint32_t skip) {
     int quads = (skip + 3) / 4;
     sample->datap += quads;
     if (skip > sample->rawSampleLen || (uint8_t*)sample->datap > sample->endp) {
         // SFABORT(sample, SF_ABORT_EOS);
-        logger << log4cpp::Priority::ERROR << "Internal error!!!";
-        exit(0);
+        logger << log4cpp::Priority::ERROR << "Very dangerous error from skipBytes function! We try to read from restricted memory region";
+        
+        return false;
     }
+
+    return true;
 }
 
 uint32_t getAddress(SFSample* sample, SFLAddress* address) {
@@ -198,8 +201,7 @@ void read_sflow_datagram(SFSample* sample) {
         if ((uint8_t*)sample->datap >= sample->endp) {
             logger
             << log4cpp::Priority::INFO
-            << "We try to read data outside packet! It's very dangerous, we stop all operations";
-            exit(0);
+            << "We tried to read data outside packet! It's very dangerous, we stop all operations";
             return;
         }
 
@@ -210,40 +212,54 @@ void read_sflow_datagram(SFSample* sample) {
         if (sample->datagramVersion >= 5) {
             switch (sample->sampleType) {
             case SFLFLOW_SAMPLE:
-                // printf("SFLFLOW_SAMPLE\n");
                 // skipBytes(sample, getData32(sample));
-                readFlowSample(sample, 0);
+                if (!readFlowSample(sample, 0)) {
+                    logger << log4cpp::Priority::ERROR << "We failed in SFLFLOW_SAMPLE handler";
+                    return;
+                }
+
                 break;
             case SFLCOUNTERS_SAMPLE:
                 // We do not need counters for our task, skip it
-                skipBytes(sample, getData32(sample));
-                // printf("SFLCOUNTERS_SAMPLE\n");
+                if (!skipBytes(sample, getData32(sample))) {
+                    logger << log4cpp::Priority::ERROR << "We failed in SFLCOUNTERS_SAMPLE handler";
+                    return;
+                }
+
                 break;
             case SFLFLOW_SAMPLE_EXPANDED:
-                // printf("SFLFLOW_SAMPLE_EXPANDED\n");
                 // skipBytes(sample, getData32(sample));
-                readFlowSample(sample, 1);
+                if (!readFlowSample(sample, 1)) {
+                    logger << log4cpp::Priority::ERROR << "We failed in SFLFLOW_SAMPLE_EXPANDED handler";
+                    return;
+                }
+                
                 break;
             case SFLCOUNTERS_SAMPLE_EXPANDED:
                 // We do not need counters for our task, skip it
-                skipBytes(sample, getData32(sample));
-                // printf("SFLCOUNTERS_SAMPLE_EXPANDED\n");
+                if (!skipBytes(sample, getData32(sample))) {
+                    logger << log4cpp::Priority::ERROR << "We failed in SFLCOUNTERS_SAMPLE_EXPANDED handler";
+                    return;
+                }
+                
                 break;
             default:
-                // printf("skip TLV record\n");
-                skipTLVRecord(sample, sample->sampleType, getData32(sample));
+                if (!skipTLVRecord(sample, sample->sampleType, getData32(sample))) {
+                    logger << log4cpp::Priority::ERROR << "We failed in default handler in skipTLVRecord";
+                    return;
+                }
                 break;
             }
         }
     }
 }
 
-void skipTLVRecord(SFSample* sample, uint32_t tag, uint32_t len) {
-    skipBytes(sample, len);
+bool skipTLVRecord(SFSample* sample, uint32_t tag, uint32_t len) {
+    return skipBytes(sample, len);
 }
 
 
-void readFlowSample(SFSample* sample, int expanded) {
+bool readFlowSample(SFSample* sample, int expanded) {
     uint32_t num_elements, sampleLength;
     uint8_t* sampleStart;
 
@@ -296,9 +312,13 @@ void readFlowSample(SFSample* sample, int expanded) {
             // process data
             readFlowSample_header(sample);
         } else {
-            skipTLVRecord(sample, tag, length);
+            if (!skipTLVRecord(sample, tag, length)) {
+                return false;
+            }
         }
     }
+
+    return true;
 }
 
 #define NFT_ETHHDR_SIZ 14
