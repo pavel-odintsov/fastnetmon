@@ -74,8 +74,10 @@ To enable netflow simply specify IP of server with installed FastNetMon and spec
 Why did we write this? Because we can't find any software for solving this problem in the open source world! 
 
 How I can help project?
+- We are looking for maintainer for Debian and Fedora/EPEL packages
 - Test it! 
 - Share your experience
+- Share your use cases
 - Share your improvements
 - Test it with different equipment
 - Create feature requests
