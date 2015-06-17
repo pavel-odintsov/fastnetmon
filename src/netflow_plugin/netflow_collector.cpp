@@ -850,7 +850,7 @@ void process_netflow_packet_v9(u_int8_t* packet, u_int len, std::string client_a
     }
 }
 
-void process_netflow_packet_v5(u_int8_t* packet, u_int len) {
+void process_netflow_packet_v5(u_int8_t* packet, u_int len, std::string client_addres_in_string_format) {
     // logger<< log4cpp::Priority::INFO<<"We get v5 netflow packet!";
 
     struct NF5_HEADER* nf5_hdr = (struct NF5_HEADER*)packet;
@@ -907,7 +907,8 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len) {
             int64_t interval_length = fast_ntoh(nf5_flow->flow_finish) - fast_ntoh(nf5_flow->flow_start);
 
             if (interval_length > 0) {
-                logger << log4cpp::Priority::INFO << "NetFlow v5 start: " << fast_ntoh(nf5_flow->flow_start)
+                logger << log4cpp::Priority::INFO << "NetFlow v5 from" << client_addres_in_string_format
+                    << "start: " << fast_ntoh(nf5_flow->flow_start)
                     << " finish: " << fast_ntoh(nf5_flow->flow_finish) 
                     << " interval length:" << interval_length 
                     << "\n";
@@ -964,7 +965,7 @@ void process_netflow_packet(u_int8_t* packet, u_int len, std::string client_addr
 
     switch (ntohs(hdr->version)) {
     case 5:
-        process_netflow_packet_v5(packet, len);
+        process_netflow_packet_v5(packet, len, client_addres_in_string_format);
         break;
     case 9:
         process_netflow_packet_v9(packet, len, client_addres_in_string_format);
