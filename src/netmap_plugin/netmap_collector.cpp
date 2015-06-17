@@ -58,6 +58,8 @@ extern log4cpp::Category& logger;
 // Pass unparsed packets number to main programm
 extern uint64_t total_unparsed_packets;
 
+extern uint64_t total_ipv6_packets;
+
 // Global configuration map
 extern std::map<std::string, std::string> configuration_map;
 
@@ -128,6 +130,8 @@ void consume_pkt(u_char* buffer, int len) {
         }
 
         netmap_process_func_ptr(packet);
+    } else if (packet_header.extended_hdr.parsed_pkt.ip_version == 6) {
+        total_ipv6_packets++;
     } else {
         total_unparsed_packets++;
     }

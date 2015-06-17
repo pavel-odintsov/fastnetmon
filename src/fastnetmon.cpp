@@ -195,6 +195,9 @@ total_counter_element total_speed_counters[4];
 // Total amount of non parsed packets
 uint64_t total_unparsed_packets = 0;
 
+// Total amount of IPv6 packets
+uint64_t total_ipv6_packets = 0;
+
 uint64_t incoming_total_flows_speed = 0;
 uint64_t outgoing_total_flows_speed = 0;
 
@@ -1769,6 +1772,7 @@ void traffic_draw_programm() {
         output_buffer << "ALERT! Toolkit working incorrectly! We should calculate speed in ~1 second\n";
     }
 
+    output_buffer << "Total amount of IPv6 packets: " << total_ipv6_packets << "\n";
     output_buffer << "Total amount of not processed packets: " << total_unparsed_packets << "\n";
 
     // Print backend stats
