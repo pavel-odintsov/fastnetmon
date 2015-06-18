@@ -40,11 +40,15 @@ extern log4cpp::Category& logger;
 // Global configuration map
 extern std::map<std::string, std::string> configuration_map;
 
+// Enable debug messages in log
+bool debug_sflow_parser = false;
+
 uint32_t getData32(SFSample* sample);
 bool skipTLVRecord(SFSample* sample, uint32_t tag, uint32_t len);
 bool readFlowSample(SFSample* sample, int expanded);
 void readFlowSample_header(SFSample* sample);
-void decodeIPV4(SFSample* sample);
+void decode_ipv4_protocol(SFSample* sample);
+void decode_ipv6_protocol(SFSample* sample);
 void print_simple_packet(struct simple_packet& packet);
 
 process_packet_pointer sflow_process_func_ptr = NULL;
@@ -327,7 +331,7 @@ bool readFlowSample(SFSample* sample, int expanded) {
 
 #define NFT_MIN_SIZ (NFT_ETHHDR_SIZ + sizeof(struct myiphdr))
 
-void decodeLinkLayer(SFSample* sample) {
+void decode_link_layer(SFSample* sample) {
     uint8_t* start = (uint8_t*)sample->header;
     uint8_t* end = start + sample->headerLen;
     uint8_t* ptr = start;
@@ -403,7 +407,9 @@ void decodeLinkLayer(SFSample* sample) {
 
         /* survived all the tests - store the offset to the start of the ip6 header */
         sample->gotIPV6 = 1;
-        sample->offsetToIPV6 = (ptr - start);    
+        sample->offsetToIPV6 = (ptr - start);
+        
+        printf("IPv6\n"); 
     }
 
     // printf("vlan: %d\n",sample->in_vlan);
@@ -423,10 +429,17 @@ void readFlowSample_header(SFSample* sample) {
     skipBytes(sample, sample->headerLen);
 
     if (sample->headerProtocol == SFLHEADER_ETHERNET_ISO8023) {
-        decodeLinkLayer(sample);
+        // Detect IPv4 or IPv6 here
+        decode_link_layer(sample);
 
-        // if we found IPv4
-        decodeIPV4(sample);
+        // Process IP packets next
+        if (sample->gotIPV4) {
+            decode_ipv4_protocol(sample);
+        }
+
+        if (sample->gotIPV6) {
+            decode_ipv6_protocol(sample);
+        }
     } else {
         logger << log4cpp::Priority::ERROR << "Not supported protocol: " << sample->headerProtocol;
         return;
@@ -542,10 +555,110 @@ void decodeIPLayer4(SFSample* sample, uint8_t* ptr) {
     sflow_process_func_ptr(current_packet);
 }
 
+void decode_ipv6_protocol(SFSample* sample){ 
+    uint8_t *ptr = sample->header + sample->offsetToIPV6;   
+    uint8_t *end = sample->header + sample->headerLen;
 
-void decodeIPV4(SFSample* sample) {
-    if (sample->gotIPV4) {
-        char buf[51];
+    int ipVersion = (*ptr >> 4);
+    
+    if (ipVersion != 6) { 
+        logger << log4cpp::Priority::ERROR << "sFLOW header decode error: unexpected IP version: " << ipVersion;
+        return;
+    }
+
+    /* get the tos (priority) */
+    sample->dcd_ipTos = *ptr++ & 15;
+
+    if (debug_sflow_parser) {
+        logger << log4cpp::Priority::INFO << "IPTOS: " << sample->dcd_ipTos;
+    }
+
+    /* 24-bit label */
+    uint32_t label = *ptr++;
+    label <<= 8;
+    label += *ptr++;
+    label <<= 8;
+    label += *ptr++;
+
+    if (debug_sflow_parser) {
+        logger << log4cpp::Priority::INFO << "IP6_label: " << label;
+    }
+
+    /* payload */
+    uint16_t payloadLen = (ptr[0] << 8) + ptr[1];
+    ptr += 2;
+
+    /* if payload is zero, that implies a jumbo payload */
+    if (debug_sflow_parser) {
+        if (payloadLen == 0) {
+            logger << log4cpp::Priority::INFO << "IPV6_payloadLen <jumbo>";
+        } else {
+            logger << log4cpp::Priority::INFO << "IPV6_payloadLen " << payloadLen;
+        }
+    }
+
+    /* next header */
+    uint32_t nextHeader = *ptr++;
+
+    /* TTL */
+    sample->dcd_ipTTL = *ptr++;
+    //sf_log(sample,"IPTTL %u\n", sample->dcd_ipTTL);
+
+    /* src and dst address */
+    // char buf[101];
+    sample->ipsrc.type = SFLADDRESSTYPE_IP_V6;
+    memcpy(&sample->ipsrc.address, ptr, 16);
+    ptr +=16;
+     
+    if (debug_sflow_parser) {
+        char buf[101];
+        logger << log4cpp::Priority::INFO << "srcIP6: " << printAddress(&sample->ipsrc, buf);
+    }
+
+    sample->ipdst.type = SFLADDRESSTYPE_IP_V6;
+    memcpy(&sample->ipdst.address, ptr, 16);
+    ptr +=16;
+
+    if (debug_sflow_parser) {
+        char buf[101];
+        logger << log4cpp::Priority::INFO << "dstIP6: " << printAddress(&sample->ipdst, buf);
+    }
+
+    /* skip over some common header extensions...
+       http://searchnetworking.techtarget.com/originalContent/0,289142,sid7_gci870277,00.html */
+    while(nextHeader == 0 ||  /* hop */
+          nextHeader == 43 || /* routing */
+          nextHeader == 44 || /* fragment */
+          /* nextHeader == 50 => encryption - don't bother coz we'll not be able to read any further */
+          nextHeader == 51 || /* auth */
+          nextHeader == 60) { /* destination options */
+        
+        uint32_t optionLen, skip;
+
+        if (debug_sflow_parser) {
+            logger << log4cpp::Priority::INFO << "IP6HeaderExtension: " << nextHeader;
+        }
+
+        nextHeader = ptr[0];
+        optionLen = 8 * (ptr[1] + 1);  /* second byte gives option len in 8-byte chunks, not counting first 8 */
+        skip = optionLen - 2;
+        ptr += skip;
+        if (ptr > end) return; /* ran off the end of the header */
+    }
+
+    /* now that we have eliminated the extension headers, nextHeader should have what we want to
+       remember as the ip protocol... */
+    sample->dcd_ipProtocol = nextHeader;
+
+    if (debug_sflow_parser) {
+        logger << log4cpp::Priority::INFO << "IPProtocol: " << sample->dcd_ipProtocol;
+    }
+    
+    //decodeIPLayer4(sample, ptr);
+}
+
+void decode_ipv4_protocol(SFSample* sample) {
+    char buf[51];
         uint8_t* ptr = sample->header + sample->offsetToIPV4;
         /* Create a local copy of the IP header (cannot overlay structure in case it is not
            quad-aligned...some
@@ -579,12 +692,4 @@ void decodeIPV4(SFSample* sample) {
             ptr += (ip.version_and_headerLen & 0x0f) * 4;
             decodeIPLayer4(sample, ptr);
         }
-    }
-
-    if (sample->gotIPV6) {
-        uint8_t *ptr = sample->header + sample->offsetToIPV6;
-
-        // TBD 
-    }
-    
 }
