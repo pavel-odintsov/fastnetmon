@@ -236,6 +236,8 @@ void parse_packet_pf_ring(const struct pfring_pkthdr* h, const u_char* p, const 
             packet.flags = 0;
         }
 
+        packet.ip_protocol_version = 4;
+
         pfring_process_func_ptr(packet);
     } else if (h->extended_hdr.parsed_pkt.ip_version == 6) {
         total_ipv6_packets++;

@@ -457,6 +457,8 @@ void decodeIPLayer4(SFSample* sample, uint8_t* ptr) {
     }
 
     simple_packet current_packet;
+    current_packet.ip_protocol_version = 4;
+
     current_packet.src_ip = sample->ipsrc.address.ip_v4.addr;
     current_packet.dst_ip = sample->ipdst.address.ip_v4.addr;
 

@@ -494,13 +494,15 @@ void nf10_flowset_to_store(u_int8_t* pkt, size_t len, struct NF10_HEADER* nf10_h
 
     // decode data in network byte order to host byte order
     packet.length = fast_ntoh(packet.length);
-
     packet.number_of_packets = fast_ntoh(packet.number_of_packets);
+    
     packet.protocol = fast_ntoh(packet.protocol);
 
     // We should convert ports to host byte order too
     packet.source_port = fast_ntoh(packet.source_port);
     packet.destination_port = fast_ntoh(packet.destination_port);
+
+    packet.ip_protocol_version = 4;
 
     // Set protocol
     switch (packet.protocol) {
@@ -561,6 +563,8 @@ void nf9_flowset_to_store(u_int8_t* pkt, size_t len, struct NF9_HEADER* nf9_hdr,
     // We should convert ports to host byte order too
     packet.source_port = fast_ntoh(packet.source_port);
     packet.destination_port = fast_ntoh(packet.destination_port);
+
+    packet.ip_protocol_version = 4;
 
     // Set protocol
     switch (packet.protocol) {
@@ -935,6 +939,9 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len, std::string client_a
 
         current_packet.source_port = fast_ntoh(nf5_flow->src_port);
         current_packet.destination_port = fast_ntoh(nf5_flow->dest_port);
+
+        // We do not support IPv6 in NetFlow v5 at all
+        current_packet.ip_protocol_version = 4;
 
         switch (nf5_flow->protocol) {
         case 1: {

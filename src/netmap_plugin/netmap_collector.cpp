@@ -120,6 +120,8 @@ void consume_pkt(u_char* buffer, int len) {
         packet.protocol = packet_header.extended_hdr.parsed_pkt.l3_proto;
         packet.ts = packet_header.ts;
 
+        packet.ip_protocol_version = 4;
+
         packet.ip_fragmented = packet_header.extended_hdr.parsed_pkt.ip_fragmented;
 
         // Copy flags from PF_RING header to our pseudo header
