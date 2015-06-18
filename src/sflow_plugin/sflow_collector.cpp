@@ -395,6 +395,17 @@ void decodeLinkLayer(SFSample* sample) {
         sample->offsetToIPV4 = (ptr - start);
     }
 
+    if (type_len == 0x86DD) {
+        /* IPV6 */
+        /* look at first byte of header.... */
+
+        if ((*ptr >> 4) != 6) return; /* not version 6 */
+
+        /* survived all the tests - store the offset to the start of the ip6 header */
+        sample->gotIPV6 = 1;
+        sample->offsetToIPV6 = (ptr - start);    
+    }
+
     // printf("vlan: %d\n",sample->in_vlan);
 }
 
@@ -569,4 +580,11 @@ void decodeIPV4(SFSample* sample) {
             decodeIPLayer4(sample, ptr);
         }
     }
+
+    if (sample->gotIPV6) {
+        uint8_t *ptr = sample->header + sample->offsetToIPV6;
+
+        // TBD 
+    }
+    
 }
