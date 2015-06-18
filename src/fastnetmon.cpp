@@ -1148,6 +1148,15 @@ void process_packet(simple_packet& current_packet) {
         logger << log4cpp::Priority::INFO << "Dump: " << print_simple_packet(current_packet);
     }
 
+    if (current_packet.ip_protocol_version == 6) {
+        total_ipv6_packets++;
+    }
+
+    // We do not process IPv6 at all on this mement
+    if (current_packet.ip_protocol_version != 4) {
+        return;
+    }
+
     // Subnet for found IPs
     unsigned long subnet = 0;
     unsigned int subnet_cidr_mask = 0;
