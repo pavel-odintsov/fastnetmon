@@ -685,6 +685,9 @@ std::string find_subnet_by_ip_in_string_format(patricia_tree_t* patricia_tree, s
     }
 }
 
+// It could not be on start or end of the line
+boost::regex  ipv6_address_compression_algorithm("(0000:){2,}");
+
 std::string print_ipv6_address(struct in6_addr& ipv6_address) {
     char buffer[128];
 
@@ -695,6 +698,11 @@ std::string print_ipv6_address(struct in6_addr& ipv6_address) {
         b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10], b[11], b[12],
         b[13], b[14], b[15]);
 
-    return std::string(buffer);
+    std::string buffer_string(buffer);
+
+    // Compress IPv6 address
+    std::string result = boost::regex_replace(buffer_string, ipv6_address_compression_algorithm, ":", boost::format_first_only);
+
+    return result;
 }
 
