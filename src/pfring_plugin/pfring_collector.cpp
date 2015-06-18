@@ -216,42 +216,44 @@ void parse_packet_pf_ring(const struct pfring_pkthdr* h, const u_char* p, const 
         }
     }
 
-    /* We handle only IPv4 */
-    if (h->extended_hdr.parsed_pkt.ip_version == 4) {
-        /* PF_RING stores data in host byte order but we use network byte order */
-        packet.src_ip = htonl(h->extended_hdr.parsed_pkt.ip_src.v4);
-        packet.dst_ip = htonl(h->extended_hdr.parsed_pkt.ip_dst.v4);
-
-        packet.source_port = h->extended_hdr.parsed_pkt.l4_src_port;
-        packet.destination_port = h->extended_hdr.parsed_pkt.l4_dst_port;
-
-        packet.length = h->len;
-        packet.protocol = h->extended_hdr.parsed_pkt.l3_proto;
-        packet.ts = h->ts;
-
-        // Copy flags from PF_RING header to our pseudo header
-        if (packet.protocol == IPPROTO_TCP) {
-            packet.flags = h->extended_hdr.parsed_pkt.tcp.flags;
-        } else {
-            packet.flags = 0;
-        }
-
-        packet.ip_protocol_version = 4;
-
-        pfring_process_func_ptr(packet);
-    } else if (h->extended_hdr.parsed_pkt.ip_version == 6) {
-        total_ipv6_packets++;
-    } else {
+    if (packet_header.extended_hdr.parsed_pkt.ip_version != 4 && packet_header.extended_hdr.parsed_pkt.ip_version != 6) {
         total_unparsed_packets++;
+        return;
     }
 
-    // Uncomment this line for deep inspection of all packets
+    packet.ip_protocol_version = packet_header.extended_hdr.parsed_pkt.ip_version;
 
-    /*
-    char buffer[512];
-    pfring_print_parsed_pkt(buffer, 512, p, h);
-    logger<<log4cpp::Priority::INFO<<buffer;
-    */
+    if (packet.ip_protocol_version == 4) {
+        // IPv4
+
+        /* PF_RING stores data in host byte order but we use network byte order */
+        packet.src_ip = htonl(packet_header.extended_hdr.parsed_pkt.ip_src.v4);
+        packet.dst_ip = htonl(packet_header.extended_hdr.parsed_pkt.ip_dst.v4);
+    } else {
+        // IPv6
+
+        memcpy(packet.src_ipv6.s6_addr, packet_header.extended_hdr.parsed_pkt.ip_src.v6.s6_addr, 16);
+        memcpy(packet.dst_ipv6.s6_addr, packet_header.extended_hdr.parsed_pkt.ip_dst.v6.s6_addr, 16);
+
+        total_ipv6_packets++;        
+    }
+ 
+
+    packet.source_port = h->extended_hdr.parsed_pkt.l4_src_port;
+    packet.destination_port = h->extended_hdr.parsed_pkt.l4_dst_port;
+
+    packet.length = h->len;
+    packet.protocol = h->extended_hdr.parsed_pkt.l3_proto;
+    packet.ts = h->ts;
+
+    // Copy flags from PF_RING header to our pseudo header
+    if (packet.protocol == IPPROTO_TCP) {
+        packet.flags = h->extended_hdr.parsed_pkt.tcp.flags;
+    } else {
+        packet.flags = 0;
+    }
+
+    pfring_process_func_ptr(packet);
 }
 
 
