@@ -214,24 +214,24 @@ void parse_packet_pf_ring(const struct pfring_pkthdr* h, const u_char* p, const 
         }
     }
 
-    if (packet_header.extended_hdr.parsed_pkt.ip_version != 4 && packet_header.extended_hdr.parsed_pkt.ip_version != 6) {
+    if (h->extended_hdr.parsed_pkt.ip_version != 4 && h->extended_hdr.parsed_pkt.ip_version != 6) {
         total_unparsed_packets++;
         return;
     }
 
-    packet.ip_protocol_version = packet_header.extended_hdr.parsed_pkt.ip_version;
+    packet.ip_protocol_version = h->extended_hdr.parsed_pkt.ip_version;
 
     if (packet.ip_protocol_version == 4) {
         // IPv4
 
         /* PF_RING stores data in host byte order but we use network byte order */
-        packet.src_ip = htonl(packet_header.extended_hdr.parsed_pkt.ip_src.v4);
-        packet.dst_ip = htonl(packet_header.extended_hdr.parsed_pkt.ip_dst.v4);
+        packet.src_ip = htonl(h->extended_hdr.parsed_pkt.ip_src.v4);
+        packet.dst_ip = htonl(h->extended_hdr.parsed_pkt.ip_dst.v4);
     } else {
         // IPv6
 
-        memcpy(packet.src_ipv6.s6_addr, packet_header.extended_hdr.parsed_pkt.ip_src.v6.s6_addr, 16);
-        memcpy(packet.dst_ipv6.s6_addr, packet_header.extended_hdr.parsed_pkt.ip_dst.v6.s6_addr, 16);
+        memcpy(packet.src_ipv6.s6_addr, h->extended_hdr.parsed_pkt.ip_src.v6.s6_addr, 16);
+        memcpy(packet.dst_ipv6.s6_addr, h->extended_hdr.parsed_pkt.ip_dst.v6.s6_addr, 16);
     }
  
 
