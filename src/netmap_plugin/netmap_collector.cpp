@@ -107,36 +107,45 @@ void consume_pkt(u_char* buffer, int len) {
     // We should fill this structure for passing to FastNetMon
     simple_packet packet;
 
-    /* We handle only IPv4 */
-    if (packet_header.extended_hdr.parsed_pkt.ip_version == 4) {
+    if (packet_header.extended_hdr.parsed_pkt.ip_version != 4 && packet_header.extended_hdr.parsed_pkt.ip_version != 6) {
+        total_unparsed_packets++;
+        return;
+    }
+
+    packet.ip_protocol_version = packet_header.extended_hdr.parsed_pkt.ip_version;
+
+    if (packet.ip_protocol_version == 4) {
+        // IPv4
+
         /* PF_RING stores data in host byte order but we use network byte order */
         packet.src_ip = htonl(packet_header.extended_hdr.parsed_pkt.ip_src.v4);
         packet.dst_ip = htonl(packet_header.extended_hdr.parsed_pkt.ip_dst.v4);
-
-        packet.source_port = packet_header.extended_hdr.parsed_pkt.l4_src_port;
-        packet.destination_port = packet_header.extended_hdr.parsed_pkt.l4_dst_port;
-
-        packet.length = packet_header.len;
-        packet.protocol = packet_header.extended_hdr.parsed_pkt.l3_proto;
-        packet.ts = packet_header.ts;
-
-        packet.ip_protocol_version = 4;
-
-        packet.ip_fragmented = packet_header.extended_hdr.parsed_pkt.ip_fragmented;
-
-        // Copy flags from PF_RING header to our pseudo header
-        if (packet.protocol == IPPROTO_TCP) {
-            packet.flags = packet_header.extended_hdr.parsed_pkt.tcp.flags;
-        } else {
-            packet.flags = 0;
-        }
-
-        netmap_process_func_ptr(packet);
-    } else if (packet_header.extended_hdr.parsed_pkt.ip_version == 6) {
-        total_ipv6_packets++;
     } else {
-        total_unparsed_packets++;
+        // IPv6
+
+        memcpy(packet.src_ipv6.s6_addr, packet_header.extended_hdr.parsed_pkt.ip_src.v6.s6_addr, 16);
+        memcpy(packet.dst_ipv6.s6_addr, packet_header.extended_hdr.parsed_pkt.ip_dst.v6.s6_addr, 16);
+
+        total_ipv6_packets++;        
     }
+
+    packet.source_port = packet_header.extended_hdr.parsed_pkt.l4_src_port;
+    packet.destination_port = packet_header.extended_hdr.parsed_pkt.l4_dst_port;
+
+    packet.length = packet_header.len;
+    packet.protocol = packet_header.extended_hdr.parsed_pkt.l3_proto;
+    packet.ts = packet_header.ts;
+
+    packet.ip_fragmented = packet_header.extended_hdr.parsed_pkt.ip_fragmented;
+
+    // Copy flags from PF_RING header to our pseudo header
+    if (packet.protocol == IPPROTO_TCP) {
+        packet.flags = packet_header.extended_hdr.parsed_pkt.tcp.flags;
+    } else {
+        packet.flags = 0;
+    }
+
+    netmap_process_func_ptr(packet);
 }
 
 void receiver(std::string interface_for_listening) {
