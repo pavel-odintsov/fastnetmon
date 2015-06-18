@@ -139,6 +139,10 @@ struct timeval drawing_thread_execution_time;
 // Global thread group for packet capture threads
 boost::thread_group packet_capture_plugin_thread_group;
 
+// Global thread group for service processes (speed recalculation,
+// screen updater and ban list cleaner)
+boost::thread_group service_thread_group;
+
 // Total number of hosts in our networks
 // We need this as global variable because it's very important value for configuring data structures
 unsigned int total_number_of_hosts_in_our_networks = 0;
@@ -1468,7 +1472,7 @@ void screen_draw_thread() {
     // Sleep for a half second for shift against calculatiuon thread
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 
-    while (1) {
+    while (true) {
         // Available only from boost 1.54: boost::this_thread::sleep_for(
         // boost::chrono::seconds(check_period) );
         boost::this_thread::sleep(boost::posix_time::seconds(check_period));
@@ -1477,7 +1481,7 @@ void screen_draw_thread() {
 }
 
 void recalculate_speed_thread_handler() {
-    while (1) {
+    while (true) {
         // recalculate data every one second
         // Available only from boost 1.54: boost::this_thread::sleep_for( boost::chrono::seconds(1)
         // );
@@ -2105,13 +2109,13 @@ int main(int argc, char** argv) {
     time(&last_call_of_traffic_recalculation);
 
     // Run screen draw thread
-    boost::thread calc_thread(screen_draw_thread);
-
+    service_thread_group.add_thread(new boost::thread(screen_draw_thread));
+    
     // start thread for recalculating speed in realtime
-    boost::thread recalculate_speed_thread(recalculate_speed_thread_handler);
+    service_thread_group.add_thread(new boost::thread(recalculate_speed_thread_handler));
 
     // Run banlist cleaner thread
-    boost::thread cleanup_ban_list_thread(cleanup_ban_list);
+    service_thread_group.add_thread(new boost::thread(cleanup_ban_list));
 
 #ifdef PF_RING
     if (enable_data_collection_from_mirror) {
@@ -2139,8 +2143,8 @@ int main(int argc, char** argv) {
     // Wait for all threads in capture thread group
     packet_capture_plugin_thread_group.join_all();
 
-    recalculate_speed_thread.join();
-    calc_thread.join();
+    // Wait for all service threads
+    service_thread_group.join_all();
 
     free_up_all_resources();
 
@@ -2159,19 +2163,24 @@ void free_up_all_resources() {
 
 // For correct programm shutdown by CTRL+C
 void interruption_signal_handler(int signal_number) {
+     
+    logger << log4cpp::Priority::INFO << "SIGNAL captured, prepare toolkit shutdown";
 
-    if (enable_pcap_collection) {
-        stop_pcap_collection();
-    }
+    logger << log4cpp::Priority::INFO << "Interrupt service threads";   
+    service_thread_group.interrupt_all();
 
-#ifdef PF_RING
-    stop_pfring_collection();
-#endif
+    logger << log4cpp::Priority::INFO << "Wait while they finished";
+    service_thread_group.join_all();
 
-    // packet_capture_plugin_thread_group.interrupt_all();
-    // Wait some time for threads finishing
-    // sleep 3;
+    logger << log4cpp::Priority::INFO << "Interrupt packet capture treads";
+    packet_capture_plugin_thread_group.interrupt_all(); 
+    
+    logger << log4cpp::Priority::INFO << "Wait while they finished";
+    packet_capture_plugin_thread_group.join_all();
+   
+    logger << log4cpp::Priority::INFO << "Shutdown main process"; 
 
+    // TODO: we should REMOVE this exit command and wait for correct toolkit shutdown
     exit(1);
 }
 

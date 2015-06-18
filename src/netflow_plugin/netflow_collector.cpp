@@ -990,8 +990,12 @@ void process_netflow_packet(u_int8_t* packet, u_int len, std::string client_addr
 
 unsigned int netflow_port = 2055;
 
+// #include <sys/prctl.h>
 void start_netflow_collection(process_packet_pointer func_ptr) {
     logger << log4cpp::Priority::INFO << "netflow plugin started";
+
+    // prctl(PR_SET_NAME,"fastnetmon_netflow", 0, 0, 0);
+
     netflow_process_func_ptr = func_ptr;
 
     // By default we listen on IPv4
@@ -1064,7 +1068,15 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
     struct sockaddr_in6 peer;
     memset(&peer, 0, sizeof(peer));
 
-    for (;;) {
+    /* We should specify timeout there for correct toolkit shutdown */
+    /* Because otherwise recvfrom will stay in blocked mode forever */
+    struct timeval tv;
+    tv.tv_sec  = 5;  /* X Secs Timeout */
+    tv.tv_usec = 0;  // Not init'ing this can cause strange errors
+
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval));
+
+    while (true) {
         // This approach provide ability to store both IPv4 and IPv6 client's addresses
         struct sockaddr_storage client_address;
         // It's MUST
@@ -1091,8 +1103,18 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
             // printf("We receive %d\n", received_bytes);
             process_netflow_packet((u_int8_t*)udp_buffer, received_bytes, client_addres_in_string_format);
         } else {
-            logger << log4cpp::Priority::ERROR << "netflow data receive failed";
+
+            if (received_bytes == -1) {
+                if (errno == EAGAIN) {
+                    // We got timeout, it's OK!
+                } else {
+                    logger << log4cpp::Priority::ERROR << "netflow data receive failed";
+                }
+            }
         }
+
+        // Add interruption point for correct application shutdown
+        boost::this_thread::interruption_point();
     }
 
     freeaddrinfo(servinfo);
