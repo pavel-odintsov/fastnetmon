@@ -34,7 +34,6 @@
 
 using namespace std;
 
-uint64_t total_ipv6_packets = 0;
 uint64_t total_unparsed_packets = 0;
 
 std::string log_file_path = "/tmp/fastnetmon_plugin_tester.log";

@@ -40,8 +40,6 @@ extern log4cpp::Category& logger;
 
 extern uint64_t total_unparsed_packets;
 
-extern uint64_t total_ipv6_packets;
-
 // Global configuration map
 extern std::map<std::string, std::string> configuration_map;
 
@@ -234,8 +232,6 @@ void parse_packet_pf_ring(const struct pfring_pkthdr* h, const u_char* p, const 
 
         memcpy(packet.src_ipv6.s6_addr, packet_header.extended_hdr.parsed_pkt.ip_src.v6.s6_addr, 16);
         memcpy(packet.dst_ipv6.s6_addr, packet_header.extended_hdr.parsed_pkt.ip_dst.v6.s6_addr, 16);
-
-        total_ipv6_packets++;        
     }
  
 
