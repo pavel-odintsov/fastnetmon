@@ -6,6 +6,8 @@ Join to [maillist](https://groups.google.com/forum/#!forum/fastnetmon) Look at [
 
 Chat: #fastnetmon at irc.freenode.net [web client](https://webchat.freenode.net/)
 
+[Please fill survey, we need your voice!](https://docs.google.com/forms/d/1YoXQImMeEjBH-JPz3KYtcDwknHs8xrI538ObwSy9uZo/edit)
+
 License: GPLv2
 
 FastNetMon - A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
@@ -19,7 +21,6 @@ What can we do? We can detect hosts in our own network with a large amount of pa
 - [Manual install on Mac OS X](docs/MAC_OS_INSTALL.md)
 - [Manual install on Slackware](docs/SLACKWARE_INSTALL.md)
 - [Manual install for VyOS](docs/VyOS_INSTALL.md)
-- You could order VPS with preinstalled FastNetMon: http://vps2fast.com/vds/
 
 [![Build Status](https://travis-ci.org/FastVPSEestiOu/fastnetmon.svg?branch=master)](https://travis-ci.org/FastVPSEestiOu/fastnetmon) [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/FastVPSEestiOu/fastnetmon?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) [![Stories in Progress](https://badge.waffle.io/FastVPSEestiOu/fastnetmon.svg?label=ready&title=Progress)](http://waffle.io/FastVPSEestiOu/fastnetmon)
 
