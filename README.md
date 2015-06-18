@@ -6,7 +6,7 @@ Join to [maillist](https://groups.google.com/forum/#!forum/fastnetmon) Look at [
 
 Chat: #fastnetmon at irc.freenode.net [web client](https://webchat.freenode.net/)
 
-[Please fill survey, we need your voice!](https://docs.google.com/forms/d/1YoXQImMeEjBH-JPz3KYtcDwknHs8xrI538ObwSy9uZo/edit)
+[Please fill survey, we need your voice!](https://docs.google.com/forms/d/1YoXQImMeEjBH-JPz3KYtcDwknHs8xrI538ObwSy9uZo/viewform)
 
 License: GPLv2
 
