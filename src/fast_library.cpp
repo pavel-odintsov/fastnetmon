@@ -425,8 +425,21 @@ std::string print_simple_packet(simple_packet packet) {
 
     buffer << convert_timeval_to_date(packet.ts) << " ";
 
-    buffer << convert_ip_as_uint_to_string(packet.src_ip) << ":" << packet.source_port << " > "
-           << convert_ip_as_uint_to_string(packet.dst_ip) << ":" << packet.destination_port
+    std::string source_ip_as_string = "";
+    std::string  destination_ip_as_string = "";
+
+    if (packet.ip_protocol_version == 4) {
+        source_ip_as_string = convert_ip_as_uint_to_string(packet.src_ip);
+        destination_ip_as_string = convert_ip_as_uint_to_string(packet.dst_ip);
+    } else if (packet.ip_protocol_version == 6) {
+        source_ip_as_string = print_ipv6_address(packet.src_ipv6);
+        destination_ip_as_string = print_ipv6_address(packet.dst_ipv6);
+    } else {
+        // WTF?
+    }
+
+    buffer << source_ip_as_string << ":" << packet.source_port << " > "
+           << destination_ip_as_string << ":" << packet.destination_port
            << " protocol: " << get_printable_protocol_name(packet.protocol);
 
     // Print flags only for TCP
@@ -671,3 +684,17 @@ std::string find_subnet_by_ip_in_string_format(patricia_tree_t* patricia_tree, s
        return "";
     }
 }
+
+std::string print_ipv6_address(struct in6_addr& ipv6_address) {
+    char buffer[128];
+
+    // For short print
+    uint8_t* b = ipv6_address.s6_addr;
+
+    sprintf(buffer, "%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+        b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10], b[11], b[12],
+        b[13], b[14], b[15]);
+
+    return std::string(buffer);
+}
+

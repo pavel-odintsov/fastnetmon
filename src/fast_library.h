@@ -44,6 +44,7 @@ std::vector<std::string> exec(std::string cmd);
 uint32_t convert_ip_as_string_to_uint(std::string ip);
 std::string convert_ip_as_uint_to_string(uint32_t ip_as_integer);
 std::string convert_int_to_string(int value);
+std::string print_ipv6_address(struct in6_addr& ipv6_address);
 std::string print_simple_packet(simple_packet packet);
 std::string convert_timeval_to_date(struct timeval tv);
 
