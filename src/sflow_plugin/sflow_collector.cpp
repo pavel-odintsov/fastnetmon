@@ -481,10 +481,18 @@ void decodeIPLayer4(SFSample* sample, uint8_t* ptr) {
     }
 
     simple_packet current_packet;
-    current_packet.ip_protocol_version = 4;
+    
+    if (sample->gotIPV6) {
+        current_packet.ip_protocol_version = 6;
 
-    current_packet.src_ip = sample->ipsrc.address.ip_v4.addr;
-    current_packet.dst_ip = sample->ipdst.address.ip_v4.addr;
+        memcpy(current_packet.src_ipv6.s6_addr, sample->ipsrc.address.ip_v6.addr, 16);
+        memcpy(current_packet.dst_ipv6.s6_addr, sample->ipdst.address.ip_v6.addr, 16);
+    } else {
+        current_packet.ip_protocol_version = 4;
+
+        current_packet.src_ip = sample->ipsrc.address.ip_v4.addr;
+        current_packet.dst_ip = sample->ipdst.address.ip_v4.addr;
+    }
 
     // Because sFLOW data is near real time we could get current time
     gettimeofday(&current_packet.ts, NULL);
@@ -654,42 +662,41 @@ void decode_ipv6_protocol(SFSample* sample){
         logger << log4cpp::Priority::INFO << "IPProtocol: " << sample->dcd_ipProtocol;
     }
     
-    //decodeIPLayer4(sample, ptr);
+    decodeIPLayer4(sample, ptr);
 }
 
 void decode_ipv4_protocol(SFSample* sample) {
     char buf[51];
-        uint8_t* ptr = sample->header + sample->offsetToIPV4;
-        /* Create a local copy of the IP header (cannot overlay structure in case it is not
-           quad-aligned...some
-            platforms would core-dump if we tried that).  It's OK coz this probably performs just as
-           well anyway. */
-        struct myiphdr ip;
-        memcpy(&ip, ptr, sizeof(ip));
-        /* Value copy all ip elements into sample */
-        sample->ipsrc.type = SFLADDRESSTYPE_IP_V4;
-        sample->ipsrc.address.ip_v4.addr = ip.saddr;
-        sample->ipdst.type = SFLADDRESSTYPE_IP_V4;
-        sample->ipdst.address.ip_v4.addr = ip.daddr;
-        sample->dcd_ipProtocol = ip.protocol;
-        sample->dcd_ipTos = ip.tos;
-        sample->dcd_ipTTL = ip.ttl;
+    uint8_t* ptr = sample->header + sample->offsetToIPV4;
+    /* Create a local copy of the IP header (cannot overlay structure in case it is not
+        quad-aligned...some platforms would core-dump if we tried that).  It's OK coz this probably performs just as well anyway. */
+    struct myiphdr ip;
+    memcpy(&ip, ptr, sizeof(ip));
+    /* Value copy all ip elements into sample */
+    sample->ipsrc.type = SFLADDRESSTYPE_IP_V4;
+    sample->ipsrc.address.ip_v4.addr = ip.saddr;
+    sample->ipdst.type = SFLADDRESSTYPE_IP_V4;
+    sample->ipdst.address.ip_v4.addr = ip.daddr;
+    sample->dcd_ipProtocol = ip.protocol;
+    sample->dcd_ipTos = ip.tos;
+    sample->dcd_ipTTL = ip.ttl;
 
-        // printf("ip.tot_len %d\n", ntohs(ip.tot_len));
-        /* Log out the decoded IP fields */
-        // printf("srcIP %s\n", printAddress(&sample->ipsrc, buf));
-        // printf("dstIP %s\n", printAddress(&sample->ipdst, buf));
-        // printf("IPProtocol %u\n", sample->dcd_ipProtocol);
-        // printf("IPTOS %u\n", sample->dcd_ipTos);
-        // printf("IPTTL %u\n", sample->dcd_ipTTL);
-        /* check for fragments */
-        sample->ip_fragmentOffset = ntohs(ip.frag_off) & 0x1FFF;
-        if (sample->ip_fragmentOffset > 0) {
-            // printf("IPFragmentOffset %u\n", sample->ip_fragmentOffset);
-        } else {
-            /* advance the pointer to the next protocol layer */
-            /* ip headerLen is expressed as a number of quads */
-            ptr += (ip.version_and_headerLen & 0x0f) * 4;
-            decodeIPLayer4(sample, ptr);
-        }
+    // printf("ip.tot_len %d\n", ntohs(ip.tot_len));
+    /* Log out the decoded IP fields */
+    // printf("srcIP %s\n", printAddress(&sample->ipsrc, buf));
+    // printf("dstIP %s\n", printAddress(&sample->ipdst, buf));
+    // printf("IPProtocol %u\n", sample->dcd_ipProtocol);
+    // printf("IPTOS %u\n", sample->dcd_ipTos);
+    // printf("IPTTL %u\n", sample->dcd_ipTTL);
+    
+    /* check for fragments */
+    sample->ip_fragmentOffset = ntohs(ip.frag_off) & 0x1FFF;
+    if (sample->ip_fragmentOffset > 0) {
+        // printf("IPFragmentOffset %u\n", sample->ip_fragmentOffset);
+    } else {
+        /* advance the pointer to the next protocol layer */
+        /* ip headerLen is expressed as a number of quads */
+        ptr += (ip.version_and_headerLen & 0x0f) * 4;
+        decodeIPLayer4(sample, ptr);
+    }
 }
