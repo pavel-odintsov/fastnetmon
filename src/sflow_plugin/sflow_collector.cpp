@@ -53,9 +53,12 @@ void print_simple_packet(struct simple_packet& packet);
 
 process_packet_pointer sflow_process_func_ptr = NULL;
 
+// #include <sys/prctl.h>
 unsigned int sflow_port = 6343;
 void start_sflow_collection(process_packet_pointer func_ptr) {
     logger << log4cpp::Priority::INFO << "sflow plugin started";
+    // prctl(PR_SET_NAME,"fastnetmon_sflow", 0, 0, 0);
+
     std::string interface_for_binding = "0.0.0.0";
 
     if (configuration_map.count("sflow_port") != 0) {
@@ -98,13 +101,21 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
     struct sockaddr_in6 peer;
     memset(&peer, 0, sizeof(peer));
 
-    for (;;) {
+    /* We should specify timeout there for correct toolkit shutdown */
+    /* Because otherwise recvfrom will stay in blocked mode forever */
+    struct timeval tv;
+    tv.tv_sec  = 5;  /* X Secs Timeout */
+    tv.tv_usec = 0;  // Not init'ing this can cause strange errors
+
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval));
+
+    while (true) {
         struct sockaddr_in cliaddr;
         socklen_t address_len = sizeof(cliaddr);
 
         int received_bytes =
         recvfrom(sockfd, udp_buffer, udp_buffer_size, 0, (struct sockaddr*)&cliaddr, &address_len);
-
+        
         if (received_bytes > 0) {
             // printf("We receive %d\n", received_bytes);
 
@@ -123,8 +134,18 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
                 // We do not support an IPv6
             }
         } else {
-            logger << log4cpp::Priority::ERROR << "Data receive failed";
+            if (received_bytes == -1) {
+
+                if (errno == EAGAIN) {
+                    // We got timeout, it's OK!
+                } else {
+                    logger << log4cpp::Priority::ERROR << "Data receive failed";
+                }
+            }
         }
+
+        // Add interruption point for correct application shutdown
+        boost::this_thread::interruption_point();
     }
 }
 

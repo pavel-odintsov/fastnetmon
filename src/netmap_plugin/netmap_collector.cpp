@@ -307,6 +307,10 @@ void netmap_thread(struct nm_desc* netmap_descriptor, int thread_number) {
 
             receive_packets(rxring);
         }
+
+        // TODO: this code could add performance degradation
+        // Add interruption point for correct toolkit shutdown 
+        // boost::this_thread::interruption_point();
     }
 
     // nm_close(netmap_descriptor);
@@ -327,18 +331,16 @@ void start_netmap_collection(process_packet_pointer func_ptr) {
 
     logger << log4cpp::Priority::INFO << "netmap will listen on " << interfaces_for_listen.size() << " interfaces";
 
-    boost::thread* netmap_main_threads[interfaces_for_listen.size()];
-
-    unsigned int threads_index = 0;
+    // Thread group for all "master" processes
+    boost::thread_group netmap_main_threads;
 
     for (std::vector<std::string>::iterator interface = interfaces_for_listen.begin();
-         interface != interfaces_for_listen.end(); ++interface) {
+        interface != interfaces_for_listen.end(); ++interface) {
 
         logger << log4cpp::Priority::INFO << "netmap will sniff interface: " << *interface;
-        netmap_main_threads[threads_index++] = new boost::thread(receiver, *interface);
+        
+        netmap_main_threads.add_thread( new boost::thread(receiver, *interface) );
     }
 
-    for (int thread_id = 0; thread_id < interfaces_for_listen.size(); thread_id++) {
-        netmap_main_threads[thread_id]->join();
-    }
+    netmap_main_threads.join_all();
 }
