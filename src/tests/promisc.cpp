@@ -5,7 +5,11 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>  
 #include <unistd.h>
-#include <linux/if.h>
+
+#include <net/if.h>
+#include <netinet/in.h>
+
+// This code compiles on FreeBSD and Linux but did not work on FreeBSD 
 
 int main() {
     // We need really any socket for ioctl
