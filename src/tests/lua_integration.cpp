@@ -1,5 +1,8 @@
 #include <lua5.1/lua.hpp>
 
+// Heh, we have luajit only for Debian Jessie and should think about custom compilation
+// https://packages.debian.org/search?keywords=luajit
+
 // This code will NOT work with lua 5.2 because 5.1 and 5.2 really incompatible: 
 // http://lists.opensuse.org/opensuse-factory/2012-01/msg00265.html
 
