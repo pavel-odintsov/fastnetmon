@@ -5,6 +5,7 @@
 
 // This code will NOT work with lua 5.2 because 5.1 and 5.2 really incompatible: 
 // http://lists.opensuse.org/opensuse-factory/2012-01/msg00265.html
+// Ubuntu 14.04 also has it: http://packages.ubuntu.com/trusty/luajit
 
 // apt-get install -y lua5.1 lua-json liblua5.1-dev 
 // g++ lua_integration.cpp -lluajit-5.1
