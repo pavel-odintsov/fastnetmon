@@ -891,6 +891,10 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len, std::string client_a
             logger << log4cpp::Priority::ERROR << "Error! You will try to read outside the packet";
         }
 
+        /* Decode to host encoding */
+        nf5_flow->if_index_in  = fast_ntoh(nf5_flow->if_index_in);
+        nf5_flow->if_index_out = fast_ntoh(nf5_flow->if_index_out);
+
         // convert netflow to simple packet form
         simple_packet current_packet;
 
