@@ -37,7 +37,7 @@ lua_State* lua_state = NULL;
 bool lua_hooks_enabled = true;
 std::string lua_hooks_path = "/usr/src/fastnetmon/src/netflow_hooks.lua";
 
-bool call_netflow_process_lua_hook(lua_State* lua_state_param, struct NF5_FLOW* flow);
+bool call_netflow_process_lua_hook(lua_State* lua_state_param, std::string client_addres_in_string_format, struct NF5_FLOW* flow);
 void init_lua_jit();
 #endif
 
@@ -989,12 +989,12 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len, std::string client_a
 
 #ifdef ENABLE_LUA_HOOKS
         if (lua_hooks_enabled) {
-            // TODO: remove it!!!
-            if (lua_state == NULL) {
-                init_lua_jit();
-            }
+            // This code could be used only for tests with pcap_reader
+            //if (lua_state == NULL) {
+            //    init_lua_jit();
+            //}
 
-            if (call_netflow_process_lua_hook(lua_state, nf5_flow)) {
+            if (call_netflow_process_lua_hook(lua_state, client_addres_in_string_format, nf5_flow)) {
                 // We will process this packet
             } else {
                 logger << log4cpp::Priority::INFO << "We will drop this packets because LUA script decided to do it";
@@ -1047,12 +1047,16 @@ void init_lua_jit() {
     }
 }
 
-bool call_netflow_process_lua_hook(lua_State* lua_state_param, struct NF5_FLOW* flow) {
+bool call_netflow_process_lua_hook(lua_State* lua_state_param, std::string client_addres_in_string_format, struct NF5_FLOW* flow) {
+    /* Function name */
     lua_getfield(lua_state_param, LUA_GLOBALSINDEX, "process_netflow");
+    
+    /* Function params */
+    lua_pushstring(lua_state_param, client_addres_in_string_format.c_str());
     lua_pushlightuserdata(lua_state_param, (void*)flow);
-
+    
     // Call with 1 argumnents and 1 result
-    lua_call(lua_state_param, 1, 1);
+    lua_call(lua_state_param, 2, 1);
     
     if (lua_gettop(lua_state_param) == 1) {
         bool result = lua_toboolean(lua_state_param, -1) == 1 ? true : false;
@@ -1102,6 +1106,10 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
     if (configuration_map.count("netflow_divide_counters_on_interval_length") != 0) {
         netflow_divide_counters_on_interval_length =
             configuration_map["netflow_divide_counters_on_interval_length"] == "on" ? true : false;
+    }
+
+    if (configuration_map.count("netflow_lua_hooks_path") != 0) {
+        lua_hooks_path = configuration_map["netflow_lua_hooks_path"];
     }
 
     logger << log4cpp::Priority::INFO << "netflow plugin will listen on " << netflow_host << ":"
