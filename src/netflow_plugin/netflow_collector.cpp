@@ -1108,9 +1108,11 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
             configuration_map["netflow_divide_counters_on_interval_length"] == "on" ? true : false;
     }
 
+#ifdef ENABLE_LUA_HOOKS
     if (configuration_map.count("netflow_lua_hooks_path") != 0) {
         lua_hooks_path = configuration_map["netflow_lua_hooks_path"];
     }
+#endif
 
     logger << log4cpp::Priority::INFO << "netflow plugin will listen on " << netflow_host << ":"
            << netflow_port << " udp port";
