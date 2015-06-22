@@ -103,6 +103,15 @@ add_library(sflow_plugin STATIC sflow_plugin/sflow_collector.cpp)
 add_library(netflow_plugin STATIC netflow_plugin/netflow_collector.cpp)
 target_link_libraries(netflow_plugin ipfix_rfc)
 
+# We do not enable it by default, it's testing feature
+# If you want it please build with:
+# cmake -DENABLE_LUA_SUPPORT=ON .. 
+if (ENABLE_LUA_SUPPORT)
+    add_definitions(-DENABLE_LUA_HOOKS)
+ 
+    target_link_libraries(netflow_plugin luajit-5.1)
+endif()
+
 # pcap plugin
 add_library(pcap_plugin STATIC pcap_plugin/pcap_collector.cpp)
 target_link_libraries(pcap_plugin pcap)

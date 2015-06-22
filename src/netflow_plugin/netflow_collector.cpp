@@ -27,6 +27,22 @@
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
+#ifdef ENABLE_LUA_HOOKS
+#include <lua5.1/lua.hpp>
+#endif
+
+#ifdef ENABLE_LUA_HOOKS
+lua_State* lua_state = NULL;
+
+bool lua_hooks_enabled = true;
+std::string lua_hooks_path = "/usr/src/fastnetmon/src/netflow_hooks.lua";
+
+bool call_netflow_process_lua_hook(lua_State* lua_state_param, struct NF5_FLOW* flow);
+void init_lua_jit();
+#endif
+
+unsigned int netflow_port = 2055;
+
 // Get it from main programm
 extern log4cpp::Category& logger;
 
@@ -892,9 +908,13 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len, std::string client_a
         }
 
         /* Decode to host encoding */
+        // TODO: move to separate function
+        nf5_flow->flow_octets = fast_ntoh(nf5_flow->flow_octets);
+        nf5_flow->flow_packets = fast_ntoh(nf5_flow->flow_packets);
+
         nf5_flow->if_index_in  = fast_ntoh(nf5_flow->if_index_in);
         nf5_flow->if_index_out = fast_ntoh(nf5_flow->if_index_out);
-
+    
         // convert netflow to simple packet form
         simple_packet current_packet;
 
@@ -908,8 +928,8 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len, std::string client_a
         current_packet.destination_port = 0;
 
         // TODO: we should pass data about "flow" structure of this data
-        current_packet.length = fast_ntoh(nf5_flow->flow_octets);
-        current_packet.number_of_packets = fast_ntoh(nf5_flow->flow_packets);
+        current_packet.length = nf5_flow->flow_octets;
+        current_packet.number_of_packets = nf5_flow->flow_packets;
 
         if (netflow_divide_counters_on_interval_length) {
             // This interval in milliseconds, convert it to seconds
@@ -967,6 +987,22 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len, std::string client_a
         } break;
         }
 
+#ifdef ENABLE_LUA_HOOKS
+        if (lua_hooks_enabled) {
+            // TODO: remove it!!!
+            if (lua_state == NULL) {
+                init_lua_jit();
+            }
+
+            if (call_netflow_process_lua_hook(lua_state, nf5_flow)) {
+                // We will process this packet
+            } else {
+                logger << log4cpp::Priority::INFO << "We will drop this packets because LUA script decided to do it";
+                return;
+            }
+        }
+#endif
+
         // Call processing function for every flow in packet
         netflow_process_func_ptr(current_packet);
     }
@@ -992,11 +1028,55 @@ void process_netflow_packet(u_int8_t* packet, u_int len, std::string client_addr
     }
 }
 
-unsigned int netflow_port = 2055;
+#ifdef ENABLE_LUA_HOOKS
+void init_lua_jit() {
+    if (lua_hooks_enabled) {
+        lua_state = luaL_newstate();
+
+         // load libraries
+        luaL_openlibs(lua_state);
+
+        int lua_load_file_result = luaL_dofile(lua_state, lua_hooks_path.c_str());
+
+        if (lua_load_file_result != 0) {
+            logger << log4cpp::Priority::ERROR << "LuaJIT can't load file correctly from path: " << lua_hooks_path
+                << " disable LUA support";
+
+            lua_hooks_enabled = false;
+        }
+    }
+}
+
+bool call_netflow_process_lua_hook(lua_State* lua_state_param, struct NF5_FLOW* flow) {
+    lua_getfield(lua_state_param, LUA_GLOBALSINDEX, "process_netflow");
+    lua_pushlightuserdata(lua_state_param, (void*)flow);
+
+    // Call with 1 argumnents and 1 result
+    lua_call(lua_state_param, 1, 1);
+    
+    if (lua_gettop(lua_state_param) == 1) {
+        bool result = lua_toboolean(lua_state_param, -1) == 1 ? true : false;
+
+        // pop returned value
+        lua_pop(lua_state_param, 1);
+
+        return result;
+    } else {
+        logger << log4cpp::Priority::ERROR << "We got " << lua_gettop(lua_state_param) << " return values from the LUA, it's error, please check your LUA code";
+        return false;
+    }
+
+    return false;
+}
+#endif
 
 // #include <sys/prctl.h>
 void start_netflow_collection(process_packet_pointer func_ptr) {
     logger << log4cpp::Priority::INFO << "netflow plugin started";
+
+#ifdef ENABLE_LUA_HOOKS
+    init_lua_jit();
+#endif
 
     // prctl(PR_SET_NAME,"fastnetmon_netflow", 0, 0, 0);
 
