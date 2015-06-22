@@ -31,3 +31,5 @@ Port      Status           Sample-rate         Subsampling
 1:40      enabled     1024      /  1024         1             
 2:39      enabled     1024      /  1024         1
 ```
+
+Juniper EX sFLOW configuration: [link](http://kb.juniper.net/InfoCenter/index?page=content&id=KB14855).
