@@ -3,7 +3,7 @@
 - Clone ExaBGP master's repository:
 ```bash
 cd /usr/src
-https://github.com/Exa-Networks/exabgp.git
+git clone https://github.com/Exa-Networks/exabgp.git
 ```
 - Put exabgp_network_collector.conf to /etc
 - Put bgp_network_collector.py to /usr/local/bin
