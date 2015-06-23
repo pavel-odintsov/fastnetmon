@@ -14,3 +14,5 @@ Build it:
 cmake -DENABLE_LUA_SUPPORT=ON ..
 make
 ```
+
+Please be aware! In Ubuntu 14.04 lua-json 1.3.1 is [buggy](https://bugs.launchpad.net/ubuntu/+source/lua-json/+bug/1443288) and should be upgraded to 1.3.2.
