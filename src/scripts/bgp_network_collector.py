@@ -40,7 +40,7 @@ while True:
                     if prefix_announce == "0.0.0.0/0":
                         continue
                        
-                    pp.pprint("We learned prefix:", prefix_announce)
+                    print >> sys.stderr, "We learned prefix:", prefix_announce
 
                     if type(prefix_announce) != str:
                         prefix_announce = prefix_announce.encode('utf8')
