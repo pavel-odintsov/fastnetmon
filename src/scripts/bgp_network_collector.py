@@ -38,6 +38,10 @@ while True:
                     #pp.pprint(current_announce_for_certain_next_hop[prefix_announce])
                     pp.pprint(prefix_announce)
 
+                    # drop default gateway
+                    if prefix_announce == "0.0.0.0/0":
+                        continue
+
                     if type(prefix_announce) != str:
                         prefix_announce = prefix_announce.encode('utf8')
 
