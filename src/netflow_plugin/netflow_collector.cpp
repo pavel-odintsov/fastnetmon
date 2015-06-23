@@ -1033,6 +1033,13 @@ void init_lua_jit() {
     if (lua_hooks_enabled) {
         lua_state = luaL_newstate();
 
+        if (lua_state == NULL) {
+            logger << log4cpp::Priority::ERROR << "Can't create LUA session";
+
+            lua_hooks_enabled = false;
+            return;
+        }
+
          // load libraries
         luaL_openlibs(lua_state);
 
