@@ -1050,6 +1050,7 @@ void init_lua_jit() {
                 << " disable LUA support";
 
             lua_hooks_enabled = false;
+            return;
         }
     }
 }
