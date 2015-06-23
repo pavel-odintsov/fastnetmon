@@ -35,6 +35,8 @@
 
 #include <numa.h>
 
+uint32_t pfring_sampling_ratio = 1; 
+
 // Get log4cpp logger from main programm
 extern log4cpp::Category& logger;
 
@@ -133,6 +135,10 @@ void start_pfring_collection(process_packet_pointer func_ptr) {
         logger << log4cpp::Priority::INFO << "We selected interface:" << work_on_interfaces;
     }
 
+    if (configuration_map.count("pfring_sampling_ratio") != 0) {
+        pfring_sampling_ratio = convert_string_to_integer(configuration_map["pfring_sampling_ratio"]);
+    }
+
     if (work_on_interfaces == "") {
         logger << log4cpp::Priority::ERROR << "Please specify interface";
         exit(1);
@@ -154,7 +160,7 @@ void parse_packet_pf_ring(const struct pfring_pkthdr* h, const u_char* p, const 
     packet.number_of_packets = 1;
 
     // Now we support only non sampled input from PF_RING
-    packet.sample_ratio = 1;
+    packet.sample_ratio = pfring_sampling_ratio;
 
     if (!pf_ring_zc_api_mode) {
         if (!we_use_pf_ring_in_kernel_parser) {
