@@ -2,8 +2,8 @@
 
 - Clone ExaBGP master's repository:
 ```bash
-cd /usr/src
-git clone https://github.com/Exa-Networks/exabgp.git
+# yum/apt-get install -y python-pip
+pip install exabgp
 ```
 - Download configs and scripts:
 ```bash
