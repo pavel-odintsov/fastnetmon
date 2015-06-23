@@ -48,6 +48,8 @@ typedef cpuset_t cpu_set_t;
 
 #include "netmap_collector.h"
 
+uint32_t netmap_sampling_ratio = 1;
+
 /* prototypes */
 void netmap_thread(struct nm_desc* netmap_descriptor, int netmap_thread);
 void consume_pkt(u_char* buffer, int len);
@@ -104,6 +106,8 @@ void consume_pkt(u_char* buffer, int len) {
 
     // We should fill this structure for passing to FastNetMon
     simple_packet packet;
+
+    packet.sample_ratio = netmap_sampling_ratio;
 
     if (packet_header.extended_hdr.parsed_pkt.ip_version != 4 && packet_header.extended_hdr.parsed_pkt.ip_version != 6) {
         total_unparsed_packets++;
@@ -324,6 +328,10 @@ void start_netmap_collection(process_packet_pointer func_ptr) {
 
     if (configuration_map.count("interfaces") != 0) {
         interfaces_list = configuration_map["interfaces"];
+    }
+
+    if (configuration_map.count("netmap_sampling_ratio") != 0) {
+        netmap_sampling_ratio = convert_string_to_integer(configuration_map["netmap_sampling_ratio"]);
     }
 
     std::vector<std::string> interfaces_for_listen;
