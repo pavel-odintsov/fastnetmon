@@ -204,6 +204,7 @@ log4cpp::Category& logger = log4cpp::Category::getRoot();
 // And initilize by 0 all fields
 total_counter_element total_counters[4];
 total_counter_element total_speed_counters[4];
+total_counter_element total_speed_average_counters[4];
 
 // Total amount of non parsed packets
 uint64_t total_unparsed_packets = 0;
@@ -1584,22 +1585,22 @@ void recalculate_speed() {
 
             /* Moving average recalculation for subnets */
             /* http://en.wikipedia.org/wiki/Moving_average#Application_to_measuring_computer_performance */
-            double exp_power = -speed_calc_period / average_calculation_amount_for_subnets;
-            double exp_value = exp(exp_power);
+            double exp_power_subnet = -speed_calc_period / average_calculation_amount_for_subnets;
+            double exp_value_subnet = exp(exp_power_subnet);
 
             map_element* current_average_speed_element = &PerSubnetAverageSpeedMap[current_subnet];
 
             current_average_speed_element->in_bytes = uint64_t(new_speed_element.in_bytes +
-                exp_value * ((double)current_average_speed_element->in_bytes - (double)new_speed_element.in_bytes));
+                exp_value_subnet * ((double)current_average_speed_element->in_bytes - (double)new_speed_element.in_bytes));
 
             current_average_speed_element->out_bytes = uint64_t(new_speed_element.out_bytes +
-                exp_value * ((double)current_average_speed_element->out_bytes - (double)new_speed_element.out_bytes));
+                exp_value_subnet * ((double)current_average_speed_element->out_bytes - (double)new_speed_element.out_bytes));
 
             current_average_speed_element->in_packets = uint64_t(new_speed_element.in_packets +
-                exp_value * ((double)current_average_speed_element->in_packets - (double)new_speed_element.in_packets));
+                exp_value_subnet * ((double)current_average_speed_element->in_packets - (double)new_speed_element.in_packets));
 
             current_average_speed_element->out_packets = uint64_t(new_speed_element.out_packets +
-                exp_value * ((double)current_average_speed_element->out_packets - (double)new_speed_element.out_packets));
+                exp_value_subnet * ((double)current_average_speed_element->out_packets - (double)new_speed_element.out_packets));
 
             // Update speed calculation structure
             PerSubnetSpeedMap[current_subnet] = new_speed_element;
@@ -1777,8 +1778,18 @@ void recalculate_speed() {
     for (unsigned int index = 0; index < 4; index++) {
         total_speed_counters[index].bytes =
         uint64_t((double)total_counters[index].bytes / (double)speed_calc_period);
+
         total_speed_counters[index].packets =
         uint64_t((double)total_counters[index].packets / (double)speed_calc_period);
+
+        double exp_power = -speed_calc_period / average_calculation_amount;
+        double exp_value = exp(exp_power);
+
+        total_speed_average_counters[index].bytes = uint64_t(total_speed_counters[index].bytes + exp_value * 
+            ((double) total_speed_average_counters[index].bytes - (double) total_speed_counters[index].bytes));
+
+        total_speed_average_counters[index].packets = uint64_t(total_speed_counters[index].packets + exp_value *  
+            ((double) total_speed_average_counters[index].packets - (double) total_speed_counters[index].packets));  
 
         // nullify data counters after speed calculation
         total_counters[index].bytes = 0;
@@ -1902,8 +1913,8 @@ void traffic_draw_programm() {
 
 // pretty print channel speed in pps and MBit
 std::string print_channel_speed(std::string traffic_type, direction packet_direction) {
-    uint64_t speed_in_pps = total_speed_counters[packet_direction].packets;
-    uint64_t speed_in_bps = total_speed_counters[packet_direction].bytes;
+    uint64_t speed_in_pps = total_speed_average_counters[packet_direction].packets;
+    uint64_t speed_in_bps = total_speed_average_counters[packet_direction].bytes;
 
     unsigned int number_of_tabs = 1;
     // We need this for correct alignment of blocks
@@ -2091,6 +2102,9 @@ int main(int argc, char** argv) {
 
         total_speed_counters[index].bytes = 0;
         total_speed_counters[index].packets = 0;
+
+        total_speed_average_counters[index].bytes = 0;
+        total_speed_average_counters[index].packets = 0; 
     }
 
     /* Create folder for attack details */
