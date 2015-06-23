@@ -6,7 +6,7 @@ It's not compiled by default and you need build it explicitly.
 
 Install dependency list (Debian 8 and Ubuntu 14.04 has it):
 ```bash
-apt-get install -y libluajit-5.1-dev luajit
+apt-get install -y libluajit-5.1-dev luajit lua-json
 ```
 
 Build it:
