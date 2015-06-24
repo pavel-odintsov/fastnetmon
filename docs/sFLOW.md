@@ -75,3 +75,7 @@ Let's start:
 ```bash
 systemctl restart hsflowd
 ```
+
+### Qtech switches 
+
+Qtech QSW-8200-52T and Qtech QSW-2850-28T has some bugs in sFLOW implementation. Sflowtool could not parse they too. Waiting answer from developers.

@@ -28,7 +28,7 @@ What can we do? We can detect hosts in our own network with a large amount of pa
 Supported packet capture engines:
 - NetFlow v5, v9
 - IPFIX
-- ![sFLOW](http://sflow.org/images/sflowlogo.gif) v5
+- ![sFLOW](http://sflow.org/images/sflowlogo.gif) v4 (dev branch only), v5
 - Port mirror/SPAN capture with PF_RING (with ZC/DNA mode support [need license](http://www.ntop.org/products/pf_ring/)), NETMAP and PCAP
 
 You could look [comparison table](https://github.com/FastVPSEestiOu/fastnetmon/blob/master/docs/CAPTURE_BACKENDS.md) for all available packet capture engines.
