@@ -23,6 +23,7 @@ Build it:
 
 // Copy and paste from netmap code
 void consume_pkt(u_char* buffer, int len) {
+    /*
     struct pfring_pkthdr packet_header;
     memset(&packet_header, 0, sizeof(packet_header));
     packet_header.len = len;
@@ -33,10 +34,11 @@ void consume_pkt(u_char* buffer, int len) {
     u_int8_t timestamp = 0;
     u_int8_t add_hash = 0;
     fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, timestamp, add_hash);
+    */
 
-    char print_buffer[512];
-    fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
-    printf("%s\n", print_buffer);
+    //char print_buffer[512];
+    //fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
+    //printf("%s\n", print_buffer);
     // logger.info("%s", print_buffer);
 }
 
@@ -103,6 +105,17 @@ void start_af_packet_capture() {
     bind_address.sll_family = AF_PACKET;
     bind_address.sll_protocol = htons(ETH_P_ALL);
     bind_address.sll_ifindex = interface_number;
+
+    // We will follow http://yusufonlinux.blogspot.ru/2010/11/data-link-access-and-zero-copy.html
+    // And this: https://www.kernel.org/doc/Documentation/networking/packet_mmap.txt
+    /*
+
+    struct tpacket_req req;
+    memset(&req, 0, sizeof(req);
+    setsockopt(packet_socket, SOL_PACKET , PACKET_RX_RING , (void*)&req , sizeof(req));
+    setsockopt(packet_socket, SOL_PACKET , PACKET_TX_RING , (void*)&req , sizeof(req));
+    
+    */
 
     int bind_result = bind(packet_socket, (struct sockaddr *)&bind_address, sizeof(bind_address));
 
