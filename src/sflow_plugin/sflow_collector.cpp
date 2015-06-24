@@ -34,6 +34,8 @@
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
+// sFLOW v4 specification: http://www.sflow.org/rfc3176.txt
+
 std::string plugin_name = "sflow";
 std::string plugin_log_prefix = plugin_name + ": ";
 
@@ -196,6 +198,58 @@ uint32_t getData32(SFSample* sample) {
     return ntohl(getData32_nobswap(sample));
 }
 
+bool readFlowSample_v2v4(SFSample *sample) {
+    sample->samplesGenerated = getData32(sample);
+    
+    uint32_t samplerId = getData32(sample);
+    sample->ds_class = samplerId >> 24;
+    sample->ds_index = samplerId & 0x00ffffff;
+
+    sample->meanSkipCount = getData32(sample);
+    sample->samplePool = getData32(sample);
+    sample->dropEvents = getData32(sample);
+    sample->inputPort = getData32(sample);
+    sample->outputPort = getData32(sample);
+
+    sample->packet_data_tag = getData32(sample);
+    
+    switch(sample->packet_data_tag) {
+
+        case INMPACKETTYPE_HEADER:
+            readFlowSample_header(sample);
+
+            break;
+        case INMPACKETTYPE_IPV4:
+            logger << log4cpp::Priority::ERROR << plugin_log_prefix << "hit INMPACKETTYPE_IPV4, very strange";
+            return false;
+
+            break;
+        case INMPACKETTYPE_IPV6:
+            logger << log4cpp::Priority::ERROR << plugin_log_prefix << "hit INMPACKETTYPE_IPV6, very strange";
+            return false;
+
+            break;
+        default:
+            logger << log4cpp::Priority::ERROR << plugin_log_prefix << "unexpected packet_data_tag";
+            return false;
+
+            break;
+    }
+
+    sample->extended_data_tag = 0; 
+
+    // We should read this data
+    sample->num_extended = getData32(sample);
+    
+    if (sample->num_extended > 0) {
+        logger << log4cpp::Priority::ERROR << plugin_log_prefix << "we have " << sample->num_extended << " extended fields";
+        logger << log4cpp::Priority::ERROR << plugin_log_prefix << "and sorry we haven't support for it :("; 
+
+        return false;
+    }
+
+    return true;
+}
 
 void read_sflow_datagram(SFSample* sample) {
     sample->datap = (uint32_t*)sample->rawSample;
@@ -204,10 +258,11 @@ void read_sflow_datagram(SFSample* sample) {
     sample->datagramVersion = getData32(sample);
     // printf("sFLOW version %d\n", sample->datagramVersion);
 
-    if (sample->datagramVersion != 5) {
+    if (sample->datagramVersion != 5 && sample->datagramVersion != 4) {
         logger << log4cpp::Priority::ERROR
                << plugin_log_prefix 
-               << "we do not support old sFLOW protocols. Please change version to sFLOW 5";
+               << "we do not support sFLOW v<< "<< sample->datagramVersion
+               << " because it's too old. Please change version to sFLOW 4 or 5";
         return;
     }
 
@@ -218,6 +273,8 @@ void read_sflow_datagram(SFSample* sample) {
     if (sample->datagramVersion >= 5) {
         sample->agentSubId = getData32(sample);
         // sf_log(sample,"agentSubId %u\n", sample->agentSubId);
+    } else {
+        sample->agentSubId = 0;
     }
 
     sample->sequenceNo = getData32(sample); /* this is the packet sequence number */
@@ -280,6 +337,25 @@ void read_sflow_datagram(SFSample* sample) {
                     return;
                 }
                 break;
+            }
+        } else {
+            // sFLOW v2 or v4 here
+            switch(sample->sampleType) {
+                case FLOWSAMPLE:
+                    if (!readFlowSample_v2v4(sample)) {
+                        // We have some troubles with old sFLOW parser 
+                        return;
+                    }
+                    break;
+                case COUNTERSSAMPLE:
+                    logger << log4cpp::Priority::ERROR << plugin_log_prefix << "we haven't support for COUNTERSSAMPLE for "
+                        << "sFLOW v4 and ignore it completely";
+                    return; 
+                    break;
+                default:
+                    logger << log4cpp::Priority::ERROR << plugin_log_prefix << "unexpected sample type: " << sample->sampleType;
+                    return;
+                    break;
             }
         }
     }
