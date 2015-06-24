@@ -4,6 +4,21 @@
 #include "sflow.h"
 #include <setjmp.h>
 
+// Packet headers for sFLOW v4
+enum INMPacket_information_type {
+  INMPACKETTYPE_HEADER  = 1,      /* Packet headers are sampled */
+  INMPACKETTYPE_IPV4    = 2,      /* IP version 4 data */
+  INMPACKETTYPE_IPV6    = 3       /* IP version 4 data */
+};
+
+/* when I turn on optimisation with the Microsoft compiler it seems to change
+   the values of these enumerated types and break the program - not sure why */
+enum INMSample_types {
+   FLOWSAMPLE  = 1,
+   COUNTERSSAMPLE = 2 
+};
+
+
 /* same for tcp */
 struct mytcphdr {
     uint16_t th_sport; /* source port */
