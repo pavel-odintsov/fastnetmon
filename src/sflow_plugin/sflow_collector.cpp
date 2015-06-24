@@ -34,6 +34,9 @@
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
+std::string plugin_name = "sflow";
+std::string plugin_log_prefix = plugin_name + ": ";
+
 // Get logger from main programm
 extern log4cpp::Category& logger;
 
@@ -56,7 +59,7 @@ process_packet_pointer sflow_process_func_ptr = NULL;
 // #include <sys/prctl.h>
 unsigned int sflow_port = 6343;
 void start_sflow_collection(process_packet_pointer func_ptr) {
-    logger << log4cpp::Priority::INFO << "sflow plugin started";
+    logger << log4cpp::Priority::INFO << plugin_log_prefix << "plugin started";
     // prctl(PR_SET_NAME,"fastnetmon_sflow", 0, 0, 0);
 
     std::string interface_for_binding = "0.0.0.0";
@@ -69,7 +72,7 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
         interface_for_binding = configuration_map["sflow_host"];
     }
 
-    logger << log4cpp::Priority::INFO << "sflow plugin will listen on " << interface_for_binding
+    logger << log4cpp::Priority::INFO << plugin_log_prefix << "plugin will listen on " << interface_for_binding
            << ":" << sflow_port << " udp port";
 
     sflow_process_func_ptr = func_ptr;
@@ -94,7 +97,7 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
     int bind_result = bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
 
     if (bind_result) {
-        logger << log4cpp::Priority::ERROR << "Can't listen port: " << sflow_port;
+        logger << log4cpp::Priority::ERROR << plugin_log_prefix << "can't listen port: " << sflow_port;
         return;
     }
 
@@ -139,7 +142,7 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
                 if (errno == EAGAIN) {
                     // We got timeout, it's OK!
                 } else {
-                    logger << log4cpp::Priority::ERROR << "Data receive failed";
+                    logger << log4cpp::Priority::ERROR << plugin_log_prefix << "data receive failed";
                 }
             }
         }
@@ -156,7 +159,7 @@ uint32_t getData32_nobswap(SFSample* sample) {
     if ((uint8_t*)sample->datap > sample->endp) {
         // SFABORT(sample, SF_ABORT_EOS);
         // Error!!!
-        logger << log4cpp::Priority::ERROR << "We tried to read data in bad place! Fault!";
+        logger << log4cpp::Priority::ERROR << plugin_log_prefix << "we tried to read data in bad place! Fault!";
         return 0;
     }
 
@@ -168,7 +171,8 @@ bool skipBytes(SFSample* sample, uint32_t skip) {
     sample->datap += quads;
     if (skip > sample->rawSampleLen || (uint8_t*)sample->datap > sample->endp) {
         // SFABORT(sample, SF_ABORT_EOS);
-        logger << log4cpp::Priority::ERROR << "Very dangerous error from skipBytes function! We try to read from restricted memory region";
+        logger << log4cpp::Priority::ERROR << plugin_log_prefix
+            << "very dangerous error from skipBytes function! We try to read from restricted memory region";
         
         return false;
     }
@@ -202,7 +206,8 @@ void read_sflow_datagram(SFSample* sample) {
 
     if (sample->datagramVersion != 5) {
         logger << log4cpp::Priority::ERROR
-               << "We do not support old sFLOW protocols. Please change version to sFLOW 5";
+               << plugin_log_prefix 
+               << "we do not support old sFLOW protocols. Please change version to sFLOW 5";
         return;
     }
 
@@ -226,7 +231,8 @@ void read_sflow_datagram(SFSample* sample) {
         if ((uint8_t*)sample->datap >= sample->endp) {
             logger
             << log4cpp::Priority::INFO
-            << "We tried to read data outside packet! It's very dangerous, we stop all operations";
+            << plugin_log_prefix
+            << "we tried to read data outside packet! It's very dangerous, we stop all operations";
             return;
         }
 
@@ -239,7 +245,7 @@ void read_sflow_datagram(SFSample* sample) {
             case SFLFLOW_SAMPLE:
                 // skipBytes(sample, getData32(sample));
                 if (!readFlowSample(sample, 0)) {
-                    logger << log4cpp::Priority::ERROR << "We failed in SFLFLOW_SAMPLE handler";
+                    logger << log4cpp::Priority::ERROR << plugin_log_prefix << "we failed in SFLFLOW_SAMPLE handler";
                     return;
                 }
 
@@ -247,7 +253,7 @@ void read_sflow_datagram(SFSample* sample) {
             case SFLCOUNTERS_SAMPLE:
                 // We do not need counters for our task, skip it
                 if (!skipBytes(sample, getData32(sample))) {
-                    logger << log4cpp::Priority::ERROR << "We failed in SFLCOUNTERS_SAMPLE handler";
+                    logger << log4cpp::Priority::ERROR << plugin_log_prefix << "we failed in SFLCOUNTERS_SAMPLE handler";
                     return;
                 }
 
@@ -255,7 +261,7 @@ void read_sflow_datagram(SFSample* sample) {
             case SFLFLOW_SAMPLE_EXPANDED:
                 // skipBytes(sample, getData32(sample));
                 if (!readFlowSample(sample, 1)) {
-                    logger << log4cpp::Priority::ERROR << "We failed in SFLFLOW_SAMPLE_EXPANDED handler";
+                    logger << log4cpp::Priority::ERROR << plugin_log_prefix << "we failed in SFLFLOW_SAMPLE_EXPANDED handler";
                     return;
                 }
                 
@@ -263,14 +269,14 @@ void read_sflow_datagram(SFSample* sample) {
             case SFLCOUNTERS_SAMPLE_EXPANDED:
                 // We do not need counters for our task, skip it
                 if (!skipBytes(sample, getData32(sample))) {
-                    logger << log4cpp::Priority::ERROR << "We failed in SFLCOUNTERS_SAMPLE_EXPANDED handler";
+                    logger << log4cpp::Priority::ERROR << plugin_log_prefix << "we failed in SFLCOUNTERS_SAMPLE_EXPANDED handler";
                     return;
                 }
                 
                 break;
             default:
                 if (!skipTLVRecord(sample, sample->sampleType, getData32(sample))) {
-                    logger << log4cpp::Priority::ERROR << "We failed in default handler in skipTLVRecord";
+                    logger << log4cpp::Priority::ERROR << plugin_log_prefix << "we failed in default handler in skipTLVRecord";
                     return;
                 }
                 break;
@@ -462,7 +468,7 @@ void readFlowSample_header(SFSample* sample) {
             decode_ipv6_protocol(sample);
         }
     } else {
-        logger << log4cpp::Priority::ERROR << "Not supported protocol: " << sample->headerProtocol;
+        logger << log4cpp::Priority::ERROR << plugin_log_prefix << "not supported protocol: " << sample->headerProtocol;
         return;
     }
 }
@@ -591,7 +597,7 @@ void decode_ipv6_protocol(SFSample* sample){
     int ipVersion = (*ptr >> 4);
     
     if (ipVersion != 6) { 
-        logger << log4cpp::Priority::ERROR << "sFLOW header decode error: unexpected IP version: " << ipVersion;
+        logger << log4cpp::Priority::ERROR << plugin_log_prefix << "sFLOW header decode error: unexpected IP version: " << ipVersion;
         return;
     }
 
@@ -599,7 +605,7 @@ void decode_ipv6_protocol(SFSample* sample){
     sample->dcd_ipTos = *ptr++ & 15;
 
     if (debug_sflow_parser) {
-        logger << log4cpp::Priority::INFO << "IPTOS: " << sample->dcd_ipTos;
+        logger << log4cpp::Priority::INFO << plugin_log_prefix << "IPTOS: " << sample->dcd_ipTos;
     }
 
     /* 24-bit label */
@@ -610,7 +616,7 @@ void decode_ipv6_protocol(SFSample* sample){
     label += *ptr++;
 
     if (debug_sflow_parser) {
-        logger << log4cpp::Priority::INFO << "IP6_label: " << label;
+        logger << log4cpp::Priority::INFO << plugin_log_prefix << "IP6_label: " << label;
     }
 
     /* payload */
@@ -620,9 +626,9 @@ void decode_ipv6_protocol(SFSample* sample){
     /* if payload is zero, that implies a jumbo payload */
     if (debug_sflow_parser) {
         if (payloadLen == 0) {
-            logger << log4cpp::Priority::INFO << "IPV6_payloadLen <jumbo>";
+            logger << log4cpp::Priority::INFO << plugin_log_prefix << "IPV6_payloadLen <jumbo>";
         } else {
-            logger << log4cpp::Priority::INFO << "IPV6_payloadLen " << payloadLen;
+            logger << log4cpp::Priority::INFO << plugin_log_prefix << "IPV6_payloadLen " << payloadLen;
         }
     }
 
@@ -641,7 +647,7 @@ void decode_ipv6_protocol(SFSample* sample){
      
     if (debug_sflow_parser) {
         char buf[101];
-        logger << log4cpp::Priority::INFO << "srcIP6: " << printAddress(&sample->ipsrc, buf);
+        logger << log4cpp::Priority::INFO << plugin_log_prefix << "srcIP6: " << printAddress(&sample->ipsrc, buf);
     }
 
     sample->ipdst.type = SFLADDRESSTYPE_IP_V6;
@@ -650,7 +656,7 @@ void decode_ipv6_protocol(SFSample* sample){
 
     if (debug_sflow_parser) {
         char buf[101];
-        logger << log4cpp::Priority::INFO << "dstIP6: " << printAddress(&sample->ipdst, buf);
+        logger << log4cpp::Priority::INFO << plugin_log_prefix << "dstIP6: " << printAddress(&sample->ipdst, buf);
     }
 
     /* skip over some common header extensions...
@@ -665,7 +671,7 @@ void decode_ipv6_protocol(SFSample* sample){
         uint32_t optionLen, skip;
 
         if (debug_sflow_parser) {
-            logger << log4cpp::Priority::INFO << "IP6HeaderExtension: " << nextHeader;
+            logger << log4cpp::Priority::INFO << plugin_log_prefix << "IP6HeaderExtension: " << nextHeader;
         }
 
         nextHeader = ptr[0];
@@ -680,7 +686,7 @@ void decode_ipv6_protocol(SFSample* sample){
     sample->dcd_ipProtocol = nextHeader;
 
     if (debug_sflow_parser) {
-        logger << log4cpp::Priority::INFO << "IPProtocol: " << sample->dcd_ipProtocol;
+        logger << log4cpp::Priority::INFO << plugin_log_prefix << "IPProtocol: " << sample->dcd_ipProtocol;
     }
     
     decodeIPLayer4(sample, ptr);

@@ -60,6 +60,8 @@ int get_interface_number_by_device_name(int socket_fd, std::string interface_nam
 
 unsigned int af_packet_threads = 1;
 
+uint64_t received_packets = 0;
+
 void start_af_packet_capture() {
     std::string interface_name = "eth5";
 
@@ -117,6 +119,7 @@ void start_af_packet_capture() {
 
     unsigned int capture_length = 1500;
     char buffer[capture_length];
+
     while (true) {
         int readed_bytes = read(packet_socket, buffer, capture_length); 
 
