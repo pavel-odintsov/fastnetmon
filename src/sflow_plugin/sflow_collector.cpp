@@ -290,6 +290,19 @@ bool skipTLVRecord(SFSample* sample, uint32_t tag, uint32_t len) {
 }
 
 
+bool length_check(SFSample *sample, const char *description, uint8_t *start, int len) {
+    uint32_t actualLen = (uint8_t *)sample->datap - start;
+    uint32_t adjustedLen = ((len + 3) >> 2) << 2;
+  
+    if (actualLen != adjustedLen) {
+        logger << log4cpp::Priority::ERROR << plugin_log_prefix << description
+            << " length error: expected " << len << " found " << actualLen;
+        return false;
+    }
+
+    return true;
+}
+
 bool readFlowSample(SFSample* sample, int expanded) {
     uint32_t num_elements, sampleLength;
     uint8_t* sampleStart;
@@ -347,6 +360,14 @@ bool readFlowSample(SFSample* sample, int expanded) {
                 return false;
             }
         }
+
+        if (!length_check(sample, "flow_sample_element", start, length)) {
+            return false;
+        }
+    }
+
+    if (!length_check(sample, "flow_sample", sampleStart, sampleLength)) {
+        return false;
     }
 
     return true;
