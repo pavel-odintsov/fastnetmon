@@ -4,6 +4,8 @@
 #include <iostream>
 #include <unistd.h>
 
+#include <boost/thread.hpp>
+
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
@@ -16,7 +18,7 @@
 /*
 
 Build it:
-   g++ ../fastnetmon_packet_parser.c -ofastnetmon_packet_parser.o -c
+   g++ ../fastnetmon_packet_parser.c -ofastnetmon_packet_parser.o -lboost_thread -lboost_system -c
    g++ af_packet.cpp fastnetmon_packet_parser.o
 
 */
@@ -64,9 +66,20 @@ unsigned int af_packet_threads = 1;
 
 uint64_t received_packets = 0;
 
-void start_af_packet_capture() {
-    std::string interface_name = "eth5";
+void speed_printer() {
+    while (true) {
+        uint64_t packets_before = received_packets;
+        
+        boost::this_thread::sleep(boost::posix_time::seconds(1));       
+        
+        uint64_t packets_after = received_packets;
+        uint64_t pps = packets_after - packets_before;
 
+        printf("We process: %llu pps\n", pps);
+    }
+}
+
+int setup_socket(std::string interface_name, int fanout_group_id) {
     // More details here: http://man7.org/linux/man-pages/man7/packet.7.html
     // We could use SOCK_RAW or SOCK_DGRAM for second argument
     // SOCK_RAW - raw packets pass from the kernel
@@ -76,14 +89,14 @@ void start_af_packet_capture() {
    
     if (packet_socket == -1) {
         printf("Can't create AF_PACKET socket\n");
-        return;
+        return -1;
     }
 
     int interface_number = get_interface_number_by_device_name(packet_socket, interface_name);
 
     if (interface_number == -1) {
         printf("Can't get interface number by interface name\n");
-        return;
+        return -1;
     }
  
     // Switch to PROMISC mode
@@ -96,7 +109,7 @@ void start_af_packet_capture() {
 
     if (set_promisc == -1) {
         printf("Can't enable promisc mode\n");
-        return;
+        return -1;
     }
 
     struct sockaddr_ll bind_address;
@@ -121,19 +134,42 @@ void start_af_packet_capture() {
 
     if (bind_result == -1) {
         printf("Can't bind to AF_PACKET socket\n");
-        return;
+        return -1;
     }
-  
-    if (af_packet_threads > 1) {
-        // TODO: add fan out support 
-        // setsockopt(packet_socket, SOL_PACKET, PACKET_FANOUT, PACKET_FANOUT_LB);
-        // Most challenging option: PACKET_TX_RING
+ 
+    if (fanout_group_id) {
+        // PACKET_FANOUT_LB - round robin
+        // PACKET_FANOUT_CPU - send packets to CPU where packet arrived
+        int fanout_type = PACKET_FANOUT_CPU; 
+
+        int fanout_arg = (fanout_group_id | (fanout_type << 16));
+
+        int setsockopt_fanout = setsockopt(packet_socket, SOL_PACKET, PACKET_FANOUT, &fanout_arg, sizeof(fanout_arg));
+
+        if (setsockopt_fanout < 0) {
+            printf("Can't configure fanout\n");
+            return -1;
+        }
     }
 
+    // Most challenging option: PACKET_TX_RING
+    return packet_socket;
+}
+
+void start_af_packet_capture(std::string interface_name, int fanout_group_id) {
+    int packet_socket = setup_socket(interface_name, fanout_group_id); 
+
+    if (packet_socket == -1) {
+        printf("Can't create socket\n");
+        return;
+    }
+    
     unsigned int capture_length = 1500;
     char buffer[capture_length];
 
     while (true) {
+        received_packets++;
+
         int readed_bytes = read(packet_socket, buffer, capture_length); 
 
         // printf("Got %d bytes from interface\n", readed_bytes);
@@ -150,6 +186,26 @@ void get_af_packet_stats() {
 // getsockopt PACKET_STATISTICS
 }
 
+bool use_multiple_fanout_processes = true;
+
 int main() {
-    start_af_packet_capture();
+     boost::thread speed_printer_thread( speed_printer );
+
+    int fanout_group_id = getpid() & 0xffff;
+
+    if (use_multiple_fanout_processes) {
+        boost::thread_group packet_receiver_thread_group;
+
+        for (int cpu = 0; cpu < 8; cpu++) {
+            packet_receiver_thread_group.add_thread(
+                new boost::thread(boost::bind(start_af_packet_capture, "eth6", fanout_group_id)));
+        }
+
+        // Wait all processes for finish
+        packet_receiver_thread_group.join_all();
+    } else {
+        start_af_packet_capture("eth6", 0);
+    }
+
+    speed_printer_thread.join();
 }
