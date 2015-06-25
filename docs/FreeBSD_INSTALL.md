@@ -47,6 +47,8 @@ And switch it with ifconfig for already running system:
 ifconfig ix1 promisc
 ```
 
+Please put your networks in CIDR format here: /usr/local/etc/networks_list.
+
 For netmap support you may need compile kernel manually with this [manual](BUILDING_FREEBSD_KERNEL_FOR_NETMAP.md).
 
 On 32 bit FreeBSD you could hit this issue:
