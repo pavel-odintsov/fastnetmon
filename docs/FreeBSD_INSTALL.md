@@ -49,3 +49,22 @@ ifconfig ix1 promisc
 
 For netmap support you may need compile kernel manually with this [manual](BUILDING_FREEBSD_KERNEL_FOR_NETMAP.md).
 
+On 32 bit FreeBSD you could hit this issue:
+```bash
+fastnetmon.cpp:(.text+0xc979): undefined reference to `__sync_fetch_and_add_8'
+```
+
+It could be fixed by this patch.
+
+ Please add this lines before line "post-patch" line:
+```bash
+.include <bsd.port.pre.mk>
+
+# Port requires 64 bit atomics
+#.if ${ARCH} == i386 && empty(MACHINE_CPU:Mi586)
+CFLAGS+= -march=i586
+#.endif
+```
+
+And replace last string ```.include <bsd.port.mk>``` by ```.include
+<bsd.port.post.mk>```.
