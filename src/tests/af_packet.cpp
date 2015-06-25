@@ -18,8 +18,8 @@
 /*
 
 Build it:
-   g++ ../fastnetmon_packet_parser.c -ofastnetmon_packet_parser.o -lboost_thread -lboost_system -c
-   g++ af_packet.cpp fastnetmon_packet_parser.o
+g++ ../fastnetmon_packet_parser.c -ofastnetmon_packet_parser.o -c
+g++ af_packet.cpp fastnetmon_packet_parser.o -lboost_thread -lboost_system -lpthread 
 
 */
 
@@ -188,6 +188,9 @@ void get_af_packet_stats() {
 
 bool use_multiple_fanout_processes = true;
 
+// Could get some speed up on NUMA servers
+bool execute_strict_cpu_affinity = false;
+
 int main() {
      boost::thread speed_printer_thread( speed_printer );
 
@@ -196,9 +199,28 @@ int main() {
     if (use_multiple_fanout_processes) {
         boost::thread_group packet_receiver_thread_group;
 
-        for (int cpu = 0; cpu < 8; cpu++) {
+        unsigned int num_cpus = 8;
+        for (int cpu = 0; cpu < num_cpus; cpu++) {
+            boost::thread::attributes thread_attrs;
+
+            if (execute_strict_cpu_affinity) {
+                cpu_set_t current_cpu_set;
+
+                int cpu_to_bind = cpu % num_cpus;
+                CPU_ZERO(&current_cpu_set);
+                // We count cpus from zero
+                CPU_SET(cpu_to_bind, &current_cpu_set);
+
+                int set_affinity_result = pthread_attr_setaffinity_np(thread_attrs.native_handle(), sizeof(cpu_set_t), &current_cpu_set);
+    
+                if (set_affinity_result != 0) {
+                    printf("Can't set CPU affinity for thread\n");
+                } 
+            }
+
             packet_receiver_thread_group.add_thread(
-                new boost::thread(boost::bind(start_af_packet_capture, "eth6", fanout_group_id)));
+                new boost::thread(thread_attrs, boost::bind(start_af_packet_capture, "eth6", fanout_group_id))
+            );
         }
 
         // Wait all processes for finish
