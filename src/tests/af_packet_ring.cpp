@@ -22,10 +22,6 @@ unsigned int blocksiz = 1 << 22;
 unsigned int framesiz = 1 << 11; 
 unsigned int blocknum = 64; 
 
-uint8_t* mapped_buffer = NULL;
-
-struct iovec* rd = NULL;
-
 struct block_desc {
     uint32_t version;
     uint32_t offset_to_priv;
@@ -190,6 +186,10 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
         return -1;
     }
 
+    // We use per thread structures
+    uint8_t* mapped_buffer = NULL;
+    struct iovec* rd = NULL;
+
     mapped_buffer = (uint8_t*)mmap(NULL, req.tp_block_size * req.tp_block_nr, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_LOCKED, packet_socket, 0);
 
     if (mapped_buffer == MAP_FAILED) {
@@ -213,18 +213,21 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
         return -1;
     }
  
-    // Most challenging option: PACKET_TX_RING
-    return packet_socket;
-}
+   if (fanout_group_id) {
+        // PACKET_FANOUT_LB - round robin
+        // PACKET_FANOUT_CPU - send packets to CPU where packet arrived
+        int fanout_type = PACKET_FANOUT_CPU; 
 
-void start_af_packet_capture(std::string interface_name, int fanout_group_id) {
-    int packet_socket = setup_socket(interface_name, fanout_group_id); 
+        int fanout_arg = (fanout_group_id | (fanout_type << 16));
 
-    if (packet_socket == -1) {
-        printf("Can't create socket\n");
-        return;
+        int setsockopt_fanout = setsockopt(packet_socket, SOL_PACKET, PACKET_FANOUT, &fanout_arg, sizeof(fanout_arg));
+
+        if (setsockopt_fanout < 0) {
+            printf("Can't configure fanout\n");
+            return -1;
+        }
     }
-    
+
     unsigned int current_block_num = 0;
 
     struct pollfd pfd;
@@ -241,13 +244,19 @@ void start_af_packet_capture(std::string interface_name, int fanout_group_id) {
             poll(&pfd, 1, -1);
 
             continue;
-        }
+        }   
 
         walk_block(pbd, current_block_num);
         flush_block(pbd);
         current_block_num = (current_block_num + 1) % blocknum;
-    }
-} 
+    }   
+
+    return packet_socket;
+}
+
+void start_af_packet_capture(std::string interface_name, int fanout_group_id) {
+    setup_socket(interface_name, fanout_group_id); 
+}
 
 void get_af_packet_stats() {
 // getsockopt PACKET_STATISTICS
@@ -256,10 +265,45 @@ void get_af_packet_stats() {
 // Could get some speed up on NUMA servers
 bool execute_strict_cpu_affinity = false;
 
+bool use_multiple_fanout_processes = true;
+
 int main() {
+    int fanout_group_id = getpid() & 0xffff;
+
     boost::thread speed_printer_thread( speed_printer );
 
-    start_af_packet_capture("eth6", 0);
+    if (use_multiple_fanout_processes) {
+        boost::thread_group packet_receiver_thread_group;
+
+        unsigned int num_cpus = 8;
+        for (int cpu = 0; cpu < num_cpus; cpu++) {
+            boost::thread::attributes thread_attrs;
+
+            if (execute_strict_cpu_affinity) {
+                cpu_set_t current_cpu_set;
+
+                int cpu_to_bind = cpu % num_cpus;
+                CPU_ZERO(&current_cpu_set);
+                // We count cpus from zero
+                CPU_SET(cpu_to_bind, &current_cpu_set);
+
+                int set_affinity_result = pthread_attr_setaffinity_np(thread_attrs.native_handle(), sizeof(cpu_set_t), &current_cpu_set);
+    
+                if (set_affinity_result != 0) {
+                    printf("Can't set CPU affinity for thread\n");
+                } 
+            }
+
+            packet_receiver_thread_group.add_thread(
+                new boost::thread(thread_attrs, boost::bind(start_af_packet_capture, "eth6", fanout_group_id))
+            );
+        }
+
+        // Wait all processes for finish
+        packet_receiver_thread_group.join_all();
+    } else {    
+        start_af_packet_capture("eth6", 0);
+    }
 
     speed_printer_thread.join();
 }
