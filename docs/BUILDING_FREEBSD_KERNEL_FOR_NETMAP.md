@@ -3,7 +3,7 @@ Installing netmap in FreeBSD
 Try to build kernel module for current kernel:
 ```bash
 cd /usr/src/sys/modules/netmap
-make 
+make
 make install
 kldload netmap
 ```

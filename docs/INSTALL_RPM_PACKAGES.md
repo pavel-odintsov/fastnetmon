@@ -48,5 +48,5 @@ Install FastNetMon on Fedora 21:
 yum install -y https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/packages/Fedora21/fastnetmon-1.1.1-1.fc21.x86_64.rpm
 ```
 
-If you want build rpm package manually please use script [build_rpm.sh](https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/build_rpm.sh). Please build on same Linux distro version as target platform for best results.
+If you want build rpm package manually please use script [build_rpm.sh](https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/packages/build_rpm.sh). Please build on same Linux distro version as target platform for best results.
 

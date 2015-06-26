@@ -1,0 +1,5 @@
+fastnetmon (1.1-2) UNRELEASED; urgency=medium
+
+  * Initial release of Debian package
+
+ -- Pavel Odintsov  <pavel.odintsov@gmail.com>  Sat, 30 May 2015 15:10:21 -0400

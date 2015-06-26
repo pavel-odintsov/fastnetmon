@@ -1,0 +1,28 @@
+build/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+
+# Ninja
+.ninja_deps
+.ninja_log
+*.ninja
+
+# CPack
+CPackConfig.cmake
+CPackSourceConfig.cmake
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.a
+*.obj
+
+# Compiled Dynamic libraries
+*.so
+*.dylib

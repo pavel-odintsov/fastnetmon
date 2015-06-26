@@ -32,7 +32,7 @@ cd /usr/local/src
 git clone https://github.com/FastVPSEestiOu/fastnetmon.git
 cd fastnetmon/src/FreeBSD_port/
 make makesum
-make install 
+make install
 ```
 
 And please switch capture interface to promisc mode.

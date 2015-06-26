@@ -1,0 +1,81 @@
+#!/bin/bash
+#
+# fastnetmon        Startup script for FastNetMon 
+#
+# chkconfig: - 85 15
+# description: FastNetMon - high performance DoS/DDoS analyzer with sflow/netflow/mirror support
+# processname: fastnemon
+# config: /etc/fastnetmon.conf
+# pidfile: /var/run/fastnetmon.pid
+#
+### BEGIN INIT INFO
+# Provides: fastnetmon
+# Required-Start: $local_fs $remote_fs $network
+# Required-Stop: $local_fs $remote_fs $network
+# Should-Start: 
+# Short-Description: start and stop FastNetMon
+# Description:  high performance DoS/DDoS analyzer with sflow/netflow/mirror support
+### END INIT INFO
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+# We do not use this configs
+#if [ -f /etc/sysconfig/fastnetmon ]; then
+#        . /etc/sysconfig/fastnetmon
+#fi
+
+
+FASTNETMON=/usr/sbin/fastnetmon
+PROGNAME="fastnetmon"
+PIDFILE=/var/run/fastnetmon.pid
+RETVAL=0
+ARGS="--daemonize"
+
+start() {
+        echo -n $"Starting $PROGNAME: "
+        $FASTNETMON $ARGS > /dev/null 2>&1 && echo_success || echo_failure
+        RETVAL=$?
+        echo ""
+        return $RETVAL
+}
+
+stop() {
+        echo -n $"Stopping $PROGNAME: "
+        killproc -p $PIDFILE $FASTNETMON
+        RETVAL=$?
+        echo ""
+        rm -f $PIDFILE
+}
+reload() {
+    echo "Reloading is not supported now, sorry"
+    #echo -n $"Reloading $PROGNAME: "
+    #kill -HUP `cat $PIDFILE`
+}
+
+# See how we were called.
+case "$1" in
+  start)
+    start
+    ;;
+  stop)
+    stop
+    ;;
+  status)
+        status -p ${PIDFILE} $PROGNAME
+    RETVAL=$?
+    ;;
+  restart)
+    stop
+        sleep 1
+    start
+    ;;
+  reload)
+        reload
+    ;;
+  *)
+    echo $"Usage: $prog {start|stop|restart|reload|status}"
+    RETVAL=2
+esac
+
+exit $RETVAL

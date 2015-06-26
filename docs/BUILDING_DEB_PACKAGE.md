@@ -9,8 +9,8 @@ tar -xf "fastnetmon_$PACKAGE_VERSION.orig.tar.gz"
 mv fastnetmon-master "fastnetmon-$PACKAGE_VERSION"
 cd "fastnetmon-$PACKAGE_VERSION"
 # Create symlinks for init files for systev and systemd
-ln -s ../src/fastnetmon_init_script_debian_6_7 debian/fastnetmon.init
-ln -s ../src/fastnetmon.service debian/fastnetmon.service
+ln -s ../packages/fastnetmon_init_script_debian_6_7 debian/fastnetmon.init
+ln -s ../packages/fastnetmon.service debian/fastnetmon.service
 # We need this for Debian https://lintian.debian.org/tags/systemd-service-file-refers-to-obsolete-target.html
 # But RHEL7 still uses it
 sed -i 's/syslog.target //' src/fastnetmon.service

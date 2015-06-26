@@ -3,7 +3,7 @@ I recommend you to disable CPU freq scaling for gain max performance (max freque
 echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 ```
 
-You can use script [irq_balance_manually.sh](https://github.com/FastVPSEestiOu/fastnetmon/blob/master/src/irq_balance_manually.sh) for irq balancing on heavy loaded networks.
+You can use script [irq_balance_manually.sh](https://github.com/FastVPSEestiOu/fastnetmon/blob/master/tools/irq_balance_manually.sh) for irq balancing on heavy loaded networks.
 
 Running tool without root permissions:
 ```bash
@@ -70,7 +70,7 @@ ninja
 Ninja use all CPUs for build process:
 ```bash
 1  [||||||||||||||||||||||||||||||||||||||||||||||100.0%]     Tasks: 53, 103 thr, 64 kthr; 6 running
-2  [||||||||||||||||||||||||||||||||||||||||||||||100.0%]     Load average: 1.32 0.45 0.19 
+2  [||||||||||||||||||||||||||||||||||||||||||||||100.0%]     Load average: 1.32 0.45 0.19
 3  [||||||||||||||||||||||||||||||||||||||||||||||100.0%]     Uptime: 1 day, 12:58:40
 4  [||||||||||||||||||||||||||||||||||||||||||||||100.0%]
 ```
