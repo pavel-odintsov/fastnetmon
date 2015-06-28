@@ -49,6 +49,7 @@ struct pkt_parsing_info {
     u_int8_t ip_version;
     u_int8_t l3_proto, ip_tos; /* Layer 3 protocol/TOS */
     u_int8_t ip_fragmented; /* Layer 3 fragmentation flag */
+    u_int8_t ip_ttl; /* TTL flag */
     ip_addr ip_src, ip_dst; /* IPv4 src/dst IP addresses */
     u_int16_t l4_src_port, l4_dst_port; /* Layer 4 src/dst ports */
     struct {

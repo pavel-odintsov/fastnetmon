@@ -137,6 +137,7 @@ void consume_pkt(u_char* buffer, int len) {
     packet.ts = packet_header.ts;
 
     packet.ip_fragmented = packet_header.extended_hdr.parsed_pkt.ip_fragmented;
+    packet.ttl = packet_header.extended_hdr.parsed_pkt.ip_ttl;
 
     // Copy flags from PF_RING header to our pseudo header
     if (packet.protocol == IPPROTO_TCP) {
