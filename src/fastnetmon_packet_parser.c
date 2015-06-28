@@ -425,6 +425,8 @@ L3:
         // Very good examples about IPv4 flags: http://lwn.net/Articles/136319/
         hdr->extended_hdr.parsed_pkt.ip_fragmented = 0;
 
+        hdr->extended_hdr.parsed_pkt.ip_ttl = ip->ttl;
+
         int fast_frag_off = ntohs(ip->frag_off);
         int fast_offset = (fast_frag_off & IP_OFFSET);
 
