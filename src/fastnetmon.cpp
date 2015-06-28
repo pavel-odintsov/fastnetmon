@@ -2529,7 +2529,7 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element a
     if (file_exists(notify_script_path)) {
         std::string script_call_params = notify_script_path + " " + client_ip_as_string + " " +
                                          data_direction_as_string + " " + pps_as_string +
-                                         " attack_details";
+                                         " " + "ban";
         logger << log4cpp::Priority::INFO << "Call script for ban client: " << client_ip_as_string;
 
         // We should execute external script in separate thread because any lag in this code will be
@@ -2903,7 +2903,7 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
                    << "Call script for notify about attack details for: " << client_ip_as_string;
 
             std::string script_params = notify_script_path + " " + client_ip_as_string + " " +
-                                        attack_direction + " " + pps_as_string + " ban";
+                                        attack_direction + " " + pps_as_string + " attack_details";
 
             // We should execute external script in separate thread because any lag in this code
             // will be very distructive
