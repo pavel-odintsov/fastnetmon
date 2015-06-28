@@ -102,6 +102,8 @@ int main(int argc, char* argv[]) {
     }
 
 #ifdef DO_SUBNET_LOOKUP
+    lookup_tree = New_Patricia(32);
+
     std::vector<std::string> network_list_from_config = read_file_to_vector("/etc/networks_list");
     
     for (std::vector<std::string>::iterator ii = network_list_from_config.begin(); ii != network_list_from_config.end(); ++ii) {
