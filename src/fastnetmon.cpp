@@ -312,7 +312,6 @@ void execute_ip_ban(uint32_t client_ip,
                     map_element current_speed_element,
                     std::string flow_attack_details,
                     subnet_t client_subnet);
-direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet, unsigned int& subnet_cidr_mask);
 void recalculate_speed();
 std::string print_channel_speed(std::string traffic_type, direction packet_direction);
 void process_packet(simple_packet& current_packet);
@@ -361,30 +360,6 @@ class TrafficComparatorClass {
         }
     }
 };
-
-std::string get_direction_name(direction direction_value) {
-    std::string direction_name;
-
-    switch (direction_value) {
-    case INCOMING:
-        direction_name = "incoming";
-        break;
-    case OUTGOING:
-        direction_name = "outgoing";
-        break;
-    case INTERNAL:
-        direction_name = "internal";
-        break;
-    case OTHER:
-        direction_name = "other";
-        break;
-    default:
-        direction_name = "unknown";
-        break;
-    }
-
-    return direction_name;
-}
 
 void sigpipe_handler_for_popen(int signo) {
     logger << log4cpp::Priority::ERROR << "Sorry but we experienced error with popen. "
@@ -1211,7 +1186,7 @@ void process_packet(simple_packet& current_packet) {
     unsigned long subnet = 0;
     unsigned int subnet_cidr_mask = 0;
 
-    direction packet_direction = get_packet_direction(current_packet.src_ip, current_packet.dst_ip, subnet, subnet_cidr_mask);
+    direction packet_direction = get_packet_direction(lookup_tree, current_packet.src_ip, current_packet.dst_ip, subnet, subnet_cidr_mask);
 
     // Skip processing of specific traffic direction
     if ((packet_direction == INCOMING && !process_incoming_traffic) or
@@ -2243,63 +2218,6 @@ void interruption_signal_handler(int signal_number) {
 
     // TODO: we should REMOVE this exit command and wait for correct toolkit shutdown
     exit(1);
-}
-
-/* Get traffic type: check it belongs to our IPs */
-direction get_packet_direction(uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet, unsigned int& subnet_cidr_mask) {
-    direction packet_direction;
-
-    bool our_ip_is_destination = false;
-    bool our_ip_is_source = false;
-
-    prefix_t prefix_for_check_adreess;
-    prefix_for_check_adreess.family = AF_INET;
-    prefix_for_check_adreess.bitlen = 32;
-
-    patricia_node_t* found_patrica_node = NULL;
-    prefix_for_check_adreess.add.sin.s_addr = dst_ip;
-
-    unsigned long destination_subnet = 0;
-    unsigned int  destination_subnet_cidr_mask = 0;
-    found_patrica_node = patricia_search_best2(lookup_tree, &prefix_for_check_adreess, 1);
-
-    if (found_patrica_node) {
-        our_ip_is_destination = true;
-        destination_subnet = found_patrica_node->prefix->add.sin.s_addr;
-        destination_subnet_cidr_mask = found_patrica_node->prefix->bitlen;
-    }
-
-    found_patrica_node = NULL;
-    prefix_for_check_adreess.add.sin.s_addr = src_ip;
-
-    unsigned long source_subnet = 0;
-    unsigned int source_subnet_cidr_mask = 0;
-    found_patrica_node = patricia_search_best2(lookup_tree, &prefix_for_check_adreess, 1);
-
-    if (found_patrica_node) {
-        our_ip_is_source = true;
-        source_subnet = found_patrica_node->prefix->add.sin.s_addr;
-        source_subnet_cidr_mask = found_patrica_node->prefix->bitlen;
-    }
-
-    subnet = 0;
-    if (our_ip_is_source && our_ip_is_destination) {
-        packet_direction = INTERNAL;
-    } else if (our_ip_is_source) {
-        subnet = source_subnet;
-        subnet_cidr_mask = source_subnet_cidr_mask;
-
-        packet_direction = OUTGOING;
-    } else if (our_ip_is_destination) {
-        subnet = destination_subnet;
-        subnet_cidr_mask = destination_subnet_cidr_mask;
-
-        packet_direction = INCOMING;
-    } else {
-        packet_direction = OTHER;
-    }
-
-    return packet_direction;
 }
 
 unsigned int detect_attack_protocol(map_element& speed_element, direction attack_direction) {

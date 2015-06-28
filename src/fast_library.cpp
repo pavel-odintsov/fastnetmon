@@ -709,3 +709,83 @@ std::string print_ipv6_address(struct in6_addr& ipv6_address) {
     return result;
 }
 
+/* Get traffic type: check it belongs to our IPs */
+direction get_packet_direction(patricia_tree_t* lookup_tree, uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet, unsigned int& subnet_cidr_mask) {
+    direction packet_direction;
+
+    bool our_ip_is_destination = false;
+    bool our_ip_is_source = false;
+
+    prefix_t prefix_for_check_adreess;
+    prefix_for_check_adreess.family = AF_INET;
+    prefix_for_check_adreess.bitlen = 32;
+
+    patricia_node_t* found_patrica_node = NULL;
+    prefix_for_check_adreess.add.sin.s_addr = dst_ip;
+
+    unsigned long destination_subnet = 0;
+    unsigned int  destination_subnet_cidr_mask = 0;
+    found_patrica_node = patricia_search_best2(lookup_tree, &prefix_for_check_adreess, 1);
+
+    if (found_patrica_node) {
+        our_ip_is_destination = true;
+        destination_subnet = found_patrica_node->prefix->add.sin.s_addr;
+        destination_subnet_cidr_mask = found_patrica_node->prefix->bitlen;
+    }
+
+    found_patrica_node = NULL;
+    prefix_for_check_adreess.add.sin.s_addr = src_ip;
+
+    unsigned long source_subnet = 0;
+    unsigned int source_subnet_cidr_mask = 0;
+    found_patrica_node = patricia_search_best2(lookup_tree, &prefix_for_check_adreess, 1);
+
+    if (found_patrica_node) {
+        our_ip_is_source = true;
+        source_subnet = found_patrica_node->prefix->add.sin.s_addr;
+        source_subnet_cidr_mask = found_patrica_node->prefix->bitlen;
+    }
+
+    subnet = 0;
+    if (our_ip_is_source && our_ip_is_destination) {
+        packet_direction = INTERNAL;
+    } else if (our_ip_is_source) {
+        subnet = source_subnet;
+        subnet_cidr_mask = source_subnet_cidr_mask;
+
+        packet_direction = OUTGOING;
+    } else if (our_ip_is_destination) {
+        subnet = destination_subnet;
+        subnet_cidr_mask = destination_subnet_cidr_mask;
+
+        packet_direction = INCOMING;
+    } else {
+        packet_direction = OTHER;
+    }
+
+    return packet_direction;
+}
+
+std::string get_direction_name(direction direction_value) {
+    std::string direction_name;
+
+    switch (direction_value) {
+    case INCOMING:
+        direction_name = "incoming";
+        break;
+    case OUTGOING:
+        direction_name = "outgoing";
+        break;
+    case INTERNAL:
+        direction_name = "internal";
+        break;
+    case OTHER:
+        direction_name = "other";
+        break;
+    default:
+        direction_name = "unknown";
+        break;
+    }    
+
+    return direction_name;
+}
