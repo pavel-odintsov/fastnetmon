@@ -452,6 +452,9 @@ std::string print_simple_packet(simple_packet packet) {
     buffer << " ";
     buffer << "packets: " << packet.number_of_packets << " ";
     buffer << "size: " << packet.length << " bytes ";
+
+    // We should cast it to integer because otherwise it will be interpreted as char
+    buffer << "ttl: " << unsigned(packet.ttl) << " ";
     buffer << "sample ratio: " << packet.sample_ratio << " ";
 
     buffer << " \n";
