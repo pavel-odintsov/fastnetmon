@@ -98,6 +98,8 @@ std::map<std::string, std::string> configuration_map;
 // If customer uses ban_time smaller than this value we will use ban_time/2 as unban_iteration_sleep_time
 int unban_iteration_sleep_time = 60;
 
+bool unban_enabled = true;
+
 /* Configuration block, we must move it to configuration file  */
 #ifdef REDIS
 unsigned int redis_port = 6379;
@@ -165,7 +167,7 @@ bool DEBUG_DUMP_ALL_PACKETS = false;
 unsigned int check_period = 3;
 
 // Standard ban time in seconds for all attacks but you can tune this value
-int standard_ban_time = 1800;
+int global_ban_time = 1800;
 
 // We calc average pps/bps for this time
 double average_calculation_amount = 15;
@@ -691,7 +693,12 @@ bool load_configuration_file() {
     }
 
     if (configuration_map.count("ban_time") != 0) {
-        standard_ban_time = convert_string_to_integer(configuration_map["ban_time"]);
+        global_ban_time = convert_string_to_integer(configuration_map["ban_time"]);
+
+        // Completely disable unban option
+        if (global_ban_time == 0) {
+            unban_enabled = false;
+        }
     }
 
     if(configuration_map.count("graphite_prefix") != 0) {
@@ -2167,7 +2174,9 @@ int main(int argc, char** argv) {
     service_thread_group.add_thread(new boost::thread(recalculate_speed_thread_handler));
 
     // Run banlist cleaner thread
-    service_thread_group.add_thread(new boost::thread(cleanup_ban_list));
+    if (unban_enabled) {
+        service_thread_group.add_thread(new boost::thread(cleanup_ban_list));
+    }
 
 #ifdef PF_RING
     if (enable_data_collection_from_mirror) {
@@ -2456,7 +2465,7 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element a
     // Store ban time
     time(&current_attack.ban_timestamp);
     // set ban time in seconds
-    current_attack.ban_time = standard_ban_time;
+    current_attack.ban_time = global_ban_time;
 
     // Pass main information about attack
     current_attack.attack_direction = data_direction;
@@ -2634,17 +2643,16 @@ void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_st
 /* Thread for cleaning up ban list */
 void cleanup_ban_list() {
     // If we use very small ban time we should call ban_cleanup thread more often
-    if (unban_iteration_sleep_time > standard_ban_time) {
-        unban_iteration_sleep_time = int(standard_ban_time / 2);
+    if (unban_iteration_sleep_time > global_ban_time) {
+        unban_iteration_sleep_time = int(global_ban_time / 2);
 
-        logger << log4cpp::Priority::INFO << "You are using enough small ban time " << standard_ban_time
+        logger << log4cpp::Priority::INFO << "You are using enough small ban time " << global_ban_time
             << " we need reduce unban_iteration_sleep_time twices to " << unban_iteration_sleep_time << " seconds";
     }
 
     logger << log4cpp::Priority::INFO << "Run banlist cleanup thread, we will awake every " << unban_iteration_sleep_time << " seconds";
 
     while (true) {
-        // Sleep for ten minutes
         boost::this_thread::sleep(boost::posix_time::seconds(unban_iteration_sleep_time));
 
         time_t current_time;
@@ -2660,7 +2668,7 @@ void cleanup_ban_list() {
             // By default we assume 'attack finished'  
             bool attack_finished = true;
 
-            if (unban_only_if_attack_finished && time_difference > ban_time) {
+            if (unban_only_if_attack_finished && ban_time != 0 && time_difference > ban_time) {
                 std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
                 uint32_t subnet_in_host_byte_order = ntohl((*itr).second.customer_network.first); 
                 int64_t shift_in_vector = (int64_t)ntohl(client_ip) - (int64_t)subnet_in_host_byte_order;
@@ -2681,7 +2689,7 @@ void cleanup_ban_list() {
                 map_element* average_speed_element = &itr_average_speed->second[shift_in_vector];  
 
                 if (we_should_ban_this_ip(average_speed_element)) {
-                    logger << log4cpp::Priority::ERROR << "Attack to IP" << client_ip_as_string
+                    logger << log4cpp::Priority::ERROR << "Attack to IP " << client_ip_as_string
                         << " still going! We should not unblock this host";
                     attack_finished = false;
                 }
@@ -2690,7 +2698,7 @@ void cleanup_ban_list() {
             // Zero value for ban_time means "no unban feature"
             if (ban_time != 0 && time_difference > ban_time && attack_finished) {
                 // Cleanup all data related with this attack
-                    attack_finished = false;
+
                 std::string data_direction_as_string = get_direction_name((*itr).second.attack_direction);
                 std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
                 std::string pps_as_string = convert_int_to_string((*itr).second.attack_power);
