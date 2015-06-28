@@ -67,7 +67,8 @@ int main(int argc, char* argv[]) {
     }
 
     // Required by Netmap and PF_RING plugins
-    configuration_map["interfaces"] = "eth0";
+    // We use fake interface name here because netmap could make server unreachable :)
+    configuration_map["interfaces"] = "ethXXX";
 
     if (strstr(argv[1], "sflow") != NULL) {
         std::cout << "Starting sflow" << std::endl;
