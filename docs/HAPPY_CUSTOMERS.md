@@ -1,0 +1,5 @@
+### Hello! Here you could find happy tool customers!
+
+- FastVPS EEsti OU
+
+Do not hesitate to add your company! Pull requests with new companies! :) 
