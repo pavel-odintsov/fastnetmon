@@ -334,7 +334,7 @@ void start_netmap_collection(process_packet_pointer func_ptr) {
     logger << log4cpp::Priority::INFO << "Netmap plugin started";
     netmap_process_func_ptr = func_ptr;
 
-    u_int num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+    num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
     logger.info("We have %d cpus", num_cpus);
 
     std::string interfaces_list = "";
