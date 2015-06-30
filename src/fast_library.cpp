@@ -4,13 +4,24 @@
 #include <arpa/inet.h>
 #include <stdlib.h> // atoi
 #include <netinet/in.h>
+#include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <netdb.h>
-
+#include <net/if.h>
+#include <sys/socket.h>
 #include <fstream>
 #include <iostream>
+
+#include "log4cpp/Category.hh"
+#include "log4cpp/Appender.hh"
+#include "log4cpp/FileAppender.hh"
+#include "log4cpp/OstreamAppender.hh"
+#include "log4cpp/Layout.hh"
+#include "log4cpp/BasicLayout.hh"
+#include "log4cpp/PatternLayout.hh"
+#include "log4cpp/Priority.hh"
 
 #if defined(__APPLE__)
 #include <libkern/OSByteOrder.h>
@@ -789,3 +800,69 @@ std::string get_direction_name(direction direction_value) {
 
     return direction_name;
 }
+
+// We haven't this code for FreeBSD yet
+#ifdef __linux__
+bool manage_interface_promisc_mode(std::string interface_name, bool switch_on) {
+    extern log4cpp::Category& logger;
+
+    // We need really any socket for ioctl
+    int fd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+    if (!fd) {
+        logger << log4cpp::Priority::ERROR << "Can't create socket for promisc mode manager";
+        return false;
+    }
+
+    struct ifreq ethreq;    
+    memset(&ethreq, 0, sizeof(ethreq));
+    strncpy(ethreq.ifr_name, interface_name.c_str(), IFNAMSIZ);
+
+    int ioctl_res = ioctl(fd, SIOCGIFFLAGS, &ethreq);
+
+    if (ioctl_res == -1) {
+        logger << log4cpp::Priority::ERROR << "Can't get interface flags";
+        return false;
+    }
+ 
+    bool promisc_enabled_on_device = ethreq.ifr_flags & IFF_PROMISC;
+
+    if (switch_on) {
+        if (promisc_enabled_on_device) {
+            logger << log4cpp::Priority::INFO << "Interface " << interface_name << " in promisc mode already";
+            return true;
+        } else {
+             logger << log4cpp::Priority::INFO << "Interface in non promisc mode now, switch it on";
+             ethreq.ifr_flags |= IFF_PROMISC;
+             
+             int ioctl_res_set = ioctl(fd, SIOCSIFFLAGS, &ethreq);
+
+             if (ioctl_res_set == -1) {
+                 logger << log4cpp::Priority::ERROR << "Can't set interface flags";
+                 return false;
+             }
+
+             return true;
+        }
+    } else { 
+        if (!promisc_enabled_on_device) {
+            logger << log4cpp::Priority::INFO << "Interface " << interface_name << " in normal mode already";
+            return true;
+        } else {
+            logger << log4cpp::Priority::INFO << "Interface in  promisc mode now, switch it off";
+
+            ethreq.ifr_flags &= ~IFF_PROMISC;
+            int ioctl_res_set = ioctl(fd, SIOCSIFFLAGS, &ethreq);
+ 
+            if (ioctl_res_set == -1) {
+                logger << log4cpp::Priority::ERROR << "Can't set interface flags";
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+}
+
+#endif

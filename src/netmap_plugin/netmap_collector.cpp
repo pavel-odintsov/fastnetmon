@@ -163,12 +163,22 @@ void receiver(std::string interface_for_listening) {
     base_nmd.nr_tx_slots = base_nmd.nr_rx_slots = 0;
 
     std::string interface = "";
+    std::string system_interface_name = "";
     // If we haven't netmap: prefix in interface name we will append it
     if (interface_for_listening.find("netmap:") == std::string::npos) {
+        system_interface_name = interface_for_listening;
+
         interface = "netmap:" + interface_for_listening;
     } else {
+        // We should skip netmap prefix
+        system_interface_name = boost::replace_all_copy(interface_for_listening, "netmap:", "");
+
         interface = interface_for_listening;
     }
+
+#ifdef __linux__
+    manage_interface_promisc_mode(system_interface_name, true); 
+#endif
 
     netmap_descriptor = nm_open(interface.c_str(), &base_nmd, 0, NULL);
 
