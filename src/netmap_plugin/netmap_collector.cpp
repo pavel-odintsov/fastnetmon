@@ -52,7 +52,7 @@ uint32_t netmap_sampling_ratio = 1;
 
 /* prototypes */
 void netmap_thread(struct nm_desc* netmap_descriptor, int netmap_thread);
-void consume_pkt(u_char* buffer, int len);
+void consume_pkt(u_char* buffer, int len, int thread_number);
 
 // Get log4cpp logger from main programm
 extern log4cpp::Category& logger;
@@ -70,7 +70,7 @@ process_packet_pointer netmap_process_func_ptr = NULL;
 
 bool execute_strict_cpu_affinity = true;
 
-int receive_packets(struct netmap_ring* ring) {
+int receive_packets(struct netmap_ring* ring, int thread_number) {
     u_int cur, rx, n;
 
     cur = ring->cur;
@@ -81,7 +81,7 @@ int receive_packets(struct netmap_ring* ring) {
         char* p = NETMAP_BUF(ring, slot->buf_idx);
 
         // process data
-        consume_pkt((u_char*)p, slot->len);
+        consume_pkt((u_char*)p, slot->len, thread_number);
 
         cur = nm_ring_next(ring, cur);
     }
@@ -90,7 +90,7 @@ int receive_packets(struct netmap_ring* ring) {
     return (rx);
 }
 
-void consume_pkt(u_char* buffer, int len) {
+void consume_pkt(u_char* buffer, int len, int thread_number) {
     struct pfring_pkthdr packet_header;
     memset(&packet_header, 0, sizeof(packet_header));
     packet_header.len = len;
@@ -319,7 +319,7 @@ void netmap_thread(struct nm_desc* netmap_descriptor, int thread_number) {
                 continue;
             }
 
-            receive_packets(rxring);
+            receive_packets(rxring, thread_number);
         }
 
         // TODO: this code could add performance degradation
