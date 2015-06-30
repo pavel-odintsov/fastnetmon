@@ -63,6 +63,8 @@ extern uint64_t total_unparsed_packets;
 // Global configuration map
 extern std::map<std::string, std::string> configuration_map;
 
+u_int num_cpus = 0;
+
 // This variable name should be uniq for every plugin!
 process_packet_pointer netmap_process_func_ptr = NULL;
 
@@ -151,9 +153,6 @@ void consume_pkt(u_char* buffer, int len) {
 
 void receiver(std::string interface_for_listening) {
     struct nm_desc* netmap_descriptor;
-
-    u_int num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
-    logger.info("We have %d cpus", num_cpus);
 
     struct nmreq base_nmd;
     bzero(&base_nmd, sizeof(base_nmd));
@@ -334,6 +333,9 @@ void netmap_thread(struct nm_desc* netmap_descriptor, int thread_number) {
 void start_netmap_collection(process_packet_pointer func_ptr) {
     logger << log4cpp::Priority::INFO << "Netmap plugin started";
     netmap_process_func_ptr = func_ptr;
+
+    u_int num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+    logger.info("We have %d cpus", num_cpus);
 
     std::string interfaces_list = "";
 
