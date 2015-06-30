@@ -92,4 +92,8 @@ std::string find_subnet_by_ip_in_string_format(patricia_tree_t* patricia_tree, s
 std::string convert_subnet_to_string(subnet_t my_subnet);
 std::string get_direction_name(direction direction_value);
 
+#ifdef __linux__
+bool manage_interface_promisc_mode(std::string interface_name, bool switch_on);
+#endif
+
 #endif
