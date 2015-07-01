@@ -50,6 +50,9 @@ extern std::map<std::string, std::string> configuration_map;
 // Sampling rate for all netflow agents
 unsigned int sampling_rate = 1;
 
+std::string netflow_plugin_name = "netflow";
+std::string netflow_plugin_log_prefix = netflow_plugin_name + ": ";
+
 // Divide packets and bytes counters from the flow by interval length for more 'smoother' data
 bool netflow_divide_counters_on_interval_length = false;
 
@@ -1095,12 +1098,10 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
     netflow_process_func_ptr = func_ptr;
     // By default we listen on IPv4
     std::string netflow_host = "0.0.0.0";
-    unsigned int netflow_port = 2055;
+    std::string netflow_ports = "";
 
-    start_netflow_collector(netflow_host, netflow_port);
-    
     if (configuration_map.count("netflow_port") != 0) {
-        netflow_port = convert_string_to_integer(configuration_map["netflow_port"]);
+        netflow_ports = configuration_map["netflow_port"];
     }
 
     if (configuration_map.count("netflow_host") != 0) {
@@ -1123,8 +1124,22 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
         lua_hooks_path = configuration_map["netflow_lua_hooks_path"];
     }
 #endif
+
+    boost::thread_group netflow_collector_threads;
     
-    start_netflow_collector(netflow_host, netflow_port);   
+    std::vector<std::string> ports_for_listen;
+    boost::split(ports_for_listen, netflow_ports, boost::is_any_of(","), boost::token_compress_on);
+
+    logger << log4cpp::Priority::INFO << netflow_plugin_log_prefix << "We will listen on " << ports_for_listen.size() << " ports";
+
+    for (std::vector<std::string>::iterator port = ports_for_listen.begin(); port != ports_for_listen.end(); ++port) {
+        netflow_collector_threads.add_thread( new boost::thread(start_netflow_collector,
+            netflow_host,
+            convert_string_to_integer(*port)
+        ));
+    }
+
+    netflow_collector_threads.join_all(); 
 }
     
 void start_netflow_collector(std::string netflow_host, unsigned int netflow_port) {
