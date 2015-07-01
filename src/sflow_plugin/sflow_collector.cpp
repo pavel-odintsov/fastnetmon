@@ -64,7 +64,7 @@ void start_sflow_collector(std::string interface_for_binding, unsigned int sflow
 
 void start_sflow_collection(process_packet_pointer func_ptr) {
     std::string interface_for_binding = "0.0.0.0";
-    unsigned int sflow_port = 6343;
+    std::string sflow_ports = "";
 
     logger << log4cpp::Priority::INFO << plugin_log_prefix << "plugin started";
     // prctl(PR_SET_NAME,"fastnetmon_sflow", 0, 0, 0);
@@ -72,14 +72,28 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
     sflow_process_func_ptr = func_ptr;
 
     if (configuration_map.count("sflow_port") != 0) {
-        sflow_port = convert_string_to_integer(configuration_map["sflow_port"]);
+        sflow_ports = configuration_map["sflow_port"];
     }
 
     if (configuration_map.count("sflow_host") != 0) {
         interface_for_binding = configuration_map["sflow_host"];
     }
-   
-    start_sflow_collector(interface_for_binding, sflow_port);
+  
+    boost::thread_group sflow_collector_threads;
+
+    std::vector<std::string> ports_for_listen;    
+    boost::split(ports_for_listen, sflow_ports, boost::is_any_of(","), boost::token_compress_on);
+
+    logger << log4cpp::Priority::INFO << plugin_log_prefix << "We will listen on " << ports_for_listen.size() << " ports";
+
+    for (std::vector<std::string>::iterator port = ports_for_listen.begin(); port != ports_for_listen.end(); ++port) {
+        sflow_collector_threads.add_thread( new  boost::thread(start_sflow_collector,
+            interface_for_binding,
+            convert_string_to_integer(*port)
+        ));
+    }
+
+    sflow_collector_threads.join_all();
 }
 
 void start_sflow_collector(std::string interface_for_binding, unsigned int sflow_port) {
