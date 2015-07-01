@@ -59,12 +59,17 @@ void print_simple_packet(struct simple_packet& packet);
 process_packet_pointer sflow_process_func_ptr = NULL;
 
 // #include <sys/prctl.h>
-unsigned int sflow_port = 6343;
+
+void start_sflow_collector(std::string interface_for_binding, unsigned int sflow_port);
+
 void start_sflow_collection(process_packet_pointer func_ptr) {
+    std::string interface_for_binding = "0.0.0.0";
+    unsigned int sflow_port = 6343;
+
     logger << log4cpp::Priority::INFO << plugin_log_prefix << "plugin started";
     // prctl(PR_SET_NAME,"fastnetmon_sflow", 0, 0, 0);
 
-    std::string interface_for_binding = "0.0.0.0";
+    sflow_process_func_ptr = func_ptr;
 
     if (configuration_map.count("sflow_port") != 0) {
         sflow_port = convert_string_to_integer(configuration_map["sflow_port"]);
@@ -73,11 +78,14 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
     if (configuration_map.count("sflow_host") != 0) {
         interface_for_binding = configuration_map["sflow_host"];
     }
+   
+    start_sflow_collector(interface_for_binding, sflow_port);
+}
+
+void start_sflow_collector(std::string interface_for_binding, unsigned int sflow_port) {
 
     logger << log4cpp::Priority::INFO << plugin_log_prefix << "plugin will listen on " << interface_for_binding
            << ":" << sflow_port << " udp port";
-
-    sflow_process_func_ptr = func_ptr;
 
     unsigned int udp_buffer_size = 65536;
     char udp_buffer[udp_buffer_size];
