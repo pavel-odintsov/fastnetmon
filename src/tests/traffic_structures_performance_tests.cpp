@@ -7,10 +7,16 @@
 #include <iomanip> 
 #include <locale.h>
 #include <vector>
+#include <functional>
 
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/unordered_map.hpp>
+
+#include <boost/container/flat_map.hpp>
+
+#include <boost/pool/pool_alloc.hpp>
+#include <boost/pool/singleton_pool.hpp>
 
 #include "../fastnetmon_types.h"
 
@@ -24,13 +30,18 @@
 #include "tbb/concurrent_unordered_map.h"
 #endif
 
+// No speed benefits
+// std::map<uint32_t, map_element, std::less<uint32_t>, boost::fast_pool_allocator<std::pair<const uint32_t, map_element>>
 std::map<uint32_t, map_element> DataCounter;
 boost::mutex data_counter_mutex;
 
 std::unordered_map<uint32_t, map_element> DataCounterUnordered;
+
 std::unordered_map<uint32_t, map_element> DataCounterUnorderedPreallocated;
 
 boost::unordered_map<uint32_t, map_element> DataCounterBoostUnordered;
+
+boost::container::flat_map<uint32_t, map_element> DataCounterBoostFlatMap;
 
 #ifndef __APPLE__
 tbb::concurrent_unordered_map<uint32_t, map_element> DataCounterUnorderedConcurrent;
@@ -105,6 +116,19 @@ void packet_collector_thread_unordered_map_preallocated() {
     }   
 }
 
+void packet_collector_thread_flat_map_preallocated() {
+    for (int iteration = 0; iteration < number_of_retries; iteration++) {
+        for (uint32_t i = 0; i < number_of_ips; i++) {
+#ifdef enable_mutexex_in_test
+            data_counter_mutex.lock();
+#endif
+            DataCounterBoostFlatMap[i].udp_in_bytes++;
+#ifdef enable_mutexex_in_test
+            data_counter_mutex.unlock();
+#endif
+        }   
+    }   
+}
 
 void packet_collector_thread_vector() {
     for (int iteration = 0; iteration < number_of_retries; iteration++) {
@@ -210,13 +234,19 @@ int main() {
     run_tests(packet_collector_thread_boost_unordered_map);
     DataCounterBoostUnordered.clear();
 
+    // Boost flat_map
+    DataCounterBoostFlatMap.reserve( number_of_ips );
+    std::cout << "std::container::flat_map with preallocated elements: ";
+    run_tests(packet_collector_thread_flat_map_preallocated);
+    DataCounterBoostFlatMap.clear();
+
     std::cout << "std::unordered_map C++11: ";
     run_tests(packet_collector_thread_unordered_map);
     DataCounterUnordered.clear();
 
     // Preallocate hash buckets
     DataCounterUnorderedPreallocated.reserve( number_of_ips );
-    std::cout << "std::unordered_map C++11 preallocated: ";
+    std::cout << "std::unordered_map C++11 preallocated buckets: ";
     run_tests(packet_collector_thread_unordered_map_preallocated);
     DataCounterUnorderedPreallocated.clear();
 
