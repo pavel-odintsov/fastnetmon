@@ -236,7 +236,7 @@ int main() {
 
     // Boost flat_map
     DataCounterBoostFlatMap.reserve( number_of_ips );
-    std::cout << "std::container::flat_map with preallocated elements: ";
+    std::cout << "boost::container::flat_map with preallocated elements: ";
     run_tests(packet_collector_thread_flat_map_preallocated);
     DataCounterBoostFlatMap.clear();
 
