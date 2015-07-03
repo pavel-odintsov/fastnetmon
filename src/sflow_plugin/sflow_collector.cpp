@@ -119,7 +119,7 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
   
 #ifdef ENABLE_LUA_HOOKS
     if (sflow_lua_hooks_enabled) {
-        sflow_lua_state = init_lua_jit();
+        sflow_lua_state = init_lua_jit(sflow_lua_hooks_path);
 
         if (sflow_lua_state == NULL) {
             sflow_lua_hooks_enabled = false;
