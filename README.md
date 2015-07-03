@@ -39,7 +39,7 @@ Features:
 - Could [announce blocked IPs](docs/EXABGP_INTEGRATION.md) to BGP router with [ExaBGP](https://github.com/Exa-Networks/exabgp)
 - Have integration with [Graphite](docs/GRAPHITE_INTEGRATION.md)
 - netmap support (open source; wire speed processing; only Intel hardware NICs or any hypervisor VM type)
-- Could filter out NetFLOW v5 flows with script implemented in LUA (useful for port exclude)
+- Could filter out NetFLOW v5 flows or sFLOW packets with script implemented in LUA (useful for port exclude)
 - Supports L2TP decapsulation, VLAN untagging and MPLS processing in mirror mode 
 - Can work on server/soft-router
 - Can detect DoS/DDoS in 1-2 seconds

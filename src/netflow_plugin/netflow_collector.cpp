@@ -36,8 +36,6 @@ lua_State* netflow_lua_state = NULL;
 
 bool lua_hooks_enabled = true;
 std::string lua_hooks_path = "/usr/src/fastnetmon/src/netflow_hooks.lua";
-
-bool call_netflow_process_lua_hook(lua_State* lua_state_param, std::string client_addres_in_string_format, struct NF5_FLOW* flow);
 #endif
 
 // Get it from main programm
@@ -1084,6 +1082,12 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
     logger << log4cpp::Priority::INFO << netflow_plugin_log_prefix << "We will listen on " << ports_for_listen.size() << " ports";
 
     for (std::vector<std::string>::iterator port = ports_for_listen.begin(); port != ports_for_listen.end(); ++port) {
+        unsigned int netflow_port = convert_string_to_integer(*port);
+        
+        if (netflow_port == 0) {
+            netflow_port = 2055;
+        }
+
         netflow_collector_threads.add_thread( new boost::thread(start_netflow_collector,
             netflow_host,
             convert_string_to_integer(*port)
