@@ -1064,7 +1064,7 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
 
 #ifdef ENABLE_LUA_HOOKS
     if (lua_hooks_enabled) {
-        netflow_lua_state = init_lua_jit();
+        netflow_lua_state = init_lua_jit(lua_hooks_path);
 
         if (netflow_lua_state == NULL) {
             lua_hooks_enabled = false;

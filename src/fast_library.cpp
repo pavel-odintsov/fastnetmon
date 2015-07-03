@@ -870,7 +870,7 @@ bool manage_interface_promisc_mode(std::string interface_name, bool switch_on) {
 }
 
 #ifdef ENABLE_LUA_HOOKS
-lua_State* init_lua_jit() {
+lua_State* init_lua_jit(std::string lua_hooks_path) {
     extern log4cpp::Category& logger;
 
     lua_State* lua_state = luaL_newstate();
