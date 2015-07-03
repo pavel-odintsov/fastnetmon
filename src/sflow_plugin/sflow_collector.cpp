@@ -35,17 +35,12 @@
 #include "log4cpp/Priority.hh"
 
 #ifdef ENABLE_LUA_HOOKS
-#include <luajit-2.0/lua.hpp>
-#endif
+lua_State* sflow_lua_state = NULL;
 
-#ifdef ENABLE_LUA_HOOKS
-lua_State* lua_state = NULL;
-
-bool lua_hooks_enabled = true;
-std::string lua_hooks_path = "/usr/src/fastnetmon/src/sflow_hooks.lua";
+bool sflow_lua_hooks_enabled = true;
+std::string sflow_lua_hooks_path = "/usr/src/fastnetmon/src/sflow_hooks.lua";
 
 bool call_sflow_process_lua_hook(lua_State* lua_state_param, std::string client_addres_in_string_format, struct NF5_FLOW* flow);
-void init_lua_jit();
 #endif
 
 // sFLOW v4 specification: http://www.sflow.org/rfc3176.txt
@@ -77,33 +72,7 @@ process_packet_pointer sflow_process_func_ptr = NULL;
 void start_sflow_collector(std::string interface_for_binding, unsigned int sflow_port);
 
 #ifdef ENABLE_LUA_HOOKS
-void init_lua_jit() {
-    if (lua_hooks_enabled) {
-        lua_state = luaL_newstate();
-
-        if (lua_state == NULL) {
-            logger << log4cpp::Priority::ERROR << "Can't create LUA session";
-
-            lua_hooks_enabled = false;
-            return;
-        }
-
-         // load libraries
-        luaL_openlibs(lua_state);
-
-        int lua_load_file_result = luaL_dofile(lua_state, lua_hooks_path.c_str());
-
-        if (lua_load_file_result != 0) {
-            logger << log4cpp::Priority::ERROR << "LuaJIT can't load file correctly from path: " << lua_hooks_path
-                << " disable LUA support";
-
-            lua_hooks_enabled = false;
-            return;
-        }
-    }
-}
-
-bool call_sflow_process_lua_hook(lua_State* lua_state_param, std::string client_addres_in_string_format, struct SFSample* flow) {
+bool call_sflow_process_lua_hook(lua_State* lua_state_param, std::string client_addres_in_string_format, SFSample* flow) {
     /* Function name */
     lua_getfield(lua_state_param, LUA_GLOBALSINDEX, "process_sflow");
     
@@ -149,7 +118,13 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
     }
   
 #ifdef ENABLE_LUA_HOOKS
-    init_lua_jit();
+    if (sflow_lua_hooks_enabled) {
+        sflow_lua_state = init_lua_jit();
+
+        if (sflow_lua_state == NULL) {
+            sflow_lua_hooks_enabled = false;
+        }
+    }
 #endif
 
     boost::thread_group sflow_collector_threads;

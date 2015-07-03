@@ -482,7 +482,11 @@ std::string convert_timeval_to_date(struct timeval tv) {
 
     strftime(tmbuf, sizeof(tmbuf), "%Y-%m-%d %H:%M:%S", nowtm);
 
+#if defined(__APPLE__)
+    snprintf(buf, sizeof(buf), "%s.%06d", tmbuf, tv.tv_usec);
+#else
     snprintf(buf, sizeof(buf), "%s.%06ld", tmbuf, tv.tv_usec);
+#endif
 
     return std::string(buf);
 }
@@ -864,5 +868,34 @@ bool manage_interface_promisc_mode(std::string interface_name, bool switch_on) {
     }
 
 }
+
+#ifdef ENABLE_LUA_HOOKS
+lua_State* init_lua_jit() {
+    extern log4cpp::Category& logger;
+
+    lua_State* lua_state = luaL_newstate();
+
+    if (lua_state == NULL) {
+        logger << log4cpp::Priority::ERROR << "Can't create LUA session";
+
+        return NULL;
+    }    
+
+     // load libraries
+    luaL_openlibs(lua_state);
+
+    int lua_load_file_result = luaL_dofile(lua_state, lua_hooks_path.c_str());
+
+    if (lua_load_file_result != 0) { 
+        logger << log4cpp::Priority::ERROR << "LuaJIT can't load file correctly from path: " << lua_hooks_path
+            << " disable LUA support";
+
+        return NULL;
+    }    
+
+    return lua_state;
+}
+
+#endif
 
 #endif

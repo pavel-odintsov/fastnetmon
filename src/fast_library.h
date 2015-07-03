@@ -22,6 +22,10 @@
 
 #include "libpatricia/patricia.h"
 
+#ifdef ENABLE_LUA_HOOKS
+#include <luajit-2.0/lua.hpp>
+#endif
+
 #define TCP_FIN_FLAG_SHIFT 1
 #define TCP_SYN_FLAG_SHIFT 2
 #define TCP_RST_FLAG_SHIFT 3
@@ -94,6 +98,10 @@ std::string get_direction_name(direction direction_value);
 
 #ifdef __linux__
 bool manage_interface_promisc_mode(std::string interface_name, bool switch_on);
+#endif
+
+#ifdef ENABLE_LUA_HOOKS
+lua_State* init_lua_jit();
 #endif
 
 #endif
