@@ -994,7 +994,7 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len, std::string client_a
             //    init_lua_jit();
             //}
 
-            if (call_netflow_process_lua_hook(netflow_lua_state, client_addres_in_string_format, nf5_flow)) {
+            if (call_lua_function("process_netflow", netflow_lua_state, client_addres_in_string_format, (void*)nf5_flow)) {
                 // We will process this packet
             } else {
                 logger << log4cpp::Priority::INFO << "We will drop this packets because LUA script decided to do it";
@@ -1027,34 +1027,6 @@ void process_netflow_packet(u_int8_t* packet, u_int len, std::string client_addr
         break;
     }
 }
-
-#ifdef ENABLE_LUA_HOOKS
-bool call_netflow_process_lua_hook(lua_State* lua_state_param, std::string client_addres_in_string_format, struct NF5_FLOW* flow) {
-    /* Function name */
-    lua_getfield(lua_state_param, LUA_GLOBALSINDEX, "process_netflow");
-    
-    /* Function params */
-    lua_pushstring(lua_state_param, client_addres_in_string_format.c_str());
-    lua_pushlightuserdata(lua_state_param, (void*)flow);
-    
-    // Call with 1 argumnents and 1 result
-    lua_call(lua_state_param, 2, 1);
-    
-    if (lua_gettop(lua_state_param) == 1) {
-        bool result = lua_toboolean(lua_state_param, -1) == 1 ? true : false;
-
-        // pop returned value
-        lua_pop(lua_state_param, 1);
-
-        return result;
-    } else {
-        logger << log4cpp::Priority::ERROR << "We got " << lua_gettop(lua_state_param) << " return values from the LUA, it's error, please check your LUA code";
-        return false;
-    }
-
-    return false;
-}
-#endif
 
 void start_netflow_collector(std::string netflow_host, unsigned int netflow_port);
 

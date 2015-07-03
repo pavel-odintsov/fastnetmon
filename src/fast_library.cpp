@@ -896,6 +896,31 @@ lua_State* init_lua_jit(std::string lua_hooks_path) {
     return lua_state;
 }
 
+bool call_lua_function(std::string function_name, lua_State* lua_state_param, std::string client_addres_in_string_format, void* ptr) { 
+    /* Function name */
+    lua_getfield(lua_state_param, LUA_GLOBALSINDEX, function_name.c_str());
+    
+    /* Function params */
+    lua_pushstring(lua_state_param, client_addres_in_string_format.c_str());
+    lua_pushlightuserdata(lua_state_param, (void*)flow);
+    
+    // Call with 1 argumnents and 1 result
+    lua_call(lua_state_param, 2, 1);
+    
+    if (lua_gettop(lua_state_param) == 1) { 
+        bool result = lua_toboolean(lua_state_param, -1) == 1 ? true : false;
+
+        // pop returned value
+        lua_pop(lua_state_param, 1);
+
+        return result;
+    } else {
+        logger << log4cpp::Priority::ERROR << "We got " << lua_gettop(lua_state_param) << " return values from the LUA, it's error, please check your LUA code";
+        return false;
+    }    
+
+    return false;
+}
 #endif
 
 #endif
