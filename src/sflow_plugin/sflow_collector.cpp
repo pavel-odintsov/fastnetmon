@@ -39,8 +39,6 @@ lua_State* sflow_lua_state = NULL;
 
 bool sflow_lua_hooks_enabled = true;
 std::string sflow_lua_hooks_path = "/usr/src/fastnetmon/src/sflow_hooks.lua";
-
-bool call_sflow_process_lua_hook(lua_State* lua_state_param, std::string client_addres_in_string_format, struct NF5_FLOW* flow);
 #endif
 
 // sFLOW v4 specification: http://www.sflow.org/rfc3176.txt
@@ -71,35 +69,6 @@ process_packet_pointer sflow_process_func_ptr = NULL;
 
 void start_sflow_collector(std::string interface_for_binding, unsigned int sflow_port);
 
-#ifdef ENABLE_LUA_HOOKS
-bool call_sflow_process_lua_hook(lua_State* lua_state_param, std::string client_addres_in_string_format, SFSample* flow) {
-    /* Function name */
-    lua_getfield(lua_state_param, LUA_GLOBALSINDEX, "process_sflow");
-    
-    /* Function params */
-    lua_pushstring(lua_state_param, client_addres_in_string_format.c_str());
-    lua_pushlightuserdata(lua_state_param, (void*)flow);
-    
-    // Call with 1 argumnents and 1 result
-    lua_call(lua_state_param, 2, 1);
-    
-    if (lua_gettop(lua_state_param) == 1) {
-        bool result = lua_toboolean(lua_state_param, -1) == 1 ? true : false;
-
-        // pop returned value
-        lua_pop(lua_state_param, 1);
-
-        return result;
-    } else {
-        logger << log4cpp::Priority::ERROR << "We got " << lua_gettop(lua_state_param) << " return values from the LUA, it's error, please check your LUA code";
-        return false;
-    }
-
-    return false;
-}
-#endif
-
-
 void start_sflow_collection(process_packet_pointer func_ptr) {
     std::string interface_for_binding = "0.0.0.0";
     std::string sflow_ports = "";
@@ -116,6 +85,12 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
     if (configuration_map.count("sflow_host") != 0) {
         interface_for_binding = configuration_map["sflow_host"];
     }
+
+#ifdef ENABLE_LUA_HOOKS
+    if (configuration_map.count("sflow_lua_hooks_path") != 0) {
+        sflow_lua_hooks_path = configuration_map["sflow_lua_hooks_path"];
+    }
+#endif
   
 #ifdef ENABLE_LUA_HOOKS
     if (sflow_lua_hooks_enabled) {
@@ -135,9 +110,15 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
     logger << log4cpp::Priority::INFO << plugin_log_prefix << "We will listen on " << ports_for_listen.size() << " ports";
 
     for (std::vector<std::string>::iterator port = ports_for_listen.begin(); port != ports_for_listen.end(); ++port) {
+        unsigned int sflow_port = convert_string_to_integer(*port); 
+
+        if (sflow_port == 0) {
+            sflow_port = 6343;
+        }
+
         sflow_collector_threads.add_thread( new  boost::thread(start_sflow_collector,
             interface_for_binding,
-            convert_string_to_integer(*port)
+            sflow_port
         ));
     }
 
@@ -753,11 +734,31 @@ void decodeIPLayer4(SFSample* sample, uint8_t* ptr) {
         break;
     }
 
+#ifdef ENABLE_LUA_HOOKS
+    //sample->inputPort  = fast_ntoh(sample->inputPort);
+    //sample->outputPort = fast_ntoh(sample->outputPort);
+
+    if (sflow_lua_hooks_enabled) {
+        // This code could be used only for tests with pcap_reader
+        if (sflow_lua_state == NULL) {
+            sflow_lua_state = init_lua_jit(sflow_lua_hooks_path); 
+        }  
+
+        if (call_lua_function("process_sflow", sflow_lua_state,
+            convert_ip_as_uint_to_string(sample->sourceIP.address.ip_v4.addr), (void*)sample)) {
+            // We will process this packet
+        } else {
+            logger << log4cpp::Priority::INFO << "We will drop this packets because LUA script decided to do it";
+            return;
+        }    
+    }    
+#endif
+
     // Call external handler function
     sflow_process_func_ptr(current_packet);
 }
 
-void decode_ipv6_protocol(SFSample* sample){ 
+void decode_ipv6_protocol(SFSample* sample) { 
     uint8_t *ptr = sample->header + sample->offsetToIPV6;   
     uint8_t *end = sample->header + sample->headerLen;
 

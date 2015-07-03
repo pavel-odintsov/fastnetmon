@@ -896,13 +896,15 @@ lua_State* init_lua_jit(std::string lua_hooks_path) {
     return lua_state;
 }
 
-bool call_lua_function(std::string function_name, lua_State* lua_state_param, std::string client_addres_in_string_format, void* ptr) { 
+bool call_lua_function(std::string function_name, lua_State* lua_state_param, std::string client_addres_in_string_format, void* ptr) {
+    extern log4cpp::Category& logger;
+ 
     /* Function name */
     lua_getfield(lua_state_param, LUA_GLOBALSINDEX, function_name.c_str());
     
     /* Function params */
     lua_pushstring(lua_state_param, client_addres_in_string_format.c_str());
-    lua_pushlightuserdata(lua_state_param, (void*)flow);
+    lua_pushlightuserdata(lua_state_param, ptr);
     
     // Call with 1 argumnents and 1 result
     lua_call(lua_state_param, 2, 1);

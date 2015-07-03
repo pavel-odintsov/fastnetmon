@@ -116,6 +116,7 @@ int main(int argc, char* argv[]) {
     // Required by Netmap and PF_RING plugins
     // We use fake interface name here because netmap could make server unreachable :)
     configuration_map["interfaces"] = "ethXXX";
+    configuration_map["sflow_lua_hooks_path"] = "/usr/src/fastnetmon_lua/src/sflow_hooks.lua";
 
     if (strstr(argv[1], "sflow") != NULL) {
         std::cout << "Starting sflow" << std::endl;

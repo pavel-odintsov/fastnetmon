@@ -191,6 +191,7 @@ typedef struct _SFSample {
 local json_file = io.open("/usr/src/fastnetmon/src/tests/netflow_exclude.json", "r")
 local decoded = json.decode(json_file:read("*all"))
 
+
 function process_sflow(flow_agent_ip, flow)
     local sflow_t = ffi.typeof('SFSample*')
     local lua_sflow = ffi.cast(sflow_t, flow)
@@ -198,12 +199,12 @@ function process_sflow(flow_agent_ip, flow)
     --print ("We got this packets from: ", flow_agent_ip)
     -- TODO: PLEASE BE AWARE! Thid code will read json file for every packet
     --print ("Flow packets and bytes: ", lua_flow.flow_packets, lua_flow.flow_octets)
-    print ("In interface :", lua_sflow.inputPort, " out interface: ", lua_flow.outputPort)
+    print ("Agent IP", flow_agent_ip," in interface :", lua_sflow.inputPort, " out interface: ", lua_sflow.outputPort)
 
     for agent_ip, ports_table in pairs(decoded) do
         if agent_ip == flow_agent_ip then
             for port_number, port_description in pairs(ports_table) do
-                if lua_flow.outputPort == port_number then
+                if lua_sflow.outputPort == port_number then
                     -- We found this port in ignore list
                     return false
                 end 
