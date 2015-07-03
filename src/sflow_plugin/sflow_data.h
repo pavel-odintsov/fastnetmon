@@ -62,6 +62,24 @@ struct myiphdr {
     uint32_t daddr;
 };
 
+#define SASAMPLE_EXTENDED_DATA_SWITCH 1
+#define SASAMPLE_EXTENDED_DATA_ROUTER 4
+#define SASAMPLE_EXTENDED_DATA_GATEWAY 8
+#define SASAMPLE_EXTENDED_DATA_USER 16
+#define SASAMPLE_EXTENDED_DATA_URL 32
+#define SASAMPLE_EXTENDED_DATA_MPLS 64
+#define SASAMPLE_EXTENDED_DATA_NAT 128
+#define SASAMPLE_EXTENDED_DATA_MPLS_TUNNEL 256
+#define SASAMPLE_EXTENDED_DATA_MPLS_VC 512
+#define SASAMPLE_EXTENDED_DATA_MPLS_FTN 1024
+#define SASAMPLE_EXTENDED_DATA_MPLS_LDP_FEC 2048
+#define SASAMPLE_EXTENDED_DATA_VLAN_TUNNEL 4096
+#define SASAMPLE_EXTENDED_DATA_NAT_PORT 8192
+
+#define SA_MAX_EXTENDED_USER_LEN 200
+#define SA_MAX_EXTENDED_URL_LEN 200
+#define SA_MAX_EXTENDED_HOST_LEN 200
+
 typedef struct _SFSample {
     SFLAddress sourceIP;
     SFLAddress agent_addr;
@@ -143,19 +161,6 @@ typedef struct _SFSample {
     /* extended data fields */
     uint32_t num_extended;
     uint32_t extended_data_tag;
-#define SASAMPLE_EXTENDED_DATA_SWITCH 1
-#define SASAMPLE_EXTENDED_DATA_ROUTER 4
-#define SASAMPLE_EXTENDED_DATA_GATEWAY 8
-#define SASAMPLE_EXTENDED_DATA_USER 16
-#define SASAMPLE_EXTENDED_DATA_URL 32
-#define SASAMPLE_EXTENDED_DATA_MPLS 64
-#define SASAMPLE_EXTENDED_DATA_NAT 128
-#define SASAMPLE_EXTENDED_DATA_MPLS_TUNNEL 256
-#define SASAMPLE_EXTENDED_DATA_MPLS_VC 512
-#define SASAMPLE_EXTENDED_DATA_MPLS_FTN 1024
-#define SASAMPLE_EXTENDED_DATA_MPLS_LDP_FEC 2048
-#define SASAMPLE_EXTENDED_DATA_VLAN_TUNNEL 4096
-#define SASAMPLE_EXTENDED_DATA_NAT_PORT 8192
 
     /* IP forwarding info */
     SFLAddress nextHop;
@@ -180,7 +185,6 @@ typedef struct _SFSample {
     uint32_t localpref;
 
 /* user id */
-#define SA_MAX_EXTENDED_USER_LEN 200
     uint32_t src_user_charset;
     uint32_t src_user_len;
     char src_user[SA_MAX_EXTENDED_USER_LEN + 1];
@@ -189,8 +193,6 @@ typedef struct _SFSample {
     char dst_user[SA_MAX_EXTENDED_USER_LEN + 1];
 
 /* url */
-#define SA_MAX_EXTENDED_URL_LEN 200
-#define SA_MAX_EXTENDED_HOST_LEN 200
     uint32_t url_direction;
     uint32_t url_len;
     char url[SA_MAX_EXTENDED_URL_LEN + 1];
@@ -209,21 +211,7 @@ typedef struct _SFSample {
     uint32_t counterBlockVersion;
 
     /* exception handler context */
-    jmp_buf env;
-
-#define ERROUT stderr
-
-#ifdef DEBUG
-#define SFABORT(s, r) abort()
-#undef ERROUT
-#define ERROUT stdout
-#else
-#define SFABORT(s, r) longjmp((s)->env, (r))
-#endif
-
-#define SF_ABORT_EOS 1
-#define SF_ABORT_DECODE_ERROR 2
-#define SF_ABORT_LENGTH_ERROR 3
+    //jmp_buf env;
 } SFSample;
 
 #endif // SFLOW_DATA_H
