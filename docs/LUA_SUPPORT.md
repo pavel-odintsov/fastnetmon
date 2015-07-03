@@ -1,6 +1,6 @@
 ### We have LUA support for processing NetFlow flows
 
-It supported only for NetFlow v5 at this moment. 
+It supported only for NetFlow v5 and sFLOW at this moment. 
 
 It's not compiled by default and you need build it explicitly.
 
