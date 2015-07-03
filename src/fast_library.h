@@ -102,6 +102,7 @@ bool manage_interface_promisc_mode(std::string interface_name, bool switch_on);
 
 #ifdef ENABLE_LUA_HOOKS
 lua_State* init_lua_jit(std::string lua_hooks_path);
+bool call_lua_function(std::string function_name, lua_State* lua_state_param, std::string client_addres_in_string_format, void* ptr);
 #endif
 
 #endif
