@@ -32,13 +32,12 @@
 #endif
 
 #ifdef ENABLE_LUA_HOOKS
-lua_State* lua_state = NULL;
+lua_State* netflow_lua_state = NULL;
 
 bool lua_hooks_enabled = true;
 std::string lua_hooks_path = "/usr/src/fastnetmon/src/netflow_hooks.lua";
 
 bool call_netflow_process_lua_hook(lua_State* lua_state_param, std::string client_addres_in_string_format, struct NF5_FLOW* flow);
-void init_lua_jit();
 #endif
 
 // Get it from main programm
@@ -995,7 +994,7 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len, std::string client_a
             //    init_lua_jit();
             //}
 
-            if (call_netflow_process_lua_hook(lua_state, client_addres_in_string_format, nf5_flow)) {
+            if (call_netflow_process_lua_hook(netflow_lua_state, client_addres_in_string_format, nf5_flow)) {
                 // We will process this packet
             } else {
                 logger << log4cpp::Priority::INFO << "We will drop this packets because LUA script decided to do it";
@@ -1030,32 +1029,6 @@ void process_netflow_packet(u_int8_t* packet, u_int len, std::string client_addr
 }
 
 #ifdef ENABLE_LUA_HOOKS
-void init_lua_jit() {
-    if (lua_hooks_enabled) {
-        lua_state = luaL_newstate();
-
-        if (lua_state == NULL) {
-            logger << log4cpp::Priority::ERROR << "Can't create LUA session";
-
-            lua_hooks_enabled = false;
-            return;
-        }
-
-         // load libraries
-        luaL_openlibs(lua_state);
-
-        int lua_load_file_result = luaL_dofile(lua_state, lua_hooks_path.c_str());
-
-        if (lua_load_file_result != 0) {
-            logger << log4cpp::Priority::ERROR << "LuaJIT can't load file correctly from path: " << lua_hooks_path
-                << " disable LUA support";
-
-            lua_hooks_enabled = false;
-            return;
-        }
-    }
-}
-
 bool call_netflow_process_lua_hook(lua_State* lua_state_param, std::string client_addres_in_string_format, struct NF5_FLOW* flow) {
     /* Function name */
     lua_getfield(lua_state_param, LUA_GLOBALSINDEX, "process_netflow");
@@ -1090,7 +1063,13 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
     logger << log4cpp::Priority::INFO << "netflow plugin started";
 
 #ifdef ENABLE_LUA_HOOKS
-    init_lua_jit();
+    if (lua_hooks_enabled) {
+        netflow_lua_state = init_lua_jit();
+
+        if (netflow_lua_state == NULL) {
+            lua_hooks_enabled = false;
+        }
+    }
 #endif
 
     // prctl(PR_SET_NAME,"fastnetmon_netflow", 0, 0, 0);

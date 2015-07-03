@@ -107,9 +107,14 @@ target_link_libraries(netflow_plugin ipfix_rfc)
 # If you want it please build with:
 # cmake -DENABLE_LUA_SUPPORT=ON .. 
 if (ENABLE_LUA_SUPPORT)
+    message(STATUS "We will enable LuaJIT support")
+
     add_definitions(-DENABLE_LUA_HOOKS)
  
     target_link_libraries(netflow_plugin luajit-5.1)
+    target_link_libraries(sflow_plugin luajit-5.1)
+    target_link_libraries(fast_library luajit-5.1)
+    
 endif()
 
 # pcap plugin
@@ -197,6 +202,11 @@ endif()
 target_link_libraries(fastnetmon ${LOG4CPP_LIBRARY_PATH})
 
 target_link_libraries(fastnetmon ${CMAKE_THREAD_LIBS_INIT})
+
+if (ENABLE_LUA_SUPPORT)
+    target_link_libraries(fast_library luajit-5.1) 
+    target_link_libraries(fastnetmon luajit-5.1)
+endif()
 
 # Our libs
 target_link_libraries(fastnetmon patricia)
