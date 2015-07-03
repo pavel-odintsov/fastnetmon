@@ -34,6 +34,20 @@
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
+#ifdef ENABLE_LUA_HOOKS
+#include <luajit-2.0/lua.hpp>
+#endif
+
+#ifdef ENABLE_LUA_HOOKS
+lua_State* lua_state = NULL;
+
+bool lua_hooks_enabled = true;
+std::string lua_hooks_path = "/usr/src/fastnetmon/src/sflow_hooks.lua";
+
+bool call_sflow_process_lua_hook(lua_State* lua_state_param, std::string client_addres_in_string_format, struct NF5_FLOW* flow);
+void init_lua_jit();
+#endif
+
 // sFLOW v4 specification: http://www.sflow.org/rfc3176.txt
 
 std::string plugin_name = "sflow";
@@ -62,6 +76,61 @@ process_packet_pointer sflow_process_func_ptr = NULL;
 
 void start_sflow_collector(std::string interface_for_binding, unsigned int sflow_port);
 
+#ifdef ENABLE_LUA_HOOKS
+void init_lua_jit() {
+    if (lua_hooks_enabled) {
+        lua_state = luaL_newstate();
+
+        if (lua_state == NULL) {
+            logger << log4cpp::Priority::ERROR << "Can't create LUA session";
+
+            lua_hooks_enabled = false;
+            return;
+        }
+
+         // load libraries
+        luaL_openlibs(lua_state);
+
+        int lua_load_file_result = luaL_dofile(lua_state, lua_hooks_path.c_str());
+
+        if (lua_load_file_result != 0) {
+            logger << log4cpp::Priority::ERROR << "LuaJIT can't load file correctly from path: " << lua_hooks_path
+                << " disable LUA support";
+
+            lua_hooks_enabled = false;
+            return;
+        }
+    }
+}
+
+bool call_sflow_process_lua_hook(lua_State* lua_state_param, std::string client_addres_in_string_format, struct SFSample* flow) {
+    /* Function name */
+    lua_getfield(lua_state_param, LUA_GLOBALSINDEX, "process_sflow");
+    
+    /* Function params */
+    lua_pushstring(lua_state_param, client_addres_in_string_format.c_str());
+    lua_pushlightuserdata(lua_state_param, (void*)flow);
+    
+    // Call with 1 argumnents and 1 result
+    lua_call(lua_state_param, 2, 1);
+    
+    if (lua_gettop(lua_state_param) == 1) {
+        bool result = lua_toboolean(lua_state_param, -1) == 1 ? true : false;
+
+        // pop returned value
+        lua_pop(lua_state_param, 1);
+
+        return result;
+    } else {
+        logger << log4cpp::Priority::ERROR << "We got " << lua_gettop(lua_state_param) << " return values from the LUA, it's error, please check your LUA code";
+        return false;
+    }
+
+    return false;
+}
+#endif
+
+
 void start_sflow_collection(process_packet_pointer func_ptr) {
     std::string interface_for_binding = "0.0.0.0";
     std::string sflow_ports = "";
@@ -79,6 +148,10 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
         interface_for_binding = configuration_map["sflow_host"];
     }
   
+#ifdef ENABLE_LUA_HOOKS
+    init_lua_jit();
+#endif
+
     boost::thread_group sflow_collector_threads;
 
     std::vector<std::string> ports_for_listen;    
