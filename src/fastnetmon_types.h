@@ -6,6 +6,7 @@
 #include <sys/time.h> // struct timeval
 #include <netinet/in.h> // struct in6_addr
 
+#include <string>
 #include <map>
 #include <vector>
 
@@ -39,6 +40,11 @@ class simple_packet {
 };
 
 typedef std::pair<uint32_t, uint32_t> subnet_t;
+typedef std::vector<subnet_t> subnet_vector_t;
+
+typedef std::map<subnet_t, std::string> subnet_to_host_group_map_t; 
+typedef std::map<std::string, subnet_vector_t> host_group_map_t;
+
 typedef void (*process_packet_pointer)(simple_packet&);
 
 // Enum with available sort by field
