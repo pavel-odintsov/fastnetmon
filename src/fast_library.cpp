@@ -369,6 +369,12 @@ std::string print_tcp_flags(uint8_t flag_value) {
     return flags_as_string.str();
 }
 
+std::vector <std::string> split_strings_to_vector_by_comma(std::string raw_string) {
+    std::vector<std::string> splitted_strings;
+    boost::split(splitted_strings, raw_string, boost::is_any_of(","), boost::token_compress_on);
+ 
+    return splitted_strings;
+}
 
 // http://stackoverflow.com/questions/14528233/bit-masking-in-c-how-to-get-first-bit-of-a-byte
 int extract_bit_value(uint8_t num, int bit) {
