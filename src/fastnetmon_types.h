@@ -194,6 +194,19 @@ class packed_conntrack_hash {
     uint16_t dst_port;
 };
 
+// This class consists of all configuration of global or per subnet ban thresholds
+class ban_settings_t {
+    public:
+        bool enable_ban;
+    
+        bool enable_ban_for_pps;
+        bool enable_ban_for_bandwidth;
+        bool enable_ban_for_flows_per_second;
+
+        unsigned int ban_threshold_mbps;
+        unsigned int ban_threshold_flows;
+        unsigned int ban_threshold_pps;
+};
 
 // data structure for storing data in Vector
 typedef std::pair<uint32_t, map_element> pair_of_map_elements;
