@@ -93,19 +93,24 @@ std::string convert_int_to_string(int value) {
     return out.str();
 }
 
+subnet_t convert_subnet_from_string_to_binary(std::string subnet_cidr) {
+    std::vector<std::string> subnet_as_string;
+    split(subnet_as_string, subnet_cidr, boost::is_any_of("/"), boost::token_compress_on);
+
+    unsigned int cidr = convert_string_to_integer(subnet_as_string[1]);
+    
+    uint32_t subnet_as_int = convert_ip_as_string_to_uint(subnet_as_string[0]);
+    uint32_t netmask_as_int = convert_cidr_to_binary_netmask(cidr);
+
+    return std::make_pair(subnet_as_int, netmask_as_int);   
+}
+
 void copy_networks_from_string_form_to_binary(std::vector<std::string> networks_list_as_string,
                                               std::vector<subnet_t>& our_networks) {
     for (std::vector<std::string>::iterator ii = networks_list_as_string.begin();
          ii != networks_list_as_string.end(); ++ii) {
-        std::vector<std::string> subnet_as_string;
-        split(subnet_as_string, *ii, boost::is_any_of("/"), boost::token_compress_on);
-        unsigned int cidr = convert_string_to_integer(subnet_as_string[1]);
 
-        uint32_t subnet_as_int = convert_ip_as_string_to_uint(subnet_as_string[0]);
-        uint32_t netmask_as_int = convert_cidr_to_binary_netmask(cidr);
-
-        subnet_t current_subnet = std::make_pair(subnet_as_int, netmask_as_int);
-
+        subnet_t current_subnet = convert_subnet_from_string_to_binary(*ii);
         our_networks.push_back(current_subnet);
     }
 }
