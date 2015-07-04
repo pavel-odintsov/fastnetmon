@@ -171,8 +171,10 @@ endif()
 # apt-get install -y libhiredis-dev 
 # yum install -y hiredis-devel
 # Please uncomment this lines if you want enable Redis support
-#find_package(Hiredis REQUIRED)
+#list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+#find_package(Hiredis QUIET)
 #if (HIREDIS_FOUND)
+#    message(STATUS "We could compile Redis support")
 #    add_definitions(-DREDIS)
 #    include_directories(${HIREDIS_INCLUDE_DIRS})
 #    target_link_libraries (fastnetmon ${HIREDIS_LIBRARIES})
