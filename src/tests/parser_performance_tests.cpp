@@ -4,13 +4,18 @@
 #include <string.h>
 #include <pthread.h>
 #include "../fastnetmon_packet_parser.h"
+#include <tins/tins.h>
+#include <iostream>
+
+using namespace Tins;
 
 /*
     gcc ../fastnetmon_packet_parser.c -o fastnetmon_packet_parser.o -c
-    gcc parser_performance_tests.cpp fastnetmon_packet_parser.o -lpthread
+    g++ parser_performance_tests.cpp fastnetmon_packet_parser.o -lpthread -ltins
 */
 
-void call_parser(void* ptr, int length);
+void call_fastnetmon_parser(void* ptr, int length);
+void call_tins_parser(void* ptr, int length);
 uint64_t received_packets = 0;
 
 void* speed_printer(void* ptr) {
@@ -61,14 +66,22 @@ int main() {
         
         // payload1[26] = byte_value; // first octet
         payload1[29] = byte_value; // last octet
-        call_parser((void*)payload1, sizeof(payload1));
+        call_fastnetmon_parser((void*)payload1, sizeof(payload1));
         //call_parser(payload2, sizeof(payload2));
     }
 }
 
-void call_parser(void* ptr, int length) {
+void call_tins_parser(void* ptr, int length) {
     __sync_fetch_and_add(&received_packets, 1);
 
+    RawPDU packet((const uint8_t*)ptr, length);
+    // TBD   
+}
+
+void call_fastnetmon_parser(void* ptr, int length) {
+    __sync_fetch_and_add(&received_packets, 1);
+
+        
     struct pfring_pkthdr packet_header;
     memset(&packet_header, 0, sizeof(struct pfring_pkthdr));
 
@@ -84,5 +97,6 @@ void call_parser(void* ptr, int length) {
     char print_buffer[512];
     fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)ptr, &packet_header);
     printf("packet: %s\n", print_buffer);
+
     */
 }
