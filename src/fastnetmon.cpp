@@ -3034,9 +3034,9 @@ std::string print_subnet_load() {
             << convert_subnet_to_string(itr->first);
             
         buffer
-            << "\t"
             << "pps in: " << speed->in_packets
             << " out: "    << speed->out_packets
+            << "\t"
             << " mbps in: " << convert_speed_to_mbps(speed->in_bytes)
             << " out: "    << convert_speed_to_mbps(speed->out_bytes)
             << "\n";
