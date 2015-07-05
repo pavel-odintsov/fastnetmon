@@ -22,6 +22,10 @@ ffi.cdef("void run_speed_printer();");
 
 -- Initialize a device driver
 print("Initializing NIC: "..pciaddr)
+
+local pci = require("lib.hardware.pci")
+pci.unbind_device_from_linux(pciaddr) -- make kernel/ixgbe release this device
+
 local intel10g = require("apps.intel.intel10g")
 -- Maximum buffers to avoid packet drops
 intel10g.num_descriptors = 32*1024
