@@ -27,7 +27,7 @@ void* speed_printer(void* ptr) {
 }
 
 
-// We could pring any payload with this function and use it for tests
+// We could print any payload with this function and use it for tests
 void print_packet_payload_in_c_form(unsigned char* data, int length) {
     int i = 0;
     printf("unsigned char payload[] = { ");
@@ -51,9 +51,18 @@ int main() {
 
     unsigned char payload2[] = { 0x90,0xE2,0xBA,0x83,0x3F,0x25,0x90,0xE2,0xBA,0x2C,0xCB,0x02,0x08,0x00,0x45,0x00,0x00,0x2E,0x00,0x00,0x00,0x00,0x40,0x06,0x69,0xDB,0x0A,0x84,0xF1,0x84,0x0A,0x0A,0x0A,0xDD,0x04,0x01,0x00,0x50,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x00,0x50,0x02,0x00,0x0A,0x9A,0x91,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 };
 
-    while (1) {
-        call_parser(payload1, sizeof(payload1));
-        call_parser(payload2, sizeof(payload2));
+    unsigned char byte_value = 0;
+
+    //int counter = 512;
+    //while (counter > 0) {
+    while(1) {
+        // We use overflow here!
+        byte_value++;
+        
+        // payload1[26] = byte_value; // first octet
+        payload1[29] = byte_value; // last octet
+        call_parser((void*)payload1, sizeof(payload1));
+        //call_parser(payload2, sizeof(payload2));
     }
 }
 
@@ -71,9 +80,9 @@ void call_parser(void* ptr, int length) {
 
     fastnetmon_parse_pkt((u_char*)ptr, &packet_header, 4, 0, 0);
 
-/*
+    /*
     char print_buffer[512];
     fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)ptr, &packet_header);
     printf("packet: %s\n", print_buffer);
-*/
+    */
 }
