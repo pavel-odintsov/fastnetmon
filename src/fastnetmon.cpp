@@ -92,7 +92,8 @@ bool unban_only_if_attack_finished = true;
 std::string screen_data_stats = "";
 
 // Global map with parsed config file
-std::map<std::string, std::string> configuration_map;
+typedef std::map<std::string, std::string> configuration_map_t;
+configuration_map_t configuration_map;
 
 // Every X seconds we will run ban list cleaner thread
 // If customer uses ban_time smaller than this value we will use ban_time/2 as unban_iteration_sleep_time
@@ -123,9 +124,26 @@ bool exabgp_announce_whole_subnet = false;
 // We will announce only /32 host
 bool exabgp_announce_host = false;
 
-bool enable_ban_for_pps = false;
-bool enable_ban_for_bandwidth = false;
-bool enable_ban_for_flows_per_second = false;
+ban_settings_t global_ban_settings;
+
+void init_global_ban_settings() {
+    // ban Configuration params
+    global_ban_settings.enable_ban_for_pps = false;
+    global_ban_settings.enable_ban_for_bandwidth = false;
+    global_ban_settings.enable_ban_for_flows_per_second = false;
+
+    // We must ban IP if it exceeed this limit in PPS
+    global_ban_settings.ban_threshold_pps = 20000;
+
+    // We must ban IP of it exceed this limit for number of flows in any direction
+    global_ban_settings.ban_threshold_flows = 3500;
+
+    // We must ban client if it exceed 1GBps
+    global_ban_settings.ban_threshold_mbps = 1000;
+
+    // Ban enable/disable flag
+    global_ban_settings.enable_ban = true;
+}
 
 bool enable_conection_tracking = true;
 
@@ -183,15 +201,6 @@ std::string sort_parameter = "packets";
 
 // Number of lines in programm output
 unsigned int max_ips_in_list = 7;
-
-// We must ban IP if it exceeed this limit in PPS
-unsigned int ban_threshold_pps = 20000;
-
-// We must ban IP of it exceed this limit for number of flows in any direction
-unsigned int ban_threshold_flows = 3500;
-
-// We must ban client if it exceed 1GBps
-unsigned int ban_threshold_mbps = 1000;
 
 // Number of lines for sending ben attack details to email
 unsigned int ban_details_records_count = 500;
@@ -253,11 +262,13 @@ map_for_counters GeoIpCounter;
 std::map<uint32_t, banlist_item> ban_list;
 std::map<uint32_t, std::vector<simple_packet> > ban_list_details;
 
+host_group_map_t host_groups;
+
+// Here we store assignment from subnet to certain host group for fast lookup
+subnet_to_host_group_map_t subnet_to_host_groups;
+
 std::vector<subnet_t> our_networks;
 std::vector<subnet_t> whitelist_networks;
-
-// Ban enable/disable flag
-bool we_do_real_ban = true;
 
 // ExaBGP support flag
 bool exabgp_enabled = false;
@@ -288,6 +299,7 @@ bool process_outgoing_traffic = true;
 void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_string);
 #endif
 
+ban_settings_t read_ban_settings(configuration_map_t configuration_map);
 void exabgp_prefix_ban_manage(std::string action, std::string prefix_as_string_with_mask, std::string exabgp_next_hop,
     std::string exabgp_community);
 std::string print_subnet_load();
@@ -632,6 +644,49 @@ std::vector<std::string> read_file_to_vector(std::string file_name) {
     return data;
 }
 
+void parse_hostgroups(std::string name, std::string value) {
+    // We are creating new host group of subnets
+    if (name != "hostgroup") {
+        return;
+    }
+
+    std::vector<std::string> splitted_new_host_group;
+    // We have new host groups in form:
+    // hostgroup = new_host_group_name:11.22.33.44/32,....
+    split(splitted_new_host_group, value, boost::is_any_of(":"), boost::token_compress_on);
+
+    if (splitted_new_host_group.size() != 2) {
+        logger << log4cpp::Priority::ERROR << "We can't parse new host group";
+    }
+
+    std::string host_group_name = splitted_new_host_group[0];
+
+    if (host_groups.count(host_group_name) > 0) {
+        logger << log4cpp::Priority::WARN << "We already have this host group (" << host_group_name << "). Please check!"; 
+        return;
+    }
+
+    // Split networks
+    std::vector<std::string> hostgroup_subnets = split_strings_to_vector_by_comma(splitted_new_host_group[1]);
+    for (std::vector<std::string>::iterator itr = hostgroup_subnets.begin(); itr != hostgroup_subnets.end(); ++itr) {
+        subnet_t subnet = convert_subnet_from_string_to_binary(*itr);
+        
+        host_groups[ host_group_name ].push_back( subnet ); 
+
+        // And add to subnet to host group lookup hash
+        if (subnet_to_host_groups.count(subnet) > 0) {
+            // Huston, we have problem! Subnet to host group mapping should map single subnet to single group! 
+            logger << log4cpp::Priority::WARN << "Seems you have specified single subnet " << *itr
+                << " to multiple host groups, please fix it, it's prohibited";
+        } else {
+            subnet_to_host_groups[ subnet ] = host_group_name;
+        } 
+    }
+
+    logger << log4cpp::Priority::INFO << "We have created host group " << host_group_name << " with "
+        << host_groups[ host_group_name ].size() << " subnets";
+}
+
 // Load configuration
 bool load_configuration_file() {
     std::ifstream config_file(global_config_path.c_str());
@@ -654,6 +709,9 @@ bool load_configuration_file() {
 
         if (parsed_config.size() == 2) {
             configuration_map[parsed_config[0]] = parsed_config[1];
+            
+            // Well, we parse host groups here
+            parse_hostgroups(parsed_config[0], parsed_config[1]);
         } else {
             logger << log4cpp::Priority::ERROR << "Can't parse config line: '" << line << "'";
         }
@@ -688,26 +746,6 @@ bool load_configuration_file() {
     if (configuration_map.count("average_calculation_time_for_subnets") != 0) {
         average_calculation_amount_for_subnets =
         convert_string_to_integer(configuration_map["average_calculation_time_for_subnets"]);
-    }
-
-    if (configuration_map.count("threshold_pps") != 0) {
-        ban_threshold_pps = convert_string_to_integer(configuration_map["threshold_pps"]);
-    }
-
-    if (configuration_map.count("threshold_mbps") != 0) {
-        ban_threshold_mbps = convert_string_to_integer(configuration_map["threshold_mbps"]);
-    }
-
-    if (configuration_map.count("threshold_flows") != 0) {
-        ban_threshold_flows = convert_string_to_integer(configuration_map["threshold_flows"]);
-    }
-
-    if (configuration_map.count("enable_ban") != 0) {
-        if (configuration_map["enable_ban"] == "on") {
-            we_do_real_ban = true;
-        } else {
-            we_do_real_ban = false;
-        }
     }
 
     if (configuration_map.count("monitor_local_ip_addresses") != 0) {
@@ -867,29 +905,8 @@ bool load_configuration_file() {
         }
     }
 
-    if (configuration_map.count("ban_for_pps") != 0) {
-        if (configuration_map["ban_for_pps"] == "on") {
-            enable_ban_for_pps = true;
-        } else {
-            enable_ban_for_pps = false;
-        }
-    }
-
-    if (configuration_map.count("ban_for_bandwidth") != 0) {
-        if (configuration_map["ban_for_bandwidth"] == "on") {
-            enable_ban_for_bandwidth = true;
-        } else {
-            enable_ban_for_bandwidth = false;
-        }
-    }
-
-    if (configuration_map.count("ban_for_flows") != 0) {
-        if (configuration_map["ban_for_flows"] == "on") {
-            enable_ban_for_flows_per_second = true;
-        } else {
-            enable_ban_for_flows_per_second = false;
-        }
-    }
+    // Read global ban configuration
+     global_ban_settings = read_ban_settings(configuration_map);
 
     if (configuration_map.count("white_list_path") != 0) {
         white_list_path = configuration_map["white_list_path"];
@@ -2049,6 +2066,8 @@ int main(int argc, char** argv) {
 
     init_logging();
 
+    init_global_ban_settings();
+
     if (file_exists(pid_path)) {
         pid_t pid_from_file = 0;
 
@@ -2312,7 +2331,7 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element a
 
     direction data_direction;
 
-    if (!we_do_real_ban) {
+    if (!global_ban_settings.enable_ban) {
         logger << log4cpp::Priority::INFO << "We do not ban: " << convert_ip_as_uint_to_string(client_ip)
                << " because ban disabled completely";
         return;
@@ -3030,15 +3049,15 @@ std::string print_ban_thresholds() {
     std::stringstream output_buffer;
 
     output_buffer << "Configuration params:\n";
-    if (we_do_real_ban) {
+    if (global_ban_settings.enable_ban) {
         output_buffer << "We call ban script: yes\n";
     } else {
         output_buffer << "We call ban script: no\n";
     }
 
     output_buffer << "Packets per second: ";
-    if (enable_ban_for_pps) {
-        output_buffer << ban_threshold_pps;
+    if (global_ban_settings.enable_ban_for_pps) {
+        output_buffer << global_ban_settings.ban_threshold_pps;
     } else {
         output_buffer << "disabled";
     }
@@ -3046,8 +3065,8 @@ std::string print_ban_thresholds() {
     output_buffer << "\n";
 
     output_buffer << "Mbps per second: ";
-    if (enable_ban_for_bandwidth) {
-        output_buffer << ban_threshold_mbps;
+    if (global_ban_settings.enable_ban_for_bandwidth) {
+        output_buffer << global_ban_settings.ban_threshold_mbps;
     } else {
         output_buffer << "disabled";
     }
@@ -3055,8 +3074,8 @@ std::string print_ban_thresholds() {
     output_buffer << "\n";
 
     output_buffer << "Flows per second: ";
-    if (enable_ban_for_flows_per_second) {
-        output_buffer << ban_threshold_flows;
+    if (global_ban_settings.enable_ban_for_flows_per_second) {
+        output_buffer << global_ban_settings.ban_threshold_flows;
     } else {
         output_buffer << "disabled";
     }
@@ -3081,6 +3100,42 @@ void print_attack_details_to_file(std::string details, std::string client_ip_as_
     }
 }
 
+ban_settings_t read_ban_settings(configuration_map_t configuration_map) {
+    ban_settings_t ban_settings;
+
+    if (configuration_map.count("enable_ban") != 0) {
+        ban_settings.enable_ban = configuration_map["enable_ban"] == "on";
+    }
+
+    if (configuration_map.count("ban_for_pps") != 0) {
+        ban_settings.enable_ban_for_pps = configuration_map["ban_for_pps"] == "on";
+    }
+
+    if (configuration_map.count("ban_for_bandwidth") != 0) {
+        ban_settings.enable_ban_for_bandwidth = configuration_map["ban_for_bandwidth"] == "on";
+    }
+
+    if (configuration_map.count("ban_for_flows") != 0) {
+        ban_settings.enable_ban_for_flows_per_second = configuration_map["ban_for_flows"] == "on";
+    }
+
+    if (configuration_map.count("threshold_pps") != 0) {
+        ban_settings.ban_threshold_pps = convert_string_to_integer(configuration_map["threshold_pps"]);
+    }
+
+    if (configuration_map.count("threshold_mbps") != 0) {
+        ban_settings.ban_threshold_mbps = convert_string_to_integer(configuration_map["threshold_mbps"]);
+    }
+
+    if (configuration_map.count("threshold_flows") != 0) {
+        ban_settings.ban_threshold_flows = convert_string_to_integer(configuration_map["threshold_flows"]);
+    }
+
+    return ban_settings;
+}
+
+
+
 // Return true when we should ban this IP
 bool we_should_ban_this_ip(map_element* average_speed_element) {
     uint64_t in_pps_average = average_speed_element->in_packets;
@@ -3096,18 +3151,20 @@ bool we_should_ban_this_ip(map_element* average_speed_element) {
     bool attack_detected_by_pps = false;
     bool attack_detected_by_bandwidth = false;
     bool attack_detected_by_flow = false;
-    if (enable_ban_for_pps && (in_pps_average > ban_threshold_pps or out_pps_average > ban_threshold_pps)) {
+    if (global_ban_settings.enable_ban_for_pps && (in_pps_average > global_ban_settings.ban_threshold_pps or
+        out_pps_average > global_ban_settings.ban_threshold_pps)) {
+
         attack_detected_by_pps = true;
     }
 
     // we detect overspeed by bandwidth
-    if (enable_ban_for_bandwidth && (convert_speed_to_mbps(in_bps_average) > ban_threshold_mbps or
-                                     convert_speed_to_mbps(out_bps_average) > ban_threshold_mbps)) {
+    if (global_ban_settings.enable_ban_for_bandwidth && (convert_speed_to_mbps(in_bps_average) > global_ban_settings.ban_threshold_mbps or
+                                     convert_speed_to_mbps(out_bps_average) > global_ban_settings.ban_threshold_mbps)) {
         attack_detected_by_bandwidth = true;
     }
 
-    if (enable_ban_for_flows_per_second &&
-        (in_flows_average > ban_threshold_flows or out_flows_average > ban_threshold_flows)) {
+    if (global_ban_settings.enable_ban_for_flows_per_second &&
+        (in_flows_average > global_ban_settings.ban_threshold_flows or out_flows_average > global_ban_settings.ban_threshold_flows)) {
         attack_detected_by_flow = true;
     }
 
