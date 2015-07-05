@@ -1825,14 +1825,18 @@ void traffic_draw_programm() {
                   << "IPs ordered by: " << sort_parameter << "\n";
 
     output_buffer << print_channel_speed("Incoming traffic", INCOMING) << std::endl;
-    output_buffer << draw_table(INCOMING, true, sorter);
 
-    output_buffer << std::endl;
+    if (process_incoming_traffic) {
+        output_buffer << draw_table(INCOMING, true, sorter);
+        output_buffer << std::endl;
+    }
 
     output_buffer << print_channel_speed("Outgoing traffic", OUTGOING) << std::endl;
-    output_buffer << draw_table(OUTGOING, false, sorter);
 
-    output_buffer << std::endl;
+    if (process_outgoing_traffic) {
+        output_buffer << draw_table(OUTGOING, false, sorter);
+        output_buffer << std::endl;
+    }
 
     output_buffer << print_channel_speed("Internal traffic", INTERNAL) << std::endl;
 
