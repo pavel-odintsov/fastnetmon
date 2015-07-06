@@ -10,7 +10,8 @@ make
 
 Then compile our .so library:
 ```
-gcc -shared -o capturecallback.so -fPIC capturecallback.c
+gcc ../../fastnetmon_packet_parser.c  -c -o fastnetmon_packet_parser.o -fPIC
+gcc -shared -o capturecallback.so -fPIC capturecallback.c fastnetmon_packet_parser.o
 ```
 
 Get NIC's PCI address:
