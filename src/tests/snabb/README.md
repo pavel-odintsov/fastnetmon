@@ -13,12 +13,6 @@ Then compile our .so library:
 gcc -shared -o capturecallback.so -fPIC capturecallback.c
 ```
 
-Unload all ixgbe drivers, pf_ring and netmap explicitly:
-```bash
-rmmod ixgbe netmap pf_ring
-rmmod ixgbe netmap pf_ring
-```
-
 Get NIC's PCI address:
 ```bash
 lspci -m|grep 82599
@@ -59,3 +53,12 @@ We achieved this with only single logical core of i7 3820 CPU:
 ```
 
 Really awesome! Huge thanks to Luke Gorrie for great help with it!
+
+Once the testing is done we can rebind the NIC to the kernel `ixgbe`
+driver. This can be done either be reloading `ixgbe` or, less
+disruptively, like this:
+
+```bash
+echo 0000:00:06.0 | sudo tee /sys/bus/pci/drivers/ixgbe/bind
+```
+
