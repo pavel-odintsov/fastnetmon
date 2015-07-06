@@ -11,8 +11,30 @@ using namespace Tins;
 
 /*
     gcc ../fastnetmon_packet_parser.c -o fastnetmon_packet_parser.o -c
-    g++ parser_performance_tests.cpp fastnetmon_packet_parser.o -lpthread -ltins
+    g++ parser_performance_tests.cpp fastnetmon_packet_parser.o -lpthread -ltins -std=c++11
 */
+
+/*
+
+Tins: C++ 98
+
+We process: 3 557 647 pps
+We process: 3 554 012 pps
+
+Tins: C++11
+
+We process: 3 529 692 pps
+We process: 3 529 249 pps
+
+PF_RING packet parser without hashing and timestamps:
+
+We process: 18 145 597 pps
+We process: 20 395 563 pps
+We process: 18 145 597 pps
+We process: 20 395 563 pps
+
+*/
+
 
 void call_fastnetmon_parser(void* ptr, int length);
 void call_tins_parser(void* ptr, int length);
@@ -67,20 +89,31 @@ int main() {
         // payload1[26] = byte_value; // first octet
         payload1[29] = byte_value; // last octet
         call_fastnetmon_parser((void*)payload1, sizeof(payload1));
-        //call_parser(payload2, sizeof(payload2));
+        //call_tins_parser((void*)payload1, sizeof(payload1));
     }
 }
 
 void call_tins_parser(void* ptr, int length) {
     __sync_fetch_and_add(&received_packets, 1);
 
-    RawPDU packet((const uint8_t*)ptr, length);
-    // TBD   
+    EthernetII pdu((const uint8_t*)ptr, length);
+    
+    const IP &ip = pdu.rfind_pdu<IP>(); // Find the IP layer
+
+    if (ip.protocol() == Tins::Constants::IP::PROTO_TCP) {
+        const TCP &tcp = pdu.rfind_pdu<TCP>(); // Find the TCP layer
+
+        //std::cout << ip.src_addr() << ':' << tcp.sport() << " -> " 
+        //    << ip.dst_addr() << ':' << tcp.dport() << std::endl;
+    } else if (ip.protocol() == Tins::Constants::IP::PROTO_UDP) {
+        const UDP &udp = pdu.rfind_pdu<UDP>(); // Find the UDP layer
+    } else if (ip.protocol() == Tins::Constants::IP::PROTO_ICMP) {
+        const ICMP &icmp = pdu.rfind_pdu<ICMP>(); // Find the ICMP layer
+    }
 }
 
 void call_fastnetmon_parser(void* ptr, int length) {
     __sync_fetch_and_add(&received_packets, 1);
-
         
     struct pfring_pkthdr packet_header;
     memset(&packet_header, 0, sizeof(struct pfring_pkthdr));
