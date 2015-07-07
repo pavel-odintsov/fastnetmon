@@ -672,9 +672,12 @@ void parse_hostgroups(std::string name, std::string value) {
     // Split networks
     std::vector<std::string> hostgroup_subnets = split_strings_to_vector_by_comma(splitted_new_host_group[1]);
     for (std::vector<std::string>::iterator itr = hostgroup_subnets.begin(); itr != hostgroup_subnets.end(); ++itr) {
-        subnet_t subnet = convert_subnet_from_string_to_binary(*itr);
-        
+        subnet_t subnet = convert_subnet_from_string_to_binary_with_cidr_format(*itr);
+       
         host_groups[ host_group_name ].push_back( subnet ); 
+        
+        logger << log4cpp::Priority::WARN << "We add subnet " << convert_subnet_to_string( subnet )
+            << " to host group " << host_group_name;
 
         // And add to subnet to host group lookup hash
         if (subnet_to_host_groups.count(subnet) > 0) {
@@ -1545,6 +1548,29 @@ void recalculate_speed_thread_handler() {
     }
 }
 
+// Get ban settings for this subnet or return global ban settings
+ban_settings_t get_ban_settings_for_this_subnet(subnet_t subnet) {
+    // Try to find host group for this subnet
+    subnet_to_host_group_map_t::iterator host_group_itr = subnet_to_host_groups.find( subnet );
+
+    if (host_group_itr == subnet_to_host_groups.end()) {
+        // We haven't host groups for all subnets, it's OK
+        return global_ban_settings;
+    }
+   
+    // We found host group for this subnet
+    host_group_ban_settings_map_t::iterator hostgroup_settings_itr = 
+        host_group_ban_settings_map.find(host_group_itr->second);
+
+    if (hostgroup_settings_itr == host_group_ban_settings_map.end()) {
+        logger << log4cpp::Priority::ERROR << "We can't find ban settings for host group " << host_group_itr->second;
+        return global_ban_settings;
+    }
+            
+    // We found ban settings for this host group and use they instead global
+    return hostgroup_settings_itr->second;
+}
+
 /* Calculate speed for all connnections */
 void recalculate_speed() {
     // logger<< log4cpp::Priority::INFO<<"We run recalculate_speed";
@@ -1761,8 +1787,9 @@ void recalculate_speed() {
             }
 
             /* Moving average recalculation end */
+            ban_settings_t current_ban_settings = get_ban_settings_for_this_subnet( itr->first );
 
-            if (we_should_ban_this_ip(current_average_speed_element, global_ban_settings)) {
+            if (we_should_ban_this_ip(current_average_speed_element, current_ban_settings)) {
                 std::string flow_attack_details = "";
 
                 if (enable_conection_tracking) {
@@ -2646,7 +2673,10 @@ void cleanup_ban_list() {
 
                 map_element* average_speed_element = &itr_average_speed->second[shift_in_vector];  
 
-                if (we_should_ban_this_ip(average_speed_element, global_ban_settings)) {
+                // We get ban settings from host subnet
+                ban_settings_t current_ban_settings = get_ban_settings_for_this_subnet( itr->second.customer_network );
+
+                if (we_should_ban_this_ip(average_speed_element, current_ban_settings)) {
                     logger << log4cpp::Priority::ERROR << "Attack to IP " << client_ip_as_string
                         << " still going! We should not unblock this host";
                     attack_finished = false;
