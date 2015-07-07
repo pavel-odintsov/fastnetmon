@@ -308,7 +308,7 @@ attack_type_t detect_attack_type(attack_details& current_attack);
 bool we_should_ban_this_ip(map_element* current_average_speed_element);
 unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp);
 void print_attack_details_to_file(std::string details, std::string client_ip_as_string, attack_details current_attack);
-std::string print_ban_thresholds();
+std::string print_ban_thresholds(ban_settings_t current_ban_settings);
 bool load_configuration_file();
 std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, std::string client_ip);
 void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_data,
@@ -1891,7 +1891,7 @@ void traffic_draw_programm() {
 
     // Print thresholds
     if (print_configuration_params_on_the_screen) {
-        output_buffer << "\n" << print_ban_thresholds();
+        output_buffer << "\n" << print_ban_thresholds(global_ban_settings);
     }
 
     if (!ban_list.empty()) {
@@ -3068,19 +3068,19 @@ std::string print_subnet_load() {
     return buffer.str();
 }
 
-std::string print_ban_thresholds() {
+std::string print_ban_thresholds(ban_settings_t current_ban_settings) {
     std::stringstream output_buffer;
 
     output_buffer << "Configuration params:\n";
-    if (global_ban_settings.enable_ban) {
+    if (current_ban_settings.enable_ban) {
         output_buffer << "We call ban script: yes\n";
     } else {
         output_buffer << "We call ban script: no\n";
     }
 
     output_buffer << "Packets per second: ";
-    if (global_ban_settings.enable_ban_for_pps) {
-        output_buffer << global_ban_settings.ban_threshold_pps;
+    if (current_ban_settings.enable_ban_for_pps) {
+        output_buffer << current_ban_settings.ban_threshold_pps;
     } else {
         output_buffer << "disabled";
     }
@@ -3088,8 +3088,8 @@ std::string print_ban_thresholds() {
     output_buffer << "\n";
 
     output_buffer << "Mbps per second: ";
-    if (global_ban_settings.enable_ban_for_bandwidth) {
-        output_buffer << global_ban_settings.ban_threshold_mbps;
+    if (current_ban_settings.enable_ban_for_bandwidth) {
+        output_buffer << current_ban_settings.ban_threshold_mbps;
     } else {
         output_buffer << "disabled";
     }
@@ -3097,8 +3097,8 @@ std::string print_ban_thresholds() {
     output_buffer << "\n";
 
     output_buffer << "Flows per second: ";
-    if (global_ban_settings.enable_ban_for_flows_per_second) {
-        output_buffer << global_ban_settings.ban_threshold_flows;
+    if (current_ban_settings.enable_ban_for_flows_per_second) {
+        output_buffer << current_ban_settings.ban_threshold_flows;
     } else {
         output_buffer << "disabled";
     }
