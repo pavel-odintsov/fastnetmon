@@ -188,6 +188,7 @@ typedef std::vector<conntrack_main_struct> vector_of_flow_counters;
 typedef std::map<subnet_t, vector_of_flow_counters> map_of_vector_counters_for_flow;
 
 typedef map_element subnet_counter_t;
+typedef std::pair<subnet_t, subnet_counter_t> pair_of_map_for_subnet_counters_elements_t;
 typedef std::map<subnet_t, subnet_counter_t> map_for_subnet_counters;
 
 class packed_conntrack_hash {

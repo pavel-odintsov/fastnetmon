@@ -331,6 +331,7 @@ void traffic_draw_programm();
 void interruption_signal_handler(int signal_number);
 
 /* Class for custom comparison fields by different fields */
+template <typename T>
 class TrafficComparatorClass {
     private:
     sort_type sort_field;
@@ -342,7 +343,7 @@ class TrafficComparatorClass {
         this->sort_direction = sort_direction;
     }
 
-    bool operator()(pair_of_map_elements a, pair_of_map_elements b) {
+    bool operator()(T a, T b) {
         if (sort_field == FLOWS) {
             if (sort_direction == INCOMING) {
                 return a.second.in_flows > b.second.in_flows;
@@ -525,7 +526,7 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
         }
 
         std::partial_sort(vector_for_sort.begin(), vector_for_sort.begin() + shift_for_sort, vector_for_sort.end(),
-                  TrafficComparatorClass(data_direction, sort_item));
+                  TrafficComparatorClass<pair_of_map_elements>(data_direction, sort_item));
     } else {
         logger << log4cpp::Priority::ERROR << "Unexpected bahaviour on sort function";
         return "Internal error";
@@ -3025,7 +3026,29 @@ std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element,
 std::string print_subnet_load() {
     std::stringstream buffer;
 
+    sort_type sorter;
+    if (sort_parameter == "packets") {
+        sorter = PACKETS;
+    } else if (sort_parameter == "bytes") {
+        sorter = BYTES;
+    } else if (sort_parameter == "flows") {
+        sorter = FLOWS;
+    } else {
+        logger << log4cpp::Priority::INFO << "Unexpected sorter type: " << sort_parameter;
+        sorter = PACKETS;
+    }  
+
+    std::vector<pair_of_map_for_subnet_counters_elements_t> vector_for_sort;
+    vector_for_sort.reserve(PerSubnetSpeedMap.size());
+
     for (map_for_subnet_counters::iterator itr = PerSubnetSpeedMap.begin(); itr != PerSubnetSpeedMap.end(); ++itr) {
+        vector_for_sort.push_back(std::make_pair(itr->first, itr->second));
+    }
+
+    std::sort(vector_for_sort.begin(), vector_for_sort.end(),
+        TrafficComparatorClass<pair_of_map_for_subnet_counters_elements_t>(INCOMING, sorter));
+
+    for (std::vector<pair_of_map_for_subnet_counters_elements_t>::iterator itr = vector_for_sort.begin(); itr != vector_for_sort.end(); ++itr) {
         map_element* speed = &itr->second; 
 
         buffer
