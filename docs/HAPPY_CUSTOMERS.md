@@ -3,5 +3,6 @@
 - FastVPS Eesti OU
 - Domain Name Registrar REG.RU
 - Moscow Datacenter COLOCAT.RU
+- Internet Service Provider MYVIRTUALSERVER.COM
 
 Do not hesitate to add your company! Pull requests with new companies! :) 
