@@ -305,7 +305,7 @@ void exabgp_prefix_ban_manage(std::string action, std::string prefix_as_string_w
 std::string print_subnet_load();
 std::string get_printable_attack_name(attack_type_t attack);
 attack_type_t detect_attack_type(attack_details& current_attack);
-bool we_should_ban_this_ip(map_element* current_average_speed_element);
+bool we_should_ban_this_ip(map_element* current_average_speed_element, ban_settings_t current_ban_settings);
 unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp);
 void print_attack_details_to_file(std::string details, std::string client_ip_as_string, attack_details current_attack);
 std::string print_ban_thresholds(ban_settings_t current_ban_settings);
@@ -907,7 +907,7 @@ bool load_configuration_file() {
     }
 
     // Read global ban configuration
-     global_ban_settings = read_ban_settings(configuration_map);
+    global_ban_settings = read_ban_settings(configuration_map);
 
     if (configuration_map.count("white_list_path") != 0) {
         white_list_path = configuration_map["white_list_path"];
@@ -1746,7 +1746,7 @@ void recalculate_speed() {
 
             /* Moving average recalculation end */
 
-            if (we_should_ban_this_ip(current_average_speed_element)) {
+            if (we_should_ban_this_ip(current_average_speed_element, global_ban_settings)) {
                 std::string flow_attack_details = "";
 
                 if (enable_conection_tracking) {
@@ -2630,7 +2630,7 @@ void cleanup_ban_list() {
 
                 map_element* average_speed_element = &itr_average_speed->second[shift_in_vector];  
 
-                if (we_should_ban_this_ip(average_speed_element)) {
+                if (we_should_ban_this_ip(average_speed_element, global_ban_settings)) {
                     logger << log4cpp::Priority::ERROR << "Attack to IP " << client_ip_as_string
                         << " still going! We should not unblock this host";
                     attack_finished = false;
@@ -3160,7 +3160,7 @@ ban_settings_t read_ban_settings(configuration_map_t configuration_map) {
 
 
 // Return true when we should ban this IP
-bool we_should_ban_this_ip(map_element* average_speed_element) {
+bool we_should_ban_this_ip(map_element* average_speed_element, ban_settings_t current_ban_settings) {
     uint64_t in_pps_average = average_speed_element->in_packets;
     uint64_t out_pps_average = average_speed_element->out_packets;
 
@@ -3174,20 +3174,20 @@ bool we_should_ban_this_ip(map_element* average_speed_element) {
     bool attack_detected_by_pps = false;
     bool attack_detected_by_bandwidth = false;
     bool attack_detected_by_flow = false;
-    if (global_ban_settings.enable_ban_for_pps && (in_pps_average > global_ban_settings.ban_threshold_pps or
-        out_pps_average > global_ban_settings.ban_threshold_pps)) {
+    if (current_ban_settings.enable_ban_for_pps && (in_pps_average > current_ban_settings.ban_threshold_pps or
+        out_pps_average > current_ban_settings.ban_threshold_pps)) {
 
         attack_detected_by_pps = true;
     }
 
     // we detect overspeed by bandwidth
-    if (global_ban_settings.enable_ban_for_bandwidth && (convert_speed_to_mbps(in_bps_average) > global_ban_settings.ban_threshold_mbps or
-                                     convert_speed_to_mbps(out_bps_average) > global_ban_settings.ban_threshold_mbps)) {
+    if (current_ban_settings.enable_ban_for_bandwidth && (convert_speed_to_mbps(in_bps_average) > current_ban_settings.ban_threshold_mbps or
+                                     convert_speed_to_mbps(out_bps_average) > current_ban_settings.ban_threshold_mbps)) {
         attack_detected_by_bandwidth = true;
     }
 
-    if (global_ban_settings.enable_ban_for_flows_per_second &&
-        (in_flows_average > global_ban_settings.ban_threshold_flows or out_flows_average > global_ban_settings.ban_threshold_flows)) {
+    if (current_ban_settings.enable_ban_for_flows_per_second &&
+        (in_flows_average > current_ban_settings.ban_threshold_flows or out_flows_average > current_ban_settings.ban_threshold_flows)) {
         attack_detected_by_flow = true;
     }
 
