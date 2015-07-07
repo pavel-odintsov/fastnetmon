@@ -267,6 +267,8 @@ host_group_map_t host_groups;
 // Here we store assignment from subnet to certain host group for fast lookup
 subnet_to_host_group_map_t subnet_to_host_groups;
 
+host_group_ban_settings_map_t host_group_ban_settings_map;
+
 std::vector<subnet_t> our_networks;
 std::vector<subnet_t> whitelist_networks;
 
@@ -299,7 +301,7 @@ bool process_outgoing_traffic = true;
 void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_string);
 #endif
 
-ban_settings_t read_ban_settings(configuration_map_t configuration_map);
+ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::string host_group_name = "");
 void exabgp_prefix_ban_manage(std::string action, std::string prefix_as_string_with_mask, std::string exabgp_next_hop,
     std::string exabgp_community);
 std::string print_subnet_load();
@@ -907,7 +909,21 @@ bool load_configuration_file() {
     }
 
     // Read global ban configuration
-    global_ban_settings = read_ban_settings(configuration_map);
+    global_ban_settings = read_ban_settings(configuration_map, "");
+
+    // logger << log4cpp::Priority::INFO << "We read global ban settings: " << print_ban_thresholds(global_ban_settings);
+
+    // Read host group ban settings
+    for (host_group_map_t::iterator hostgroup_itr = host_groups.begin(); hostgroup_itr != host_groups.end(); ++hostgroup_itr) {
+        std::string host_group_name = hostgroup_itr->first;
+
+        logger << log4cpp::Priority::INFO << "We will read ban settings for " << host_group_name;
+
+        host_group_ban_settings_map[ host_group_name ] =  read_ban_settings(configuration_map, host_group_name);
+
+        //logger << log4cpp::Priority::INFO << "We read " << host_group_name << " ban settings "
+        //    << print_ban_thresholds(host_group_ban_settings_map[ host_group_name ]);
+    }
 
     if (configuration_map.count("white_list_path") != 0) {
         white_list_path = configuration_map["white_list_path"];
@@ -3123,35 +3139,40 @@ void print_attack_details_to_file(std::string details, std::string client_ip_as_
     }
 }
 
-ban_settings_t read_ban_settings(configuration_map_t configuration_map) {
+ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::string host_group_name) {
     ban_settings_t ban_settings;
 
-    if (configuration_map.count("enable_ban") != 0) {
-        ban_settings.enable_ban = configuration_map["enable_ban"] == "on";
+    std::string prefix = "";
+    if (host_group_name != "") {
+        prefix = host_group_name + "_";
+    } 
+
+    if (configuration_map.count(prefix + "enable_ban") != 0) {
+        ban_settings.enable_ban = configuration_map[prefix + "enable_ban"] == "on";
     }
 
-    if (configuration_map.count("ban_for_pps") != 0) {
-        ban_settings.enable_ban_for_pps = configuration_map["ban_for_pps"] == "on";
+    if (configuration_map.count(prefix + "ban_for_pps") != 0) {
+        ban_settings.enable_ban_for_pps = configuration_map[prefix + "ban_for_pps"] == "on";
     }
 
-    if (configuration_map.count("ban_for_bandwidth") != 0) {
-        ban_settings.enable_ban_for_bandwidth = configuration_map["ban_for_bandwidth"] == "on";
+    if (configuration_map.count(prefix + "ban_for_bandwidth") != 0) {
+        ban_settings.enable_ban_for_bandwidth = configuration_map[prefix + "ban_for_bandwidth"] == "on";
     }
 
-    if (configuration_map.count("ban_for_flows") != 0) {
-        ban_settings.enable_ban_for_flows_per_second = configuration_map["ban_for_flows"] == "on";
+    if (configuration_map.count(prefix + "ban_for_flows") != 0) {
+        ban_settings.enable_ban_for_flows_per_second = configuration_map[prefix + "ban_for_flows"] == "on";
     }
 
-    if (configuration_map.count("threshold_pps") != 0) {
-        ban_settings.ban_threshold_pps = convert_string_to_integer(configuration_map["threshold_pps"]);
+    if (configuration_map.count(prefix + "threshold_pps") != 0) {
+        ban_settings.ban_threshold_pps = convert_string_to_integer(configuration_map[prefix + "threshold_pps"]);
     }
 
-    if (configuration_map.count("threshold_mbps") != 0) {
-        ban_settings.ban_threshold_mbps = convert_string_to_integer(configuration_map["threshold_mbps"]);
+    if (configuration_map.count(prefix + "threshold_mbps") != 0) {
+        ban_settings.ban_threshold_mbps = convert_string_to_integer(configuration_map[prefix + "threshold_mbps"]);
     }
 
-    if (configuration_map.count("threshold_flows") != 0) {
-        ban_settings.ban_threshold_flows = convert_string_to_integer(configuration_map["threshold_flows"]);
+    if (configuration_map.count(prefix + "threshold_flows") != 0) {
+        ban_settings.ban_threshold_flows = convert_string_to_integer(configuration_map[prefix + "threshold_flows"]);
     }
 
     return ban_settings;
