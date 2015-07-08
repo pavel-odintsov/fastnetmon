@@ -16,7 +16,7 @@ void* speed_printer(void* ptr) {
         uint64_t packets_after = received_packets;
         uint64_t pps = packets_after - packets_before;
  
-        printf("We process: %llu pps\n", pps);
+        printf("We process: %llu pps\n", (long long)pps);
     }   
 }
 
@@ -27,7 +27,7 @@ void run_speed_printer() {
     pthread_detach(thread);
 }
 
-void packet(char *data, int length) {
+void process_packet(char *data, int length) {
     // Put packet to the cache
     __builtin_prefetch(data);
 
@@ -41,3 +41,35 @@ void packet(char *data, int length) {
     __sync_fetch_and_add(&received_packets, 1);
     //printf("Got packet with %d bytes.\n", length);
 }
+
+//
+// DMA processing callback for Lua
+//
+
+// Legacy receive descriptor format.
+// See 82599 data sheet section 7.1.5.
+struct rdesc {
+  uint64_t address;
+  uint16_t length;
+  uint16_t cksum;
+  uint8_t status;
+  uint8_t errors;
+  uint16_t vlan;
+} __attribute__((packed));
+
+// Traverse the hardware receive descriptor ring.
+// Process each packet that is ready.
+// Return the updated ring indx.
+int process_packets(char **packets,       // array of packet data buffers
+                    struct rdesc *rxring, // hardware RX descriptor ring
+                    int ring_size,        // size of ring
+                    int index,
+                    int max) {          // current index into ring
+  while (max-- > 0 && (rxring[index].status & 1)) { // packet ready?
+    process_packet(packets[index], rxring[index].length); // process packet
+    rxring[index].status = 0;                     // reset descriptor
+    index = (index + 1) & (ring_size-1);          // move on to next ring item
+  }
+  return index;
+}
+
