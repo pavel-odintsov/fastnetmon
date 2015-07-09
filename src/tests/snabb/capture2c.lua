@@ -27,7 +27,7 @@ void run_speed_printer();
 -- Array where we store a function for each NIC that will process the traffic.
 local run_functions = {}
 
-for pciaddr in pciaddresses:gmatch("[0-9:.]+") do
+for pciaddr in pciaddresses:gmatch("[0-9a-z:.]+") do
 
    -- Initialize a device driver
    print("Initializing NIC: "..pciaddr)
