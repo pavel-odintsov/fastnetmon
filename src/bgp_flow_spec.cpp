@@ -42,6 +42,25 @@ int main() {
     exabgp_rule.set_action( my_action );
 
     std::cout << exabgp_rule.serialize();
+
+    /*
+        Example output:
+
+        flow {
+            match {
+                source 4.0.0.0/24;
+                destination 127.0.0.0/24;
+                protocol [ udp ];
+                source-port [ =53 ];
+                destination-port [ =80 ];
+                packet-length [ =777 =1122 ];
+                fragment [ is-fragment dont-fragment ];
+            }
+         then {
+                rate-limit 1024;
+        }
+    }
+    */
 }
 
 void exabgp_flow_spec_rule_ban_manage(std::string action, flow_spec_rule_t flow_spec_rule) {
