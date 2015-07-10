@@ -41,7 +41,12 @@ int main() {
 
     exabgp_rule.set_action( my_action );
 
-    std::cout << exabgp_rule.serialize();
+    exabgp_rule.announce_is_correct();
+
+    //std::cout << exabgp_rule.serialize();
+    std::cout << exabgp_rule.serialize_complete_exabgp_configuration();
+
+    // /usr/src/exabgp/sbin/exabgp --test flow_spec.conf 2> /dev/null ; echo $?
 
     /*
         Example output:

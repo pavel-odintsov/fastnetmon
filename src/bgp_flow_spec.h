@@ -121,6 +121,14 @@ class flow_spec_rule_t {
             destination_subnet_used = false;
         }
 
+        bool announce_is_correct() {
+            if (source_subnet_used || destination_subnet_used) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
         void set_source_subnet(subnet_t source_subnet) {
             this->source_subnet = source_subnet;
             this->source_subnet_used = true;
@@ -232,27 +240,62 @@ class flow_spec_rule_t {
         std::vector<flow_spec_fragmentation_types_t> fragmentation_flags;
 
         bgp_flow_spec_action_t action;
-
-        bool sanity_check() {
-            // check all fields for correctness! We SHOULD not announce weird flow spec
-        }    
 };
 
 class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
     public:
+        exabgp_flow_spec_rule_t() {
+            four_spaces = "    ";
+        }
+
+        std::string serialize_complete_exabgp_configuration() {
+            std::ostringstream buffer;
+    
+            buffer << "neighbor 127.0.0.1 {" << "\n"
+            << four_spaces << "router-id 1.2.3.4;" << "\n"
+            << four_spaces << "local-address 127.0.0.1;" << "\n"
+            << four_spaces << "local-as 1;" << "\n"
+            << four_spaces << "peer-as 1;" << "\n"
+            << four_spaces << "group-updates false;" << "\n\n";
+
+            buffer << four_spaces << "family {" << "\n"
+                << four_spaces << four_spaces << "ipv4 flow;" << "\n" 
+                << four_spaces << four_spaces << "ipv6 flow;" << "\n"
+                << four_spaces << "}" << "\n";
+
+            buffer << "flow {\n";
+            buffer << this->serialize();          
+            buffer << "}\n"; 
+
+            buffer << "}" << "\n";
+
+            return buffer.str(); 
+        }
+
         std::string serialize() {
             std::ostringstream buffer;
 
-            std::string four_spaces = "    ";
-            buffer << "flow {\n" << four_spaces << "match {\n";
+            buffer
+                << "route {" << "\n"
+                << this->serialize_match()
+                << this->serialize_then()
+                << "\n" << "}" << "\n";
+
+            return buffer.str();
+        }
+
+        std::string serialize_match() {
+            std::ostringstream buffer;
+
+            buffer << four_spaces << "match {\n";
 
             // Match block
             if (this->source_subnet_used) {
-                buffer <<  four_spaces << four_spaces << "source " << serialize_source_subnet() << ";\n";
+                buffer <<  four_spaces << four_spaces << "source " << serialize_source_subnet() << ";" << "\n";
             }
 
             if (this->destination_subnet_used) {
-                buffer <<  four_spaces << four_spaces << "destination " << serialize_destination_subnet() << ";\n";
+                buffer <<  four_spaces << four_spaces << "destination " << serialize_destination_subnet() << ";" << "\n";
             }
 
             if (!this->protocols.empty()) {
@@ -279,16 +322,22 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
             // Match block end
 
             buffer << four_spaces << "}";
+            return buffer.str();
+        }
 
-            buffer << "\n" << four_spaces << "then {\n";
+        std::string serialize_then() {
+            std::ostringstream buffer;
+            buffer << "\n" << four_spaces << "then {" << "\n";
 
             buffer <<  four_spaces << four_spaces << this->action.serialize() << "\n"; 
 
             buffer << four_spaces << "}";
-            buffer << "\n}\n"; 
 
             return buffer.str();
         }     
+
+    private:
+        std::string four_spaces;
 };
 
 #endif
