@@ -61,6 +61,8 @@ std::ostream &operator<<(std::ostream &os, bgp_flow_spec_protocol_t const &proto
         return os << "tcp";
     } else if (protocol == FLOW_SPEC_PROTOCOL_ICMP) {
         return os << "icmp";
+    } else {
+        return os;
     }
 }
 
@@ -77,6 +79,8 @@ std::ostream &operator<<(std::ostream &os, flow_spec_fragmentation_types_t const
         return os << "last-fragment";
     } else if (fragment_flag == FLOW_NOT_A_FRAGMENT) {
         return os << "not-a-fragment";
+    } else {
+        return os;
     }
 }
 
@@ -135,11 +139,11 @@ class flow_spec_rule_t {
         }
 
         std::string serialize_source_subnet() {
-            return convert_subnet_to_string(this->source_subnet);
+            return "source " + convert_subnet_to_string(this->source_subnet) + ";";
         }
 
         std::string serialize_destination_subnet() {
-            return convert_subnet_to_string(this->destination_subnet);
+            return "destination " + convert_subnet_to_string(this->destination_subnet) + ";";
         }
 
         void set_destination_subnet(subnet_t destination_subnet) {
@@ -155,7 +159,7 @@ class flow_spec_rule_t {
         std::string serialize_source_ports() {
             std::ostringstream output_buffer;
             
-            output_buffer << "source-port [ " << serialize_vector_by_string_with_prefix<uint16_t>(this->source_ports, ",", "=") << " ];";
+            output_buffer << "source-port [ " << serialize_vector_by_string_with_prefix<uint16_t>(this->source_ports, " ", "=") << " ];";
 
             return output_buffer.str();
         }
@@ -188,7 +192,7 @@ class flow_spec_rule_t {
             this->protocols.push_back(protocol);
         }
 
-        std::string serialize_protocol() {
+        std::string serialize_protocols() {
             std::ostringstream output_buffer;
 
             output_buffer << "protocol [ " <<  serialize_vector_by_string(this->protocols, " ")  << " ];";
@@ -291,7 +295,7 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
 
             // Match block
             if (this->source_subnet_used) {
-                buffer <<  four_spaces << four_spaces << "source " << serialize_source_subnet() << ";" << "\n";
+                buffer <<  four_spaces << four_spaces <<  serialize_source_subnet() << "\n";
             }
 
             if (this->destination_subnet_used) {
@@ -299,7 +303,7 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
             }
 
             if (!this->protocols.empty()) {
-                buffer <<  four_spaces << four_spaces << this->serialize_protocol() << "\n";
+                buffer <<  four_spaces << four_spaces << this->serialize_protocols() << "\n";
             }
 
 
