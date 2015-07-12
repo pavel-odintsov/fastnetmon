@@ -255,6 +255,19 @@ if (BUILD_PCAP_READER)
     target_link_libraries(fastnetmon_pcap_reader sflow_plugin)
 endif()
 
+# cmake -DBUILD_TESTS=ON ..
+if (BUILD_TESTS) 
+    add_executable(fastnetmon_tests fastnetmon_tests.cpp)
+    target_link_libraries(fastnetmon_tests fast_library)
+    target_link_libraries(fastnetmon_tests ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(fastnetmon_tests ${Boost_LIBRARIES})
+
+    # Compiled Google Library
+    include_directories("/Users/pavel-odintsov/googletest-read-only/include")
+    target_link_libraries(fastnetmon_tests "/Users/pavel-odintsov/googletest-read-only/build/libgtest.a")
+    target_link_libraries(fastnetmon_tests "/Users/pavel-odintsov/googletest-read-only/build/libgtest_main.a")
+endif()
+
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" OR ${CMAKE_SYSTEM_NAME} STREQUAL "DragonFly")
     install(TARGETS fastnetmon DESTINATION bin)
     install(TARGETS fastnetmon_client DESTINATION bin)
