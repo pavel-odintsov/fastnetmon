@@ -360,10 +360,6 @@ void add_peer_template(global_template_storage_t& table_for_add,
     return;
 }
 
-int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t* data, simple_packet& packet) {
-    /* XXX: use a table-based interpreter */
-    switch (record_type) {
-
 /* Copy an int (possibly shorter than the target) keeping their LSBs aligned */
 #define BE_COPY(a) memcpy((u_char*)&a + (sizeof(a) - record_length), data, record_length);
 
@@ -375,6 +371,10 @@ int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t* data, simp
     case v9_field:                                       \
         memcpy(&packet.flow_field, data, record_length); \
         break
+
+int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t* data, simple_packet& packet) {
+    /* XXX: use a table-based interpreter */
+    switch (record_type) {
         V9_FIELD(NF9_IN_BYTES, OCTETS, length);
         V9_FIELD(NF9_IN_PACKETS, PACKETS, number_of_packets);
         V9_FIELD(NF9_IN_PROTOCOL, PROTO_FLAGS_TOS, protocol);
@@ -382,8 +382,46 @@ int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t* data, simp
         V9_FIELD(NF9_L4_SRC_PORT, SRCDST_PORT, source_port);
         V9_FIELD(NF9_L4_DST_PORT, SRCDST_PORT, destination_port);
 
-        V9_FIELD_ADDR(NF9_IPV4_SRC_ADDR, SRC_ADDR4, src_ip);
-        V9_FIELD_ADDR(NF9_IPV4_DST_ADDR, DST_ADDR4, dst_ip);
+        case NF9_IPV4_SRC_ADDR:
+            memcpy(&packet.src_ip, data, record_length);
+            break;
+        case NF9_IPV4_DST_ADDR:
+            memcpy(&packet.dst_ip, data, record_length);
+            break;
+        case NF9_INPUT_SNMP: {
+                uint16_t input_port = 0;
+
+                if (record_length > sizeof(input_port)) {
+                    logger << log4cpp::Priority::ERROR << "Received very big packet for NF9_INPUT_SNMP!";
+                    return 0;
+                }
+
+                BE_COPY(input_port);
+                input_port = fast_ntoh(input_port);
+
+                // logger << log4cpp::Priority::INFO << "NF9_INPUT_SNMP is: " << input_port;
+            }
+
+            break;
+        case NF9_OUTPUT_SNMP: {
+                uint16_t output_port = 0; 
+
+                if (record_length > sizeof(output_port)) {
+                    logger << log4cpp::Priority::ERROR << "Received very big packet for NF9_OUTPUT_SNMP!";
+                    return 0;
+                }    
+
+                BE_COPY(output_port);
+                output_port = fast_ntoh(output_port);
+
+                // logger << log4cpp::Priority::INFO << "NF9_OUTPUT_SNMP is: " << output_port;
+            }    
+
+            break;        
+
+
+        //V9_FIELD_ADDR(NF9_IPV4_SRC_ADDR, SRC_ADDR4, src_ip);
+        //V9_FIELD_ADDR(NF9_IPV4_DST_ADDR, DST_ADDR4, dst_ip);
 
         // Sampling rate
         // We use NULL as second argument because it's suelles for us
@@ -412,6 +450,7 @@ int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t* data, simp
         //#undef V9_FIELD_ADDR
         //#undef BE_COPY
     }
+
     return 0;
 }
 
@@ -561,9 +600,12 @@ void nf9_flowset_to_store(u_int8_t* pkt, size_t len, struct NF9_HEADER* nf9_hdr,
         u_int record_type = iter->type;
         u_int record_length = iter->len;
 
-        nf9_rec_to_flow(record_type, record_length, pkt + offset, packet);
+        int nf9_rec_to_flow_result = nf9_rec_to_flow(record_type, record_length, pkt + offset, packet);
         // logger<< log4cpp::Priority::INFO<<"Read data with type: "<<record_type<<" and
         // length:"<<record_length;
+        if (nf9_rec_to_flow_result != 0) {
+            return;
+        }   
 
         offset += record_length;
     }
