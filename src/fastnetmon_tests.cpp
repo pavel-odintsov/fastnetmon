@@ -183,6 +183,41 @@ TEST(BgpFlowSpec, urg) {
     EXPECT_EQ(exabgp_rule.serialize_tcp_flags(), "tcp-flags [ urgent ];" );
 }
 
+TEST(BgpFlowSpec, serialize_match_first) {
+    exabgp_flow_spec_rule_t exabgp_rule;
+    exabgp_rule.add_protocol(FLOW_SPEC_PROTOCOL_UDP);
+    exabgp_rule.add_source_port(53);
+    exabgp_rule.add_destination_port(80);
+
+    exabgp_rule.add_packet_length(777);
+    exabgp_rule.add_packet_length(1122);
+
+    exabgp_rule.add_fragmentation_flag(FLOW_SPEC_IS_A_FRAGMENT);
+    exabgp_rule.add_fragmentation_flag(FLOW_SPEC_DONT_FRAGMENT);
+
+    exabgp_rule.set_destination_subnet( convert_subnet_from_string_to_binary_with_cidr_format("127.0.0.0/24") );
+    exabgp_rule.set_source_subnet( convert_subnet_from_string_to_binary_with_cidr_format("4.0.0.0/24") );
+    
+    // Disable indentation
+    exabgp_rule.disable_indents();
+
+    EXPECT_EQ( exabgp_rule.serialize_match(), "match {source 4.0.0.0/24;destination 127.0.0.0/24;protocol [ udp ];source-port [ =53 ];destination-port [ =80 ];packet-length [ =777 =1122 ];fragment [ is-fragment dont-fragment ];}");
+}
+
+TEST(BgpFlowSpec, serialize_then_first) {
+    exabgp_flow_spec_rule_t exabgp_rule;
+    
+    bgp_flow_spec_action_t my_action;
+    //my_action.set_type(FLOW_SPEC_ACTION_ACCEPT);
+    my_action.set_type(FLOW_SPEC_ACTION_RATE_LIMIT);
+    my_action.set_rate_limit(1024); 
+
+    exabgp_rule.set_action( my_action );
+
+    exabgp_rule.disable_indents();
+
+    EXPECT_EQ( exabgp_rule.serialize_then(), "then {rate-limit 1024;}");
+}
 
 // Flow Spec actions tests
 
@@ -245,3 +280,4 @@ TEST(serialize_vector_by_string_with_prefix, few_elements) {
 
     EXPECT_EQ( serialize_vector_by_string_with_prefix(vect, ",", "^"), "^123,^456"); 
 }
+

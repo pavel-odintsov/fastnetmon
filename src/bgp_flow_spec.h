@@ -289,6 +289,11 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
     public:
         exabgp_flow_spec_rule_t() {
             four_spaces = "    ";
+            this->enabled_indents = true;
+        }
+
+        void disable_indents() {
+            enabled_indents = false;
         }
 
         std::string serialize_complete_exabgp_configuration() {
@@ -329,20 +334,52 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
 
         std::string serialize_match() {
             std::ostringstream buffer;
+    
+            if (enabled_indents) {
+                buffer << four_spaces;
+            }
 
-            buffer << four_spaces << "match {\n";
+            buffer << "match {";
+
+            if (enabled_indents) {
+                buffer << "\n";
+            }
 
             // Match block
             if (this->source_subnet_used) {
-                buffer <<  four_spaces << four_spaces <<  serialize_source_subnet() << "\n";
+                if (enabled_indents) {
+                    buffer <<  four_spaces << four_spaces;
+                }
+
+                buffer <<  serialize_source_subnet();
+
+                if (enabled_indents) {
+                    buffer << "\n";
+                }
             }
 
             if (this->destination_subnet_used) {
-                buffer <<  four_spaces << four_spaces << "destination " << serialize_destination_subnet() << ";" << "\n";
+                if (enabled_indents) {
+                    buffer <<  four_spaces << four_spaces;
+                }
+
+                buffer << serialize_destination_subnet();
+                
+                if (enabled_indents) {
+                    buffer << "\n";
+                }
             }
 
             if (!this->protocols.empty()) {
-                buffer <<  four_spaces << four_spaces << this->serialize_protocols() << "\n";
+                if (enabled_indents) {
+                    buffer <<  four_spaces << four_spaces;
+                }
+
+                buffer << this->serialize_protocols();
+    
+                if (enabled_indents) {
+                    buffer << "\n";
+                }
             }
 
             // If we have TCP in protocols list explicitly, we add flags
@@ -350,45 +387,104 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
                 != this->protocols.end() ) {
 
                 if (!this->tcp_flags.empty()) {
-                    buffer <<  four_spaces << four_spaces << this->serialize_tcp_flags() << "\n";
+                    if (enabled_indents) {
+                        buffer << four_spaces << four_spaces;
+                    }
+
+                    buffer << this->serialize_tcp_flags();
+
+                    if (enabled_indents) {
+                        buffer << "\n";
+                    }
                 }
             }
 
             if (!this->source_ports.empty()) {
-                buffer <<  four_spaces << four_spaces << this->serialize_source_ports() << "\n";
+                if (enabled_indents) {
+                    buffer <<  four_spaces << four_spaces;
+                }
+
+                buffer << this->serialize_source_ports();
+
+                if (enabled_indents) {
+                    buffer << "\n";
+                }
             }
 
             if (!this->destination_ports.empty()) {
-                buffer <<  four_spaces << four_spaces << this->serialize_destination_ports() << "\n";
+                if (enabled_indents) {
+                    buffer <<  four_spaces << four_spaces;
+                }
+
+                buffer << this->serialize_destination_ports();
+            
+                if (enabled_indents) {
+                    buffer << "\n";
+                }
             }
 
             if (!this->packet_lengths.empty()) {
-                buffer <<  four_spaces << four_spaces << this->serialize_packet_lengths() << "\n";
+                if (enabled_indents) {
+                    buffer << four_spaces << four_spaces;
+                }
+
+                buffer << this->serialize_packet_lengths();
+
+                if (enabled_indents) {
+                    buffer << "\n";
+                }
             }
 
             if (!this->fragmentation_flags.empty()) {
-                buffer << four_spaces << four_spaces << this->serialize_fragmentation_flags() << "\n"; 
+                if (enabled_indents) {
+                    buffer << four_spaces << four_spaces;
+                }
+    
+                buffer << this->serialize_fragmentation_flags();
+
+                if (enabled_indents) {
+                    buffer << "\n"; 
+                }
             }
 
             // Match block end
-
-            buffer << four_spaces << "}";
+            if (enabled_indents) {
+                buffer << four_spaces;
+            }
+            
+            buffer << "}";
             return buffer.str();
         }
 
         std::string serialize_then() {
             std::ostringstream buffer;
-            buffer << "\n" << four_spaces << "then {" << "\n";
+                
+            if (enabled_indents) {
+                buffer << "\n" << four_spaces;
+            }
 
-            buffer <<  four_spaces << four_spaces << this->action.serialize() << "\n"; 
+            buffer << "then {";
 
-            buffer << four_spaces << "}";
+            if (enabled_indents) {
+                buffer << "\n";
+                buffer <<  four_spaces << four_spaces;
+            }   
+ 
+            buffer << this->action.serialize();
+
+            if (enabled_indents) {
+                buffer << "\n"; 
+                buffer << four_spaces;
+            }
+
+            buffer << "}";
 
             return buffer.str();
         }     
 
     private:
         std::string four_spaces;
+        bool enabled_indents; 
 };
 
 #endif
