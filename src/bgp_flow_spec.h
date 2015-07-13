@@ -39,6 +39,16 @@ enum flow_spec_fragmentation_types_t {
     FLOW_NOT_A_FRAGMENT,
 };
 
+// TCP flags for Flow Spec
+enum flow_spec_tcp_flags_t {
+    FLOW_TCP_FLAG_SYN,
+    FLOW_TCP_FLAG_FIN,
+    FLOW_TCP_FLAG_URG,
+    FLOW_TCP_FLAG_ACK,
+    FLOW_TCP_FLAG_PSH,
+    FLOW_TCP_FLAG_RST,
+};
+
 // Flow spec actions
 enum bgp_flow_spec_action_types_t {
     FLOW_SPEC_ACTION_DISCARD,
@@ -79,6 +89,24 @@ std::ostream &operator<<(std::ostream &os, flow_spec_fragmentation_types_t const
         return os << "last-fragment";
     } else if (fragment_flag == FLOW_NOT_A_FRAGMENT) {
         return os << "not-a-fragment";
+    } else {
+        return os;
+    }
+}
+
+std::ostream &operator<<(std::ostream &os, flow_spec_tcp_flags_t const &tcp_flag) {
+    if (tcp_flag == FLOW_TCP_FLAG_SYN) {
+        return os << "syn";
+    } else if (tcp_flag == FLOW_TCP_FLAG_ACK) {
+        return os << "ack";
+    } else if (tcp_flag == FLOW_TCP_FLAG_FIN) {
+        return os << "fin";
+    } else if (tcp_flag == FLOW_TCP_FLAG_URG) {
+        return os << "urgent";
+    } else if (tcp_flag == FLOW_TCP_FLAG_PSH) {
+        return os << "push";
+    } else if(tcp_flag == FLOW_TCP_FLAG_RST) {
+        return os << "rst"; 
     } else {
         return os;
     }
@@ -208,10 +236,16 @@ class flow_spec_rule_t {
             return output_buffer.str();
         }
 
-        /*
-        std::string tcp_flags;
-        bool tcp_flags_used;
 
+        std::string serialize_tcp_flags() {
+            std::ostringstream output_buffer;
+
+            output_buffer << "tcp-flags [ " << serialize_vector_by_string(this->tcp_flags, " ")  << " ];";
+
+            return output_buffer.str();
+        }
+
+        /*
         std::string icmp_flags;
         bool icmp_flags_used;
 
@@ -224,6 +258,10 @@ class flow_spec_rule_t {
 
         void add_fragmentation_flag(flow_spec_fragmentation_types_t flag) {
             this->fragmentation_flags.push_back(flag);
+        }
+
+        void add_tcp_flag(flow_spec_tcp_flags_t flag) {
+            this->tcp_flags.push_back(flag);
         }
 
         void set_action(bgp_flow_spec_action_t action) {
@@ -242,6 +280,7 @@ class flow_spec_rule_t {
         std::vector<uint16_t> packet_lengths;
         std::vector<bgp_flow_spec_protocol_t> protocols;
         std::vector<flow_spec_fragmentation_types_t> fragmentation_flags;
+        std::vector<flow_spec_tcp_flags_t> tcp_flags;
 
         bgp_flow_spec_action_t action;
 };
@@ -306,6 +345,14 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
                 buffer <<  four_spaces << four_spaces << this->serialize_protocols() << "\n";
             }
 
+            // If we have TCP in protocols list explicitly, we add flags
+            if (find(this->protocols.begin(), this->protocols.end(), FLOW_SPEC_PROTOCOL_TCP)
+                != this->protocols.end() ) {
+
+                if (!this->tcp_flags.empty()) {
+                    buffer <<  four_spaces << four_spaces << this->serialize_tcp_flags() << "\n";
+                }
+            }
 
             if (!this->source_ports.empty()) {
                 buffer <<  four_spaces << four_spaces << this->serialize_source_ports() << "\n";

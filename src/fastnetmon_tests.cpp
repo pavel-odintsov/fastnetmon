@@ -140,7 +140,108 @@ TEST(BgpFlowSpec, fragmentation_fragments) {
     EXPECT_EQ(exabgp_rule.serialize_fragmentation_flags(), "fragment [ not-a-fragment ];");
 }
 
-// exabgp_rule.add_fragmentation_flag(FLOW_SPEC_IS_A_FRAGMENT);
-// exabgp_rule.add_fragmentation_flag(FLOW_SPEC_DONT_FRAGMENT);
-// 
+// tcp flags tests
+TEST(BgpFlowSpec, syn) {
+    exabgp_flow_spec_rule_t exabgp_rule;
+    exabgp_rule.add_tcp_flag(FLOW_TCP_FLAG_SYN);
 
+    EXPECT_EQ(exabgp_rule.serialize_tcp_flags(), "tcp-flags [ syn ];" );
+}
+
+TEST(BgpFlowSpec, rst) {
+    exabgp_flow_spec_rule_t exabgp_rule;
+    exabgp_rule.add_tcp_flag(FLOW_TCP_FLAG_RST);
+
+    EXPECT_EQ(exabgp_rule.serialize_tcp_flags(), "tcp-flags [ rst ];" );
+}
+
+TEST(BgpFlowSpec, ack) {
+    exabgp_flow_spec_rule_t exabgp_rule;
+    exabgp_rule.add_tcp_flag(FLOW_TCP_FLAG_ACK);
+
+    EXPECT_EQ(exabgp_rule.serialize_tcp_flags(), "tcp-flags [ ack ];" );
+}
+
+TEST(BgpFlowSpec, fin) {
+    exabgp_flow_spec_rule_t exabgp_rule;
+    exabgp_rule.add_tcp_flag(FLOW_TCP_FLAG_FIN);
+
+    EXPECT_EQ(exabgp_rule.serialize_tcp_flags(), "tcp-flags [ fin ];" );
+}
+
+TEST(BgpFlowSpec, psh) {
+    exabgp_flow_spec_rule_t exabgp_rule;
+    exabgp_rule.add_tcp_flag(FLOW_TCP_FLAG_PSH);
+
+    EXPECT_EQ(exabgp_rule.serialize_tcp_flags(), "tcp-flags [ push ];" );
+}
+
+TEST(BgpFlowSpec, urg) {
+    exabgp_flow_spec_rule_t exabgp_rule;
+    exabgp_rule.add_tcp_flag(FLOW_TCP_FLAG_URG);
+
+    EXPECT_EQ(exabgp_rule.serialize_tcp_flags(), "tcp-flags [ urgent ];" );
+}
+
+
+// Flow Spec actions tests
+
+TEST(BgpFlowSpecAction, rate_limit) {
+    bgp_flow_spec_action_t my_action;
+    my_action.set_type(FLOW_SPEC_ACTION_RATE_LIMIT);
+    my_action.set_rate_limit(1024);
+    
+    EXPECT_EQ( my_action.serialize(), "rate-limit 1024;");    
+}
+
+TEST(BgpFlowSpecAction, discard) {
+    bgp_flow_spec_action_t my_action;
+    my_action.set_type(FLOW_SPEC_ACTION_DISCARD);
+    
+    EXPECT_EQ( my_action.serialize(), "discard;"); 
+}
+
+TEST(BgpFlowSpecAction, accept) {
+    bgp_flow_spec_action_t my_action;
+    my_action.set_type(FLOW_SPEC_ACTION_ACCEPT);
+    
+    EXPECT_EQ( my_action.serialize(), "accept;"); 
+}
+
+TEST(BgpFlowSpecAction, default_constructor) {
+    bgp_flow_spec_action_t my_action;
+    
+    EXPECT_EQ( my_action.serialize(), "accept;"); 
+}
+
+// Serializers tests
+
+TEST(serialize_vector_by_string, single_element) {
+    std::vector<std::string> vect;
+    vect.push_back("123");
+
+    EXPECT_EQ( serialize_vector_by_string(vect, ","), "123"); 
+} 
+
+TEST(serialize_vector_by_string, few_elements) {
+    std::vector<std::string> vect;
+    vect.push_back("123");
+    vect.push_back("456");
+
+    EXPECT_EQ( serialize_vector_by_string(vect, ","), "123,456"); 
+}
+
+TEST(serialize_vector_by_string_with_prefix, single_element) {
+    std::vector<uint16_t> vect;
+    vect.push_back(123);
+
+    EXPECT_EQ( serialize_vector_by_string_with_prefix(vect, ",", "^"), "^123"); 
+} 
+
+TEST(serialize_vector_by_string_with_prefix, few_elements) {
+    std::vector<uint16_t> vect;
+    vect.push_back(123);
+    vect.push_back(456);
+
+    EXPECT_EQ( serialize_vector_by_string_with_prefix(vect, ",", "^"), "^123,^456"); 
+}
