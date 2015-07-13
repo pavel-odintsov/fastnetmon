@@ -311,9 +311,9 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
                 << four_spaces << four_spaces << "ipv6 flow;" << "\n"
                 << four_spaces << "}" << "\n";
 
-            buffer << "flow {\n";
+            buffer << "flow {" << "\n";
             buffer << this->serialize();          
-            buffer << "}\n"; 
+            buffer << "}" << "\n"; 
 
             buffer << "}" << "\n";
 
@@ -323,11 +323,24 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
         std::string serialize() {
             std::ostringstream buffer;
 
-            buffer
-                << "route {" << "\n"
-                << this->serialize_match()
-                << this->serialize_then()
-                << "\n" << "}" << "\n";
+            buffer << "route {";
+            
+            if (enabled_indents) {
+                buffer << "\n";
+            }
+
+            buffer << this->serialize_match();
+            buffer << this->serialize_then();
+
+            if (enabled_indents) {
+                buffer << "\n";
+            }
+
+            buffer << "}";
+
+            if (enabled_indents) {
+                buffer << "\n";
+            }
 
             return buffer.str();
         }
@@ -486,5 +499,11 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
         std::string four_spaces;
         bool enabled_indents; 
 };
+
+void exabgp_flow_spec_rule_ban_manage(std::string action, flow_spec_rule_t flow_spec_rule) {
+// "announce flow route {\\n match {\\n source 10.0.0.1/32;\\nsource-port =" + str(i) +
+// ";\\n destination 1.2.3.4/32;\\n }\\n then {\\n discard;\\n }\\n }\\n\n")
+}
+
 
 #endif
