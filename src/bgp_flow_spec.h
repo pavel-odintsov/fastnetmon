@@ -117,6 +117,8 @@ class bgp_flow_spec_action_t {
         bgp_flow_spec_action_t() {
            this->action_type = FLOW_SPEC_ACTION_ACCEPT; 
            this->rate_limit = 9600;
+
+            sentence_separator = ";";
         }
 
         void set_type(bgp_flow_spec_action_types_t action_type) {
@@ -127,18 +129,23 @@ class bgp_flow_spec_action_t {
             this->rate_limit = rate_limit;
         } 
 
+        void set_sentence_separator(std::string sentence_separator) {
+            this->sentence_separator = sentence_separator;
+        }
+
         std::string serialize() {
             if (this->action_type == FLOW_SPEC_ACTION_ACCEPT) {
-                return "accept;";
+                return "accept" + sentence_separator;
             } else if (this->action_type == FLOW_SPEC_ACTION_DISCARD) {
-                return "discard;";
+                return "discard" + sentence_separator;
             } else if (this->action_type == FLOW_SPEC_ACTION_RATE_LIMIT) {
-                return "rate-limit " + convert_int_to_string(this->rate_limit) + ";"; 
+                return "rate-limit " + convert_int_to_string(this->rate_limit) + sentence_separator; 
             }
         } 
     private:
         bgp_flow_spec_action_types_t action_type;
         unsigned int rate_limit;
+        std::string sentence_separator;
         // TBD
          
         // Community, rate-limit value
@@ -166,14 +173,6 @@ class flow_spec_rule_t {
             this->source_subnet_used = true;
         }
 
-        std::string serialize_source_subnet() {
-            return "source " + convert_subnet_to_string(this->source_subnet) + ";";
-        }
-
-        std::string serialize_destination_subnet() {
-            return "destination " + convert_subnet_to_string(this->destination_subnet) + ";";
-        }
-
         void set_destination_subnet(subnet_t destination_subnet) {
             this->destination_subnet = destination_subnet;
             this->destination_subnet_used = true;
@@ -183,34 +182,9 @@ class flow_spec_rule_t {
             this->source_ports.push_back(source_port);
         }
 
-
-        std::string serialize_source_ports() {
-            std::ostringstream output_buffer;
-            
-            output_buffer << "source-port [ " << serialize_vector_by_string_with_prefix<uint16_t>(this->source_ports, " ", "=") << " ];";
-
-            return output_buffer.str();
-        }
-
         void add_destination_port(uint16_t destination_port) {
             this->destination_ports.push_back(destination_port);
         }
-
-        std::string serialize_destination_ports() {
-            std::ostringstream output_buffer;
-
-            output_buffer << "destination-port [ " << serialize_vector_by_string_with_prefix<uint16_t>(this->destination_ports, " ", "=") << " ];";
-
-            return output_buffer.str();
-        }
-
-        std::string serialize_packet_lengths() {
-            std::ostringstream output_buffer;
-
-            output_buffer << "packet-length [ " <<  serialize_vector_by_string_with_prefix<uint16_t>(this->packet_lengths, " ", "=")  << " ];";
-
-            return output_buffer.str();
-        } 
 
         void add_packet_length(uint16_t packet_length) {
             this->packet_lengths.push_back(packet_length);
@@ -218,31 +192,6 @@ class flow_spec_rule_t {
 
         void add_protocol(bgp_flow_spec_protocol_t protocol) {
             this->protocols.push_back(protocol);
-        }
-
-        std::string serialize_protocols() {
-            std::ostringstream output_buffer;
-
-            output_buffer << "protocol [ " <<  serialize_vector_by_string(this->protocols, " ")  << " ];";
-
-            return output_buffer.str();
-        }
-
-        std::string serialize_fragmentation_flags() {
-            std::ostringstream output_buffer;
-
-            output_buffer << "fragment [ " <<  serialize_vector_by_string(this->fragmentation_flags, " ")  << " ];";
-
-            return output_buffer.str();
-        }
-
-
-        std::string serialize_tcp_flags() {
-            std::ostringstream output_buffer;
-
-            output_buffer << "tcp-flags [ " << serialize_vector_by_string(this->tcp_flags, " ")  << " ];";
-
-            return output_buffer.str();
         }
 
         /*
@@ -289,11 +238,85 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
     public:
         exabgp_flow_spec_rule_t() {
             four_spaces = "    ";
+            sentence_separator = ";";
+
             this->enabled_indents = true;
+            this->enble_block_headers = true;
         }
 
         void disable_indents() {
             enabled_indents = false;
+        }
+
+        std::string serialize_source_ports() {
+            std::ostringstream output_buffer;
+
+            output_buffer << "source-port [ " << serialize_vector_by_string_with_prefix<uint16_t>(this->source_ports, " ", "=") << " ]" << sentence_separator;
+
+            return output_buffer.str();
+        }
+
+        std::string serialize_destination_ports() {
+            std::ostringstream output_buffer;
+
+            output_buffer << "destination-port [ " << serialize_vector_by_string_with_prefix<uint16_t>(this->destination_ports, " ", "=") << " ]" << sentence_separator;
+
+            return output_buffer.str();
+        }
+
+        std::string serialize_packet_lengths() {
+            std::ostringstream output_buffer;
+
+            output_buffer << "packet-length [ " <<  serialize_vector_by_string_with_prefix<uint16_t>(this->packet_lengths, " ", "=")  << " ]" << sentence_separator;
+
+            return output_buffer.str();
+        }
+
+
+        std::string serialize_protocols() {
+            std::ostringstream output_buffer;
+
+            output_buffer << "protocol [ " <<  serialize_vector_by_string(this->protocols, " ")  << " ]" << sentence_separator;
+
+            return output_buffer.str();
+        }
+        std::string serialize_fragmentation_flags() {
+            std::ostringstream output_buffer;
+
+            output_buffer << "fragment [ " <<  serialize_vector_by_string(this->fragmentation_flags, " ")  << " ]" << sentence_separator;
+
+            return output_buffer.str();
+        }
+
+        std::string serialize_tcp_flags() {
+            std::ostringstream output_buffer;
+
+            output_buffer << "tcp-flags [ " << serialize_vector_by_string(this->tcp_flags, " ")  << " ]" << sentence_separator;
+
+            return output_buffer.str();
+        }
+
+        std::string serialize_source_subnet() {
+            return "source " + convert_subnet_to_string(this->source_subnet) + sentence_separator;
+        }   
+
+        std::string serialize_destination_subnet() {
+            return "destination " + convert_subnet_to_string(this->destination_subnet) + sentence_separator;
+        }   
+
+        // More details regarding format: https://github.com/Exa-Networks/exabgp/blob/master/qa/conf/api-flow.run
+        // https://plus.google.com/+ThomasMangin/posts/bL6w16BXcJ4
+        // This format is INCOMPATIBLE with ExaBGP v3, please be careful!
+        std::string serialize_single_line_exabgp_v4_configuration() {
+            this->enabled_indents = false;
+            this->enble_block_headers = false;
+            sentence_separator = " "; 
+
+            return "flow route " + this->serialize_match() + this->serialize_then(); 
+
+            sentence_separator = ";";
+            this->enabled_indents = true;
+            this->enble_block_headers = true; 
         }
 
         std::string serialize_complete_exabgp_configuration() {
@@ -352,7 +375,9 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
                 buffer << four_spaces;
             }
 
-            buffer << "match {";
+            if (enble_block_headers) {
+                buffer << "match {";
+            }
 
             if (enabled_indents) {
                 buffer << "\n";
@@ -464,8 +489,11 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
             if (enabled_indents) {
                 buffer << four_spaces;
             }
-            
-            buffer << "}";
+         
+            if (enble_block_headers) {   
+                buffer << "}";
+            }
+
             return buffer.str();
         }
 
@@ -475,14 +503,19 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
             if (enabled_indents) {
                 buffer << "\n" << four_spaces;
             }
-
-            buffer << "then {";
+            
+            if (enble_block_headers) {
+                buffer << "then {";
+            }
 
             if (enabled_indents) {
                 buffer << "\n";
                 buffer <<  four_spaces << four_spaces;
             }   
- 
+    
+            // Set same sentence separator as in main class
+            this->action.set_sentence_separator(this->sentence_separator); 
+
             buffer << this->action.serialize();
 
             if (enabled_indents) {
@@ -490,14 +523,18 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
                 buffer << four_spaces;
             }
 
-            buffer << "}";
+            if (enble_block_headers) {
+                buffer << "}";
+            }
 
             return buffer.str();
         }     
 
     private:
         std::string four_spaces;
-        bool enabled_indents; 
+        bool enabled_indents;
+        bool enble_block_headers;
+        std::string sentence_separator;
 };
 
 void exabgp_flow_spec_rule_ban_manage(std::string action, flow_spec_rule_t flow_spec_rule) {
