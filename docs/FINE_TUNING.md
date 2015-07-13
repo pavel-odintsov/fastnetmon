@@ -86,6 +86,29 @@ Run pcap data:
 ./fastnetmon_pcap_reader netflow dump.pcap
 ```
 
+How to run tests?
+
+Compile and install Google Test Library:
+```bash
+cd /usr/src/
+wget https://googletest.googlecode.com/files/gtest-1.7.0.zip
+unzip  gtest-1.7.0.zip
+cd gtest-1.7.0
+mkdir build
+cd build
+cmake ..
+mkdir /opt/gtest
+mkdir /opt/gtest/lib
+cp -R ../include/ /opt/gtest/
+cp libgtest_main.a  libgtest.a /opt/gtest/lib/
+```
+
+Build and run tests:
+```bash
+cmake -DBUILD_TESTS=ON ..
+./fastnetmon_tests
+```
+
 Build script for running packet capture plugins without analyzer backend:
 ```bash
 cmake .. -DBUILD_PLUGIN_RUNNER=ON

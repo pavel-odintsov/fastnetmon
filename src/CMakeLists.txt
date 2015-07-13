@@ -261,11 +261,14 @@ if (BUILD_TESTS)
     target_link_libraries(fastnetmon_tests fast_library)
     target_link_libraries(fastnetmon_tests ${CMAKE_THREAD_LIBS_INIT})
     target_link_libraries(fastnetmon_tests ${Boost_LIBRARIES})
+    target_link_libraries(fastnetmon_tests ${LOG4CPP_LIBRARY_PATH})
+
+    set(GOOGLE_TEST_INCLUDE_DIRS /opt/gtest/include)
+    set(GOOGLE_TEST_LIBRARIES /opt/gtest/lib/libgtest.a /opt/gtest/lib/libgtest_main.a)
 
     # Compiled Google Library
-    include_directories("/Users/pavel-odintsov/googletest-read-only/include")
-    target_link_libraries(fastnetmon_tests "/Users/pavel-odintsov/googletest-read-only/build/libgtest.a")
-    target_link_libraries(fastnetmon_tests "/Users/pavel-odintsov/googletest-read-only/build/libgtest_main.a")
+    include_directories(${GOOGLE_TEST_INCLUDE_DIRS})
+    target_link_libraries(fastnetmon_tests ${GOOGLE_TEST_LIBRARIES})
 endif()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" OR ${CMAKE_SYSTEM_NAME} STREQUAL "DragonFly")
