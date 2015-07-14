@@ -179,6 +179,9 @@ endif()
 #    include_directories(${HIREDIS_INCLUDE_DIRS})
 #    target_link_libraries (fastnetmon ${HIREDIS_LIBRARIES})
 #endif()
+# For CentOS 6 please use this code:
+# add_definitions(-DREDIS)
+# target_link_libraries (fastnetmon hiredis)
 
 # Standard path for Linux
 set(LOG4CPP_LIBRARY_PATH log4cpp)
