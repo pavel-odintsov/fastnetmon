@@ -2,6 +2,13 @@
 
 Sorry, we haven't integration for it now but we will finish this work sometimes :)
 
+Debian 8 Jessie.
+
+Install MongoDB itself:
+```bash
+apt-get install -y mongodb-server mongodb-clients mongodb-dev  
+```
+
 Library compilation:
 ```bash
 cd /usr/src
