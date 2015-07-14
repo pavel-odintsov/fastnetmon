@@ -1,9 +1,9 @@
 ### Here we store all code related with Snabb switch intergration :) We like it because it's awesome!
 
-First of all, please compile Snabb Switch:
+First of all, please compile Snabb Switch from next branch:
 ```bash
 cd /usr/src/
-git clone https://github.com/SnabbCo/snabbswitch.git
+git clone https://github.com/SnabbCo/snabbswitch.git -b next
 cd snabbswitch
 make
 ```
@@ -25,7 +25,7 @@ For example, we will use 00:06.0, we need convert this value to Snabb's format w
 
 Run capture:
 ```bash
-/usr/src/snabbswitch/src/snabb snsh capture2c.lua 0000:00:06.0 ./capturecallback.so
+/usr/src/snabbswitch/src/snabb firehose --input 0000:03:00.0,0000:03:00.1 /usr/src/fastnetmon/src/tests/snabb/capturecallback.so 
 ```
 
 I have got really amazing results:
