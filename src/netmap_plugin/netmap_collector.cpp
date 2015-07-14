@@ -90,8 +90,9 @@ int receive_packets(struct netmap_ring* ring, int thread_number) {
     return (rx);
 }
 
-void consume_pkt(u_char* buffer, int len, int thread_number) {
+bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet& packet) {
     struct pfring_pkthdr packet_header;
+
     memset(&packet_header, 0, sizeof(packet_header));
     packet_header.len = len;
     packet_header.caplen = len;
@@ -106,14 +107,8 @@ void consume_pkt(u_char* buffer, int len, int thread_number) {
     // fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
     // logger.info("%s", print_buffer);
 
-    // We should fill this structure for passing to FastNetMon
-    simple_packet packet;
-
-    packet.sample_ratio = netmap_sampling_ratio;
-
     if (packet_header.extended_hdr.parsed_pkt.ip_version != 4 && packet_header.extended_hdr.parsed_pkt.ip_version != 6) {
-        total_unparsed_packets++;
-        return;
+        return false;
     }
 
     packet.ip_protocol_version = packet_header.extended_hdr.parsed_pkt.ip_version;
@@ -126,7 +121,6 @@ void consume_pkt(u_char* buffer, int len, int thread_number) {
         packet.dst_ip = htonl(packet_header.extended_hdr.parsed_pkt.ip_dst.v4);
     } else {
         // IPv6
-
         memcpy(packet.src_ipv6.s6_addr, packet_header.extended_hdr.parsed_pkt.ip_src.v6.s6_addr, 16);
         memcpy(packet.dst_ipv6.s6_addr, packet_header.extended_hdr.parsed_pkt.ip_dst.v6.s6_addr, 16);
     }
@@ -147,6 +141,21 @@ void consume_pkt(u_char* buffer, int len, int thread_number) {
     } else {
         packet.flags = 0;
     }
+
+    return true;
+} 
+
+void consume_pkt(u_char* buffer, int len, int thread_number) {
+    // We should fill this structure for passing to FastNetMon
+    simple_packet packet;
+
+    packet.sample_ratio = netmap_sampling_ratio;
+
+    if (!parse_raw_packet_to_simple_packet(buffer, len, packet)) {
+        total_unparsed_packets++;
+
+        return;
+    }   
 
     netmap_process_func_ptr(packet);
 }
