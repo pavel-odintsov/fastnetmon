@@ -25,6 +25,8 @@
 #include <string>
 #define NETMAP_WITH_LIBS
 
+// Disable debug messages from Netmap
+#define NETMAP_NO_DEBUG
 #include <net/netmap_user.h>
 #include <boost/thread.hpp>
 

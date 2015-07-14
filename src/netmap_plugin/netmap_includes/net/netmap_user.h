@@ -144,6 +144,12 @@ nm_ring_space(struct netmap_ring *ring)
 #include <signal.h>
 #include <stdlib.h>
 
+#ifdef NETMAP_NO_DEBUG 
+#define ND(_fmt, ...) do {} while(0)
+#define D(_fmt, ...) do {} while(0)
+#define RD(lps, format, ...) do {} while(0)
+#else 
+
 #ifndef ND /* debug macros */
 /* debug support */
 #define ND(_fmt, ...) do {} while(0)
@@ -170,6 +176,8 @@ nm_ring_space(struct netmap_ring *ring)
             D(format, ##__VA_ARGS__);                           \
         }                                                       \
     } while (0)
+#endif
+
 #endif
 
 struct nm_pkthdr {	/* same as pcap_pkthdr */
