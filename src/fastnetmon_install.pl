@@ -326,7 +326,7 @@ sub install {
     my $we_have_init_script_for_this_machine = '';    
 
     # Init file for any systemd aware distro
-    if ( ($distro_type eq 'debian' && $distro_version >= 7) or ($distro_type eq 'centos' && $distro_version >= 7) ) {
+    if ( ($distro_type eq 'debian' && $distro_version > 7) or ($distro_type eq 'centos' && $distro_version >= 7) ) {
         my $systemd_service_path = "/etc/systemd/system/fastnetmon.service";
         `cp $fastnetmon_code_dir/fastnetmon.service $systemd_service_path`;
  
