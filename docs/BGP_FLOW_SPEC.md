@@ -1,5 +1,11 @@
 ### All this docs about ExaBGP 4.0 (Git master branch)
 
+Clone code:
+```bash
+cd /usr/src/
+git clone git clone https://github.com/Exa-Networks/exabgp.git
+```
+
 Thay are not compatible with ExaBGP 3.0
 
 vim /root/announcer.py:
@@ -43,5 +49,6 @@ neighbor 127.0.0.1 {
 
 Run it:
 ```bash
+cd /usr/src/exabgp
 env  exabgp.api.file=/tmp/exabgp.cmd exabgp.daemon.user=root exabgp.daemon.daemonize=false exabgp.daemon.pid=/var/run/exabgp.pid exabgp.log.destination=/var/log/exabgp.log sbin/exabgp --debug /etc/exabgp_flowspec.conf 
 ```
