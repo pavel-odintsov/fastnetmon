@@ -147,7 +147,7 @@ nm_ring_space(struct netmap_ring *ring)
 #ifndef ND /* debug macros */
 /* debug support */
 #define ND(_fmt, ...) do {} while(0)
-#define NETMAP_DEBUG(_fmt, ...)						\
+#define D(_fmt, ...)						\
 	do {							\
 		struct timeval _t0;				\
 		gettimeofday(&_t0, NULL);			\
@@ -167,7 +167,7 @@ nm_ring_space(struct netmap_ring *ring)
             __cnt = 0;                                          \
         }                                                       \
         if (__cnt++ < lps) {                                    \
-            NETMAP_DEBUG(format, ##__VA_ARGS__);                           \
+            D(format, ##__VA_ARGS__);                           \
         }                                                       \
     } while (0)
 #endif
@@ -284,6 +284,12 @@ typedef void (*nm_cb_t)(u_char *, const struct nm_pkthdr *, const u_char *d);
  *		-NN		bind individual NIC ring pair
  *		{NN		bind master side of pipe NN
  *		}NN		bind slave side of pipe NN
+ *		a suffix starting with + and the following flags,
+ *		in any order:
+ *		x		exclusive access
+ *		z		zero copy monitor
+ *		t		monitor tx side
+ *		r		monitor rx side
  *
  * req		provides the initial values of nmreq before parsing ifname.
  *		Remember that the ifname parsing will override the ring
@@ -351,9 +357,12 @@ nm_open(const char *ifname, const struct nmreq *req,
 	struct nm_desc *d = NULL;
 	const struct nm_desc *parent = arg;
 	u_int namelen;
-	uint32_t nr_ringid = 0, nr_flags;
+	uint32_t nr_ringid = 0, nr_flags, nr_reg;
 	const char *port = NULL;
-	const char *errmsg = NULL;
+#define MAXERRMSG 80
+	char errmsg[MAXERRMSG] = "";
+	enum { P_START, P_RNGSFXOK, P_GETNUM, P_FLAGS, P_FLAGSOK } p_state;
+	long num;
 
 	if (strncmp(ifname, "netmap:", 7) && strncmp(ifname, "vale", 4)) {
 		errno = 0; /* name not recognised, not an error */
@@ -362,60 +371,112 @@ nm_open(const char *ifname, const struct nmreq *req,
 	if (ifname[0] == 'n')
 		ifname += 7;
 	/* scan for a separator */
-	for (port = ifname; *port && !index("-*^{}", *port); port++)
+	for (port = ifname; *port && !index("-*^{}/", *port); port++)
 		;
 	namelen = port - ifname;
 	if (namelen >= sizeof(d->req.nr_name)) {
-		errmsg = "name too long";
+		snprintf(errmsg, MAXERRMSG, "name too long");
 		goto fail;
 	}
-	switch (*port) {
-	default:  /* '\0', no suffix */
-		nr_flags = NR_REG_ALL_NIC;
-		break;
-	case '-': /* one NIC */
-		nr_flags = NR_REG_ONE_NIC;
-		nr_ringid = atoi(port + 1);
-		break;
-	case '*': /* NIC and SW, ignore port */
-		nr_flags = NR_REG_NIC_SW;
-		if (port[1]) {
-			errmsg = "invalid port for nic+sw";
-			goto fail;
+	p_state = P_START;
+	nr_flags = NR_REG_ALL_NIC; /* default for no suffix */
+	while (*port) {
+		switch (p_state) {
+		case P_START:
+			switch (*port) {
+			case '^': /* only SW ring */
+				nr_flags = NR_REG_SW;
+				p_state = P_RNGSFXOK;
+				break;
+			case '*': /* NIC and SW */
+				nr_flags = NR_REG_NIC_SW;
+				p_state = P_RNGSFXOK;
+				break;
+			case '-': /* one NIC ring pair */
+				nr_flags = NR_REG_ONE_NIC;
+				p_state = P_GETNUM;
+				break;
+			case '{': /* pipe (master endpoint) */
+				nr_flags = NR_REG_PIPE_MASTER;
+				p_state = P_GETNUM;
+				break;
+			case '}': /* pipe (slave endoint) */
+				nr_flags = NR_REG_PIPE_SLAVE;
+				p_state = P_GETNUM;
+				break;
+			case '/': /* start of flags */
+				p_state = P_FLAGS;
+				break;
+			default:
+				snprintf(errmsg, MAXERRMSG, "unknown modifier: '%c'", *port);
+				goto fail;
+			}
+			port++;
+			break;
+		case P_RNGSFXOK:
+			switch (*port) {
+			case '/':
+				p_state = P_FLAGS;
+				break;
+			default:
+				snprintf(errmsg, MAXERRMSG, "unexpected character: '%c'", *port);
+				goto fail;
+			}
+			port++;
+			break;
+		case P_GETNUM:
+			num = strtol(port, (char **)&port, 10);
+			if (num < 0 || num >= NETMAP_RING_MASK) {
+				snprintf(errmsg, MAXERRMSG, "'%ld' out of range [0, %d)",
+						num, NETMAP_RING_MASK);
+				goto fail;
+			}
+			nr_ringid = num & NETMAP_RING_MASK;
+			p_state = P_RNGSFXOK;
+			break;
+		case P_FLAGS:
+		case P_FLAGSOK:
+			switch (*port) {
+			case 'x':
+				nr_flags |= NR_EXCLUSIVE;
+				break;
+			case 'z':
+				nr_flags |= NR_ZCOPY_MON;
+				break;
+			case 't':
+				nr_flags |= NR_MONITOR_TX;
+				break;
+			case 'r':
+				nr_flags |= NR_MONITOR_RX;
+				break;
+			default:
+				snprintf(errmsg, MAXERRMSG, "unrecognized flag: '%c'", *port);
+				goto fail;
+			}
+			port++;
+			p_state = P_FLAGSOK;
+			break;
 		}
-		break;
-	case '^': /* only sw ring */
-		nr_flags = NR_REG_SW;
-		if (port[1]) {
-			errmsg = "invalid port for sw ring";
-			goto fail;
-		}
-		break;
-	case '{':
-		nr_flags = NR_REG_PIPE_MASTER;
-		nr_ringid = atoi(port + 1);
-		break;
-	case '}':
-		nr_flags = NR_REG_PIPE_SLAVE;
-		nr_ringid = atoi(port + 1);
-		break;
 	}
-
-	if (nr_ringid >= NETMAP_RING_MASK) {
-		errmsg = "invalid ringid";
+	if (p_state != P_START && p_state != P_RNGSFXOK && p_state != P_FLAGSOK) {
+		snprintf(errmsg, MAXERRMSG, "unexpected end of port name");
 		goto fail;
 	}
-
+	ND("flags: %s %s %s %s",
+			(nr_flags & NR_EXCLUSIVE) ? "EXCLUSIVE" : "",
+			(nr_flags & NR_ZCOPY_MON) ? "ZCOPY_MON" : "",
+			(nr_flags & NR_MONITOR_TX) ? "MONITOR_TX" : "",
+			(nr_flags & NR_MONITOR_RX) ? "MONITOR_RX" : "");
 	d = (struct nm_desc *)calloc(1, sizeof(*d));
 	if (d == NULL) {
-		errmsg = "nm_desc alloc failure";
+		snprintf(errmsg, MAXERRMSG, "nm_desc alloc failure");
 		errno = ENOMEM;
 		return NULL;
 	}
 	d->self = d;	/* set this early so nm_close() works */
 	d->fd = open("/dev/netmap", O_RDWR);
 	if (d->fd < 0) {
-		errmsg = "cannot open /dev/netmap";
+		snprintf(errmsg, MAXERRMSG, "cannot open /dev/netmap: %s", strerror(errno));
 		goto fail;
 	}
 
@@ -432,29 +493,28 @@ nm_open(const char *ifname, const struct nmreq *req,
 	/* optionally import info from parent */
 	if (IS_NETMAP_DESC(parent) && new_flags) {
 		if (new_flags & NM_OPEN_ARG1)
-			NETMAP_DEBUG("overriding ARG1 %d", parent->req.nr_arg1);
+			D("overriding ARG1 %d", parent->req.nr_arg1);
 		d->req.nr_arg1 = new_flags & NM_OPEN_ARG1 ?
 			parent->req.nr_arg1 : 4;
 		if (new_flags & NM_OPEN_ARG2)
-			NETMAP_DEBUG("overriding ARG2 %d", parent->req.nr_arg2);
+			D("overriding ARG2 %d", parent->req.nr_arg2);
 		d->req.nr_arg2 = new_flags & NM_OPEN_ARG2 ?
 			parent->req.nr_arg2 : 0;
 		if (new_flags & NM_OPEN_ARG3)
-			NETMAP_DEBUG("overriding ARG3 %d", parent->req.nr_arg3);
+			D("overriding ARG3 %d", parent->req.nr_arg3);
 		d->req.nr_arg3 = new_flags & NM_OPEN_ARG3 ?
 			parent->req.nr_arg3 : 0;
 		if (new_flags & NM_OPEN_RING_CFG) {
-			NETMAP_DEBUG("overriding RING_CFG");
+			D("overriding RING_CFG");
 			d->req.nr_tx_slots = parent->req.nr_tx_slots;
 			d->req.nr_rx_slots = parent->req.nr_rx_slots;
 			d->req.nr_tx_rings = parent->req.nr_tx_rings;
 			d->req.nr_rx_rings = parent->req.nr_rx_rings;
 		}
 		if (new_flags & NM_OPEN_IFNAME) {
-                        // Commented by Pavel Odintsov
-			//NETMAP_DEBUG("overriding ifname %s ringid 0x%x flags 0x%x",
-			//	parent->req.nr_name, parent->req.nr_ringid,
-			//	parent->req.nr_flags);
+			D("overriding ifname %s ringid 0x%x flags 0x%x",
+				parent->req.nr_name, parent->req.nr_ringid,
+				parent->req.nr_flags);
 			memcpy(d->req.nr_name, parent->req.nr_name,
 				sizeof(d->req.nr_name));
 			d->req.nr_ringid = parent->req.nr_ringid;
@@ -465,7 +525,7 @@ nm_open(const char *ifname, const struct nmreq *req,
 	d->req.nr_ringid |= new_flags & (NETMAP_NO_TX_POLL | NETMAP_DO_RX_POLL);
 
 	if (ioctl(d->fd, NIOCREGIF, &d->req)) {
-		errmsg = "NIOCREGIF failed";
+		snprintf(errmsg, MAXERRMSG, "NIOCREGIF failed: %s", strerror(errno));
 		goto fail;
 	}
 
@@ -480,7 +540,7 @@ nm_open(const char *ifname, const struct nmreq *req,
 		d->mem = mmap(0, d->memsize, PROT_WRITE | PROT_READ, MAP_SHARED,
 				d->fd, 0);
 		if (d->mem == MAP_FAILED) {
-			errmsg = "mmap failed";
+			snprintf(errmsg, MAXERRMSG, "mmap failed: %s", strerror(errno));
 			goto fail;
 		}
 		d->done_mmap = 1;
@@ -496,20 +556,22 @@ nm_open(const char *ifname, const struct nmreq *req,
 			(char *)d->mem + d->memsize;
 	}
 
-	if (d->req.nr_flags ==  NR_REG_SW) { /* host stack */
+	nr_reg = d->req.nr_flags & NR_REG_MASK;
+
+	if (nr_reg ==  NR_REG_SW) { /* host stack */
 		d->first_tx_ring = d->last_tx_ring = d->req.nr_tx_rings;
 		d->first_rx_ring = d->last_rx_ring = d->req.nr_rx_rings;
-	} else if (d->req.nr_flags ==  NR_REG_ALL_NIC) { /* only nic */
+	} else if (nr_reg ==  NR_REG_ALL_NIC) { /* only nic */
 		d->first_tx_ring = 0;
 		d->first_rx_ring = 0;
 		d->last_tx_ring = d->req.nr_tx_rings - 1;
 		d->last_rx_ring = d->req.nr_rx_rings - 1;
-	} else if (d->req.nr_flags ==  NR_REG_NIC_SW) {
+	} else if (nr_reg ==  NR_REG_NIC_SW) {
 		d->first_tx_ring = 0;
 		d->first_rx_ring = 0;
 		d->last_tx_ring = d->req.nr_tx_rings;
 		d->last_rx_ring = d->req.nr_rx_rings;
-	} else if (d->req.nr_flags == NR_REG_ONE_NIC) {
+	} else if (nr_reg == NR_REG_ONE_NIC) {
 		/* XXX check validity */
 		d->first_tx_ring = d->last_tx_ring =
 		d->first_rx_ring = d->last_rx_ring = d->req.nr_ringid & NETMAP_RING_MASK;
@@ -522,16 +584,16 @@ nm_open(const char *ifname, const struct nmreq *req,
     { /* debugging code */
 	int i;
 
-	NETMAP_DEBUG("%s tx %d .. %d %d rx %d .. %d %d", ifname,
+	D("%s tx %d .. %d %d rx %d .. %d %d", ifname,
 		d->first_tx_ring, d->last_tx_ring, d->req.nr_tx_rings,
                 d->first_rx_ring, d->last_rx_ring, d->req.nr_rx_rings);
 	for (i = 0; i <= d->req.nr_tx_rings; i++) {
 		struct netmap_ring *r = NETMAP_TXRING(d->nifp, i);
-		NETMAP_DEBUG("TX%d %p h %d c %d t %d", i, r, r->head, r->cur, r->tail);
+		D("TX%d %p h %d c %d t %d", i, r, r->head, r->cur, r->tail);
 	}
 	for (i = 0; i <= d->req.nr_rx_rings; i++) {
 		struct netmap_ring *r = NETMAP_RXRING(d->nifp, i);
-		NETMAP_DEBUG("RX%d %p h %d c %d t %d", i, r, r->head, r->cur, r->tail);
+		D("RX%d %p h %d c %d t %d", i, r, r->head, r->cur, r->tail);
 	}
     }
 #endif /* debugging */
@@ -542,8 +604,8 @@ nm_open(const char *ifname, const struct nmreq *req,
 
 fail:
 	nm_close(d);
-	if (errmsg)
-		NETMAP_DEBUG("%s %s", errmsg, ifname);
+	if (errmsg[0])
+		D("%s %s", errmsg, ifname);
 	if (errno == 0)
 		errno = EINVAL;
 	return NULL;
