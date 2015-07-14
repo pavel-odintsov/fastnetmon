@@ -25,7 +25,7 @@ For example, we will use 00:06.0, we need convert this value to Snabb's format w
 
 Run capture:
 ```bash
-/usr/src/snabbswitch/src/snabb firehose --input 0000:03:00.0,0000:03:00.1 /usr/src/fastnetmon/src/tests/snabb/capturecallback.so 
+/usr/src/snabbswitch/src/snabb firehose --input 0000:03:00.0 --input 0000:03:00.1 /usr/src/fastnetmon/src/tests/snabb/capturecallback.so 
 ```
 
 I have got really amazing results:
