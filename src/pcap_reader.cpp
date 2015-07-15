@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
-#include <pcap.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdint.h>
@@ -50,6 +49,27 @@ log4cpp::Category& logger = log4cpp::Category::getRoot();
     packet header: struct fastnetmon_pcap_pkthdr
 */
 
+/*
+ * Compatibility for systems that have a bpf.h that
+ * predates the bpf typedefs for 64-bit support.
+ */
+#if BPF_RELEASE - 0 < 199406
+typedef int bpf_int32;
+typedef u_int bpf_u_int32;
+#endif
+
+// We use copy and paste from pcap.h here because we do not want to link with pcap here
+struct fastnetmon_pcap_file_header {
+        bpf_u_int32 magic;
+        u_short version_major;
+        u_short version_minor;
+        bpf_int32 thiszone;     /* gmt to local correction */
+        bpf_u_int32 sigfigs;    /* accuracy of timestamps */
+        bpf_u_int32 snaplen;    /* max length saved portion of each pkt */
+        bpf_u_int32 linktype;   /* data link type (LINKTYPE_*) */
+};
+
+
 // We can't use pcap_pkthdr from upstream because it uses 16 bytes timeval instead of 8 byte and
 // broke everything
 struct fastnetmon_pcap_pkthdr {
@@ -81,10 +101,10 @@ int pcap_reader(const char* flow_type, const char* pcap_file_path) {
         return -1;
     }
 
-    struct pcap_file_header pcap_header;
-    ssize_t file_header_readed_bytes = read(filedesc, &pcap_header, sizeof(struct pcap_file_header));
+    struct fastnetmon_pcap_file_header pcap_header;
+    ssize_t file_header_readed_bytes = read(filedesc, &pcap_header, sizeof(struct fastnetmon_pcap_file_header));
 
-    if (file_header_readed_bytes != sizeof(struct pcap_file_header)) {
+    if (file_header_readed_bytes != sizeof(struct fastnetmon_pcap_file_header)) {
         printf("Can't read pcap file header");
     }
 
