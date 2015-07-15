@@ -2763,40 +2763,18 @@ std::string print_ddos_attack_details() {
     return output_buffer.str();
 }
 
-std::string get_attack_description(uint32_t client_ip, attack_details& current_attack) {
+std::string serialize_attack_description(attack_details& current_attack) {
     std::stringstream attack_description;
 
     attack_type_t attack_type = detect_attack_type(current_attack);
     std::string printable_attack_type = get_printable_attack_name(attack_type);
 
-
     attack_description
-    << "IP: " << convert_ip_as_uint_to_string(client_ip) << "\n"
     << "Attack type: " << printable_attack_type << "\n"
     << "Initial attack power: " << current_attack.attack_power << " packets per second\n"
     << "Peak attack power: " << current_attack.max_attack_power << " packets per second\n"
     << "Attack direction: " << get_direction_name(current_attack.attack_direction) << "\n"
     << "Attack protocol: " << get_printable_protocol_name(current_attack.attack_protocol) << "\n";
-
-    if (enable_subnet_counters) {
-        // Got subnet tracking structure
-        // TODO: we suppose case "no key exists" is not possible
-        map_element network_speed_meter = PerSubnetSpeedMap[ current_attack.customer_network ];
-        map_element average_network_speed_meter = PerSubnetAverageSpeedMap[ current_attack.customer_network ];
-
-        attack_description
-        <<"Network: " << convert_subnet_to_string(current_attack.customer_network) << "\n"
-        <<"Network incoming traffic: "<< convert_speed_to_mbps(network_speed_meter.in_bytes) << " mbps\n"
-        <<"Network outgoing traffic: "<< convert_speed_to_mbps(network_speed_meter.out_bytes) << " mbps\n"
-        <<"Network incoming pps: "<< network_speed_meter.in_packets << " packets per second\n"
-        <<"Network outgoing pps: "<< network_speed_meter.out_packets << " packets per second\n"; 
-
-        attack_description
-        <<"Average network incoming traffic: "<< convert_speed_to_mbps(average_network_speed_meter.in_bytes) << " mbps\n"
-        <<"Average network outgoing traffic: "<< convert_speed_to_mbps(average_network_speed_meter.out_bytes) << " mbps\n"
-        <<"Average network incoming pps: "<< average_network_speed_meter.in_packets << " packets per second\n"
-        <<"Average network outgoing pps: "<< average_network_speed_meter.out_packets << " packets per second\n";
-    }
 
     attack_description
     << "Total incoming traffic: " << convert_speed_to_mbps(current_attack.in_bytes) << " mbps\n"
@@ -2806,28 +2784,15 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
     << "Total incoming flows: " << current_attack.in_flows << " flows per second\n"
     << "Total outgoing flows: " << current_attack.out_flows << " flows per second\n";
 
+
     // Add average counters
     attack_description
-    << "Average incoming traffic: " << convert_speed_to_mbps(current_attack.average_in_bytes)
-    << " mbps\n"
+    << "Average incoming traffic: " << convert_speed_to_mbps(current_attack.average_in_bytes) << " mbps\n"
     << "Average outgoing traffic: " << convert_speed_to_mbps(current_attack.average_out_bytes) << " mbps\n"
     << "Average incoming pps: " << current_attack.average_in_packets << " packets per second\n"
     << "Average outgoing pps: " << current_attack.average_out_packets << " packets per second\n"
     << "Average incoming flows: " << current_attack.average_in_flows << " flows per second\n"
     << "Average outgoing flows: " << current_attack.average_out_flows << " flows per second\n";
-
-    double average_packet_size_for_incoming_traffic = 0;
-    double average_packet_size_for_outgoing_traffic = 0;
-
-    if (current_attack.average_in_packets > 0) {
-        average_packet_size_for_incoming_traffic =
-        (double)current_attack.average_in_bytes / (double)current_attack.average_in_packets;
-    }
-
-    if (current_attack.average_out_packets > 0) {
-        average_packet_size_for_outgoing_traffic =
-        (double)current_attack.average_out_bytes / (double)current_attack.average_out_packets;
-    }
 
     attack_description
     << "Incoming ip fragmented traffic: " << convert_speed_to_mbps(current_attack.fragmented_in_bytes) << " mbps\n"
@@ -2842,7 +2807,6 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
     << "Outgoing tcp traffic: " << convert_speed_to_mbps(current_attack.tcp_out_bytes) << " mbps\n"
     << "Incoming tcp pps: " << current_attack.tcp_in_packets << " packets per second\n"
     << "Outgoing tcp pps: " << current_attack.tcp_out_packets << " packets per second\n"
-
     << "Incoming syn tcp traffic: " << convert_speed_to_mbps(current_attack.tcp_syn_in_bytes)
     << " mbps\n"
     << "Outgoing syn tcp traffic: " << convert_speed_to_mbps(current_attack.tcp_syn_out_bytes) << " mbps\n"
@@ -2855,10 +2819,61 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
     << "Outgoing udp pps: " << current_attack.udp_out_packets << " packets per second\n"
 
     << "Incoming icmp traffic: " << convert_speed_to_mbps(current_attack.icmp_in_bytes) << " mbps\n"
-    << "Outgoing icmp traffic: " << convert_speed_to_mbps(current_attack.icmp_out_bytes)
-    << " mbps\n"
+    << "Outgoing icmp traffic: " << convert_speed_to_mbps(current_attack.icmp_out_bytes) << " mbps\n"
     << "Incoming icmp pps: " << current_attack.icmp_in_packets << " packets per second\n"
     << "Outgoing icmp pps: " << current_attack.icmp_out_packets << " packets per second\n";
+
+    return attack_description.str();
+}
+
+std::string serialize_network_load_to_text(map_element& network_speed_meter, bool average) {
+    std::stringstream buffer;
+
+    std::string prefix = "Network";
+
+    if (average) {
+        prefix = "Average network";
+    }
+
+    buffer 
+        << prefix << " incoming traffic: "<< convert_speed_to_mbps(network_speed_meter.in_bytes) << " mbps\n"
+        << prefix << " outgoing traffic: "<< convert_speed_to_mbps(network_speed_meter.out_bytes) << " mbps\n"
+        << prefix << " incoming pps: "<< network_speed_meter.in_packets << " packets per second\n"
+        << prefix << " outgoing pps: "<< network_speed_meter.out_packets << " packets per second\n"; 
+
+    return buffer.str();
+}
+
+std::string get_attack_description(uint32_t client_ip, attack_details& current_attack) {
+    std::stringstream attack_description;
+
+    attack_description << "IP: " << convert_ip_as_uint_to_string(client_ip) << "\n";
+    attack_description << serialize_attack_description(current_attack) << "\n";
+
+    if (enable_subnet_counters) {
+        // Got subnet tracking structure
+        // TODO: we suppose case "no key exists" is not possible
+        map_element network_speed_meter = PerSubnetSpeedMap[ current_attack.customer_network ];
+        map_element average_network_speed_meter = PerSubnetAverageSpeedMap[ current_attack.customer_network ];
+
+        attack_description <<"Network: " << convert_subnet_to_string(current_attack.customer_network) << "\n";
+
+        attack_description << serialize_network_load_to_text(network_speed_meter, false);
+        attack_description << serialize_network_load_to_text(average_network_speed_meter, true);
+    }
+
+    double average_packet_size_for_incoming_traffic = 0;
+    double average_packet_size_for_outgoing_traffic = 0;
+
+    if (current_attack.average_in_packets > 0) {
+        average_packet_size_for_incoming_traffic =
+        (double)current_attack.average_in_bytes / (double)current_attack.average_in_packets;
+    }
+
+    if (current_attack.average_out_packets > 0) {
+        average_packet_size_for_outgoing_traffic =
+        (double)current_attack.average_out_bytes / (double)current_attack.average_out_packets;
+    }
 
     // We do not need very accurate size
     attack_description.precision(1);
