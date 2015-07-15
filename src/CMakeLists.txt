@@ -249,7 +249,6 @@ endif()
 if (BUILD_PCAP_READER)
     add_executable(fastnetmon_pcap_reader pcap_reader.cpp)
 
-    target_link_libraries(fastnetmon_pcap_reader pcap)
     target_link_libraries(fastnetmon_pcap_reader fastnetmon_packet_parser)
     target_link_libraries(fastnetmon_pcap_reader patricia)
     target_link_libraries(fastnetmon_pcap_reader fast_library)
