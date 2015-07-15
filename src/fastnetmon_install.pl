@@ -92,6 +92,13 @@ if (-e "/etc/redhat-release") {
     }    
 }
 
+if (-e "/etc/gentoo-release") {
+    $distro_type = 'gentoo';
+
+    my $distro_version_raw = `cat /etc/gentoo-release`;
+    chomp $distro_version_raw;
+}
+
 unless ($distro_type) {
     die "This distro is unsupported, please do manual install";
 }
@@ -157,28 +164,36 @@ sub install {
         }
 
         `yum install -y make bison flex $kernel_package_name gcc gcc-c++ dkms numactl-devel subversion`;
-    }
+    } elsif ($distro_type eq 'gentoo') {
+		my @gentoo_packages_for_pfring = ('subversion', 'sys-process/numactl', 'wget', 'tar');
+		
+		my $gentoo_packages_for_pfring_as_string = join " ", @gentoo_packages_for_pfring;
+		system("emerge -avu $gentoo_packages_for_pfring_as_string");
+		if ($? != 0) {
+			print "Emerge fail with code $?\n"
+		}
+	}
 
     if ($we_could_install_kernel_modules) {
         print "Download PF_RING $pf_ring_version sources\n";
 
-        `wget --quiet $pf_ring_url -O$pf_ring_archive_path`;
+        system("wget --quiet $pf_ring_url -O$pf_ring_archive_path");
    
         if ($? == 0) {
             print "Unpack PF_RING\n";
             mkdir $pf_ring_sources_path;
-            `tar -xf $pf_ring_archive_path -C /usr/src`;
+            system("tar -xf $pf_ring_archive_path -C /usr/src");
 
             print "Build PF_RING kernel module\n";
-            `make -C $pf_ring_sources_path/kernel clean`;
-            `make -C $pf_ring_sources_path/kernel`;
-            `make -C $pf_ring_sources_path/kernel install`;
+            system("make -C $pf_ring_sources_path/kernel clean");
+            system("make -C $pf_ring_sources_path/kernel");
+            system("make -C $pf_ring_sources_path/kernel install");
 
             print "Unload PF_RING if it was installed earlier\n";
-            `rmmod pf_ring 2>/dev/null`;
+            system("rmmod pf_ring 2>/dev/null");
 
             print "Load PF_RING module into kernel\n";
-            `modprobe pf_ring`;
+            system("modprobe pf_ring");
 
             my @dmesg = `dmesg`;
             chomp @dmesg;
@@ -201,9 +216,9 @@ sub install {
         print "Build PF_RING lib\n";
         # Because we can't run configure from another folder because it can't find ZC dependency :(
         chdir "$pf_ring_sources_path/userland/lib";
-        `./configure --prefix=/opt/pf_ring_$pf_ring_version`;
-        `make`;
-        `make install`; 
+        system("./configure --prefix=/opt/pf_ring_$pf_ring_version");
+        system("make");
+        system("make install"); 
 
         print "Create library symlink\n";
         unlink "/opt/pf_ring";
@@ -217,7 +232,7 @@ sub install {
         close $pf_ring_ld_so_conf_handle;
 
         print "Run ldconfig\n";
-        `ldconfig`; 
+        system("ldconfig"); 
     }
 
     print "Install FastNetMon dependency list\n";
@@ -256,7 +271,19 @@ sub install {
             print "Your distro haven't log4cpp in stable EPEL packages and we install log4cpp from testing of EPEL\n";
             `yum install -y https://kojipkgs.fedoraproject.org//packages/log4cpp/1.1.1/1.el7/x86_64/log4cpp-devel-1.1.1-1.el7.x86_64.rpm https://kojipkgs.fedoraproject.org//packages/log4cpp/1.1.1/1.el7/x86_64/log4cpp-1.1.1-1.el7.x86_64.rpm`;
         }
-    }
+    } elsif ($distro_type eq 'gentoo') {
+		my @fastnetmon_deps = ("dev-vcs/git", "gcc", "sys-libs/gpm", "sys-libs/ncurses", "dev-libs/log4cpp", "dev-libs/geoip", 
+			"net-libs/libpcap", "dev-util/cmake", "pkg-config", "dev-libs/hiredis", "dev-libs/boost"
+		);
+		
+		# "sys-devel/clang", s
+		
+		my $fastnetmon_deps_as_string = join " ", @fastnetmon_deps;
+		system("emerge -avu $fastnetmon_deps_as_string");
+		if ($? != 0) {
+			print "Emerge fail with code $?\n"
+		}
+	}
 
     print "Clone FastNetMon repo\n";
     chdir "/usr/src";
@@ -266,10 +293,10 @@ sub install {
     if (-e $fastnetmon_code_dir) {
         # Code already downloaded
         chdir $fastnetmon_code_dir;
-        `git pull`;
+        system("git pull");
     } else {
         # Update code
-        `git clone $fastnetmon_git_path --branch $stable_branch_name --quiet 2>/dev/null`;
+        system("git clone $fastnetmon_git_path --branch $stable_branch_name --quiet 2>/dev/null");
 
         if ($? != 0) {
             die "Can't clone source code\n";
@@ -291,14 +318,14 @@ sub install {
         $cmake_params .= " -DBoost_NO_BOOST_CMAKE=BOOL:ON";
     }
 
-    `cmake .. $cmake_params`;
-    `make`;
+    system("cmake .. $cmake_params");
+    system("make");
 
     my $fastnetmon_dir = "/opt/fastnetmon";
     my $fastnetmon_build_binary_path = "$fastnetmon_code_dir/build/fastnetmon";
 
     unless (-e $fastnetmon_build_binary_path) {
-        die "Can't build fastnetmon!";
+        die "Can't find fastnetmon binary!";
     }
 
     mkdir $fastnetmon_dir;
@@ -370,6 +397,22 @@ sub install {
         }
     } 
 
+	# For Gentoo
+	if ( $distro_type eq 'gentoo' ) {
+		my $init_path_in_src = "$fastnetmon_code_dir/fastnetmon_init_script_gentoo";
+		my $system_init_path = '/etc/init.d/fastnetmon';
+
+		# Checker for source code version, will work only for 1.1.3+ versions
+		if (-e $init_path_in_src) {
+			`cp $init_path_in_src $system_init_path`;
+
+			print "We created service fastnetmon for you\n";
+			print "You could run it with command: /etc/init.d/fastnetmon start\n";
+
+			$we_have_init_script_for_this_machine = 1; 
+		}
+	}
+	
     unless ($we_have_init_script_for_this_machine) {
         print "You can run fastnetmon with command: $fastnetmon_dir/fastnetmon\n";
     }
