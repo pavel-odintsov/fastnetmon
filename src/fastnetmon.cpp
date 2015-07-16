@@ -2954,7 +2954,7 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
             std::string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack_details.ban_timestamp);
             std::string attack_pcap_dump_path = attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string + ".pcap"; 
 
-            int pcap_fump_filedesc = open(attack_pcap_dump_path.c_str(), O_WRONLY|O_CREAT);
+            int pcap_fump_filedesc = open(attack_pcap_dump_path.c_str(), O_WRONLY|O_CREAT, S_IRUSR|S_IWUSR);
             if (pcap_fump_filedesc <= 0) {
                 logger << log4cpp::Priority::ERROR << "Can't open file for storing pcap dump: " << attack_pcap_dump_path;
             } else {
