@@ -25,6 +25,7 @@
 #include "libpatricia/patricia.h"
 #include "fastnetmon_types.h"
 #include "fast_library.h"
+#include "packet_storage.h"
 #include "bgp_flow_spec.h"
 
 // Here we store variables which differs for different paltforms
