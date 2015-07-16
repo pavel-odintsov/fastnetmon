@@ -244,6 +244,10 @@ void parse_packet_pf_ring(const struct pfring_pkthdr* h, const u_char* p, const 
     packet.source_port = h->extended_hdr.parsed_pkt.l4_src_port;
     packet.destination_port = h->extended_hdr.parsed_pkt.l4_dst_port;
 
+    // We need this for deep packet inspection
+    packet.packet_payload_length = h->len;
+    packet.packet_payload_pointer = (void*)p;
+
     packet.length = h->len;
     packet.protocol = h->extended_hdr.parsed_pkt.l3_proto;
     packet.ts = h->ts;
