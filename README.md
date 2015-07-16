@@ -14,6 +14,7 @@ FastNetMon - A high performance DoS/DDoS load analyzer built on top of multiple 
 
 What can we do? We can detect hosts in our own network with a large amount of packets per second/bytes per second or flow per second incoming or outgoing from certain hosts. And we can call an external script which can notify you, switch off a server or blackhole the client.
 
+- We are part of [CloudRouter](https://cloudrouter.org/cloudrouter/2015/07/09/fastnetmon.html) distribution
 - [VyOS based iso image with bundled FastNetMon](docs/VYOS_BINARY_ISO_IMAGE.md)
 - [Binary rpm packages for CentOS 6/7 and Fedora 21](docs/INSTALL_RPM_PACKAGES.md)
 - [Automatic install script for Debian/Ubuntu/CentOS/Fedora](docs/INSTALL.md)
