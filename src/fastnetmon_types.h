@@ -10,12 +10,15 @@
 #include <map>
 #include <vector>
 
+#include "packet_storage.h"
+
 // simplified packet struct for lightweight save into memory
 class simple_packet {
     public:
     simple_packet()
     : sample_ratio(1), src_ip(0), dst_ip(0), source_port(0), destination_port(0), protocol(0),
-      length(0), flags(0), number_of_packets(1), ip_fragmented(false), ip_protocol_version(4), ttl(0) {
+      length(0), flags(0), number_of_packets(1), ip_fragmented(false), ip_protocol_version(4), ttl(0),
+        packet_payload_pointer(NULL), packet_payload_length(0) {
 
         ts.tv_usec = 0;
         ts.tv_sec = 0;
@@ -37,6 +40,8 @@ class simple_packet {
     uint8_t flags; /* tcp flags */
     bool ip_fragmented; /* If IP packet fragmented */
     struct timeval ts;
+    void* packet_payload_pointer;
+    int packet_payload_length;
 };
 
 typedef std::pair<uint32_t, uint32_t> subnet_t;
@@ -147,6 +152,8 @@ class attack_details : public map_element {
     int ban_time; // seconds of the ban
 
     subnet_t customer_network;
+
+    packet_storage_t pcap_attack_dump;
 };
 
 

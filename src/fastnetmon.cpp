@@ -88,6 +88,9 @@ unsigned int recalculate_speed_timeout = 1;
 // Send or not any details about attack for ban script call over stdin
 bool notify_script_pass_details = true;
 
+// We could collect attack dumps in pcap format
+bool collect_attack_pcap_dumps = false;
+
 bool unban_only_if_attack_finished = true;
 
 // Variable with all data from main screen
@@ -210,6 +213,8 @@ unsigned int max_ips_in_list = 7;
 // Number of lines for sending ben attack details to email
 unsigned int ban_details_records_count = 500;
 
+// We haven't option for configure it with configuration file
+unsigned int number_of_packets_for_pcap_attack_dump = 500;
 
 // log file
 log4cpp::Category& logger = log4cpp::Category::getRoot();
@@ -1348,6 +1353,15 @@ void process_packet(simple_packet& current_packet) {
             ban_list_details[current_packet.src_ip].size() < ban_details_records_count) {
 
             ban_list_details_mutex.lock();
+
+            if (collect_attack_pcap_dumps) {
+                // this code SHOULD NOT be called without mutex!
+                if (current_packet.packet_payload_length > 0 && current_packet.packet_payload_pointer != NULL) {
+                    ban_list[current_packet.src_ip].pcap_attack_dump.write_packet(current_packet.packet_payload_pointer,
+                        current_packet.packet_payload_length);
+                }
+            }
+
             ban_list_details[current_packet.src_ip].push_back(current_packet);
             ban_list_details_mutex.unlock();
         }
@@ -1457,6 +1471,15 @@ void process_packet(simple_packet& current_packet) {
             ban_list_details[current_packet.dst_ip].size() < ban_details_records_count) {
 
             ban_list_details_mutex.lock();
+
+            if (collect_attack_pcap_dumps) {
+                // this code SHOULD NOT be called without mutex!
+                if (current_packet.packet_payload_length > 0 && current_packet.packet_payload_pointer != NULL) {
+                    ban_list[current_packet.dst_ip].pcap_attack_dump.write_packet(current_packet.packet_payload_pointer,
+                        current_packet.packet_payload_length);
+                }    
+            }    
+
             ban_list_details[current_packet.dst_ip].push_back(current_packet);
             ban_list_details_mutex.unlock();
         }
@@ -2508,6 +2531,16 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element a
     current_attack.average_out_bytes = average_speed_element.out_bytes;
     current_attack.average_out_flows = average_speed_element.out_flows;
 
+    if (collect_attack_pcap_dumps) {
+        bool buffer_allocation_result = current_attack.pcap_attack_dump.allocate_buffer( number_of_packets_for_pcap_attack_dump );
+
+        if (!buffer_allocation_result) {
+            logger << log4cpp::Priority::ERROR << "Can't allocate buffer for attack, switch off this option completely ";
+            collect_attack_pcap_dumps = false; 
+        }
+        
+    }
+
     ban_list_mutex.lock();
     ban_list[client_ip] = current_attack;
     ban_list_mutex.unlock();
@@ -2916,6 +2949,27 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
                << " traffic sample collected";
 
         print_attack_details_to_file(attack_details.str(), client_ip_as_string, current_attack_details);
+
+        if (collect_attack_pcap_dumps) {
+            std::string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack_details.ban_timestamp);
+            std::string attack_pcap_dump_path = attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string + ".pcap"; 
+
+            int pcap_fump_filedesc = open(attack_pcap_dump_path.c_str(), O_WRONLY|O_CREAT);
+            if (pcap_fump_filedesc <= 0) {
+                logger << log4cpp::Priority::ERROR << "Can't open file for storing pcap dump: " << attack_pcap_dump_path;
+            } else {
+                ssize_t wrote_bytes = write(pcap_fump_filedesc,
+                    (void*)current_attack_details.pcap_attack_dump.get_buffer_pointer(),
+                    current_attack_details.pcap_attack_dump.get_used_memory());
+            
+                if (wrote_bytes != current_attack_details.pcap_attack_dump.get_used_memory()) {
+                    logger << log4cpp::Priority::ERROR << "Can't wrote all attack details to the disk correctly"; 
+                }
+    
+                // Freeup memory
+                current_attack_details.pcap_attack_dump.deallocate_buffer();   
+            }
+        }
 
         // Pass attack details to script
         if (file_exists(notify_script_path)) {

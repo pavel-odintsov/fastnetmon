@@ -113,6 +113,10 @@ bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet& p
         return false;
     }
 
+    // We need this for deep packet inspection
+    packet.packet_payload_length = len;
+    packet.packet_payload_pointer = (void*)buffer;
+
     packet.ip_protocol_version = packet_header.extended_hdr.parsed_pkt.ip_version;
 
     if (packet.ip_protocol_version == 4) {

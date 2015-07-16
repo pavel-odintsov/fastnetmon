@@ -1,6 +1,8 @@
 #ifndef PACKET_STORAGE_H
 #define PACKET_STORAGE_H
 
+#include <stdlib.h>
+#include <string.h>
 #include "fastnetmon_pcap_format.h"
 
 class packet_storage_t {
@@ -24,7 +26,9 @@ class packet_storage_t {
             if (memory_pointer != NULL) {
                 this->buffer_size = memory_size_in_bytes;
                 memory_pos = memory_pointer;
-                return true;
+
+                // Add header to newely allocated memory block
+                return this->write_header();
             } else {
                 return false;
             }
