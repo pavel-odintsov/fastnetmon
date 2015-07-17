@@ -1005,6 +1005,10 @@ bool load_configuration_file() {
         notify_script_enabled = false;
     }
 
+    if (configuration_map.count("collect_attack_pcap_dumps") != 0) {
+        collect_attack_pcap_dumps = configuration_map["collect_attack_pcap_dumps"] == "on" ? true : false;
+    }
+
     return true;
 }
 
@@ -2988,7 +2992,7 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
     std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
 
     // Very strange code but it work in 95% cases
-    if (ban_list_details.count(client_ip) > 0 && ban_list_details[client_ip].size() == ban_details_records_count) {
+    if (ban_list_details.count(client_ip) > 0 && ban_list_details[client_ip].size() >= ban_details_records_count) {
         std::stringstream attack_details;
 
         attack_details << get_attack_description(client_ip, current_attack_details) << "\n\n";
