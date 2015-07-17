@@ -168,7 +168,7 @@ sub install {
         my @gentoo_packages_for_pfring = ('subversion', 'sys-process/numactl', 'wget', 'tar');
 
         my $gentoo_packages_for_pfring_as_string = join " ", @gentoo_packages_for_pfring;
-        `emerge -avu $gentoo_packages_for_pfring_as_string`;
+        `emerge -vu $gentoo_packages_for_pfring_as_string`;
 
         if ($? != 0) {
             print "Emerge fail with code $?\n";
@@ -278,7 +278,7 @@ sub install {
         );
 
         my $fastnetmon_deps_as_string = join " ", @fastnetmon_deps;
-        `emerge -avu $fastnetmon_deps_as_string`;
+        `emerge -vu $fastnetmon_deps_as_string`;
 
         if ($? != 0) {
             print "Emerge fail with code $?\n";
