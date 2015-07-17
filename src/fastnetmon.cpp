@@ -313,6 +313,7 @@ bool process_outgoing_traffic = true;
 void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_string);
 #endif
 
+void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::string flow_attack_details);
 void call_unban_handlers(uint32_t client_ip, attack_details& current_attack);
 ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::string host_group_name = "");
 void exabgp_prefix_ban_manage(std::string action, std::string prefix_as_string_with_mask, std::string exabgp_next_hop,
@@ -2563,15 +2564,29 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element a
     logger << log4cpp::Priority::INFO << "Attack with direction: " << data_direction_as_string
            << " IP: " << client_ip_as_string << " Power: " << pps_as_string;
 
+    call_ban_handlers(client_ip, ban_list[client_ip], flow_attack_details);
+}
+
+void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::string flow_attack_details) { 
+    std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+    std::string pps_as_string = convert_int_to_string(current_attack.attack_power);
+    std::string data_direction_as_string = get_direction_name(current_attack.attack_direction);
+
 #ifdef HWFILTER_LOCKING
     logger << log4cpp::Priority::INFO
            << "We will block traffic to/from this IP with hardware filters";
     block_all_traffic_with_82599_hardware_filtering(client_ip_as_string);
 #endif
 
+    bool store_attack_details_to_file = true;
+
+    
     std::string basic_attack_information = get_attack_description(client_ip, current_attack);
     std::string full_attack_description = basic_attack_information + flow_attack_details;
-    print_attack_details_to_file(full_attack_description, client_ip_as_string, current_attack);
+
+    if (store_attack_details_to_file) {
+        print_attack_details_to_file(full_attack_description, client_ip_as_string, current_attack);
+    }
 
     if (notify_script_enabled) {
         std::string script_call_params = notify_script_path + " " + client_ip_as_string + " " +
