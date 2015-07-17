@@ -127,7 +127,7 @@ class attack_details : public map_element {
     attack_details()
     : attack_protocol(0), attack_power(0), max_attack_power(0), average_in_bytes(0),
       average_out_bytes(0), average_in_packets(0), average_out_packets(0), average_in_flows(0),
-      average_out_flows(0), ban_time(0), attack_direction(OTHER) {
+      average_out_flows(0), ban_time(0), attack_direction(OTHER), unban_enabled(true) {
 
         customer_network.first = 0;
         customer_network.second = 0;
@@ -149,6 +149,7 @@ class attack_details : public map_element {
 
     // time when we but this user
     time_t ban_timestamp;
+    bool unban_enabled;
     int ban_time; // seconds of the ban
 
     subnet_t customer_network;

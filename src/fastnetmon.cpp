@@ -88,6 +88,8 @@ unsigned int recalculate_speed_timeout = 1;
 // Send or not any details about attack for ban script call over stdin
 bool notify_script_pass_details = true;
 
+bool notify_script_enabled = true; 
+
 // We could collect attack dumps in pcap format
 bool collect_attack_pcap_dumps = false;
 
@@ -311,6 +313,7 @@ bool process_outgoing_traffic = true;
 void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_string);
 #endif
 
+void call_unban_handlers(uint32_t client_ip, attack_details& current_attack);
 ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::string host_group_name = "");
 void exabgp_prefix_ban_manage(std::string action, std::string prefix_as_string_with_mask, std::string exabgp_next_hop,
     std::string exabgp_community);
@@ -991,6 +994,13 @@ bool load_configuration_file() {
 
     if (configuration_map.count("notify_script_pass_details") != 0) {
         notify_script_pass_details = configuration_map["notify_script_pass_details"] == "on" ? true : false;
+    }
+
+    if (file_exists(notify_script_path)) {
+        notify_script_enabled = true;
+    } else {
+        logger << log4cpp::Priority::ERROR << "We can't find notify script " << notify_script_path;
+        notify_script_enabled = false;
     }
 
     return true;
@@ -2483,6 +2493,7 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element a
     time(&current_attack.ban_timestamp);
     // set ban time in seconds
     current_attack.ban_time = global_ban_time;
+    current_attack.unban_enabled = unban_enabled;
 
     // Pass main information about attack
     current_attack.attack_direction = data_direction;
@@ -2562,7 +2573,7 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element a
     std::string full_attack_description = basic_attack_information + flow_attack_details;
     print_attack_details_to_file(full_attack_description, client_ip_as_string, current_attack);
 
-    if (file_exists(notify_script_path)) {
+    if (notify_script_enabled) {
         std::string script_call_params = notify_script_path + " " + client_ip_as_string + " " +
                                          data_direction_as_string + " " + pps_as_string +
                                          " " + "ban";
@@ -2685,32 +2696,47 @@ void cleanup_ban_list() {
         time_t current_time;
         time(&current_time);
 
-        std::map<uint32_t, banlist_item>::iterator itr = ban_list.begin();
-        while (itr != ban_list.end()) {
-            uint32_t client_ip = (*itr).first;
+        std::vector<uint32_t> ban_list_items_for_erase;
 
-            double time_difference = difftime(current_time, ((*itr).second).ban_timestamp);
-            int ban_time = ((*itr).second).ban_time;
+        for (std::map<uint32_t, banlist_item>::iterator itr = ban_list.begin(); itr != ban_list.end(); ++itr) {
+            uint32_t client_ip = itr->first;
 
-            // By default we assume 'attack finished'  
-            bool attack_finished = true;
+            // This IP should be banned permanentely and we skip any processing
+            if (!itr->second.unban_enabled) {
+                continue;
+            }
 
-            if (unban_only_if_attack_finished && ban_time != 0 && time_difference > ban_time) {
+            double time_difference = difftime(current_time, itr->second.ban_timestamp);
+            int ban_time = itr->second.ban_time;
+
+            // Yes, we reached end of ban time for this customer
+            bool we_could_unban_this_ip = time_difference > ban_time; 
+
+            // We haven't reached time for unban yet
+            if (!we_could_unban_this_ip) {
+                continue;
+            }
+
+            // Check about ongoing attack
+            if (unban_only_if_attack_finished) {
                 std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
-                uint32_t subnet_in_host_byte_order = ntohl((*itr).second.customer_network.first); 
+                uint32_t subnet_in_host_byte_order = ntohl(itr->second.customer_network.first); 
                 int64_t shift_in_vector = (int64_t)ntohl(client_ip) - (int64_t)subnet_in_host_byte_order;
-     
+    
+                // Try to find average speed element 
                 map_of_vector_counters::iterator itr_average_speed =
-                    SubnetVectorMapSpeedAverage.find((*itr).second.customer_network); 
+                    SubnetVectorMapSpeedAverage.find(itr->second.customer_network); 
 
                 if (itr_average_speed == SubnetVectorMapSpeedAverage.end()) {
                     logger << log4cpp::Priority::ERROR << "Can't find vector address in subnet map for unban function";
                     continue;
-                }    
+                }
 
                 if (shift_in_vector < 0 or shift_in_vector >= itr_average_speed->second.size()) {
                     logger << log4cpp::Priority::ERROR << "We tried to access to element with index " << shift_in_vector
                         << " which located outside allocated vector with size " << itr_average_speed->second.size();
+
+                    continue;
                 }
 
                 map_element* average_speed_element = &itr_average_speed->second[shift_in_vector];  
@@ -2721,59 +2747,61 @@ void cleanup_ban_list() {
                 if (we_should_ban_this_ip(average_speed_element, current_ban_settings)) {
                     logger << log4cpp::Priority::ERROR << "Attack to IP " << client_ip_as_string
                         << " still going! We should not unblock this host";
-                    attack_finished = false;
+
+                    // Well, we still saw attack, skip to next iteration
+                    continue;
                 }
             } 
 
-            // Zero value for ban_time means "no unban feature"
-            if (ban_time != 0 && time_difference > ban_time && attack_finished) {
-                // Cleanup all data related with this attack
+            // Add this IP to remove list
+            // We will remove keyas really after this loop
+            ban_list_items_for_erase.push_back(itr->first);
 
-                std::string data_direction_as_string = get_direction_name((*itr).second.attack_direction);
-                std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
-                std::string pps_as_string = convert_int_to_string((*itr).second.attack_power);
+            // Call all hooks for unban
+            call_unban_handlers(itr->first, itr->second);
+        }
 
-                logger << log4cpp::Priority::INFO << "We will unban banned IP: " << client_ip_as_string
-                       << " because it ban time " << ban_time << " seconds is ended";
-
-                ban_list_mutex.lock();
-                std::map<uint32_t, banlist_item>::iterator itr_to_erase = itr;
-                ++itr;
-
-                ban_list.erase(itr_to_erase);
-                ban_list_mutex.unlock();
-
-                if (file_exists(notify_script_path)) {
-                    std::string script_call_params = notify_script_path + " " + client_ip_as_string +
-                                                     " " + data_direction_as_string + " " +
-                                                     pps_as_string + " unban";
-
-                    logger << log4cpp::Priority::INFO << "Call script for unban client: " << client_ip_as_string;
-
-                    // We should execute external script in separate thread because any lag in this
-                    // code will be very distructive
-                    boost::thread exec_thread(exec, script_call_params);
-                    exec_thread.detach();
-
-                    logger << log4cpp::Priority::INFO
-                           << "Script for unban client is finished: " << client_ip_as_string;
-                }
-
-                if (exabgp_enabled) {
-                    logger << log4cpp::Priority::INFO
-                           << "Call ExaBGP for unban client started: " << client_ip_as_string;
-
-                    boost::thread exabgp_thread(exabgp_ban_manage, "unban", client_ip_as_string, itr->second);
-                    exabgp_thread.detach();
-
-                    logger << log4cpp::Priority::INFO
-                           << "Call to ExaBGP for unban client is finished: " << client_ip_as_string;
-                }
-            } else {
-                ++itr;
-            }
+        // Remove all unbanned hosts from the ban list
+        for (std::vector<uint32_t>::iterator itr = ban_list_items_for_erase.begin(); itr != ban_list_items_for_erase.end(); ++itr) {
+            ban_list_mutex.lock();
+            ban_list.erase(*itr);
+            ban_list_mutex.unlock(); 
         }
     }
+}
+
+void call_unban_handlers(uint32_t client_ip, attack_details& current_attack) {
+    std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+
+    logger << log4cpp::Priority::INFO << "We will unban banned IP: " << client_ip_as_string
+        << " because it ban time " << current_attack.ban_time << " seconds is ended";
+
+    if (notify_script_enabled) {
+        std::string data_direction_as_string = get_direction_name(current_attack.attack_direction); 
+        std::string pps_as_string = convert_int_to_string(current_attack.attack_power);
+
+        std::string script_call_params = notify_script_path + " " + client_ip_as_string +
+            " " + data_direction_as_string + " " +  pps_as_string + " unban";
+
+        logger << log4cpp::Priority::INFO << "Call script for unban client: " << client_ip_as_string;
+
+        // We should execute external script in separate thread because any lag in this
+        // code will be very distructive
+        boost::thread exec_thread(exec, script_call_params);
+        exec_thread.detach();
+
+        logger << log4cpp::Priority::INFO << "Script for unban client is finished: " << client_ip_as_string;
+    }   
+
+    if (exabgp_enabled) {
+        logger << log4cpp::Priority::INFO
+               << "Call ExaBGP for unban client started: " << client_ip_as_string;
+
+        boost::thread exabgp_thread(exabgp_ban_manage, "unban", client_ip_as_string, current_attack);
+        exabgp_thread.detach();
+
+        logger << log4cpp::Priority::INFO << "Call to ExaBGP for unban client is finished: " << client_ip_as_string;
+    }   
 }
 
 std::string print_ddos_attack_details() {
@@ -2972,7 +3000,7 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
         }
 
         // Pass attack details to script
-        if (file_exists(notify_script_path)) {
+        if (notify_script_enabled) {
             logger << log4cpp::Priority::INFO
                    << "Call script for notify about attack details for: " << client_ip_as_string;
 
