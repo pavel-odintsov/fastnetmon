@@ -92,6 +92,13 @@ if (-e "/etc/redhat-release") {
     }    
 }
 
+if (-e "/etc/gentoo-release") {
+    $distro_type = 'gentoo';
+
+    my $distro_version_raw = `cat /etc/gentoo-release`;
+    chomp $distro_version_raw;
+}
+
 unless ($distro_type) {
     die "This distro is unsupported, please do manual install";
 }
@@ -157,6 +164,15 @@ sub install {
         }
 
         `yum install -y make bison flex $kernel_package_name gcc gcc-c++ dkms numactl-devel subversion`;
+    } elsif ($distro_type eq 'gentoo') {
+        my @gentoo_packages_for_pfring = ('subversion', 'sys-process/numactl', 'wget', 'tar');
+
+        my $gentoo_packages_for_pfring_as_string = join " ", @gentoo_packages_for_pfring;
+        `emerge -avu $gentoo_packages_for_pfring_as_string`;
+
+        if ($? != 0) {
+            print "Emerge fail with code $?\n";
+        }
     }
 
     if ($we_could_install_kernel_modules) {
@@ -256,6 +272,17 @@ sub install {
             print "Your distro haven't log4cpp in stable EPEL packages and we install log4cpp from testing of EPEL\n";
             `yum install -y https://kojipkgs.fedoraproject.org//packages/log4cpp/1.1.1/1.el7/x86_64/log4cpp-devel-1.1.1-1.el7.x86_64.rpm https://kojipkgs.fedoraproject.org//packages/log4cpp/1.1.1/1.el7/x86_64/log4cpp-1.1.1-1.el7.x86_64.rpm`;
         }
+    } elsif ($distro_type eq 'gentoo') {
+        my @fastnetmon_deps = ("dev-vcs/git", "gcc", "sys-libs/gpm", "sys-libs/ncurses", "dev-libs/log4cpp", "dev-libs/geoip", 
+            "net-libs/libpcap", "dev-util/cmake", "pkg-config", "dev-libs/hiredis", "dev-libs/boost"
+        );
+
+        my $fastnetmon_deps_as_string = join " ", @fastnetmon_deps;
+        `emerge -avu $fastnetmon_deps_as_string`;
+
+        if ($? != 0) {
+            print "Emerge fail with code $?\n";
+        }
     }
 
     print "Clone FastNetMon repo\n";
@@ -349,6 +376,22 @@ sub install {
         print "You could run it with command: /etc/init.d/fastnetmon start\n";
 
         $we_have_init_script_for_this_machine = 1; 
+    }
+
+    # For Gentoo
+    if ( $distro_type eq 'gentoo' ) {
+        my $init_path_in_src = "$fastnetmon_code_dir/fastnetmon_init_script_gentoo";
+        my $system_init_path = '/etc/init.d/fastnetmon';
+
+        # Checker for source code version, will work only for 1.1.3+ versions
+        if (-e $init_path_in_src) {
+            `cp $init_path_in_src $system_init_path`;
+
+            print "We created service fastnetmon for you\n";
+            print "You could run it with command: /etc/init.d/fastnetmon start\n";
+
+            $we_have_init_script_for_this_machine = 1; 
+        }
     }
 
     # For Debian Squeeze and Wheezy 

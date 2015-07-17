@@ -1,4 +1,4 @@
-For Debian 6, 7, 8 and CentOS 6 and 7 you should use the automatic installer:
+For Debian 6, 7, 8 and CentOS 6, 7 and Fedora and Gentoo you should use the automatic installer:
 ```bash
 wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl 
 sudo perl fastnetmon_install.pl
