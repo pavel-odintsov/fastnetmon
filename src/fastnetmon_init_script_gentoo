@@ -1,0 +1,32 @@
+#!/sbin/runscript
+
+FASTNETMON="/opt/fastnetmon/fastnetmon"
+PIDFILE="/var/run/fastnetmon.pid"
+ARGS="--daemonize"
+
+depend() {
+    need net
+}
+
+start() {
+    ebegin "Starting fastnetmon"
+    if [ -f "${PIDFILE}" ]; then
+        einfo "  Removing stale pidfile ${PIDFILE}"
+        rm -f "${PIDFILE}" 1>/dev/null
+    fi
+
+    $FASTNETMON $ARGS
+    eend $?
+}
+
+stop() {
+    ebegin "Stopping fastnetmon"
+
+    kill -9 `cat $PIDFILE`
+    RETVAL=$?
+
+    pidof fastnetmon | xargs kill -9
+
+    rm -f "${PIDFILE}"
+    eend $RETVAL
+}
