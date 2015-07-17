@@ -313,6 +313,7 @@ bool process_outgoing_traffic = true;
 void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_string);
 #endif
 
+void call_attack_details_handlers(uint32_t client_ip, attack_details& current_attack, std::string attack_fingerprint);
 void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::string flow_attack_details);
 void call_unban_handlers(uint32_t client_ip, attack_details& current_attack);
 ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::string host_group_name = "");
@@ -2579,7 +2580,6 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
 #endif
 
     bool store_attack_details_to_file = true;
-
     
     std::string basic_attack_information = get_attack_description(client_ip, current_attack);
     std::string full_attack_description = basic_attack_information + flow_attack_details;
@@ -2962,6 +2962,26 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
     return attack_description.str();
 }
 
+std::string generate_simple_packets_dump(std::vector<simple_packet>& ban_list_details) {
+    std::stringstream attack_details;
+
+    std::map<unsigned int, unsigned int> protocol_counter;
+    for (std::vector<simple_packet>::iterator iii = ban_list_details.begin(); iii != ban_list_details.end(); ++iii) {
+            attack_details << print_simple_packet(*iii);
+
+        protocol_counter[iii->protocol]++;
+    }    
+
+    std::map<unsigned int, unsigned int>::iterator max_proto =
+    std::max_element(protocol_counter.begin(), protocol_counter.end(), protocol_counter.value_comp());
+    attack_details
+        << "\n" 
+        << "We got more packets (" << max_proto->second << " from " << ban_details_records_count
+        << ") for protocol: " << get_protocol_name_by_number(max_proto->first) << "\n";
+
+    return attack_details.str();
+}
+
 void send_attack_details(uint32_t client_ip, attack_details current_attack_details) {
     std::string pps_as_string = convert_int_to_string(current_attack_details.attack_power);
     std::string attack_direction = get_direction_name(current_attack_details.attack_direction);
@@ -2972,50 +2992,53 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
         std::stringstream attack_details;
 
         attack_details << get_attack_description(client_ip, current_attack_details) << "\n\n";
-
-        std::map<unsigned int, unsigned int> protocol_counter;
-        for (std::vector<simple_packet>::iterator iii = ban_list_details[client_ip].begin();
-             iii != ban_list_details[client_ip].end(); ++iii) {
-            attack_details << print_simple_packet(*iii);
-
-            protocol_counter[iii->protocol]++;
-        }
-
-        std::map<unsigned int, unsigned int>::iterator max_proto =
-        std::max_element(protocol_counter.begin(), protocol_counter.end(), protocol_counter.value_comp());
-        attack_details << "\n"
-                       << "We got more packets (" << max_proto->second << " from " << ban_details_records_count
-                       << ") for protocol: " << get_protocol_name_by_number(max_proto->first) << "\n";
-
+        attack_details << generate_simple_packets_dump(ban_list_details[client_ip]);
+        
         logger << log4cpp::Priority::INFO << "Attack with direction: " << attack_direction
                << " IP: " << client_ip_as_string << " Power: " << pps_as_string
-               << " traffic sample collected";
+               << " traffic samples collected";
 
-        print_attack_details_to_file(attack_details.str(), client_ip_as_string, current_attack_details);
+        call_attack_details_handlers(client_ip, current_attack_details, attack_details.str()); 
 
-        if (collect_attack_pcap_dumps) {
-            std::string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack_details.ban_timestamp);
-            std::string attack_pcap_dump_path = attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string + ".pcap"; 
+        // TODO: here we have definitely RACE CONDITION!!! FIX IT
 
-            int pcap_fump_filedesc = open(attack_pcap_dump_path.c_str(), O_WRONLY|O_CREAT, S_IRUSR|S_IWUSR);
-            if (pcap_fump_filedesc <= 0) {
-                logger << log4cpp::Priority::ERROR << "Can't open file for storing pcap dump: " << attack_pcap_dump_path;
-            } else {
-                ssize_t wrote_bytes = write(pcap_fump_filedesc,
-                    (void*)current_attack_details.pcap_attack_dump.get_buffer_pointer(),
-                    current_attack_details.pcap_attack_dump.get_used_memory());
+        // Remove key and prevent collection new data about this attack
+        ban_list_details_mutex.lock();
+        ban_list_details.erase(client_ip);
+        ban_list_details_mutex.unlock();
+    }    
+}
+
+void call_attack_details_handlers(uint32_t client_ip, attack_details& current_attack, std::string attack_fingerprint) { 
+    std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+    std::string attack_direction = get_direction_name(current_attack.attack_direction);
+    std::string pps_as_string = convert_int_to_string(current_attack.attack_power);
+
+    print_attack_details_to_file(attack_fingerprint, client_ip_as_string, current_attack);
+
+    if (collect_attack_pcap_dumps) {
+        std::string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
+        std::string attack_pcap_dump_path = attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string + ".pcap"; 
+
+        int pcap_fump_filedesc = open(attack_pcap_dump_path.c_str(), O_WRONLY|O_CREAT, S_IRUSR|S_IWUSR);
+        if (pcap_fump_filedesc <= 0) {
+            logger << log4cpp::Priority::ERROR << "Can't open file for storing pcap dump: " << attack_pcap_dump_path;
+        } else {
+            ssize_t wrote_bytes = write(pcap_fump_filedesc,
+                (void*)current_attack.pcap_attack_dump.get_buffer_pointer(),
+                current_attack.pcap_attack_dump.get_used_memory());
             
-                if (wrote_bytes != current_attack_details.pcap_attack_dump.get_used_memory()) {
-                    logger << log4cpp::Priority::ERROR << "Can't wrote all attack details to the disk correctly"; 
-                }
-    
-                // Freeup memory
-                current_attack_details.pcap_attack_dump.deallocate_buffer();   
+            if (wrote_bytes != current_attack.pcap_attack_dump.get_used_memory()) {
+                 logger << log4cpp::Priority::ERROR << "Can't wrote all attack details to the disk correctly"; 
             }
+    
+            // Freeup memory
+            current_attack.pcap_attack_dump.deallocate_buffer();   
         }
+    }
 
-        // Pass attack details to script
-        if (notify_script_enabled) {
+    // Pass attack details to script
+    if (notify_script_enabled) {
             logger << log4cpp::Priority::INFO
                    << "Call script for notify about attack details for: " << client_ip_as_string;
 
@@ -3024,7 +3047,7 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
 
             // We should execute external script in separate thread because any lag in this code
             // will be very distructive
-            boost::thread exec_with_params_thread(exec_with_stdin_params, script_params, attack_details.str());
+            boost::thread exec_with_params_thread(exec_with_stdin_params, script_params, attack_fingerprint);
             exec_with_params_thread.detach();
 
             logger << log4cpp::Priority::INFO
@@ -3041,14 +3064,6 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
             logger << log4cpp::Priority::INFO << "Finish data save in redis for key: " << redis_key_name;
         }
 #endif
-
-        // TODO: here we have definitely RACE CONDITION!!! FIX IT
-
-        // Remove key and prevent collection new data about this attack
-        ban_list_details_mutex.lock();
-        ban_list_details.erase(client_ip);
-        ban_list_details_mutex.unlock();
-    }
 }
 
 uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash* struct_value) {
