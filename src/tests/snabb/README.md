@@ -14,6 +14,14 @@ gcc -O3 ../../fastnetmon_packet_parser.c  -c -o fastnetmon_packet_parser.o -fPIC
 gcc -O3 -shared -o capturecallback.so -fPIC capturecallback.c fastnetmon_packet_parser.o
 ```
 
+Polly enabled clang compilation (offer significant speedup):
+```bash
+alias pollycc="/usr/src/polly/llvm_build/bin/clang -Xclang -load -Xclang /usr/src/polly/llvm_build/lib/LLVMPolly.so"
+
+pollycc -O3 ../../fastnetmon_packet_parser.c  -c -o fastnetmon_packet_parser.o -fPIC
+pollycc -O3 -shared -o capturecallback.so -fPIC capturecallback.c fastnetmon_packet_parser.o
+```
+
 Get NIC's PCI address:
 ```bash
 lspci -m|grep 82599
