@@ -6,6 +6,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <map>
+#include <string>
+
+#include "../../fastnetmon_types.h"
 #include "../../fastnetmon_packet_parser.h"
 
 #include "libndpi/ndpi_api.h"
@@ -145,15 +149,165 @@ void firehose_start() {
     pthread_detach(thread);
 }
 
+// https://code.google.com/p/smhasher/source/browse/trunk/MurmurHash2.cpp
+// 64-bit hash for 64-bit platforms
+#define BIG_CONSTANT(x) (x##LLU)
+uint64_t MurmurHash64A(const void* key, int len, uint64_t seed) {
+    const uint64_t m = BIG_CONSTANT(0xc6a4a7935bd1e995);
+    const int r = 47;
+
+    uint64_t h = seed ^ (len * m);
+
+    const uint64_t* data = (const uint64_t*)key;
+    const uint64_t* end = data + (len / 8);
+
+    while (data != end) {
+        uint64_t k = *data++;
+
+        k *= m;
+        k ^= k >> r;
+        k *= m;
+
+        h ^= k;
+        h *= m;
+    }
+
+    const unsigned char* data2 = (const unsigned char*)data;
+
+    switch (len & 7) {
+    case 7:
+        h ^= uint64_t(data2[6]) << 48;
+    case 6:
+        h ^= uint64_t(data2[5]) << 40;
+    case 5:
+        h ^= uint64_t(data2[4]) << 32;
+    case 4:
+        h ^= uint64_t(data2[3]) << 24;
+    case 3:
+        h ^= uint64_t(data2[2]) << 16;
+    case 2:
+        h ^= uint64_t(data2[1]) << 8;
+    case 1:
+        h ^= uint64_t(data2[0]);
+        h *= m;
+    };
+
+    h ^= h >> r;
+    h *= m;
+    h ^= h >> r;
+
+    return h;
+}
+
+class conntrack_hash_struct_for_simple_packet_t {
+    public:
+        uint32_t src_ip;
+        uint32_t dst_ip;
+        
+        uint16_t source_port;
+        uint16_t destination_port;
+
+        unsigned int protocol;
+};
+
+
+// Copy and paste from netmap module 
+bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet& packet) {
+    struct pfring_pkthdr packet_header;
+
+    memset(&packet_header, 0, sizeof(packet_header));
+    packet_header.len = len;
+    packet_header.caplen = len;
+
+    // We do not calculate timestamps because timestamping is very CPU intensive operation:
+    // https://github.com/ntop/PF_RING/issues/9
+    u_int8_t timestamp = 0;
+    u_int8_t add_hash = 0;
+    fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, timestamp, add_hash);
+
+    // char print_buffer[512];
+    // fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
+    // logger.info("%s", print_buffer);
+
+    if (packet_header.extended_hdr.parsed_pkt.ip_version != 4 && packet_header.extended_hdr.parsed_pkt.ip_version != 6) {
+        return false;
+    }
+
+    // We need this for deep packet inspection
+    packet.packet_payload_length = len;
+    packet.packet_payload_pointer = (void*)buffer;
+
+    packet.ip_protocol_version = packet_header.extended_hdr.parsed_pkt.ip_version;
+
+    if (packet.ip_protocol_version == 4) {
+        // IPv4
+
+        /* PF_RING stores data in host byte order but we use network byte order */
+        packet.src_ip = htonl(packet_header.extended_hdr.parsed_pkt.ip_src.v4);
+        packet.dst_ip = htonl(packet_header.extended_hdr.parsed_pkt.ip_dst.v4);
+    } else {
+        // IPv6
+        memcpy(packet.src_ipv6.s6_addr, packet_header.extended_hdr.parsed_pkt.ip_src.v6.s6_addr, 16);
+        memcpy(packet.dst_ipv6.s6_addr, packet_header.extended_hdr.parsed_pkt.ip_dst.v6.s6_addr, 16);
+    }
+
+    packet.source_port = packet_header.extended_hdr.parsed_pkt.l4_src_port;
+    packet.destination_port = packet_header.extended_hdr.parsed_pkt.l4_dst_port;
+
+    packet.length = packet_header.len;
+    packet.protocol = packet_header.extended_hdr.parsed_pkt.l3_proto;
+    packet.ts = packet_header.ts;
+
+    packet.ip_fragmented = packet_header.extended_hdr.parsed_pkt.ip_fragmented;
+    packet.ttl = packet_header.extended_hdr.parsed_pkt.ip_ttl;
+
+    // Copy flags from PF_RING header to our pseudo header
+    if (packet.protocol == IPPROTO_TCP) {
+        packet.flags = packet_header.extended_hdr.parsed_pkt.tcp.flags;
+    } else {
+        packet.flags = 0;
+    }
+
+    return true;
+} 
+
+bool convert_simple_packet_toconntrack_hash_struct(simple_packet& packet, conntrack_hash_struct_for_simple_packet_t& conntrack_struct) {
+    conntrack_struct.src_ip = packet.src_ip;
+    conntrack_struct.dst_ip = packet.dst_ip;
+
+    conntrack_struct.protocol = packet.protocol;
+
+    conntrack_struct.source_port = packet.source_port;
+    conntrack_struct.destination_port = packet.destination_port; 
+}
+
+typedef std::map<uint64_t, unsigned int> my_connection_tracking_storage_t;
+my_connection_tracking_storage_t my_connection_tracking_storage;
+
 void firehose_packet(const char *pciaddr, char *data, int length) {
     // Put packet to the cache
-    struct pfring_pkthdr packet_header;
-    memset(&packet_header, 0, sizeof(packet_header));
-    packet_header.len = length;
-    packet_header.caplen = length;
+    simple_packet current_packet;
 
-    fastnetmon_parse_pkt((u_char*)data, &packet_header, 3, 0, 0);
+    parse_raw_packet_to_simple_packet((u_char*)data, length, current_packet); 
+    
+    conntrack_hash_struct_for_simple_packet_t conntrack_structure;
+    convert_simple_packet_toconntrack_hash_struct(current_packet, conntrack_structure);
 
+    unsigned int seed = 13;
+    uint64_t conntrack_hash = MurmurHash64A(&conntrack_structure, sizeof(conntrack_structure), seed);
+    
+    // printf("Hash: %llu", conntrack_hash);
+
+    my_connection_tracking_storage_t::iterator itr = my_connection_tracking_storage.find(conntrack_hash);
+
+    if (itr == my_connection_tracking_storage.end()) {
+        my_connection_tracking_storage[ conntrack_hash ] = 123;
+        printf("Initiate new connection\n");
+    } else {
+        printf("Found this connection\n");
+    }
+
+    /*
     struct ndpi_id_struct *src, *dst;
     struct ndpi_flow_struct *flow;
 
@@ -166,9 +320,11 @@ void firehose_packet(const char *pciaddr, char *data, int length) {
 
     if (detected_protocol.protocol != NDPI_PROTOCOL_UNKNOWN) {
         printf("Can't detect protocol");
+        return;
     } 
 
-    printf("protocol: %s\n", ndpi_get_proto_name(my_ndpi_struct, detected_protocol.protocol));
+    // printf("protocol: %s\n", ndpi_get_proto_name(my_ndpi_struct, flow->detected_protocol));
+    */
 
     /* 
     char print_buffer[512];
