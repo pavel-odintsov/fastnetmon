@@ -6,7 +6,9 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <map>
+#include <algorithm>
+#include <vector>
+#include <unordered_map>
 #include <string>
 
 #include "../../fastnetmon_types.h"
@@ -208,11 +210,14 @@ class conntrack_hash_struct_for_simple_packet_t {
         uint16_t destination_port;
 
         unsigned int protocol;
+        bool operator==(const conntrack_hash_struct_for_simple_packet_t& rhs) {
+            return memcmp(this, &rhs, sizeof(conntrack_hash_struct_for_simple_packet_t)) == 0; 
+        }
 };
 
 
 // Copy and paste from netmap module 
-bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet& packet) {
+inline bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet& packet) {
     struct pfring_pkthdr packet_header;
 
     memset(&packet_header, 0, sizeof(packet_header));
@@ -281,7 +286,7 @@ bool convert_simple_packet_toconntrack_hash_struct(simple_packet& packet, conntr
     conntrack_struct.destination_port = packet.destination_port; 
 }
 
-typedef std::map<uint64_t, unsigned int> my_connection_tracking_storage_t;
+typedef std::unordered_map<uint64_t, unsigned int> my_connection_tracking_storage_t;
 my_connection_tracking_storage_t my_connection_tracking_storage;
 
 void firehose_packet(const char *pciaddr, char *data, int length) {
@@ -297,14 +302,14 @@ void firehose_packet(const char *pciaddr, char *data, int length) {
     uint64_t conntrack_hash = MurmurHash64A(&conntrack_structure, sizeof(conntrack_structure), seed);
     
     // printf("Hash: %llu", conntrack_hash);
-
+   
     my_connection_tracking_storage_t::iterator itr = my_connection_tracking_storage.find(conntrack_hash);
 
     if (itr == my_connection_tracking_storage.end()) {
         my_connection_tracking_storage[ conntrack_hash ] = 123;
-        printf("Initiate new connection\n");
+        //printf("Initiate new connection\n");
     } else {
-        printf("Found this connection\n");
+        //printf("Found this connection\n");
     }
 
     /*
