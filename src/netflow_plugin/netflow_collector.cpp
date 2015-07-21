@@ -389,17 +389,17 @@ int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t* data, simp
             memcpy(&packet.dst_ip, data, record_length);
             break;
         case NF9_INPUT_SNMP: {
+                // TODO: port number could be 4 byte (Juniper MX) and we should rewrite BE_COPY for correct handling
                 uint16_t input_port = 0;
 
                 if (record_length > sizeof(input_port)) {
-                    logger << log4cpp::Priority::ERROR << "Received very big packet for NF9_INPUT_SNMP!";
-                    return 0;
+                    //logger << log4cpp::Priority::ERROR << "Received very big packet for NF9_INPUT_SNMP!";
+                    //return 0;
+                } else {
+                    BE_COPY(input_port);
+                    input_port = fast_ntoh(input_port);
+                    // logger << log4cpp::Priority::INFO << "NF9_INPUT_SNMP is: " << input_port;
                 }
-
-                BE_COPY(input_port);
-                input_port = fast_ntoh(input_port);
-
-                // logger << log4cpp::Priority::INFO << "NF9_INPUT_SNMP is: " << input_port;
             }
 
             break;
@@ -407,14 +407,13 @@ int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t* data, simp
                 uint16_t output_port = 0; 
 
                 if (record_length > sizeof(output_port)) {
-                    logger << log4cpp::Priority::ERROR << "Received very big packet for NF9_OUTPUT_SNMP!";
-                    return 0;
-                }    
-
-                BE_COPY(output_port);
-                output_port = fast_ntoh(output_port);
-
-                // logger << log4cpp::Priority::INFO << "NF9_OUTPUT_SNMP is: " << output_port;
+                    //logger << log4cpp::Priority::ERROR << "Received very big packet for NF9_OUTPUT_SNMP!";
+                    //return 0;
+                } else {
+                    BE_COPY(output_port);
+                    output_port = fast_ntoh(output_port);
+                    // logger << log4cpp::Priority::INFO << "NF9_OUTPUT_SNMP is: " << output_port;
+                }
             }    
 
             break;        
