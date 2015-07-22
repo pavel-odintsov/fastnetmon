@@ -87,6 +87,8 @@ endif()
 # Our LPM library
 add_library(patricia STATIC libpatricia/patricia.c)
 
+add_library(fastnetmon_pcap_format STATIC fastnetmon_pcap_format.cpp)
+
 # Our tools library
 add_library(fast_library STATIC fast_library.cpp)
 
@@ -159,6 +161,7 @@ if(Boost_FOUND)
 endif()
 
 target_link_libraries(fast_library patricia)
+target_link_libraries(fast_library fastnetmon_pcap_format)
 
 # Try to find ncurses librreary
 find_package(Curses REQUIRED)
@@ -215,6 +218,7 @@ endif()
 
 # Our libs
 target_link_libraries(fastnetmon patricia)
+target_link_libraries(fastnetmon fastnetmon_pcap_format)
 
 target_link_libraries(fastnetmon ipfix_rfc)
 
@@ -233,6 +237,7 @@ if (BUILD_PLUGIN_RUNNER)
 
     target_link_libraries(fastnetmon_plugin_runner ${CMAKE_THREAD_LIBS_INIT})
     target_link_libraries(fastnetmon_plugin_runner patricia)
+    target_link_libraries(fastnetmon_plugin_runner fastnetmon_pcap_format)
     target_link_libraries(fastnetmon_plugin_runner ${LOG4CPP_LIBRARY_PATH})
     target_link_libraries(fastnetmon_plugin_runner fast_library)
 
@@ -251,6 +256,9 @@ if (BUILD_PCAP_READER)
 
     target_link_libraries(fastnetmon_pcap_reader fastnetmon_packet_parser)
     target_link_libraries(fastnetmon_pcap_reader patricia)
+    target_link_libraries(fastnetmon_pcap_reader fastnetmon_pcap_format)
+
+
     target_link_libraries(fastnetmon_pcap_reader fast_library)
     target_link_libraries(fastnetmon_pcap_reader ${LOG4CPP_LIBRARY_PATH})
     target_link_libraries(fastnetmon_pcap_reader netflow_plugin)   
