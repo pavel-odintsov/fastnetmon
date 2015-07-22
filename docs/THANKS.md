@@ -1,4 +1,5 @@
 Thanks file! For all peoples which helped this project :)
+- Luke Gorrie for SnabbSwitch and help with lightning speed packet processing :)
 - Andrei Ziltsov / FastVPS Eesti OU for testing and patience :)
 - Luca Deri for PF_RING toolkit!
 - Alfredo Cardigliano for helping me with PF_RING libraries :)

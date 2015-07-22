@@ -6,16 +6,30 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <map>
+#include <iostream>
+#include <functional>
+#include <algorithm>
+#include <vector>
+#include <unordered_map>
 #include <string>
 
+#include "../../fastnetmon_pcap_format.h"
 #include "../../fastnetmon_types.h"
 #include "../../fastnetmon_packet_parser.h"
+
+#define DEBUG 1
 
 #include "libndpi/ndpi_api.h"
 
 // For correct compilation with g++
-extern "C" {
+#ifdef __cplusplus
+// extern "C" {
+#endif
+
+u_int32_t size_flow_struct = 0;
+u_int32_t size_id_struct = 0;
+
+void pcap_parse_packet(const char* flow_type, char* buffer, uint32_t len);
 
 void debug_printf(u_int32_t protocol, void *id_struct, ndpi_log_level_t log_level, const char *format, ...) {
     va_list va_ap;
@@ -67,8 +81,8 @@ bool init_ndpi() {
     ndpi_set_protocol_detection_bitmask2(my_ndpi_struct, &all);
 
     // allocate memory for id and flow tracking
-    uint32_t size_id_struct = ndpi_detection_get_sizeof_ndpi_id_struct();
-    uint32_t size_flow_struct = ndpi_detection_get_sizeof_ndpi_flow_struct();
+    size_id_struct = ndpi_detection_get_sizeof_ndpi_id_struct();
+    size_flow_struct = ndpi_detection_get_sizeof_ndpi_flow_struct();
 
     // Load custom protocols
     // ndpi_load_protocols_file(ndpi_thread_info[thread_id].ndpi_struct, _protoFilePath);
@@ -208,11 +222,14 @@ class conntrack_hash_struct_for_simple_packet_t {
         uint16_t destination_port;
 
         unsigned int protocol;
+        bool operator==(const conntrack_hash_struct_for_simple_packet_t& rhs) const {
+            return memcmp(this, &rhs, sizeof(conntrack_hash_struct_for_simple_packet_t)) == 0; 
+        }
 };
 
 
 // Copy and paste from netmap module 
-bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet& packet) {
+inline bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet& packet) {
     struct pfring_pkthdr packet_header;
 
     memset(&packet_header, 0, sizeof(packet_header));
@@ -281,7 +298,17 @@ bool convert_simple_packet_toconntrack_hash_struct(simple_packet& packet, conntr
     conntrack_struct.destination_port = packet.destination_port; 
 }
 
-typedef std::map<uint64_t, unsigned int> my_connection_tracking_storage_t;
+namespace std {
+    template<>
+    struct hash<conntrack_hash_struct_for_simple_packet_t> {
+        size_t operator()(const conntrack_hash_struct_for_simple_packet_t& x) const {
+            return std::hash<unsigned int>()(x.src_ip);
+        }
+    };
+}
+
+typedef std::unordered_map<conntrack_hash_struct_for_simple_packet_t, unsigned int> my_connection_tracking_storage_t;
+
 my_connection_tracking_storage_t my_connection_tracking_storage;
 
 void firehose_packet(const char *pciaddr, char *data, int length) {
@@ -293,18 +320,18 @@ void firehose_packet(const char *pciaddr, char *data, int length) {
     conntrack_hash_struct_for_simple_packet_t conntrack_structure;
     convert_simple_packet_toconntrack_hash_struct(current_packet, conntrack_structure);
 
-    unsigned int seed = 13;
-    uint64_t conntrack_hash = MurmurHash64A(&conntrack_structure, sizeof(conntrack_structure), seed);
+    //unsigned int seed = 13;
+    //uint64_t conntrack_hash = MurmurHash64A(&conntrack_structure, sizeof(conntrack_structure), seed);
     
     // printf("Hash: %llu", conntrack_hash);
-
-    my_connection_tracking_storage_t::iterator itr = my_connection_tracking_storage.find(conntrack_hash);
+   
+    my_connection_tracking_storage_t::iterator itr = my_connection_tracking_storage.find(conntrack_structure);
 
     if (itr == my_connection_tracking_storage.end()) {
-        my_connection_tracking_storage[ conntrack_hash ] = 123;
-        printf("Initiate new connection\n");
+        my_connection_tracking_storage[ conntrack_structure ] = 123;
+        //printf("Initiate new connection\n");
     } else {
-        printf("Found this connection\n");
+        //printf("Found this connection\n");
     }
 
     /*
@@ -336,4 +363,108 @@ void firehose_packet(const char *pciaddr, char *data, int length) {
     //printf("Got packet with %d bytes.\n", length);
 }
 
+#ifdef __cplusplus
+// }
+#endif
+
+struct ndpi_id_struct *src = NULL;
+struct ndpi_id_struct *dst = NULL;
+struct ndpi_flow_struct *flow = NULL;
+
+void pcap_parse_packet(char* buffer, uint32_t len) {
+    struct pfring_pkthdr packet_header;
+
+    memset(&packet_header, 0, sizeof(packet_header));
+    packet_header.len = len;
+    packet_header.caplen = len;
+
+    // We do not calculate timestamps because timestamping is very CPU intensive operation:
+    // https://github.com/ntop/PF_RING/issues/9
+    u_int8_t timestamp = 0;
+    u_int8_t add_hash = 0;
+    fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, timestamp, add_hash);
+
+    // So, we will init nDPI flow here
+    if (flow == NULL) {
+        printf ("Allocate buffers\n");
+        src = (struct ndpi_id_struct*)malloc(size_id_struct);
+        memset(src, 0, size_id_struct);
+
+        dst = (struct ndpi_id_struct*)malloc(size_id_struct);
+        memset(dst, 0, size_id_struct);
+
+        flow = (struct ndpi_flow_struct *)malloc(size_flow_struct); 
+        memset(flow, 0, size_flow_struct);
+
+        /*
+
+        struct ndpi_flow *newflow = (struct ndpi_flow*)malloc(sizeof(struct ndpi_flow)); 
+        memset(newflow, 0, sizeof(struct ndpi_flow));
+
+        newflow->protocol = packet_header.extended_hdr.parsed_pkt.l3_proto;
+        newflow->vlan_id = packet_header.extended_hdr.parsed_pkt.vlan_id;
+
+        uint32_t ip_src = packet_header.extended_hdr.parsed_pkt.ip_src.v4;
+        uint32_t ip_dst = packet_header.extended_hdr.parsed_pkt.ip_dst.v4;
+
+        uint16_t src_port = packet_header.extended_hdr.parsed_pkt.l4_src_port; 
+        uint16_t dst_port = packet_header.extended_hdr.parsed_pkt.l4_dst_port;
+
+        if (ip_src < ip_dst) {
+            newflow->lower_ip = ip_src 
+            newflow->upper_ip = ip_dst;
+
+            newflow->lower_port = src_port; 
+            newflow->upper_port = dst_port;
+        } else {
+            newflow->lower_ip = ip_dst;
+            newflow->upper_ip = ip_src;
+
+            newflow->lower_port = dst_port;
+            newflow->upper_port = src_port;
+        }
+
+        newflow->src_id = malloc(size_id_struct);
+        memset(newflow->src_id, 0, size_id_struct);
+
+        newflow->dst_id = malloc(size_id_struct);
+        memset(newflow->dst_id, 0, size_id_struct);
+           
+        *src = newflow->src_id, *dst = newflow->dst_id; 
+
+        flow = newflow;
+
+        */
+    } else {
+        printf("We process only single packet\n");
+        exit(0);
+        return;
+    }
+
+    uint32_t current_tickt = 0 ;
+  
+    uint8_t* iph = (uint8_t*)(&buffer[packet_header.extended_hdr.parsed_pkt.offset.l3_offset]);
+
+    struct ndpi_iphdr* ndpi_ip_header = (struct ndpi_iphdr*)iph;
+
+    printf("Protocol: %d\n", ndpi_ip_header->protocol); 
+
+    unsigned int ipsize = packet_header.len; 
+ 
+    ndpi_protocol detected_protocol = ndpi_detection_process_packet(my_ndpi_struct, flow, iph, ipsize, current_tickt, src, dst);
+
+    if (detected_protocol.protocol != NDPI_PROTOCOL_UNKNOWN) {
+        printf("Can't detect protocol\n");
+        return;
+    } else {
+        printf("Protocol detected %d\n", detected_protocol.protocol);
+    }
 }
+
+int main() {
+    init_ndpi();
+    const char* path = "/root/ssdp_udp_attack_to_5.101.117.174.pcap";
+
+    pcap_reader(path, pcap_parse_packet);
+}
+
