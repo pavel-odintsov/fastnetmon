@@ -8,12 +8,18 @@ wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fast
 ```
 
 
-Now create networks.list. Replace CIDR-1/20 and CIDR-2/19 with your 
+Now create networks.list. Include all your networks CIDR 
 
 ```
-echo "CIDR-1/20
-CIDR-2/19" > /etc/networks.list
+echo "10.10.0.0/20
+10.200.0.0/19" > /etc/networks.list
 ````
+
+Add your whitelist networks:
+
+```
+echo "10.240.0.0/24" > /etc/networks_whitelist
+```
 
 
 Now create log files to access them outside cointainer
@@ -44,6 +50,7 @@ docker run -a stdin -a stdout -i \
 -v /var/log/fastnetmon_attacks:/var/log/fastnetmon_attacks \
 -v /var/log/fastnetmon.log:/var/log/fastnetmon.log \
 -v /etc/networks_list:/etc/networks_list \
+-v /etc/networks_whitelist:/etc/networks_whitelist \
 -v /etc/fastnetmon.conf:/etc/fastnetmon.conf \
 -p IPFIX1:2055:2055/udp \
 -p IPFIX2:2055:2055/udp \
