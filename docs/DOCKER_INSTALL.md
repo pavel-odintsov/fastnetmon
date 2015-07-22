@@ -1,5 +1,8 @@
 
-You can run docker from pre built container.
+You can run docker from pre-built image:
+'''
+docker pull robertoberto/fastnetmon
+'''.
 
 First, get fastnetmon.conf from github, edit it after download.
 
