@@ -29,7 +29,7 @@
 u_int32_t size_flow_struct = 0;
 u_int32_t size_id_struct = 0;
 
-void pcap_parse_packet(const char* flow_type, char* buffer, uint32_t len);
+void pcap_parse_packet(char* buffer, uint32_t len);
 
 void debug_printf(u_int32_t protocol, void *id_struct, ndpi_log_level_t log_level, const char *format, ...) {
     va_list va_ap;
@@ -312,6 +312,9 @@ typedef std::unordered_map<conntrack_hash_struct_for_simple_packet_t, unsigned i
 my_connection_tracking_storage_t my_connection_tracking_storage;
 
 void firehose_packet(const char *pciaddr, char *data, int length) {
+    pcap_parse_packet(data, length);
+
+    /*
     // Put packet to the cache
     simple_packet current_packet;
 
@@ -333,6 +336,8 @@ void firehose_packet(const char *pciaddr, char *data, int length) {
     } else {
         //printf("Found this connection\n");
     }
+
+    */
 
     /*
     struct ndpi_id_struct *src, *dst;
