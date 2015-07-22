@@ -1,6 +1,15 @@
 #ifndef FASTNETMON_PCAP_FORMAT_H
 #define FASTNETMON_PCAP_FORMAT_H
 
+#include <stdint.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/stat.h> 
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 /*
    pcap dump format:
     global header: struct pcap_file_header
@@ -36,5 +45,9 @@ struct fastnetmon_pcap_pkthdr {
     uint32_t incl_len; /* number of octets of packet saved in file */
     uint32_t orig_len; /* actual length of packet */
 };
+
+typedef void (*pcap_packet_parser_callback)(char* buffer, uint32_t len);
+
+int pcap_reader(const char* pcap_file_path, pcap_packet_parser_callback  pcap_parse_packet_function_ptr);
 
 #endif 
