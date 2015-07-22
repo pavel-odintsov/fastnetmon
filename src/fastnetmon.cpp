@@ -3063,7 +3063,7 @@ void call_attack_details_handlers(uint32_t client_ip, attack_details& current_at
             std::string redis_key_name = client_ip_as_string + "_packets_dump";
 
             logger << log4cpp::Priority::INFO << "Start data save in redis for key: " << redis_key_name;
-            boost::thread redis_store_thread(store_data_in_redis, redis_key_name, attack_details.str());
+            boost::thread redis_store_thread(store_data_in_redis, redis_key_name, attack_fingerprint);
             redis_store_thread.detach();
             logger << log4cpp::Priority::INFO << "Finish data save in redis for key: " << redis_key_name;
         }
