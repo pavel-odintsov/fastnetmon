@@ -60,6 +60,9 @@ Supported architectures:
 - x86 64 bit (recommended)
 - x86 32 bit
 
+Router integration instructions:
+- [Juniper MX Routers](docs/JUNOS_INTEGRATION.md)
+
 What is "flow" in FastNetMon terms? It's one or multiple udp, tcp, icmp connections with unique src IP, dst IP, src port, dst port and protocol.
 
 Main program screen image:
