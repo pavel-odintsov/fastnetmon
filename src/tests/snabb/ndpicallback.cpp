@@ -367,10 +367,6 @@ void firehose_packet(const char *pciaddr, char *data, int length) {
 // }
 #endif
 
-struct ndpi_id_struct *src = NULL;
-struct ndpi_id_struct *dst = NULL;
-struct ndpi_flow_struct *flow = NULL;
-
 void pcap_parse_packet(char* buffer, uint32_t len) {
     struct pfring_pkthdr packet_header;
 
@@ -384,9 +380,12 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
     u_int8_t add_hash = 0;
     fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, timestamp, add_hash);
 
+    struct ndpi_id_struct *src = NULL;
+    struct ndpi_id_struct *dst = NULL;
+    struct ndpi_flow_struct *flow = NULL;
+
     // So, we will init nDPI flow here
     if (flow == NULL) {
-        printf ("Allocate buffers\n");
         src = (struct ndpi_id_struct*)malloc(size_id_struct);
         memset(src, 0, size_id_struct);
 
@@ -436,8 +435,8 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
 
         */
     } else {
-        printf("We process only single packet\n");
-        exit(0);
+        //printf("We process only single packet\n");
+        //exit(0);
         return;
     }
 
@@ -447,17 +446,20 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
 
     struct ndpi_iphdr* ndpi_ip_header = (struct ndpi_iphdr*)iph;
 
-    printf("Protocol: %d\n", ndpi_ip_header->protocol); 
-
     unsigned int ipsize = packet_header.len; 
  
     ndpi_protocol detected_protocol = ndpi_detection_process_packet(my_ndpi_struct, flow, iph, ipsize, current_tickt, src, dst);
 
-    if (detected_protocol.protocol != NDPI_PROTOCOL_UNKNOWN) {
+    if (detected_protocol.protocol == NDPI_PROTOCOL_UNKNOWN) {
         printf("Can't detect protocol\n");
         return;
     } else {
-        printf("Protocol detected %d\n", detected_protocol.protocol);
+        //printf("Master protocol: %d protocol: %d\n", detected_protocol.master_protocol, detected_protocol.protocol);
+        
+        printf("Protocol: %s master protocol: %s\n",
+            ndpi_get_proto_name(my_ndpi_struct, detected_protocol.protocol),
+            ndpi_get_proto_name(my_ndpi_struct, detected_protocol.master_protocol)
+        );
     }
 }
 
