@@ -457,11 +457,18 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
         printf("Can't detect protocol\n");
     } else {
         //printf("Master protocol: %d protocol: %d\n", detected_protocol.master_protocol, detected_protocol.protocol);
-        
-        printf("Protocol: %s master protocol: %s\n",
-            ndpi_get_proto_name(my_ndpi_struct, detected_protocol.protocol),
-            ndpi_get_proto_name(my_ndpi_struct, detected_protocol.master_protocol)
-        );
+        char* protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.protocol);
+        char* master_protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.master_protocol);        
+
+        printf("Protocol: %s master protocol: %s\n", protocol_name, master_protocol_name);
+
+        if (strstr(master_protocol_name, "Tor") == master_protocol_name) {
+            printf("Shitty Tor found\n");
+            char print_buffer[512];
+            fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
+            printf("packet: %s\n", print_buffer);
+        }
+
     }
 
     free(flow);
