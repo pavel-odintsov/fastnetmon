@@ -17,8 +17,6 @@
 #include "../../fastnetmon_types.h"
 #include "../../fastnetmon_packet_parser.h"
 
-#define DEBUG 1
-
 #include "libndpi/ndpi_api.h"
 
 class conntrack_hash_struct_for_simple_packet_t {
