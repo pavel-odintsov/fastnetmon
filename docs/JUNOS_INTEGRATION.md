@@ -8,6 +8,16 @@ Fastnetmon server have 2 interfaces:
 10.50.1.2/30 - connected to r1
 10.50.1.6/30 - connected to r2
 
+R1 have 1 transit connected to ge-1/0/0.0
+R2 have 1 transit connected to ge-1/0/0.0
+
+Setting sampling on transit interfaces. Run that on those interfaces on each router.
+
+```
+set interfaces ge-1/0/0.0 family inet sampling input
+```
+
+
 You can check https://github.com/FastVPSEestiOu/fastnetmon/blob/master/docs/DOCKER_INSTALL.md to see how to configure Fastnetmon to work with inline-jflow
 
 ```
@@ -18,6 +28,9 @@ unit 0 {
         address 10.50.1.1/30;
     }
 }
+
+
+
 r1# show interfaces ge-1/0/4 | display set 
 set interfaces ge-1/0/4 unit 0 description netflow-coletor
 set interfaces ge-1/0/4 unit 0 family inet address 10.50.1.1/30
@@ -36,13 +49,6 @@ set interfaces ge-1/0/4 unit 0 family inet address 10.50.1.5/30
 
 Now add templates configuration on r1 and r2:
 ```
-set services flow-monitoring version9 template ipv4 flow-active-timeout 60
-set services flow-monitoring version9 template ipv4 flow-inactive-timeout 60
-set services flow-monitoring version9 template ipv4 template-refresh-rate packets 1000
-set services flow-monitoring version9 template ipv4 template-refresh-rate seconds 10
-set services flow-monitoring version9 template ipv4 option-refresh-rate packets 1000
-set services flow-monitoring version9 template ipv4 option-refresh-rate seconds 10
-set services flow-monitoring version9 template ipv4 ipv4-template
 set services flow-monitoring version-ipfix template ipv4 flow-active-timeout 60
 set services flow-monitoring version-ipfix template ipv4 flow-inactive-timeout 60
 set services flow-monitoring version-ipfix template ipv4 template-refresh-rate packets 1000
@@ -50,24 +56,10 @@ set services flow-monitoring version-ipfix template ipv4 template-refresh-rate s
 set services flow-monitoring version-ipfix template ipv4 option-refresh-rate packets 1000
 set services flow-monitoring version-ipfix template ipv4 option-refresh-rate seconds 10
 set services flow-monitoring version-ipfix template ipv4 ipv4-template
+set chassis tfeb slot 0 sampling-instance ipfix
 
 
 flow-monitoring {
-    version9 {
-        template ipv4 {
-            flow-active-timeout 60;
-            flow-inactive-timeout 60;
-            template-refresh-rate {
-                packets 1000;
-                seconds 10;
-            }
-            option-refresh-rate {
-                packets 1000;
-                seconds 10;
-            }
-            ipv4-template;
-        }
-    }
     version-ipfix {
         template ipv4 {
             flow-active-timeout 60;
@@ -84,6 +76,11 @@ flow-monitoring {
         }
     }
 }
+
+slot 0 {
+    sampling-instance ipfix;
+}
+
 
 ```
 
