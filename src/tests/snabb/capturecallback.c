@@ -1,8 +1,11 @@
 // compile with: gcc -shared -o capturecallback.so -fPIC capturecallback.c
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <pthread.h>
 #include <string.h>
+#include <signal.h>
+
 #include "../../fastnetmon_packet_parser.h"
 
 /* Called once before processing packets. */
@@ -10,6 +13,10 @@ void firehose_start(); /* optional */
 
 /* Called once after processing packets. */
 void firehose_stop();  /* optional */
+
+void firehose_stop() {
+
+}
 
 /*
  * Process a packet received from a NIC.
@@ -68,8 +75,17 @@ void* speed_printer(void* ptr) {
     }   
 }
 
+void sigproc(int sig) {
+    firehose_stop();
+
+    printf("We caught SINGINT and will finish application\n");
+    exit(0);
+}
+
 // We will start speed printer
 void firehose_start() {
+    signal(SIGINT,  sigproc); 
+
     pthread_t thread;
     pthread_create(&thread, NULL, speed_printer, NULL);
 
