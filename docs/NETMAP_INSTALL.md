@@ -1,5 +1,7 @@
 Build netmap on Debian 7 Wheezy with ixgbe 10GE NIC (82599):
 
+If you want _stable_ driver with all modern features, please use this reference instead [here](http://www.stableit.ru/2014/10/netmap-debian-7-wheezy-intel-82599.html)
+
 Get kernel sources:
 ```bash
 cd /usr/src
@@ -47,4 +49,3 @@ ifconfig eth0 up
 ifconfig eth0 promisc
 ```
 
-If you want driver with all modern features, please take a look [here](http://www.stableit.ru/2014/10/netmap-debian-7-wheezy-intel-82599.html)
