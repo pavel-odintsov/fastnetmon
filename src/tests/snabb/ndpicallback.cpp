@@ -21,9 +21,36 @@
 
 #include "libndpi/ndpi_api.h"
 
+class conntrack_hash_struct_for_simple_packet_t {
+    public:
+        uint32_t src_ip;
+        uint32_t dst_ip;
+    
+        uint16_t source_port;
+        uint16_t destination_port;
+
+        unsigned int protocol;
+        bool operator==(const conntrack_hash_struct_for_simple_packet_t& rhs) const {
+            return memcmp(this, &rhs, sizeof(conntrack_hash_struct_for_simple_packet_t)) == 0;  
+        }   
+};
+
+namespace std {
+    template<>
+    struct hash<conntrack_hash_struct_for_simple_packet_t> {
+        size_t operator()(const conntrack_hash_struct_for_simple_packet_t& x) const {
+            return std::hash<unsigned int>()(x.src_ip);
+        }
+    };
+}
+
+typedef std::unordered_map<conntrack_hash_struct_for_simple_packet_t, unsigned int> my_connection_tracking_storage_t;
+
+my_connection_tracking_storage_t my_connection_tracking_storage;
+
 // For correct compilation with g++
 #ifdef __cplusplus
-// extern "C" {
+    extern "C" {
 #endif
 
 u_int32_t size_flow_struct = 0;
@@ -213,21 +240,6 @@ uint64_t MurmurHash64A(const void* key, int len, uint64_t seed) {
     return h;
 }
 
-class conntrack_hash_struct_for_simple_packet_t {
-    public:
-        uint32_t src_ip;
-        uint32_t dst_ip;
-        
-        uint16_t source_port;
-        uint16_t destination_port;
-
-        unsigned int protocol;
-        bool operator==(const conntrack_hash_struct_for_simple_packet_t& rhs) const {
-            return memcmp(this, &rhs, sizeof(conntrack_hash_struct_for_simple_packet_t)) == 0; 
-        }
-};
-
-
 // Copy and paste from netmap module 
 inline bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet& packet) {
     struct pfring_pkthdr packet_header;
@@ -298,19 +310,6 @@ bool convert_simple_packet_toconntrack_hash_struct(simple_packet& packet, conntr
     conntrack_struct.destination_port = packet.destination_port; 
 }
 
-namespace std {
-    template<>
-    struct hash<conntrack_hash_struct_for_simple_packet_t> {
-        size_t operator()(const conntrack_hash_struct_for_simple_packet_t& x) const {
-            return std::hash<unsigned int>()(x.src_ip);
-        }
-    };
-}
-
-typedef std::unordered_map<conntrack_hash_struct_for_simple_packet_t, unsigned int> my_connection_tracking_storage_t;
-
-my_connection_tracking_storage_t my_connection_tracking_storage;
-
 void firehose_packet(const char *pciaddr, char *data, int length) {
     pcap_parse_packet(data, length);
 
@@ -369,7 +368,7 @@ void firehose_packet(const char *pciaddr, char *data, int length) {
 }
 
 #ifdef __cplusplus
-// }
+    }
 #endif
 
 void pcap_parse_packet(char* buffer, uint32_t len) {
@@ -466,6 +465,14 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
             ndpi_get_proto_name(my_ndpi_struct, detected_protocol.master_protocol)
         );
     }
+
+    free(flow);
+    free(dst);
+    free(src);
+
+    flow = NULL:
+    dst = NULL;
+    src = NULL;
 }
 
 int main() {
