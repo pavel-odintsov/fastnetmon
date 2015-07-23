@@ -470,7 +470,7 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
     free(dst);
     free(src);
 
-    flow = NULL:
+    flow = NULL;
     dst = NULL;
     src = NULL;
 }
