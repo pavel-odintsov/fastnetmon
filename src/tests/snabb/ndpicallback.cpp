@@ -454,7 +454,8 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
  
     ndpi_protocol detected_protocol = ndpi_detection_process_packet(my_ndpi_struct, flow, iph, ipsize, current_tickt, src, dst);
 
-    if (detected_protocol.protocol == NDPI_PROTOCOL_UNKNOWN) {
+    if (detected_protocol.protocol == NDPI_PROTOCOL_UNKNOWN && 
+        detected_protocol.master_protocol == NDPI_PROTOCOL_UNKNOWN) {
         printf("Can't detect protocol\n");
         return;
     } else {
