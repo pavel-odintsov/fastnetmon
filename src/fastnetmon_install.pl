@@ -110,7 +110,8 @@ sub install {
     chomp $kernel_version;
 
     my $we_have_pfring_support = '';
-
+    my $we_have_ndpi_support = '';
+    
     print "Install PF_RING dependencies with package manager\n";
 
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
@@ -233,6 +234,33 @@ sub install {
         close $pf_ring_ld_so_conf_handle;
 
         print "Run ldconfig\n";
+        `ldconfig`; 
+    }
+
+    if ($we_have_ndpi_support) {
+        if (-e "/usr/src/nDPI") {
+            # Get new code from the repository
+            chdir "/usr/src/nDPI";
+            `git pull`;
+        } else {
+            chdir "/usr/src";
+            `git clone https://github.com/ntop/nDPI.git`;
+            chdir "/usr/src/nDPI";
+        }
+
+        `./autogen.sh`;
+        `./configure --prefix=/opt/ndpi`;
+
+        `make install`;
+
+        print "Add ndpi to ld.so.conf\n";
+        my $ndpi_ld_so_conf = "/etc/ld.so.conf.d/ndpi.conf";
+    
+        open my $ndpi_ld_so_conf_handle, ">", $ndpi_ld_so_conf or die "Can't open $! for writing\n";
+        print {$ndpi_ld_so_conf_handle} "/opt/ndpi/lib";
+        close $ndpi_ld_so_conf_handle;
+        
+        print "Run ldconfig\n"; 
         `ldconfig`; 
     }
 
