@@ -480,9 +480,15 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
     src = NULL;
 }
 
-int main() {
+int main(int argc, char** argv) {
     init_ndpi();
-    const char* path = "/root/ssdp_udp_attack_to_5.101.117.174.pcap";
+
+    if (argc != 2) {
+        printf("Please specify path to dump file\n");
+        exit(-1);
+    }
+
+    const char* path = argv[1];
 
     pcap_reader(path, pcap_parse_packet);
 }
