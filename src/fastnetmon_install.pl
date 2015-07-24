@@ -240,9 +240,9 @@ sub install {
     if ($we_have_ndpi_support) {
         if ($distro_type eq 'debian') {
             `apt-get update`;
-            `apt-get install  -y --force-yes git`;
+            `apt-get install -y --force-yes git autoconf`;
         } elsif ($distro_type eq 'centos') {
-            `yum install -y git`;
+            `yum install -y git autoconf`;
         }
 
         if (-e "/usr/src/nDPI") {
