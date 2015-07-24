@@ -1,10 +1,12 @@
 #include "fastnetmon_pcap_format.h"
+#include <string.h>
+#include <errno.h>
 
 int pcap_reader(const char* pcap_file_path, pcap_packet_parser_callback  pcap_parse_packet_function_ptr) {
     int filedesc = open(pcap_file_path, O_RDONLY);
 
     if (filedesc <= 0) {
-        printf("Can't open dump file");
+        printf("Can't open dump file, error: %s\n", strerror(errno));
         return -1;
     }
 
