@@ -105,6 +105,21 @@ add_library(sflow_plugin STATIC sflow_plugin/sflow_collector.cpp)
 add_library(netflow_plugin STATIC netflow_plugin/netflow_collector.cpp)
 target_link_libraries(netflow_plugin ipfix_rfc)
 
+# set (ENABLE_DPI_SUPPORT yes)
+if (ENABLE_DPI_SUPPORT) 
+    add_library(fast_dpi STATIC fast_dpi.cpp)
+
+    set(NDPI_INCLUDE_DIRS "/opt/ndpi/include/libndpi-1.7.0")
+    set(NDPI_LIBRARIES "ndpi")
+
+    link_directories("/opt/ndpi/lib")
+    include_directories(${NDPI_INCLUDE_DIRS})
+
+    add_definitions(-DENABLE_DPI)
+
+    target_link_libraries(fast_dpi ${NDPI_LIBRARIES})
+endif()
+
 # We do not enable it by default, it's testing feature
 # If you want it please build with:
 # cmake -DENABLE_LUA_SUPPORT=ON .. 
@@ -258,11 +273,14 @@ if (BUILD_PCAP_READER)
     target_link_libraries(fastnetmon_pcap_reader patricia)
     target_link_libraries(fastnetmon_pcap_reader fastnetmon_pcap_format)
 
-
     target_link_libraries(fastnetmon_pcap_reader fast_library)
     target_link_libraries(fastnetmon_pcap_reader ${LOG4CPP_LIBRARY_PATH})
     target_link_libraries(fastnetmon_pcap_reader netflow_plugin)   
     target_link_libraries(fastnetmon_pcap_reader sflow_plugin)
+
+    if (ENABLE_DPI_SUPPORT)
+        target_link_libraries(fastnetmon_pcap_reader fast_dpi)
+    endif()
 endif()
 
 # cmake -DBUILD_TESTS=ON ..
