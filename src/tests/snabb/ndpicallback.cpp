@@ -449,8 +449,8 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
         }
 
         /*
-        if (strstr(master_protocol_name, "Tor") == master_protocol_name) {
-            printf("Shitty Tor found\n");
+        if (strstr(master_protocol_name, "Tor") == 0 or strstr(protocol_name, "IRC") != NULL)  {
+            printf("Bad protocol %s master protocol %s found\n", protocol_name, master_protocol_name);
             char print_buffer[512];
             fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
             printf("packet: %s\n", print_buffer);
