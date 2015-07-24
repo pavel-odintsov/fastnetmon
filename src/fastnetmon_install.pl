@@ -238,6 +238,13 @@ sub install {
     }
 
     if ($we_have_ndpi_support) {
+        if ($distro_type eq 'debian') {
+            `apt-get update`;
+            `apt-get install  -y --force-yes git`;
+        } elsif ($distro_type eq 'centos') {
+            `yum install -y git`;
+        }
+
         if (-e "/usr/src/nDPI") {
             # Get new code from the repository
             chdir "/usr/src/nDPI";
