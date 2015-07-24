@@ -156,7 +156,7 @@ void* speed_printer(void* ptr) {
 
 // We will start speed printer
 void firehose_start() {
-    init_ndpi();
+    my_ndpi_struct = init_ndpi();
 
     pthread_t thread;
     pthread_create(&thread, NULL, speed_printer, NULL);
@@ -465,7 +465,7 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
 }
 
 int main(int argc, char** argv) {
-    init_ndpi();
+    my_ndpi_struct = init_ndpi();
 
     size_id_struct = ndpi_detection_get_sizeof_ndpi_id_struct();
     size_flow_struct = ndpi_detection_get_sizeof_ndpi_flow_struct();
