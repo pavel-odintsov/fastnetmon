@@ -158,6 +158,9 @@ void* speed_printer(void* ptr) {
 void firehose_start() {
     my_ndpi_struct = init_ndpi();
 
+    ndpi_size_id_struct   = ndpi_detection_get_sizeof_ndpi_id_struct();
+    ndpi_size_flow_struct = ndpi_detection_get_sizeof_ndpi_flow_struct();
+
     pthread_t thread;
     pthread_create(&thread, NULL, speed_printer, NULL);
 
