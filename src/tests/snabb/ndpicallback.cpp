@@ -17,7 +17,8 @@
 #include "../../fastnetmon_types.h"
 #include "../../fastnetmon_packet_parser.h"
 
-#include "libndpi/ndpi_api.h"
+#include "../../fast_dpi.h"
+//#include "libndpi/ndpi_api.h"
 
 class conntrack_hash_struct_for_simple_packet_t {
     public:
@@ -89,31 +90,6 @@ void debug_printf(u_int32_t protocol, void *id_struct, ndpi_log_level_t log_leve
 
 
 struct ndpi_detection_module_struct* my_ndpi_struct = NULL;
-
-bool init_ndpi() {
-    u_int32_t detection_tick_resolution = 1000;
-    
-    my_ndpi_struct = ndpi_init_detection_module(detection_tick_resolution, malloc, free, debug_printf);
-
-    if (my_ndpi_struct == NULL) {
-        printf("Can't init nDPI");
-        return false;     
-    }
-
-    NDPI_PROTOCOL_BITMASK all;
-    // enable all protocols
-    NDPI_BITMASK_SET_ALL(all);
-    ndpi_set_protocol_detection_bitmask2(my_ndpi_struct, &all);
-
-    // allocate memory for id and flow tracking
-    size_id_struct = ndpi_detection_get_sizeof_ndpi_id_struct();
-    size_flow_struct = ndpi_detection_get_sizeof_ndpi_flow_struct();
-
-    // Load custom protocols
-    // ndpi_load_protocols_file(ndpi_thread_info[thread_id].ndpi_struct, _protoFilePath);
-
-    printf("nDPI started correctly\n");
-}
 
 /* Called once before processing packets. */
 void firehose_start(); /* optional */
@@ -306,6 +282,8 @@ bool convert_simple_packet_toconntrack_hash_struct(simple_packet& packet, conntr
 
     conntrack_struct.source_port = packet.source_port;
     conntrack_struct.destination_port = packet.destination_port; 
+
+    return true;
 }
 
 void firehose_packet(const char *pciaddr, char *data, int length) {
@@ -462,13 +440,19 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
 
         printf("Protocol: %s master protocol: %s\n", protocol_name, master_protocol_name);
 
+        // It's DNS request or answer
+        if (detected_protocol.protocol == NDPI_PROTOCOL_DNS) {
+            
+        }
+
+        /*
         if (strstr(master_protocol_name, "Tor") == master_protocol_name) {
             printf("Shitty Tor found\n");
             char print_buffer[512];
             fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
             printf("packet: %s\n", print_buffer);
         }
-
+        */
     }
 
     free(flow);
@@ -482,6 +466,9 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
 
 int main(int argc, char** argv) {
     init_ndpi();
+
+    size_id_struct = ndpi_detection_get_sizeof_ndpi_id_struct();
+    size_flow_struct = ndpi_detection_get_sizeof_ndpi_flow_struct();
 
     if (argc != 2) {
         printf("Please specify path to dump file\n");
