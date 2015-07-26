@@ -16,10 +16,16 @@
 
 #include "../../fastnetmon_packet_parser.h"
 
-typedef struct { unsigned char buffer[1600]; unsigned int length; } packet_buffer_t;
+class packet_buffer_t {
+    public:
+        unsigned char buffer[1600];
+        unsigned int length;
+};
+
 typedef std::shared_ptr<packet_buffer_t> packet_buffer_shared_pointer_t;
 typedef boost::lockfree::spsc_queue< packet_buffer_shared_pointer_t,  boost::lockfree::capacity<1048576> > my_spsc_queue_t;
 
+FILE* pcap_file = NULL;
 my_spsc_queue_t my_spsc_queue;
 
 extern "C" {
@@ -31,7 +37,8 @@ void firehose_start(); /* optional */
 void firehose_stop();  /* optional */
 
 void firehose_stop() {
-
+    // Close file and flush data
+    fclose(pcap_file);
 }
 
 /*
@@ -81,28 +88,43 @@ int firehose_callback_v1(const char *pciaddr,
 }
 
 uint64_t received_packets = 0;
+uint64_t received_bytes = 0;
 
 void* speed_printer(void* ptr) {
     while (1) {
         uint64_t packets_before = received_packets;
-    
+	uint64_t bytes_before = received_bytes;   
+   
+ 
         sleep(1);
     
         uint64_t packets_after = received_packets;
+        uint64_t bytes_after = received_bytes;
+
         uint64_t pps = packets_after - packets_before;
+        uint64_t bps = bytes_after - bytes_before; 
+
+	float gbps_speed = (float)bps/1024/1024/1024 * 8;
  
-        printf("We process: %llu pps\n", (long long)pps);
+        printf("We process: %llu pps %.2f Gbps. We will store %.2f megabytes per second\n", (long long)pps, gbps_speed, gbps_speed / 8 * 1024);
     }   
 }
 
 void* packets_consumer(void* ptr) {
+    printf("Start consumer thread\n");
     packet_buffer_shared_pointer_t packet;
 
-    while (my_spsc_queue.pop(packet)) {
-        printf("Pop\n");
-        __sync_fetch_and_add(&received_packets, 1);
+    while (true) {
+        while (my_spsc_queue.pop(packet)) {
+            unsigned int written_bytes = fwrite(packet->buffer, sizeof(char), packet->length, pcap_file);
 
-	//packet.reset();
+            if (written_bytes != packet->length) {
+                printf("Can't write data to file\n");
+            }
+
+            __sync_fetch_and_add(&received_packets, 1);
+            __sync_fetch_and_add(&received_bytes, packet->length);
+        }
     }
 }
 
@@ -118,6 +140,13 @@ extern "C" {
 // We will start speed printer
 void firehose_start() {
     signal(SIGINT,  sigproc); 
+
+    pcap_file = fopen("/root/traffic_capture.pcap", "wb");
+
+    if (pcap_file == NULL) {
+        printf("Can't open file for capture\n");
+        exit(-1);
+    }
 
     pthread_t thread;
     pthread_create(&thread, NULL, speed_printer, NULL);
@@ -156,6 +185,7 @@ void firehose_packet(const char *pciaddr, char *data, int length) {
 
     // Put pointer to the tube!
     while (!my_spsc_queue.push(packet_pointer)); 
+
     //__sync_fetch_and_add(&received_packets, 1);
     //printf("Got packet with %d bytes.\n", length);
 }
