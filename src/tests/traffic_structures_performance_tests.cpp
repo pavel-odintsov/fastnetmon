@@ -20,8 +20,8 @@
 
 #include "../fastnetmon_types.h"
 
-// apt-get install -y libtbb-dev
-// g++ traffic_structures_performance_tests.cpp -std=c++11 -lboost_system  -lboost_thread -ltbb -I/opt/local/include -L/opt/local/lib
+// apt-get install -y libtbb-dev libsparsehash-dev
+// g++ -O3 traffic_structures_performance_tests.cpp -std=c++11 -lboost_system  -lboost_thread -ltbb -I/opt/local/include -L/opt/local/lib
 //  clang traffic_structures_performance_tests.cpp -std=c++11 -lboost_system  -lboost_thread -ltbb -I/opt/local/include -L/opt/local/lib -lstdc++ -lm
 // Mac OS:
 // g++ traffic_structures_performance_tests.cpp -std=c++11 -lboost_system_mt -lboost_thread_mt -ltbb -I/opt/local/include -L/opt/local/lib -g -pg
@@ -29,6 +29,8 @@
 #ifndef __APPLE__
 #include "tbb/concurrent_unordered_map.h"
 #endif
+
+#include <sparsehash/dense_hash_map>
 
 // No speed benefits
 // std::map<uint32_t, map_element, std::less<uint32_t>, boost::fast_pool_allocator<std::pair<const uint32_t, map_element>>
@@ -42,6 +44,16 @@ std::unordered_map<uint32_t, map_element> DataCounterUnorderedPreallocated;
 boost::unordered_map<uint32_t, map_element> DataCounterBoostUnordered;
 
 boost::container::flat_map<uint32_t, map_element> DataCounterBoostFlatMap;
+
+struct eqint {
+    bool operator()(uint32_t a, uint32_t b) const {
+        return a == b;
+    }
+};
+
+google::dense_hash_map<uint32_t, map_element, std::hash<uint32_t>, eqint> DataCounterGoogleDensehashMapPreallocated;
+
+google::dense_hash_map<uint32_t, map_element, std::hash<uint32_t>, eqint> DataCounterGoogleDensehashMap;
 
 #ifndef __APPLE__
 tbb::concurrent_unordered_map<uint32_t, map_element> DataCounterUnorderedConcurrent;
@@ -95,6 +107,34 @@ void packet_collector_thread_unordered_map() {
             data_counter_mutex.lock();
 #endif
             DataCounterUnordered[i].udp_in_bytes++;
+#ifdef enable_mutexex_in_test
+            data_counter_mutex.unlock();
+#endif
+        }
+    }
+}
+
+void packet_collector_thread_google_dense_hash_map_preallocated() {
+    for (int iteration = 0; iteration < number_of_retries; iteration++) {
+        for (uint32_t i = 0; i < number_of_ips; i++) {
+#ifdef enable_mutexex_in_test
+            data_counter_mutex.lock();
+#endif
+            DataCounterGoogleDensehashMapPreallocated[i].udp_in_bytes++;
+#ifdef enable_mutexex_in_test
+            data_counter_mutex.unlock();
+#endif
+        }   
+    }   
+}
+
+void packet_collector_thread_google_dense_hash_map() {
+    for (int iteration = 0; iteration < number_of_retries; iteration++) {
+        for (uint32_t i = 0; i < number_of_ips; i++) {
+#ifdef enable_mutexex_in_test
+            data_counter_mutex.lock();
+#endif
+            DataCounterGoogleDensehashMap[i].udp_in_bytes++;
 #ifdef enable_mutexex_in_test
             data_counter_mutex.unlock();
 #endif
@@ -216,29 +256,33 @@ int run_tests(void (*tested_function)(void)) {
     return 0;
 }
 
+bool enabled_slow_data_structures_test = true;
+
 int main() {
     std::cout << "Element size: " << sizeof(map_element) << std::endl;
 
-    std::cout << "std::map: ";
-    run_tests(packet_collector_thread_std_map);
-    DataCounter.clear();
+    if (enabled_slow_data_structures_test) {
+        std::cout << "std::map: ";
+        run_tests(packet_collector_thread_std_map);
+        DataCounter.clear();
 
 #ifndef __APPLE__
-    std::cout << "tbb::concurrent_unordered_map: ";
-    run_tests(packet_collector_thread_unordered_concurrent_map);
-    DataCounterUnorderedConcurrent.clear();
+        std::cout << "tbb::concurrent_unordered_map: ";
+        run_tests(packet_collector_thread_unordered_concurrent_map);
+        DataCounterUnorderedConcurrent.clear();
 #endif
 
-    // Boost unordered map
-    std::cout << "boost::unordered_map: ";
-    run_tests(packet_collector_thread_boost_unordered_map);
-    DataCounterBoostUnordered.clear();
+        // Boost unordered map
+        std::cout << "boost::unordered_map: ";
+        run_tests(packet_collector_thread_boost_unordered_map);
+        DataCounterBoostUnordered.clear();
 
-    // Boost flat_map
-    DataCounterBoostFlatMap.reserve( number_of_ips );
-    std::cout << "boost::container::flat_map with preallocated elements: ";
-    run_tests(packet_collector_thread_flat_map_preallocated);
-    DataCounterBoostFlatMap.clear();
+        // Boost flat_map
+        DataCounterBoostFlatMap.reserve( number_of_ips );
+        std::cout << "boost::container::flat_map with preallocated elements: ";
+        run_tests(packet_collector_thread_flat_map_preallocated);
+        DataCounterBoostFlatMap.clear();
+    }
 
     std::cout << "std::unordered_map C++11: ";
     run_tests(packet_collector_thread_unordered_map);
@@ -249,6 +293,18 @@ int main() {
     std::cout << "std::unordered_map C++11 preallocated buckets: ";
     run_tests(packet_collector_thread_unordered_map_preallocated);
     DataCounterUnorderedPreallocated.clear();
+
+    std::cout << "google:dense_hashmap without preallocation: ";
+    DataCounterGoogleDensehashMap.set_empty_key(UINT32_MAX); // We will got assert without it!
+    run_tests(packet_collector_thread_google_dense_hash_map);
+    DataCounterGoogleDensehashMap.clear();
+
+    std::cout << "google:dense_hashmap preallocated buckets: ";
+    // We use UINT32_MAX as "empty" here, not a good idea but OK for tests
+    DataCounterGoogleDensehashMapPreallocated.set_empty_key(UINT32_MAX); // We will got assert without it!
+    DataCounterGoogleDensehashMapPreallocated.resize( number_of_ips );
+    run_tests(packet_collector_thread_google_dense_hash_map_preallocated);
+    DataCounterGoogleDensehashMapPreallocated.clear();
 
     // Preallocate vector
     DataCounterVector.reserve( number_of_ips );
