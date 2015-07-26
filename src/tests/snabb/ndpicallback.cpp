@@ -140,17 +140,22 @@ int firehose_callback_v1(const char *pciaddr,
 
 
 uint64_t received_packets = 0;
+uint64_t received_bytes = 0;
 
 void* speed_printer(void* ptr) {
     while (1) {
         uint64_t packets_before = received_packets;
-    
+        uint64_t bytes_before = received_bytes;   
+ 
         sleep(1);
     
         uint64_t packets_after = received_packets;
+        uint64_t bytes_after = received_packets;
+
         uint64_t pps = packets_after - packets_before;
- 
-        printf("We process: %llu pps\n", (long long)pps);
+        uint64_t bps = bytes_after - bytes_before; 
+
+        printf("We process: %llu pps %.2f Gbps\n", (long long)pps, (float)bps/1024/1024/1024 * 8);
     }   
 }
 
@@ -343,6 +348,7 @@ void firehose_packet(const char *pciaddr, char *data, int length) {
     */
 
     __sync_fetch_and_add(&received_packets, 1);
+    __sync_fetch_and_add(&received_bytes, length);
     //printf("Got packet with %d bytes.\n", length);
 }
 
