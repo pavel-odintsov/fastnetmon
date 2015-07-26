@@ -150,7 +150,7 @@ void* speed_printer(void* ptr) {
         sleep(1);
     
         uint64_t packets_after = received_packets;
-        uint64_t bytes_after = received_packets;
+        uint64_t bytes_after = received_bytes;
 
         uint64_t pps = packets_after - packets_before;
         uint64_t bps = bytes_after - bytes_before; 
