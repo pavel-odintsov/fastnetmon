@@ -96,6 +96,8 @@ void traffic_processor() {
 
     while (1) {
         for (int i = 0; i < 8; i ++) {
+            // while (!my_spsc_queue[thread_number].push(packet));
+
             while (my_spsc_queue[i].pop(packet)) {
                 //std::cout << print_simple_packet(packet);
                 //map_counter[packet.src_ip]++;
