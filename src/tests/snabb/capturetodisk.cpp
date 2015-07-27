@@ -212,8 +212,12 @@ void firehose_start() {
         exit(-1);
     }
 
-    printf("Preaallocate %llu bytes on file system for storing traffic\n");
-    posix_fallocate(pcap_file, 0, preallocate_packet_dump_file_size);
+    printf("Preaallocate %llu bytes on file system for storing traffic\n", preallocate_packet_dump_file_size);
+    int fallocate_result = posix_fallocate(pcap_file, 0, preallocate_packet_dump_file_size);
+
+    if (fallocate_result != 0) {
+        printf("fallocate failed! Please check disk space and Linux Kernel Code\n");
+    }
 
     /* Caching is useless for our case because we have average linear traffic in most cases
     // We enable full buffering: _IOFBF
