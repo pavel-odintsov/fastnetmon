@@ -65,7 +65,7 @@ if (ENABLE_PFRING_SUPPORT)
     else() 
         # Set path to manually compiled PF_RING
         set(PFRING_INCLUDE_DIRS /opt/pf_ring/include)
-        set(PFRING_LIBRARIES /opt/pf_ring/lib/libpfring.so)
+        set(PFRING_LIBRARIES pfring)
     endif()
 
     add_definitions(-DPF_RING)
@@ -78,6 +78,7 @@ if (ENABLE_PFRING_SUPPORT)
         message(WARNING "We can't find PF_RING ZC header pfring_zc.h in folder /opt/pf_ring/include. Will not compile ZC support") 
     endif()
 
+    link_directories(/opt/pf_ring/lib)
     include_directories(${PFRING_INCLUDE_DIRS})
 endif()
 
