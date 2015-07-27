@@ -1,4 +1,6 @@
-// compile with: gcc -shared -o capturecallback.so -fPIC capturecallback.c
+// Author: Pavel.Odintsov@gmail.com
+// License GPLv2
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
