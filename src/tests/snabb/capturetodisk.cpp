@@ -14,15 +14,16 @@
 #include <boost/lockfree/spsc_queue.hpp>
 #include <boost/atomic.hpp>
 
-//#include "../../fastnetmon_packet_parser.h"
 #include "../../fastnetmon_pcap_format.h"
 
 /*
 
-g++ -O3 ../../fastnetmon_packet_parser.c  -c -o fastnetmon_packet_parser.o -fPIC -std=c++11
+Compile it:
 g++ -O3 -fPIC -std=c++11  ../../fastnetmon_pcap_format.cpp  -c -o fastnetmon_pcap_format.o
+g++ -O3 -shared -o capturetodisk.so -fPIC capturetodisk.cpp  fastnetmon_pcap_format.o -std=c++11 -lboost_system
 
-g++ -O3 -shared -o capturetodisk.so -fPIC capturetodisk.cpp  fastnetmon_packet_parser.o fastnetmon_pcap_format.o -std=c++11 -lboost_system
+Run it:
+/usr/src/snabbswitch/src/snabb firehose --input 0000:02:00.0 --input 0000:02:00.1 /usr/src/fastnetmon/src/tests/snabb/capturetodisk.so
 
 */
 
@@ -38,10 +39,16 @@ typedef boost::lockfree::spsc_queue< packet_buffer_shared_pointer_t,  boost::loc
 FILE* pcap_file = NULL;
 my_spsc_queue_t my_spsc_queue;
 
+#ifdef __cplusplus
 extern "C" {
+#endif
+
 /* Called once before processing packets. */
 void firehose_start(); /* optional */
+
+#ifdef __cplusplus
 }
+#endif
 
 /* Called once after processing packets. */
 void firehose_stop();  /* optional */
@@ -78,7 +85,10 @@ struct firehose_rdesc {
  * Process each packet that is ready.
  * Return the updated ring index.
  */
+
+#ifdef __cplusplus
 extern "C" {
+#endif
 
 int firehose_callback_v1(const char *pciaddr,
                          char **packets,
@@ -95,7 +105,9 @@ int firehose_callback_v1(const char *pciaddr,
   return index;
 }
 
+#ifdef __cplusplus
 }
+#endif
 
 uint64_t received_packets = 0;
 uint64_t received_bytes = 0;
@@ -105,7 +117,6 @@ void* speed_printer(void* ptr) {
         uint64_t packets_before = received_packets;
 	uint64_t bytes_before = received_bytes;   
    
- 
         sleep(1);
     
         uint64_t packets_after = received_packets;
@@ -171,7 +182,9 @@ void sigproc(int sig) {
     exit(0);
 }
 
+#ifdef __cplusplus
 extern "C" {
+#endif
 
 // We will start speed printer
 void firehose_start() {
@@ -203,22 +216,11 @@ void firehose_start() {
     pthread_detach(consumer_thread);
 }
 
+#ifdef __cplusplus
 }
+#endif
 
 void firehose_packet(const char *pciaddr, char *data, int length) {
-    // Put packet to the cache
-    //struct pfring_pkthdr packet_header;
-    //memset(&packet_header, 0, sizeof(packet_header));
-    //packet_header.len = length;
-    //packet_header.caplen = length;
-
-    // fastnetmon_parse_pkt((u_char*)data, &packet_header, 3, 0, 0);
-
-    /* 
-    char print_buffer[512];
-    fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)data, &packet_header);
-    printf("packet: %s\n", print_buffer);
-    */
     std::shared_ptr<packet_buffer_t> packet_pointer( new packet_buffer_t );
     packet_pointer->length = length;
 
@@ -230,8 +232,5 @@ void firehose_packet(const char *pciaddr, char *data, int length) {
 
     // Put pointer to the tube!
     while (!my_spsc_queue.push(packet_pointer)); 
-
-    //__sync_fetch_and_add(&received_packets, 1);
-    //printf("Got packet with %d bytes.\n", length);
 }
 
