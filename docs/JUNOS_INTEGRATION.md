@@ -47,10 +47,10 @@ set interfaces ge-1/0/4 unit 0 description netflow-coletor
 set interfaces ge-1/0/4 unit 0 family inet address 10.50.1.5/30
 ```
 
-Now add templates configuration on r1 and r2:
+Now add templates configuration on r1 and r2. Take care of flow-active-timeout and flow-inactive-timeout it should be less than average_calculation_time. Try average_calculation_time=20 where flow-active-timeout=10:
 ```
-set services flow-monitoring version-ipfix template ipv4 flow-active-timeout 60
-set services flow-monitoring version-ipfix template ipv4 flow-inactive-timeout 60
+set services flow-monitoring version-ipfix template ipv4 flow-active-timeout 10
+set services flow-monitoring version-ipfix template ipv4 flow-inactive-timeout 10
 set services flow-monitoring version-ipfix template ipv4 template-refresh-rate packets 1000
 set services flow-monitoring version-ipfix template ipv4 template-refresh-rate seconds 10
 set services flow-monitoring version-ipfix template ipv4 option-refresh-rate packets 1000
