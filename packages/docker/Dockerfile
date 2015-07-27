@@ -18,11 +18,17 @@ RUN apt-get update && apt-get install -y \
   libnuma-dev \
   libpcap-dev \
   linux-headers-$(uname -r) \
-  make
+  make \
+  python-pip \
+  socat \
+  vim
 
+
+RUN pip install exabgp
 
 RUN cd /usr/src; git clone https://github.com/FastVPSEestiOu/fastnetmon.git
 
+COPY exabgp_blackhole.conf /etc/exabgp_blackhole.conf
 
 RUN cd /usr/src/fastnetmon/src; mkdir build; cd build; cmake .. -DDISABLE_PF_RING_SUPPORT=ON; make
 
