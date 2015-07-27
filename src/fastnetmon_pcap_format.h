@@ -50,4 +50,6 @@ typedef void (*pcap_packet_parser_callback)(char* buffer, uint32_t len);
 
 int pcap_reader(const char* pcap_file_path, pcap_packet_parser_callback  pcap_parse_packet_function_ptr);
 
+bool fill_pcap_header(struct fastnetmon_pcap_file_header* pcap_header, bpf_u_int32 snap_length);
+
 #endif 
