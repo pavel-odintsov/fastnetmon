@@ -14,7 +14,17 @@
 #include <boost/lockfree/spsc_queue.hpp>
 #include <boost/atomic.hpp>
 
-#include "../../fastnetmon_packet_parser.h"
+//#include "../../fastnetmon_packet_parser.h"
+#include "../../fastnetmon_pcap_format.h"
+
+/*
+
+g++ -O3 ../../fastnetmon_packet_parser.c  -c -o fastnetmon_packet_parser.o -fPIC -std=c++11
+g++ -O3 -fPIC -std=c++11  ../../fastnetmon_pcap_format.cpp  -c -o fastnetmon_pcap_format.o
+
+g++ -O3 -shared -o capturetodisk.so -fPIC capturetodisk.cpp  fastnetmon_packet_parser.o fastnetmon_pcap_format.o -std=c++11 -lboost_system
+
+*/
 
 class packet_buffer_t {
     public:
@@ -116,6 +126,32 @@ void* packets_consumer(void* ptr) {
 
     while (true) {
         while (my_spsc_queue.pop(packet)) {
+            struct timeval current_time;
+
+            current_time.tv_sec  = 0;
+            current_time.tv_usec = 0;
+
+            // It's performance killer!
+            bool we_do_timestamps = false; 
+
+            if (we_do_timestamps) {
+                gettimeofday(&current_time, NULL);
+            }
+
+            struct fastnetmon_pcap_pkthdr pcap_packet_header;
+            
+            pcap_packet_header.ts_sec  = current_time.tv_sec;
+            pcap_packet_header.ts_usec = current_time.tv_usec;
+
+            pcap_packet_header.incl_len = packet->length;
+            pcap_packet_header.orig_len = packet->length;
+
+            unsigned int written_structs = fwrite(&pcap_packet_header, sizeof(pcap_packet_header), 1, pcap_file);
+
+            if (written_structs != 1) { 
+                printf("Can't write pcap pcaket header\n");
+            }
+
             unsigned int written_bytes = fwrite(packet->buffer, sizeof(char), packet->length, pcap_file);
 
             if (written_bytes != packet->length) {
@@ -141,13 +177,22 @@ extern "C" {
 void firehose_start() {
     signal(SIGINT,  sigproc); 
 
-    pcap_file = fopen("/root/traffic_capture.pcap", "wb");
+    pcap_file = fopen("/tmp/traffic_capture.pcap", "wb");
 
     if (pcap_file == NULL) {
         printf("Can't open file for capture\n");
         exit(-1);
     }
 
+    struct fastnetmon_pcap_file_header pcap_header;
+    fill_pcap_header(&pcap_header, 1600);
+ 
+    unsigned int written_structures = fwrite(&pcap_header, sizeof(pcap_header), 1, pcap_file);
+
+    if (written_structures != 1) {
+        printf("Can't write pcap header\n");
+    }
+ 
     pthread_t thread;
     pthread_create(&thread, NULL, speed_printer, NULL);
 
