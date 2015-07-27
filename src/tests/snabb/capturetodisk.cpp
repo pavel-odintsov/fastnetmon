@@ -27,6 +27,9 @@ g++ -O3 -shared -o capturetodisk.so -fPIC capturetodisk.cpp  fastnetmon_pcap_for
 Run it:
 /usr/src/snabbswitch/src/snabb firehose --input 0000:02:00.0 --input 0000:02:00.1 /usr/src/fastnetmon/src/tests/snabb/capturetodisk.so
 
+Please use ext4 with writeback feature:
+mount -odata=writeback /dev/sdb  /mnt
+
 */
 
 class packet_buffer_t {
@@ -36,9 +39,14 @@ class packet_buffer_t {
 };
 
 typedef std::shared_ptr<packet_buffer_t> packet_buffer_shared_pointer_t;
-typedef boost::lockfree::spsc_queue< packet_buffer_shared_pointer_t,  boost::lockfree::capacity<1048576> > my_spsc_queue_t;
+constexpr auto size_spsc_queue = 1048576;
 
-FILE* pcap_file = NULL;
+// We use persistent preallocation for ext4 and allocate 20 GB for storing data before any operations
+uint64_t preallocate_packet_dump_file_size = 1073741824ul * 20ul;
+
+typedef boost::lockfree::spsc_queue< packet_buffer_shared_pointer_t,  boost::lockfree::capacity<size_spsc_queue> > my_spsc_queue_t;
+
+int pcap_file = 0;
 my_spsc_queue_t my_spsc_queue;
 
 #ifdef __cplusplus
@@ -57,7 +65,7 @@ void firehose_stop();  /* optional */
 
 void firehose_stop() {
     // Close file and flush data
-    fclose(pcap_file);
+    close(pcap_file);
 }
 
 /*
@@ -128,8 +136,43 @@ void* speed_printer(void* ptr) {
         uint64_t bps = bytes_after - bytes_before; 
 
 	float gbps_speed = (float)bps/1024/1024/1024 * 8;
+        float gb_total = (float)received_bytes/1024/1024/1024;
  
-        printf("We process: %llu pps %.2f Gbps. We will store %.2f megabytes per second\n", (long long)pps, gbps_speed, gbps_speed / 8 * 1024);
+        printf("We process: %llu pps %.2f Gbps. We will store %.2f megabytes per second. We have stored %.2f GB of data\n", (long long)pps, gbps_speed, gbps_speed / 8 * 1024, gb_total);
+    }   
+}
+
+void write_packet_to_file(packet_buffer_shared_pointer_t packet) {
+    struct timeval current_time;
+
+    current_time.tv_sec  = 0;
+    current_time.tv_usec = 0;
+
+    // It's performance killer!
+    bool we_do_timestamps = false;     
+
+    if (we_do_timestamps) {
+        gettimeofday(&current_time, NULL);
+    }   
+
+    struct fastnetmon_pcap_pkthdr pcap_packet_header;
+
+    pcap_packet_header.ts_sec  = current_time.tv_sec;
+    pcap_packet_header.ts_usec = current_time.tv_usec;
+
+    pcap_packet_header.incl_len = packet->length;
+    pcap_packet_header.orig_len = packet->length;
+
+    unsigned int packet_header_written_bytes = write(pcap_file, &pcap_packet_header, sizeof(pcap_packet_header));
+
+    if (packet_header_written_bytes != sizeof(pcap_packet_header)) { 
+        printf("Can't write pcap pcaket header\n");
+    }   
+
+    unsigned int packet_written_bytes = write(pcap_file, packet->buffer, packet->length);
+
+    if (packet_written_bytes != packet->length) {
+        printf("Can't write data to file\n");
     }   
 }
 
@@ -139,37 +182,7 @@ void* packets_consumer(void* ptr) {
 
     while (true) {
         while (my_spsc_queue.pop(packet)) {
-            struct timeval current_time;
-
-            current_time.tv_sec  = 0;
-            current_time.tv_usec = 0;
-
-            // It's performance killer!
-            bool we_do_timestamps = false; 
-
-            if (we_do_timestamps) {
-                gettimeofday(&current_time, NULL);
-            }
-
-            struct fastnetmon_pcap_pkthdr pcap_packet_header;
-            
-            pcap_packet_header.ts_sec  = current_time.tv_sec;
-            pcap_packet_header.ts_usec = current_time.tv_usec;
-
-            pcap_packet_header.incl_len = packet->length;
-            pcap_packet_header.orig_len = packet->length;
-
-            unsigned int written_structs = fwrite(&pcap_packet_header, sizeof(pcap_packet_header), 1, pcap_file);
-
-            if (written_structs != 1) { 
-                printf("Can't write pcap pcaket header\n");
-            }
-
-            unsigned int written_bytes = fwrite(packet->buffer, sizeof(char), packet->length, pcap_file);
-
-            if (written_bytes != packet->length) {
-                printf("Can't write data to file\n");
-            }
+            write_packet_to_file(packet);
 
             __sync_fetch_and_add(&received_packets, 1);
             __sync_fetch_and_add(&received_bytes, packet->length);
@@ -192,19 +205,31 @@ extern "C" {
 void firehose_start() {
     signal(SIGINT,  sigproc); 
 
-    pcap_file = fopen("/tmp/traffic_capture.pcap", "wb");
+    pcap_file = open("/mnt/traffic_capture.pcap", O_TRUNC|O_WRONLY|O_CREAT);
 
-    if (pcap_file == NULL) {
+    if (pcap_file < 0) {
         printf("Can't open file for capture\n");
         exit(-1);
     }
 
+    printf("Preaallocate %llu bytes on file system for storing traffic\n");
+    posix_fallocate(pcap_file, 0, preallocate_packet_dump_file_size);
+
+    /* Caching is useless for our case because we have average linear traffic in most cases
+    // We enable full buffering: _IOFBF
+    int setvbuf_result = setvbuf(pcap_file, NULL, _IONBF, 1024 * 1024 * 4);
+
+    if (setvbuf_result != 0) {
+        printf("Can't set buffer for file operation\n");
+    }
+    */
+
     struct fastnetmon_pcap_file_header pcap_header;
     fill_pcap_header(&pcap_header, 1600);
  
-    unsigned int written_structures = fwrite(&pcap_header, sizeof(pcap_header), 1, pcap_file);
+    unsigned int written_bytes = write(pcap_file, &pcap_header, sizeof(pcap_header));
 
-    if (written_structures != 1) {
+    if (written_bytes != sizeof(pcap_header)) {
         printf("Can't write pcap header\n");
     }
  
