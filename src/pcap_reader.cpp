@@ -94,7 +94,8 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
     char* payload_ptr = packet_header.extended_hdr.parsed_pkt.offset.payload_offset + buffer;
 
     if (packet_header.len <= packet_header.extended_hdr.parsed_pkt.offset.payload_offset) {
-        printf("Something goes wrong! Offset if bigger than total packet length");
+        printf("Something goes wrong! Offset %u is bigger than total packet length %u\n",
+            packet_header.extended_hdr.parsed_pkt.offset.payload_offset, packet_header.len);
         return;
     }
 
