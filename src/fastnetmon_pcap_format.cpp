@@ -66,3 +66,17 @@ int pcap_reader(const char* pcap_file_path, pcap_packet_parser_callback  pcap_pa
     return 0;
 }
 
+bool fill_pcap_header(struct fastnetmon_pcap_file_header* pcap_header, bpf_u_int32 snap_length) {
+    pcap_header->magic = 0xa1b2c3d4;
+    pcap_header->version_major = 2;
+    pcap_header->version_minor = 4;
+    pcap_header->thiszone = 0;
+    pcap_header->sigfigs = 0;
+    // TODO: fix this!!!
+    pcap_header->snaplen = snap_length;
+    // http://www.tcpdump.org/linktypes.html
+    // DLT_EN10MB = 1
+    pcap_header->linktype = 1;
+
+    return true;
+}

@@ -83,16 +83,9 @@ class packet_storage_t {
 
         bool write_header() {
             struct fastnetmon_pcap_file_header pcap_header;
-            pcap_header.magic = 0xa1b2c3d4;
-            pcap_header.version_major = 2;
-            pcap_header.version_minor = 4;
-            pcap_header.thiszone = 0;
-            pcap_header.sigfigs = 0;
-            // TODO: fix this!!!
-            pcap_header.snaplen = 1500;
-            // http://www.tcpdump.org/linktypes.html
-            // DLT_EN10MB = 1
-            pcap_header.linktype = 1;
+
+            // TODO: fix hardcoded mtu size this!!!
+            fill_pcap_header(&pcap_header, 1500);
 
             return this->write_binary_data(&pcap_header, sizeof(pcap_header));
         }
