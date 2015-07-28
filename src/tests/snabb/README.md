@@ -10,8 +10,8 @@ make
 
 Then compile our .so library:
 ```
-gcc -O3 ../../fastnetmon_packet_parser.c  -c -o fastnetmon_packet_parser.o -fPIC
-gcc -O3 -shared -o capturecallback.so -fPIC capturecallback.c fastnetmon_packet_parser.o
+g++ -O3 ../../fastnetmon_packet_parser.c  -c -o fastnetmon_packet_parser.o -fPIC
+g++ -O3 -shared -o capturecallback.so -fPIC capturecallback.cpp fastnetmon_packet_parser.o
 ```
 
 Polly enabled clang compilation (offer significant speedup):
