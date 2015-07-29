@@ -93,6 +93,9 @@ bool notify_script_enabled = true;
 // We could collect attack dumps in pcap format
 bool collect_attack_pcap_dumps = false;
 
+// We could process this dumps with DPI
+bool process_pcap_attack_dumps_with_dpi = false;
+
 bool unban_only_if_attack_finished = true;
 
 // Variable with all data from main screen
@@ -1008,6 +1011,12 @@ bool load_configuration_file() {
     if (configuration_map.count("collect_attack_pcap_dumps") != 0) {
         collect_attack_pcap_dumps = configuration_map["collect_attack_pcap_dumps"] == "on" ? true : false;
     }
+
+    if (configuration_map.count("process_pcap_attack_dumps_with_dpi") != 0) {
+        if (collect_attack_pcap_dumps) {
+            process_pcap_attack_dumps_with_dpi = configuration_map["process_pcap_attack_dumps_with_dpi"] == "on" ? true : false;
+        }
+    } 
 
     return true;
 }
