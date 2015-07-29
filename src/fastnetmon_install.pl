@@ -24,6 +24,10 @@ my $we_use_code_from_master = '';
 # Get options from command line
 GetOptions('use-git-master' => \$we_use_code_from_master);
 
+if ($we_use_code_from_master) {
+    $we_have_ndpi_support = 1;
+}
+
 if (-e "/.dockerinit") {
     # On Docker we can't build kernel modules
     $we_could_install_kernel_modules = 0;
