@@ -156,6 +156,24 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
 
         printf("Protocol: %s master protocol: %s\n", protocol_name, master_protocol_name);
 
+        if (detected_protocol.protocol == NDPI_PROTOCOL_DNS) {
+            printf("It's DNS, we could check packet type. query_type: %d query_class: %d rsp_code: %d\n",
+                flow->protos.dns.query_type,
+                flow->protos.dns.query_class,
+                flow->protos.dns.rsp_type
+            );
+
+            /*
+                struct {
+                    u_int8_t num_queries, num_answers, ret_code;
+                    u_int8_t bad_packet // the received packet looks bad
+                    u_int16_t query_type, query_class, rsp_type;
+                } dns;
+            */
+
+            
+        }
+
         ndpi_free_flow(flow);
         free(dst);
         free(src);
