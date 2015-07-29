@@ -15,6 +15,11 @@ my $pf_ring_archive_path = "/usr/src/PF_RING-$pf_ring_version.tar.gz";
 my $pf_ring_sources_path = "/usr/src/PF_RING-$pf_ring_version";
 
 my $fastnetmon_git_path = 'https://github.com/FastVPSEestiOu/fastnetmon.git';
+
+# Official mirror: https://github.com/ntop/nDPI.git
+# But we have soem patches for NTP and DNS protocols here
+my $ndpi_repository = 'https://github.com/pavel-odintsov/nDPI.git';
+
 my $stable_branch_name = 'v1.1.2';
 
 my $we_could_install_kernel_modules = 1;
@@ -263,7 +268,7 @@ sub install {
             `git pull`;
         } else {
             chdir "/usr/src";
-            `git clone https://github.com/ntop/nDPI.git`;
+            `git clone $ndpi_repository`;
             chdir "/usr/src/nDPI";
         }
 
