@@ -259,7 +259,7 @@ sub install {
             `apt-get update`;
             `apt-get install -y --force-yes git autoconf`;
         } elsif ($distro_type eq 'centos') {
-            `yum install -y git autoconf`;
+            `yum install -y git autoconf automake libtool`;
         }
 
         if (-e "/usr/src/nDPI") {
