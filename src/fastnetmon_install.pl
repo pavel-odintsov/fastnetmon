@@ -3,6 +3,8 @@
 use strict;
 use warnings;
 
+use Getopt::Long;
+
 my $distro_type = '';
 my $distro_version = '';
 
@@ -16,6 +18,11 @@ my $fastnetmon_git_path = 'https://github.com/FastVPSEestiOu/fastnetmon.git';
 my $stable_branch_name = 'v1.1.2';
 
 my $we_could_install_kernel_modules = 1;
+
+my $we_use_code_from_master = '';
+
+# Get options from command line
+GetOptions('use-git-master' => \$we_use_code_from_master);
 
 if (-e "/.dockerinit") {
     # On Docker we can't build kernel modules
@@ -328,10 +335,20 @@ sub install {
     if (-e $fastnetmon_code_dir) {
         # Code already downloaded
         chdir $fastnetmon_code_dir;
+
+        # Switch to master if we on stable branch
+        if ($we_use_code_from_master) {
+            `git checkout master`;
+        }
+
         `git pull`;
     } else {
-        # Update code
-        `git clone $fastnetmon_git_path --branch $stable_branch_name --quiet 2>/dev/null`;
+        # Pull new code
+	if ($we_use_code_from_master) {
+            `git clone $fastnetmon_git_path --quiet 2>/dev/null`;
+        } else {
+            `git clone $fastnetmon_git_path --branch $stable_branch_name --quiet 2>/dev/null`;
+        }
 
         if ($? != 0) {
             die "Can't clone source code\n";
@@ -342,6 +359,11 @@ sub install {
     chdir "$fastnetmon_code_dir/build";
 
     my $cmake_params = "";
+
+    # So, we have this option in master branch ;)
+    if ($we_use_code_from_master) {
+        $cmake_params .= " -DENABLE_DPI_SUPPORT=ON";
+    }
 
     unless ($we_have_pfring_support) {
         $cmake_params .= " -DDISABLE_PF_RING_SUPPORT=ON";
