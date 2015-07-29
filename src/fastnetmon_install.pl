@@ -24,6 +24,8 @@ my $we_use_code_from_master = '';
 # Get options from command line
 GetOptions('use-git-master' => \$we_use_code_from_master);
 
+my $we_have_ndpi_support = '';
+
 if ($we_use_code_from_master) {
     $we_have_ndpi_support = 1;
 }
@@ -121,7 +123,6 @@ sub install {
     chomp $kernel_version;
 
     my $we_have_pfring_support = '';
-    my $we_have_ndpi_support = '';
     
     print "Install PF_RING dependencies with package manager\n";
 
