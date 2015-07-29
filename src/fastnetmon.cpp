@@ -3163,8 +3163,6 @@ void call_attack_details_handlers(uint32_t client_ip, attack_details& current_at
     std::string attack_direction = get_direction_name(current_attack.attack_direction);
     std::string pps_as_string = convert_int_to_string(current_attack.attack_power);
 
-    print_attack_details_to_file(attack_fingerprint, client_ip_as_string, current_attack);
-
     // We place this variables here because we need this paths from DPI parser code
     std::string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
     std::string attack_pcap_dump_path = attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string + ".pcap"; 
@@ -3200,6 +3198,8 @@ void call_attack_details_handlers(uint32_t client_ip, attack_details& current_at
         attack_fingerprint = attack_fingerprint + string_buffer_for_dpi_data.str();
     }
 #endif
+
+    print_attack_details_to_file(attack_fingerprint, client_ip_as_string, current_attack);
 
     // Pass attack details to script
     if (notify_script_enabled) {
