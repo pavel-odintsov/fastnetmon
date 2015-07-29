@@ -45,6 +45,9 @@ std::map<std::string, std::string> configuration_map;
 std::string log_file_path = "/tmp/fastnetmon_pcap_reader.log";
 log4cpp::Category& logger = log4cpp::Category::getRoot();
 
+uint64_t dns_amplification_packets = 0;
+uint64_t ntp_amplification_packets = 0;
+uint64_t ssdp_amplification_packets = 0;
 
 /* It's prototype for moc testing of FastNetMon, it's very useful for netflow or direct packet
  * parsers debug */
@@ -93,7 +96,7 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
 
     char* payload_ptr = packet_header.extended_hdr.parsed_pkt.offset.payload_offset + buffer;
 
-    if (packet_header.len <= packet_header.extended_hdr.parsed_pkt.offset.payload_offset) {
+    if (packet_header.len < packet_header.extended_hdr.parsed_pkt.offset.payload_offset) {
         printf("Something goes wrong! Offset %u is bigger than total packet length %u\n",
             packet_header.extended_hdr.parsed_pkt.offset.payload_offset, packet_header.len);
         return;
@@ -157,10 +160,17 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
         printf("Protocol: %s master protocol: %s\n", protocol_name, master_protocol_name);
 
         if (detected_protocol.protocol == NDPI_PROTOCOL_DNS) {
-            printf("It's DNS, we could check packet type. query_type: %d query_class: %d rsp_code: %d\n",
+            // It's answer for ANY request with so much 
+            if (flow->protos.dns.query_type == 255 && flow->protos.dns.num_queries < flow->protos.dns.num_answers) {
+                dns_amplification_packets++;
+            }
+    
+            printf("It's DNS, we could check packet type. query_type: %d query_class: %d rsp_code: %d num answers: %d, num queries: %d\n",
                 flow->protos.dns.query_type,
                 flow->protos.dns.query_class,
-                flow->protos.dns.rsp_type
+                flow->protos.dns.rsp_type,
+                flow->protos.dns.num_answers,
+                flow->protos.dns.num_queries
             );
 
             /*
@@ -172,6 +182,15 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
             */
 
             
+        } else if (detected_protocol.protocol == NDPI_PROTOCOL_NTP) {
+            printf("Request type field: %d version: %d\n", flow->protos.ntp.request_code, flow->protos.ntp.version);
+
+            // Detect packets with type MON_GETLIST_1
+            if (flow->protos.ntp.version == 2 && flow->protos.ntp.request_code == 42) {
+                ntp_amplification_packets++;
+            }
+        } else if (detected_protocol.protocol == NDPI_PROTOCOL_SSDP) {
+            ssdp_amplification_packets++;
         }
 
         ndpi_free_flow(flow);
@@ -208,6 +227,12 @@ int main(int argc, char** argv) {
     }
 #endif
     
-
     pcap_reader(argv[2], pcap_parse_packet);
+
+#ifdef ENABLE_DPI
+    printf("DNS amplification packets: %lld\n", dns_amplification_packets);
+    printf("NTP amplification packets: %lld\n", ntp_amplification_packets);
+    printf("SSDP amplification packets: %lld\n", ssdp_amplification_packets);
+    
+#endif
 }
