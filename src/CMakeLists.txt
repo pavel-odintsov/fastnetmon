@@ -223,6 +223,10 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Dr
     set(LOG4CPP_LIBRARY_PATH ${LOG4_CPP_LIRBARY_FOUNDER}) 
 endif()
 
+if (ENABLE_DPI_SUPPORT)
+    target_link_libraries(fastnetmon fast_dpi)
+endif()
+
 target_link_libraries(fastnetmon ${LOG4CPP_LIBRARY_PATH})
 
 target_link_libraries(fastnetmon ${CMAKE_THREAD_LIBS_INIT})
