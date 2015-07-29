@@ -156,7 +156,7 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
 
         printf("Protocol: %s master protocol: %s\n", protocol_name, master_protocol_name);
 
-        free(flow);
+        ndpi_free_flow(flow);
         free(dst);
         free(src);
 #endif  
