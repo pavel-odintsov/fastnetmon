@@ -7,6 +7,8 @@
 #include <signal.h>
 #include <unistd.h>
 
+#include <algorithm>
+
 #include "../../fastnetmon_packet_parser.h"
 
 double system_tsc_resolution_hz = 0;
@@ -46,20 +48,27 @@ class token_bucket_t {
         token_bucket_t() {
             this->tokens = 0;
             this->rate = 0;
+            this->burst = 0;
             this->last_timestamp = 0;
         }
 
         int64_t get_rate() {
             return this->rate;
         }
-    
+   
+        int64_t get_burst() {
+            return this->burst;
+        }
+ 
         int64_t get_tokens() {
             return this->tokens;
         }
 
-        bool set_rate(int64_t rate) {
-            this->tokens = rate;
+        bool set_rate(int64_t rate, int64_t burst) {
             this->rate   = rate;
+
+            this->tokens = burst;
+            this->burst  = burst;
 
             // Start counter!
             this->last_timestamp = (double)rte_rdtsc() / system_tsc_resolution_hz;
@@ -74,23 +83,21 @@ class token_bucket_t {
             }
 
             this->last_timestamp = current_time;
-            this->tokens = this->tokens + interval * this->rate;
 
-            if (this->tokens > this->rate) {
-                this->tokens = this->rate;
-            }    
+            this->tokens = std::max(
+                (double)0, 
+                std::min(
+                    double(this->tokens + this->rate * interval), 
+                    double(this->burst)
+                ) 
+            ) - 1;
 
-            this->tokens = this->tokens - consumed_tokens;
-
-            if (this->tokens >= 0) {
-                return 0;
-            } else {
-                return - this->tokens / this->rate;
-            }
+            return this->tokens;
         }
     private:
         int64_t rate;
         int64_t tokens;
+        int64_t burst;
         double last_timestamp;
 };
 
@@ -163,10 +170,12 @@ void* speed_printer(void* ptr) {
         uint64_t packets_after = received_packets;
         uint64_t pps = packets_after - packets_before;
  
-        printf("We process: %llu pps tokens %lld rate %lld\n",
+        printf("We process: %llu pps tokens %lld rate %lld burst %lld \n",
             (long long)pps,
             global_token_bucket_counter.get_tokens(),
-            global_token_bucket_counter.get_rate());
+            global_token_bucket_counter.get_rate(),
+            global_token_bucket_counter.get_burst()
+        );
     }   
 }
 
@@ -183,7 +192,7 @@ void firehose_start() {
     signal(SIGINT,  sigproc); 
 
     set_tsc_freq_fallback();
-    global_token_bucket_counter.set_rate(10000000);
+    global_token_bucket_counter.set_rate(10000000, 15000000);
 
     //printf("tsq hz is: %f\n", system_tsc_resolution_hz);
 
@@ -213,11 +222,8 @@ void firehose_packet(const char *pciaddr, char *data, int length) {
 
     int64_t consume_result = global_token_bucket_counter.consume(1);
 
-    if (consume_result == 0) {
-        // All right, we have free buckets!
-    } else {
-        // Overspeed!
-        printf("Consume result: %lld\n", consume_result);
+    if (consume_result < 0) {
+        printf("Overflow!\n");
     }
 
     __sync_fetch_and_add(&received_packets, 1);
