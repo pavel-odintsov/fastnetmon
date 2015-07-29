@@ -42,3 +42,9 @@ chmod 755 /usr/local/bin/notify_about_attack.sh
 After copying the file, you need to open it and configure the 'email_notify' option as required.
 
 Guide for manual install (for unsupported platforms): [link](MANUAL_INSTALL.md)
+
+If you want unstable development branch, please use this syntax:
+```bash
+wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl 
+sudo perl fastnetmon_install.pl --use-git-master
+```
