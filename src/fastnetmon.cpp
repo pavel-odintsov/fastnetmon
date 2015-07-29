@@ -3049,7 +3049,7 @@ void dpi_parse_packet(char* buffer, uint32_t len, std::stringstream& ss) {
     packet_header.len = len;
     packet_header.caplen = len;
 
-    fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 3, 1, 0);
+    fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, 1, 0);
 
     struct ndpi_id_struct *src = NULL;
     struct ndpi_id_struct *dst = NULL;
