@@ -24,12 +24,17 @@
 
 #include "libpatricia/patricia.h"
 #include "fastnetmon_types.h"
+#include "fastnetmon_packet_parser.h"
 #include "fast_library.h"
 #include "packet_storage.h"
 #include "bgp_flow_spec.h"
 
 // Here we store variables which differs for different paltforms
 #include "fast_platform.h"
+
+#ifdef ENABLE_DPI
+#include "fast_dpi.h"
+#endif
 
 // Plugins
 #include "sflow_plugin/sflow_collector.h"
@@ -110,6 +115,13 @@ configuration_map_t configuration_map;
 int unban_iteration_sleep_time = 60;
 
 bool unban_enabled = true;
+
+#ifdef ENABLE_DPI
+struct ndpi_detection_module_struct* my_ndpi_struct = NULL;
+
+u_int32_t ndpi_size_flow_struct = 0;
+u_int32_t ndpi_size_id_struct = 0;
+#endif
 
 /* Configuration block, we must move it to configuration file  */
 #ifdef REDIS
@@ -312,6 +324,10 @@ bool process_incoming_traffic = true;
 bool process_outgoing_traffic = true;
 
 // Prototypes
+#ifdef ENABLE_DPI
+void init_current_instance_of_ndpi();
+#endif
+
 #ifdef HWFILTER_LOCKING
 void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_string);
 #endif
@@ -2198,6 +2214,10 @@ int main(int argc, char** argv) {
     // If we not failed in check steps we could run toolkit
     print_pid_to_file(getpid(), pid_path);
 
+#ifdef ENABLE_DPI
+    init_current_instance_of_ndpi();
+#endif
+
     lookup_tree = New_Patricia(32);
     whitelist_tree = New_Patricia(32);
 
@@ -3022,6 +3042,122 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
     }    
 }
 
+#ifdef ENABLE_DPI
+void dpi_parse_packet(char* buffer, uint32_t len, std::stringstream& ss) {
+    struct pfring_pkthdr packet_header;
+    memset(&packet_header, 0, sizeof(packet_header));
+    packet_header.len = len;
+    packet_header.caplen = len;
+
+    fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 3, 1, 0);
+
+    struct ndpi_id_struct *src = NULL;
+    struct ndpi_id_struct *dst = NULL;
+    struct ndpi_flow_struct *flow = NULL;
+
+    src = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
+    memset(src, 0, ndpi_size_id_struct);
+
+    dst = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
+    memset(dst, 0, ndpi_size_id_struct);
+
+    flow = (struct ndpi_flow_struct *)malloc(ndpi_size_flow_struct); 
+    memset(flow, 0, ndpi_size_flow_struct);
+
+    uint32_t current_tickt = 0;
+    uint8_t* iph = (uint8_t*)(&buffer[packet_header.extended_hdr.parsed_pkt.offset.l3_offset]);
+    unsigned int ipsize = packet_header.len; 
+
+    ndpi_protocol detected_protocol = ndpi_detection_process_packet(my_ndpi_struct, flow, iph, ipsize, current_tickt, src, dst);
+
+    char* protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.protocol);
+    char* master_protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.master_protocol); 
+
+    char print_buffer[512];
+    fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
+    ss << print_buffer << " protocol: " << protocol_name << " master_protocol: " << master_protocol_name << "\n"; 
+
+    ndpi_free_flow(flow);
+    free(dst);
+    free(src);
+}
+#endif
+
+#ifdef ENABLE_DPI
+void init_current_instance_of_ndpi() {
+    my_ndpi_struct = init_ndpi();
+
+    if (my_ndpi_struct == NULL) {
+        logger << log4cpp::Priority::ERROR << "Can't load nDPI, disable it!";
+        process_pcap_attack_dumps_with_dpi = false;
+
+        return;
+    }
+
+    // Load sizes of main parsing structures
+    ndpi_size_id_struct   = ndpi_detection_get_sizeof_ndpi_id_struct();
+    ndpi_size_flow_struct = ndpi_detection_get_sizeof_ndpi_flow_struct(); 
+}
+
+// Not so pretty copy and paste from pcap_reader()
+// TODO: rewrite to memory parser
+void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstream& ss) {
+    int filedesc = open(pcap_file_path.c_str(), O_RDONLY);
+
+    if (filedesc <= 0) {
+        logger << log4cpp::Priority::ERROR << "Can't open file for DPI";
+        return;
+    }
+
+    struct fastnetmon_pcap_file_header pcap_header;
+    ssize_t file_header_readed_bytes = read(filedesc, &pcap_header, sizeof(struct fastnetmon_pcap_file_header));
+
+    if (file_header_readed_bytes != sizeof(struct fastnetmon_pcap_file_header)) {
+        logger << log4cpp::Priority::ERROR << "Can't read pcap file header";
+        return;
+    }   
+
+    // http://www.tcpdump.org/manpages/pcap-savefile.5.html
+    if (pcap_header.magic == 0xa1b2c3d4 or pcap_header.magic == 0xd4c3b2a1) {
+        // printf("Magic readed correctly\n");
+    } else {
+        logger << log4cpp::Priority::ERROR << "Magic in file header broken";
+        return;
+    }   
+
+    // Buffer for packets
+    char packet_buffer[pcap_header.snaplen];
+
+    unsigned int read_packets = 0;
+    while (1) {
+        // printf("Start packet %d processing\n", read_packets);
+        struct fastnetmon_pcap_pkthdr pcap_packet_header;
+        ssize_t packet_header_readed_bytes =
+        read(filedesc, &pcap_packet_header, sizeof(struct fastnetmon_pcap_pkthdr));
+
+        if (packet_header_readed_bytes != sizeof(struct fastnetmon_pcap_pkthdr)) {
+            // We haven't any packets
+            break;
+        }
+
+        if (pcap_packet_header.incl_len > pcap_header.snaplen) {
+            logger << log4cpp::Priority::ERROR << "Please enlarge packet buffer for DPI";
+            return;
+        }
+
+        ssize_t packet_payload_readed_bytes = read(filedesc, packet_buffer, pcap_packet_header.incl_len);
+
+        if (pcap_packet_header.incl_len != packet_payload_readed_bytes) {
+            logger << log4cpp::Priority::ERROR << "I read packet header but can't read packet payload";
+            return;
+        }
+
+        dpi_parse_packet(packet_buffer, pcap_packet_header.incl_len, ss);
+    }
+}
+
+#endif
+
 void call_attack_details_handlers(uint32_t client_ip, attack_details& current_attack, std::string attack_fingerprint) { 
     std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
     std::string attack_direction = get_direction_name(current_attack.attack_direction);
@@ -3029,10 +3165,11 @@ void call_attack_details_handlers(uint32_t client_ip, attack_details& current_at
 
     print_attack_details_to_file(attack_fingerprint, client_ip_as_string, current_attack);
 
-    if (collect_attack_pcap_dumps) {
-        std::string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
-        std::string attack_pcap_dump_path = attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string + ".pcap"; 
+    // We place this variables here because we need this paths from DPI parser code
+    std::string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
+    std::string attack_pcap_dump_path = attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string + ".pcap"; 
 
+    if (collect_attack_pcap_dumps) {
         int pcap_fump_filedesc = open(attack_pcap_dump_path.c_str(), O_WRONLY|O_CREAT, S_IRUSR|S_IWUSR);
         if (pcap_fump_filedesc <= 0) {
             logger << log4cpp::Priority::ERROR << "Can't open file for storing pcap dump: " << attack_pcap_dump_path;
@@ -3046,9 +3183,23 @@ void call_attack_details_handlers(uint32_t client_ip, attack_details& current_at
             }
     
             // Freeup memory
-            current_attack.pcap_attack_dump.deallocate_buffer();   
+            current_attack.pcap_attack_dump.deallocate_buffer();
         }
     }
+
+#ifdef ENABLE_DPI
+    // Yes, will be fine to read packets from the memory but we haven't this code yet
+    // Thus we could read from file with not good performance because it's simpler
+    if (collect_attack_pcap_dumps && process_pcap_attack_dumps_with_dpi) {
+        std::stringstream string_buffer_for_dpi_data;
+
+        string_buffer_for_dpi_data << "\n\nDPI\n\n";
+
+        produce_dpi_dump_for_pcap_dump(attack_pcap_dump_path, string_buffer_for_dpi_data);
+
+        attack_fingerprint = attack_fingerprint + string_buffer_for_dpi_data.str();
+    }
+#endif
 
     // Pass attack details to script
     if (notify_script_enabled) {

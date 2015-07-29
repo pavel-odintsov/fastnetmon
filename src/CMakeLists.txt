@@ -106,6 +106,7 @@ add_library(sflow_plugin STATIC sflow_plugin/sflow_collector.cpp)
 add_library(netflow_plugin STATIC netflow_plugin/netflow_collector.cpp)
 target_link_libraries(netflow_plugin ipfix_rfc)
 
+# set(ENABLE_DPI_SUPPORT YES)
 if (ENABLE_DPI_SUPPORT) 
     add_library(fast_dpi STATIC fast_dpi.cpp)
 
