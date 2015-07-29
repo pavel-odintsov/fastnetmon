@@ -117,6 +117,15 @@ class packet_storage_t {
         void* get_buffer_pointer() {
             return memory_pointer;
         }
+        
+        unsigned int get_max_packet_size() {
+            return this->max_packet_size;
+        }
+
+        void set_max_packet_size(unsigned int new_max_packet_size) {
+            this->max_packet_size = new_max_packet_size;
+        }
+
     private:
         unsigned char* memory_pointer;
         unsigned char* memory_pos;
