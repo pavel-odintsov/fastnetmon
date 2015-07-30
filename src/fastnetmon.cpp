@@ -3205,7 +3205,7 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
 
         std::string parsed_packet_as_string;
 
-        ndpi_protocol detected_protocol = dpi_parse_packet(packet_buffer, pcap_packet_header.incl_len, pcap_packet_header.orig_len, src, dst, flow, parsed_packet_as_string);
+        ndpi_protocol detected_protocol = dpi_parse_packet(packet_buffer, pcap_packet_header.orig_len, pcap_packet_header.incl_len, src, dst, flow, parsed_packet_as_string);
 
         char* protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.protocol);
         char* master_protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.master_protocol); 
