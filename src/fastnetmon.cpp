@@ -336,6 +336,7 @@ void init_current_instance_of_ndpi();
 void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_string);
 #endif
 
+std::string get_amplification_attack_type(amplification_attack_type_t attack_type);
 std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type, std::string destination_ip);
 bool exabgp_flow_spec_ban_manage(std::string action, std::string flow_spec_rule_as_text);
 void call_attack_details_handlers(uint32_t client_ip, attack_details& current_attack, std::string attack_fingerprint);
@@ -3238,6 +3239,9 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
 
     amplification_attack_type_t attack_type;
 
+    // Attack type in unknown by default
+    attack_type = AMPLIFICATION_ATTACK_UNKNOWN;
+
     // Detect amplification attack type
     if ( (double)dns_amplification_packets / (double)total_packets_number > 0.5) {
         attack_type = AMPLIFICATION_ATTACK_DNS;
@@ -3252,6 +3256,8 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
     if (attack_type == AMPLIFICATION_ATTACK_UNKNOWN) {
         logger << log4cpp::Priority::ERROR << "We can't detect attack type with DPI it's not so criticial, only for your information";
     } else {
+        logger << log4cpp::Priority::INFO << "We detected this attack as: " << get_amplification_attack_type(attack_type);
+    
         std::string flow_spec_rule_text = generate_flow_spec_for_amplification_attack(attack_type, client_ip_as_string);
 
         logger << log4cpp::Priority::INFO << "We have generated BGP Flow Spec rule for this attack: " << flow_spec_rule_text;
@@ -3735,4 +3741,22 @@ std::string generate_flow_spec_for_amplification_attack(amplification_attack_typ
     } 
 
     return exabgp_rule.serialize_single_line_exabgp_v4_configuration();
+}
+
+std::string get_amplification_attack_type(amplification_attack_type_t attack_type) {
+    if (attack_type == AMPLIFICATION_ATTACK_UNKNOWN) {
+        return "unknown";
+    } else if (attack_type == AMPLIFICATION_ATTACK_DNS) {
+        return "dns_amplification";
+    } else if (attack_type == AMPLIFICATION_ATTACK_NTP) {
+        return "ntp_amplification";
+    } else if (attack_type == AMPLIFICATION_ATTACK_SSDP) {
+        return "ssdp_amplification";
+    } else if (attack_type == AMPLIFICATION_ATTACK_SNMP) {
+        return "snmp_amplification";
+    } else if (attack_type == AMPLIFICATION_ATTACK_CHARGEN) {
+        return "chargen_amplification";
+    } else {
+        return "unexpected";
+    }
 }
