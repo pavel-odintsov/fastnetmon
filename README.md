@@ -36,6 +36,7 @@ Supported packet capture engines:
 You could look [comparison table](https://github.com/FastVPSEestiOu/fastnetmon/blob/master/docs/CAPTURE_BACKENDS.md) for all available packet capture engines.
 
 Features:
+- Complete [BGP Flow Spec support](docs/BGP_FLOW_SPEC.md), RFC 5575
 - Can process incoming and outgoing traffic
 - Can trigger block script if certain IP loads network with a large amount of packets/bytes/flows per second
 - Thresholds could be configured in per subnet basis with hostgroups feature

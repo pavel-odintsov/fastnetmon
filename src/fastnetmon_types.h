@@ -66,6 +66,16 @@ enum attack_type_t {
     ATTACK_IP_FRAGMENTATION_FLOOD = 5,
 };
 
+// Amplification types
+enum amplification_attack_type_t {
+    AMPLIFICATION_ATTACK_UNKNOWN = 1,
+    AMPLIFICATION_ATTACK_DNS     = 2,
+    AMPLIFICATION_ATTACK_NTP     = 3,
+    AMPLIFICATION_ATTACK_SSDP    = 4,
+    AMPLIFICATION_ATTACK_SNMP    = 5,
+    AMPLIFICATION_ATTACK_CHARGEN = 6,
+};
+
 typedef struct {
     uint64_t bytes;
     uint64_t packets;
