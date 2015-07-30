@@ -82,11 +82,11 @@ u_int32_t ndpi_size_flow_struct = 0;
 u_int32_t ndpi_size_id_struct = 0;
 #endif
 
-void pcap_parse_packet(char* buffer, uint32_t len) {
+void pcap_parse_packet(char* buffer, uint32_t len, uint32_t snap_len) {
     struct pfring_pkthdr packet_header;
     memset(&packet_header, 0, sizeof(packet_header));
     packet_header.len = len;
-    packet_header.caplen = len;
+    packet_header.caplen = snap_len;
 
     fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, 1, 0);
 

@@ -46,7 +46,7 @@ struct fastnetmon_pcap_pkthdr {
     uint32_t orig_len; /* actual length of packet */
 };
 
-typedef void (*pcap_packet_parser_callback)(char* buffer, uint32_t len);
+typedef void (*pcap_packet_parser_callback)(char* buffer, uint32_t len, uint32_t snaplen);
 
 int pcap_reader(const char* pcap_file_path, pcap_packet_parser_callback  pcap_parse_packet_function_ptr);
 
