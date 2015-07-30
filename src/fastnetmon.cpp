@@ -3044,10 +3044,12 @@ std::string generate_simple_packets_dump(std::vector<simple_packet>& ban_list_de
 
     std::map<unsigned int, unsigned int>::iterator max_proto =
     std::max_element(protocol_counter.begin(), protocol_counter.end(), protocol_counter.value_comp());
+    /*
     attack_details
         << "\n" 
         << "We got more packets (" << max_proto->second << " from " << ban_details_records_count
         << ") for protocol: " << get_protocol_name_by_number(max_proto->first) << "\n";
+    */
 
     return attack_details.str();
 }
@@ -3081,7 +3083,7 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
 
 #ifdef ENABLE_DPI
 // Parse raw binary stand-alone packet with nDPI
-ndpi_protocol dpi_parse_packet(char* buffer, uint32_t len, struct ndpi_id_struct *src, struct ndpi_id_struct *dst, struct ndpi_flow_struct *flow, std::string parsed_packet_as_string) {
+ndpi_protocol dpi_parse_packet(char* buffer, uint32_t len, struct ndpi_id_struct *src, struct ndpi_id_struct *dst, struct ndpi_flow_struct *flow, std::string& parsed_packet_as_string) {
     struct pfring_pkthdr packet_header;
     memset(&packet_header, 0, sizeof(packet_header));
     packet_header.len = len;
