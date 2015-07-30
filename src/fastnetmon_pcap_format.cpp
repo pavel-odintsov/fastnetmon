@@ -55,7 +55,7 @@ int pcap_reader(const char* pcap_file_path, pcap_packet_parser_callback  pcap_pa
         }
 
         // printf("packet payload read\n");
-        pcap_parse_packet_function_ptr(packet_buffer, pcap_packet_header.incl_len);
+        pcap_parse_packet_function_ptr(packet_buffer, pcap_packet_header.orig_len, pcap_packet_header.incl_len);
 
         // printf("Process packet %d\n", read_packets);
         read_packets++;
