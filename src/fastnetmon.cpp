@@ -3083,11 +3083,11 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
 
 #ifdef ENABLE_DPI
 // Parse raw binary stand-alone packet with nDPI
-ndpi_protocol dpi_parse_packet(char* buffer, uint32_t len, struct ndpi_id_struct *src, struct ndpi_id_struct *dst, struct ndpi_flow_struct *flow, std::string& parsed_packet_as_string) {
+ndpi_protocol dpi_parse_packet(char* buffer, uint32_t len, uint32_t snap_len, struct ndpi_id_struct *src, struct ndpi_id_struct *dst, struct ndpi_flow_struct *flow, std::string& parsed_packet_as_string) {
     struct pfring_pkthdr packet_header;
     memset(&packet_header, 0, sizeof(packet_header));
     packet_header.len = len;
-    packet_header.caplen = len;
+    packet_header.caplen = snap_len;
 
     fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, 1, 0);
 
@@ -3205,7 +3205,7 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
 
         std::string parsed_packet_as_string;
 
-        ndpi_protocol detected_protocol = dpi_parse_packet(packet_buffer, pcap_packet_header.incl_len, src, dst, flow, parsed_packet_as_string);
+        ndpi_protocol detected_protocol = dpi_parse_packet(packet_buffer, pcap_packet_header.incl_len, pcap_packet_header.orig_len, src, dst, flow, parsed_packet_as_string);
 
         char* protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.protocol);
         char* master_protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.master_protocol); 
