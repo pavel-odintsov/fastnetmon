@@ -3091,15 +3091,6 @@ ndpi_protocol dpi_parse_packet(char* buffer, uint32_t len, uint32_t snap_len, st
 
     fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, 1, 0);
 
-    src = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
-    memset(src, 0, ndpi_size_id_struct);
-
-    dst = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
-    memset(dst, 0, ndpi_size_id_struct);
-
-    flow = (struct ndpi_flow_struct *)malloc(ndpi_size_flow_struct); 
-    memset(flow, 0, ndpi_size_flow_struct);
-
     uint32_t current_tickt = 0;
     uint8_t* iph = (uint8_t*)(&buffer[packet_header.extended_hdr.parsed_pkt.offset.l3_offset]);
     unsigned int ipsize = packet_header.len; 
