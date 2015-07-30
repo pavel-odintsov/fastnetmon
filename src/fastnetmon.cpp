@@ -236,6 +236,10 @@ unsigned int number_of_packets_for_pcap_attack_dump = 500;
 // log file
 log4cpp::Category& logger = log4cpp::Category::getRoot();
 
+// We storae all active BGP Flow Spec announces here
+typedef std::map<std::string, uint32_t> active_flow_spec_announces_t;
+active_flow_spec_announces_t active_flow_spec_announces;
+
 /* Configuration block ends */
 
 // We count total number of incoming/outgoing/internal and other traffic type packets/bytes
@@ -332,6 +336,8 @@ void init_current_instance_of_ndpi();
 void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_string);
 #endif
 
+std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type, std::string destination_ip);
+bool exabgp_flow_spec_ban_manage(std::string action, std::string flow_spec_rule_as_text);
 void call_attack_details_handlers(uint32_t client_ip, attack_details& current_attack, std::string attack_fingerprint);
 void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::string flow_attack_details);
 void call_unban_handlers(uint32_t client_ip, attack_details& current_attack);
@@ -2439,6 +2445,36 @@ void exabgp_prefix_ban_manage(std::string action, std::string prefix_as_string_w
     close(exabgp_pipe);
 }
 
+bool exabgp_flow_spec_ban_manage(std::string action, std::string flow_spec_rule_as_text) {
+    std::string announce_action;
+
+    if (action == "ban") {
+        announce_action = "announce";
+    } else {
+        announce_action = "withdraw";
+    }
+
+    // Trailing \n is very important!
+    std::string bgp_message = announce_action + " " + flow_spec_rule_as_text + "\n"; 
+
+    int exabgp_pipe = open(exabgp_command_pipe.c_str(), O_WRONLY);
+
+    if (exabgp_pipe <= 0) {
+        logger << log4cpp::Priority::ERROR << "Can't open ExaBGP pipe for flow spec announce " << exabgp_command_pipe;
+        return false;
+    }
+
+    int wrote_bytes = write(exabgp_pipe, bgp_message.c_str(), bgp_message.size());
+
+    if (wrote_bytes != bgp_message.size()) {
+        logger << log4cpp::Priority::ERROR << "Can't write message to ExaBGP pipe";
+        return false;
+    }
+
+    close(exabgp_pipe);
+    return true;
+}
+
 void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element average_speed_element, std::string flow_attack_details, subnet_t customer_subnet) {
     struct attack_details current_attack;
     uint64_t pps = 0;
@@ -3043,17 +3079,14 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
 }
 
 #ifdef ENABLE_DPI
-void dpi_parse_packet(char* buffer, uint32_t len, std::stringstream& ss) {
+// Parse raw binary stand-alone packet with nDPI
+ndpi_protocol dpi_parse_packet(char* buffer, uint32_t len, struct ndpi_id_struct *src, struct ndpi_id_struct *dst, struct ndpi_flow_struct *flow, std::string parsed_packet_as_string) {
     struct pfring_pkthdr packet_header;
     memset(&packet_header, 0, sizeof(packet_header));
     packet_header.len = len;
     packet_header.caplen = len;
 
     fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, 1, 0);
-
-    struct ndpi_id_struct *src = NULL;
-    struct ndpi_id_struct *dst = NULL;
-    struct ndpi_flow_struct *flow = NULL;
 
     src = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
     memset(src, 0, ndpi_size_id_struct);
@@ -3070,16 +3103,13 @@ void dpi_parse_packet(char* buffer, uint32_t len, std::stringstream& ss) {
 
     ndpi_protocol detected_protocol = ndpi_detection_process_packet(my_ndpi_struct, flow, iph, ipsize, current_tickt, src, dst);
 
-    char* protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.protocol);
-    char* master_protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.master_protocol); 
-
+    // So bad approach :( 
     char print_buffer[512];
     fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
-    ss << print_buffer << " protocol: " << protocol_name << " master_protocol: " << master_protocol_name << "\n"; 
 
-    ndpi_free_flow(flow);
-    free(dst);
-    free(src);
+    parsed_packet_as_string = std::string(print_buffer);
+ 
+    return detected_protocol;
 }
 #endif
 
@@ -3101,7 +3131,7 @@ void init_current_instance_of_ndpi() {
 
 // Not so pretty copy and paste from pcap_reader()
 // TODO: rewrite to memory parser
-void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstream& ss) {
+void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstream& ss, std::string client_ip_as_string) {
     int filedesc = open(pcap_file_path.c_str(), O_RDONLY);
 
     if (filedesc <= 0) {
@@ -3128,9 +3158,14 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
     // Buffer for packets
     char packet_buffer[pcap_header.snaplen];
 
-    unsigned int read_packets = 0;
+    unsigned int total_packets_number = 0;
+
+    uint64_t dns_amplification_packets = 0;
+    uint64_t ntp_amplification_packets = 0;
+    uint64_t ssdp_amplification_packets = 0;
+    uint64_t snmp_amplification_packets = 0;
+
     while (1) {
-        // printf("Start packet %d processing\n", read_packets);
         struct fastnetmon_pcap_pkthdr pcap_packet_header;
         ssize_t packet_header_readed_bytes =
         read(filedesc, &pcap_packet_header, sizeof(struct fastnetmon_pcap_pkthdr));
@@ -3152,7 +3187,91 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
             return;
         }
 
-        dpi_parse_packet(packet_buffer, pcap_packet_header.incl_len, ss);
+        struct ndpi_id_struct *src = NULL;
+        struct ndpi_id_struct *dst = NULL;
+        struct ndpi_flow_struct *flow = NULL;
+
+        src = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
+        memset(src, 0, ndpi_size_id_struct);
+
+        dst = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
+        memset(dst, 0, ndpi_size_id_struct);
+
+        flow = (struct ndpi_flow_struct *)malloc(ndpi_size_flow_struct); 
+        memset(flow, 0, ndpi_size_flow_struct);
+
+        std::string parsed_packet_as_string;
+
+        ndpi_protocol detected_protocol = dpi_parse_packet(packet_buffer, pcap_packet_header.incl_len, src, dst, flow, parsed_packet_as_string);
+
+        char* protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.protocol);
+        char* master_protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.master_protocol); 
+
+        if (detected_protocol.protocol == NDPI_PROTOCOL_DNS) {
+            // It's answer for ANY request with so much
+            if (flow->protos.dns.query_type == 255 && flow->protos.dns.num_queries < flow->protos.dns.num_answers) {
+                dns_amplification_packets++;
+            }
+
+        } else if (detected_protocol.protocol == NDPI_PROTOCOL_NTP) {
+            // Detect packets with type MON_GETLIST_1
+            if (flow->protos.ntp.version == 2 && flow->protos.ntp.request_code == 42) {
+                ntp_amplification_packets++;
+            }
+        } else if (detected_protocol.protocol == NDPI_PROTOCOL_SSDP) {
+            // So, this protocol completely unexpected in WAN networks
+            ssdp_amplification_packets++;
+        } else if (detected_protocol.protocol == NDPI_PROTOCOL_SNMP) {
+            // TODO: we need detailed tests for SNMP!
+            snmp_amplification_packets++;
+        }
+
+        ss << parsed_packet_as_string << " protocol: " << protocol_name << " master_protocol: " << master_protocol_name << "\n";
+
+        // Free up all memory
+        ndpi_free_flow(flow);
+        free(dst);
+        free(src);
+
+        total_packets_number++;
+    }
+
+    amplification_attack_type_t attack_type;
+
+    // Detect amplification attack type
+    if ( (double)dns_amplification_packets / (double)total_packets_number > 0.5) {
+        attack_type = AMPLIFICATION_ATTACK_DNS;
+    } else if ( (double)ntp_amplification_packets / (double)total_packets_number > 0.5) {
+        attack_type = AMPLIFICATION_ATTACK_NTP;
+    } else if ( (double)ssdp_amplification_packets / (double)total_packets_number > 0.5) {
+        attack_type = AMPLIFICATION_ATTACK_SSDP;
+    } else if ( (double)snmp_amplification_packets / (double)total_packets_number > 0.5) {
+        attack_type = AMPLIFICATION_ATTACK_SNMP;
+    }
+
+    if (attack_type == AMPLIFICATION_ATTACK_UNKNOWN) {
+        logger << log4cpp::Priority::ERROR << "We can't detect attack type with DPI it's not so criticial, only for your information";
+    } else {
+        std::string flow_spec_rule_text = generate_flow_spec_for_amplification_attack(attack_type, client_ip_as_string);
+
+        logger << log4cpp::Priority::INFO << "We have generated BGP Flow Spec rule for this attack: " << flow_spec_rule_text;
+
+        if (exabgp_flow_spec_announces) {
+            active_flow_spec_announces_t::iterator itr = active_flow_spec_announces.find(flow_spec_rule_text);
+
+            if (itr == active_flow_spec_announces.end()) {
+                // We havent this flow spec rule active yet
+
+                logger << log4cpp::Priority::INFO << "We will publish flow spec announce about this attack";
+                bool exabgp_publish_result = exabgp_flow_spec_ban_manage("ban", flow_spec_rule_text);
+
+                if (exabgp_publish_result) {
+                    active_flow_spec_announces[ flow_spec_rule_text ] = 1;
+                }
+            } else {
+                // We have already blocked this attack
+            }
+        }
     }
 }
 
@@ -3193,7 +3312,7 @@ void call_attack_details_handlers(uint32_t client_ip, attack_details& current_at
 
         string_buffer_for_dpi_data << "\n\nDPI\n\n";
 
-        produce_dpi_dump_for_pcap_dump(attack_pcap_dump_path, string_buffer_for_dpi_data);
+        produce_dpi_dump_for_pcap_dump(attack_pcap_dump_path, string_buffer_for_dpi_data, client_ip_as_string);
 
         attack_fingerprint = attack_fingerprint + string_buffer_for_dpi_data.str();
     }
@@ -3587,4 +3706,33 @@ std::string get_printable_attack_name(attack_type_t attack) {
     } else {
         return "unknown";
     }
+}
+
+std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type, std::string destination_ip) {
+    exabgp_flow_spec_rule_t exabgp_rule;
+
+    bgp_flow_spec_action_t my_action;
+
+    // We drop all traffic by default
+    my_action.set_type(FLOW_SPEC_ACTION_DISCARD);
+
+    // TODO: rewrite!
+    exabgp_rule.set_destination_subnet( convert_subnet_from_string_to_binary_with_cidr_format( destination_ip + "/32") );
+    
+    // We use only UDP here
+    exabgp_rule.add_protocol(FLOW_SPEC_PROTOCOL_UDP);
+    
+    if (amplification_attack_type == AMPLIFICATION_ATTACK_DNS) {
+        exabgp_rule.add_source_port(53);
+    } else if (amplification_attack_type == AMPLIFICATION_ATTACK_NTP) {
+        exabgp_rule.add_source_port(123);
+    } else if (amplification_attack_type == AMPLIFICATION_ATTACK_SSDP) {
+        exabgp_rule.add_source_port(1900);
+    } else if (amplification_attack_type == AMPLIFICATION_ATTACK_SNMP) {
+        exabgp_rule.add_source_port(161);
+    } else if (amplification_attack_type == AMPLIFICATION_ATTACK_CHARGEN) {
+        exabgp_rule.add_source_port(19);
+    } 
+
+    return exabgp_rule.serialize_single_line_exabgp_v4_configuration();
 }
