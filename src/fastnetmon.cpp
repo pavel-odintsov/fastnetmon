@@ -3715,6 +3715,9 @@ std::string generate_flow_spec_for_amplification_attack(amplification_attack_typ
     // We drop all traffic by default
     my_action.set_type(FLOW_SPEC_ACTION_DISCARD);
 
+    // Assign action to the rule
+    exabgp_rule.set_action( my_action ); 
+
     // TODO: rewrite!
     exabgp_rule.set_destination_subnet( convert_subnet_from_string_to_binary_with_cidr_format( destination_ip + "/32") );
     
