@@ -13,6 +13,8 @@
 #include <unordered_map>
 #include <string>
 
+#include <boost/functional/hash.hpp>
+
 #include "../../fastnetmon_pcap_format.h"
 #include "../../fastnetmon_types.h"
 #include "../../fastnetmon_packet_parser.h"
@@ -41,7 +43,14 @@ namespace std {
     template<>
     struct hash<conntrack_hash_struct_for_simple_packet_t> {
         size_t operator()(const conntrack_hash_struct_for_simple_packet_t& x) const {
-            return std::hash<conntrack_hash_struct_for_simple_packet_t>()(x);
+            std::size_t seed = 0;
+            boost::hash_combine(seed, x.upper_ip);
+            boost::hash_combine(seed, x.lower_ip);
+            boost::hash_combine(seed, x.upper_port);
+            boost::hash_combine(seed, x.lower_port);
+            boost::hash_combine(seed, x.protocol);
+  
+            return seed; 
         }
     };
 }
@@ -74,6 +83,7 @@ class ndpi_tracking_flow_t {
         struct ndpi_id_struct *src = NULL;
         struct ndpi_id_struct *dst = NULL;
     	struct ndpi_flow_struct *flow = NULL;     
+        bool protocol_detected = false;
 };
 
 typedef std::unordered_map<conntrack_hash_struct_for_simple_packet_t, ndpi_tracking_flow_t> my_connection_tracking_storage_t;
@@ -167,7 +177,6 @@ int firehose_callback_v1(const char *pciaddr,
   }
   return index;
 }
-
 
 uint64_t received_packets = 0;
 uint64_t received_bytes = 0;
@@ -340,11 +349,10 @@ bool convert_simple_packet_toconntrack_hash_struct(simple_packet& packet, conntr
     return true;
 }
 
-#ifdef __cplusplus
-    }
-#endif
-
 void firehose_packet(const char *pciaddr, char *data, int length) {
+    __sync_fetch_and_add(&received_packets, 1);
+    __sync_fetch_and_add(&received_bytes, length);
+ 
     struct pfring_pkthdr packet_header;
 
     memset(&packet_header, 0, sizeof(packet_header));
@@ -359,11 +367,16 @@ void firehose_packet(const char *pciaddr, char *data, int length) {
 
     simple_packet current_packet;
     parse_raw_packet_to_simple_packet((u_char*)data, length, current_packet); 
-
+    
     conntrack_hash_struct_for_simple_packet_t conntrack_structure;
     convert_simple_packet_toconntrack_hash_struct(current_packet, conntrack_structure);
 
-    ndpi_tracking_flow_t* dpi_tracking_structure = &my_connection_tracking_storage[ conntrack_structure ];
+    ndpi_tracking_flow_t& dpi_tracking_structure = my_connection_tracking_storage[ conntrack_structure ];
+
+    // Protocol already detected
+    if (dpi_tracking_structure.protocol_detected) {
+        return;
+    }
 
     uint32_t current_tickt = 0 ;
     uint8_t* iph = (uint8_t*)(&data[packet_header.extended_hdr.parsed_pkt.offset.l3_offset]);
@@ -372,33 +385,40 @@ void firehose_packet(const char *pciaddr, char *data, int length) {
 
     unsigned int ipsize = packet_header.len; 
  
-    ndpi_protocol detected_protocol = ndpi_detection_process_packet(my_ndpi_struct, dpi_tracking_structure->flow, iph, ipsize, current_tickt, dpi_tracking_structure->src, dpi_tracking_structure->dst);
+    ndpi_protocol detected_protocol = ndpi_detection_process_packet(my_ndpi_struct, dpi_tracking_structure.flow, iph, ipsize, current_tickt, dpi_tracking_structure.src, dpi_tracking_structure.dst);
 
-    if (detected_protocol.protocol == NDPI_PROTOCOL_UNKNOWN && 
-        detected_protocol.master_protocol == NDPI_PROTOCOL_UNKNOWN) {
-        printf("Can't detect protocol\n");
+    if (detected_protocol.protocol == NDPI_PROTOCOL_UNKNOWN && detected_protocol.master_protocol == NDPI_PROTOCOL_UNKNOWN) {
+        // printf("Can't detect protocol\n");
     } else {
+        dpi_tracking_structure.protocol_detected = true;
+
         //printf("Master protocol: %d protocol: %d\n", detected_protocol.master_protocol, detected_protocol.protocol);
         char* protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.protocol);
         char* master_protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.master_protocol);        
 
-        printf("Protocol: %s master protocol: %s\n", protocol_name, master_protocol_name);
+        // printf("Protocol: %s master protocol: %s\n", protocol_name, master_protocol_name);
 
-        // It's DNS request or answer
-        if (detected_protocol.protocol == NDPI_PROTOCOL_DNS) {
-            
+        bool its_bad_protocol = false; 
+        if (detected_protocol.protocol == NDPI_PROTOCOL_TOR or detected_protocol.master_protocol == NDPI_PROTOCOL_TOR) {
+            its_bad_protocol = true;
         }
 
-        
-        if (strstr(master_protocol_name, "Tor") == master_protocol_name or strstr(protocol_name, "IRC") != NULL)  {
+        if (detected_protocol.protocol == NDPI_PROTOCOL_IRC or detected_protocol.master_protocol == NDPI_PROTOCOL_IRC) {
+            its_bad_protocol = true;
+        }
+
+        if (its_bad_protocol) {
             printf("Bad protocol %s master protocol %s found\n", protocol_name, master_protocol_name);
             char print_buffer[512];
             fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)data, &packet_header);
             printf("packet: %s\n", print_buffer);
         }
-       
     }
 }
+
+#ifdef __cplusplus
+    }   
+#endif
 
 int main(int argc, char** argv) {
     my_ndpi_struct = init_ndpi();
