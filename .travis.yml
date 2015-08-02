@@ -19,6 +19,7 @@ before_script:
   - ./configure --prefix=/opt/ndpi
   - sudo make install
   - cd `cat /tmp/old_current_path`
+  - sudo perl src/fastnetmon_install.pl --use-git-master
   - cd src
 script: mkdir -p build; cd build; cmake ..; make
 notifications:
