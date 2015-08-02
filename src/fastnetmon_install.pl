@@ -67,7 +67,7 @@ sub install_luajit {
 
     `sed -i 's#export PREFIX= /usr/local#export PREFIX= /opt/luajit_2.0.4#' Makefile`; 
 
-    print "Build and install Luajit";
+    print "Build and install Luajit\n";
     `make install`;
 
     put_library_path_to_ld_so("/etc/ld.so.conf.d/luajit.conf", "/opt/luajit_2.0.4/lib");
@@ -90,7 +90,8 @@ sub install_lua_lpeg {
 
     # Set path
     print "Install lpeg library\n";
-    `sed -i 's#LUADIR = ../lua/#LUADIR = /opt/luajit_2.0.4/include/luajit-2.0#' makefile`; 
+    `sed -i 's#LUADIR = ../lua/#LUADIR = /opt/luajit_2.0.4/include/luajit-2.0#' makefile`;
+    `make install`;
     `cp lpeg.so /opt/luajit_2.0.4/lib/lua/5.1`;
 }
 
