@@ -28,11 +28,11 @@ ffi.cdef([[typedef struct __attribute__((packed)) NF5_FLOW {
 local json_file = io.open("/usr/src/fastnetmon/src/tests/netflow_exclude.json", "r")
 local decoded = json.decode(json_file:read("*all"))
 
-for k, v in pairs(decoded) do  
-    for kk, vv in pairs(v) do
-        print(k, kk, vv) 
-    end 
-end 
+--for k, v in pairs(decoded) do  
+--    for kk, vv in pairs(v) do
+--        print(k, kk, vv) 
+--    end 
+--end 
 
 function process_netflow(flow_agent_ip, flow)
     local netlflow5_t = ffi.typeof('NF5_FLOW_t*')
