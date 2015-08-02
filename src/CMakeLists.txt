@@ -108,6 +108,8 @@ target_link_libraries(netflow_plugin ipfix_rfc)
 
 set(ENABLE_DPI_SUPPORT YES)
 if (ENABLE_DPI_SUPPORT) 
+    message(STATUS "We will enable nDPI support")
+
     add_library(fast_dpi STATIC fast_dpi.cpp)
 
     set(NDPI_INCLUDE_DIRS "/opt/ndpi/include/libndpi-1.7.0")
