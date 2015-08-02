@@ -28,7 +28,9 @@ GetOptions('use-git-master' => \$we_use_code_from_master);
 
 my $we_have_ndpi_support = '';
 my $we_have_luajit_support = '';
-my $we_have_pfring_support = '';
+
+# Actually, we haven't PF_RING on some platforms
+my $we_have_pfring_support = 1;
 
 if ($we_use_code_from_master) {
     $we_have_ndpi_support = 1;
@@ -41,7 +43,9 @@ main();
 sub main {
     detect_distribution();
 
-    install_pf_ring();
+    if ($we_have_pfring_support) {
+        install_pf_ring();
+    }
 
     if ($we_have_ndpi_support) {
         install_ndpi();
@@ -303,14 +307,6 @@ sub install_pf_ring {
     my $kernel_version = `uname -r`;
     chomp $kernel_version;
 
-    my $we_could_install_kernel_modules = 1;
-
-    # TODO: we should offer some way to build only userspace library 
-    if (-e "/.dockerinit") {
-        # On Docker we can't build kernel modules
-        $we_could_install_kernel_modules = 0;
-    }
- 
     print "Install PF_RING dependencies with package manager\n";
 
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
@@ -319,16 +315,14 @@ sub install_pf_ring {
             'libnuma-dev', 'wget', 'tar', 'make', 'dpkg-dev', 'dkms', 'debhelper');
   
         # Install kernel headers only when we could compile kernel modules there
-        if ($we_could_install_kernel_modules) {
-            my $kernel_headers_package_name = "linux-headers-$kernel_version";
-  
-            if ($appliance_name eq 'vyos') { 
-                # VyOS uses another name for package for building kernel modules
-                $kernel_headers_package_name = 'linux-vyatta-kbuild';
-            }
+        my $kernel_headers_package_name = "linux-headers-$kernel_version";
 
-            push @debian_packages_for_pfring, $kernel_headers_package_name;
-        }    
+        if ($appliance_name eq 'vyos') { 
+            # VyOS uses another name for package for building kernel modules
+            $kernel_headers_package_name = 'linux-vyatta-kbuild';
+        }
+
+        push @debian_packages_for_pfring, $kernel_headers_package_name;
 
         # We install one package per apt-get call because installing multiple packages in one time could fail of one
         # pacakge broken
@@ -340,7 +334,7 @@ sub install_pf_ring {
             }  
         }
 
-        if ($appliance_name eq 'vyos' && $we_could_install_kernel_modules) {
+        if ($appliance_name eq 'vyos') {
             # By default we waven't this symlink and should add it manually
 
             # x86_64 or i686
@@ -374,6 +368,8 @@ sub install_pf_ring {
         }
     }
 
+    # Sometimes we do not want to build kernel module (Docker, KVM and other cases)
+    my $we_could_install_kernel_modules = 1;
     if ($we_could_install_kernel_modules) {
         print "Download PF_RING $pf_ring_version sources\n";
 
@@ -401,32 +397,30 @@ sub install_pf_ring {
             if (scalar grep (/\[PF_RING\] Initialized correctly/, @dmesg) > 0) {
                 print "PF_RING loaded correctly\n";
 
-                $we_have_pfring_support = 1;
             } else {
-                warn "PF_RING load error! We disable PF_RING plugin\n";
+                warn "PF_RING load error! Please fix this issue manually\n";
 
-                $we_have_pfring_support = '';
+                # We need this headers for building userspace libs
+                `cp kernel/linux/pf_ring.h /usr/include/linux`;
             }
         } else {
             warn "Can't download PF_RING source code. Disable support of PF_RING\n";
         } 
     }
 
-    if ($we_have_pfring_support) {
-        print "Build PF_RING lib\n";
-        # Because we can't run configure from another folder because it can't find ZC dependency :(
-        chdir "$pf_ring_sources_path/userland/lib";
-        `./configure --prefix=/opt/pf_ring_$pf_ring_version`;
-        `make`;
-        `make install`; 
+    print "Build PF_RING lib\n";
+    # Because we can't run configure from another folder because it can't find ZC dependency :(
+    chdir "$pf_ring_sources_path/userland/lib";
+    `./configure --prefix=/opt/pf_ring_$pf_ring_version`;
+    `make`;
+    `make install`; 
 
-        print "Create library symlink\n";
-        unlink "/opt/pf_ring";
-        `ln -s /opt/pf_ring_$pf_ring_version /opt/pf_ring`;
+    print "Create library symlink\n";
+    unlink "/opt/pf_ring";
+    `ln -s /opt/pf_ring_$pf_ring_version /opt/pf_ring`;
 
-        print "Add pf_ring to ld.so.conf\n";
-        put_library_path_to_ld_so("/etc/ld.so.conf.d/pf_ring.conf", "/opt/pf_ring/lib");
-    }
+    print "Add pf_ring to ld.so.conf\n";
+    put_library_path_to_ld_so("/etc/ld.so.conf.d/pf_ring.conf", "/opt/pf_ring/lib");
 }
 
 sub install_fastnetmon {
