@@ -5,43 +5,146 @@ use warnings;
 
 use Getopt::Long;
 
-my $distro_type = '';
-my $distro_version = '';
-
 my $pf_ring_version = '6.0.3';
-
 my $pf_ring_url = "https://github.com/ntop/PF_RING/archive/v$pf_ring_version.tar.gz";
-my $pf_ring_archive_path = "/usr/src/PF_RING-$pf_ring_version.tar.gz";
-my $pf_ring_sources_path = "/usr/src/PF_RING-$pf_ring_version";
 
 my $fastnetmon_git_path = 'https://github.com/FastVPSEestiOu/fastnetmon.git';
+my $fastnetmon_code_dir = "/usr/src/fastnetmon/src";
 
 # Official mirror: https://github.com/ntop/nDPI.git
-# But we have soem patches for NTP and DNS protocols here
+# But we have some patches for NTP and DNS protocols here
 my $ndpi_repository = 'https://github.com/pavel-odintsov/nDPI.git';
 
 my $stable_branch_name = 'v1.1.2';
-
-my $we_could_install_kernel_modules = 1;
-
 my $we_use_code_from_master = '';
+
+my $distro_type = ''; 
+my $distro_version = ''; 
+# Used for VyOS and different appliances based on rpm/deb
+my $appliance_name = ''; 
 
 # Get options from command line
 GetOptions('use-git-master' => \$we_use_code_from_master);
 
 my $we_have_ndpi_support = '';
+my $we_have_pfring_support = '';
 
 if ($we_use_code_from_master) {
     $we_have_ndpi_support = 1;
 }
 
-if (-e "/.dockerinit") {
-    # On Docker we can't build kernel modules
-    $we_could_install_kernel_modules = 0;
+main();
+
+### Functions start here
+sub main {
+    detect_distribution();
+
+    install_pf_ring();
+
+    if ($we_have_ndpi_support) {
+        install_ndpi();
+    }
+
+    install_fastnetmon();
 }
 
-# Used for VyOS and different appliances based on rpm/deb
-my $appliance_name = '';
+sub install_init_scripts {
+    # Init file for any systemd aware distro
+    if ( ($distro_type eq 'debian' && $distro_version > 7) or ($distro_type eq 'centos' && $distro_version >= 7) ) {
+        my $systemd_service_path = "/etc/systemd/system/fastnetmon.service";
+        `cp $fastnetmon_code_dir/fastnetmon.service $systemd_service_path`;
+
+        `sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $systemd_service_path`;
+
+        print "We found systemd enabled distro and created service: fastnetmon.service\n";
+        print "You could run it with command: systemctl start fastnetmon.service\n";
+
+        return 1;
+    }
+
+    # Init file for CentOS 6
+    if ($distro_type eq 'centos' && $distro_version == 6) {
+        my $system_init_path = '/etc/init.d/fastnetmon';
+        `cp $fastnetmon_code_dir/fastnetmon_init_script_centos6 $system_init_path`;
+
+        `sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $system_init_path`;
+
+        print "We created service fastnetmon for you\n";
+        print "You could run it with command: /etc/init.d/fastnetmon start\n";
+
+        return 1;
+    }
+
+    # For Gentoo
+    if ( $distro_type eq 'gentoo' ) {
+        my $init_path_in_src = "$fastnetmon_code_dir/fastnetmon_init_script_gentoo";
+        my $system_init_path = '/etc/init.d/fastnetmon';
+
+        # Checker for source code version, will work only for 1.1.3+ versions
+        if (-e $init_path_in_src) {
+            `cp $init_path_in_src $system_init_path`;
+
+            print "We created service fastnetmon for you\n";
+            print "You could run it with command: /etc/init.d/fastnetmon start\n";
+
+            return 1;
+        }
+    }
+
+    # For Debian Squeeze and Wheezy 
+    # And any stable Ubuntu version
+    if ( ($distro_type eq 'debian' && ($distro_version == 6 or $distro_version == 7)) or $distro_type eq 'ubuntu') {
+        my $init_path_in_src = "$fastnetmon_code_dir/fastnetmon_init_script_debian_6_7";
+        my $system_init_path = '/etc/init.d/fastnetmon';
+
+        # Checker for source code version, will work only for 1.1.3+ versions
+        if (-e $init_path_in_src) {
+           `cp $init_path_in_src $system_init_path`;
+
+            `sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $system_init_path`;
+
+            print "We created service fastnetmon for you\n";
+            print "You could run it with command: /etc/init.d/fastnetmon start\n";
+
+            return 1;
+        }
+    }
+}
+
+# We use global variable $ndpi_repository here
+sub install_ndpi {
+    if ($distro_type eq 'debian') {
+        `apt-get update`;
+        `apt-get install -y --force-yes git autoconf`;
+    } elsif ($distro_type eq 'centos') {
+        `yum install -y git autoconf automake libtool`;
+    }   
+
+    if (-e "/usr/src/nDPI") {
+        # Get new code from the repository
+        chdir "/usr/src/nDPI";
+        `git pull`;
+    } else {
+        chdir "/usr/src";
+        `git clone $ndpi_repository`;
+        chdir "/usr/src/nDPI";
+    }   
+
+    `./autogen.sh`;
+    `./configure --prefix=/opt/ndpi`;
+
+    `make install`;
+
+    print "Add ndpi to ld.so.conf\n";
+    my $ndpi_ld_so_conf = "/etc/ld.so.conf.d/ndpi.conf";
+    
+    open my $ndpi_ld_so_conf_handle, ">", $ndpi_ld_so_conf or die "Can't open $! for writing\n";
+    print {$ndpi_ld_so_conf_handle} "/opt/ndpi/lib";
+    close $ndpi_ld_so_conf_handle;
+    
+    print "Run ldconfig\n"; 
+    `ldconfig`; 
+}
 
 sub read_file {
     my $file_name = shift;
@@ -58,77 +161,91 @@ sub read_file {
     return $content;
 }
 
-if (-e "/etc/debian_version") {
-    # Well, on this step it could be Ubuntu or Debian
+# Detect operating system of this machine
+sub detect_distribution { 
+    # We use following global variables here:
+    # $distro_type, $distro_version, $appliance_name
 
-    # We need check issue for more details 
-    my @issue = `cat /etc/issue`;
-    chomp @issue;
+    if (-e "/etc/debian_version") {
+        # Well, on this step it could be Ubuntu or Debian
 
-    my $issue_first_line = $issue[0];
+        # We need check issue for more details 
+        my @issue = `cat /etc/issue`;
+        chomp @issue;
 
-    # Possible /etc/issue contents: 
-    # Debian GNU/Linux 8 \n \l
-    # Ubuntu 14.04.2 LTS \n \l
-    # Welcome to VyOS - \n \l 
-    if ($issue_first_line =~ m/Debian/) {
-        $distro_type = 'debian';
+        my $issue_first_line = $issue[0];
 
-        $distro_version = `cat /etc/debian_version`;
-        chomp $distro_version;
-    } elsif ($issue_first_line =~ m/Ubuntu (\d+)/) {
-        $distro_type = 'ubuntu';
-        $distro_version = $1;
-    } elsif ($issue_first_line =~ m/VyOS/) {
-        # Yes, VyOS is a Debian
-        $distro_type = 'debian';
-        $appliance_name = 'vyos';
+        # Possible /etc/issue contents: 
+        # Debian GNU/Linux 8 \n \l
+        # Ubuntu 14.04.2 LTS \n \l
+        # Welcome to VyOS - \n \l 
+        if ($issue_first_line =~ m/Debian/) {
+            $distro_type = 'debian';
 
-        my $vyos_distro_version = `cat /etc/debian_version`;
-        chomp $vyos_distro_version;
-
-        # VyOS have strange version and we should fix it
-        if ($vyos_distro_version =~ /^(\d+)\.\d+\.\d+$/) {
+            $distro_version = `cat /etc/debian_version`;
+            chomp $distro_version;
+        } elsif ($issue_first_line =~ m/Ubuntu (\d+)/) {
+            $distro_type = 'ubuntu';
             $distro_version = $1;
+        } elsif ($issue_first_line =~ m/VyOS/) {
+            # Yes, VyOS is a Debian
+            $distro_type = 'debian';
+            $appliance_name = 'vyos';
+
+            my $vyos_distro_version = `cat /etc/debian_version`;
+            chomp $vyos_distro_version;
+
+            # VyOS have strange version and we should fix it
+            if ($vyos_distro_version =~ /^(\d+)\.\d+\.\d+$/) {
+                $distro_version = $1;
+            }
         }
     }
+
+    if (-e "/etc/redhat-release") {
+        $distro_type = 'centos';
+
+        my $distro_version_raw = `cat /etc/redhat-release`;
+        chomp $distro_version_raw;
+
+        # CentOS 6:
+        # CentOS release 6.6 (Final)
+        # CentOS 7:
+        # CentOS Linux release 7.0.1406 (Core) 
+        # Fedora release 21 (Twenty One)
+        if ($distro_version_raw =~ /(\d+)/) {
+            $distro_version = $1;
+        }    
+    }
+
+    if (-e "/etc/gentoo-release") {
+        $distro_type = 'gentoo';
+
+        my $distro_version_raw = `cat /etc/gentoo-release`;
+        chomp $distro_version_raw;
+    }
+
+    unless ($distro_type) {
+        die "This distro is unsupported, please do manual install";
+    }
+
 }
 
-if (-e "/etc/redhat-release") {
-    $distro_type = 'centos';
+sub install_pf_ring {
+    my $pf_ring_archive_path = "/usr/src/PF_RING-$pf_ring_version.tar.gz";
+    my $pf_ring_sources_path = "/usr/src/PF_RING-$pf_ring_version";
 
-    my $distro_version_raw = `cat /etc/redhat-release`;
-    chomp $distro_version_raw;
-
-    # CentOS 6:
-    # CentOS release 6.6 (Final)
-    # CentOS 7:
-    # CentOS Linux release 7.0.1406 (Core) 
-    # Fedora release 21 (Twenty One)
-    if ($distro_version_raw =~ /(\d+)/) {
-        $distro_version = $1;
-    }    
-}
-
-if (-e "/etc/gentoo-release") {
-    $distro_type = 'gentoo';
-
-    my $distro_version_raw = `cat /etc/gentoo-release`;
-    chomp $distro_version_raw;
-}
-
-unless ($distro_type) {
-    die "This distro is unsupported, please do manual install";
-}
-
-install();
-
-sub install {
     my $kernel_version = `uname -r`;
     chomp $kernel_version;
 
-    my $we_have_pfring_support = '';
-    
+    my $we_could_install_kernel_modules = 1;
+
+    # TODO: we should offer some way to build only userspace library 
+    if (-e "/.dockerinit") {
+        # On Docker we can't build kernel modules
+        $we_could_install_kernel_modules = 0;
+    }
+ 
     print "Install PF_RING dependencies with package manager\n";
 
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
@@ -157,7 +274,6 @@ sub install {
                 print "Package '$package' install failed with code $?\n"
             }  
         }
-
 
         if ($appliance_name eq 'vyos' && $we_could_install_kernel_modules) {
             # By default we waven't this symlink and should add it manually
@@ -253,41 +369,9 @@ sub install {
         print "Run ldconfig\n";
         `ldconfig`; 
     }
+}
 
-    if ($we_have_ndpi_support) {
-        if ($distro_type eq 'debian') {
-            `apt-get update`;
-            `apt-get install -y --force-yes git autoconf`;
-        } elsif ($distro_type eq 'centos') {
-            `yum install -y git autoconf automake libtool`;
-        }
-
-        if (-e "/usr/src/nDPI") {
-            # Get new code from the repository
-            chdir "/usr/src/nDPI";
-            `git pull`;
-        } else {
-            chdir "/usr/src";
-            `git clone $ndpi_repository`;
-            chdir "/usr/src/nDPI";
-        }
-
-        `./autogen.sh`;
-        `./configure --prefix=/opt/ndpi`;
-
-        `make install`;
-
-        print "Add ndpi to ld.so.conf\n";
-        my $ndpi_ld_so_conf = "/etc/ld.so.conf.d/ndpi.conf";
-    
-        open my $ndpi_ld_so_conf_handle, ">", $ndpi_ld_so_conf or die "Can't open $! for writing\n";
-        print {$ndpi_ld_so_conf_handle} "/opt/ndpi/lib";
-        close $ndpi_ld_so_conf_handle;
-        
-        print "Run ldconfig\n"; 
-        `ldconfig`; 
-    }
-
+sub install_fastnetmon {
     print "Install FastNetMon dependency list\n";
 
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
@@ -340,8 +424,6 @@ sub install {
     print "Clone FastNetMon repo\n";
     chdir "/usr/src";
 
-    my $fastnetmon_code_dir = "/usr/src/fastnetmon/src";
-
     if (-e $fastnetmon_code_dir) {
         # Code already downloaded
         chdir $fastnetmon_code_dir;
@@ -354,7 +436,7 @@ sub install {
         `git pull`;
     } else {
         # Pull new code
-	if ($we_use_code_from_master) {
+    if ($we_use_code_from_master) {
             `git clone $fastnetmon_git_path --quiet 2>/dev/null`;
         } else {
             `git clone $fastnetmon_git_path --branch $stable_branch_name --quiet 2>/dev/null`;
@@ -417,70 +499,10 @@ sub install {
     print "If you have any issues, please check /var/log/fastnetmon.log file contents\n";
     print "Please add your subnets in /etc/networks_list in CIDR format one subnet per line\n";
 
-    my $we_have_init_script_for_this_machine = '';    
+    my $init_script_result = install_init_scripts();
 
-    # Init file for any systemd aware distro
-    if ( ($distro_type eq 'debian' && $distro_version > 7) or ($distro_type eq 'centos' && $distro_version >= 7) ) {
-        my $systemd_service_path = "/etc/systemd/system/fastnetmon.service";
-        `cp $fastnetmon_code_dir/fastnetmon.service $systemd_service_path`;
- 
-        `sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $systemd_service_path`;
-
-        print "We found systemd enabled distro and created service: fastnetmon.service\n";
-        print "You could run it with command: systemctl start fastnetmon.service\n";
-
-        $we_have_init_script_for_this_machine = 1; 
-    }
-
-    # Init file for CentOS 6
-    if ($distro_type eq 'centos' && $distro_version == 6) {
-        my $system_init_path = '/etc/init.d/fastnetmon';
-        `cp $fastnetmon_code_dir/fastnetmon_init_script_centos6 $system_init_path`;
-       
-        `sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $system_init_path`;
-
-        print "We created service fastnetmon for you\n";
-        print "You could run it with command: /etc/init.d/fastnetmon start\n";
-
-        $we_have_init_script_for_this_machine = 1; 
-    }
-
-    # For Gentoo
-    if ( $distro_type eq 'gentoo' ) {
-        my $init_path_in_src = "$fastnetmon_code_dir/fastnetmon_init_script_gentoo";
-        my $system_init_path = '/etc/init.d/fastnetmon';
-
-        # Checker for source code version, will work only for 1.1.3+ versions
-        if (-e $init_path_in_src) {
-            `cp $init_path_in_src $system_init_path`;
-
-            print "We created service fastnetmon for you\n";
-            print "You could run it with command: /etc/init.d/fastnetmon start\n";
-
-            $we_have_init_script_for_this_machine = 1; 
-        }
-    }
-
-    # For Debian Squeeze and Wheezy 
-    # And any stable Ubuntu version
-    if ( ($distro_type eq 'debian' && ($distro_version == 6 or $distro_version == 7)) or $distro_type eq 'ubuntu') {
-        my $init_path_in_src = "$fastnetmon_code_dir/fastnetmon_init_script_debian_6_7";
-        my $system_init_path = '/etc/init.d/fastnetmon';
-
-        # Checker for source code version, will work only for 1.1.3+ versions
-        if (-e $init_path_in_src) {
-           `cp $init_path_in_src $system_init_path`;
-
-            `sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $system_init_path`;
-
-            print "We created service fastnetmon for you\n";
-            print "You could run it with command: /etc/init.d/fastnetmon start\n";
-
-            $we_have_init_script_for_this_machine = 1; 
-        }
-    } 
-
-    unless ($we_have_init_script_for_this_machine) {
+    # Print unified run message 
+    unless ($init_script_result) {
         print "You can run fastnetmon with command: $fastnetmon_dir/fastnetmon\n";
     }
 }
