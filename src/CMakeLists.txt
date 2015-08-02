@@ -124,10 +124,14 @@ endif()
 # We do not enable it by default, it's testing feature
 # If you want it please build with:
 # cmake -DENABLE_LUA_SUPPORT=ON .. 
+set(ENABLE_LUA_SUPPORT yes)
 if (ENABLE_LUA_SUPPORT)
     message(STATUS "We will enable LuaJIT support")
 
     add_definitions(-DENABLE_LUA_HOOKS)
+
+    link_directories("/opt/luajit_2.0.4/lib")
+    include_directories("/opt/luajit_2.0.4/include")
  
     target_link_libraries(netflow_plugin luajit-5.1)
     target_link_libraries(sflow_plugin luajit-5.1)

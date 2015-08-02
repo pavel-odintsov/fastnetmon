@@ -27,10 +27,12 @@ my $appliance_name = '';
 GetOptions('use-git-master' => \$we_use_code_from_master);
 
 my $we_have_ndpi_support = '';
+my $we_have_luajit_support = '';
 my $we_have_pfring_support = '';
 
 if ($we_use_code_from_master) {
     $we_have_ndpi_support = 1;
+    $we_have_luajit_support = 1;
 }
 
 main();
@@ -45,7 +47,66 @@ sub main {
         install_ndpi();
     }
 
+    if ($we_have_luajit_support) {
+        install_luajit();
+        install_luajit_libs();
+    }
+
     install_fastnetmon();
+}
+
+sub install_luajit {
+    chdir "/usr/src";
+
+    print "Download Luajit\n";
+    `wget http://luajit.org/download/LuaJIT-2.0.4.tar.gz`;
+
+    print "Unpack Luajit\n";
+    `tar -xf LuaJIT-2.0.4.tar.gz`;
+    chdir "LuaJIT-2.0.4";
+
+    `sed -i 's#export PREFIX= /usr/local#export PREFIX= /opt/luajit_2.0.4#' Makefile`; 
+
+    print "Build and install Luajit";
+    `make install`;
+
+    put_library_path_to_ld_so("/etc/ld.so.conf.d/luajit.conf", "/opt/luajit_2.0.4/lib");
+}
+
+sub install_luajit_libs {
+    install_lua_lpeg();
+    install_lua_json();
+} 
+
+sub install_lua_lpeg {
+    print "Install LUA lpeg module\n";
+
+    print "Download archive\n";
+    chdir "/usr/src";
+    `wget http://www.inf.puc-rio.br/~roberto/lpeg/lpeg-0.12.2.tar.gz`;
+
+    `tar -xf lpeg-0.12.2.tar.gz`;
+    chdir "lpeg-0.12.2";
+
+    # Set path
+    print "Install lpeg library\n";
+    `sed -i 's#LUADIR = ../lua/#LUADIR = /opt/luajit_2.0.4/include/luajit-2.0#' makefile`; 
+    `cp lpeg.so /opt/luajit_2.0.4/lib/lua/5.1`;
+}
+
+sub install_lua_json {
+    print "Install LUA json module\n";
+    
+    chdir "/usr/src";
+
+    print "Download archive\n";
+    `wget https://github.com/harningt/luajson/archive/1.3.3.tar.gz`;
+    `tar -xf 1.3.3.tar.gz`;
+
+    chdir "luajson-1.3.3";
+
+    print "Install it\n";
+    `PREFIX=/opt/luajit_2.0.4 make install`;
 }
 
 sub install_init_scripts {
@@ -136,14 +197,17 @@ sub install_ndpi {
     `make install`;
 
     print "Add ndpi to ld.so.conf\n";
-    my $ndpi_ld_so_conf = "/etc/ld.so.conf.d/ndpi.conf";
-    
-    open my $ndpi_ld_so_conf_handle, ">", $ndpi_ld_so_conf or die "Can't open $! for writing\n";
-    print {$ndpi_ld_so_conf_handle} "/opt/ndpi/lib";
-    close $ndpi_ld_so_conf_handle;
-    
-    print "Run ldconfig\n"; 
-    `ldconfig`; 
+    put_library_path_to_ld_so("/etc/ld.so.conf.d/ndpi.conf", "/opt/ndpi/lib"); 
+}
+
+sub put_library_path_to_ld_so {
+    my ($ld_so_file_path, $library_path) = @_; 
+
+    open my $ld_so_conf_handle, ">", $ld_so_file_path or die "Can't open $! for writing\n";
+    print {$ld_so_conf_handle} $library_path;
+    close $ld_so_conf_handle;
+
+    `ldconfig`;
 }
 
 sub read_file {
@@ -360,14 +424,7 @@ sub install_pf_ring {
         `ln -s /opt/pf_ring_$pf_ring_version /opt/pf_ring`;
 
         print "Add pf_ring to ld.so.conf\n";
-        my $pf_ring_ld_so_conf = "/etc/ld.so.conf.d/pf_ring.conf";
-    
-        open my $pf_ring_ld_so_conf_handle, ">", $pf_ring_ld_so_conf or die "Can't open $! for writing\n";
-        print {$pf_ring_ld_so_conf_handle} "/opt/pf_ring/lib";
-        close $pf_ring_ld_so_conf_handle;
-
-        print "Run ldconfig\n";
-        `ldconfig`; 
+        put_library_path_to_ld_so("/etc/ld.so.conf.d/pf_ring.conf", "/opt/pf_ring/lib");
     }
 }
 
@@ -431,6 +488,7 @@ sub install_fastnetmon {
         # Switch to master if we on stable branch
         if ($we_use_code_from_master) {
             `git checkout master`;
+            printf("\n");
         }
 
         `git pull`;
@@ -459,6 +517,10 @@ sub install_fastnetmon {
 
     unless ($we_have_pfring_support) {
         $cmake_params .= " -DDISABLE_PF_RING_SUPPORT=ON";
+    }
+
+    if ($we_have_luajit_support) {
+        $cmake_params .= " -DENABLE_LUA_SUPPORT=ON";
     }
 
     if ($distro_type eq 'centos' && $distro_version == 6) {
