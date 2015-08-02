@@ -91,7 +91,7 @@ sub install_lua_lpeg {
     # Set path
     print "Install lpeg library\n";
     `sed -i 's#LUADIR = ../lua/#LUADIR = /opt/luajit_2.0.4/include/luajit-2.0#' makefile`;
-    `make install`;
+    `make`;
     `cp lpeg.so /opt/luajit_2.0.4/lib/lua/5.1`;
 }
 
