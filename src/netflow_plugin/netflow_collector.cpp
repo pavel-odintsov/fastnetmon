@@ -34,7 +34,7 @@
 #ifdef ENABLE_LUA_HOOKS
 lua_State* netflow_lua_state = NULL;
 
-bool lua_hooks_enabled = true;
+bool lua_hooks_enabled = false;
 std::string lua_hooks_path = "/usr/src/fastnetmon/src/netflow_hooks.lua";
 #endif
 
@@ -1112,6 +1112,7 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
 #ifdef ENABLE_LUA_HOOKS
     if (configuration_map.count("netflow_lua_hooks_path") != 0) {
         lua_hooks_path = configuration_map["netflow_lua_hooks_path"];
+        lua_hooks_enabled = true;
     }
 #endif
 
