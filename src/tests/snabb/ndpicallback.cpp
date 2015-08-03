@@ -24,6 +24,38 @@
 u_int32_t size_flow_struct = 0;
 u_int32_t size_id_struct = 0;
 
+double last_timestamp = 0;
+double system_tsc_resolution_hz = 0;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+inline uint64_t rte_rdtsc(void) {
+    union {
+        uint64_t tsc_64;
+            struct {
+                uint32_t lo_32;
+                uint32_t hi_32;
+            };  
+    } tsc;
+
+    asm volatile("rdtsc" :
+        "=a" (tsc.lo_32),
+        "=d" (tsc.hi_32));
+    return tsc.tsc_64;
+}
+
+void set_tsc_freq_fallback() {
+    uint64_t start = rte_rdtsc();
+    sleep(1);
+    system_tsc_resolution_hz = (double)rte_rdtsc() - start;
+}
+
+#ifdef __cplusplus
+}
+#endif
+
 class conntrack_hash_struct_for_simple_packet_t {
     public:
         uint32_t upper_ip;
@@ -66,6 +98,12 @@ class ndpi_tracking_flow_t {
 
             flow = (struct ndpi_flow_struct *)malloc(size_flow_struct);
             memset(flow, 0, size_flow_struct);
+        
+            update_timestamp();    
+        }
+
+        void update_timestamp() {
+            this->last_timestamp = (double)rte_rdtsc() / system_tsc_resolution_hz;
         }
 
         ~ndpi_tracking_flow_t() {
@@ -80,10 +118,12 @@ class ndpi_tracking_flow_t {
             src = NULL;
         }
 
+        ndpi_protocol detected_protocol;
         struct ndpi_id_struct *src = NULL;
         struct ndpi_id_struct *dst = NULL;
     	struct ndpi_flow_struct *flow = NULL;     
         bool protocol_detected = false;
+        double last_timestamp;
 };
 
 typedef std::unordered_map<conntrack_hash_struct_for_simple_packet_t, ndpi_tracking_flow_t> my_connection_tracking_storage_t;
@@ -195,12 +235,19 @@ void* speed_printer(void* ptr) {
         uint64_t bps = bytes_after - bytes_before; 
 
         printf("We process: %llu pps %.2f Gbps\n", (long long)pps, (float)bps/1024/1024/1024 * 8);
+        // std::cout << "Hash size: " << my_connection_tracking_storage.size() << std::endl;
     }   
 }
 
 // We will start speed printer
 void firehose_start() {
     my_ndpi_struct = init_ndpi();
+
+    // Tune timer
+    set_tsc_freq_fallback();
+
+    // Set call time
+    last_timestamp = (double)rte_rdtsc() / system_tsc_resolution_hz;
 
     size_id_struct   = ndpi_detection_get_sizeof_ndpi_id_struct();
     size_flow_struct = ndpi_detection_get_sizeof_ndpi_flow_struct();
@@ -349,7 +396,35 @@ bool convert_simple_packet_toconntrack_hash_struct(simple_packet& packet, conntr
     return true;
 }
 
+unsigned int gc_call_timeout = 20;
+unsigned int gc_clean_how_old_records = 20; 
+
 void firehose_packet(const char *pciaddr, char *data, int length) {
+    // Garbadge collection code
+    double current_timestamp = (double)rte_rdtsc() / system_tsc_resolution_hz;
+
+    if (current_timestamp - last_timestamp > gc_call_timeout) {
+        std::vector<conntrack_hash_struct_for_simple_packet_t> keys_to_remove; 
+    
+        for (auto& itr : my_connection_tracking_storage) {
+            // Remove all records who older than X seconds
+            if (current_timestamp - itr.second.last_timestamp > gc_clean_how_old_records) {
+                keys_to_remove.push_back(itr.first);
+            }   
+        }   
+
+        //if (!keys_to_remove.empty()) {
+        //    std::cout << "We will remove " << keys_to_remove.size() << " keys" << std::endl; 
+        //}  
+
+        for (auto key_to_remove : keys_to_remove)  {
+            my_connection_tracking_storage.erase(key_to_remove);
+        }
+
+        last_timestamp = current_timestamp;
+    }  
+    // GC code ends
+    
     __sync_fetch_and_add(&received_packets, 1);
     __sync_fetch_and_add(&received_bytes, length);
  
@@ -371,15 +446,33 @@ void firehose_packet(const char *pciaddr, char *data, int length) {
     conntrack_hash_struct_for_simple_packet_t conntrack_structure;
     convert_simple_packet_toconntrack_hash_struct(current_packet, conntrack_structure);
 
+
+
     ndpi_tracking_flow_t& dpi_tracking_structure = my_connection_tracking_storage[ conntrack_structure ];
 
     // Protocol already detected
-    if (dpi_tracking_structure.protocol_detected) {
+    if (dpi_tracking_structure.protocol_detected && dpi_tracking_structure.detected_protocol.protocol == NDPI_PROTOCOL_IRC) {
+        char print_buffer[512];
+        fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)data, &packet_header);
+        printf("packet: %s\n", print_buffer);
+
+        /*
+        for (unsigned int index = packet_header.extended_hdr.parsed_pkt.offset.payload_offset; index < packet_header.len; index++) {
+            printf("%c", data[index]); 
+        }   
+    
+        printf("\n");
+        */
+
         return;
     }
 
+    dpi_tracking_structure.update_timestamp();
+
     uint32_t current_tickt = 0 ;
     uint8_t* iph = (uint8_t*)(&data[packet_header.extended_hdr.parsed_pkt.offset.l3_offset]);
+
+    // printf("vlan: %d\n", packet_header.extended_hdr.parsed_pkt.vlan_id);
 
     struct ndpi_iphdr* ndpi_ip_header = (struct ndpi_iphdr*)iph;
 
@@ -390,6 +483,7 @@ void firehose_packet(const char *pciaddr, char *data, int length) {
     if (detected_protocol.protocol == NDPI_PROTOCOL_UNKNOWN && detected_protocol.master_protocol == NDPI_PROTOCOL_UNKNOWN) {
         // printf("Can't detect protocol\n");
     } else {
+        dpi_tracking_structure.detected_protocol = detected_protocol;
         dpi_tracking_structure.protocol_detected = true;
 
         //printf("Master protocol: %d protocol: %d\n", detected_protocol.master_protocol, detected_protocol.protocol);
@@ -398,12 +492,12 @@ void firehose_packet(const char *pciaddr, char *data, int length) {
 
         // printf("Protocol: %s master protocol: %s\n", protocol_name, master_protocol_name);
 
-        bool its_bad_protocol = false; 
-        if (detected_protocol.protocol == NDPI_PROTOCOL_TOR or detected_protocol.master_protocol == NDPI_PROTOCOL_TOR) {
-            its_bad_protocol = true;
-        }
-
-        if (detected_protocol.protocol == NDPI_PROTOCOL_IRC or detected_protocol.master_protocol == NDPI_PROTOCOL_IRC) {
+        bool its_bad_protocol = false;
+        //if(ndpi_is_proto(detected_protocol, NDPI_PROTOCOL_TOR)) { 
+        //    its_bad_protocol = true;
+        //}
+   
+        if (detected_protocol.protocol == NDPI_PROTOCOL_IRC or detected_protocol.master_protocol == NDPI_PROTOCOL_IRC) { 
             its_bad_protocol = true;
         }
 
@@ -412,6 +506,15 @@ void firehose_packet(const char *pciaddr, char *data, int length) {
             char print_buffer[512];
             fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)data, &packet_header);
             printf("packet: %s\n", print_buffer);
+
+            /*
+            for (unsigned int index = packet_header.extended_hdr.parsed_pkt.offset.payload_offset; index < packet_header.len; index++) {
+                printf("%c", data[index]); 
+            }
+            
+            printf("\n");
+
+            */
         }
     }
 }
