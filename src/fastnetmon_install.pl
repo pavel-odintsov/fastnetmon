@@ -236,7 +236,7 @@ sub install_ndpi {
     `./configure --prefix=/opt/ndpi`;
 
    if ($? != 0) {
-        print "Configure failed\n"
+        print "Configure failed\n";
         return;
     }
 
