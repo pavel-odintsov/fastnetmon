@@ -37,7 +37,7 @@
 #ifdef ENABLE_LUA_HOOKS
 lua_State* sflow_lua_state = NULL;
 
-bool sflow_lua_hooks_enabled = true;
+bool sflow_lua_hooks_enabled = false;
 std::string sflow_lua_hooks_path = "/usr/src/fastnetmon/src/sflow_hooks.lua";
 #endif
 
@@ -89,6 +89,8 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
 #ifdef ENABLE_LUA_HOOKS
     if (configuration_map.count("sflow_lua_hooks_path") != 0) {
         sflow_lua_hooks_path = configuration_map["sflow_lua_hooks_path"];
+
+        sflow_lua_hooks_enabled = true;
     }
 #endif
   
