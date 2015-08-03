@@ -67,7 +67,9 @@ sub get_sha1_sum {
     my $output = `sha1sum $path`;
     chomp $output;
     
-    return ($output =~ m/^(\w+)\s+/);
+    my ($sha1) = ($output =~ m/^(\w+)\s+/);
+
+    return $sha1;
 }
 
 sub install_luajit {
