@@ -215,9 +215,9 @@ sub install_init_scripts {
 # We use global variable $ndpi_repository here
 sub install_ndpi {
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
-        `apt-get install -y --force-yes git autoconf libtool automake`;
+        `apt-get install -y --force-yes git autoconf libtool automake libpcap-dev`;
     } elsif ($distro_type eq 'centos') {
-        `yum install -y git autoconf automake libtool`;
+        `yum install -y git autoconf automake libtool libpcap-devel`;
     }   
 
     print "Download nDPI\n";
