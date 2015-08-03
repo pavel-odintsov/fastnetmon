@@ -62,11 +62,26 @@ sub main {
     install_fastnetmon();
 }
 
+sub get_sha1_sum {
+    my $path = shift;
+    my $output = `sha1sum $path`;
+    chomp $output;
+    
+    return ($output =~ m/^(\w+)\s+/);
+}
+
 sub install_luajit {
     chdir "/usr/src";
 
+    my $archive_file_name = "LuaJIT-2.0.4.tar.gz";
+
     print "Download Luajit\n";
-    `wget http://luajit.org/download/LuaJIT-2.0.4.tar.gz`;
+    `wget --quiet http://luajit.org/download/$archive_file_name -O$archive_file_name`;
+
+    unless (get_sha1_sum($archive_file_name) eq '6e533675180300e85d12c4bbeea2d0e41ad21172') {
+        print "Downloaded archive has incorrect sha1\n";
+        return;
+    }
 
     print "Unpack Luajit\n";
     `tar -xf LuaJIT-2.0.4.tar.gz`;
@@ -90,7 +105,14 @@ sub install_lua_lpeg {
 
     print "Download archive\n";
     chdir "/usr/src";
-    `wget http://www.inf.puc-rio.br/~roberto/lpeg/lpeg-0.12.2.tar.gz`;
+
+    my $archive_file_name = 'lpeg-0.12.2.tar.gz';
+    `wget --quiet http://www.inf.puc-rio.br/~roberto/lpeg/$archive_file_name -O$archive_file_name`;
+
+    unless (get_sha1_sum($archive_file_name) eq '69eda40623cb479b4a30fb3720302d3a75f45577') {
+        print "Downloaded archive has incorrect sha1\n";
+        return;
+    }  
 
     `tar -xf lpeg-0.12.2.tar.gz`;
     chdir "lpeg-0.12.2";
@@ -108,8 +130,16 @@ sub install_lua_json {
     chdir "/usr/src";
 
     print "Download archive\n";
-    `wget https://github.com/harningt/luajson/archive/1.3.3.tar.gz`;
-    `tar -xf 1.3.3.tar.gz`;
+
+    my $archive_file_name = '1.3.3.tar.gz';
+    `wget --quiet https://github.com/harningt/luajson/archive/$archive_file_name -O$archive_file_name`;
+
+    unless (get_sha1_sum($archive_file_name) eq '53455f697c3f1d7cc955202062e97bbafbea0779') {
+        print "Downloaded archive has incorrect sha1\n";
+        return;
+    }  
+
+    `tar -xf $archive_file_name`;
 
     chdir "luajson-1.3.3";
 
@@ -384,6 +414,13 @@ sub install_pf_ring {
 
         `wget --quiet $pf_ring_url -O$pf_ring_archive_path`;
    
+        my $archive_file_name = $pf_ring_archive_path;
+
+        unless (get_sha1_sum($archive_file_name) eq '9fb8080defd1a079ad5f0097e8a8adb5bc264d00') {
+            print "Downloaded archive has incorrect sha1\n";
+            return;
+        }  
+
         if ($? == 0) {
             print "Unpack PF_RING\n";
             mkdir $pf_ring_sources_path;
