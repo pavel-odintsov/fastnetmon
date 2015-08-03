@@ -41,6 +41,9 @@ main();
 
 ### Functions start here
 sub main {
+    # Refresh information about packages
+    init_package_manager();
+
     detect_distribution();
 
     if ($we_have_pfring_support) {
@@ -180,12 +183,12 @@ sub install_init_scripts {
 # We use global variable $ndpi_repository here
 sub install_ndpi {
     if ($distro_type eq 'debian') {
-        `apt-get update`;
-        `apt-get install -y --force-yes git autoconf`;
+        `apt-get install -y --force-yes git autoconf libtool`;
     } elsif ($distro_type eq 'centos') {
         `yum install -y git autoconf automake libtool`;
     }   
 
+    print "Download nDPI\n";
     if (-e "/usr/src/nDPI") {
         # Get new code from the repository
         chdir "/usr/src/nDPI";
@@ -196,6 +199,7 @@ sub install_ndpi {
         chdir "/usr/src/nDPI";
     }   
 
+    print "Build nDPI\n";
     `./autogen.sh`;
     `./configure --prefix=/opt/ndpi`;
 
@@ -203,6 +207,12 @@ sub install_ndpi {
 
     print "Add ndpi to ld.so.conf\n";
     put_library_path_to_ld_so("/etc/ld.so.conf.d/ndpi.conf", "/opt/ndpi/lib"); 
+}
+
+sub init_package_manager { 
+    if ($distro_type eq 'debian') {
+        `apt-get update`;
+    }
 }
 
 sub put_library_path_to_ld_so {
@@ -310,7 +320,6 @@ sub install_pf_ring {
     print "Install PF_RING dependencies with package manager\n";
 
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
-        `apt-get update`;
         my @debian_packages_for_pfring = ('build-essential', 'bison', 'flex', 'subversion',
             'libnuma-dev', 'wget', 'tar', 'make', 'dpkg-dev', 'dkms', 'debhelper');
   
@@ -401,7 +410,7 @@ sub install_pf_ring {
                 warn "PF_RING load error! Please fix this issue manually\n";
 
                 # We need this headers for building userspace libs
-                `cp kernel/linux/pf_ring.h /usr/include/linux`;
+                `cp $pf_ring_sources_path/kernel/linux/pf_ring.h /usr/include/linux`;
             }
         } else {
             warn "Can't download PF_RING source code. Disable support of PF_RING\n";
