@@ -232,8 +232,8 @@ sub install_ndpi {
     }   
 
     print "Configure nDPI\n";
-    `./autogen.sh`;
-    `./configure --prefix=/opt/ndpi`;
+    system("./autogen.sh");
+    system("./configure --prefix=/opt/ndpi");
 
    if ($? != 0) {
         print "Configure failed\n";
