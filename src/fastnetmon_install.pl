@@ -214,8 +214,8 @@ sub install_init_scripts {
 
 # We use global variable $ndpi_repository here
 sub install_ndpi {
-    if ($distro_type eq 'debian') {
-        `apt-get install -y --force-yes git autoconf libtool`;
+    if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
+        `apt-get install -y --force-yes git autoconf libtool automake`;
     } elsif ($distro_type eq 'centos') {
         `yum install -y git autoconf automake libtool`;
     }   
@@ -231,10 +231,16 @@ sub install_ndpi {
         chdir "/usr/src/nDPI";
     }   
 
-    print "Build nDPI\n";
+    print "Configure nDPI\n";
     `./autogen.sh`;
     `./configure --prefix=/opt/ndpi`;
 
+   if ($? != 0) {
+        print "Configure failed\n"
+        return;
+    }
+
+    print "Build and install nDPI\n";
     `make install`;
 
     print "Add ndpi to ld.so.conf\n";
@@ -242,7 +248,7 @@ sub install_ndpi {
 }
 
 sub init_package_manager { 
-    if ($distro_type eq 'debian') {
+    if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
         `apt-get update`;
     }
 }
