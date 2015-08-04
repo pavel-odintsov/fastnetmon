@@ -38,10 +38,11 @@ chown _graphite:_graphite /var/lib/graphite/graphite.db
 
 Run it with apache:
 ```bash
-apt-get install -y libapache2-mod-wsgi
+apt-get install -y libapache2-mod-wsgi apache2-mpm-prefork
 cp /usr/share/graphite-web/apache2-graphite.conf  /etc/apache2/sites-available/graphite-web.conf
 a2dissite 000-default.conf
 a2ensite graphite-web
+a2enmod wsgi
 ```
 
 Enable load on startup:
