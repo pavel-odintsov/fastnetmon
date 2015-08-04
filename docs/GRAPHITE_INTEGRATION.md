@@ -16,7 +16,7 @@ graphite_prefix = fastnetmon
 
 First of all, please install all packages:
 ```bash
-apt-get install python-whisper graphite-carbon
+apt-get install -y python-whisper graphite-carbon
 ```
 
 Whisper - it's database for data. Graphite - service for storing and retrieving data from database. 
