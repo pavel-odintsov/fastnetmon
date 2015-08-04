@@ -3512,14 +3512,35 @@ std::string print_subnet_load() {
     std::sort(vector_for_sort.begin(), vector_for_sort.end(),
         TrafficComparatorClass<pair_of_map_for_subnet_counters_elements_t>(INCOMING, sorter));
 
+    graphite_data_t graphite_data;
+
     for (std::vector<pair_of_map_for_subnet_counters_elements_t>::iterator itr = vector_for_sort.begin(); itr != vector_for_sort.end(); ++itr) {
         map_element* speed = &itr->second; 
+        std::string subnet_as_string = convert_subnet_to_string(itr->first);
 
         buffer
             << std::setw(18)
             << std::left
-            << convert_subnet_to_string(itr->first);
-            
+            << subnet_as_string;
+           
+        if (graphite_enabled) {
+            std::string subnet_as_string_as_dash_delimiters = subnet_as_string;
+
+            // Replace dots by dashes
+            std::replace(subnet_as_string_as_dash_delimiters.begin(),
+                subnet_as_string_as_dash_delimiters.end(), '.', '_');
+
+            // Replace / by dashes too
+            std::replace(subnet_as_string_as_dash_delimiters.begin(),
+                subnet_as_string_as_dash_delimiters.end(), '/', '_');
+
+            graphite_data[ graphite_prefix + "." + subnet_as_string_as_dash_delimiters + ".incoming.pps" ] = speed->in_packets;
+            graphite_data[ graphite_prefix + "." + subnet_as_string_as_dash_delimiters + ".outgoing.pps" ] = speed->out_packets; 
+
+            graphite_data[ graphite_prefix + "." + subnet_as_string_as_dash_delimiters + ".incoming.mbps" ] = convert_speed_to_mbps(speed->in_bytes); 
+            graphite_data[ graphite_prefix + "." + subnet_as_string_as_dash_delimiters + ".outgoing.mbps" ] = convert_speed_to_mbps(speed->out_bytes);
+        }
+    
         buffer
             << " "
             << "pps in: "   << std::setw(8) << speed->in_packets
@@ -3527,6 +3548,14 @@ std::string print_subnet_load() {
             << " mbps in: " << std::setw(5) << convert_speed_to_mbps(speed->in_bytes)
             << " out: "     << std::setw(5) << convert_speed_to_mbps(speed->out_bytes)
             << "\n";
+    }
+
+    if (graphite_enabled) {
+        bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
+        
+        if (!graphite_put_result) {
+            logger << log4cpp::Priority::ERROR << "Can't store network load data to Graphite";
+        }
     }
 
     return buffer.str();
