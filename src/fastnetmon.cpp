@@ -2075,11 +2075,11 @@ std::string print_channel_speed(std::string traffic_type, direction packet_direc
             if (packet_direction == INCOMING) {
                 direction_as_string = "incoming";
 
-                graphite_data[graphite_prefix + "." + direction_as_string + "flows"] = incoming_total_flows_speed;
+                graphite_data[graphite_prefix + "." + direction_as_string + ".flows"] = incoming_total_flows_speed;
             } else if (packet_direction == OUTGOING) {
                 direction_as_string = "outgoing";
 
-                graphite_data[graphite_prefix + "." + direction_as_string + "flows"] = outgoing_total_flows_speed;
+                graphite_data[graphite_prefix + "." + direction_as_string + ".flows"] = outgoing_total_flows_speed;
             }
 
             graphite_data[graphite_prefix + "." + direction_as_string + ".pps"] = speed_in_pps;
