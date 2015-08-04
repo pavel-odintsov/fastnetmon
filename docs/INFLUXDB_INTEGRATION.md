@@ -1,8 +1,10 @@
 ### InfluxDB integration
 
-You could install InfluxDB from [binary packages](https://influxdb.com/download/index.html)
+InfluxDB is a very fast time series database written in awesome Go language. You could find some performance tests for InfluxDB and Graphite [here](https://groups.google.com/forum/#!topic/influxdb/0VeUQCqzgVg).
 
-For Debian 8 Jessie I could offer part of manual here:
+You could install InfluxDB from [binary packages](https://influxdb.com/download/index.html).
+
+For Debian 8 Jessie I could offer part of this manual here:
 ```bash
 wget https://s3.amazonaws.com/influxdb/influxdb_0.9.2_amd64.deb
 sudo dpkg -i influxdb_0.9.2_amd64.deb 
@@ -51,3 +53,5 @@ name: fastnetmon.outgoing.pps
 time            mean
 1970-01-01T00:00:00Z    334968.38950276235
 ```
+
+Or you could install [Grafana](http://grafana.org) and make awesome Dashboard ;)

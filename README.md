@@ -41,7 +41,7 @@ Features:
 - Can trigger block script if certain IP loads network with a large amount of packets/bytes/flows per second
 - Thresholds could be configured in per subnet basis with hostgroups feature
 - Could [announce blocked IPs](docs/EXABGP_INTEGRATION.md) to BGP router with [ExaBGP](https://github.com/Exa-Networks/exabgp)
-- Have integration with [Graphite](docs/GRAPHITE_INTEGRATION.md)
+- Full integration with [Graphite](docs/GRAPHITE_INTEGRATION.md) and [InfluxDB](docs/INFLUXDB_INTEGRATION.md)
 - Deep packet inspection for attack traffic
 - netmap support (open source; wire speed processing; only Intel hardware NICs or any hypervisor VM type)
 - Could filter out NetFLOW v5 flows or sFLOW packets with script implemented in LUA (useful for port exclude)
