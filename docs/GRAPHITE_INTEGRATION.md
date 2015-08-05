@@ -57,7 +57,7 @@ Open site:
 http://ip.ad.dr.es
 
 Put test data to Graphite:
-```echo "test.bash.stats 42 `date +%s`" | nc 127.0.0.1 2003```
+```echo "test.bash.stats 42 `date +%s`" | nc -q0 127.0.0.1 2003```
 
 If you have issues with Carbon like this:
 ```bash
