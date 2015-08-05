@@ -31,6 +31,8 @@ Create database, specify login/password and email here:
 graphite-manage syncdb
 ```
 
+Specify your timezone in file /etc/graphite/local_settings.py on line TIME_ZONE.
+
 Change owner:
 ```bash
 chown _graphite:_graphite /var/lib/graphite/graphite.db
