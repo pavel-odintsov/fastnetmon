@@ -319,7 +319,6 @@ std::string exabgp_next_hop = "";
 bool graphite_enabled = false;
 std::string graphite_host = "127.0.0.1";
 unsigned short int graphite_port = 2003;
-unsigned int graphite_number_of_ips = 20;
 
 // Default graphite namespace
 std::string graphite_prefix = "fastnetmon";
@@ -555,11 +554,6 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
     // Sort only first X elements in this vector
     unsigned int shift_for_sort = max_ips_in_list;
 
-    // Graphite could use bigger amount of TOP IP's
-    if (graphite_enabled && graphite_number_of_ips > shift_for_sort) {
-        shift_for_sort = graphite_number_of_ips;
-    }
- 
     if (data_direction == INCOMING or data_direction == OUTGOING) {
         // Because in another case we will got segmentation fault
         unsigned int vector_size = vector_for_sort.size();
@@ -575,12 +569,15 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
         return "Internal error";
     }
 
-    graphite_data_t graphite_data;
-
     unsigned int element_number = 0;
     
     // In this loop we print only top X talkers in our subnet to screen buffer
     for (std::vector<pair_of_map_elements>::iterator ii = vector_for_sort.begin(); ii != vector_for_sort.end(); ++ii) {
+        // Print first max_ips_in_list elements in list, we will show top X "huge" channel loaders
+        if (element_number > max_ips_in_list) {
+            break;
+        } 
+
         uint32_t client_ip = (*ii).first;
         std::string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
 
@@ -609,22 +606,46 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
         uint64_t mbps = convert_speed_to_mbps(bps);
         uint64_t mbps_average = convert_speed_to_mbps(bps_average);
 
-        // Print first max_ips_in_list elements in list, we will show top 20 "huge" channel loaders
-        if (element_number < max_ips_in_list) {
-            std::string is_banned = ban_list.count(client_ip) > 0 ? " *banned* " : "";
+        std::string is_banned = ban_list.count(client_ip) > 0 ? " *banned* " : "";
 
-            // We use setw for alignment
-            output_buffer << client_ip_as_string << "\t\t";
+        // We use setw for alignment
+        output_buffer << client_ip_as_string << "\t\t";
 
-            output_buffer << std::setw(6) << pps << " pps ";
-            output_buffer << std::setw(6) << mbps << " mbps ";
-            output_buffer << std::setw(6) << flows << " flows ";
+        output_buffer << std::setw(6) << pps << " pps ";
+        output_buffer << std::setw(6) << mbps << " mbps ";
+        output_buffer << std::setw(6) << flows << " flows ";
         
-            output_buffer << is_banned << std::endl;
+        output_buffer << is_banned << std::endl;
 
-        }
+        element_number++;
+    }
 
-        if (graphite_enabled && element_number < graphite_number_of_ips) {
+    graphite_data_t graphite_data;
+
+    // TODO: add graphite operations time to the config file
+    if (graphite_enabled) {
+        for (std::vector<pair_of_map_elements>::iterator ii = vector_for_sort.begin(); ii != vector_for_sort.end(); ++ii) {
+            uint32_t client_ip = (*ii).first;
+            std::string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
+
+            uint64_t pps = 0;
+            uint64_t bps = 0;
+            uint64_t flows = 0;
+
+            // Here we could have average or instantaneous speed
+            map_element* current_speed_element = &ii->second;
+
+            // Create polymorphic pps, byte and flow counters
+            if (data_direction == INCOMING) {
+                pps = current_speed_element->in_packets;
+                bps = current_speed_element->in_bytes;
+                flows = current_speed_element->in_flows;
+            } else if (data_direction == OUTGOING) {
+                pps = current_speed_element->out_packets;
+                bps = current_speed_element->out_bytes;
+                flows = current_speed_element->out_flows;
+            }
+
             std::string direction_as_string;
 
             if (data_direction == INCOMING) {
@@ -644,18 +665,24 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
                 graphite_current_prefix = graphite_current_prefix + ".average";
             }
 
-            graphite_data[ graphite_current_prefix + ".pps"   ] = pps;
-            graphite_data[ graphite_current_prefix + ".bps"  ]  = bps * 8;
-            graphite_data[ graphite_current_prefix + ".flows" ] = flows;
+            // We do not store zero data to Graphite
+            if (pps != 0) {
+                graphite_data[ graphite_current_prefix + ".pps"   ] = pps;
+            }
+
+            if (bps != 0) {
+                graphite_data[ graphite_current_prefix + ".bps"  ]  = bps * 8;
+            }
+    
+            if (flows != 0) {
+                graphite_data[ graphite_current_prefix + ".flows" ] = flows;
+            }
         }
-
-        // If we achieved last sorted element, we should stop this loop
-        if (element_number > shift_for_sort) {
-            break;
-        } 
-
-        element_number++;
     }
+
+    // TODO: we should switch to piclke format instead text
+    // TODO: we should check packet size for Graphite
+    // logger << log4cpp::Priority::INFO << "We will write " << graphite_data.size() << " records to Graphite"; 
 
     if (graphite_enabled) {
         bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
@@ -914,7 +941,7 @@ bool load_configuration_file() {
     }
 
     if (configuration_map.count("graphite_number_of_ips") != 0) {
-        graphite_number_of_ips = convert_string_to_integer(configuration_map["graphite_number_of_ips"]);
+        logger << log4cpp::Priority::ERROR << "Sorry, you have used deprecated function graphite_number_of_ips";  
     }
 
     if (configuration_map.count("process_incoming_traffic") != 0) {
