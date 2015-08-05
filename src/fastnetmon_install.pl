@@ -563,16 +563,25 @@ sub install_fastnetmon {
         `git pull`;
     } else {
         # Pull new code
-    if ($we_use_code_from_master) {
+        if ($we_use_code_from_master) {
             `git clone $fastnetmon_git_path --quiet 2>/dev/null`;
         } else {
-            `git clone $fastnetmon_git_path --branch $stable_branch_name --quiet 2>/dev/null`;
+            `git clone $fastnetmon_git_path --quiet 2>/dev/null`;
         }
 
         if ($? != 0) {
             die "Can't clone source code\n";
         }
     }
+
+    if ($we_use_code_from_master) {
+
+    } else {
+        # We use this approach because older git versions do not support git clone -b ... correctly
+        # warning: Remote branch v1.1.2 not found in upstream origin, using HEAD instead
+        chdir "fastnetmon";
+        `git checkout $stable_branch_name`;
+    } 
 
     `mkdir -p $fastnetmon_code_dir/build`;
     chdir "$fastnetmon_code_dir/build";
