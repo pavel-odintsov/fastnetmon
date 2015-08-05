@@ -638,7 +638,7 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
             std::replace(ip_as_string_with_dash_delimiters.begin(),
                 ip_as_string_with_dash_delimiters.end(), '.', '_');
 
-            std::string graphite_current_prefix = graphite_prefix + "." + ip_as_string_with_dash_delimiters + "." + direction_as_string;
+            std::string graphite_current_prefix = graphite_prefix + ".hosts." + ip_as_string_with_dash_delimiters + "." + direction_as_string;
 
             if (print_average_traffic_counts) {
                 graphite_current_prefix = graphite_current_prefix + ".average";
@@ -2075,15 +2075,15 @@ std::string print_channel_speed(std::string traffic_type, direction packet_direc
             if (packet_direction == INCOMING) {
                 direction_as_string = "incoming";
 
-                graphite_data[graphite_prefix + "." + direction_as_string + ".flows"] = incoming_total_flows_speed;
+                graphite_data[graphite_prefix + ".total." + direction_as_string + ".flows"] = incoming_total_flows_speed;
             } else if (packet_direction == OUTGOING) {
                 direction_as_string = "outgoing";
 
-                graphite_data[graphite_prefix + "." + direction_as_string + ".flows"] = outgoing_total_flows_speed;
+                graphite_data[graphite_prefix + ".total." + direction_as_string + ".flows"] = outgoing_total_flows_speed;
             }
 
-            graphite_data[graphite_prefix + "." + direction_as_string + ".pps"] = speed_in_pps;
-            graphite_data[graphite_prefix + "." + direction_as_string + ".mbps"] = speed_in_mbps;
+            graphite_data[graphite_prefix + ".total." + direction_as_string + ".pps"] = speed_in_pps;
+            graphite_data[graphite_prefix + ".total." + direction_as_string + ".mbps"] = speed_in_mbps;
 
             bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
 
@@ -3534,11 +3534,11 @@ std::string print_subnet_load() {
             std::replace(subnet_as_string_as_dash_delimiters.begin(),
                 subnet_as_string_as_dash_delimiters.end(), '/', '_');
 
-            graphite_data[ graphite_prefix + "." + subnet_as_string_as_dash_delimiters + ".incoming.pps" ] = speed->in_packets;
-            graphite_data[ graphite_prefix + "." + subnet_as_string_as_dash_delimiters + ".outgoing.pps" ] = speed->out_packets; 
+            graphite_data[ graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".incoming.pps" ] = speed->in_packets;
+            graphite_data[ graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".outgoing.pps" ] = speed->out_packets; 
 
-            graphite_data[ graphite_prefix + "." + subnet_as_string_as_dash_delimiters + ".incoming.mbps" ] = convert_speed_to_mbps(speed->in_bytes); 
-            graphite_data[ graphite_prefix + "." + subnet_as_string_as_dash_delimiters + ".outgoing.mbps" ] = convert_speed_to_mbps(speed->out_bytes);
+            graphite_data[ graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".incoming.mbps" ] = convert_speed_to_mbps(speed->in_bytes); 
+            graphite_data[ graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".outgoing.mbps" ] = convert_speed_to_mbps(speed->out_bytes);
         }
     
         buffer
