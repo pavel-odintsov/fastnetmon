@@ -74,4 +74,23 @@ If you have issues with Carbon like this:
 twisted.python.usage.UsageError: Unknown command: carbon-cache
 ```
 
+Some useful graphics for Graphite.
+
+Total load:
+```bash
+fastnetmon.incoming.pps
+fastnetmon.outgoing.pps
+
+fastnetmon.incoming.mbps
+fastnetmon.outgoing.mbps
+```
+
+Top talkers:
+```bash
+highestMax(fastnetmon.*.outgoing.average.pps, 10)
+highestMax(fastnetmon.*.outgoing.average.mbps, 10)
+highestMax(fastnetmon.*.incoming.average.pps, 10)
+highestMax(fastnetmon.*.incoming.average.mbps, 10)
+```
+
 Please check this [link](http://stackoverflow.com/questions/27951317/install-graphite-statsd-getting-error-unknown-carbon-cache)
