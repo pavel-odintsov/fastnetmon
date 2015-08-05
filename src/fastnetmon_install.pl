@@ -23,8 +23,12 @@ my $distro_version = '';
 # Used for VyOS and different appliances based on rpm/deb
 my $appliance_name = ''; 
 
+# So, you could disable this option but without this feature we could not improve FastNetMon for your distribution
+my $do_not_track_me = '';
+
 # Get options from command line
 GetOptions('use-git-master' => \$we_use_code_from_master);
+GetOptions('do-not-track-me' => \$do_not_track_me);
 
 my $we_have_ndpi_support = '';
 my $we_have_luajit_support = '';
@@ -46,6 +50,8 @@ sub main {
 
     detect_distribution();
 
+    send_tracking_information('started');
+
     if ($we_have_pfring_support) {
         install_pf_ring();
     }
@@ -60,6 +66,20 @@ sub main {
     }
 
     install_fastnetmon();
+
+    send_tracking_information('finished');
+}
+
+sub send_tracking_information {
+    my $step = shift;
+
+    unless ($do_not_track_me) {
+        my $stats_url = "http://178.62.227.110/new_fastnetmon_installation";
+        my $post_data = "distro_type=$distro_type&distro_version=$distro_version&step=$step";
+        my $user_agent = 'FastNetMon install tracker v1';
+
+        `wget --post-data="$post_data" --user-agent="$user_agent" -q '$stats_url'`;
+    }
 }
 
 sub get_sha1_sum {
