@@ -645,7 +645,7 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
             }
 
             graphite_data[ graphite_current_prefix + ".pps"   ] = pps;
-            graphite_data[ graphite_current_prefix + ".mbps"  ] = mbps;
+            graphite_data[ graphite_current_prefix + ".bps"  ]  = bps * 8;
             graphite_data[ graphite_current_prefix + ".flows" ] = flows;
         }
 
@@ -2083,7 +2083,7 @@ std::string print_channel_speed(std::string traffic_type, direction packet_direc
             }
 
             graphite_data[graphite_prefix + ".total." + direction_as_string + ".pps"] = speed_in_pps;
-            graphite_data[graphite_prefix + ".total." + direction_as_string + ".mbps"] = speed_in_mbps;
+            graphite_data[graphite_prefix + ".total." + direction_as_string + ".bps"] = speed_in_bps * 8;
 
             bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
 
@@ -3537,8 +3537,8 @@ std::string print_subnet_load() {
             graphite_data[ graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".incoming.pps" ] = speed->in_packets;
             graphite_data[ graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".outgoing.pps" ] = speed->out_packets; 
 
-            graphite_data[ graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".incoming.mbps" ] = convert_speed_to_mbps(speed->in_bytes); 
-            graphite_data[ graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".outgoing.mbps" ] = convert_speed_to_mbps(speed->out_bytes);
+            graphite_data[ graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".incoming.bps" ] = speed->in_bytes * 8; 
+            graphite_data[ graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".outgoing.bps" ] = speed->out_bytes * 8;
         }
     
         buffer
