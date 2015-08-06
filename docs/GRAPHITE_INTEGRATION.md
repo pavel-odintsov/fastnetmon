@@ -74,6 +74,8 @@ If you have issues with Carbon like this:
 twisted.python.usage.UsageError: Unknown command: carbon-cache
 ```
 
+Please check this [link](http://stackoverflow.com/questions/27951317/install-graphite-statsd-getting-error-unknown-carbon-cache)
+
 Some useful graphics for Graphite.
 
 Total load:
@@ -93,4 +95,16 @@ highestMax(fastnetmon.*.incoming.average.pps, 10)
 highestMax(fastnetmon.*.incoming.average.mbps, 10)
 ```
 
-Please check this [link](http://stackoverflow.com/questions/27951317/install-graphite-statsd-getting-error-unknown-carbon-cache)
+Also I recommend to configure Graphite this way.
+
+For big networks please enlarge number of created file in /etc/carbon/carbon.conf:
+```bash
+MAX_CREATES_PER_MINUTE = 5000
+```
+
+And if you want to store data every 5 seconds for 1 months please do following _before_ starting collection to Graphite in file /etc/carbon/storage-schemas.conf:
+```bash
+[default_5sec_for_1month]
+pattern = .*
+retentions = 5s:31d
+``` 
