@@ -12,13 +12,15 @@
 
 #include "packet_storage.h"
 
+enum direction { INCOMING = 0, OUTGOING, INTERNAL, OTHER };
+
 // simplified packet struct for lightweight save into memory
 class simple_packet {
     public:
     simple_packet()
     : sample_ratio(1), src_ip(0), dst_ip(0), source_port(0), destination_port(0), protocol(0),
       length(0), flags(0), number_of_packets(1), ip_fragmented(false), ip_protocol_version(4), ttl(0),
-        packet_payload_pointer(NULL), packet_payload_length(0) {
+        packet_payload_pointer(NULL), packet_payload_length(0), packet_direction(OTHER) {
 
         ts.tv_usec = 0;
         ts.tv_sec = 0;
@@ -42,6 +44,8 @@ class simple_packet {
     struct timeval ts;
     void* packet_payload_pointer;
     int packet_payload_length;
+    // We store packet direction here because direction calculation is very difficult task for cpu
+    direction packet_direction;
 };
 
 typedef std::pair<uint32_t, uint32_t> subnet_t;
@@ -54,8 +58,6 @@ typedef void (*process_packet_pointer)(simple_packet&);
 
 // Enum with available sort by field
 enum sort_type { PACKETS, BYTES, FLOWS };
-
-enum direction { INCOMING = 0, OUTGOING, INTERNAL, OTHER };
 
 // Attack types
 enum attack_type_t {
