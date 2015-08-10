@@ -37,7 +37,7 @@ typedef std::map<std::string, uint64_t> graphite_data_t;
 typedef std::vector<std::string> interfaces_list_t;
 typedef std::vector<std::string> ip_addresses_list_t;
 
-ip_addresses_list_t get_local_ip_addresses_list();
+ip_addresses_list_t get_local_ip_v4_addresses_list();
 ip_addresses_list_t get_ip_list_for_interface(std::string interface);
 interfaces_list_t get_interfaces_list();
 
