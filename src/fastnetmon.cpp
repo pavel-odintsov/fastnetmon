@@ -1246,6 +1246,11 @@ bool load_our_networks_list() {
 
         for (std::vector<std::string>::iterator line_itr = network_list_from_config.begin(); line_itr != network_list_from_config.end(); ++line_itr) {
 
+            if (line_itr->length() == 0) { 
+                // Skip blank lines in subnet list file silently
+                continue;
+            }    
+
             if (strstr(line_itr->c_str(), ":") == NULL) {
                 networks_list_ipv4_as_string.push_back(*line_itr);
             } else {
@@ -1266,11 +1271,7 @@ bool load_our_networks_list() {
 
     for (std::vector<std::string>::iterator ii = networks_list_ipv4_as_string.begin();
          ii != networks_list_ipv4_as_string.end(); ++ii) {
-        if (ii->length() == 0) {
-            // Skip blank lines in subnet list file silently
-            continue;
-        }
-
+        
         if (!is_cidr_subnet(ii->c_str())) {
             logger << log4cpp::Priority::ERROR << "Can't parse line from subnet list: '" << *ii << "'";
             continue;
