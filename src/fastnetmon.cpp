@@ -258,6 +258,9 @@ uint64_t total_unparsed_packets = 0;
 // Total amount of IPv6 packets
 uint64_t total_ipv6_packets = 0;
 
+// IPv6 traffic which belongs to our own networks
+uint64_t our_ipv6_packets = 0;
+
 uint64_t incoming_total_flows_speed = 0;
 uint64_t outgoing_total_flows_speed = 0;
 
@@ -1303,6 +1306,13 @@ bool load_our_networks_list() {
         make_and_lookup(lookup_tree_ipv4, const_cast<char*>(network_address_in_cidr_form.c_str()));
     }
 
+    for (std::vector<std::string>::iterator ii = networks_list_ipv6_as_string.begin();
+         ii != networks_list_ipv6_as_string.end(); ++ii) {
+            
+        // TODO: add IPv6 subnet format validation
+        make_and_lookup_ipv6(lookup_tree_ipv6, (char*)ii->c_str()); 
+    }
+
     logger << log4cpp::Priority::INFO
            << "Total number of monitored hosts (total size of all networks): " << total_number_of_hosts_in_our_networks;
 
@@ -1333,7 +1343,13 @@ void process_packet(simple_packet& current_packet) {
     }
 
     if (current_packet.ip_protocol_version == 6) {
-        total_ipv6_packets++;
+        __sync_fetch_and_add(&total_ipv6_packets, 1);
+
+        direction packet_direction = get_packet_direction_ipv6(lookup_tree_ipv6, current_packet.src_ipv6, current_packet.dst_ipv6);
+
+        if (packet_direction != OTHER) {
+            __sync_fetch_and_add(&our_ipv6_packets, 1);
+        }
     }
 
     // We do not process IPv6 at all on this mement
@@ -2059,6 +2075,7 @@ void traffic_draw_programm() {
     }
 
     output_buffer << "Total amount of IPv6 packets: " << total_ipv6_packets << "\n";
+    output_buffer << "Total amount of IPv6 packets related to our own network: " << our_ipv6_packets << "\n";
     output_buffer << "Total amount of not processed packets: " << total_unparsed_packets << "\n";
 
     // Print backend stats
