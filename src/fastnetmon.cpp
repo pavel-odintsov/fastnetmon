@@ -85,6 +85,12 @@
 #include <hiredis/hiredis.h>
 #endif
 
+// #define IPV6_HASH_COUNTERS
+
+#ifdef IPV6_HASH_COUNTERS
+#include "concurrentqueue.h"
+#endif
+
 time_t last_call_of_traffic_recalculation;
 
 
@@ -1335,6 +1341,38 @@ bool load_our_networks_list() {
     return true;
 }
 
+#ifdef IPV6_HASH_COUNTERS
+
+moodycamel::ConcurrentQueue<simple_packet> multi_process_queue_for_ipv6_counters;
+
+void ipv6_traffic_processor() {
+    simple_packet packets_from_queue[32];
+
+    while (true) {
+        std::size_t count = 0;
+
+        while ((count = multi_process_queue_for_ipv6_counters.try_dequeue_bulk(packets_from_queue, 32)) != 0) {
+            for (std::size_t i = 0; i != count; ++i) {
+                __sync_fetch_and_add(&total_ipv6_packets, 1);
+            
+                direction packet_direction = packets_from_queue[i].packet_direction;
+
+                uint64_t sampled_number_of_packets = packets_from_queue[i].number_of_packets * packets_from_queue[i].sample_ratio;
+                uint64_t sampled_number_of_bytes = packets_from_queue[i].length * packets_from_queue[i].sample_ratio;
+
+                __sync_fetch_and_add(&total_counters[packet_direction].packets, sampled_number_of_packets);
+                __sync_fetch_and_add(&total_counters[packet_direction].bytes,   sampled_number_of_bytes);
+
+                if (packet_direction != OTHER) {
+                    __sync_fetch_and_add(&our_ipv6_packets, 1);
+                }       
+            }
+        }
+    }
+}
+
+#endif
+
 /* Process simple unified packet */
 void process_packet(simple_packet& current_packet) {
     // Packets dump is very useful for bug hunting
@@ -1343,13 +1381,16 @@ void process_packet(simple_packet& current_packet) {
     }
 
     if (current_packet.ip_protocol_version == 6) {
+#ifdef IPV6_HASH_COUNTERS
+        current_packet.packet_direction = get_packet_direction_ipv6(lookup_tree_ipv6, current_packet.src_ipv6, current_packet.dst_ipv6);
+
+        // TODO: move to bulk operations here!
+        multi_process_queue_for_ipv6_counters.enqueue(current_packet);
+#else
         __sync_fetch_and_add(&total_ipv6_packets, 1);
+#endif
 
-        direction packet_direction = get_packet_direction_ipv6(lookup_tree_ipv6, current_packet.src_ipv6, current_packet.dst_ipv6);
-
-        if (packet_direction != OTHER) {
-            __sync_fetch_and_add(&our_ipv6_packets, 1);
-        }
+        return;
     }
 
     // We do not process IPv6 at all on this mement
@@ -2074,7 +2115,10 @@ void traffic_draw_programm() {
         output_buffer << "ALERT! Toolkit working incorrectly! We should calculate speed in ~1 second\n";
     }
 
+#ifdef IPV6_HASH_COUNTERS
     output_buffer << "Total amount of IPv6 packets: " << total_ipv6_packets << "\n";
+#endif
+
     output_buffer << "Total amount of IPv6 packets related to our own network: " << our_ipv6_packets << "\n";
     output_buffer << "Total amount of not processed packets: " << total_unparsed_packets << "\n";
 
@@ -2372,6 +2416,10 @@ int main(int argc, char** argv) {
 #endif
     // Init previous run date
     time(&last_call_of_traffic_recalculation);
+
+#ifdef IPV6_HASH_COUNTERS
+    service_thread_group.add_thread(new boost::thread(ipv6_traffic_processor));
+#endif
 
     // Run screen draw thread
     service_thread_group.add_thread(new boost::thread(screen_draw_thread));
