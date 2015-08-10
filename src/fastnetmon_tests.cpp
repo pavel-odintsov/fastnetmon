@@ -15,6 +15,8 @@
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
+#include <arpa/inet.h>
+
 log4cpp::Category& logger = log4cpp::Category::getRoot();
 
 TEST(BgpFlowSpec, protocol_check_udp) {
@@ -372,3 +374,45 @@ TEST(serialize_vector_by_string_with_prefix, few_elements) {
     EXPECT_EQ( serialize_vector_by_string_with_prefix(vect, ",", "^"), "^123,^456"); 
 }
 
+/* Patricia tests */
+
+TEST (patricia, negative_lookup_ipv6_prefix) {
+    patricia_tree_t* lookup_ipv6_tree;
+    lookup_ipv6_tree = New_Patricia(128);
+
+    make_and_lookup_ipv6(lookup_ipv6_tree, (char*)"2a03:f480::/32");
+
+    //Destroy_Patricia(lookup_ipv6_tree, (void_fn_t)0);
+   
+    prefix_t prefix_for_check_address;
+    
+    // Convert fb.com frontend address to internal structure
+    inet_pton(AF_INET6, "2a03:2880:2130:cf05:face:b00c::1", (void*)&prefix_for_check_address.add.sin6);
+
+    prefix_for_check_address.family = AF_INET6;
+    prefix_for_check_address.bitlen = 128;
+ 
+    bool found = patricia_search_best2(lookup_ipv6_tree, &prefix_for_check_address, 1) != NULL;
+
+    EXPECT_EQ( found, false );   
+}
+
+TEST (patricia, positive_lookup_ipv6_prefix) {
+    patricia_tree_t* lookup_ipv6_tree;
+    lookup_ipv6_tree = New_Patricia(128);
+
+    make_and_lookup_ipv6(lookup_ipv6_tree, (char*)"2a03:f480::/32");
+
+    //Destroy_Patricia(lookup_ipv6_tree, (void_fn_t)0);
+   
+    prefix_t prefix_for_check_address;
+    
+    inet_pton(AF_INET6, "2a03:f480:2130:cf05:face:b00c::1", (void*)&prefix_for_check_address.add.sin6);
+
+    prefix_for_check_address.family = AF_INET6;
+    prefix_for_check_address.bitlen = 128;
+ 
+    bool found = patricia_search_best2(lookup_ipv6_tree, &prefix_for_check_address, 1) != NULL;
+
+    EXPECT_EQ( found, true );
+}

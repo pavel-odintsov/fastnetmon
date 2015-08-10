@@ -956,6 +956,19 @@ make_and_lookup (patricia_tree_t *tree, char *string)
 }
 
 patricia_node_t *
+make_and_lookup_ipv6 (patricia_tree_t *tree, char *string)
+{
+    prefix_t *prefix;
+    patricia_node_t *node;
+
+    prefix = ascii2prefix (AF_INET6, string);
+    // printf ("make_and_lookup: %s/%d\n", prefix_toa (prefix), prefix->bitlen);
+    node = patricia_lookup (tree, prefix);
+    Deref_Prefix (prefix);
+    return (node);
+}
+
+patricia_node_t *
 try_search_exact (patricia_tree_t *tree, char *string)
 {
     prefix_t *prefix;
