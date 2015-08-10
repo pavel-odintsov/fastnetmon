@@ -1180,53 +1180,78 @@ bool load_our_networks_list() {
                << " networks from whitelist file";
     }
 
-    std::vector<std::string> networks_list_as_string;
+    std::vector<std::string> networks_list_ipv4_as_string;
+    std::vector<std::string> networks_list_ipv6_as_string;
+
     // We can bould "our subnets" automatically here
     if (file_exists("/proc/vz/version")) {
         logger << log4cpp::Priority::INFO << "We found OpenVZ";
         // Add /32 CIDR mask for every IP here
         std::vector<std::string> openvz_ips = read_file_to_vector("/proc/vz/veip");
         for (std::vector<std::string>::iterator ii = openvz_ips.begin(); ii != openvz_ips.end(); ++ii) {
-            // skip IPv6 addresses
-            if (strstr(ii->c_str(), ":") != NULL) {
-                continue;
-            }
-
             // skip header
             if (strstr(ii->c_str(), "Version") != NULL) {
                 continue;
             }
 
-            std::vector<std::string> subnet_as_string;
-            split(subnet_as_string, *ii, boost::is_any_of(" "), boost::token_compress_on);
+            /*
+                Example data for this lines: 
+                2a03:f480:1:17:0:0:0:19          0
+                            185.4.72.40          0
+            */
 
-            std::string openvz_subnet = subnet_as_string[1] + "/32";
-            networks_list_as_string.push_back(openvz_subnet);
+            if (strstr(ii->c_str(), ":") == NULL) {
+                // IPv4
+
+                std::vector<std::string> subnet_as_string;
+                split(subnet_as_string, *ii, boost::is_any_of(" "), boost::token_compress_on);
+
+                std::string openvz_subnet = subnet_as_string[1] + "/32";
+                networks_list_ipv4_as_string.push_back(openvz_subnet);
+            } else {
+                // IPv6
+
+                std::vector<std::string> subnet_as_string;
+                split(subnet_as_string, *ii, boost::is_any_of(" "), boost::token_compress_on);
+
+                std::string openvz_subnet = subnet_as_string[1] + "/128";
+                networks_list_ipv6_as_string.push_back(openvz_subnet);
+            }
         }
 
-        logger << log4cpp::Priority::INFO << "We loaded " << networks_list_as_string.size()
-               << " networks from /proc/vz/veip";
+        logger << log4cpp::Priority::INFO << "We loaded " << networks_list_ipv4_as_string.size()
+               << " IPv4 networks from /proc/vz/veip";
+
+        logger << log4cpp::Priority::INFO << "We loaded " << networks_list_ipv6_as_string.size()
+                << " IPv6 networks from /proc/vz/veip";
     }
 
     if (monitor_local_ip_addresses && file_exists("/sbin/ip")) {
         logger << log4cpp::Priority::INFO
                << "We are working on Linux and could use ip tool for detecting local IP's";
 
-        ip_addresses_list_t ip_list = get_local_ip_addresses_list();
+        ip_addresses_list_t ip_list = get_local_ip_v4_addresses_list();
 
         logger << log4cpp::Priority::INFO << "We found " << ip_list.size()
                << " local IP addresses and will monitor they";
 
         for (ip_addresses_list_t::iterator iter = ip_list.begin(); iter != ip_list.end(); ++iter) {
-            networks_list_as_string.push_back(*iter + "/32");
+            // TODO: add IPv6 here
+            networks_list_ipv4_as_string.push_back(*iter + "/32");
         }
     }
 
     if (file_exists(networks_list_path)) {
-        std::vector<std::string> network_list_from_config =
-        read_file_to_vector(networks_list_path);
-        networks_list_as_string.insert(networks_list_as_string.end(), network_list_from_config.begin(),
-                                       network_list_from_config.end());
+        std::vector<std::string> network_list_from_config = read_file_to_vector(networks_list_path);
+
+        for (std::vector<std::string>::iterator line_itr = network_list_from_config.begin(); line_itr != network_list_from_config.end(); ++line_itr) {
+
+            if (strstr(line_itr->c_str(), ":") == NULL) {
+                networks_list_ipv4_as_string.push_back(*line_itr);
+            } else {
+                networks_list_ipv6_as_string.push_back(*line_itr);
+            }
+        } 
 
         logger << log4cpp::Priority::INFO << "We loaded " << network_list_from_config.size()
                << " networks from networks file";
@@ -1236,8 +1261,11 @@ bool load_our_networks_list() {
     assert(convert_ip_as_string_to_uint("255.255.255.0") == convert_cidr_to_binary_netmask(24));
     assert(convert_ip_as_string_to_uint("255.255.255.255") == convert_cidr_to_binary_netmask(32));
 
-    for (std::vector<std::string>::iterator ii = networks_list_as_string.begin();
-         ii != networks_list_as_string.end(); ++ii) {
+    logger << log4cpp::Priority::INFO << "Totally we have " << networks_list_ipv4_as_string.size() << " IPv4 subnets";
+    logger << log4cpp::Priority::INFO << "Totally we have " << networks_list_ipv6_as_string.size() << " IPv6 subnets";
+
+    for (std::vector<std::string>::iterator ii = networks_list_ipv4_as_string.begin();
+         ii != networks_list_ipv4_as_string.end(); ++ii) {
         if (ii->length() == 0) {
             // Skip blank lines in subnet list file silently
             continue;
@@ -1290,8 +1318,8 @@ bool load_our_networks_list() {
     zeroify_all_counters();
     logger << log4cpp::Priority::INFO << "We finished zerofication";
 
-    logger << log4cpp::Priority::INFO << "We loaded " << networks_list_as_string.size()
-           << " subnets to our in-memory list of networks";
+    logger << log4cpp::Priority::INFO << "We loaded " << networks_list_ipv4_as_string.size()
+           << " IPv4 subnets to our in-memory list of networks";
     
     return true;
 }
