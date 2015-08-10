@@ -199,7 +199,11 @@ unsigned int total_number_of_hosts_in_our_networks = 0;
 GeoIP* geo_ip = NULL;
 #endif
 
-patricia_tree_t* lookup_tree, *whitelist_tree;
+// IPv4 lookup trees
+patricia_tree_t* lookup_tree_ipv4, *whitelist_tree_ipv4;
+
+// IPv6 lookup trees
+patricia_tree_t* lookup_tree_ipv6, *whitelist_tree_ipv6;
 
 bool DEBUG = 0;
 
@@ -1166,7 +1170,7 @@ bool load_our_networks_list() {
         for (std::vector<std::string>::iterator ii = network_list_from_config.begin();
              ii != network_list_from_config.end(); ++ii) {
             if (ii->length() > 0 && is_cidr_subnet(ii->c_str())) {
-                make_and_lookup(whitelist_tree, const_cast<char*>(ii->c_str()));
+                make_and_lookup(whitelist_tree_ipv4, const_cast<char*>(ii->c_str()));
             } else {
                 logger << log4cpp::Priority::ERROR << "Can't parse line from whitelist: " << *ii;
             }
@@ -1267,7 +1271,7 @@ bool load_our_networks_list() {
             network_address_in_cidr_form = new_network_address_as_string;
         }
 
-        make_and_lookup(lookup_tree, const_cast<char*>(network_address_in_cidr_form.c_str()));
+        make_and_lookup(lookup_tree_ipv4, const_cast<char*>(network_address_in_cidr_form.c_str()));
     }
 
     logger << log4cpp::Priority::INFO
@@ -1280,7 +1284,7 @@ bool load_our_networks_list() {
         << "We need " << memory_requirements << " MB of memory for storing counters for your networks";
 
     /* Preallocate data structures */
-    patricia_process(lookup_tree, (void_fn_t)subnet_vectors_allocator);
+    patricia_process(lookup_tree_ipv4, (void_fn_t)subnet_vectors_allocator);
 
     logger << log4cpp::Priority::INFO << "We start total zerofication of counters";
     zeroify_all_counters();
@@ -1312,7 +1316,7 @@ void process_packet(simple_packet& current_packet) {
     unsigned long subnet = 0;
     unsigned int subnet_cidr_mask = 0;
 
-    direction packet_direction = get_packet_direction(lookup_tree, current_packet.src_ip, current_packet.dst_ip, subnet, subnet_cidr_mask);
+    direction packet_direction = get_packet_direction(lookup_tree_ipv4, current_packet.src_ip, current_packet.dst_ip, subnet, subnet_cidr_mask);
 
     // Skip processing of specific traffic direction
     if ((packet_direction == INCOMING && !process_incoming_traffic) or
@@ -2252,8 +2256,11 @@ int main(int argc, char** argv) {
     init_current_instance_of_ndpi();
 #endif
 
-    lookup_tree = New_Patricia(32);
-    whitelist_tree = New_Patricia(32);
+    lookup_tree_ipv4 = New_Patricia(32);
+    whitelist_tree_ipv4 = New_Patricia(32);
+
+    lookup_tree_ipv6 = New_Patricia(128);
+    whitelist_tree_ipv6 = New_Patricia(128);
 
     // nullify total counters
     for (int index = 0; index < 4; index++) {
@@ -2371,8 +2378,11 @@ void free_up_all_resources() {
     GeoIP_delete(geo_ip);
 #endif
 
-    Destroy_Patricia(lookup_tree, (void_fn_t)0);
-    Destroy_Patricia(whitelist_tree, (void_fn_t)0);
+    Destroy_Patricia(lookup_tree_ipv4, (void_fn_t)0);
+    Destroy_Patricia(whitelist_tree_ipv4, (void_fn_t)0);
+
+    Destroy_Patricia(lookup_tree_ipv6, (void_fn_t)0);
+    Destroy_Patricia(whitelist_tree_ipv6, (void_fn_t)0);
 }
 
 // For correct programm shutdown by CTRL+C
@@ -2567,7 +2577,7 @@ void execute_ip_ban(uint32_t client_ip, map_element speed_element, map_element a
     prefix_for_check_adreess.family = AF_INET;
     prefix_for_check_adreess.bitlen = 32;
 
-    bool in_white_list = (patricia_search_best2(whitelist_tree, &prefix_for_check_adreess, 1) != NULL);
+    bool in_white_list = (patricia_search_best2(whitelist_tree_ipv4, &prefix_for_check_adreess, 1) != NULL);
 
     if (in_white_list) {
         return;
