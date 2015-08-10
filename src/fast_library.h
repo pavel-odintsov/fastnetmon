@@ -91,6 +91,8 @@ bool read_pid_from_file(pid_t& pid, std::string pid_path);
 
 direction get_packet_direction(patricia_tree_t* lookup_tree, uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet, unsigned int& subnet_cidr_mask);
 
+direction get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_addr src_ipv6, struct in6_addr dst_ipv6);
+
 std::string convert_prefix_to_string_representation(prefix_t* prefix);
 std::string find_subnet_by_ip_in_string_format(patricia_tree_t* patricia_tree, std::string ip);
 std::string convert_subnet_to_string(subnet_t my_subnet);
