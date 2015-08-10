@@ -986,6 +986,32 @@ bool call_lua_function(std::string function_name, lua_State* lua_state_param, st
 
     return false;
 }
+
 #endif
+
+inline uint64_t read_tsc_cpu_register() {
+    union {
+        uint64_t tsc_64;
+            struct {
+                uint32_t lo_32;
+                uint32_t hi_32;
+            };  
+    } tsc;
+
+    asm volatile("rdtsc" :
+        "=a" (tsc.lo_32),
+        "=d" (tsc.hi_32));
+    return tsc.tsc_64;
+}
+
+uint64_t get_tsc_freq_with_sleep() {
+    uint64_t start = read_tsc_cpu_register();
+            
+    sleep(1);
+
+    return read_tsc_cpu_register() - start;
+}
+
+
 
 #endif
