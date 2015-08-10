@@ -669,7 +669,7 @@ ip_addresses_list_t get_ip_list_for_interface(std::string interface) {
     return ip_list;
 }
 
-ip_addresses_list_t get_local_ip_addresses_list() {
+ip_addresses_list_t get_local_ip_v4_addresses_list() {
     ip_addresses_list_t ip_list;
 
     std::vector<std::string> list_of_ignored_interfaces;
