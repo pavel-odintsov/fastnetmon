@@ -32,6 +32,7 @@ GetOptions('do-not-track-me' => \$do_not_track_me);
 
 my $we_have_ndpi_support = '';
 my $we_have_luajit_support = '';
+my $we_have_hiredis_support = '';
 
 # Actually, we haven't PF_RING on some platforms
 my $we_have_pfring_support = 1;
@@ -39,6 +40,7 @@ my $we_have_pfring_support = 1;
 if ($we_use_code_from_master) {
     $we_have_ndpi_support = 1;
     $we_have_luajit_support = 1;
+    $we_have_hiredis_support = 1;
 }
 
 main();
@@ -63,6 +65,10 @@ sub main {
     if ($we_have_luajit_support) {
         install_luajit();
         install_luajit_libs();
+    }
+
+    if ($we_have_hiredis_support) {
+        install_hiredis();
     }
 
     install_fastnetmon();
@@ -230,6 +236,24 @@ sub install_init_scripts {
             return 1;
         }
     }
+}
+
+sub install_hiredis {
+    my $disto_file_name = 'v0.13.1.tar.gz'; 
+    my $hiredis_install_path = '/opt/libhiredis_0_13';
+
+    chdir "/usr/src";
+
+    print "Download hiredis\n";
+    `wget https://github.com/redis/hiredis/archive/$disto_file_name -O$disto_file_name`;
+    `tar -xf $disto_file_name`;
+
+    print "Build hiredis\n";
+    chdir "hiredis-0.13.1";
+    `PREFIX=$hiredis_install_path make install`;
+
+    print "Add hiredis to ld.so.conf\n";
+    put_library_path_to_ld_so("/etc/ld.so.conf.d/hiredis.conf", "$hiredis_install_path/lib"); 
 }
 
 # We use global variable $ndpi_repository here

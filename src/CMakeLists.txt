@@ -25,6 +25,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 # If you want C++ 11 support, please uncomment it
 # set(CMAKE_CXX_FLAGS_RELEASE "-std=c++11")
 
+set(HIREDIS_CUSTOM_INSTALL_PATH "/opt/libhiredis_0_13")
+
 set(FASTNETMON_PROFILER OFF)
 
 set(FASTNETMON_PROFILE_FLAGS "-g -pg")
@@ -193,20 +195,23 @@ if(CURSES_FOUND)
     target_link_libraries(fastnetmon_client ${CURSES_LIBRARIES})
 endif()
 
-# apt-get install -y libhiredis-dev 
-# yum install -y hiredis-devel
-# Please uncomment this lines if you want enable Redis support
-#list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-#find_package(Hiredis QUIET)
-#if (HIREDIS_FOUND)
-#    message(STATUS "We could compile Redis support")
-#    add_definitions(-DREDIS)
-#    include_directories(${HIREDIS_INCLUDE_DIRS})
-#    target_link_libraries (fastnetmon ${HIREDIS_LIBRARIES})
-#endif()
-# For CentOS 6 please use this code:
-# add_definitions(-DREDIS)
-# target_link_libraries (fastnetmon hiredis)
+### Move this code to cmake module
+
+# Try to find hiredis in a specific folder
+find_path(HIREDIS_INCLUDES_FOLDER NAMES hiredis/hiredis.h PATHS "${HIREDIS_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
+
+# Try to find hiredis library path
+find_library(HIREDIS_LIBRARY_PATH NAMES hiredis PATHS "${HIREDIS_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+
+if (HIREDIS_INCLUDES_FOLDER AND HIREDIS_LIBRARY_PATH) 
+    message(STATUS "We found hiredis library and will build Redis support ${HIREDIS_INCLUDES_FOLDER} ${HIREDIS_LIBRARY_PATH}")
+
+    add_definitions(-DREDIS)
+    include_directories(${HIREDIS_INCLUDES_FOLDER})
+    target_link_libraries (fastnetmon ${HIREDIS_LIBRARY_PATH})
+else()
+    message(STATUS "We can't find hiredis library and will disable Redis support")
+endif()
 
 # Standard path for Linux
 set(LOG4CPP_LIBRARY_PATH log4cpp)
