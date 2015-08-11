@@ -64,6 +64,8 @@
 #include <boost/regex.hpp>
 
 // log4cpp logging facility
+#include "log4cpp/RemoteSyslogAppender.hh"
+#include "log4cpp/SyslogAppender.hh"
 #include "log4cpp/Category.hh"
 #include "log4cpp/Appender.hh"
 #include "log4cpp/FileAppender.hh"
@@ -108,6 +110,8 @@ bool collect_attack_pcap_dumps = false;
 bool process_pcap_attack_dumps_with_dpi = false;
 
 bool unban_only_if_attack_finished = true;
+
+logging_configuration_t logging_configuration;
 
 // Variable with all data from main screen
 std::string screen_data_stats = "";
@@ -348,6 +352,7 @@ void init_current_instance_of_ndpi();
 void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_string);
 #endif
 
+logging_configuration_t read_logging_settings(configuration_map_t configuration_map);
 std::string get_amplification_attack_type(amplification_attack_type_t attack_type);
 std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type, std::string destination_ip);
 bool exabgp_flow_spec_ban_manage(std::string action, std::string flow_spec_rule_as_text);
@@ -998,6 +1003,8 @@ bool load_configuration_file() {
 
     // Read global ban configuration
     global_ban_settings = read_ban_settings(configuration_map, "");
+
+    logging_configuration = read_logging_settings(configuration_map);
 
     // logger << log4cpp::Priority::INFO << "We read global ban settings: " << print_ban_thresholds(global_ban_settings);
 
@@ -2230,6 +2237,23 @@ void init_logging() {
     logger << log4cpp::Priority::INFO << "Logger initialized!";
 }
 
+void reconfigure_logging() {
+    if (logging_configuration.local_syslog_logging) {
+        log4cpp::Appender* local_syslog_appender = new log4cpp::SyslogAppender("fastnetmon", "fastnetmon", LOG_USER);
+        logger.addAppender(local_syslog_appender);
+
+        logger << log4cpp::Priority::INFO << "We start local syslog logging corectly";
+    }   
+     
+    if (logging_configuration.remote_syslog_logging) {
+        log4cpp::Appender* remote_syslog_appender = new log4cpp::RemoteSyslogAppender(
+            "fastnetmon", "fastnetmon", logging_configuration.remote_syslog_server, LOG_USER, logging_configuration.remote_syslog_port); 
+
+        logger.addAppender(remote_syslog_appender);
+        
+        logger << log4cpp::Priority::INFO << "We start remote syslog logging corectly";
+    }
+}
 
 // Call fork function
 int do_fork() {
@@ -2392,6 +2416,9 @@ int main(int argc, char** argv) {
         fprintf(stderr, "Can't open config file %s, please create it!\n", global_config_path.c_str());
         exit(1);
     }
+
+    // Reconfigure logging. We will enable specific logging methods here
+    reconfigure_logging();
 
     load_our_networks_list();
 
@@ -3745,6 +3772,41 @@ void print_attack_details_to_file(std::string details, std::string client_ip_as_
     } else {
         logger << log4cpp::Priority::ERROR << "Can't print attack details to file";
     }
+}
+
+logging_configuration_t read_logging_settings(configuration_map_t configuration_map) {
+    logging_configuration_t logging_configuration_temp;
+
+    if (configuration_map.count("logging:local_syslog_logging") != 0) {
+        logging_configuration_temp.local_syslog_logging = configuration_map["logging:local_syslog_logging"] == "on";
+    }
+
+    if (configuration_map.count("logging:remote_syslog_logging") != 0) { 
+        logging_configuration_temp.remote_syslog_logging = configuration_map["logging:remote_syslog_logging"] == "on";
+    } 
+
+    if (configuration_map.count("logging:remote_syslog_server") != 0) {
+        logging_configuration_temp.remote_syslog_server = configuration_map["logging:remote_syslog_server"];
+    }
+
+    if (configuration_map.count("logging:remote_syslog_port") != 0) {
+        logging_configuration_temp.remote_syslog_port = convert_string_to_integer(configuration_map["logging:remote_syslog_port"]);
+    }
+
+    if (logging_configuration_temp.remote_syslog_logging) {
+        if (logging_configuration_temp.remote_syslog_port > 0 && !logging_configuration_temp.remote_syslog_server.empty()) {
+            logger << log4cpp::Priority::INFO << "We have configured remote syslog logging corectly";
+        } else {
+            logger << log4cpp::Priority::ERROR << "You have enabled remote logging but haven't specified port or host";
+            logging_configuration_temp.remote_syslog_logging = false;
+        }
+    }
+
+    if (logging_configuration_temp.local_syslog_logging) {
+        logger << log4cpp::Priority::INFO << "We have configured local syslog logging corectly";
+    }
+
+    return logging_configuration_temp;
 }
 
 ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::string host_group_name) {

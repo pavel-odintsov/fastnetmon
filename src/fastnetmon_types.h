@@ -48,6 +48,20 @@ class simple_packet {
     direction packet_direction;
 };
 
+class logging_configuration_t {
+    public:
+        logging_configuration_t() :
+            filesystem_logging(true), local_syslog_logging(false), remote_syslog_logging(false), remote_syslog_port(0) {}
+        bool filesystem_logging;
+        std::string filesystem_logging_path;
+    
+        bool local_syslog_logging;
+        
+        bool remote_syslog_logging;
+        std::string remote_syslog_server;
+        unsigned int remote_syslog_port;
+};
+
 typedef std::pair<uint32_t, uint32_t> subnet_t;
 typedef std::vector<subnet_t> subnet_vector_t;
 
