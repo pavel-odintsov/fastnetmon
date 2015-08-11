@@ -26,6 +26,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 # set(CMAKE_CXX_FLAGS_RELEASE "-std=c++11")
 
 set(HIREDIS_CUSTOM_INSTALL_PATH "/opt/libhiredis_0_13")
+set(LOG4CPP_CUSTOM_INSTALL_PATH "/opt/log4cpp1.1.1")
 
 set(FASTNETMON_PROFILER OFF)
 
@@ -213,25 +214,17 @@ else()
     message(STATUS "We can't find hiredis library and will disable Redis support")
 endif()
 
-# Standard path for Linux
-set(LOG4CPP_LIBRARY_PATH log4cpp)
+# Try to find log4cpp includes path
+find_path(LOG4CPP_INCLUDES_FOLDER NAMES log4cpp/Appender.hh PATHS "${LOG4CPP_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
 
-# Non standard path on platforms where we compile log4cpp from sources
-if (WE_USE_CUSTOM_LOG4CPP) 
-    set(LOG4CPP_LIBRARY_PATH /opt/log4cpp1.1.1/lib/liblog4cpp.so)
-    include_directories(/opt/log4cpp1.1.1/include) 
-endif()
+# Try to find log4cpp library path
+find_library(LOG4CPP_LIBRARY_PATH NAMES log4cpp PATHS "${LOG4CPP_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
 
-# Try to find log4cpp library where it installed by mac ports
-if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-    FIND_LIBRARY(LOG4_CPP_LIRBARY_FOUNDER log4cpp /opt/local/lib REQUIRED)
-    set(LOG4CPP_LIBRARY_PATH ${LOG4_CPP_LIRBARY_FOUNDER}) 
-endif()
-
-# Try to find log4cpp library where it installed by FreeBSD's and Dragonfly's pkg
-if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" OR ${CMAKE_SYSTEM_NAME} STREQUAL "DragonFly")
-    FIND_LIBRARY(LOG4_CPP_LIRBARY_FOUNDER log4cpp /usr/local/lib REQUIRED)
-    set(LOG4CPP_LIBRARY_PATH ${LOG4_CPP_LIRBARY_FOUNDER}) 
+if (LOG4CPP_INCLUDES_FOLDER AND LOG4CPP_LIBRARY_PATH)
+    include_directories(${LOG4CPP_INCLUDES_FOLDER})
+    message(STATUS "We have found log4cpp and will build project")
+else()
+    message(STATUS "We can't find log4cpp. We can't build project")
 endif()
 
 if (ENABLE_DPI_SUPPORT)

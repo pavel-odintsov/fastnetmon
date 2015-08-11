@@ -41,6 +41,7 @@ if ($we_use_code_from_master) {
     $we_have_ndpi_support = 1;
     $we_have_luajit_support = 1;
     $we_have_hiredis_support = 1;
+    $we_have_log4cpp_support = 1;
 }
 
 main();
@@ -69,6 +70,10 @@ sub main {
 
     if ($we_have_hiredis_support) {
         install_hiredis();
+    }
+
+    if ($we_have_log4cpp_support) {
+        install_log4cpp();
     }
 
     install_fastnetmon();
@@ -236,6 +241,28 @@ sub install_init_scripts {
             return 1;
         }
     }
+}
+
+sub install_log4cpp {
+    my $distro_file_name = 'log4cpp-1.1.1.tar.gz';
+    my $log4cpp_url = 'https://sourceforge.net/projects/log4cpp/files/log4cpp-1.1.x%20%28new%29/log4cpp-1.1/log4cpp-1.1.1.tar.gz/download';
+    my $log4cpp_install_path = '/opt/log4cpp1.1.1';
+
+    chdir "/usr/src";
+
+    print "Download log4cpp sources\n";
+    `wget '$log4cpp_url' -O$distro_file_name`;
+
+    print "Unpack log4cpp sources\n";
+    `tar -xf $distro_file_name`;
+    chdir "/usr/src/log4cpp";
+
+    print "Build log4cpp\n";
+    `./configure --prefix=$log4cpp_install_path`;
+    `make install`; 
+
+    print "Add log4cpp to ld.so.conf\n";
+    put_library_path_to_ld_so("/etc/ld.so.conf.d/log4cpp.conf", "$log4cpp_install_path/lib");
 }
 
 sub install_hiredis {
