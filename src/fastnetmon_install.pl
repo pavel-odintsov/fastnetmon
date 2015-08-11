@@ -33,6 +33,7 @@ GetOptions('do-not-track-me' => \$do_not_track_me);
 my $we_have_ndpi_support = '';
 my $we_have_luajit_support = '';
 my $we_have_hiredis_support = '';
+my $we_have_log4cpp_support = '';
 
 # Actually, we haven't PF_RING on some platforms
 my $we_have_pfring_support = 1;
