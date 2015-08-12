@@ -34,6 +34,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
 set(HIREDIS_CUSTOM_INSTALL_PATH "/opt/libhiredis_0_13")
 set(LOG4CPP_CUSTOM_INSTALL_PATH "/opt/log4cpp1.1.1")
+set(JSONC_CUSTOM_INSTALL_PATH "/opt/json-c-0.12")
 
 set(FASTNETMON_PROFILER OFF)
 
@@ -148,7 +149,6 @@ if (ENABLE_LUA_SUPPORT)
     target_link_libraries(netflow_plugin luajit-5.1)
     target_link_libraries(sflow_plugin luajit-5.1)
     target_link_libraries(fast_library luajit-5.1)
-    
 endif()
 
 # pcap plugin
@@ -192,6 +192,7 @@ if(Boost_FOUND)
     target_link_libraries(fast_library ${Boost_LIBRARIES})
 endif()
 
+target_link_libraries(fast_library ${JSONC_LIBRARY_PATH})
 target_link_libraries(fast_library patricia)
 target_link_libraries(fast_library fastnetmon_pcap_format)
 
@@ -221,6 +222,8 @@ else()
     message(STATUS "We can't find hiredis library and will disable Redis support")
 endif()
 
+### Look for log4cpp
+
 # Try to find log4cpp includes path
 find_path(LOG4CPP_INCLUDES_FOLDER NAMES log4cpp/Appender.hh PATHS "${LOG4CPP_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
 
@@ -232,6 +235,18 @@ if (LOG4CPP_INCLUDES_FOLDER AND LOG4CPP_LIBRARY_PATH)
     message(STATUS "We have found log4cpp and will build project")
 else()
     message(STATUS "We can't find log4cpp. We can't build project")
+endif()
+
+### Look for jsonc
+
+find_path(JSONC_INCLUDES_FOLDER NAMES json-c/json.h PATHS "${JSONC_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
+find_library(JSONC_LIBRARY_PATH NAMES json-c PATHS "${JSONC_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+
+if (JSONC_INCLUDES_FOLDER AND JSONC_LIBRARY_PATH)
+    include_directories(${JSONC_INCLUDES_FOLDER}) 
+    message(STATUS "We have found json-c library correctly: ${JSONC_LIBRARY_PATH}")
+else()
+    message(STATUS "We can't find json-c library! Can't build project")
 endif()
 
 if (ENABLE_DPI_SUPPORT)
