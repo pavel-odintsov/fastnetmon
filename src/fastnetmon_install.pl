@@ -77,6 +77,10 @@ sub main {
         install_log4cpp();
     }
 
+    if ($we_use_code_from_master) {
+        install_json_c();
+    }
+
     install_fastnetmon();
 
     send_tracking_information('finished');
@@ -156,6 +160,32 @@ sub install_lua_lpeg {
     `sed -i 's#LUADIR = ../lua/#LUADIR = /opt/luajit_2.0.4/include/luajit-2.0#' makefile`;
     `make`;
     `cp lpeg.so /opt/luajit_2.0.4/lib/lua/5.1`;
+}
+
+sub install_json_c {
+    my $archive_name  = 'json-c-0.12-20140410.tar.gz';
+    my $install_path = '/opt/json-c-0.12';
+
+    print "Install json library\n";
+
+    chdir "/usr/src";
+
+    print "Download archive\n";
+    `wget https://github.com/json-c/json-c/archive/$archive_name -O$archive_name`;
+ 
+    print "Uncompress it\n";       
+    `tar -xf $archive_name`;
+    chdir "json-c-json-c-0.12-20140410";
+
+    # Fix bugs (assigned but not used variable) which prevent code compilation 
+    `sed -i '355 s#^#//#' json_tokener.c`;
+    `sed -i '360 s#^#//#' json_tokener.c`;
+
+    print "Build it\n";
+    `./configure --prefix=$install_path`;
+
+    print "Install it\n";
+    `make install`;
 }
 
 sub install_lua_json {
