@@ -352,6 +352,7 @@ void init_current_instance_of_ndpi();
 void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_string);
 #endif
 
+std::string get_attack_description_in_json(uint32_t client_ip, attack_details& current_attack);
 logging_configuration_t read_logging_settings(configuration_map_t configuration_map);
 std::string get_amplification_attack_type(amplification_attack_type_t attack_type);
 std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type, std::string destination_ip);
@@ -2808,6 +2809,10 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
     bool store_attack_details_to_file = true;
     
     std::string basic_attack_information = get_attack_description(client_ip, current_attack);
+    
+    // TODO
+    //std::string basic_attack_information_in_json = get_attack_description_in_json(client_ip, current_attack);
+
     std::string full_attack_description = basic_attack_information + flow_attack_details;
 
     if (store_attack_details_to_file) {
@@ -3066,24 +3071,6 @@ std::string print_ddos_attack_details() {
     return output_buffer.str();
 }
 
-std::string serialize_network_load_to_text(map_element& network_speed_meter, bool average) {
-    std::stringstream buffer;
-
-    std::string prefix = "Network";
-
-    if (average) {
-        prefix = "Average network";
-    }
-
-    buffer 
-        << prefix << " incoming traffic: "<< convert_speed_to_mbps(network_speed_meter.in_bytes) << " mbps\n"
-        << prefix << " outgoing traffic: "<< convert_speed_to_mbps(network_speed_meter.out_bytes) << " mbps\n"
-        << prefix << " incoming pps: "<< network_speed_meter.in_packets << " packets per second\n"
-        << prefix << " outgoing pps: "<< network_speed_meter.out_packets << " packets per second\n"; 
-
-    return buffer.str();
-}
-
 std::string get_attack_description(uint32_t client_ip, attack_details& current_attack) {
     std::stringstream attack_description;
 
@@ -3102,27 +3089,31 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
         attack_description << serialize_network_load_to_text(average_network_speed_meter, true);
     }
 
-    double average_packet_size_for_incoming_traffic = 0;
-    double average_packet_size_for_outgoing_traffic = 0;
+    attack_description << serialize_statistic_counters_about_attack(current_attack);
+}
 
-    if (current_attack.average_in_packets > 0) {
-        average_packet_size_for_incoming_traffic =
-        (double)current_attack.average_in_bytes / (double)current_attack.average_in_packets;
+std::string get_attack_description_in_json(uint32_t client_ip, attack_details& current_attack) {
+    json_object* jobj = json_object_new_object();
+
+    json_object_object_add(jobj, "IP", json_object_new_string(convert_ip_as_uint_to_string(client_ip).c_str()));
+    json_object_object_add(jobj, "Attack details", serialize_attack_description_to_json(current_attack) ); 
+
+    if (enable_subnet_counters) {
+        map_element network_speed_meter = PerSubnetSpeedMap[ current_attack.customer_network ];
+        map_element average_network_speed_meter = PerSubnetAverageSpeedMap[ current_attack.customer_network ];
+
+        json_object_object_add(jobj, "Network load", serialize_network_load_to_json(network_speed_meter));
+        json_object_object_add(jobj, "Network average load", serialize_network_load_to_json(average_network_speed_meter));
     }
 
-    if (current_attack.average_out_packets > 0) {
-        average_packet_size_for_outgoing_traffic =
-        (double)current_attack.average_out_bytes / (double)current_attack.average_out_packets;
-    }
+    // So we haven't statistic_counters here but from my point of view they are useless
 
-    // We do not need very accurate size
-    attack_description.precision(1);
-    attack_description << "Average packet size for incoming traffic: " << std::fixed
-                       << average_packet_size_for_incoming_traffic << " bytes \n"
-                       << "Average packet size for outgoing traffic: " << std::fixed
-                       << average_packet_size_for_outgoing_traffic << " bytes \n";
+    std::string json_as_text = json_object_to_json_string(jobj);
 
-    return attack_description.str();
+    // Free memory
+    json_object_put(jobj);
+
+    return json_as_text;
 }
 
 std::string generate_simple_packets_dump(std::vector<simple_packet>& ban_list_details) {
