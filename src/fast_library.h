@@ -113,4 +113,8 @@ lua_State* init_lua_jit(std::string lua_hooks_path);
 bool call_lua_function(std::string function_name, lua_State* lua_state_param, std::string client_addres_in_string_format, void* ptr);
 #endif
 
+std::string serialize_attack_description(attack_details& current_attack);
+attack_type_t detect_attack_type(attack_details& current_attack);
+std::string get_printable_attack_name(attack_type_t attack);
+
 #endif

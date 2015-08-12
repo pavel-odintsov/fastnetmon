@@ -1012,6 +1012,111 @@ uint64_t get_tsc_freq_with_sleep() {
     return read_tsc_cpu_register() - start;
 }
 
+std::string serialize_attack_description(attack_details& current_attack) {
+    std::stringstream attack_description;
 
+    attack_type_t attack_type = detect_attack_type(current_attack);
+    std::string printable_attack_type = get_printable_attack_name(attack_type);
+
+    attack_description
+    << "Attack type: " << printable_attack_type << "\n"
+    << "Initial attack power: " << current_attack.attack_power << " packets per second\n"
+    << "Peak attack power: " << current_attack.max_attack_power << " packets per second\n"
+    << "Attack direction: " << get_direction_name(current_attack.attack_direction) << "\n"
+    << "Attack protocol: " << get_printable_protocol_name(current_attack.attack_protocol) << "\n";
+
+    attack_description
+    << "Total incoming traffic: " << convert_speed_to_mbps(current_attack.in_bytes) << " mbps\n"
+    << "Total outgoing traffic: " << convert_speed_to_mbps(current_attack.out_bytes) << " mbps\n"
+    << "Total incoming pps: " << current_attack.in_packets << " packets per second\n"
+    << "Total outgoing pps: " << current_attack.out_packets << " packets per second\n"
+    << "Total incoming flows: " << current_attack.in_flows << " flows per second\n"
+    << "Total outgoing flows: " << current_attack.out_flows << " flows per second\n";
+
+
+    // Add average counters
+    attack_description
+    << "Average incoming traffic: " << convert_speed_to_mbps(current_attack.average_in_bytes) << " mbps\n"
+    << "Average outgoing traffic: " << convert_speed_to_mbps(current_attack.average_out_bytes) << " mbps\n"
+    << "Average incoming pps: " << current_attack.average_in_packets << " packets per second\n"
+    << "Average outgoing pps: " << current_attack.average_out_packets << " packets per second\n"
+    << "Average incoming flows: " << current_attack.average_in_flows << " flows per second\n"
+    << "Average outgoing flows: " << current_attack.average_out_flows << " flows per second\n";
+
+    attack_description
+    << "Incoming ip fragmented traffic: " << convert_speed_to_mbps(current_attack.fragmented_in_bytes) << " mbps\n"
+    << "Outgoing ip fragmented traffic: " << convert_speed_to_mbps(current_attack.fragmented_out_bytes)
+    << " mbps\n"
+    << "Incoming ip fragmented pps: " << current_attack.fragmented_in_packets
+    << " packets per second\n"
+    << "Outgoing ip fragmented pps: " << current_attack.fragmented_out_packets
+    << " packets per second\n"
+
+    << "Incoming tcp traffic: " << convert_speed_to_mbps(current_attack.tcp_in_bytes) << " mbps\n"
+    << "Outgoing tcp traffic: " << convert_speed_to_mbps(current_attack.tcp_out_bytes) << " mbps\n"
+    << "Incoming tcp pps: " << current_attack.tcp_in_packets << " packets per second\n"
+    << "Outgoing tcp pps: " << current_attack.tcp_out_packets << " packets per second\n"
+    << "Incoming syn tcp traffic: " << convert_speed_to_mbps(current_attack.tcp_syn_in_bytes)
+    << " mbps\n"
+    << "Outgoing syn tcp traffic: " << convert_speed_to_mbps(current_attack.tcp_syn_out_bytes) << " mbps\n"
+    << "Incoming syn tcp pps: " << current_attack.tcp_syn_in_packets << " packets per second\n"
+    << "Outgoing syn tcp pps: " << current_attack.tcp_syn_out_packets << " packets per second\n"
+
+    << "Incoming udp traffic: " << convert_speed_to_mbps(current_attack.udp_in_bytes) << " mbps\n"
+    << "Outgoing udp traffic: " << convert_speed_to_mbps(current_attack.udp_out_bytes) << " mbps\n"
+    << "Incoming udp pps: " << current_attack.udp_in_packets << " packets per second\n"
+    << "Outgoing udp pps: " << current_attack.udp_out_packets << " packets per second\n"
+
+    << "Incoming icmp traffic: " << convert_speed_to_mbps(current_attack.icmp_in_bytes) << " mbps\n"
+    << "Outgoing icmp traffic: " << convert_speed_to_mbps(current_attack.icmp_out_bytes) << " mbps\n"
+    << "Incoming icmp pps: " << current_attack.icmp_in_packets << " packets per second\n"
+    << "Outgoing icmp pps: " << current_attack.icmp_out_packets << " packets per second\n";
+
+    return attack_description.str();
+}
+
+attack_type_t detect_attack_type(attack_details& current_attack) {
+    double threshold_value = 0.9; 
+
+    if (current_attack.attack_direction == INCOMING) {
+        if (current_attack.tcp_syn_in_packets > threshold_value * current_attack.in_packets) {
+            return ATTACK_SYN_FLOOD;
+        } else if (current_attack.icmp_in_packets > threshold_value * current_attack.in_packets) {
+            return ATTACK_ICMP_FLOOD;
+        } else if (current_attack.fragmented_in_packets > threshold_value * current_attack.in_packets) {
+            return ATTACK_IP_FRAGMENTATION_FLOOD;
+        } else if (current_attack.udp_in_packets > threshold_value * current_attack.in_packets) {
+            return ATTACK_UDP_FLOOD;
+        }    
+    } else if (current_attack.attack_direction == OUTGOING) {
+        if (current_attack.tcp_syn_out_packets > threshold_value * current_attack.out_packets) {
+            return ATTACK_SYN_FLOOD;
+        } else if (current_attack.icmp_out_packets > threshold_value * current_attack.out_packets) {
+            return ATTACK_ICMP_FLOOD;
+        } else if (current_attack.fragmented_out_packets > threshold_value * current_attack.out_packets) {
+            return ATTACK_IP_FRAGMENTATION_FLOOD;
+        } else if (current_attack.udp_out_packets > threshold_value * current_attack.out_packets) {
+            return ATTACK_UDP_FLOOD;
+        }    
+    }    
+
+    return ATTACK_UNKNOWN;
+}
+
+std::string get_printable_attack_name(attack_type_t attack) {
+    if (attack == ATTACK_SYN_FLOOD) {
+        return "syn_flood";
+    } else if (attack == ATTACK_ICMP_FLOOD) {
+        return "icmp_flood";
+    } else if (attack == ATTACK_UDP_FLOOD) {
+        return "udp_flood";
+    } else if (attack == ATTACK_IP_FRAGMENTATION_FLOOD) {
+        return "ip_fragmentation";
+    } else if (attack == ATTACK_UNKNOWN) {
+        return "unknown";
+    } else {
+        return "unknown";
+    }    
+}
 
 #endif
