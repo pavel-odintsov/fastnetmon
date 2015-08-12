@@ -15,15 +15,22 @@ project(FastNetMon)
 # Enable it and fix all warnigns!
 # add_definitions ("-Wall")
 
-set (Tutorial_VERSION_MAJOR 1)
-set (Tutorial_VERSION_MINOR 1)
+set (FASTNETMON_VERSION_MAJOR 1)
+set (FASTNETMON_VERSION_MINOR 1)
+
+# cmake -DENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT=ON .. 
+if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
+    set(BOOST_INCLUDEDIR "/opt/boost_1_58_0")
+    set(BOOST_LIBRARYDIR "/opt/boost_1_58_0/stage/lib/")
+
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11")
+    # Disable warning from Boost when compiling with gcc 5.2
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
+endif()
 
 # It's pretty safe and provide big speedup for our packet processor and patricia code
 set(CMAKE_C_FLAGS_RELEASE "-O2")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
-
-# If you want C++ 11 support, please uncomment it
-# set(CMAKE_CXX_FLAGS_RELEASE "-std=c++11")
 
 set(HIREDIS_CUSTOM_INSTALL_PATH "/opt/libhiredis_0_13")
 set(LOG4CPP_CUSTOM_INSTALL_PATH "/opt/log4cpp1.1.1")
