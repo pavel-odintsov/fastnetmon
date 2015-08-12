@@ -17,6 +17,8 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/regex.hpp>
 
+#include <json-c/json.h>
+
 // Boost libs
 #include <boost/algorithm/string.hpp>
 
@@ -116,5 +118,9 @@ bool call_lua_function(std::string function_name, lua_State* lua_state_param, st
 std::string serialize_attack_description(attack_details& current_attack);
 attack_type_t detect_attack_type(attack_details& current_attack);
 std::string get_printable_attack_name(attack_type_t attack);
+std::string serialize_network_load_to_text(map_element& network_speed_meter, bool average);
+json_object* serialize_attack_description_to_json(attack_details& current_attack);
+json_object* serialize_network_load_to_json(map_element& network_speed_meter);
+std::string serialize_statistic_counters_about_attack(attack_details& current_attack);
 
 #endif
