@@ -196,9 +196,6 @@ if(Boost_FOUND)
     target_link_libraries(fast_library ${Boost_LIBRARIES})
 endif()
 
-target_link_libraries(fastnetmon ${JSONC_LIBRARY_PATH})
-
-target_link_libraries(fast_library ${JSONC_LIBRARY_PATH})
 target_link_libraries(fast_library patricia)
 target_link_libraries(fast_library fastnetmon_pcap_format)
 
@@ -254,6 +251,8 @@ if (JSONC_INCLUDES_FOLDER AND JSONC_LIBRARY_PATH)
 else()
     message(STATUS "We can't find json-c library! Can't build project")
 endif()
+
+target_link_libraries(fast_library ${JSONC_LIBRARY_PATH})
 
 if (ENABLE_DPI_SUPPORT)
     target_link_libraries(fastnetmon fast_dpi)
