@@ -719,17 +719,8 @@ sub install_fastnetmon {
 
     my $cmake_params = "";
 
-    # So, we have this option in master branch ;)
-    if ($we_use_code_from_master) {
-        $cmake_params .= " -DENABLE_DPI_SUPPORT=ON";
-    }
-
     unless ($we_have_pfring_support) {
         $cmake_params .= " -DDISABLE_PF_RING_SUPPORT=ON";
-    }
-
-    if ($we_have_luajit_support) {
-        $cmake_params .= " -DENABLE_LUA_SUPPORT=ON";
     }
 
     if ($distro_type eq 'centos' && $distro_version == 6) {
