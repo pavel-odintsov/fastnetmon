@@ -108,17 +108,43 @@ sub get_sha1_sum {
     return $sha1;
 }
 
+sub download_file {
+    my ($url, $path, $expected_sha1_checksumm) = @_;
+
+    `wget --quiet $url -O$path`;
+
+    if ($? != 0) {
+        print "We can't download archive $url correctly\n";
+        return '';
+    }
+
+    if ($expected_sha1_checksumm) {
+        if (get_sha1_sum($path) eq $expected_sha1_checksumm) {
+            return 1;
+        } else {
+            print "Downloaded archive has incorrect sha1\n";
+            return '';
+        }      
+    } else {
+        return 1;
+    }     
+}
+
 sub install_luajit {
     chdir "/usr/src";
 
     my $archive_file_name = "LuaJIT-2.0.4.tar.gz";
 
     print "Download Luajit\n";
-    `wget --quiet http://luajit.org/download/$archive_file_name -O$archive_file_name`;
+   
+    my $luajit_download_result = download_file(
+        "http://luajit.org/download/$archive_file_name",
+        $archive_file_name,
+        '6e533675180300e85d12c4bbeea2d0e41ad21172'
+    ); 
 
-    unless (get_sha1_sum($archive_file_name) eq '6e533675180300e85d12c4bbeea2d0e41ad21172') {
-        print "Downloaded archive has incorrect sha1\n";
-        return;
+    unless ($luajit_download_result) {
+        die "Can't download luajit\n";
     }
 
     print "Unpack Luajit\n";
@@ -145,12 +171,13 @@ sub install_lua_lpeg {
     chdir "/usr/src";
 
     my $archive_file_name = 'lpeg-0.12.2.tar.gz';
-    `wget --quiet http://www.inf.puc-rio.br/~roberto/lpeg/$archive_file_name -O$archive_file_name`;
 
-    unless (get_sha1_sum($archive_file_name) eq '69eda40623cb479b4a30fb3720302d3a75f45577') {
-        print "Downloaded archive has incorrect sha1\n";
-        return;
-    }  
+    my $lpeg_download_result = download_file("http://www.inf.puc-rio.br/~roberto/lpeg/$archive_file_name",
+        $archive_file_name, '69eda40623cb479b4a30fb3720302d3a75f45577'); 
+
+    unless ($lpeg_download_result) {
+        die "Can't download lpeg\n";
+    }
 
     `tar -xf lpeg-0.12.2.tar.gz`;
     chdir "lpeg-0.12.2";
@@ -171,8 +198,15 @@ sub install_json_c {
     chdir "/usr/src";
 
     print "Download archive\n";
-    `wget https://github.com/json-c/json-c/archive/$archive_name -O$archive_name`;
- 
+    
+    my $json_c_download_result = download_file("https://github.com/json-c/json-c/archive/$archive_name",
+        $archive_name,
+        'b33872f8b2837c7909e9bd8734855669c57a67ce');
+
+    unless ($json_c_download_result) {
+        die "Can't download json-c sources\n";
+    }
+    
     print "Uncompress it\n";       
     `tar -xf $archive_name`;
     chdir "json-c-json-c-0.12-20140410";
@@ -198,12 +232,13 @@ sub install_lua_json {
     print "Download archive\n";
 
     my $archive_file_name = '1.3.3.tar.gz';
-    `wget --quiet https://github.com/harningt/luajson/archive/$archive_file_name -O$archive_file_name`;
 
-    unless (get_sha1_sum($archive_file_name) eq '53455f697c3f1d7cc955202062e97bbafbea0779') {
-        print "Downloaded archive has incorrect sha1\n";
-        return;
-    }  
+    my $lua_json_download_result = download_file("https://github.com/harningt/luajson/archive/$archive_file_name", $archive_file_name,
+        '53455f697c3f1d7cc955202062e97bbafbea0779');
+
+    unless ($lua_json_download_result) {
+        die "Can't download lua json\n";
+    }
 
     `tar -xf $archive_file_name`;
 
@@ -284,7 +319,11 @@ sub install_log4cpp {
     chdir "/usr/src";
 
     print "Download log4cpp sources\n";
-    `wget '$log4cpp_url' -O$distro_file_name`;
+    my $log4cpp_download_result = download_file($log4cpp_url, $distro_file_name, '23aa5bd7d6f79992c92bad3e1c6d64a34f8fcf68');
+
+    unless ($log4cpp_download_result) {
+        die "Can't download log4cpp\n";
+    }
 
     print "Unpack log4cpp sources\n";
     `tar -xf $distro_file_name`;
@@ -305,7 +344,13 @@ sub install_hiredis {
     chdir "/usr/src";
 
     print "Download hiredis\n";
-    `wget https://github.com/redis/hiredis/archive/$disto_file_name -O$disto_file_name`;
+    my $hiredis_download_result = download_file("https://github.com/redis/hiredis/archive/$disto_file_name",
+        $disto_file_name, '737c4ed101096c5ec47fcaeba847664352d16204');
+
+    unless ($hiredis_download_result) {
+        die "Can't download hiredis\n";
+    }
+
     `tar -xf $disto_file_name`;
 
     print "Build hiredis\n";
@@ -527,15 +572,13 @@ sub install_pf_ring {
     my $we_could_install_kernel_modules = 1;
     if ($we_could_install_kernel_modules) {
         print "Download PF_RING $pf_ring_version sources\n";
+        my $pfring_download_result = download_file($pf_ring_url, $pf_ring_archive_path, '9fb8080defd1a079ad5f0097e8a8adb5bc264d00');  
 
-        `wget --quiet $pf_ring_url -O$pf_ring_archive_path`;
-   
+        unless ($pfring_download_result) {
+            die "Can't download PF_RING sources\n";
+        }
+ 
         my $archive_file_name = $pf_ring_archive_path;
-
-        unless (get_sha1_sum($archive_file_name) eq '9fb8080defd1a079ad5f0097e8a8adb5bc264d00') {
-            print "Downloaded archive has incorrect sha1\n";
-            return;
-        }  
 
         if ($? == 0) {
             print "Unpack PF_RING\n";
