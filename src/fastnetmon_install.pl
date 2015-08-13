@@ -365,9 +365,6 @@ sub install_hiredis {
 sub install_ndpi {
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
         `apt-get install -y --force-yes git autoconf libtool automake libpcap-dev`;
-
-        # We have libjson-c-dev only in Jessie and will try to install it
-        `apt-get install -y --force-yes libjson-c-dev`;
     } elsif ($distro_type eq 'centos') {
         # We have json-c-devel for CentOS 6 and 7 and will use it for nDPI build system
         `yum install -y git autoconf automake libtool libpcap-devel json-c-devel`;
