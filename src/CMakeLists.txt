@@ -196,6 +196,8 @@ if(Boost_FOUND)
     target_link_libraries(fast_library ${Boost_LIBRARIES})
 endif()
 
+target_link_libraries(fastnetmon ${JSONC_LIBRARY_PATH})
+
 target_link_libraries(fast_library ${JSONC_LIBRARY_PATH})
 target_link_libraries(fast_library patricia)
 target_link_libraries(fast_library fastnetmon_pcap_format)
