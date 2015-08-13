@@ -20,6 +20,10 @@ set (FASTNETMON_VERSION_MINOR 1)
 
 # cmake -DENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT=ON .. 
 if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
+    # We use custom compiler too
+    set(CMAKE_C_COMPILER "/opt/gcc520/bin/gcc")
+    set(CMAKE_CXX_COMPILER "/opt/gcc520/bin/g++")
+
     set(BOOST_INCLUDEDIR "/opt/boost_1_58_0")
     set(BOOST_LIBRARYDIR "/opt/boost_1_58_0/stage/lib/")
 

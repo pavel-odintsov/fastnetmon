@@ -186,6 +186,8 @@ sub install_json_c {
 
     print "Install it\n";
     `make install`;
+
+    put_library_path_to_ld_so("/etc/ld.so.conf.d/json-c.conf", "$install_path/lib");
 }
 
 sub install_lua_json {
