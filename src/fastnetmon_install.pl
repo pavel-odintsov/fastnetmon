@@ -60,6 +60,10 @@ sub main {
         install_pf_ring();
     }
 
+    if ($we_use_code_from_master) {
+        install_json_c();
+    }   
+
     if ($we_have_ndpi_support) {
         install_ndpi();
     }
@@ -75,10 +79,6 @@ sub main {
 
     if ($we_have_log4cpp_support) {
         install_log4cpp();
-    }
-
-    if ($we_use_code_from_master) {
-        install_json_c();
     }
 
     install_fastnetmon();
@@ -386,7 +386,9 @@ sub install_ndpi {
 
     print "Configure nDPI\n";
     `./autogen.sh`;
-    `./configure --prefix=/opt/ndpi`;
+
+    # We have specified direct path to json-c here because it required for example app compilation
+    `PKG_CONFIG_PATH=/opt/json-c-0.12/lib/pkgconfig ./configure --prefix=/opt/ndpi`;
 
    if ($? != 0) {
         print "Configure failed\n";
