@@ -3097,15 +3097,15 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
 std::string get_attack_description_in_json(uint32_t client_ip, attack_details& current_attack) {
     json_object* jobj = json_object_new_object();
 
-    json_object_object_add(jobj, "IP", json_object_new_string(convert_ip_as_uint_to_string(client_ip).c_str()));
-    json_object_object_add(jobj, "Attack details", serialize_attack_description_to_json(current_attack) ); 
+    json_object_object_add(jobj, "ip", json_object_new_string(convert_ip_as_uint_to_string(client_ip).c_str()));
+    json_object_object_add(jobj, "attack_details", serialize_attack_description_to_json(current_attack) ); 
 
     if (enable_subnet_counters) {
         map_element network_speed_meter = PerSubnetSpeedMap[ current_attack.customer_network ];
         map_element average_network_speed_meter = PerSubnetAverageSpeedMap[ current_attack.customer_network ];
 
-        json_object_object_add(jobj, "Network load", serialize_network_load_to_json(network_speed_meter));
-        json_object_object_add(jobj, "Network average load", serialize_network_load_to_json(average_network_speed_meter));
+        json_object_object_add(jobj, "network_load", serialize_network_load_to_json(network_speed_meter));
+        json_object_object_add(jobj, "network_average_load", serialize_network_load_to_json(average_network_speed_meter));
     }
 
     // So we haven't statistic_counters here but from my point of view they are useless
