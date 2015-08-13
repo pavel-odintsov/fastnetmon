@@ -27,9 +27,19 @@ if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
     set(BOOST_INCLUDEDIR "/opt/boost_1_58_0")
     set(BOOST_LIBRARYDIR "/opt/boost_1_58_0/stage/lib/")
 
+    # It's really nice part of this custom build process :)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11")
+
     # Disable warning from Boost when compiling with gcc 5.2
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
+ 
+    # Specify full RPATH for build tree
+    SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+
+    # Create builds in current folder with install RPATH
+    SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+
+    SET(CMAKE_INSTALL_RPATH "/opt/gcc520/lib64;/opt/boost_1_58_0/stage/lib;/opt/libhiredis_0_13/lib;/opt/log4cpp1.1.1/lib;/opt/luajit_2.0.4/lib;/opt/ndpi/lib;/opt/pf_ring/lib;/opt/json-c-0.12/lib")
 endif()
 
 # It's pretty safe and provide big speedup for our packet processor and patricia code
