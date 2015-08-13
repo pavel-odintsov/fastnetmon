@@ -1037,7 +1037,8 @@ bool load_configuration_file() {
     }
 
     if (configuration_map.count("redis_enabled") != 0) {
-        if (configuration_map["redis_enabled"] == "yes") {
+        // We use yes and on because it's stupid typo :(
+        if (configuration_map["redis_enabled"] == "on" or configuration_map["redis_enabled"] == "yes") {
             redis_enabled = true;
         } else {
             redis_enabled = false;
@@ -2810,8 +2811,7 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
     
     std::string basic_attack_information = get_attack_description(client_ip, current_attack);
     
-    // TODO
-    //std::string basic_attack_information_in_json = get_attack_description_in_json(client_ip, current_attack);
+    std::string basic_attack_information_in_json = get_attack_description_in_json(client_ip, current_attack);
 
     std::string full_attack_description = basic_attack_information + flow_attack_details;
 
@@ -2855,7 +2855,7 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
         std::string redis_key_name = client_ip_as_string + "_information";
 
         logger << log4cpp::Priority::INFO << "Start data save in redis in key: " << redis_key_name;
-        boost::thread redis_store_thread(store_data_in_redis, redis_key_name, basic_attack_information);
+        boost::thread redis_store_thread(store_data_in_redis, redis_key_name, basic_attack_information_in_json);
         redis_store_thread.detach();
         logger << log4cpp::Priority::INFO << "Finish data save in redis in key: " << redis_key_name;
     }
@@ -3090,6 +3090,8 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
     }
 
     attack_description << serialize_statistic_counters_about_attack(current_attack);
+    
+    return attack_description.str();
 }
 
 std::string get_attack_description_in_json(uint32_t client_ip, attack_details& current_attack) {
