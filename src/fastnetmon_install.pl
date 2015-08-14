@@ -11,6 +11,8 @@ my $pf_ring_url = "https://github.com/ntop/PF_RING/archive/v$pf_ring_version.tar
 my $fastnetmon_git_path = 'https://github.com/FastVPSEestiOu/fastnetmon.git';
 my $fastnetmon_code_dir = "/usr/src/fastnetmon/src";
 
+my $install_log_path = '/tmp/fastnetmon_install.log';
+
 # Official mirror: https://github.com/ntop/nDPI.git
 # But we have some patches for NTP and DNS protocols here
 my $ndpi_repository = 'https://github.com/pavel-odintsov/nDPI.git';
@@ -100,8 +102,13 @@ sub send_tracking_information {
 
 sub exec_command {
     my $command = shift;
-   
-    `$command`;
+
+    open my $fl, ">>", $install_log_path;
+    print {$fl} "We are calling command: $command\n\n";
+ 
+    my $output = `$command 2>&1 >> $install_log_path`;
+  
+    print {$fl} "Command finished with code $?\n\n";
 }
 
 sub get_sha1_sum {
