@@ -98,6 +98,12 @@ sub send_tracking_information {
     }
 }
 
+sub exec_command {
+    my $command = shift;
+   
+    `$command`;
+}
+
 sub get_sha1_sum {
     my $path = shift;
     my $output = `sha1sum $path`;
@@ -148,13 +154,13 @@ sub install_luajit {
     }
 
     print "Unpack Luajit\n";
-    `tar -xf LuaJIT-2.0.4.tar.gz`;
+    exec_command("tar -xf LuaJIT-2.0.4.tar.gz");
     chdir "LuaJIT-2.0.4";
 
-    `sed -i 's#export PREFIX= /usr/local#export PREFIX= /opt/luajit_2.0.4#' Makefile`; 
+    exec_command("sed -i 's#export PREFIX= /usr/local#export PREFIX= /opt/luajit_2.0.4#' Makefile"); 
 
     print "Build and install Luajit\n";
-    `make install`;
+    exec_command("make install");
 
     put_library_path_to_ld_so("/etc/ld.so.conf.d/luajit.conf", "/opt/luajit_2.0.4/lib");
 }
@@ -179,14 +185,14 @@ sub install_lua_lpeg {
         die "Can't download lpeg\n";
     }
 
-    `tar -xf lpeg-0.12.2.tar.gz`;
+    exec_command("tar -xf lpeg-0.12.2.tar.gz");
     chdir "lpeg-0.12.2";
 
     # Set path
     print "Install lpeg library\n";
-    `sed -i 's#LUADIR = ../lua/#LUADIR = /opt/luajit_2.0.4/include/luajit-2.0#' makefile`;
-    `make`;
-    `cp lpeg.so /opt/luajit_2.0.4/lib/lua/5.1`;
+    exec_command("sed -i 's#LUADIR = ../lua/#LUADIR = /opt/luajit_2.0.4/include/luajit-2.0#' makefile");
+    exec_command("make");
+    exec_command("cp lpeg.so /opt/luajit_2.0.4/lib/lua/5.1");
 }
 
 sub install_json_c {
@@ -208,18 +214,18 @@ sub install_json_c {
     }
     
     print "Uncompress it\n";       
-    `tar -xf $archive_name`;
+    exec_command("tar -xf $archive_name");
     chdir "json-c-json-c-0.12-20140410";
 
     # Fix bugs (assigned but not used variable) which prevent code compilation 
-    `sed -i '355 s#^#//#' json_tokener.c`;
-    `sed -i '360 s#^#//#' json_tokener.c`;
+    exec_command("sed -i '355 s#^#//#' json_tokener.c");
+    exec_command("sed -i '360 s#^#//#' json_tokener.c");
 
     print "Build it\n";
-    `./configure --prefix=$install_path`;
+    exec_command("./configure --prefix=$install_path");
 
     print "Install it\n";
-    `make install`;
+    exec_command("make install");
 
     put_library_path_to_ld_so("/etc/ld.so.conf.d/json-c.conf", "$install_path/lib");
 }
@@ -240,21 +246,21 @@ sub install_lua_json {
         die "Can't download lua json\n";
     }
 
-    `tar -xf $archive_file_name`;
+    exec_command("tar -xf $archive_file_name");
 
     chdir "luajson-1.3.3";
 
     print "Install it\n";
-    `PREFIX=/opt/luajit_2.0.4 make install`;
+    exec_command("PREFIX=/opt/luajit_2.0.4 make install");
 }
 
 sub install_init_scripts {
     # Init file for any systemd aware distro
     if ( ($distro_type eq 'debian' && $distro_version > 7) or ($distro_type eq 'centos' && $distro_version >= 7) ) {
         my $systemd_service_path = "/etc/systemd/system/fastnetmon.service";
-        `cp $fastnetmon_code_dir/fastnetmon.service $systemd_service_path`;
+        exec_command("cp $fastnetmon_code_dir/fastnetmon.service $systemd_service_path");
 
-        `sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $systemd_service_path`;
+        exec_command("sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $systemd_service_path");
 
         print "We found systemd enabled distro and created service: fastnetmon.service\n";
         print "You could run it with command: systemctl start fastnetmon.service\n";
@@ -265,9 +271,9 @@ sub install_init_scripts {
     # Init file for CentOS 6
     if ($distro_type eq 'centos' && $distro_version == 6) {
         my $system_init_path = '/etc/init.d/fastnetmon';
-        `cp $fastnetmon_code_dir/fastnetmon_init_script_centos6 $system_init_path`;
+        exec_command("cp $fastnetmon_code_dir/fastnetmon_init_script_centos6 $system_init_path");
 
-        `sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $system_init_path`;
+        exec_command("sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $system_init_path");
 
         print "We created service fastnetmon for you\n";
         print "You could run it with command: /etc/init.d/fastnetmon start\n";
@@ -282,7 +288,7 @@ sub install_init_scripts {
 
         # Checker for source code version, will work only for 1.1.3+ versions
         if (-e $init_path_in_src) {
-            `cp $init_path_in_src $system_init_path`;
+            exec_command("cp $init_path_in_src $system_init_path");
 
             print "We created service fastnetmon for you\n";
             print "You could run it with command: /etc/init.d/fastnetmon start\n";
@@ -299,9 +305,9 @@ sub install_init_scripts {
 
         # Checker for source code version, will work only for 1.1.3+ versions
         if (-e $init_path_in_src) {
-           `cp $init_path_in_src $system_init_path`;
+           exec_command("cp $init_path_in_src $system_init_path");
 
-            `sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $system_init_path`;
+            exec_command("sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $system_init_path");
 
             print "We created service fastnetmon for you\n";
             print "You could run it with command: /etc/init.d/fastnetmon start\n";
@@ -326,12 +332,12 @@ sub install_log4cpp {
     }
 
     print "Unpack log4cpp sources\n";
-    `tar -xf $distro_file_name`;
+    exec_command("tar -xf $distro_file_name");
     chdir "/usr/src/log4cpp";
 
     print "Build log4cpp\n";
-    `./configure --prefix=$log4cpp_install_path`;
-    `make install`; 
+    exec_command("./configure --prefix=$log4cpp_install_path");
+    exec_command("make install"); 
 
     print "Add log4cpp to ld.so.conf\n";
     put_library_path_to_ld_so("/etc/ld.so.conf.d/log4cpp.conf", "$log4cpp_install_path/lib");
@@ -351,11 +357,11 @@ sub install_hiredis {
         die "Can't download hiredis\n";
     }
 
-    `tar -xf $disto_file_name`;
+    exec_command("tar -xf $disto_file_name");
 
     print "Build hiredis\n";
     chdir "hiredis-0.13.1";
-    `PREFIX=$hiredis_install_path make install`;
+    exec_command("PREFIX=$hiredis_install_path make install");
 
     print "Add hiredis to ld.so.conf\n";
     put_library_path_to_ld_so("/etc/ld.so.conf.d/hiredis.conf", "$hiredis_install_path/lib"); 
@@ -364,28 +370,28 @@ sub install_hiredis {
 # We use global variable $ndpi_repository here
 sub install_ndpi {
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
-        `apt-get install -y --force-yes git autoconf libtool automake libpcap-dev`;
+        exec_command("apt-get install -y --force-yes git autoconf libtool automake libpcap-dev");
     } elsif ($distro_type eq 'centos') {
         # We have json-c-devel for CentOS 6 and 7 and will use it for nDPI build system
-        `yum install -y git autoconf automake libtool libpcap-devel json-c-devel`;
+        exec_command("yum install -y git autoconf automake libtool libpcap-devel json-c-devel");
     }   
 
     print "Download nDPI\n";
     if (-e "/usr/src/nDPI") {
         # Get new code from the repository
         chdir "/usr/src/nDPI";
-        `git pull`;
+        exec_command("git pull");
     } else {
         chdir "/usr/src";
-        `git clone $ndpi_repository`;
+        exec_command("git clone $ndpi_repository");
         chdir "/usr/src/nDPI";
     }   
 
     print "Configure nDPI\n";
-    `./autogen.sh`;
+    exec_command("./autogen.sh");
 
     # We have specified direct path to json-c here because it required for example app compilation
-    `PKG_CONFIG_PATH=/opt/json-c-0.12/lib/pkgconfig ./configure --prefix=/opt/ndpi`;
+    exec_command("PKG_CONFIG_PATH=/opt/json-c-0.12/lib/pkgconfig ./configure --prefix=/opt/ndpi");
 
    if ($? != 0) {
         print "Configure failed\n";
@@ -393,7 +399,7 @@ sub install_ndpi {
     }
 
     print "Build and install nDPI\n";
-    `make install`;
+    exec_command("make install");
 
     print "Add ndpi to ld.so.conf\n";
     put_library_path_to_ld_so("/etc/ld.so.conf.d/ndpi.conf", "/opt/ndpi/lib"); 
@@ -403,7 +409,7 @@ sub init_package_manager {
 
     print "Update package manager cache\n";
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
-        `apt-get update`;
+        exec_command("apt-get update");
     }
 }
 
@@ -414,7 +420,7 @@ sub put_library_path_to_ld_so {
     print {$ld_so_conf_handle} $library_path;
     close $ld_so_conf_handle;
 
-    `ldconfig`;
+    exec_command("ldconfig");
 }
 
 sub read_file {
@@ -528,7 +534,7 @@ sub install_pf_ring {
         # We install one package per apt-get call because installing multiple packages in one time could fail of one
         # pacakge broken
         for my $package (@debian_packages_for_pfring) {
-            `apt-get install -y --force-yes $package`;
+            exec_command("apt-get install -y --force-yes $package");
 
             if ($? != 0) {
                 print "Package '$package' install failed with code $?\n"
@@ -543,10 +549,10 @@ sub install_pf_ring {
             chomp $server_architecture;
 
             if ($server_architecture eq 'x86_64') {  
-                `ln -s /usr/src/linux-image/debian/build/build-amd64-none-amd64-vyos/ /lib/modules/$kernel_version/build`;
+                exec_command("ln -s /usr/src/linux-image/debian/build/build-amd64-none-amd64-vyos/ /lib/modules/$kernel_version/build");
             } else {
                 # i686
-                `ln -s /usr/src/linux-image/debian/build/build-i386-none-586-vyos/ /lib/modules/$kernel_version/build`;
+                exec_command("ln -s /usr/src/linux-image/debian/build/build-i386-none-586-vyos/ /lib/modules/$kernel_version/build");
             }
         }
     } elsif ($distro_type eq 'centos') {
@@ -557,12 +563,12 @@ sub install_pf_ring {
             $kernel_package_name = "vzkernel-devel-$kernel_version";
         }
 
-        `yum install -y make bison flex $kernel_package_name gcc gcc-c++ dkms numactl-devel subversion`;
+        exec_command("yum install -y make bison flex $kernel_package_name gcc gcc-c++ dkms numactl-devel subversion");
     } elsif ($distro_type eq 'gentoo') {
         my @gentoo_packages_for_pfring = ('subversion', 'sys-process/numactl', 'wget', 'tar');
 
         my $gentoo_packages_for_pfring_as_string = join " ", @gentoo_packages_for_pfring;
-        `emerge -vu $gentoo_packages_for_pfring_as_string`;
+        exec_command("emerge -vu $gentoo_packages_for_pfring_as_string");
 
         if ($? != 0) {
             print "Emerge fail with code $?\n";
@@ -584,18 +590,18 @@ sub install_pf_ring {
         if ($? == 0) {
             print "Unpack PF_RING\n";
             mkdir $pf_ring_sources_path;
-            `tar -xf $pf_ring_archive_path -C /usr/src`;
+            exec_command("tar -xf $pf_ring_archive_path -C /usr/src");
 
             print "Build PF_RING kernel module\n";
-            `make -C $pf_ring_sources_path/kernel clean`;
-            `make -C $pf_ring_sources_path/kernel`;
-            `make -C $pf_ring_sources_path/kernel install`;
+            exec_command("make -C $pf_ring_sources_path/kernel clean");
+            exec_command("make -C $pf_ring_sources_path/kernel");
+            exec_command("make -C $pf_ring_sources_path/kernel install");
 
             print "Unload PF_RING if it was installed earlier\n";
-            `rmmod pf_ring 2>/dev/null`;
+            exec_command("rmmod pf_ring 2>/dev/null");
 
             print "Load PF_RING module into kernel\n";
-            `modprobe pf_ring`;
+            exec_command("modprobe pf_ring");
 
             my @dmesg = `dmesg`;
             chomp @dmesg;
@@ -607,7 +613,7 @@ sub install_pf_ring {
                 warn "PF_RING load error! Please fix this issue manually\n";
 
                 # We need this headers for building userspace libs
-                `cp $pf_ring_sources_path/kernel/linux/pf_ring.h /usr/include/linux`;
+                exec_command("cp $pf_ring_sources_path/kernel/linux/pf_ring.h /usr/include/linux");
             }
         } else {
             warn "Can't download PF_RING source code. Disable support of PF_RING\n";
@@ -617,13 +623,13 @@ sub install_pf_ring {
     print "Build PF_RING lib\n";
     # Because we can't run configure from another folder because it can't find ZC dependency :(
     chdir "$pf_ring_sources_path/userland/lib";
-    `./configure --prefix=/opt/pf_ring_$pf_ring_version`;
-    `make`;
-    `make install`; 
+    exec_command("./configure --prefix=/opt/pf_ring_$pf_ring_version");
+    exec_command("make");
+    exec_command("make install"); 
 
     print "Create library symlink\n";
     unlink "/opt/pf_ring";
-    `ln -s /opt/pf_ring_$pf_ring_version /opt/pf_ring`;
+    exec_command("ln -s /opt/pf_ring_$pf_ring_version /opt/pf_ring");
 
     print "Add pf_ring to ld.so.conf\n";
     put_library_path_to_ld_so("/etc/ld.so.conf.d/pf_ring.conf", "/opt/pf_ring/lib");
@@ -647,7 +653,7 @@ sub install_fastnetmon {
         # We install one package per apt-get call because installing multiple packages in one time could fail of one
         # package is broken
         for my $package (@fastnetmon_deps) {
-            `apt-get install -y --force-yes $package`;
+            exec_command("apt-get install -y --force-yes $package");
 
             if ($? != 0) {
                 print "Package '$package' install failed with code $?\n"
@@ -660,11 +666,11 @@ sub install_fastnetmon {
         );
 
         my $fastnetmon_deps_as_string = join " ", @fastnetmon_deps;
-        `yum install -y $fastnetmon_deps_as_string`;
+        exec_command("yum install -y $fastnetmon_deps_as_string");
 
         if ($distro_version == 7) {
             print "Your distro haven't log4cpp in stable EPEL packages and we install log4cpp from testing of EPEL\n";
-            `yum install -y https://kojipkgs.fedoraproject.org//packages/log4cpp/1.1.1/1.el7/x86_64/log4cpp-devel-1.1.1-1.el7.x86_64.rpm https://kojipkgs.fedoraproject.org//packages/log4cpp/1.1.1/1.el7/x86_64/log4cpp-1.1.1-1.el7.x86_64.rpm`;
+            exec_command("yum install -y https://kojipkgs.fedoraproject.org//packages/log4cpp/1.1.1/1.el7/x86_64/log4cpp-devel-1.1.1-1.el7.x86_64.rpm https://kojipkgs.fedoraproject.org//packages/log4cpp/1.1.1/1.el7/x86_64/log4cpp-1.1.1-1.el7.x86_64.rpm");
         }
     } elsif ($distro_type eq 'gentoo') {
         my @fastnetmon_deps = ("dev-vcs/git", "gcc", "sys-libs/gpm", "sys-libs/ncurses", "dev-libs/log4cpp", "dev-libs/geoip", 
@@ -672,7 +678,7 @@ sub install_fastnetmon {
         );
 
         my $fastnetmon_deps_as_string = join " ", @fastnetmon_deps;
-        `emerge -vu $fastnetmon_deps_as_string`;
+        exec_command("emerge -vu $fastnetmon_deps_as_string");
 
         if ($? != 0) {
             print "Emerge fail with code $?\n";
@@ -688,17 +694,17 @@ sub install_fastnetmon {
 
         # Switch to master if we on stable branch
         if ($we_use_code_from_master) {
-            `git checkout master`;
+            exec_command("git checkout master");
             printf("\n");
         }
 
-        `git pull`;
+        exec_command("git pull");
     } else {
         # Pull new code
         if ($we_use_code_from_master) {
-            `git clone $fastnetmon_git_path --quiet 2>/dev/null`;
+            exec_command("git clone $fastnetmon_git_path --quiet 2>/dev/null");
         } else {
-            `git clone $fastnetmon_git_path --quiet 2>/dev/null`;
+            exec_command("git clone $fastnetmon_git_path --quiet 2>/dev/null");
         }
 
         if ($? != 0) {
@@ -712,10 +718,10 @@ sub install_fastnetmon {
         # We use this approach because older git versions do not support git clone -b ... correctly
         # warning: Remote branch v1.1.2 not found in upstream origin, using HEAD instead
         chdir "fastnetmon";
-        `git checkout $stable_branch_name`;
+        exec_command("git checkout $stable_branch_name");
     } 
 
-    `mkdir -p $fastnetmon_code_dir/build`;
+    exec_command("mkdir -p $fastnetmon_code_dir/build");
     chdir "$fastnetmon_code_dir/build";
 
     my $cmake_params = "";
@@ -730,8 +736,8 @@ sub install_fastnetmon {
         $cmake_params .= " -DBoost_NO_BOOST_CMAKE=BOOL:ON";
     }
 
-    `cmake .. $cmake_params`;
-    `make`;
+    exec_command("cmake .. $cmake_params");
+    exec_command("make");
 
     my $fastnetmon_dir = "/opt/fastnetmon";
     my $fastnetmon_build_binary_path = "$fastnetmon_code_dir/build/fastnetmon";
@@ -743,20 +749,20 @@ sub install_fastnetmon {
     mkdir $fastnetmon_dir;
 
     print "Install fastnetmon to dir $fastnetmon_dir\n";
-    `cp $fastnetmon_build_binary_path $fastnetmon_dir/fastnetmon`;
-    `cp $fastnetmon_code_dir/build/fastnetmon_client $fastnetmon_dir/fastnetmon_client`;
+    exec_command("cp $fastnetmon_build_binary_path $fastnetmon_dir/fastnetmon");
+    exec_command("cp $fastnetmon_code_dir/build/fastnetmon_client $fastnetmon_dir/fastnetmon_client");
 
     my $fastnetmon_config_path = "/etc/fastnetmon.conf";
     unless (-e $fastnetmon_config_path) {
         print "Create stub configuration file\n";
-        `cp $fastnetmon_code_dir/fastnetmon.conf $fastnetmon_config_path`;
+        exec_command("cp $fastnetmon_code_dir/fastnetmon.conf $fastnetmon_config_path");
     
         my @interfaces = get_active_network_interfaces();
         my $interfaces_as_list = join ',', @interfaces;
         print "Select $interfaces_as_list as active interfaces\n";
 
         print "Tune config\n";
-        `sed -i 's/interfaces.*/interfaces = $interfaces_as_list/' $fastnetmon_config_path`;
+        exec_command("sed -i 's/interfaces.*/interfaces = $interfaces_as_list/' $fastnetmon_config_path");
     }
 
     print "If you have any issues, please check /var/log/fastnetmon.log file contents\n";
