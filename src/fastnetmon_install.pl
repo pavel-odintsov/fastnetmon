@@ -400,6 +400,8 @@ sub install_ndpi {
 }
 
 sub init_package_manager { 
+
+    print "Update package manager cache\n";
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
         `apt-get update`;
     }
