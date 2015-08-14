@@ -28,6 +28,9 @@ my $appliance_name = '';
 # So, you could disable this option but without this feature we could not improve FastNetMon for your distribution
 my $do_not_track_me = '';
 
+# We could pass options to make with this variable
+my $make_options = '';
+
 # Get options from command line
 GetOptions('use-git-master' => \$we_use_code_from_master);
 GetOptions('do-not-track-me' => \$do_not_track_me);
@@ -167,7 +170,7 @@ sub install_luajit {
     exec_command("sed -i 's#export PREFIX= /usr/local#export PREFIX= /opt/luajit_2.0.4#' Makefile"); 
 
     print "Build and install Luajit\n";
-    exec_command("make install");
+    exec_command("make $make_options install");
 
     put_library_path_to_ld_so("/etc/ld.so.conf.d/luajit.conf", "/opt/luajit_2.0.4/lib");
 }
@@ -198,7 +201,7 @@ sub install_lua_lpeg {
     # Set path
     print "Install lpeg library\n";
     exec_command("sed -i 's#LUADIR = ../lua/#LUADIR = /opt/luajit_2.0.4/include/luajit-2.0#' makefile");
-    exec_command("make");
+    exec_command("make $make_options");
     exec_command("cp lpeg.so /opt/luajit_2.0.4/lib/lua/5.1");
 }
 
@@ -232,7 +235,7 @@ sub install_json_c {
     exec_command("./configure --prefix=$install_path");
 
     print "Install it\n";
-    exec_command("make install");
+    exec_command("make $make_options install");
 
     put_library_path_to_ld_so("/etc/ld.so.conf.d/json-c.conf", "$install_path/lib");
 }
@@ -258,7 +261,7 @@ sub install_lua_json {
     chdir "luajson-1.3.3";
 
     print "Install it\n";
-    exec_command("PREFIX=/opt/luajit_2.0.4 make install");
+    exec_command("PREFIX=/opt/luajit_2.0.4 make $make_options install");
 }
 
 sub install_init_scripts {
@@ -344,7 +347,7 @@ sub install_log4cpp {
 
     print "Build log4cpp\n";
     exec_command("./configure --prefix=$log4cpp_install_path");
-    exec_command("make install"); 
+    exec_command("make $make_options install"); 
 
     print "Add log4cpp to ld.so.conf\n";
     put_library_path_to_ld_so("/etc/ld.so.conf.d/log4cpp.conf", "$log4cpp_install_path/lib");
@@ -368,7 +371,7 @@ sub install_hiredis {
 
     print "Build hiredis\n";
     chdir "hiredis-0.13.1";
-    exec_command("PREFIX=$hiredis_install_path make install");
+    exec_command("PREFIX=$hiredis_install_path make $make_options install");
 
     print "Add hiredis to ld.so.conf\n";
     put_library_path_to_ld_so("/etc/ld.so.conf.d/hiredis.conf", "$hiredis_install_path/lib"); 
@@ -406,7 +409,7 @@ sub install_ndpi {
     }
 
     print "Build and install nDPI\n";
-    exec_command("make install");
+    exec_command("make $make_options install");
 
     print "Add ndpi to ld.so.conf\n";
     put_library_path_to_ld_so("/etc/ld.so.conf.d/ndpi.conf", "/opt/ndpi/lib"); 
@@ -600,9 +603,9 @@ sub install_pf_ring {
             exec_command("tar -xf $pf_ring_archive_path -C /usr/src");
 
             print "Build PF_RING kernel module\n";
-            exec_command("make -C $pf_ring_sources_path/kernel clean");
-            exec_command("make -C $pf_ring_sources_path/kernel");
-            exec_command("make -C $pf_ring_sources_path/kernel install");
+            exec_command("make $make_options -C $pf_ring_sources_path/kernel clean");
+            exec_command("make $make_options -C $pf_ring_sources_path/kernel");
+            exec_command("make $make_options -C $pf_ring_sources_path/kernel install");
 
             print "Unload PF_RING if it was installed earlier\n";
             exec_command("rmmod pf_ring 2>/dev/null");
@@ -631,8 +634,8 @@ sub install_pf_ring {
     # Because we can't run configure from another folder because it can't find ZC dependency :(
     chdir "$pf_ring_sources_path/userland/lib";
     exec_command("./configure --prefix=/opt/pf_ring_$pf_ring_version");
-    exec_command("make");
-    exec_command("make install"); 
+    exec_command("make $make_options");
+    exec_command("make $make_options install"); 
 
     print "Create library symlink\n";
     unlink "/opt/pf_ring";
@@ -744,7 +747,7 @@ sub install_fastnetmon {
     }
 
     exec_command("cmake .. $cmake_params");
-    exec_command("make");
+    exec_command("make $make_options");
 
     my $fastnetmon_dir = "/opt/fastnetmon";
     my $fastnetmon_build_binary_path = "$fastnetmon_code_dir/build/fastnetmon";
