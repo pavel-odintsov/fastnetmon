@@ -49,10 +49,10 @@ main();
 
 ### Functions start here
 sub main {
+    detect_distribution();
+
     # Refresh information about packages
     init_package_manager();
-
-    detect_distribution();
 
     send_tracking_information('started');
 
