@@ -825,6 +825,14 @@ bool load_configuration_file() {
         }
     }
 
+    if (configuration_map.count("unban_only_if_attack_finished") != 0) {
+        if (configuration_map["unban_only_if_attack_finished"] == "on") {
+            unban_only_if_attack_finished = true;
+        } else { 
+            unban_only_if_attack_finished = false;
+        }
+    }
+
     if(configuration_map.count("graphite_prefix") != 0) {
         graphite_prefix = configuration_map["graphite_prefix"];
     }
