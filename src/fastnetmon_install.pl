@@ -9,7 +9,12 @@ my $pf_ring_version = '6.0.3';
 my $pf_ring_url = "https://github.com/ntop/PF_RING/archive/v$pf_ring_version.tar.gz";
 
 my $fastnetmon_git_path = 'https://github.com/FastVPSEestiOu/fastnetmon.git';
-my $fastnetmon_code_dir = "/usr/src/fastnetmon/src";
+
+# TODO:
+# mktemp -d /tmp/fastnetmon.build.dir.XXXXXXXXXX
+my $temp_folder_for_building_project = '/usr/src';
+
+my $fastnetmon_code_dir = "$temp_folder_for_building_project/fastnetmon/src";
 
 my $install_log_path = '/tmp/fastnetmon_install.log';
 
@@ -147,7 +152,7 @@ sub download_file {
 }
 
 sub install_luajit {
-    chdir "/usr/src";
+    chdir $temp_folder_for_building_project;
 
     my $archive_file_name = "LuaJIT-2.0.4.tar.gz";
 
@@ -184,7 +189,7 @@ sub install_lua_lpeg {
     print "Install LUA lpeg module\n";
 
     print "Download archive\n";
-    chdir "/usr/src";
+    chdir $temp_folder_for_building_project;
 
     my $archive_file_name = 'lpeg-0.12.2.tar.gz';
 
@@ -211,7 +216,7 @@ sub install_json_c {
 
     print "Install json library\n";
 
-    chdir "/usr/src";
+    chdir $temp_folder_for_building_project;
 
     print "Download archive\n";
     
@@ -243,7 +248,7 @@ sub install_json_c {
 sub install_lua_json {
     print "Install LUA json module\n";
     
-    chdir "/usr/src";
+    chdir $temp_folder_for_building_project;
 
     print "Download archive\n";
 
@@ -332,7 +337,7 @@ sub install_log4cpp {
     my $log4cpp_url = 'https://sourceforge.net/projects/log4cpp/files/log4cpp-1.1.x%20%28new%29/log4cpp-1.1/log4cpp-1.1.1.tar.gz/download';
     my $log4cpp_install_path = '/opt/log4cpp1.1.1';
 
-    chdir "/usr/src";
+    chdir $temp_folder_for_building_project;
 
     print "Download log4cpp sources\n";
     my $log4cpp_download_result = download_file($log4cpp_url, $distro_file_name, '23aa5bd7d6f79992c92bad3e1c6d64a34f8fcf68');
@@ -343,7 +348,7 @@ sub install_log4cpp {
 
     print "Unpack log4cpp sources\n";
     exec_command("tar -xf $distro_file_name");
-    chdir "/usr/src/log4cpp";
+    chdir "$temp_folder_for_building_project/log4cpp";
 
     print "Build log4cpp\n";
     exec_command("./configure --prefix=$log4cpp_install_path");
@@ -357,7 +362,7 @@ sub install_hiredis {
     my $disto_file_name = 'v0.13.1.tar.gz'; 
     my $hiredis_install_path = '/opt/libhiredis_0_13';
 
-    chdir "/usr/src";
+    chdir $temp_folder_for_building_project;
 
     print "Download hiredis\n";
     my $hiredis_download_result = download_file("https://github.com/redis/hiredis/archive/$disto_file_name",
@@ -387,14 +392,14 @@ sub install_ndpi {
     }   
 
     print "Download nDPI\n";
-    if (-e "/usr/src/nDPI") {
+    if (-e "$temp_folder_for_building_project/nDPI") {
         # Get new code from the repository
-        chdir "/usr/src/nDPI";
+        chdir "$temp_folder_for_building_project/nDPI";
         exec_command("git pull");
     } else {
-        chdir "/usr/src";
+        chdir $temp_folder_for_building_project;
         exec_command("git clone $ndpi_repository");
-        chdir "/usr/src/nDPI";
+        chdir "$temp_folder_for_building_project/nDPI";
     }   
 
     print "Configure nDPI\n";
@@ -519,8 +524,8 @@ sub detect_distribution {
 }
 
 sub install_pf_ring {
-    my $pf_ring_archive_path = "/usr/src/PF_RING-$pf_ring_version.tar.gz";
-    my $pf_ring_sources_path = "/usr/src/PF_RING-$pf_ring_version";
+    my $pf_ring_archive_path = "$temp_folder_for_building_project/PF_RING-$pf_ring_version.tar.gz";
+    my $pf_ring_sources_path = "$temp_folder_for_building_project/PF_RING-$pf_ring_version";
 
     my $kernel_version = `uname -r`;
     chomp $kernel_version;
@@ -600,7 +605,7 @@ sub install_pf_ring {
         if ($? == 0) {
             print "Unpack PF_RING\n";
             mkdir $pf_ring_sources_path;
-            exec_command("tar -xf $pf_ring_archive_path -C /usr/src");
+            exec_command("tar -xf $pf_ring_archive_path -C $temp_folder_for_building_project");
 
             print "Build PF_RING kernel module\n";
             exec_command("make $make_options -C $pf_ring_sources_path/kernel clean");
@@ -696,7 +701,7 @@ sub install_fastnetmon {
     }
 
     print "Clone FastNetMon repo\n";
-    chdir "/usr/src";
+    chdir $temp_folder_for_building_project;
 
     if (-e $fastnetmon_code_dir) {
         # Code already downloaded
