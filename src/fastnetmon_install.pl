@@ -49,9 +49,13 @@ if ($cpus_number > 1) {
     $make_options = "-j $cpus_number";
 }
 
+# We will build gcc, stdc++ and boost for this distribution from sources
+my $build_binary_environment = '';
+
 # Get options from command line
 GetOptions('use-git-master' => \$we_use_code_from_master);
 GetOptions('do-not-track-me' => \$do_not_track_me);
+GetOptions('build-binary-environment' => \$build_binary_environment);
 
 my $we_have_ndpi_support = '';
 my $we_have_luajit_support = '';
@@ -87,6 +91,10 @@ sub main {
     init_package_manager();
 
     send_tracking_information('started');
+
+    if ($build_binary_environment) {
+        install_gcc();
+    }
 
     if ($we_have_pfring_support) {
         install_pf_ring();
@@ -176,6 +184,10 @@ sub download_file {
     } else {
         return 1;
     }     
+}
+
+sub install_gcc {
+    # Install gcc from sources
 }
 
 sub install_luajit {
@@ -412,10 +424,10 @@ sub install_hiredis {
 # We use global variable $ndpi_repository here
 sub install_ndpi {
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
-        exec_command("apt-get install -y --force-yes git autoconf libtool automake libpcap-dev");
+        apt_get('git', 'autoconf', 'libtool', 'automake', 'libpcap-dev');
     } elsif ($distro_type eq 'centos') {
         # We have json-c-devel for CentOS 6 and 7 and will use it for nDPI build system
-        exec_command("yum install -y git autoconf automake libtool libpcap-devel json-c-devel");
+        yum('git', 'autoconf', 'automake', 'libtool', 'libpcap-devel', 'json-c-devel');
     }   
 
     print "Download nDPI\n";
@@ -573,15 +585,7 @@ sub install_pf_ring {
 
         push @debian_packages_for_pfring, $kernel_headers_package_name;
 
-        # We install one package per apt-get call because installing multiple packages in one time could fail of one
-        # pacakge broken
-        for my $package (@debian_packages_for_pfring) {
-            exec_command("apt-get install -y --force-yes $package");
-
-            if ($? != 0) {
-                print "Package '$package' install failed with code $?\n"
-            }  
-        }
+        apt_get(@debian_packages_for_pfring);
 
         if ($appliance_name eq 'vyos') {
             # By default we waven't this symlink and should add it manually
@@ -604,8 +608,8 @@ sub install_pf_ring {
         if ($kernel_version =~ /stab/) {
             $kernel_package_name = "vzkernel-devel-$kernel_version";
         }
-
-        exec_command("yum install -y make bison flex $kernel_package_name gcc gcc-c++ dkms numactl-devel subversion");
+    
+        yum('make', 'bison', 'flex', $kernel_package_name, 'gcc', 'gcc-c++', 'dkms', 'numactl-devel', 'subversion');
     } elsif ($distro_type eq 'gentoo') {
         my @gentoo_packages_for_pfring = ('subversion', 'sys-process/numactl', 'wget', 'tar');
 
@@ -677,6 +681,31 @@ sub install_pf_ring {
     put_library_path_to_ld_so("/etc/ld.so.conf.d/pf_ring.conf", "/opt/pf_ring/lib");
 }
 
+sub apt_get {
+    my @packages_list = @_; 
+
+    # We install one package per apt-get call because installing multiple packages in one time could fail of one package is broken
+    for my $package (@packages_list) {
+        exec_command("apt-get install -y --force-yes $package");
+
+        if ($? != 0) {
+            print "Package '$package' install failed with code $?\n"
+        }   
+    }   
+}
+
+sub yum {
+    my @packages_list = @_;
+
+    for my $package (@packages_list) {
+        exec_command("yum install -y $package");
+
+        if ($? != 0) {
+            print "Package '$package' install failed with code $?\n";
+        }
+    }
+}
+
 sub install_fastnetmon {
     print "Install FastNetMon dependency list\n";
 
@@ -692,27 +721,19 @@ sub install_fastnetmon {
             push @fastnetmon_deps, "libboost-all-dev";
         }
 
-        # We install one package per apt-get call because installing multiple packages in one time could fail of one
-        # package is broken
-        for my $package (@fastnetmon_deps) {
-            exec_command("apt-get install -y --force-yes $package");
-
-            if ($? != 0) {
-                print "Package '$package' install failed with code $?\n"
-            }
-        }
+        apt_get(@fastnetmon_deps);
     } elsif ($distro_type eq 'centos') {
         my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++', 'boost-devel', 'GeoIP-devel', 'log4cpp-devel',
             'ncurses-devel', 'glibc-static', 'ncurses-static', 'boost-thread', 'libpcap-devel', 'gpm-static',
             'gpm-devel', 'clang', 'cmake', 'pkgconfig', 'hiredis-devel',
         );
 
-        my $fastnetmon_deps_as_string = join " ", @fastnetmon_deps;
-        exec_command("yum install -y $fastnetmon_deps_as_string");
+        yum(@fastnetmon_deps);
 
         if ($distro_version == 7) {
             print "Your distro haven't log4cpp in stable EPEL packages and we install log4cpp from testing of EPEL\n";
-            exec_command("yum install -y https://kojipkgs.fedoraproject.org//packages/log4cpp/1.1.1/1.el7/x86_64/log4cpp-devel-1.1.1-1.el7.x86_64.rpm https://kojipkgs.fedoraproject.org//packages/log4cpp/1.1.1/1.el7/x86_64/log4cpp-1.1.1-1.el7.x86_64.rpm");
+            yum('https://kojipkgs.fedoraproject.org//packages/log4cpp/1.1.1/1.el7/x86_64/log4cpp-devel-1.1.1-1.el7.x86_64.rpm',
+                'https://kojipkgs.fedoraproject.org//packages/log4cpp/1.1.1/1.el7/x86_64/log4cpp-1.1.1-1.el7.x86_64.rpm');
         }
     } elsif ($distro_type eq 'gentoo') {
         my @fastnetmon_deps = ("dev-vcs/git", "gcc", "sys-libs/gpm", "sys-libs/ncurses", "dev-libs/log4cpp", "dev-libs/geoip", 
