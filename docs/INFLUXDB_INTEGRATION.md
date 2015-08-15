@@ -5,7 +5,7 @@ InfluxDB is a very fast time series database written in awesome Go language. You
 You could install InfluxDB from [binary packages](https://influxdb.com/download/index.html).
 
 For Debian 8 Jessie I could offer part of this manual here:
-Note: Nightly build current version = 0.9.3
+Recommended version: 0.9.3 (Nightly build) - more lightweight than 0.9.2 and support graphite/batch
 
 ```bash
 wget https://s3.amazonaws.com/influxdb/influxdb_nightly_amd64.deb
@@ -13,9 +13,8 @@ sudo dpkg -i influxdb_nightly_amd64.deb
 ```
 
 Then we should enable graphite protocol emulation in configuration file: /etc/opt/influxdb/influxdb.conf:
-As well add templates for converting graphite metrics to InfluxDB measurements with proper tags.
-Note: We recommend you to use InfluxDB nightly build (0.9.3), so you can enable batch-size.
-This should help not losing metrics under high DB cpu/io load
+As well enable batch for avoid metric loss under load, and add templates for converting graphite metrics 
+to InfluxDB measurements, with its proper tags.
 
 ```bash
 [[graphite]]
