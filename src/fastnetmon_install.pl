@@ -36,8 +36,16 @@ my $appliance_name = '';
 # So, you could disable this option but without this feature we could not improve FastNetMon for your distribution
 my $do_not_track_me = '';
 
+my $cpus_number = get_logical_cpus_number();
+
 # We could pass options to make with this variable
 my $make_options = '';
+
+# We could get huge speed benefits with this option
+if ($cpus_number > 1) {
+    print "You have really nice server with $cpus_number CPU's and we will use they all for build process :)\n";
+    $make_options = "-j $cpus_number";
+}
 
 # Get options from command line
 GetOptions('use-git-master' => \$we_use_code_from_master);
@@ -59,6 +67,15 @@ if ($we_use_code_from_master) {
 }
 
 main();
+
+sub get_logical_cpus_number {
+    my @cpuinfo = `cat /proc/cpuinfo`;
+    chomp @cpuinfo;
+        
+    my $cpus_number = scalar grep {/processor/} @cpuinfo;
+    
+    return $cpus_number;
+}
 
 ### Functions start here
 sub main {
