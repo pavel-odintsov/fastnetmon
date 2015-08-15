@@ -53,9 +53,11 @@ if ($cpus_number > 1) {
 my $build_binary_environment = '';
 
 # Get options from command line
-GetOptions('use-git-master' => \$we_use_code_from_master);
-GetOptions('do-not-track-me' => \$do_not_track_me);
-GetOptions('build-binary-environment' => \$build_binary_environment);
+GetOptions(
+    'use-git-master' => \$we_use_code_from_master,
+    'do-not-track-me' => \$do_not_track_me,
+    'build-binary-environment' => \$build_binary_environment
+);
 
 my $we_have_ndpi_support = '';
 my $we_have_luajit_support = '';
