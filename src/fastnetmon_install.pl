@@ -43,6 +43,9 @@ my $cpus_number = get_logical_cpus_number();
 # We could pass options to make with this variable
 my $make_options = '';
 
+# We could pass options to configure with this variable
+my $configure_options = '';
+
 # We could get huge speed benefits with this option
 if ($cpus_number > 1) {
     print "You have really nice server with $cpus_number CPU's and we will use they all for build process :)\n";
@@ -97,6 +100,7 @@ sub main {
     if ($build_binary_environment) {
         install_gcc();
         install_boost_builder();
+        install_boost();
     }
 
     if ($we_have_pfring_support) {
@@ -170,7 +174,7 @@ sub get_sha1_sum {
 sub download_file {
     my ($url, $path, $expected_sha1_checksumm) = @_;
 
-    `wget --quiet $url -O$path`;
+    `wget --quiet '$url' -O$path`;
 
     if ($? != 0) {
         print "We can't download archive $url correctly\n";
@@ -234,13 +238,41 @@ sub install_gcc {
     # We do not add it to ld.so.conf.d path because it could broke system
 }
 
+sub install_boost {
+    chdir '/opt';
+    my $archive_file_name = 'boost_1_58_0.tar.gz';
+
+    print "Download Boost source code\n";
+    my $boost_download_result = download_file("http://downloads.sourceforge.net/project/boost/boost/1.58.0/boost_1_58_0.tar.gz?r=http%3A%2F%2Fwww.boost.org%2Fusers%2Fhistory%2Fversion_1_58_0.html&ts=1439207367&use_mirror=cznic", $archive_file_name, 'a27b010b9d5de0c07df9dddc9c336767725b1e6b');
+
+    unless ($boost_download_result) {
+        die "Can't download Boost source code\n";
+    }
+
+    print "Unpack Boost source code\n";
+    exec_command("tar -xf $archive_file_name");
+    
+    # Remove archive
+    unlink "$archive_file_name";
+
+    chdir "boost_1_58_0";
+
+    # We use non standard gcc compiler for Boost and specify it this way
+    open my $fl, ">", "/root/user-config.jam" or die "Can't open $! file for writing manifest\n";
+    print {$fl} "using gcc : 5.2 : /opt/gcc520/bin/g++ ;\n";
+    close $fl;
+
+    exec_command("/opt/boost_build1.5.8/bin/b2 --build-dir=/tmp/boosе_build_temp_directory_1_5_8 toolset=gcc-5.2 --without-test --without-python --without-wave --without-graph --without-coroutine --without-math --without-log --without-graph_parallel --without-mpi"); 
+}
+
 sub install_boost_builder { 
     chdir $temp_folder_for_building_project;
 
-    my $archive_file_name = 'boost-1.58.0.tar.gz';
+    # We use another name because it uses same name as boost distribution
+    my $archive_file_name = 'boost-builder-1.58.0.tar.gz';
 
     print "Download boost builder\n";
-    my $boost_build_result = download_file("https://github.com/boostorg/build/archive/$archive_file_name", $archive_file_name,
+    my $boost_build_result = download_file("https://github.com/boostorg/build/archive/boost-1.58.0.tar.gz", $archive_file_name,
         'e86375ed83ed07a79a33c76e80e8648d969b3218');
 
     unless ($boost_build_result) {
@@ -457,7 +489,14 @@ sub install_log4cpp {
     chdir "$temp_folder_for_building_project/log4cpp";
 
     print "Build log4cpp\n";
-    exec_command("./configure --prefix=$log4cpp_install_path");
+
+    # TODO: we need some more reliable way to specify options here
+    if ($configure_options) {
+        exec_command("$configure_options ./configure --prefix=$log4cpp_install_path");
+    } else {
+        exec_command("./configure --prefix=$log4cpp_install_path");
+    }    
+
     exec_command("make $make_options install"); 
 
     print "Add log4cpp to ld.so.conf\n";
@@ -864,6 +903,11 @@ sub install_fastnetmon {
         # Disable cmake script from Boost package because it's broken:
         # http://public.kitware.com/Bug/view.php?id=15270
         $cmake_params .= " -DBoost_NO_BOOST_CMAKE=BOOL:ON";
+    }
+
+    # We should specify this option if we want to build with custom gcc compiler
+    if ($build_binary_environment) {
+        $cmake_params .= "-DENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT=ON";
     }
 
     exec_command("cmake .. $cmake_params");
