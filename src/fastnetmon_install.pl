@@ -210,6 +210,10 @@ sub install_gcc {
         my @dependency_list = ('libmpfr-dev', 'libmpc-dev', 'libgmp-dev');
 
         apt_get(@dependency_list);
+    } elsif ($distro_type eq 'centos') {
+        my @dependency_list = ('gmp-devel', 'mpfr-devel', 'libmpc-devel');
+
+        yum(@dependency_list);
     } 
 
     print "Download gcc archive\n";
