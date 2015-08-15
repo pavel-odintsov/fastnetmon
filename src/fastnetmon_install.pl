@@ -10,9 +10,12 @@ my $pf_ring_url = "https://github.com/ntop/PF_RING/archive/v$pf_ring_version.tar
 
 my $fastnetmon_git_path = 'https://github.com/FastVPSEestiOu/fastnetmon.git';
 
-# TODO:
-# mktemp -d /tmp/fastnetmon.build.dir.XXXXXXXXXX
-my $temp_folder_for_building_project = '/usr/src';
+my $temp_folder_for_building_project = `mktemp -d /tmp/fastnetmon.build.dir.XXXXXXXXXX`;
+chomp $temp_folder_for_building_project;
+
+unless ($temp_folder_for_building_project && -e $temp_folder_for_building_project) {
+    die "Can't create temp folder in /tmp for building project: $temp_folder_for_building_project\n";
+}
 
 my $fastnetmon_code_dir = "$temp_folder_for_building_project/fastnetmon/src";
 
