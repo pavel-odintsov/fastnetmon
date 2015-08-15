@@ -17,6 +17,8 @@ unless ($temp_folder_for_building_project && -e $temp_folder_for_building_projec
     die "Can't create temp folder in /tmp for building project: $temp_folder_for_building_project\n";
 }
 
+my $start_time = time();
+
 my $fastnetmon_code_dir = "$temp_folder_for_building_project/fastnetmon/src";
 
 my $install_log_path = '/tmp/fastnetmon_install.log';
@@ -114,6 +116,11 @@ sub main {
     install_fastnetmon();
 
     send_tracking_information('finished');
+
+    my $install_time = time() - $start_time;
+    my $pretty_install_time_in_minutes = sprintf("%.2f", $install_time / 60);
+
+    print "We have built project in $pretty_install_time_in_minutes minutes\n";
 }
 
 sub send_tracking_information {
