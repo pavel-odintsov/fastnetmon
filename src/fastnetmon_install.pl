@@ -188,6 +188,43 @@ sub download_file {
 
 sub install_gcc {
     # Install gcc from sources
+    if ($distro_type eq 'debian') {
+        my @dependency_list = ('libmpfr-dev', 'libmpc-dev');
+
+        if ($distro_version <= 7) {
+            # We have another name for Debian 6 Squeeze
+            push @dependency_list, 'libgmp3-dev';
+        } else {
+            push @dependency_list, 'libgmp-dev';
+        }
+
+        apt_get(@dependency_list);
+    } elsif ($distro_type eq 'ubuntu') {
+        my @dependency_list = ('libmpfr-dev', 'libmpc-dev', 'libgmp-dev');
+
+        apt_get(@dependency_list);
+    } 
+
+    print "Download gcc archive\n";
+    chdir $temp_folder_for_building_project;
+
+    my $archive_file_name = 'gcc-5.2.0.tar.gz';
+    my $gcc_download_result = download_file("ftp://ftp.mpi-sb.mpg.de/pub/gnu/mirror/gcc.gnu.org/pub/gcc/releases/gcc-5.2.0/$archive_file_name", $archive_file_name, '713211883406b3839bdba4a22e7111a0cff5d09b');
+
+    unless ($gcc_download_result) {
+        die "Can't download gcc sources\n";
+    }
+
+    exec_command("tar -xf $archive_file_name");
+    exec_command("mkdir $temp_folder_for_building_project/gcc-5.2.0-objdir");
+
+    chdir "$temp_folder_for_building_project/gcc-5.2.0-objdir";
+    exec_command("$temp_folder_for_building_project/gcc-5.2.0/configure --prefix=/opt/gcc520 --enable-languages=c,c++ --disable-multilib");
+
+    exec_command("make $make_options");
+    exec_command("make $make_options install");
+
+    # We do not add it to ld.so.conf.d path because it could broke system
 }
 
 sub install_luajit {
