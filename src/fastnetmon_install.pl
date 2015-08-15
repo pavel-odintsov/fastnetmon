@@ -217,12 +217,16 @@ sub install_gcc {
         die "Can't download gcc sources\n";
     }
 
+    print "Unpack archive\n";
     exec_command("tar -xf $archive_file_name");
     exec_command("mkdir $temp_folder_for_building_project/gcc-5.2.0-objdir");
 
     chdir "$temp_folder_for_building_project/gcc-5.2.0-objdir";
+
+    print "Configure build system\n";
     exec_command("$temp_folder_for_building_project/gcc-5.2.0/configure --prefix=/opt/gcc520 --enable-languages=c,c++ --disable-multilib");
 
+    print "Build gcc\n";
     exec_command("make $make_options");
     exec_command("make $make_options install");
 
