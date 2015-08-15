@@ -96,6 +96,7 @@ sub main {
 
     if ($build_binary_environment) {
         install_gcc();
+        install_boost_builder();
     }
 
     if ($we_have_pfring_support) {
@@ -231,6 +232,29 @@ sub install_gcc {
     exec_command("make $make_options install");
 
     # We do not add it to ld.so.conf.d path because it could broke system
+}
+
+sub install_boost_builder { 
+    chdir $temp_folder_for_building_project;
+
+    my $archive_file_name = 'boost-1.58.0.tar.gz';
+
+    print "Download boost builder\n";
+    my $boost_build_result = download_file("https://github.com/boostorg/build/archive/$archive_file_name", $archive_file_name,
+        'e86375ed83ed07a79a33c76e80e8648d969b3218');
+
+    unless ($boost_build_result) {
+        die "Can't download boost builder\n";
+    }
+
+    print "Unpack boost builder\n";
+    exec_command("tar -xf $archive_file_name");
+
+    chdir "build-boost-1.58.0";
+
+    print "Build Boost builder\n";
+    exec_command("./bootstrap.sh");
+    exec_command("./b2 install --prefix=/opt/boost_build1.5.8");
 }
 
 sub install_luajit {
