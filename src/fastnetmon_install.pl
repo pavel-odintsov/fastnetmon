@@ -32,6 +32,8 @@ my $we_use_code_from_master = '';
 
 my $distro_type = ''; 
 my $distro_version = ''; 
+my $distro_architecture = '';
+
 # Used for VyOS and different appliances based on rpm/deb
 my $appliance_name = ''; 
 
@@ -143,7 +145,7 @@ sub send_tracking_information {
 
     unless ($do_not_track_me) {
         my $stats_url = "http://178.62.227.110/new_fastnetmon_installation";
-        my $post_data = "distro_type=$distro_type&distro_version=$distro_version&step=$step";
+        my $post_data = "distro_type=$distro_type&distro_version=$distro_version&distro_architecture=$distro_architecture&step=$step";
         my $user_agent = 'FastNetMon install tracker v1';
 
         `wget --post-data="$post_data" --user-agent="$user_agent" -q '$stats_url'`;
@@ -607,6 +609,11 @@ sub detect_distribution {
     # We use following global variables here:
     # $distro_type, $distro_version, $appliance_name
 
+
+    # x86_64 or i686
+    $distro_architecture = `uname -m`;
+    chomp $distro_architecture;
+
     if (-e "/etc/debian_version") {
         # Well, on this step it could be Ubuntu or Debian
 
@@ -700,11 +707,7 @@ sub install_pf_ring {
         if ($appliance_name eq 'vyos') {
             # By default we waven't this symlink and should add it manually
 
-            # x86_64 or i686
-            my $server_architecture = `uname -m`;
-            chomp $server_architecture;
-
-            if ($server_architecture eq 'x86_64') {  
+            if ($distro_architecture eq 'x86_64') {  
                 exec_command("ln -s /usr/src/linux-image/debian/build/build-amd64-none-amd64-vyos/ /lib/modules/$kernel_version/build");
             } else {
                 # i686
