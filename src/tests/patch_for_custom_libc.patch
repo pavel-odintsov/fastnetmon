@@ -1,0 +1,46 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index a65734b..406a5b9 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -27,11 +27,32 @@ if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
+     set(BOOST_INCLUDEDIR "/opt/boost_1_58_0")
+     set(BOOST_LIBRARYDIR "/opt/boost_1_58_0/stage/lib/")
+ 
++    # Remove all system directories with default libraries
++    message(STATUS  "CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES=${CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES}")
++    set(CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES "")
++
++    message(STATUS "CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES = ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES}")
++    set(CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES "/opt/glibc_2.22/include")
++
++    set(CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES "/opt/glibc_2.22/lib;/opt/gcc520/lib64;/opt/glibc_2.22/lib;/opt/gcc520/lib/gcc/x86_64-unknown-linux-gnu/5.2.0")
++    include_directories("/opt/glibc_2.22/include")
++
++    message(STATUS "CMAKE_CXX_IMPLICIT_LINK_LIBRARIES=${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES}")
++    set(CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "")
++    set(CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "stdc++;gcc;gcc_s;m;c")
++
++    message(STATUS "CMAKE_CXX_IMPLICIT_LINK_LIBRARIES=${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES}")
++
+     # It's really nice part of this custom build process :)
+     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11")
+ 
+     # Disable warning from Boost when compiling with gcc 5.2
+     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
++
++    # Pass custom ld-linux for our own binary 
++    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wl,--dynamic-linker=/opt/glibc_2.22/lib/ld-linux-x86-64.so.2")
++
++    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -nodefaultlibs -nostdinc -nostdinc++")
+  
+     # Specify full RPATH for build tree
+     SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+@@ -39,7 +60,7 @@ if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
+     # Create builds in current folder with install RPATH
+     SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+ 
+-    SET(CMAKE_INSTALL_RPATH "/opt/gcc520/lib64;/opt/boost_1_58_0/stage/lib;/opt/libhiredis_0_13/lib;/opt/log4cpp1.1.1/lib;/opt/luajit_2.0.4/lib;/opt/ndpi/lib;/opt/pf_ring/lib;/opt/json-c-0.12/lib")
++    SET(CMAKE_INSTALL_RPATH "/opt/glibc_2.22/lib;/opt/gcc520/lib64;/opt/boost_1_58_0/stage/lib;/opt/libhiredis_0_13/lib;/opt/log4cpp1.1.1/lib;/opt/luajit_2.0.4/lib;/opt/ndpi/lib;/opt/pf_ring/lib;/opt/json-c-0.12/lib")
+ endif()
+ 
+ # It's pretty safe and provide big speedup for our packet processor and patricia code
