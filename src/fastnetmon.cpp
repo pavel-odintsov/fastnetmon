@@ -137,6 +137,7 @@ u_int32_t ndpi_size_id_struct = 0;
 #ifdef REDIS
 unsigned int redis_port = 6379;
 std::string redis_host = "127.0.0.1";
+std::string redis_prefix = NULL;
 
 // because it's additional and very specific feature we should disable it by default
 bool redis_enabled = false;
@@ -504,6 +505,10 @@ void store_data_in_redis(std::string key_name, std::string attack_details) {
     if (!redis_context) {
         logger << log4cpp::Priority::INFO << "Could not initiate connection to Redis";
         return;
+    }
+
+    if (redis_prefix) {
+        key_name = redis_prefix.c_str() + key_name;
     }
 
     reply = (redisReply*)redisCommand(redis_context, "SET %s %s", key_name.c_str(), attack_details.c_str());
@@ -1042,6 +1047,10 @@ bool load_configuration_file() {
 
     if (configuration_map.count("redis_host") != 0) {
         redis_host = configuration_map["redis_host"];
+    }
+
+    if (configuration_map.count("redis_prefix") != "no") {
+        redis_prefix = configuration_map["redis_prefix"];
     }
 
     if (configuration_map.count("redis_enabled") != 0) {
