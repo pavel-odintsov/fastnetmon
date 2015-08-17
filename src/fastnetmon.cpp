@@ -508,7 +508,7 @@ void store_data_in_redis(std::string key_name, std::string attack_details) {
     }
 
     if (redis_prefix) {
-        key_name = redis_prefix + key_name;
+        key_name = redis_prefix.c_str() + key_name;
     }
 
     reply = (redisReply*)redisCommand(redis_context, "SET %s %s", key_name.c_str(), attack_details.c_str());
