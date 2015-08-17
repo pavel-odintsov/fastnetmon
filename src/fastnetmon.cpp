@@ -2881,7 +2881,7 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
     if (redis_enabled && !flow_attack_details.empty()) {
         std::string redis_key_name = client_ip_as_string + "_flow_dump";
 
-        if (redis_prefix != NULL) {
+        if (!redis_prefix.empty()) {
             std::string redis_key_name = redis_prefix + "_" + client_ip_as_string + "_flow_dump";
         }
 
@@ -3447,7 +3447,7 @@ void call_attack_details_handlers(uint32_t client_ip, attack_details& current_at
         if (redis_enabled) {
             std::string redis_key_name = client_ip_as_string + "_packets_dump";
 
-            if (redis_prefix != NULL) {
+            if (!redis_prefix.empty()) {
             std::string redis_key_name = redis_prefix + "_" + client_ip_as_string + "_packets_dump";
         }
 
