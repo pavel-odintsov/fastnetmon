@@ -789,7 +789,7 @@ sub install_pf_ring {
     print "Create library symlink\n";
 
     print "Add pf_ring to ld.so.conf\n";
-    put_library_path_to_ld_so("/etc/ld.so.conf.d/pf_ring.conf", "/opt/pf_ring/lib");
+    put_library_path_to_ld_so("/etc/ld.so.conf.d/pf_ring.conf", "/opt/pf_ring_$pf_ring_version/lib");
 }
 
 sub apt_get {
