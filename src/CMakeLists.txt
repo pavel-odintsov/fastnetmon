@@ -239,6 +239,9 @@ else()
     message(STATUS "We can't find hiredis library and will disable Redis support")
 endif()
 
+### Look for libpcap
+
+
 ### Look for log4cpp
 
 # Try to find log4cpp includes path
@@ -251,7 +254,7 @@ if (LOG4CPP_INCLUDES_FOLDER AND LOG4CPP_LIBRARY_PATH)
     include_directories(${LOG4CPP_INCLUDES_FOLDER})
     message(STATUS "We have found log4cpp and will build project")
 else()
-    message(STATUS "We can't find log4cpp. We can't build project")
+    message(FATAL_ERROR "We can't find log4cpp. We can't build project")
 endif()
 
 ### Look for jsonc
@@ -263,7 +266,7 @@ if (JSONC_INCLUDES_FOLDER AND JSONC_LIBRARY_PATH)
     include_directories(${JSONC_INCLUDES_FOLDER}) 
     message(STATUS "We have found json-c library correctly: ${JSONC_LIBRARY_PATH}")
 else()
-    message(STATUS "We can't find json-c library! Can't build project")
+    message(FATAL_ERROR "We can't find json-c library! Can't build project")
 endif()
 
 target_link_libraries(fast_library ${JSONC_LIBRARY_PATH})
