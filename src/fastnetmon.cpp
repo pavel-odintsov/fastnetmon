@@ -1045,7 +1045,7 @@ bool load_configuration_file() {
         redis_host = configuration_map["redis_host"];
     }
 
-    if (configuration_map.count("redis_prefix") != "off") {
+    if (configuration_map("redis_prefix") != "off") {
         redis_host = configuration_map["redis_prefix"];
     }
 
