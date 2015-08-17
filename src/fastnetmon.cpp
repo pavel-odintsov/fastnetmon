@@ -137,6 +137,7 @@ u_int32_t ndpi_size_id_struct = 0;
 #ifdef REDIS
 unsigned int redis_port = 6379;
 std::string redis_host = "127.0.0.1";
+std::string redis_prefix = NULL;
 
 // because it's additional and very specific feature we should disable it by default
 bool redis_enabled = false;
@@ -1042,6 +1043,10 @@ bool load_configuration_file() {
 
     if (configuration_map.count("redis_host") != 0) {
         redis_host = configuration_map["redis_host"];
+    }
+
+    if (configuration_map.count("redis_prefix") != "off") {
+        redis_host = configuration_map["redis_prefix"];
     }
 
     if (configuration_map.count("redis_enabled") != 0) {
@@ -2862,6 +2867,10 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
     if (redis_enabled) {
         std::string redis_key_name = client_ip_as_string + "_information";
 
+        if (redis_prefix != NULL) {
+            std::string redis_key_name = redis_prefix + "_" + client_ip_as_string + "_information";
+        }
+
         logger << log4cpp::Priority::INFO << "Start data save in redis in key: " << redis_key_name;
         boost::thread redis_store_thread(store_data_in_redis, redis_key_name, basic_attack_information_in_json);
         redis_store_thread.detach();
@@ -2871,6 +2880,10 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
     // If we have flow dump put in redis too
     if (redis_enabled && !flow_attack_details.empty()) {
         std::string redis_key_name = client_ip_as_string + "_flow_dump";
+
+        if (redis_prefix != NULL) {
+            std::string redis_key_name = redis_prefix + "_" + client_ip_as_string + "_flow_dump";
+        }
 
         logger << log4cpp::Priority::INFO << "Start data save in redis in key: " << redis_key_name;
         boost::thread redis_store_thread(store_data_in_redis, redis_key_name, flow_attack_details);
@@ -3433,6 +3446,10 @@ void call_attack_details_handlers(uint32_t client_ip, attack_details& current_at
 #ifdef REDIS
         if (redis_enabled) {
             std::string redis_key_name = client_ip_as_string + "_packets_dump";
+
+            if (redis_prefix != NULL) {
+            std::string redis_key_name = redis_prefix + "_" + client_ip_as_string + "_packets_dump";
+        }
 
             logger << log4cpp::Priority::INFO << "Start data save in redis for key: " << redis_key_name;
             boost::thread redis_store_thread(store_data_in_redis, redis_key_name, attack_fingerprint);
