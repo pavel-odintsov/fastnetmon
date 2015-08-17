@@ -787,8 +787,6 @@ sub install_pf_ring {
     exec_command("make $make_options install"); 
 
     print "Create library symlink\n";
-    unlink "/opt/pf_ring";
-    exec_command("ln -s /opt/pf_ring_$pf_ring_version /opt/pf_ring");
 
     print "Add pf_ring to ld.so.conf\n";
     put_library_path_to_ld_so("/etc/ld.so.conf.d/pf_ring.conf", "/opt/pf_ring/lib");

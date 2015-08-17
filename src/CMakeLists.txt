@@ -5,6 +5,13 @@ cmake_minimum_required (VERSION 2.8)
 # Debian 7 - 2.8.9
 # CentOS 6 - 2.8.12
 
+# We should set compiler before project() call 
+if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
+    # We use custom compiler too
+    set(CMAKE_C_COMPILER "/opt/gcc520/bin/gcc")
+    set(CMAKE_CXX_COMPILER "/opt/gcc520/bin/g++")
+endif()
+
 project(FastNetMon)
 
 # Unfortunately, Debian Squeeze haven't support for this feature
@@ -20,10 +27,6 @@ set (FASTNETMON_VERSION_MINOR 1)
 
 # cmake -DENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT=ON .. 
 if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
-    # We use custom compiler too
-    set(CMAKE_C_COMPILER "/opt/gcc520/bin/gcc")
-    set(CMAKE_CXX_COMPILER "/opt/gcc520/bin/g++")
-
     set(BOOST_INCLUDEDIR "/opt/boost_1_58_0")
     set(BOOST_LIBRARYDIR "/opt/boost_1_58_0/stage/lib/")
 
@@ -49,6 +52,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 set(HIREDIS_CUSTOM_INSTALL_PATH "/opt/libhiredis_0_13")
 set(LOG4CPP_CUSTOM_INSTALL_PATH "/opt/log4cpp1.1.1")
 set(JSONC_CUSTOM_INSTALL_PATH "/opt/json-c-0.12")
+set(PFRING_CUSTOM_INSTALL_PATH "/opt/pf_ring_6.0.3")
 
 set(FASTNETMON_PROFILER OFF)
 
@@ -89,13 +93,14 @@ if (ENABLE_PFRING_SUPPORT)
         set(PFRING_LIBRARIES pfring) 
     else() 
         # Set path to manually compiled PF_RING
-        set(PFRING_INCLUDE_DIRS /opt/pf_ring/include)
+        set(PFRING_INCLUDE_DIRS "${PFRING_CUSTOM_INSTALL_PATH}/include")
         set(PFRING_LIBRARIES pfring)
+        link_directories("${PFRING_CUSTOM_INSTALL_PATH}/lib")
     endif()
 
     add_definitions(-DPF_RING)
 
-    if (EXISTS "/opt/pf_ring/include/pfring_zc.h" OR EXISTS "/usr/local/include/pfring_zc.h")
+    if (EXISTS "${PFRING_CUSTOM_INSTALL_PATH}/include/pfring_zc.h" OR EXISTS "/usr/local/include/pfring_zc.h")
         message(STATUS "We found PF_RING ZC headers and will build PF_RING ZC support")
         # Enable ZC support
         add_definitions(-DPF_RING_ZC)
@@ -103,7 +108,6 @@ if (ENABLE_PFRING_SUPPORT)
         message(WARNING "We can't find PF_RING ZC header pfring_zc.h in folder /opt/pf_ring/include. Will not compile ZC support") 
     endif()
 
-    link_directories(/opt/pf_ring/lib)
     include_directories(${PFRING_INCLUDE_DIRS})
 endif()
 
