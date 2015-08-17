@@ -137,6 +137,8 @@ u_int32_t ndpi_size_id_struct = 0;
 #ifdef REDIS
 unsigned int redis_port = 6379;
 std::string redis_host = "127.0.0.1";
+
+// redis key prefix
 std::string redis_prefix = "";
 
 // because it's additional and very specific feature we should disable it by default
