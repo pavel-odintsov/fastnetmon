@@ -12,8 +12,8 @@ wget https://s3.amazonaws.com/influxdb/influxdb_nightly_amd64.deb
 sudo dpkg -i influxdb_nightly_amd64.deb
 ```
 
-Then we should enable graphite protocol emulation in configuration file: /etc/opt/influxdb/influxdb.conf:
-As well enable batch for avoid metric loss under load, and add templates for converting graphite metrics 
+Then we should enable graphite protocol emulation in configuration file: /etc/opt/influxdb/influxdb.conf
+As well enable batch for avoid metric loss under load, and add templates for converting graphite metrics
 to InfluxDB measurements, with its proper tags.
 
 ```bash
@@ -63,11 +63,25 @@ systemctl restart fastnetmon
 
 Finally you could query data from InfluxDB with CLI tool /opt/influxdb/influx:
 ```bash
-select MEAN(value) from "fastnetmon.outgoing.pps"
-name: fastnetmon.outgoing.pps
------------------------------
-time            mean
-1970-01-01T00:00:00Z    334968.38950276235
+Connected to http://localhost:8086 version 0.9.3-nightly-c2dbf16
+InfluxDB shell 0.9.3-nightly-c2dbf16
+> use graphite
+Using database graphite
+> show measurements
+name: measurements
+------------------
+hosts
+networks
+total
+
+>
+> select mean(value) from networks where direction = 'incoming' and resource = 'bps' group by *
+name: networks
+tags: app=fastnetmon, cidr=10.20.30.40_24, direction=incoming, resource=bps
+time      mean
+----      ----
+1970-01-01T00:00:00Z  408540.85148584365
+
 ```
 
 Or you could install [Grafana](http://grafana.org) and make awesome Dashboard ;)
