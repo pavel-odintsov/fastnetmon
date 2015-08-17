@@ -69,8 +69,11 @@ for my $library (@our_libraries) {
 
 # manually handle toolkit itself
 mkdir "$target_path/fastnetmon";
-copy("$global_path/fastnetmon/fastnetmon",        "$target_path/fastnetmon");
-copy("$global_path/fastnetmon/fastnetmon_client", "$target_path/fastnetmon");
+copy("$global_path/fastnetmon/fastnetmon",        "$target_path/fastnetmon/fastnetmon");
+copy("$global_path/fastnetmon/fastnetmon_client", "$target_path/fastnetmon/fastnetmon_client");
+
+# Set exec flag
+chmod 0755, "$target_path/fastnetmon/fastnetmon";
 
 my $archive_bundle_name = '/tmp/fastnetmon_bundle.tar.gz';
 unlink $archive_bundle_name;
