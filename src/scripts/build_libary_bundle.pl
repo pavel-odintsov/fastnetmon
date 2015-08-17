@@ -45,7 +45,7 @@ for my $library (@our_libraries) {
     for my $file_full_path (@files) {
         chomp $file_full_path;
 
-        if ($file_full_path =~ /\.so$/) {
+        if ($file_full_path =~ /\.so[\.\d]*$/) {
             my $dir_name = dirname($file_full_path);
             my $file_name = basename($file_full_path);
 
@@ -58,11 +58,21 @@ for my $library (@our_libraries) {
             my $target_full_folder_path = $dir_name;
             $target_full_folder_path =~ s/^$global_path/$target_path/;
 
-            print "Create folder $target_full_folder_path\n";
-            make_path( $target_full_folder_path );
+            unless (-e $target_full_folder_path) {
+                print "Create folder $target_full_folder_path\n";
+                make_path( $target_full_folder_path );
+            }
 
-            #print "copy file from $file_full_path to $target_full_path\n";
-            copy($file_full_path, $target_full_folder_path);
+            if (-l $file_full_path) {
+                my $symlink_target_name = readlink($file_full_path);
+
+                print "We have symlink which aims to $symlink_target_name\n";
+ 
+                # This way we copy symlinks
+                symlink($symlink_target_name, $target_full_path); 
+            } else {
+                copy($file_full_path, $target_full_folder_path);
+            }
         }
     }
 }
