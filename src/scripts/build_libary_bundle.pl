@@ -75,5 +75,6 @@ copy("$global_path/fastnetmon/fastnetmon_client", "$target_path/fastnetmon");
 my $archive_bundle_name = '/tmp/fastnetmon_bundle.tar.gz';
 unlink $archive_bundle_name;
 
-`tar -cpzf $archive_bundle_name $target_path/*`;
+
+`tar -cpzf $archive_bundle_name -C $target_path ./`;
 print "We have created bundle $archive_bundle_name\n";
