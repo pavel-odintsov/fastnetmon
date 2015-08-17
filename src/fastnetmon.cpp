@@ -1047,7 +1047,7 @@ bool load_configuration_file() {
         redis_host = configuration_map["redis_host"];
     }
 
-    if (configuration_map["redis_prefix"] != "off") {
+    if (configuration_map.count("redis_prefix") != 0) {
         redis_prefix = configuration_map["redis_prefix"];
     }
 
@@ -2870,7 +2870,7 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
         std::string redis_key_name = client_ip_as_string + "_information";
 
         if (!redis_prefix.empty()) {
-            std::string redis_key_name = redis_prefix + "_" + client_ip_as_string + "_information";
+            redis_key_name = redis_prefix + "_" + client_ip_as_string + "_information";
         }
 
         logger << log4cpp::Priority::INFO << "Start data save in redis in key: " << redis_key_name;
@@ -2884,7 +2884,7 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
         std::string redis_key_name = client_ip_as_string + "_flow_dump";
 
         if (!redis_prefix.empty()) {
-            std::string redis_key_name = redis_prefix + "_" + client_ip_as_string + "_flow_dump";
+            redis_key_name = redis_prefix + "_" + client_ip_as_string + "_flow_dump";
         }
 
         logger << log4cpp::Priority::INFO << "Start data save in redis in key: " << redis_key_name;
@@ -3450,8 +3450,8 @@ void call_attack_details_handlers(uint32_t client_ip, attack_details& current_at
             std::string redis_key_name = client_ip_as_string + "_packets_dump";
 
             if (!redis_prefix.empty()) {
-            std::string redis_key_name = redis_prefix + "_" + client_ip_as_string + "_packets_dump";
-        }
+                redis_key_name = redis_prefix + "_" + client_ip_as_string + "_packets_dump";
+            }
 
             logger << log4cpp::Priority::INFO << "Start data save in redis for key: " << redis_key_name;
             boost::thread redis_store_thread(store_data_in_redis, redis_key_name, attack_fingerprint);
