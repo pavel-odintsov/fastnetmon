@@ -72,7 +72,7 @@ mkdir "$target_path/fastnetmon";
 copy("$global_path/fastnetmon/fastnetmon",        "$target_path/fastnetmon");
 copy("$global_path/fastnetmon/fastnetmon_client", "$target_path/fastnetmon");
 
-my $archive_bundle_name = 'fastnetmon_bundle.tar.gz';
+my $archive_bundle_name = '/tmp/fastnetmon_bundle.tar.gz';
 unlink $archive_bundle_name;
 
 `tar -cpzf $archive_bundle_name $target_path/*`;
