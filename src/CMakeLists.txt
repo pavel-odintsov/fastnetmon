@@ -42,7 +42,7 @@ if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
     # Create builds in current folder with install RPATH
     SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
-    SET(CMAKE_INSTALL_RPATH "/opt/gcc520/lib64;/opt/boost_1_58_0/stage/lib;/opt/libhiredis_0_13/lib;/opt/log4cpp1.1.1/lib;/opt/luajit_2.0.4/lib;/opt/ndpi/lib;/opt/pf_ring/lib;/opt/json-c-0.12/lib")
+    SET(CMAKE_INSTALL_RPATH "/opt/gcc520/lib64;/opt/boost_1_58_0/stage/lib;/opt/libhiredis_0_13/lib;/opt/log4cpp1.1.1/lib;/opt/luajit_2.0.4/lib;/opt/ndpi/lib;/opt/pf_ring_6.0.3/lib;/opt/json-c-0.12/lib")
 endif()
 
 # It's pretty safe and provide big speedup for our packet processor and patricia code
