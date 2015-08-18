@@ -238,7 +238,15 @@ sub install_binary_gcc {
     my $package_distro_version = '';
 
     if ($distro_type eq 'debian') {
-        $package_distro_version = int($distro_version);
+        # Debian 6: 6.0.10
+        # Debian 7: 7.8
+        # Debian 8: 8.1
+
+        if ($distro_version =~ m/^(6)/) {
+            $package_distro_version = $1;
+        } else {
+            $package_distro_version = int($distro_version);
+        }
     } elsif ($distro_type eq 'ubuntu') {
         $package_distro_version = $distro_version;
     } elsif ($distro_type eq 'centos') {
