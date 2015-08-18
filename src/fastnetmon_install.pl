@@ -1064,7 +1064,7 @@ sub install_fastnetmon {
         $cmake_params .= " -DENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT=ON ";
 
         # We should specify compilir this way
-        $cmake_params .= "-DCMAKE_C_COMPILER=/opt/gcc520/bin/gcc -DCMAKE_CXX_COMPILER=/opt/gcc520/bin/g++ "; 
+        $cmake_params .= " -DCMAKE_C_COMPILER=/opt/gcc520/bin/gcc -DCMAKE_CXX_COMPILER=/opt/gcc520/bin/g++ "; 
     }
 
     exec_command("cmake .. $cmake_params");
