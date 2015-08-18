@@ -332,7 +332,8 @@ sub install_boost_builder {
     chdir "build-boost-1.58.0";
 
     print "Build Boost builder\n";
-    exec_command("./bootstrap.sh");
+    # We haven't system compiler here and we will use custom gcc for compilation here
+    exec_command("CC=/opt/gcc520/bin/gcc./bootstrap.sh");
     exec_command("./b2 install --prefix=/opt/boost_build1.5.8");
 }
 
