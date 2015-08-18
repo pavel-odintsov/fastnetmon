@@ -281,6 +281,10 @@ sub install_gcc {
     exec_command("make $make_options");
     exec_command("make $make_options install");
 
+    # Add new compiler to configure options
+    # It's mandatory for log4cpp
+    $configure_options = "CC=/opt/gcc520/bin/gcc CXX=/opt/gcc520/bin/g++";
+
     # We do not add it to ld.so.conf.d path because it could broke system
 }
 
