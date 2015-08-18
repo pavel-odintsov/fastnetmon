@@ -394,6 +394,11 @@ sub install_boost {
 sub install_boost_builder { 
     chdir $temp_folder_for_building_project;
 
+    # We need libc headers for compilation of this code
+    if ($distro_type eq 'centos') {
+        yum('glibc-devel');
+    }
+
     # We use another name because it uses same name as boost distribution
     my $archive_file_name = 'boost-builder-1.58.0.tar.gz';
 
