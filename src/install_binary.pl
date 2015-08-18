@@ -302,10 +302,23 @@ sub yum {
 sub install_fastnetmon {
     print "Install FastNetMon dependency list\n";
   
-    my $repository_address = 'http://192.168.0.127/~pavel-odintsov/FastNetMon_gcc_toolchain'; 
-    my $bundle_version = 'git-c7831ff71a182a15903f47de2afd99ed24ca7201'; 
+    my $repository_address = 'http://178.62.227.110/fastnetmon_binary_repository'; 
+    my $bundle_version = '';
+ 
     my $bundle_file_name = "fastnetmon-binary-$bundle_version-$distro_type-$distro_version-$distro_architecture.tar.gz";
 
+    if ($distro_type eq 'ubuntu' && $distro_version eq '12.04') {
+        $bundle_version = 'git-9e20adc243c2f2949cc18cae3dc466b3f6f8604c';
+    }
+
+    if ($distro_type eq 'ubuntu' && $distro_version eq '14.04') {
+        $bundle_version = 'git-c7831ff71a182a15903f47de2afd99ed24ca7201';
+    }
+
+    unless ($bundle_version) {
+        die "Sorry! We haven't packages for your distribution now\n";
+    }
+    
     my $full_url = "$repository_address/$bundle_file_name";
 
     print "I will try to download file from $full_url\n";
