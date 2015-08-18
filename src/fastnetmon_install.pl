@@ -390,13 +390,17 @@ sub install_boost_builder {
 
     print "Build Boost builder\n";
     # We haven't system compiler here and we will use custom gcc for compilation here
-    my $bootstrap_result = exec_command("CC=/opt/gcc520/bin/gcc ./bootstrap.sh --with-toolset=cc");
+    my $bootstrap_result = exec_command("CC=/opt/gcc520/bin/gcc CXX=/opt/gcc520/bin/g++ ./bootstrap.sh --with-toolset=cc");
 
     unless ($bootstrap_result) {
         die "bootstrap of Boost Builder failed, please check logs\n";
     }
 
-    exec_command("./b2 install --prefix=/opt/boost_build1.5.8");
+    my $b2_install_result = exec_command("CC=/opt/gcc520/bin/gcc CXX=/opt/gcc520/bin/g++ ./b2 install --prefix=/opt/boost_build1.5.8");
+    
+    unless ($b2_install_result) {
+        die "Can't execute b2 install\n";
+    }
 }
 
 sub install_luajit {
