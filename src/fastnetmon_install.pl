@@ -916,19 +916,27 @@ sub install_fastnetmon {
             "liblog4cpp5-dev", "libnuma-dev", "libgeoip-dev","libpcap-dev", "cmake", "pkg-config", "libhiredis-dev",
         );
 
-        # We add this dependencies because package libboost-all-dev is broken on VyOS
-        if ($appliance_name eq 'vyos') {
-            push @fastnetmon_deps, ('libboost-regex-dev', 'libboost-system-dev', 'libboost-thread-dev');
-        } else {
-            push @fastnetmon_deps, "libboost-all-dev";
+        # Do not install Boost when we build it manually
+        unless ($build_binary_environment) {
+            # We add this dependencies because package libboost-all-dev is broken on VyOS
+            if ($appliance_name eq 'vyos') {
+                push @fastnetmon_deps, ('libboost-regex-dev', 'libboost-system-dev', 'libboost-thread-dev');
+            } else {
+                push @fastnetmon_deps, "libboost-all-dev";
+            }
         }
 
         apt_get(@fastnetmon_deps);
     } elsif ($distro_type eq 'centos') {
-        my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++', 'boost-devel', 'GeoIP-devel', 'log4cpp-devel',
-            'ncurses-devel', 'glibc-static', 'ncurses-static', 'boost-thread', 'libpcap-devel', 'gpm-static',
+        my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++', 'GeoIP-devel', 'log4cpp-devel',
+            'ncurses-devel', 'glibc-static', 'ncurses-static', 'libpcap-devel', 'gpm-static',
             'gpm-devel', 'cmake', 'pkgconfig', 'hiredis-devel',
         );
+
+        # Do not install Boost when we build it manually
+        unless ($build_binary_environment) {
+            @fastnetmon_deps = (@fastnetmon_deps, 'boost-devel', 'boost-thread')
+        }
 
         yum(@fastnetmon_deps);
 
