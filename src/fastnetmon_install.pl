@@ -390,7 +390,7 @@ sub install_boost_builder {
 
     print "Build Boost builder\n";
     # We haven't system compiler here and we will use custom gcc for compilation here
-    my $bootstrap_result = exec_command("/opt/gcc520/bin/gcc ./bootstrap.sh --with-toolset=cc");
+    my $bootstrap_result = exec_command("CC=/opt/gcc520/bin/gcc ./bootstrap.sh --with-toolset=cc");
 
     unless ($bootstrap_result) {
         die "bootstrap of Boost Builder failed, please check logs\n";
