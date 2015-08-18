@@ -308,6 +308,7 @@ sub install_boost {
     print {$fl} "using gcc : 5.2 : /opt/gcc520/bin/g++ ;\n";
     close $fl;
 
+    print "Build Boost\n";
     exec_command("/opt/boost_build1.5.8/bin/b2 --build-dir=/tmp/boosе_build_temp_directory_1_5_8 toolset=gcc-5.2 --without-test --without-python --without-wave --without-graph --without-coroutine --without-math --without-log --without-graph_parallel --without-mpi"); 
 }
 
