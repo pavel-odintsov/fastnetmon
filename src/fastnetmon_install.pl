@@ -273,10 +273,17 @@ sub install_gcc {
     # It's mandatory for log4cpp
     $configure_options = "CC=/opt/gcc520/bin/gcc CXX=/opt/gcc520/bin/g++";
 
+    # More detailes about jam lookup: http://www.boost.org/build/doc/html/bbv2/overview/configuration.html
+
     # We use non standard gcc compiler for Boost builder and Boost and specify it this way
     open my $fl, ">", "/root/user-config.jam" or die "Can't open $! file for writing manifest\n";
     print {$fl} "using gcc : 5.2 : /opt/gcc520/bin/g++ ;\n";
     close $fl;
+
+    # When we run it with vzctl exec we ahve broken env and should put config in /etc too
+    open my $etcfl, ">", "/etc/user-config.jam" or die "Can't open $! file for writing manifest\n";
+    print {$etcfl} "using gcc : 5.2 : /opt/gcc520/bin/g++ ;\n";
+    close $etcfl; 
 
     # Install gcc from sources
     if ($distro_type eq 'debian') {
