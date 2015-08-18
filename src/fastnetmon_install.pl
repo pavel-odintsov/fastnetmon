@@ -1061,7 +1061,10 @@ sub install_fastnetmon {
 
     # We should specify this option if we want to build with custom gcc compiler
     if ($build_binary_environment) {
-        $cmake_params .= "-DENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT=ON";
+        $cmake_params .= " -DENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT=ON ";
+
+        # We should specify compilir this way
+        $cmake_params .= "-DCMAKE_C_COMPILER=/opt/gcc520/bin/gcc -DCMAKE_CXX_COMPILER=/opt/gcc520/bin/g++ "; 
     }
 
     exec_command("cmake .. $cmake_params");
