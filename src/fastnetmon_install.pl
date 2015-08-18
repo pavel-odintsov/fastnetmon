@@ -295,8 +295,15 @@ sub install_boost {
     print "Install Boost dependencies\n";
 
     # libicu dependencies
-    if ($distro_type eq 'ubuntu' && $distro_version eq '14.04') {
-        apt_get('libicu52');
+    if ($distro_type eq 'ubuntu') {
+
+        if ($distro_version eq '14.04') {
+            apt_get('libicu52');
+        }
+
+        if ($distro_version eq '12.04') {
+            apt_get('libicu48');
+        }
     }
 
     print "Download Boost source code\n";
