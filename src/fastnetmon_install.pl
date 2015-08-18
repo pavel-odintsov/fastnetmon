@@ -313,6 +313,11 @@ sub install_gcc {
         my @dependency_list = ('gmp-devel', 'mpfr-devel', 'libmpc-devel');
 
         yum(@dependency_list);
+
+        if ($distro_version == 6) {
+            # We haven't libmpc in base repository here and should enable EPEL
+            yum('https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm');
+        }
     } 
 
     # Please be careful! This libs required for binary version of gcc! We should install they!
