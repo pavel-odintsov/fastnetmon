@@ -373,7 +373,8 @@ sub install_boost {
     chdir "boost_1_58_0";
 
     print "Build Boost\n";
-    exec_command("/opt/boost_build1.5.8/bin/b2 --build-dir=/tmp/boost_build_temp_directory_1_5_8 toolset=gcc-5.2 --without-test --without-python --without-wave --without-graph --without-coroutine --without-math --without-log --without-graph_parallel --without-mpi"); 
+    # We have troubles when run this code with vzctl exec so we should add custom compiler in path 
+    exec_command("PATH=\$PATH:/opt/gcc520/bin /opt/boost_build1.5.8/bin/b2 --build-dir=/tmp/boost_build_temp_directory_1_5_8 toolset=gcc-5.2 --without-test --without-python --without-wave --without-graph --without-coroutine --without-math --without-log --without-graph_parallel --without-mpi"); 
 }
 
 sub install_boost_builder { 
