@@ -195,7 +195,47 @@ sub download_file {
     }     
 }
 
+sub install_binary_gcc {
+    my $binary_repository_path = 'http://192.168.0.127/~pavel-odintsov/FastNetMon_gcc_toolchain/';
+    my $package_distro_version = '';
+
+    if ($distro_type eq 'debian') {
+        $package_distro_version = int($distro_version);
+    } elsif ($distro_type eq 'ubuntu') {
+        $package_distro_version = $distro_version;
+    } elsif ($distro_type eq 'centos') {
+        $package_distro_version = $distro_version;
+    }
+
+    chdir $temp_folder_for_building_project;
+
+    my $distribution_file_name = "gcc-5.2.0-$distro_type-$package_distro_version-$distro_architecture.tar.gz"; 
+    my $full_path = "$binary_repository_path/$distribution_file_name";
+
+    print "We will try to download prebuilded binary gcc package for your distribution\n";
+    print "We will download from $full_path\n";
+    my $gcc_binary_download_result = download_file($full_path, $distribution_file_name);
+
+    unless ($gcc_binary_download_result) {
+        print "Download failed, skip to source compilation\n";
+        return '';
+    }
+
+    print "Unpack gcc binary package\n";
+    # Unpack file to opt
+    exec_command("tar -xf $distribution_file_name -C /opt"); 
+
+    return 1;
+}
+
 sub install_gcc {
+    my $result = install_binary_gcc();
+
+    # Do not call source compilation in this case
+    if ($result) {
+        return;
+    }
+
     # Install gcc from sources
     if ($distro_type eq 'debian') {
         my @dependency_list = ('libmpfr-dev', 'libmpc-dev');
@@ -609,7 +649,6 @@ sub detect_distribution {
     # We use following global variables here:
     # $distro_type, $distro_version, $appliance_name
 
-
     # x86_64 or i686
     $distro_architecture = `uname -m`;
     chomp $distro_architecture;
@@ -632,7 +671,7 @@ sub detect_distribution {
 
             $distro_version = `cat /etc/debian_version`;
             chomp $distro_version;
-        } elsif ($issue_first_line =~ m/Ubuntu (\d+)/) {
+        } elsif ($issue_first_line =~ m/Ubuntu (\d+(?:\.\d+)?)/) {
             $distro_type = 'ubuntu';
             $distro_version = $1;
         } elsif ($issue_first_line =~ m/VyOS/) {
