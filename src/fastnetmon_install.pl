@@ -278,11 +278,6 @@ sub install_gcc {
     print {$fl} "using gcc : 5.2 : /opt/gcc520/bin/g++ ;\n";
     close $fl;
 
-    # Do not call source compilation in this case
-    if ($result) {
-        return;
-    }
-
     # Install gcc from sources
     if ($distro_type eq 'debian') {
         my @dependency_list = ('libmpfr-dev', 'libmpc-dev');
@@ -304,6 +299,12 @@ sub install_gcc {
 
         yum(@dependency_list);
     } 
+
+    # Please be careful! This libs required for binary version of gcc! We should install they!
+    # Do not call source compilation in this case
+    if ($result) {
+        return;
+    }    
 
     print "Download gcc archive\n";
     chdir $temp_folder_for_building_project;
@@ -389,7 +390,7 @@ sub install_boost_builder {
 
     print "Build Boost builder\n";
     # We haven't system compiler here and we will use custom gcc for compilation here
-    my $bootstrap_result = exec_command("./bootstrap.sh --with-toolset=gcc-5.2");
+    my $bootstrap_result = exec_command("/opt/gcc520/bin/gcc ./bootstrap.sh --with-toolset=cc");
 
     unless ($bootstrap_result) {
         die "bootstrap of Boost Builder failed, please check logs\n";
