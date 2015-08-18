@@ -231,6 +231,10 @@ sub install_binary_gcc {
 sub install_gcc {
     my $result = install_binary_gcc();
 
+    # Add new compiler to configure options
+    # It's mandatory for log4cpp
+    $configure_options = "CC=/opt/gcc520/bin/gcc CXX=/opt/gcc520/bin/g++";
+
     # Do not call source compilation in this case
     if ($result) {
         return;
@@ -281,16 +285,19 @@ sub install_gcc {
     exec_command("make $make_options");
     exec_command("make $make_options install");
 
-    # Add new compiler to configure options
-    # It's mandatory for log4cpp
-    $configure_options = "CC=/opt/gcc520/bin/gcc CXX=/opt/gcc520/bin/g++";
-
     # We do not add it to ld.so.conf.d path because it could broke system
 }
 
 sub install_boost {
     chdir '/opt';
     my $archive_file_name = 'boost_1_58_0.tar.gz';
+
+    print "Install Boost dependencies\n";
+
+    # libicu dependencies
+    if ($distro_type eq 'ubuntu' && $distro_version eq '14.04') {
+        apt_get('libicu52');
+    }
 
     print "Download Boost source code\n";
     my $boost_download_result = download_file("http://downloads.sourceforge.net/project/boost/boost/1.58.0/boost_1_58_0.tar.gz?r=http%3A%2F%2Fwww.boost.org%2Fusers%2Fhistory%2Fversion_1_58_0.html&ts=1439207367&use_mirror=cznic", $archive_file_name, 'a27b010b9d5de0c07df9dddc9c336767725b1e6b');
