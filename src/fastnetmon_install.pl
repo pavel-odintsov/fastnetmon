@@ -389,7 +389,12 @@ sub install_boost_builder {
 
     print "Build Boost builder\n";
     # We haven't system compiler here and we will use custom gcc for compilation here
-    exec_command("./bootstrap.sh --with-toolset=gcc-5.2");
+    my $bootstrap_result = exec_command("./bootstrap.sh --with-toolset=gcc-5.2");
+
+    unless ($bootstrap_result) {
+        die "bootstrap of Boost Builder failed, please check logs\n";
+    }
+
     exec_command("./b2 install --prefix=/opt/boost_build1.5.8");
 }
 
