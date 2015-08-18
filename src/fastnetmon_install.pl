@@ -196,7 +196,7 @@ sub download_file {
 }
 
 sub install_binary_gcc {
-    my $binary_repository_path = 'http://192.168.0.127/~pavel-odintsov/FastNetMon_gcc_toolchain/';
+    my $binary_repository_path = 'http://192.168.0.127/~pavel-odintsov/FastNetMon_gcc_toolchain';
     my $package_distro_version = '';
 
     if ($distro_type eq 'debian') {
