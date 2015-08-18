@@ -881,7 +881,7 @@ sub install_fastnetmon {
 
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
         my @fastnetmon_deps = ("git", "g++", "gcc", "libgpm-dev", "libncurses5-dev",
-            "liblog4cpp5-dev", "libnuma-dev", "libgeoip-dev","libpcap-dev", "clang", "cmake", "pkg-config", "libhiredis-dev",
+            "liblog4cpp5-dev", "libnuma-dev", "libgeoip-dev","libpcap-dev", "cmake", "pkg-config", "libhiredis-dev",
         );
 
         # We add this dependencies because package libboost-all-dev is broken on VyOS
@@ -895,7 +895,7 @@ sub install_fastnetmon {
     } elsif ($distro_type eq 'centos') {
         my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++', 'boost-devel', 'GeoIP-devel', 'log4cpp-devel',
             'ncurses-devel', 'glibc-static', 'ncurses-static', 'boost-thread', 'libpcap-devel', 'gpm-static',
-            'gpm-devel', 'clang', 'cmake', 'pkgconfig', 'hiredis-devel',
+            'gpm-devel', 'cmake', 'pkgconfig', 'hiredis-devel',
         );
 
         yum(@fastnetmon_deps);
