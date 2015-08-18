@@ -193,6 +193,12 @@ sub exec_command {
     my $output = `$command 2>&1 >> $install_log_path`;
   
     print {$fl} "Command finished with code $?\n\n";
+
+    if ($? == 0) {
+        return 1;
+    } else {
+        return '';
+    }
 }
 
 sub get_sha1_sum {
@@ -266,6 +272,11 @@ sub install_gcc {
     # Add new compiler to configure options
     # It's mandatory for log4cpp
     $configure_options = "CC=/opt/gcc520/bin/gcc CXX=/opt/gcc520/bin/g++";
+
+    # We use non standard gcc compiler for Boost builder and Boost and specify it this way
+    open my $fl, ">", "/root/user-config.jam" or die "Can't open $! file for writing manifest\n";
+    print {$fl} "using gcc : 5.2 : /opt/gcc520/bin/g++ ;\n";
+    close $fl;
 
     # Do not call source compilation in this case
     if ($result) {
@@ -353,11 +364,6 @@ sub install_boost {
 
     chdir "boost_1_58_0";
 
-    # We use non standard gcc compiler for Boost and specify it this way
-    open my $fl, ">", "/root/user-config.jam" or die "Can't open $! file for writing manifest\n";
-    print {$fl} "using gcc : 5.2 : /opt/gcc520/bin/g++ ;\n";
-    close $fl;
-
     print "Build Boost\n";
     exec_command("/opt/boost_build1.5.8/bin/b2 --build-dir=/tmp/boost_build_temp_directory_1_5_8 toolset=gcc-5.2 --without-test --without-python --without-wave --without-graph --without-coroutine --without-math --without-log --without-graph_parallel --without-mpi"); 
 }
@@ -383,7 +389,7 @@ sub install_boost_builder {
 
     print "Build Boost builder\n";
     # We haven't system compiler here and we will use custom gcc for compilation here
-    exec_command("CC=/opt/gcc520/bin/gcc ./bootstrap.sh");
+    exec_command("./bootstrap.sh --with-toolset=gcc-5.2");
     exec_command("./b2 install --prefix=/opt/boost_build1.5.8");
 }
 
