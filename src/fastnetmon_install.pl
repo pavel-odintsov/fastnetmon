@@ -396,7 +396,8 @@ sub install_boost_builder {
         die "bootstrap of Boost Builder failed, please check logs\n";
     }
 
-    my $b2_install_result = exec_command("CC=/opt/gcc520/bin/gcc CXX=/opt/gcc520/bin/g++ ./b2 install --prefix=/opt/boost_build1.5.8");
+    # We should specify toolset here if we want to do build with custom compiler
+    my $b2_install_result = exec_command("./b2 install --prefix=/opt/boost_build1.5.8 toolset=gcc-5.2");
     
     unless ($b2_install_result) {
         die "Can't execute b2 install\n";
