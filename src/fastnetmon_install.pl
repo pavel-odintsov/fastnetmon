@@ -214,7 +214,7 @@ sub get_sha1_sum {
 sub download_file {
     my ($url, $path, $expected_sha1_checksumm) = @_;
 
-    `wget --quiet '$url' -O$path`;
+    `wget --no-check-certificate --quiet '$url' -O$path`;
 
     if ($? != 0) {
         print "We can't download archive $url correctly\n";
