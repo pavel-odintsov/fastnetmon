@@ -57,11 +57,15 @@ if ($cpus_number > 1) {
 # We will build gcc, stdc++ and boost for this distribution from sources
 my $build_binary_environment = '';
 
+# With this option we could build full binary package
+my $create_binary_bundle = '';
+
 # Get options from command line
 GetOptions(
     'use-git-master' => \$we_use_code_from_master,
     'do-not-track-me' => \$do_not_track_me,
-    'build-binary-environment' => \$build_binary_environment
+    'build-binary-environment' => \$build_binary_environment,
+    'create-binary-bundle' => \$create_binary_bundle,
 );
 
 my $we_have_ndpi_support = '';
@@ -134,10 +138,38 @@ sub main {
 
     send_tracking_information('finished');
 
+    if ($create_binary_bundle) {
+        create_binary_bundle();
+    }
+
     my $install_time = time() - $start_time;
     my $pretty_install_time_in_minutes = sprintf("%.2f", $install_time / 60);
 
     print "We have built project in $pretty_install_time_in_minutes minutes\n";
+}
+
+sub create_binary_bundle {
+    chdir $temp_folder_for_building_project;
+    chdir "fastnetmon";
+
+    my $bundle_version = '';
+
+    if ($we_use_code_from_master) {
+        my $git_last_commit_id = `git log --format="%H" -n 1`;
+        chomp $git_last_commit_id;
+
+        $bundle_version = "git-$git_last_commit_id";
+    } else {
+        $bundle_version = $stable_branch_name;
+    }
+
+    my $bundle_file_name = "fastnetmon-binary-$bundle_version-$distro_type-$distro_version-$distro_architecture.tar.gz";
+    my $full_bundle_path = "/tmp/$bundle_file_name";
+
+    print "We will create bundle with name $bundle_file_name\n";
+
+    exec_command("$temp_folder_for_building_project/fastnetmon/src/scripts/build_libary_bundle.pl $full_bundle_path");
+    print "You could download bundle here $full_bundle_path\n";
 }
 
 sub send_tracking_information {
