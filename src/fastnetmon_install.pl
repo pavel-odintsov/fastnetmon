@@ -327,7 +327,7 @@ sub install_boost {
     close $fl;
 
     print "Build Boost\n";
-    exec_command("/opt/boost_build1.5.8/bin/b2 --build-dir=/tmp/boosе_build_temp_directory_1_5_8 toolset=gcc-5.2 --without-test --without-python --without-wave --without-graph --without-coroutine --without-math --without-log --without-graph_parallel --without-mpi"); 
+    exec_command("/opt/boost_build1.5.8/bin/b2 --build-dir=/tmp/boost_build_temp_directory_1_5_8 toolset=gcc-5.2 --without-test --without-python --without-wave --without-graph --without-coroutine --without-math --without-log --without-graph_parallel --without-mpi"); 
 }
 
 sub install_boost_builder { 
