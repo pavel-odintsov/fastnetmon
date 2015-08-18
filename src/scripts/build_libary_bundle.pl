@@ -11,6 +11,19 @@ use File::Path qw(make_path);
 # This script will produce binary archive withh all libraries which required for FastNetMon
 #
 
+my $archive_bundle_name = '';
+
+if (scalar @ARGV == 1 && $ARGV[0]) {
+    $archive_bundle_name = $ARGV[0]; 
+} else {
+    $archive_bundle_name = '/tmp/fastnetmon_bundle.tar.gz';
+}
+
+if (-e $archive_bundle_name) {
+    print "Bundle file is already exists, remove it\n";
+    unlink $archive_bundle_name;
+}
+
 my $global_path = '/opt';
 
 my $target_path = `mktemp -d`;
@@ -84,10 +97,6 @@ copy("$global_path/fastnetmon/fastnetmon_client", "$target_path/fastnetmon/fastn
 
 # Set exec flag
 chmod 0755, "$target_path/fastnetmon/fastnetmon";
-
-my $archive_bundle_name = '/tmp/fastnetmon_bundle.tar.gz';
-unlink $archive_bundle_name;
-
 
 `tar -cpzf $archive_bundle_name -C $target_path ./`;
 print "We have created bundle $archive_bundle_name\n";
