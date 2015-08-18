@@ -374,7 +374,8 @@ sub install_boost {
 
     print "Build Boost\n";
     # We have troubles when run this code with vzctl exec so we should add custom compiler in path 
-    my $b2_build_result = exec_command("PATH=\$PATH:/opt/gcc520/bin /opt/boost_build1.5.8/bin/b2 --build-dir=/tmp/boost_build_temp_directory_1_5_8 toolset=gcc-5.2 --without-test --without-python --without-wave --without-graph --without-coroutine --without-math --without-log --without-graph_parallel --without-mpi"); 
+    # So without HOME=/root nothing worked correctly due to another "openvz" feature
+    my $b2_build_result = exec_command("HOME=/root PATH=\$PATH:/opt/gcc520/bin /opt/boost_build1.5.8/bin/b2 --build-dir=/tmp/boost_build_temp_directory_1_5_8 toolset=gcc-5.2 --without-test --without-python --without-wave --without-graph --without-coroutine --without-math --without-log --without-graph_parallel --without-mpi"); 
 
     unless ($b2_build_result) {
         die "Can't execute b2 build correctly\n";
