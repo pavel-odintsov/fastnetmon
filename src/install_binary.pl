@@ -302,7 +302,7 @@ sub yum {
 sub install_fastnetmon {
     print "Install FastNetMon dependency list\n";
   
-    my $repository_address = 'http://192.168.0.127/~pavel-odintsov/'; 
+    my $repository_address = 'http://192.168.0.127/~pavel-odintsov/FastNetMon_gcc_toolchain'; 
     my $bundle_version = 'git-c7831ff71a182a15903f47de2afd99ed24ca7201'; 
     my $bundle_file_name = "fastnetmon-binary-$bundle_version-$distro_type-$distro_version-$distro_architecture.tar.gz";
 
