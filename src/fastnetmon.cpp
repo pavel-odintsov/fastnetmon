@@ -3406,7 +3406,9 @@ void call_attack_details_handlers(uint32_t client_ip, attack_details& current_at
             if (wrote_bytes != current_attack.pcap_attack_dump.get_used_memory()) {
                  logger << log4cpp::Priority::ERROR << "Can't wrote all attack details to the disk correctly"; 
             }
-    
+
+            close (pcap_fump_filedesc);   
+ 
             // Freeup memory
             current_attack.pcap_attack_dump.deallocate_buffer();
         }
