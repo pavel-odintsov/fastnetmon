@@ -1,5 +1,7 @@
 # VyOS install reference
 
+This guide well tested with VyOS 1.1.5 only.
+
 First of all you should enable Debian Squeeze stable and lts repos on VyOS box:
 ```bash
 configure
