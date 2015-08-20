@@ -3335,6 +3335,8 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
         ndpi_free_flow(flow);
         free(dst);
         free(src);
+        
+        close(filedesc);
 
         total_packets_number++;
     }

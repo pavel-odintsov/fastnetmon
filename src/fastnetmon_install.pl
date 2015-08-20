@@ -927,6 +927,9 @@ sub install_pf_ring {
     exec_command("make $make_options");
     exec_command("make $make_options install"); 
 
+    # We need do this for backward compatibility with old code (v1.1.2)
+    exec_command("ln -s /opt/pf_ring_$pf_ring_version /opt/pf_ring");
+
     print "Create library symlink\n";
 
     print "Add pf_ring to ld.so.conf\n";
