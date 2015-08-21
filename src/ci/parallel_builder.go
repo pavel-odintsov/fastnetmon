@@ -102,7 +102,7 @@ func main() {
 
             install_cmd.Run()
 
-            fmt.Println("Command call on " + distro + " finished")
+            fmt.Println("Command call on " + distribution_name + " finished")
 
             fmt.Println("stdout")
             fmt.Println(stdout_output.String())
