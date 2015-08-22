@@ -91,8 +91,8 @@ sub welcome_message {
     print "Hello, my dear Customer!\n\n";
 
     print "We need about ten minutes of your time for installig FastNetMon toolkit\n";
-    print "You could make coffee/tee or you will help project and fill this short survey:\nhttp://bit.ly/fastnetmon_survey\n";
-    print "I will be very glad if you spent this time and share your DDoS experience\n\n";
+    print "You could make coffee/tee or you will help project and fill this short survey:   http://bit.ly/fastnetmon_survey\n";
+    print "I will be very glad if you spent this time and share your DDoS experience :)\n\n";
 }
 
 sub get_logical_cpus_number {
