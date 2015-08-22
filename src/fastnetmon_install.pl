@@ -790,6 +790,12 @@ sub detect_distribution {
 
             $distro_version = `cat /etc/debian_version`;
             chomp $distro_version;
+
+            # Debian 6 example: 6.0.10
+            # We will try transform it to decimal number
+            if ($distro_version =~ /^(\d+\.\d+)\.\d+$/) {
+                $distro_version = $1;
+            }
         } elsif ($issue_first_line =~ m/Ubuntu (\d+(?:\.\d+)?)/) {
             $distro_type = 'ubuntu';
             $distro_version = $1;
