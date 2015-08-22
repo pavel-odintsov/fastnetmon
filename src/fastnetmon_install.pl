@@ -94,9 +94,26 @@ sub get_logical_cpus_number {
     return $cpus_number;
 }
 
+sub install_additional_repositories {
+    if ($distro_type eq 'centos') {
+        if ($distro_version == 6) {
+            print "Install EPEL repository for your system\n"; 
+            yum('https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm');
+        }    
+
+        if ($distro_version == 7) {
+            print "Install EPEL repository for your system\n"; 
+            yum('https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm');
+        } 
+    }
+}
+
 ### Functions start here
 sub main {
     detect_distribution();
+
+    # CentOS base repository is very very poor and we need EPEL for some dependencies
+    install_additional_repositories();
 
     # Refresh information about packages
     init_package_manager();
@@ -981,7 +998,7 @@ sub install_fastnetmon {
 
         apt_get(@fastnetmon_deps);
     } elsif ($distro_type eq 'centos') {
-        my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++', 'GeoIP-devel', 'log4cpp-devel',
+        my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++', 'GeoIP-devel',
             'ncurses-devel', 'glibc-static', 'ncurses-static', 'libpcap-devel', 'gpm-static',
             'gpm-devel', 'cmake', 'pkgconfig', 'hiredis-devel',
         );
@@ -991,14 +1008,16 @@ sub install_fastnetmon {
             @fastnetmon_deps = (@fastnetmon_deps, 'boost-devel', 'boost-thread')
         }
 
-        yum(@fastnetmon_deps);
-
         if ($distro_version == 7) {
             print "Your distro haven't log4cpp in stable EPEL packages and we install log4cpp from testing of EPEL\n";
             # We should install log4cpp packages only in this order!
             yum('https://kojipkgs.fedoraproject.org//packages/log4cpp/1.1.1/1.el7/x86_64/log4cpp-1.1.1-1.el7.x86_64.rpm',
                 'https://kojipkgs.fedoraproject.org//packages/log4cpp/1.1.1/1.el7/x86_64/log4cpp-devel-1.1.1-1.el7.x86_64.rpm'),
+        } else {
+            push @fastnetmon_deps, 'log4cpp-devel';
         }
+
+        yum(@fastnetmon_deps);
     } elsif ($distro_type eq 'gentoo') {
         my @fastnetmon_deps = ("dev-vcs/git", "gcc", "sys-libs/gpm", "sys-libs/ncurses", "dev-libs/log4cpp", "dev-libs/geoip", 
             "net-libs/libpcap", "dev-util/cmake", "pkg-config", "dev-libs/hiredis", "dev-libs/boost"
