@@ -48,6 +48,8 @@ my $make_options = '';
 # We could pass options to configure with this variable
 my $configure_options = '';
 
+welcome_message();
+
 # We could get huge speed benefits with this option
 if ($cpus_number > 1) {
     print "You have really nice server with $cpus_number CPU's and we will use they all for build process :)\n";
@@ -84,6 +86,14 @@ if ($we_use_code_from_master) {
 }
 
 main();
+
+sub welcome_message {
+    print "Hello, my dear Customer!\n\n";
+
+    print "We need about ten minutes of your time for installig FastNetMon toolkit\n";
+    print "You could make coffee/tee or you will help project and fill this short survey:\nhttp://bit.ly/fastnetmon_survey\n";
+    print "I will be very glad if you spent this time and share your DDoS experience\n\n";
+}
 
 sub get_logical_cpus_number {
     my @cpuinfo = `cat /proc/cpuinfo`;
