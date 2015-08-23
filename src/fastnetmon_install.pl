@@ -298,6 +298,9 @@ sub install_binary_gcc {
     # Unpack file to opt
     exec_command("tar -xf $distribution_file_name -C /opt"); 
 
+    # Remove archive
+    unlink($distribution_file_name);
+
     return 1;
 }
 
