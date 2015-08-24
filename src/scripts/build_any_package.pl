@@ -125,6 +125,7 @@ WantedBy=multi-user.target
 DOC
 
     my $rpm_sources_path = '/root/rpmbuild/SOURCES';
+
     `wget http://178.62.227.110/fastnetmon_binary_repository/test_binary_builds/$archive_name.tar.gz -O$rpm_sources_path/archive.tar.gz`;
     `wget --no-check-certificate https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon.conf -O$rpm_sources_path/fastnetmon.conf`;
    
@@ -146,6 +147,120 @@ DOC
 
     # Filter out folders
     @files_list = grep { ! m#/$# } @files_list;
+
+    my $systemd_spec_file = <<'DOC';
+    my $spec_file = <<'DOC';
+#
+# Pre/post params: https://fedoraproject.org/wiki/Packaging:ScriptletSnippets
+#
+
+%global  fastnetmon_attackdir   %{_localstatedir}/log/fastnetmon_attacks
+%global  fastnetmon_user        root
+%global  fastnetmon_group       %{fastnetmon_user}
+%global  fastnetmon_config_path %{_sysconfdir}/fastnetmon.conf
+
+Name:              fastnetmon
+Version:           1.1.3
+Release:           1%{?dist}
+
+Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
+Group:             System Environment/Daemons
+License:           GPLv2
+URL:               https://github.com/FastVPSEestiOu/fastnetmon
+
+# Top level fodler inside archive should be named as "fastnetmon-1.1.1" 
+Source0:           http://178.62.227.110/fastnetmon_binary_repository/test_binary_builds/this_fake_path_do_not_check_it/archive.tar.gz
+
+# Yes, it's bad idea to specify fixed version of PF_RING but they have strange issue when we use another library version 
+
+Requires:          libpcap, numactl
+Requires(pre):     shadow-utils
+Requires(post):    systemd
+Requires(preun):   systemd
+Requires(postun):  systemd
+Provides:          fastnetmon
+
+%description
+A high performance DoS/DDoS load analyzer built on top of multiple packet capture
+engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
+
+%prep
+
+rm -rf fastnetmon-tree
+mkdir fastnetmon-tree
+mkdir fastnetmon-tree/opt
+tar -xvvf /root/rpmbuild/SOURCES/archive.tar.gz -C fastnetmon-tree/opt
+
+# Copy service scripts
+mkdir fastnetmon-tree/etc
+cp /root/rpmbuild/SOURCES/systemd_init fastnetmon-tree/etc
+cp /root/rpmbuild/SOURCES/fastnetmon.conf fastnetmon-tree/etc
+
+%build
+
+# We do not build anything
+exit 0
+
+%install
+
+mkdir %{buildroot}/opt
+cp -R fastnetmon-tree/opt/* %{buildroot}/opt
+chmod 755 %{buildroot}/opt/fastnetmon/fastnetmon
+chmod 755 %{buildroot}/opt/fastnetmon/fastnetmon_client
+
+# install init script
+install -p -D -m 0755 fastnetmon-tree/etc/systemd_init %{buildroot}%{_sysconfdir}/systemd/system/fastnetmon.service
+
+# install config
+install -p -D -m 0644 fastnetmon-tree/etc/fastnetmon.conf %{buildroot}%{fastnetmon_config_path}
+
+# Create log folder
+install -p -d -m 0700 %{buildroot}%{fastnetmon_attackdir}
+
+exit 0
+
+%pre
+
+exit 0
+
+%post
+
+%systemd_post fastnetmon.service
+
+if [ $1 -eq 1 ]; then
+    # It's install
+    # Enable autostart
+    /usr/bin/systemctl enable fastnetmon.service
+    /usr/bin/systemctl start fastnetmon.service
+fi
+
+
+#if [ $1 -eq 2 ]; then
+    # upgrade
+    #/sbin/service %{name} restart >/dev/null 2>&1
+#fi
+
+%preun
+
+%systemd_preun fastnetmon.service
+
+%postun
+
+%systemd_postun_with_restart fastnetmon.service 
+
+%files
+#%doc LICENSE CHANGES README
+
+{files_list}
+
+%{_sysconfdir}/systemd/system
+%config(noreplace) %{_sysconfdir}/fastnetmon.conf
+%attr(700,%{fastnetmon_user},%{fastnetmon_group}) %dir %{fastnetmon_attackdir}
+
+%changelog
+* Mon Mar 23 2015 Pavel Odintsov <pavel.odintsov@gmail.com> - 1.1.1-1
+- First RPM package release
+DOC
 
     my $spec_file = <<'DOC';
 #
