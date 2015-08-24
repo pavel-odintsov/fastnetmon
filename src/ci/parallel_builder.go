@@ -15,6 +15,27 @@ var target_directory = ""
 var public_key_path = "/root/.ssh/id_rsa.pub"
 
 /*
+
+Download all images
+vztmpl-dl --update centos-6-x86_64 centos-6-x86 centos-7-x86_64 debian-7.0-x86 debian-7.0-x86_64 debian-8.0-x86_64 ubuntu-12.04-x86 ubuntu-12.04-x86_64 ubuntu-14.04-x86 ubuntu-14.04-x86_64 debian-6.0-x86_64
+
+Please configure NAT before:
+
+Fix /etc/modprobe.d/openvz.conf to following content:
+options nf_conntrack ip_conntrack_disable_ve0=0
+vim /etc/sysct.conf
+
+Uncomment:
+net.ipv4.ip_forward=1
+sysctl -p
+iptables -t nat -A POSTROUTING -s 10.10.10.1/24 -o eth0 -j SNAT --to 192.168.0.241
+
+Save iptables config
+/etc/init.d/iptables save
+
+*/
+
+/*
 For renaming of result packages you could use:
 find -type f| perl -e 'do{ chomp; my @m=split "/", $_; my @n = split /\./, $_; rename($_, "fastnetmon-git-447aa5b86bb5a248e310c15a4d5945e72594d6cf-$m[1]_x86_64.$n[-1]"); } for <>' 
 */
