@@ -8,7 +8,10 @@ import "os/exec"
 import "regexp"
 import "log"
 import "strconv"
+import "io/ioutil"
 
+// In this folder we will store all results of our work
+var target_directory = ""
 var public_key_path = "/root/.ssh/id_rsa.pub"
 
 var distros_x86_64 = []string{ "centos-6-x86_64", "centos-7-x86_64", "debian-6.0-x86_64", "debian-7.0-x86_64", "debian-8.0-x86_64", "ubuntu-12.04-x86_64", "ubuntu-14.04-x86_64" } 
@@ -18,6 +21,14 @@ var distros_x86 = []string{ "centos-6-x86", "debian-6.0-x86", "debian-7.0-x86", 
 var start_ctid_number = 1000
 
 func main() {
+    target_directory, err := ioutil.TempDir("/root", "builded_packages") 
+ 
+    if err != nil {
+        log.Fatal("Can't create temp folder", err)
+    }
+
+    fmt.Println("We will store result data to folder", target_directory)
+ 
     _ = distros_x86
     var wg sync.WaitGroup
 
@@ -92,7 +103,8 @@ func main() {
             os.Remove("/root/.ssh/known_hosts")
 
             // perl /root/fastnetmon_install.pl --use-git-master --create-binary-bundle --build-binary-environment"
-            install_cmd := exec.Command("ssh", "-lroot", ip_address, "perl", "/root/fastnetmon_install.pl")
+            // install_cmd := exec.Command("ssh", "-lroot", ip_address, "perl", "/root/fastnetmon_install.pl")
+            install_cmd := exec.Command("ssh", "-lroot", ip_address, "perl", "/root/fastnetmon_install.pl", "--use-git-master", "--create-binary-bundle", "--build-binary-environment")
 
             var stdout_output bytes.Buffer
             var stderr_output bytes.Buffer
@@ -109,6 +121,11 @@ func main() {
 
             fmt.Println("stderr")
             fmt.Println(stderr_output.String())
+
+            fmt.Println("Get produced data from container to host system")
+
+            copy_cmd := exec.Command("cp", "-rf", "/vz/root/" + ctid_as_string + "/tmp/result_data", target_directory + "/" + distribution_name) 
+            copy_cmd.Run()
 
             // Stop it 
             fmt.Println("Stop container ", ctid_as_string)
