@@ -305,7 +305,7 @@ sub install_fastnetmon {
     if ($distro_type eq 'centos') {
         yum("/tmp/$bundle_file_name");
     } elsif ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
-        apt_get("/tmp/$bundle_file_name");
+        exec_command("dpkg -i /tmp/$bundle_file_name");
     }
 
     print "If you have any issues, please check /var/log/fastnetmon.log file contents\n";
