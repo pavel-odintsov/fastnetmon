@@ -283,7 +283,7 @@ sub install_fastnetmon {
         }
  
         if (int($distro_version) == 7) {
-            apt_get('libpcap0.8', 'libnuma1', 'libicu46');
+            apt_get('libpcap0.8', 'libnuma1', 'libicu48');
         }
 
         if (int($distro_version) == 8) {
@@ -293,7 +293,13 @@ sub install_fastnetmon {
 
     if ($distro_type eq 'centos') {
         # For CentOS 6 and 7 this list is equal
-        yum('libpcap', 'libicu', 'numactl-libs');
+        yum('libpcap', 'libicu');
+
+        if (int($distro_version) == 7) {
+            yum('numactl-libs');
+        } elsif (int($distro_version) == 6) {
+            yum('numactl');
+        } 
     }
 
     if ($distro_type eq 'ubuntu') {
