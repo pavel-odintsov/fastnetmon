@@ -149,7 +149,6 @@ DOC
     @files_list = grep { ! m#/$# } @files_list;
 
     my $systemd_spec_file = <<'DOC';
-    my $spec_file = <<'DOC';
 #
 # Pre/post params: https://fedoraproject.org/wiki/Packaging:ScriptletSnippets
 #
@@ -381,8 +380,15 @@ DOC
     my $joined_file_list = join "\n", @files_list;
     $spec_file =~ s/\{files_list\}/$joined_file_list/;
 
+    my $selected_spec_file = $spec_file;
+
+    # For CentOS we use systemd
+    if ($archive_name =~ m/centos-7/) {
+        $selected_spec_file = $systemd_spec_file;
+    }
+
     open my $fl, ">", "generated_spec_file.spec" or die "Can't create spec file\n";
-    print {$fl} $spec_file;
+    print {$fl} $selected_spec_file;
     system("rpmbuild -bb generated_spec_file.spec");
 
     mkdir "/tmp/result_data";
