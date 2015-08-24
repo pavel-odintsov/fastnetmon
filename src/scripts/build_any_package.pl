@@ -206,7 +206,7 @@ cp -R fastnetmon-tree/opt/* %{buildroot}/opt
 chmod 755 %{buildroot}/opt/fastnetmon/fastnetmon
 chmod 755 %{buildroot}/opt/fastnetmon/fastnetmon_client
 
-nstall init script
+# install init script
 install -p -D -m 0755 fastnetmon-tree/etc/system_v_init %{buildroot}%{_initrddir}/fastnetmon
 
 # install config
@@ -222,6 +222,7 @@ exit 0
 exit 0
 
 %post
+
 if [ $1 -eq 1 ]; then
     # It's install
     /sbin/chkconfig --add %{name}
@@ -230,10 +231,10 @@ if [ $1 -eq 1 ]; then
 fi
 
 
-if [ $1 -eq 2 ]; then
+#if [ $1 -eq 2 ]; then
     # upgrade
     #/sbin/service %{name} restart >/dev/null 2>&1
-fi
+#fi
 
 %preun
 
