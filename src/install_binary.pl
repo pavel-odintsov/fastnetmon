@@ -334,11 +334,17 @@ sub install_fastnetmon {
     exec_command("tar -xf /tmp/$bundle_file_name -C /opt");
 
     if ($distro_type eq 'debian') {
-        if ($distro_version == 8) {
-            apt_get('libpcap0.8', 'libicu52', 'libnuma1');
+        if (int($distro_version) == 6) {
+            apt_get('libpcap0.8', 'libnuma1', 'libicu44');
         }
-    
-        # TODO
+ 
+        if (int($distro_version) == 7) {
+            apt_get('libpcap0.8', 'libnuma1', 'libicu46');
+        }
+
+        if (int($distro_version) == 8) {
+            apt_get('libpcap0.8', 'libnuma1', 'libicu52');
+        }
     }
 
     if ($distro_type eq 'centos') {
