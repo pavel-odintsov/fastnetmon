@@ -127,9 +127,9 @@ sub build_deb {
 
     # Create folder for config
     mkdir("$folder_for_build/etc");
-    print `wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon.conf -O$folder_for_build/etc/fastnetmon.conf`;
+    print `wget --no-check-certificate https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon.conf -O$folder_for_build/etc/fastnetmon.conf`;
 
-    print `$archive_path -O$folder_for_build/archive.tar.gz`;
+    print `wget --no-check-certificate $archive_path -O$folder_for_build/archive.tar.gz`;
 
     print `tar -xf $folder_for_build/archive.tar.gz  -C $folder_for_build`;
     unlink("$folder_for_build/archive.tar.gz");
