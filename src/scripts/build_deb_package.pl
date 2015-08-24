@@ -3,6 +3,14 @@
 use strict;
 use warnings;
 
+unless (scalar @ARGV == 1 && $ARGV[0]) {
+    die "Please specifyoriginal binary file name: fastnetmon-binary-git-0cfdfd5e2062ad94de24f2f383576ea48e6f3a07-debian-6.0.10-x86_64";
+}
+
+my $archive_name = $ARGV[0];
+
+print "We will build deb from $archive_name\n";
+
 my $fastnetmon_systemd_unit = <<'DOC';
 [Unit]
 Description=FastNetMon - DoS/DDoS analyzer with sflow/netflow/mirror support
@@ -80,12 +88,12 @@ esac
 exit 0
 DOC
 
+# dpkg-deb: warning: '/tmp/tmp.gbd1VXGPQB/DEBIAN/control' contains user-defined field '#Standards-Version'
 my $fastnetmon_control_file = <<'DOC';
 Package: fastnetmon
 Maintainer: Pavel Odintsov <pavel.odintsov@gmail.com>
 Section: misc
 Priority: optional
-Standards-Version: 3.9.6
 Architecture: amd64
 Version: 1.1.3
 Depends: libpcap0.8, libnuma1
@@ -118,12 +126,23 @@ sub build_deb {
     put_text_to_file("$folder_for_build/DEBIAN/control", $fastnetmon_control_file);
 
     # Create init files for different versions of Debian like OS 
-    put_text_to_file("$folder_for_build/DEBIAN/fastnetmon.service", $fastnetmon_systemd_unit);
-    put_text_to_file("$folder_for_build/DEBIAN/fastnetmon.init", $fastnetmon_systemv_init);
+    mkdir "$folder_for_build/etc";
+    mkdir "$folder_for_build/etc/init.d";
 
+    put_text_to_file("$folder_for_build/etc/init.d/fastnetmon", $fastnetmon_systemv_init);
+    chmod 0755, "$folder_for_build/etc/init.d/fastnetmon";
+
+    # systemd
+    mkdir "$folder_for_build/lib";
+    mkdir "$folder_for_build/lib/systemd";
+    mkdir "$folder_for_build/lib/systemd/system";
+ 
+    put_text_to_file("$folder_for_build/lib/systemd/system/fastnetmon.service", $fastnetmon_systemd_unit);
+
+    # Configuration file
     put_text_to_file("$folder_for_build/DEBIAN/conffiles", "etc/fastnetmon.conf\n");
 
-    my $archive_path = 'http://178.62.227.110/fastnetmon_binary_repository/test_binary_builds/fastnetmon-binary-git-0cfdfd5e2062ad94de24f2f383576ea48e6f3a07-debian-6.0.10-x86_64.tar.gz';
+    my $archive_path = "http://178.62.227.110/fastnetmon_binary_repository/test_binary_builds/$archive_name.tar.gz";
 
     # Create folder for config
     mkdir("$folder_for_build/etc");
@@ -131,8 +150,10 @@ sub build_deb {
 
     print `wget --no-check-certificate $archive_path -O$folder_for_build/archive.tar.gz`;
 
-    print `tar -xf $folder_for_build/archive.tar.gz  -C $folder_for_build`;
+    mkdir "$folder_for_build/opt";
+    print `tar -xf $folder_for_build/archive.tar.gz  -C $folder_for_build/opt`;
     unlink("$folder_for_build/archive.tar.gz");
 
-    system("dpkg-deb --build $folder_for_build");
+    mkdir "/tmp/result_data";
+    system("dpkg-deb --build $folder_for_build /tmp/result_data/$archive_name.deb");
 }
