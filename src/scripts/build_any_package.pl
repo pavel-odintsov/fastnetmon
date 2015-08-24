@@ -23,13 +23,125 @@ sub build_rpm_package {
     mkdir '/root/rpmbuild';
     mkdir '/root/rpmbuild/SOURCES';
 
-    `wget http://178.62.227.110/fastnetmon_binary_repository/test_binary_builds/$archive_name.tar.gz -O/root/rpmbuild/SOURCES/archive.tar.gz`;
+    my $system_v_init_script = <<'DOC';
+#!/bin/bash
+#
+# fastnetmon        Startup script for FastNetMon 
+#
+# chkconfig: - 85 15
+# description: FastNetMon - high performance DoS/DDoS analyzer with sflow/netflow/mirror support
+# processname: fastnemon
+# config: /etc/fastnetmon.conf
+# pidfile: /var/run/fastnetmon.pid
+#
+### BEGIN INIT INFO
+# Provides: fastnetmon
+# Required-Start: $local_fs $remote_fs $network
+# Required-Stop: $local_fs $remote_fs $network
+# Should-Start: 
+# Short-Description: start and stop FastNetMon
+# Description:  high performance DoS/DDoS analyzer with sflow/netflow/mirror support
+### END INIT INFO
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+# We do not use this configs
+#if [ -f /etc/sysconfig/fastnetmon ]; then
+#        . /etc/sysconfig/fastnetmon
+#fi
+
+
+FASTNETMON=/opt/fastnetmon/fastnetmon
+PROGNAME="fastnetmon"
+PIDFILE=/var/run/fastnetmon.pid
+RETVAL=0
+ARGS="--daemonize"
+
+start() {
+        echo -n $"Starting $PROGNAME: "
+        $FASTNETMON $ARGS > /dev/null 2>&1 && echo_success || echo_failure
+        RETVAL=$?
+        echo ""
+        return $RETVAL
+}
+
+stop() {
+        echo -n $"Stopping $PROGNAME: "
+        killproc -p $PIDFILE $FASTNETMON
+        RETVAL=$?
+        echo ""
+        rm -f $PIDFILE
+}
+reload() {
+    echo "Reloading is not supported now, sorry"
+    #echo -n $"Reloading $PROGNAME: "
+    #kill -HUP `cat $PIDFILE`
+}
+
+# See how we were called.
+case "$1" in
+  start)
+    start
+    ;;
+  stop)
+    stop
+    ;;
+  status)
+        status -p ${PIDFILE} $PROGNAME
+    RETVAL=$?
+    ;;
+  restart)
+    stop
+        sleep 1
+    start
+    ;;
+  reload)
+        reload
+    ;;
+  *)
+    echo $"Usage: $prog {start|stop|restart|reload|status}"
+    RETVAL=2
+esac
+
+exit $RETVAL
+DOC
+
+    my $systemd_init_script = <<'DOC';
+[Unit]
+Description=FastNetMon - DoS/DDoS analyzer with sflow/netflow/mirror support
+After=syslog.target network.target remote-fs.target
+ 
+[Service]
+Type=forking
+ExecStart=/opt/fastnetmon/fastnetmon --daemonize
+PIDFile=/run/fastnetmon.pid
+
+#ExecReload=/bin/kill -s HUP $MAINPID
+#ExecStop=/bin/kill -s QUIT $MAINPID
+ 
+[Install]
+WantedBy=multi-user.target
+DOC
+
+    my $rpm_sources_path = '/root/rpmbuild/SOURCES';
+    `wget http://178.62.227.110/fastnetmon_binary_repository/test_binary_builds/$archive_name.tar.gz -O$rpm_sources_path/archive.tar.gz`;
+    `wget --no-check-certificate https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon.conf -O$rpm_sources_path/fastnetmon.conf`;
+   
+    open my $system_v_init_fl, ">", "$rpm_sources_path/system_v_init";
+    print {$system_v_init_fl} $system_v_init_script;
+    close $system_v_init_fl;
+
+    open my $systemd_init_fl, ">", "$rpm_sources_path/systemd_init";
+    print {$systemd_init_fl} $systemd_init_script;
+    close $systemd_init_fl;
 
     # Create files list from archive
     # ./luajit_2.0.4/
     my @files_list = `tar -tf /root/rpmbuild/SOURCES/archive.tar.gz`;
     chomp  @files_list;
 
+    # Replace path
     @files_list = map { s#^\.#/opt#; $_ } @files_list;
 
     # Filter out folders
@@ -74,7 +186,13 @@ engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
 
 rm -rf fastnetmon-tree
 mkdir fastnetmon-tree
-tar -xvvf /root/rpmbuild/SOURCES/archive.tar.gz -C fastnetmon-tree
+mkdir fastnetmon-tree/opt
+tar -xvvf /root/rpmbuild/SOURCES/archive.tar.gz -C fastnetmon-tree/opt
+
+# Copy service scripts
+mkdir fastnetmon-tree/etc
+cp /root/rpmbuild/SOURCES/system_v_init fastnetmon-tree/etc
+cp /root/rpmbuild/SOURCES/fastnetmon.conf fastnetmon-tree/etc
 
 %build
 
@@ -83,16 +201,16 @@ exit 0
 
 %install
 
-# install init script
-#install -p -D -m 0755 src/fastnetmon_init_script_centos6 %{buildroot}%{_initrddir}/fastnetmon
-
 mkdir %{buildroot}/opt
-cp -R fastnetmon-tree/* %{buildroot}/opt
+cp -R fastnetmon-tree/opt/* %{buildroot}/opt
 chmod 755 %{buildroot}/opt/fastnetmon/fastnetmon
 chmod 755 %{buildroot}/opt/fastnetmon/fastnetmon_client
 
+nstall init script
+install -p -D -m 0755 fastnetmon-tree/etc/system_v_init %{buildroot}%{_initrddir}/fastnetmon
+
 # install config
-#install -p -D -m 0755 src/fastnetmon.conf %{buildroot}%{fastnetmon_config_path}
+install -p -D -m 0644 fastnetmon-tree/etc/fastnetmon.conf %{buildroot}%{fastnetmon_config_path}
 
 # Create log folder
 install -p -d -m 0700 %{buildroot}%{fastnetmon_attackdir}
@@ -109,17 +227,12 @@ if [ $1 -eq 1 ]; then
     /sbin/chkconfig --add %{name}
     /sbin/chkconfig %{name} on
     /sbin/service %{name} start
-
-    # Fix pfring issue with library path
-    echo "/usr/local/lib" > /etc/ld.so.conf.d/pfring.conf
-    /sbin/ldconfig
 fi
 
 
 if [ $1 -eq 2 ]; then
     # upgrade
     #/sbin/service %{name} restart >/dev/null 2>&1
-    chmod 700 %{fastnetmon_attackdir}
 fi
 
 %preun
@@ -138,12 +251,10 @@ fi
 %files
 #%doc LICENSE CHANGES README
 
-# find /root/rpmbuild/BUILD/fastnetmon-tree/ -type f -or -type l |sed 's#/root/rpmbuild/BUILD/fastnetmon-tree/#/opt/#'
 {files_list}
 
-### TODO
-### %{_initrddir}/fastnetmon
-### %config(noreplace) %{_sysconfdir}/fastnetmon.conf
+%{_initrddir}/fastnetmon
+%config(noreplace) %{_sysconfdir}/fastnetmon.conf
 %attr(700,%{fastnetmon_user},%{fastnetmon_group}) %dir %{fastnetmon_attackdir}
 
 %changelog
