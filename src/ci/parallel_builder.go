@@ -14,6 +14,11 @@ import "io/ioutil"
 var target_directory = ""
 var public_key_path = "/root/.ssh/id_rsa.pub"
 
+/*
+For renaming of result packages you could use:
+find -type f| perl -e 'do{ chomp; my @m=split "/", $_; my @n = split /\./, $_; rename($_, "fastnetmon-git-447aa5b86bb5a248e310c15a4d5945e72594d6cf-$m[1]_x86_64.$n[-1]"); } for <>' 
+*/
+
 var distros_x86_64 = []string{ "centos-6-x86_64", "centos-7-x86_64", "debian-6.0-x86_64", "debian-7.0-x86_64", "debian-8.0-x86_64", "ubuntu-12.04-x86_64", "ubuntu-14.04-x86_64" } 
 
 var distros_x86 = []string{ "centos-6-x86", "debian-6.0-x86", "debian-7.0-x86", "ubuntu-12.04-x86", "ubuntu-14.04-x86" }
