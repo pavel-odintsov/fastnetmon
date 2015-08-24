@@ -126,7 +126,9 @@ DOC
 
     my $rpm_sources_path = '/root/rpmbuild/SOURCES';
 
-    `wget http://178.62.227.110/fastnetmon_binary_repository/test_binary_builds/$archive_name.tar.gz -O$rpm_sources_path/archive.tar.gz`;
+    # Copy bundle to build tree
+    `cp $archive_name $rpm_sources_path/archive.tar.gz`;
+
     `wget --no-check-certificate https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon.conf -O$rpm_sources_path/fastnetmon.conf`;
    
     open my $system_v_init_fl, ">", "$rpm_sources_path/system_v_init";
@@ -392,7 +394,7 @@ DOC
     system("rpmbuild -bb generated_spec_file.spec");
 
     mkdir "/tmp/result_data";
-    `cp /root/rpmbuild/RPMS/x86_64/fastnetmon-1.1.3-1.el6.x86_64.rpm /tmp/result_data`;
+    `cp /root/rpmbuild/RPMS/x86_64/* /tmp/result_data`;
 }
 
 sub build_deb_package {
@@ -517,20 +519,18 @@ DOC
     # Configuration file
     put_text_to_file("$folder_for_build/DEBIAN/conffiles", "etc/fastnetmon.conf\n");
 
-    my $archive_path = "http://178.62.227.110/fastnetmon_binary_repository/test_binary_builds/$archive_name.tar.gz";
-
     # Create folder for config
     mkdir("$folder_for_build/etc");
     print `wget --no-check-certificate https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon.conf -O$folder_for_build/etc/fastnetmon.conf`;
 
-    print `wget --no-check-certificate $archive_path -O$folder_for_build/archive.tar.gz`;
+    `cp $archive_name $folder_for_build/archive.tar.gz`;
 
     mkdir "$folder_for_build/opt";
     print `tar -xf $folder_for_build/archive.tar.gz  -C $folder_for_build/opt`;
     unlink("$folder_for_build/archive.tar.gz");
 
     mkdir "/tmp/result_data";
-    system("dpkg-deb --build $folder_for_build /tmp/result_data/$archive_name.deb");
+    system("dpkg-deb --build $folder_for_build /tmp/result_data/fastnetmon_package.deb");
 }
 
 sub put_text_to_file {
