@@ -200,8 +200,13 @@ sub create_binary_bundle {
 
     if ($distro_type eq 'ubuntu' or $distro_type eq 'debian') {
         print "We could build .deb packages for this OS\n";
-        exec_command("$temp_folder_for_building_project/fastnetmon/src/scripts/build_deb_package.pl $full_bundle_path");
+        exec_command("$temp_folder_for_building_project/fastnetmon/src/scripts/build_any_package.pl deb $full_bundle_path");
     } 
+
+    if ($distro_type eq 'centos') {
+        print "We could build .rpm packages for this OS\n";
+        exec_command("$temp_folder_for_building_project/fastnetmon/src/scripts/build_any_package.pl rpm $full_bundle_path");
+    }
 }
 
 sub send_tracking_information {
