@@ -377,15 +377,15 @@ fi
 - First RPM package release
 DOC
 
-    my $joined_file_list = join "\n", @files_list;
-    $spec_file =~ s/\{files_list\}/$joined_file_list/;
-
     my $selected_spec_file = $spec_file;
 
     # For CentOS we use systemd
     if ($archive_name =~ m/centos-7/) {
         $selected_spec_file = $systemd_spec_file;
     }
+
+    my $joined_file_list = join "\n", @files_list;
+    $selected_spec_file =~ s/\{files_list\}/$joined_file_list/;
 
     open my $fl, ">", "generated_spec_file.spec" or die "Can't create spec file\n";
     print {$fl} $selected_spec_file;
