@@ -21,7 +21,6 @@ my $do_not_track_me = '';
 
 my $cpus_number = get_logical_cpus_number();
 
-
 main();
 
 sub get_logical_cpus_number {
@@ -47,7 +46,7 @@ sub main {
     my $install_time = time() - $start_time;
     my $pretty_install_time_in_minutes = sprintf("%.2f", $install_time / 60);
 
-    print "We have built project in $pretty_install_time_in_minutes minutes\n";
+    print "We have installed project in $pretty_install_time_in_minutes minutes\n";
 }
 
 sub send_tracking_information {
@@ -111,71 +110,6 @@ sub download_file {
     }     
 }
 
-# TODO return this code
-my $fastnetmon_code_dir = '/tmp/fake_path';
-
-sub install_init_scripts {
-    # Init file for any systemd aware distro
-    if ( ($distro_type eq 'debian' && $distro_version > 7) or ($distro_type eq 'centos' && $distro_version >= 7) ) {
-        my $systemd_service_path = "/etc/systemd/system/fastnetmon.service";
-        exec_command("cp $fastnetmon_code_dir/fastnetmon.service $systemd_service_path");
-
-        exec_command("sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $systemd_service_path");
-
-        print "We found systemd enabled distro and created service: fastnetmon.service\n";
-        print "You could run it with command: systemctl start fastnetmon.service\n";
-
-        return 1;
-    }
-
-    # Init file for CentOS 6
-    if ($distro_type eq 'centos' && $distro_version == 6) {
-        my $system_init_path = '/etc/init.d/fastnetmon';
-        exec_command("cp $fastnetmon_code_dir/fastnetmon_init_script_centos6 $system_init_path");
-
-        exec_command("sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $system_init_path");
-
-        print "We created service fastnetmon for you\n";
-        print "You could run it with command: /etc/init.d/fastnetmon start\n";
-
-        return 1;
-    }
-
-    # For Gentoo
-    if ( $distro_type eq 'gentoo' ) {
-        my $init_path_in_src = "$fastnetmon_code_dir/fastnetmon_init_script_gentoo";
-        my $system_init_path = '/etc/init.d/fastnetmon';
-
-        # Checker for source code version, will work only for 1.1.3+ versions
-        if (-e $init_path_in_src) {
-            exec_command("cp $init_path_in_src $system_init_path");
-
-            print "We created service fastnetmon for you\n";
-            print "You could run it with command: /etc/init.d/fastnetmon start\n";
-
-            return 1;
-        }
-    }
-
-    # For Debian Squeeze and Wheezy 
-    # And any stable Ubuntu version
-    if ( ($distro_type eq 'debian' && ($distro_version == 6 or $distro_version == 7)) or $distro_type eq 'ubuntu') {
-        my $init_path_in_src = "$fastnetmon_code_dir/fastnetmon_init_script_debian_6_7";
-        my $system_init_path = '/etc/init.d/fastnetmon';
-
-        # Checker for source code version, will work only for 1.1.3+ versions
-        if (-e $init_path_in_src) {
-           exec_command("cp $init_path_in_src $system_init_path");
-
-            exec_command("sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $system_init_path");
-
-            print "We created service fastnetmon for you\n";
-            print "You could run it with command: /etc/init.d/fastnetmon start\n";
-
-            return 1;
-        }
-    }
-}
 
 sub init_package_manager { 
 
@@ -227,6 +161,12 @@ sub detect_distribution {
 
             $distro_version = `cat /etc/debian_version`;
             chomp $distro_version;
+
+            # Debian 6 example: 6.0.10
+            # We will try transform it to decimal number
+            if ($distro_version =~ /^(\d+\.\d+)\.\d+$/) {
+                $distro_version = $1;
+            }
         } elsif ($issue_first_line =~ m/Ubuntu (\d+(?:\.\d+)?)/) {
             $distro_type = 'ubuntu';
             $distro_version = $1;
@@ -302,22 +242,30 @@ sub yum {
 sub install_fastnetmon {
     print "Install FastNetMon dependency list\n";
   
-    my $repository_address = 'http://178.62.227.110/fastnetmon_binary_repository'; 
-    my $bundle_version = '';
+    my $repository_address = 'http://178.62.227.110/fastnetmon_binary_repository/test_package_build'; 
+
+    my $file_name = '';
  
-    if ($distro_type eq 'ubuntu' && $distro_version eq '12.04') {
-        $bundle_version = 'git-9e20adc243c2f2949cc18cae3dc466b3f6f8604c';
+    if ($distro_type eq 'ubuntu') {
+        $file_name = "ubuntu-$distro_version-x86_64.deb"; 
+    } elsif ($distro_type eq 'debian') {
+        my $our_own_debian_version = $distro_version;
+        # Convert 6.x to 6.0 
+        $our_own_debian_version =~ s/\.\d+/.0/;
+
+        $file_name = "debian-$our_own_debian_version-x86_64.deb";
+    } elsif ($distro_type eq 'centos') {
+        my $our_own_centos_version = int($distro_version);
+
+        $file_name = "centos-$our_own_centos_version-x86_64.rpm";
+    } else {
+        die "Sorry, we haven't binary packages for your distribution\n";
     }
 
-    if ($distro_type eq 'ubuntu' && $distro_version eq '14.04') {
-        $bundle_version = 'git-c7831ff71a182a15903f47de2afd99ed24ca7201';
-    }
-
-    unless ($bundle_version) {
-        die "Sorry! We haven't packages for your distribution now\n";
-    }
-   
-    my $bundle_file_name = "fastnetmon-binary-$bundle_version-$distro_type-$distro_version-$distro_architecture.tar.gz";
+    # http://178.62.227.110/fastnetmon_binary_repository/test_package_build/fastnetmon-git-447aa5b86bb5a248e310c15a4d5945e72594d6cf-centos-6-x86_64_x86_64.rpm
+ 
+    my $git_version = '447aa5b86bb5a248e310c15a4d5945e72594d6cf';
+    my $bundle_file_name = "fastnetmon-git-$git_version-$file_name";
  
     my $full_url = "$repository_address/$bundle_file_name";
 
@@ -328,10 +276,6 @@ sub install_fastnetmon {
     unless ($fastnetmon_download_result) {
         die "Can't download FastNetMon distribution\n";
     }
-
-    # TODO: use seoarate folder instead
-    # Unpack everything in /opt
-    exec_command("tar -xf /tmp/$bundle_file_name -C /opt");
 
     if ($distro_type eq 'debian') {
         if (int($distro_version) == 6) {
@@ -358,46 +302,13 @@ sub install_fastnetmon {
         }    
     }
 
-    my $fastnetmon_config_path = "/etc/fastnetmon.conf";
-    unless (-e $fastnetmon_config_path) {
-        print "Create stub configuration file\n";
-        exec_command("cp $fastnetmon_code_dir/fastnetmon.conf $fastnetmon_config_path");
-    
-        my @interfaces = get_active_network_interfaces();
-        my $interfaces_as_list = join ',', @interfaces;
-        print "Select $interfaces_as_list as active interfaces\n";
-
-        print "Tune config\n";
-        exec_command("sed -i 's/interfaces.*/interfaces = $interfaces_as_list/' $fastnetmon_config_path");
+    if ($distro_type eq 'centos') {
+        yum("/tmp/$bundle_file_name");
+    } elsif ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
+        apt_get("/tmp/$bundle_file_name");
     }
 
     print "If you have any issues, please check /var/log/fastnetmon.log file contents\n";
     print "Please add your subnets in /etc/networks_list in CIDR format one subnet per line\n";
-
-    # TODO: return this code ASAP!!!
-    #my $init_script_result = install_init_scripts();
-
-    # Print unified run message 
-    #unless ($init_script_result) {
-    #    print "You can run fastnetmon with command: /opt/fastnetmon/fastnetmon\n";
-    #}
-}
-
-sub get_active_network_interfaces {
-    my @interfaces = `LANG=C netstat -i|egrep -v 'lo|Iface|Kernel'|awk '{print \$1}'`;
-    chomp @interfaces;
-
-    my @clean_interfaces = ();
-
-    for my $iface (@interfaces) {
-        # skip aliases
-        if ($iface =~ /:/) {
-            next;
-        }
-
-        push @clean_interfaces, $iface;
-    }
-
-    return  @clean_interfaces;
 }
 
