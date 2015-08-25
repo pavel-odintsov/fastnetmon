@@ -176,7 +176,7 @@ Source0:           http://178.62.227.110/fastnetmon_binary_repository/test_binar
 AutoReq:           no
 AutoProv:          no
 
-Requires:          libpcap, numactl
+Requires:          libpcap, numactl, libicu
 Requires(pre):     shadow-utils
 Requires(post):    systemd
 Requires(preun):   systemd
@@ -291,7 +291,7 @@ Source0:           http://178.62.227.110/fastnetmon_binary_repository/test_binar
 AutoReq:           no
 AutoProv:          no
 
-Requires:          libpcap, numactl
+Requires:          libpcap, numactl, libicu
 Requires(pre):     shadow-utils
 Requires(post):    chkconfig
 Requires(preun):   chkconfig, initscripts
