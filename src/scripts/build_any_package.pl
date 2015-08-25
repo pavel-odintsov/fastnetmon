@@ -172,7 +172,9 @@ URL:               https://github.com/FastVPSEestiOu/fastnetmon
 # Top level fodler inside archive should be named as "fastnetmon-1.1.1" 
 Source0:           http://178.62.227.110/fastnetmon_binary_repository/test_binary_builds/this_fake_path_do_not_check_it/archive.tar.gz
 
-# Yes, it's bad idea to specify fixed version of PF_RING but they have strange issue when we use another library version 
+# Disable any sort of dynamic dependency detection for our own custom bunch of binaries
+AutoReq:           no
+AutoProv:          no
 
 Requires:          libpcap, numactl
 Requires(pre):     shadow-utils
@@ -285,7 +287,9 @@ URL:               https://github.com/FastVPSEestiOu/fastnetmon
 # Top level fodler inside archive should be named as "fastnetmon-1.1.1" 
 Source0:           http://178.62.227.110/fastnetmon_binary_repository/test_binary_builds/this_fake_path_do_not_check_it/archive.tar.gz
 
-# Yes, it's bad idea to specify fixed version of PF_RING but they have strange issue when we use another library version 
+# Disable any sort of dynamic dependency detection for our own custom bunch of binaries
+AutoReq:           no
+AutoProv:          no
 
 Requires:          libpcap, numactl
 Requires(pre):     shadow-utils
