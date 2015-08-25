@@ -33,6 +33,9 @@ iptables -t nat -A POSTROUTING -s 10.10.10.1/24 -o eth0 -j SNAT --to 192.168.0.2
 Save iptables config
 /etc/init.d/iptables save
 
+Enable iptables:
+chkconfig iptables on
+
 Generate ssh key:
 ssh-keygen -t rsa -q -f /root/.ssh/id_rsa -P ""
 
