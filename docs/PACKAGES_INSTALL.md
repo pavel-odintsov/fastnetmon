@@ -2,7 +2,7 @@
 
 So we spent so much time and would like to offer rpm and deb packages for all most popular distros! We have only x86_64 pakages.
 
-Pleasee be aware! It's beta packaegs builded for current (25 aug 2015) version of Git master!
+Please be aware! It's beta packaegs builded for current (25 aug 2015) version of Git master!
 
 #### Ubuntu LTS 12.04
 
