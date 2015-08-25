@@ -1,8 +1,10 @@
 ### It's your favorite place if you are hate any "installer scripts" 
 
-So we spent so much time and would like to offer rpm and deb packages for all most popular distros! We have only x86_64 pakages.
+So we spent so much time and would like to offer rpm and deb packages for all most popular distros! We have only x86_64 paсkages.
 
-Please be aware! It's beta packaegs builded for current (25 aug 2015) version of Git master!
+Please be aware! It's beta packaegs builded from current (25 aug 2015) version of Git master!
+
+Dear Debian and Ubuntu user, please do not panic if you got error from dpkg command about missing deps! It's OK! It will be fixed by second call of apt-get install -f.
 
 #### Ubuntu LTS 12.04
 
