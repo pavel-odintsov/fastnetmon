@@ -133,7 +133,7 @@ func main() {
 
             // perl /root/fastnetmon_install.pl --use-git-master --create-binary-bundle --build-binary-environment"
             // install_cmd := exec.Command("ssh", "-lroot", ip_address, "perl", "/root/fastnetmon_install.pl")
-            install_cmd := exec.Command("ssh", "-lroot", ip_address, "perl", "/root/fastnetmon_install.pl", "--use-git-master", "--create-binary-bundle", "--build-binary-environment")
+            install_cmd := exec.Command("ssh", "-o", "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no", "-lroot", ip_address, "perl", "/root/fastnetmon_install.pl", "--use-git-master", "--create-binary-bundle", "--build-binary-environment")
 
             var stdout_output bytes.Buffer
             var stderr_output bytes.Buffer
