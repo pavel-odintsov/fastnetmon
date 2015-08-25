@@ -291,22 +291,15 @@ sub install_fastnetmon {
         }
     }
 
-    if ($distro_type eq 'centos') {
-        # For CentOS 6 and 7 this list is equal
-        yum('libpcap', 'libicu');
-
-        if (int($distro_version) == 7) {
-            yum('numactl-libs');
-        } elsif (int($distro_version) == 6) {
-            yum('numactl');
-        } 
-    }
-
     if ($distro_type eq 'ubuntu') {
         if ($distro_version eq '14.04') {
             apt_get('libicu52', 'libpcap0.8', 'libnuma1');
         }    
     }
+
+    if ($distro_type eq 'centos') {
+        # For CentOS 6 and 7 we are installind all deps with yum
+    } 
 
     if ($distro_type eq 'centos') {
         yum("/tmp/$bundle_file_name");
