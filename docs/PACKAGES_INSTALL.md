@@ -37,7 +37,7 @@ service fastnetmon start
 
 ```bash
 yum install -y http://178.62.227.110/fastnetmon_binary_repository/test_package_build/fastnetmon-git-447aa5b86bb5a248e310c15a4d5945e72594d6cf-centos-7-x86_64.rpm
-systemctl fastnetmon start 
+systemctl start fastnetmon
 ```
 
 #### Debian 6 Squeeze
