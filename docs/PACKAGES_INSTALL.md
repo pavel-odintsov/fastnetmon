@@ -70,7 +70,7 @@ apt-get install -f
 systemctl start fastnetmon
 ```
 
-VyOS 
+#### VyOS 
 
 We need to enable Squeeze repository for some dependencies. 
 ```bash
