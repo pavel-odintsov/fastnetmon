@@ -69,3 +69,35 @@ dpkg -i fastnetmon-git-447aa5b86bb5a248e310c15a4d5945e72594d6cf-debian-8.0-x86_6
 apt-get install -f
 systemctl start fastnetmon
 ```
+
+VyOS 
+
+We need to enable Squeeze repository for some dependencies. 
+```bash
+configure
+# squeeze
+set system package repository squeeze components 'main contrib non-free'
+set system package repository squeeze distribution 'squeeze'
+set system package repository squeeze url 'http://mirrors.kernel.org/debian'
+
+# lts
+set system package repository squeeze-lts components 'main contrib non-free'
+set system package repository squeeze-lts distribution 'squeeze-lts'
+set system package repository squeeze-lts url 'http://mirrors.kernel.org/debian'
+commit
+save
+exit
+```
+
+```bash
+wget http://178.62.227.110/fastnetmon_binary_repository/test_package_build/fastnetmon-git-447aa5b86bb5a248e310c15a4d5945e72594d6cf-debian-6.0-x86_64.deb
+
+wget http://vyos.net/so3group_maintainers.key
+sudo apt-key add ./so3group_maintainers.key
+
+sudo apt-get update
+sudo dpkg -i fastnetmon-git-447aa5b86bb5a248e310c15a4d5945e72594d6cf-debian-6.0-x86_64.deb
+sudo apt-get install -f
+sudo insserv fastnetmon
+sudo service fastnetmon start
+```
