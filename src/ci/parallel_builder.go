@@ -13,6 +13,7 @@ import "io/ioutil"
 // In this folder we will store all results of our work
 var target_directory = ""
 var public_key_path = "/root/.ssh/id_rsa.pub"
+var container_private_path = "/vz_zram/private"
 
 /*
 
@@ -40,9 +41,19 @@ Generate ssh key:
 ssh-keygen -t rsa -q -f /root/.ssh/id_rsa -P ""
 
 Disable quotas:
+
 vim /etc/vz/vz.conf
+
 # Disable quota
 DISK_QUOTA=no
+
+Create zram disk for build speedup:
+modprobe zram num_devices=1
+echo $((20*1024*1024*1024)) > /sys/block/zram0/disksize
+mkdir /vz_zram
+mkfs.ext4 /dev/zram0 
+mount /dev/zram0 /vz_zram
+mkdir /vz_zram/private
 
 */
 
@@ -85,7 +96,7 @@ func main() {
             ctid := start_ctid_number + position
             ctid_as_string := strconv.Itoa(ctid)
 
-            vzctl_create_as_string := fmt.Sprintf("create %d --ostemplate %s --config vswap-4g --layout simfs --ipadd %s --diskspace 20G --hostname ct%d.test.com", ctid, distribution_name, ip_address, ctid)
+            vzctl_create_as_string := fmt.Sprintf("create %d --ostemplate %s --config vswap-4g --layout simfs --ipadd %s --diskspace 20G --hostname ct%d.test.com --private %s/%d", ctid, distribution_name, ip_address, ctid, container_private_path, ctid)
 
             r := regexp.MustCompile("[^\\s]+")
             vzctl_create_as_list := r.FindAllString(vzctl_create_as_string, -1) 
