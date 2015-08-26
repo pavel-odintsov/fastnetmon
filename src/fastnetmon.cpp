@@ -594,7 +594,7 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
     // In this loop we print only top X talkers in our subnet to screen buffer
     for (std::vector<pair_of_map_elements>::iterator ii = vector_for_sort.begin(); ii != vector_for_sort.end(); ++ii) {
         // Print first max_ips_in_list elements in list, we will show top X "huge" channel loaders
-        if (element_number > max_ips_in_list) {
+        if (element_number >= max_ips_in_list) {
             break;
         } 
 
