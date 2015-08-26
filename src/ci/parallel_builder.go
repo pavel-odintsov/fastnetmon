@@ -39,6 +39,11 @@ chkconfig iptables on
 Generate ssh key:
 ssh-keygen -t rsa -q -f /root/.ssh/id_rsa -P ""
 
+Disable quotas:
+vim /etc/vz/vz.conf
+# Disable quota
+DISK_QUOTA=no
+
 */
 
 /*
