@@ -8,6 +8,8 @@ Chat: #fastnetmon at irc.freenode.net [web client](https://webchat.freenode.net/
 
 [Please fill survey, we need your voice!](https://docs.google.com/forms/d/1YoXQImMeEjBH-JPz3KYtcDwknHs8xrI538ObwSy9uZo/viewform)
 
+Detailed reference in Russian: [link](https://github.com/FastVPSEestiOu/fastnetmon/blob/master/docs/FastNetMon_Reference_Russian.pdf)
+
 License: GPLv2
 
 FastNetMon - A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
