@@ -125,24 +125,24 @@ void pcap_parse_packet(char* buffer, uint32_t len, uint32_t snap_len) {
         read_sflow_datagram(&sample);
     } else if (strcmp(flow_type, "raw") == 0) {
         // We do not need parsed data here
-        struct pfring_pkthdr packet_header;
-        memset(&packet_header, 0, sizeof(packet_header));
+        struct pfring_pkthdr raw_packet_header;
+        memset(&raw_packet_header, 0, sizeof(raw_packet_header));
 
-        packet_header.len = payload_length;
-        packet_header.caplen = payload_length;
+        raw_packet_header.len = len;
+        raw_packet_header.caplen = snap_len;
 
-        int parser_return_code = fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, 1, 0);
+        int parser_return_code = fastnetmon_parse_pkt((u_char*)buffer, &raw_packet_header, 4, 1, 0);
 
         // We are not interested so much in l2 data and we interested only in l3 data here and more
         if (parser_return_code < 3) {
-            printf("Parser failed for following packet\n");
+            printf("Parser failed for with code %d following packet with number %llu\n", parser_return_code, raw_unparsed_packets + raw_parsed_packets);
             raw_unparsed_packets++;
         } else {
             raw_parsed_packets++;
         }
 
         char print_buffer[512];
-        fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
+        fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &raw_packet_header);
         printf("%s", print_buffer);
     } else if (strcmp(flow_type, "dpi") == 0) {
 #ifdef ENABLE_DPI
@@ -248,9 +248,10 @@ int main(int argc, char** argv) {
     }
 
 #ifdef ENABLE_DPI
-    printf("DNS amplification packets: %lld\n", dns_amplification_packets);
-    printf("NTP amplification packets: %lld\n", ntp_amplification_packets);
-    printf("SSDP amplification packets: %lld\n", ssdp_amplification_packets);
-    
+    if (strcmp(flow_type, "dpi") == 0) {
+        printf("DNS amplification packets: %lld\n", dns_amplification_packets);
+        printf("NTP amplification packets: %lld\n", ntp_amplification_packets);
+        printf("SSDP amplification packets: %lld\n", ssdp_amplification_packets);
+    }
 #endif
 }
