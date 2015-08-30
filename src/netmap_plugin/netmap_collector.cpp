@@ -192,6 +192,7 @@ void receiver(std::string interface_for_listening) {
 
 #ifdef __linux__
     manage_interface_promisc_mode(system_interface_name, true); 
+    logger.warn("Please disable all types of offload for this NIC manually: ethtool -K %s gro off gso off tso off lro off", system_interface_name.c_str());
 #endif
 
     netmap_descriptor = nm_open(interface.c_str(), &base_nmd, 0, NULL);
