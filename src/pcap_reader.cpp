@@ -49,6 +49,9 @@ uint64_t dns_amplification_packets = 0;
 uint64_t ntp_amplification_packets = 0;
 uint64_t ssdp_amplification_packets = 0;
 
+uint64_t raw_parsed_packets = 0;
+uint64_t raw_unparsed_packets = 0;
+
 /* It's prototype for moc testing of FastNetMon, it's very useful for netflow or direct packet
  * parsers debug */
 
@@ -128,7 +131,15 @@ void pcap_parse_packet(char* buffer, uint32_t len, uint32_t snap_len) {
         packet_header.len = payload_length;
         packet_header.caplen = payload_length;
 
-        fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, 1, 0);
+        int parser_return_code = fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, 1, 0);
+
+        // We are not interested so much in l2 data and we interested only in l3 data here and more
+        if (parser_return_code < 3) {
+            printf("Parser failed for following packet\n");
+            raw_unparsed_packets++;
+        } else {
+            raw_parsed_packets++;
+        }
 
         char print_buffer[512];
         fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
@@ -228,6 +239,13 @@ int main(int argc, char** argv) {
 #endif
     
     pcap_reader(argv[2], pcap_parse_packet);
+
+    if (strcmp(flow_type, "raw") == 0) {
+        printf("Parsed packets: %llu\n", raw_parsed_packets);
+        printf("Unparsed packets: %llu\n", raw_unparsed_packets);
+
+        printf("Total packets: %llu\n", raw_parsed_packets + raw_unparsed_packets);
+    }
 
 #ifdef ENABLE_DPI
     printf("DNS amplification packets: %lld\n", dns_amplification_packets);
