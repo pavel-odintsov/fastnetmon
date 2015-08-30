@@ -242,17 +242,17 @@ endif()
 
 ### Look for libpcap
 
-find_path(LIBPCAP_INCLUDES_FOLDER NAMES pcap.h PATHS "${LIBPCAP_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
+#find_path(LIBPCAP_INCLUDES_FOLDER NAMES pcap.h PATHS "${LIBPCAP_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
 
-find_library(LIBPCAP_LIBRARY_PATH NAMES pcap PATHS "${LIBPCAP_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+#find_library(LIBPCAP_LIBRARY_PATH NAMES pcap PATHS "${LIBPCAP_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
 
-if (LIBPCAP_INCLUDES_FOLDER AND LIBPCAP_LIBRARY_PATH) 
-    message(STATUS "We found pcap library ${LIBPCAP_LIBRARY_PATH}")
+#if (LIBPCAP_INCLUDES_FOLDER AND LIBPCAP_LIBRARY_PATH) 
+#    message(STATUS "We found pcap library ${LIBPCAP_LIBRARY_PATH}")
 
-    include_directories(${LIBPCAP_INCLUDES_FOLDER})
-else()
-    message(FATAL_ERROR "We can't find pcap library")    
-endif()
+#    include_directories(${LIBPCAP_INCLUDES_FOLDER})
+#else()
+#    message(FATAL_ERROR "We can't find pcap library")    
+#endif()
 
 ### Look for log4cpp
 
