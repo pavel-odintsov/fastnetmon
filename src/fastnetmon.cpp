@@ -267,6 +267,7 @@ total_counter_element total_speed_average_counters[4];
 
 // Total amount of non parsed packets
 uint64_t total_unparsed_packets = 0;
+uint64_t total_unparsed_packets_speed = 0;
 
 // Total amount of IPv6 packets
 uint64_t total_ipv6_packets = 0;
@@ -2037,6 +2038,9 @@ void recalculate_speed() {
         flow_counter.unlock();
     }
 
+    total_unparsed_packets_speed = uint64_t((double)total_unparsed_packets / (double)speed_calc_period);
+    total_unparsed_packets = 0;
+
     for (unsigned int index = 0; index < 4; index++) {
         total_speed_counters[index].bytes =
         uint64_t((double)total_counters[index].bytes / (double)speed_calc_period);
@@ -2142,7 +2146,7 @@ void traffic_draw_programm() {
 #endif
 
     output_buffer << "Total amount of IPv6 packets related to our own network: " << our_ipv6_packets << "\n";
-    output_buffer << "Total amount of not processed packets: " << total_unparsed_packets << "\n";
+    output_buffer << "Not processed packets: " << total_unparsed_packets_speed << " pps\n";
 
     // Print backend stats
     if (enable_pcap_collection) {
