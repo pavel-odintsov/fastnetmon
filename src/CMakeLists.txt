@@ -129,6 +129,15 @@ add_library(ipfix_rfc STATIC ipfix_rfc.cpp)
 # Our packet parser
 add_library(fastnetmon_packet_parser STATIC fastnetmon_packet_parser.c)
 
+# -DENABLE_SNABBSWITCH_SUPPORT=ON ..
+if (ENABLE_SNABBSWITCH_SUPPORT) 
+    add_definitions(-DSNABB_SWITCH)
+    add_library(snabbswitch_plugin STATIC snabbswitch_plugin/snabbswitch_collector.cpp)
+
+    link_directories(/usr/src/snabbswitch/src)
+    target_link_libraries(snabbswitch_plugin snabb)
+endif()
+
 # sFLOW plugin
 add_library(sflow_plugin STATIC sflow_plugin/sflow_collector.cpp) 
 
@@ -314,6 +323,10 @@ target_link_libraries(fastnetmon sflow_plugin netflow_plugin pcap_plugin example
 # cmake .. -DBUILD_PLUGIN_RUNNER=ON
 if (BUILD_PLUGIN_RUNNER)
     add_executable(fastnetmon_plugin_runner plugin_runner.cpp)
+
+    if (ENABLE_SNABBSWITCH_SUPPORT) 
+        target_link_libraries(fastnetmon_plugin_runner snabbswitch_plugin)
+    endif()
 
     target_link_libraries(fastnetmon_plugin_runner ${CMAKE_THREAD_LIBS_INIT})
     target_link_libraries(fastnetmon_plugin_runner patricia)
