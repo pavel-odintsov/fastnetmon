@@ -12,7 +12,7 @@ Detailed reference in Russian: [link](https://github.com/FastVPSEestiOu/fastnetm
 
 License: GPLv2
 
-FastNetMon - A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
+FastNetMon - A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, SnabbSwitch, netmap, PF_RING, PCAP).
 
 What can we do? We can detect hosts in our own network with a large amount of packets per second/bytes per second or flow per second incoming or outgoing from certain hosts. And we can call an external script which can notify you, switch off a server or blackhole the client.
 
@@ -33,7 +33,7 @@ Supported packet capture engines:
 - NetFlow v5, v9
 - IPFIX
 - ![sFLOW](http://sflow.org/images/sflowlogo.gif) v4 (dev branch only), v5
-- Port mirror/SPAN capture with PF_RING (with ZC/DNA mode support [need license](http://www.ntop.org/products/pf_ring/)), NETMAP and PCAP
+- Port mirror/SPAN capture with PF_RING (with ZC/DNA mode support [need license](http://www.ntop.org/products/pf_ring/)), SnabbSwitch, NETMAP and PCAP
 
 You could look [comparison table](https://github.com/FastVPSEestiOu/fastnetmon/blob/master/docs/CAPTURE_BACKENDS.md) for all available packet capture engines.
 
@@ -46,6 +46,7 @@ Features:
 - Full integration with [Graphite](docs/GRAPHITE_INTEGRATION.md) and [InfluxDB](docs/INFLUXDB_INTEGRATION.md)
 - Deep packet inspection for attack traffic
 - netmap support (open source; wire speed processing; only Intel hardware NICs or any hypervisor VM type)
+- SnabbSwitch support (open source, very flexible, LUA driven, very-very-very fast)
 - Could filter out NetFLOW v5 flows or sFLOW packets with script implemented in LUA (useful for port exclude)
 - Supports L2TP decapsulation, VLAN untagging and MPLS processing in mirror mode 
 - Can work on server/soft-router

@@ -38,7 +38,7 @@ extern "C" {
 #endif
 
 // This code defined in SnabbSwitch
-int start_snabb_switch(int snabb_argc, char **snabb_argv);
+int start_snabb_switch(int snabb_argc, const char **snabb_argv);
 
 #ifdef __cplusplus
 }
@@ -75,7 +75,6 @@ struct firehose_rdesc {
 bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet& packet);
 
 void firehose_packet(const char *pciaddr, char *data, int length) {
-    //__sync_fetch_and_add(&received_packets, 1);
     simple_packet packet;
 
     if (!parse_raw_packet_to_simple_packet((u_char*)data, length, packet)) {
@@ -122,21 +121,34 @@ void start_snabbswitch_collection(process_packet_pointer func_ptr) {
     std::vector<std::string> interfaces_for_capture;
     boost::split(interfaces_for_capture, interfaces_list, boost::is_any_of(","), boost::token_compress_on);
 
+    if (interfaces_for_capture.size()  == 0) {
+        logger << log4cpp::Priority::ERROR << "Please specify list of PCI-e addresses for SnabbSwitch capture";
+    }
+
     logger << log4cpp::Priority::INFO << "SnabbSwitch will listen on " << interfaces_for_capture.size() << " interfaces";
-   
-    // TODO read this from configureation! 
-    char* cli_arguments[] = {
-        "snabb", // emulate call of standard application
-        "firehose",
-        "--input",
-        "0000:03:00.0",
-        "--input",
-        "0000:03:00.1",
-        "weird_data"
-    };
+  
+    boost::thread_group snabbswitch_main_threads;
 
-    int cli_number_of_arguments = sizeof(cli_arguments) / sizeof(char*);
+    for (std::vector<std::string>::iterator interface = interfaces_for_capture.begin(); 
+        interface != interfaces_for_capture.end(); ++interface) {
+     
+        // We could specify multiple NIC's for single thread with multiple --input
+        const char* cli_arguments[5];
 
-    start_snabb_switch(cli_number_of_arguments, cli_arguments); 
+        cli_arguments[0] = "snabb"; // emulate call of standard application
+        cli_arguments[1] = "firehose";
+        cli_arguments[2] = "--input";
+        cli_arguments[3] = interface->c_str();
+        cli_arguments[4] ="weird_data";
+
+        int cli_number_of_arguments = sizeof(cli_arguments) / sizeof(char*);
+    
+        logger << log4cpp::Priority::INFO << "We are starting SnabbSwitch instance for PCIe interface " << *interface; 
+        snabbswitch_main_threads.add_thread( new boost::thread(start_snabb_switch, cli_number_of_arguments, cli_arguments) );
+        // We should sleep here because init code of SnabbSwitch is not thread safe
+        sleep(10); 
+    }
+
+    snabbswitch_main_threads.join_all();
 }
 
