@@ -130,6 +130,7 @@ add_library(ipfix_rfc STATIC ipfix_rfc.cpp)
 add_library(fastnetmon_packet_parser STATIC fastnetmon_packet_parser.c)
 
 # -DENABLE_SNABBSWITCH_SUPPORT=ON ..
+# Please also comment out line: set(ENABLE_LUA_SUPPORT yes) if you want SnabbSwitch support
 if (ENABLE_SNABBSWITCH_SUPPORT) 
     add_definitions(-DSNABB_SWITCH)
     add_library(snabbswitch_plugin STATIC snabbswitch_plugin/snabbswitch_collector.cpp)
@@ -315,7 +316,11 @@ target_link_libraries(fastnetmon ipfix_rfc)
 target_link_libraries(fastnetmon fast_library)
 
 if (ENABLE_PFRING_SUPPORT)
-target_link_libraries(fastnetmon pfring_plugin)
+    target_link_libraries(fastnetmon pfring_plugin)
+endif()
+
+if (ENABLE_SNABBSWITCH_SUPPORT)
+    target_link_libraries(fastnetmon snabbswitch_plugin)
 endif()
 
 target_link_libraries(fastnetmon sflow_plugin netflow_plugin pcap_plugin example_plugin netmap_plugin)
