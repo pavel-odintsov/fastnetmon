@@ -21,6 +21,10 @@
 #include "pfring_plugin/pfring_collector.h"
 #endif
 
+#ifdef FASTNETMON_ENABLE_AFPACKET
+#include "afpacket_plugin/afpacket_collector.h"
+#endif
+
 #ifdef SNABB_SWITCH
 #include "snabbswitch_plugin/snabbswitch_collector.h"
 #endif
@@ -101,7 +105,7 @@ int main(int argc, char* argv[]) {
     init_logging();
 
     if (argc < 2) {
-        std::cout << "Please specify sflow or netflow as param" << std::endl;
+        std::cout << "Please specify sflow, netflow, raw, dpi, snabbswitch, afpacket as param" << std::endl;
         return 1;
     }
 
@@ -145,6 +149,13 @@ int main(int argc, char* argv[]) {
         start_pfring_collection(process_packet);
 #else
         std::cout << "PF_RING support disabled here" << std::endl; 
+#endif
+    } else if (strstr(argv[1], "afpacket") != NULL) {
+#ifdef FASTNETMON_ENABLE_AFPACKET
+        std::cout << "Starting afpacket" << std::endl;
+        start_afpacket_collection(process_packet);
+#else
+        printf("AF_PACKET is not supported here");
 #endif
     } else if (strstr(argv[1], "netmap") != NULL) {
         std::cout << "Starting netmap" << std::endl;

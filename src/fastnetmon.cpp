@@ -50,6 +50,10 @@
 #include "snabbswitch_plugin/snabbswitch_collector.h"
 #endif
 
+#ifdef FASTNETMON_ENABLE_AFPACKET
+#include "afpacket_plugin/afpacket_collector.h"
+#endif
+
 // Yes, maybe it's not an good idea but with this we can guarantee working code in example plugin
 #include "example_plugin/example_collector.h"
 
@@ -190,6 +194,7 @@ void init_global_ban_settings() {
 bool enable_conection_tracking = true;
 
 bool enable_snabbswitch_collection = false;
+bool enable_afpacket_collection = true;
 bool enable_data_collection_from_mirror = true;
 bool enable_netmap_collection = false;
 bool enable_sflow_collection = false;
@@ -1005,6 +1010,10 @@ bool load_configuration_file() {
     if (configuration_map.count("mirror_snabbswitch") != 0) {
         enable_snabbswitch_collection = configuration_map["mirror_snabbswitch"] == "on";
     } 
+
+    if (configuration_map.count("mirror_afpacket") != 0) {
+        enable_afpacket_collection = configuration_map["mirror_afpacket"] == "on";
+    }
 
     if (enable_netmap_collection && enable_data_collection_from_mirror) {
         logger << log4cpp::Priority::ERROR << "You have enabled pfring and netmap data collection "
@@ -2501,6 +2510,12 @@ int main(int argc, char** argv) {
 #ifdef SNABB_SWITCH 
     if (enable_snabbswitch_collection) {
         packet_capture_plugin_thread_group.add_thread(new boost::thread(start_snabbswitch_collection, process_packet));
+    }
+#endif
+
+#ifdef FASTNETMON_ENABLE_AFPACKET
+    if (enable_afpacket_collection) {
+        packet_capture_plugin_thread_group.add_thread(new boost::thread(start_afpacket_collection, process_packet));
     }
 #endif
 
