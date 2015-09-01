@@ -6,4 +6,4 @@
 | pcap | very slow, 10-100 mbps | Simple | huge | FreeBSD, Linux | GPL | Not so accurate | Very fast|
 | sFLOW | Up to 40-100GE | Very simple | Small | Linux, FreeBSD, MacOS | Free |  Accurate but depends on sampling rate (1-128 sampling rate recommended but significantly depends on traffic in network) | Very fast|
 | NetFlow | Up to 40-100GE | Very simple | Small for FastNetMon but could be huge for network equpment if implemented in software way | Linux, FreeBSD, MacOS | Free but could require additional licenses or hardware from network equipment vendor | Not so accurate | So slow, up to multiple minutes depends on flow timeout configuration  on routers|
-| AF_PACKET (not implemented yet) | Up to 5-10 MPPS/5-10GE | Very simple | Normal-huge | Linux (since 3.6 kernel) | GPLv2 | Very accurate | Very fast|
+| AF_PACKET | Up to 2 MPPS/5-10GE | Very simple | Normal-huge | Linux (since 3.6 kernel) | GPLv2 | Very accurate | Very fast|

@@ -139,6 +139,13 @@ if (ENABLE_SNABBSWITCH_SUPPORT)
     target_link_libraries(snabbswitch_plugin snabb)
 endif()
 
+# -DENABLE_AFPACKET_SUPPORT=ON ..
+if (ENABLE_AFPACKET_SUPPORT)
+   add_definitions(-DFASTNETMON_ENABLE_AFPACKET) 
+
+    add_library(afpacket_plugin STATIC afpacket_plugin/afpacket_collector.cpp)
+endif()
+
 # sFLOW plugin
 add_library(sflow_plugin STATIC sflow_plugin/sflow_collector.cpp) 
 
@@ -323,6 +330,10 @@ if (ENABLE_SNABBSWITCH_SUPPORT)
     target_link_libraries(fastnetmon snabbswitch_plugin)
 endif()
 
+if (ENABLE_AFPACKET_SUPPORT)
+    target_link_libraries(fastnetmon afpacket_plugin)
+endif()
+
 target_link_libraries(fastnetmon sflow_plugin netflow_plugin pcap_plugin example_plugin netmap_plugin)
 
 # cmake .. -DBUILD_PLUGIN_RUNNER=ON
@@ -331,6 +342,10 @@ if (BUILD_PLUGIN_RUNNER)
 
     if (ENABLE_SNABBSWITCH_SUPPORT) 
         target_link_libraries(fastnetmon_plugin_runner snabbswitch_plugin)
+    endif()
+
+    if (ENABLE_AFPACKET_SUPPORT) 
+        target_link_libraries(fastnetmon_plugin_runner afpacket_plugin)
     endif()
 
     target_link_libraries(fastnetmon_plugin_runner ${CMAKE_THREAD_LIBS_INIT})
