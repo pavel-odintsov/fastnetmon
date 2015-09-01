@@ -142,7 +142,7 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
     int packet_socket = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
    
     if (packet_socket == -1) {
-        printf("Can't create AF_PACKET socket\n");
+        logger << log4cpp::Priority::ERROR << "Can't create AF_PACKET socket";
         return -1;
     }
 
@@ -151,14 +151,14 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
     int setsockopt_packet_version = setsockopt(packet_socket, SOL_PACKET, PACKET_VERSION, &version, sizeof(version));
 
     if (setsockopt_packet_version < 0) {
-        printf("Can't set packet v3 version\n");
+        logger << log4cpp::Priority::ERROR << "Can't set packet v3 version";
         return -1;
     }
 
     int interface_number = get_interface_number_by_device_name(packet_socket, interface_name);
 
     if (interface_number == -1) {
-        printf("Can't get interface number by interface name for %s\n", interface_name.c_str());
+        logger << log4cpp::Priority::ERROR << "Can't get interface number by interface name for " << interface_name;
         return -1;
     }
  
@@ -171,7 +171,7 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
     int set_promisc = setsockopt(packet_socket, SOL_PACKET, PACKET_ADD_MEMBERSHIP, (void *)&sock_params, sizeof(sock_params));
 
     if (set_promisc == -1) {
-        printf("Can't enable promisc mode\n");
+        logger << log4cpp::Priority::ERROR << "Can't enable promisc mode";
         return -1;
     }
 
@@ -199,7 +199,7 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
     int setsockopt_rx_ring = setsockopt(packet_socket, SOL_PACKET , PACKET_RX_RING , (void*)&req , sizeof(req));
     
     if (setsockopt_rx_ring == -1) {
-        printf("Can't enable RX_RING for AF_PACKET socket\n");
+        logger << log4cpp::Priority::ERROR << "Can't enable RX_RING for AF_PACKET socket";
         return -1;
     }
 
@@ -210,7 +210,7 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
     mapped_buffer = (uint8_t*)mmap(NULL, req.tp_block_size * req.tp_block_nr, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_LOCKED, packet_socket, 0);
 
     if (mapped_buffer == MAP_FAILED) {
-        printf("mmap failed!\n");
+        logger << log4cpp::Priority::ERROR << "MMAP failed";
         return -1;
     }
 
@@ -226,7 +226,7 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
     int bind_result = bind(packet_socket, (struct sockaddr *)&bind_address, sizeof(bind_address));
 
     if (bind_result == -1) {
-        printf("Can't bind to AF_PACKET socket\n");
+        logger << log4cpp::Priority::ERROR << "Can't bind to AF_PACKET socket";
         return -1;
     }
  
@@ -240,7 +240,7 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
         int setsockopt_fanout = setsockopt(packet_socket, SOL_PACKET, PACKET_FANOUT, &fanout_arg, sizeof(fanout_arg));
 
         if (setsockopt_fanout < 0) {
-            printf("Can't configure fanout\n");
+            logger << log4cpp::Priority::ERROR << "Can't configure fanout error number: "<< errno << " error: " << strerror(errno);
             return -1;
         }
     }
@@ -330,7 +330,7 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
                 int set_affinity_result = pthread_attr_setaffinity_np(thread_attrs.native_handle(), sizeof(cpu_set_t), &current_cpu_set);
     
                 if (set_affinity_result != 0) {
-                    printf("Can't set CPU affinity for thread\n");
+                    logger << log4cpp::Priority::ERROR << "Can't set CPU affinity for thread";
                 } 
             }
 
