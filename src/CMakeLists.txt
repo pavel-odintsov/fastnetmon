@@ -139,6 +139,11 @@ if (ENABLE_SNABBSWITCH_SUPPORT)
     target_link_libraries(snabbswitch_plugin snabb)
 endif()
 
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+    message(STATUS "You are running Linux and we can build AF_PACKET support")
+    set (ENABLE_AFPACKET_SUPPORT ON)
+endif()
+
 # -DENABLE_AFPACKET_SUPPORT=ON ..
 if (ENABLE_AFPACKET_SUPPORT)
    add_definitions(-DFASTNETMON_ENABLE_AFPACKET) 
