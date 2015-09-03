@@ -110,10 +110,9 @@ if (ENABLE_PFRING_SUPPORT)
     endif()
 
     include_directories(${PFRING_INCLUDE_DIRS})
-endif()
 
-# If you need hardware locking features
-# add_definitions(-DHWFILTER_LOCKING)
+    message(STATUS "We have enabled PF_RING's hardware filtering option")
+endif()
 
 # Our LPM library
 add_library(patricia STATIC libpatricia/patricia.c)
@@ -203,6 +202,9 @@ if (ENABLE_PFRING_SUPPORT)
     target_link_libraries(pfring_plugin ${PFRING_LIBRARIES})
     target_link_libraries(pfring_plugin numa)
     target_link_libraries(pfring_plugin ${CMAKE_THREAD_LIBS_INIT})
+
+    # Add action for hardware filetring
+    add_library(pfring_hardware_filter_action STATIC actions/pfring_hardware_filter_action.cpp)
 endif()
 
 # example plugin
@@ -329,6 +331,8 @@ target_link_libraries(fastnetmon fast_library)
 
 if (ENABLE_PFRING_SUPPORT)
     target_link_libraries(fastnetmon pfring_plugin)
+    # Link hardware filter too
+    target_link_libraries(fastnetmon pfring_hardware_filter_action)
 endif()
 
 if (ENABLE_SNABBSWITCH_SUPPORT)
