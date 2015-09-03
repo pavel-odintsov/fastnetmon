@@ -54,6 +54,10 @@
 #include "afpacket_plugin/afpacket_collector.h"
 #endif
 
+#ifdef PF_RING
+#include "actions/pfring_hardware_filter_action.h"
+#endif
+
 // Yes, maybe it's not an good idea but with this we can guarantee working code in example plugin
 #include "example_plugin/example_collector.h"
 
@@ -108,6 +112,8 @@ unsigned int recalculate_speed_timeout = 1;
 
 // Send or not any details about attack for ban script call over stdin
 bool notify_script_pass_details = true;
+
+bool pfring_hardware_filters_enabled = false;
 
 bool notify_script_enabled = true; 
 
@@ -360,10 +366,6 @@ bool process_outgoing_traffic = true;
 // Prototypes
 #ifdef ENABLE_DPI
 void init_current_instance_of_ndpi();
-#endif
-
-#ifdef HWFILTER_LOCKING
-void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_string);
 #endif
 
 std::string get_attack_description_in_json(uint32_t client_ip, attack_details& current_attack);
@@ -944,6 +946,10 @@ bool load_configuration_file() {
         } else {
             enable_sflow_collection = false;
         }
+    }
+
+    if (configuration_map.count("pfring_hardware_filters_enabled") != 0) {
+        pfring_hardware_filters_enabled = configuration_map["pfring_hardware_filters_enabled"] == "on";
     }
 
     if (configuration_map.count("netflow") != 0) {
@@ -2850,12 +2856,6 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
     std::string pps_as_string = convert_int_to_string(current_attack.attack_power);
     std::string data_direction_as_string = get_direction_name(current_attack.attack_direction);
 
-#ifdef HWFILTER_LOCKING
-    logger << log4cpp::Priority::INFO
-           << "We will block traffic to/from this IP with hardware filters";
-    block_all_traffic_with_82599_hardware_filtering(client_ip_as_string);
-#endif
-
     bool store_attack_details_to_file = true;
     
     std::string basic_attack_information = get_attack_description(client_ip, current_attack);
@@ -2866,6 +2866,16 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
 
     if (store_attack_details_to_file) {
         print_attack_details_to_file(full_attack_description, client_ip_as_string, current_attack);
+    }
+
+    if (pfring_hardware_filters_enabled) {
+#ifdef PF_RING
+        logger << log4cpp::Priority::INFO
+            << "We will block traffic to/from this IP with hardware filters";
+        pfring_hardware_filter_action_block(client_ip_as_string);
+#else
+        logger << log4cpp::Priority::ERROR << "You haven't compiled PF_RING hardware filters support";
+#endif
     }
 
     if (notify_script_enabled) {
@@ -2928,58 +2938,6 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
     }
 #endif
 }
-
-#ifdef HWFILTER_LOCKING
-void block_all_traffic_with_82599_hardware_filtering(std::string client_ip_as_string) {
-    /* 6 - tcp, 17 - udp, 0 - other (non tcp and non udp) */
-    std::vector<int> banned_protocols;
-    banned_protocols.push_back(17);
-    banned_protocols.push_back(6);
-    banned_protocols.push_back(0);
-
-    int rule_number = 10;
-
-    // Iterate over incoming and outgoing direction
-    for (int rule_direction = 0; rule_direction < 2; rule_direction++) {
-        for (std::vector<int>::iterator banned_protocol = banned_protocols.begin();
-             banned_protocol != banned_protocols.end(); ++banned_protocol) {
-
-            /* On 82599 NIC we can ban traffic using hardware filtering rules */
-
-            // Difference between fie tuple and perfect filters:
-            // http://www.ntop.org/products/pf_ring/hardware-packet-filtering/
-
-            hw_filtering_rule rule;
-            intel_82599_five_tuple_filter_hw_rule* ft_rule;
-
-            ft_rule = &rule.rule_family.five_tuple_rule;
-
-            memset(&rule, 0, sizeof(rule));
-            rule.rule_family_type = intel_82599_five_tuple_rule;
-            rule.rule_id = rule_number++;
-            ft_rule->queue_id = -1; // drop traffic
-            ft_rule->proto = *banned_protocol;
-
-            std::string hw_filter_rule_direction = "";
-            if (rule_direction == 0) {
-                hw_filter_rule_direction = "outgoing";
-                ft_rule->s_addr = ntohl(inet_addr(client_ip_as_string.c_str()));
-            } else {
-                hw_filter_rule_direction = "incoming";
-                ft_rule->d_addr = ntohl(inet_addr(client_ip_as_string.c_str()));
-            }
-
-            if (pfring_add_hw_rule(pf_ring_descr, &rule) != 0) {
-                logger << log4cpp::Priority::ERROR
-                       << "Can't add hardware filtering rule for protocol: " << *banned_protocol
-                       << " in direction: " << hw_filter_rule_direction;
-            }
-
-            rule_number++;
-        }
-    }
-}
-#endif
 
 /* Thread for cleaning up ban list */
 void cleanup_ban_list() {
