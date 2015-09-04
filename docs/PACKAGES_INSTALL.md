@@ -6,6 +6,11 @@ Please be aware! It's beta packages builded from current (25 aug 2015) version o
 
 Dear Debian and Ubuntu user, please do not panic if you got error from dpkg command about missing deps! It's OK! It will be fixed by second call of apt-get install -f.
 
+
+#### Initial configuration
+
+It's REQUIRED to add all of your networks in CIDR notation (11.22.33.0/24) to the file /etc/networks_list in the form of one prefix per line. After this you could run /opt/fastnetmon/fastnetmon_client and check output. 
+
 #### Ubuntu LTS 12.04
 
 ```bash
