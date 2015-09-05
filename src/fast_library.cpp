@@ -590,12 +590,14 @@ bool store_data_to_graphite(unsigned short int graphite_port, std::string graphi
     int pton_result = inet_pton(AF_INET, graphite_host.c_str(), &serv_addr.sin_addr);
 
     if (pton_result <= 0) {
+        close(client_sockfd);
         return false;
     }
 
     int connect_result = connect(client_sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
 
     if (connect_result < 0) {
+        close(client_sockfd);
         return false;
     }
 
