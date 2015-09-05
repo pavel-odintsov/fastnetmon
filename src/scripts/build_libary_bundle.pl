@@ -62,7 +62,7 @@ for my $library (@our_libraries) {
             my $dir_name = dirname($file_full_path);
             my $file_name = basename($file_full_path);
 
-            print "$dir_name $file_name \n";
+            print "$dir_name $file_name\n";
 
             my $target_full_path = $file_full_path;
             $target_full_path =~ s/^$global_path/$target_path/;
@@ -97,6 +97,7 @@ copy("$global_path/fastnetmon/fastnetmon_client", "$target_path/fastnetmon/fastn
 
 # Set exec flag
 chmod 0755, "$target_path/fastnetmon/fastnetmon";
+chmod 0755, "$target_path/fastnetmon/fastnetmon_client";
 
 `tar -cpzf $archive_bundle_name -C $target_path ./`;
 print "We have created bundle $archive_bundle_name\n";
