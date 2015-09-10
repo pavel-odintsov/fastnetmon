@@ -50,6 +50,12 @@ typedef cpuset_t cpu_set_t;
 
 #include "netmap_collector.h"
 
+// By default we read packet size from link layer
+// But in case of Juniper we could crop first X bytes from packet:
+// maximum-packet-length 110;
+// And this option become mandatory if we want correct bps speed in toolkit
+bool netmap_read_packet_length_from_ip_header = false;
+
 uint32_t netmap_sampling_ratio = 1;
 
 /* prototypes */
@@ -134,7 +140,12 @@ bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet& p
     packet.source_port = packet_header.extended_hdr.parsed_pkt.l4_src_port;
     packet.destination_port = packet_header.extended_hdr.parsed_pkt.l4_dst_port;
 
-    packet.length = packet_header.len;
+    if (netmap_read_packet_length_from_ip_header) { 
+        packet.length = packet_header.extended_hdr.parsed_pkt.ip_total_size;
+    } else {
+        packet.length = packet_header.len;
+    }
+
     packet.protocol = packet_header.extended_hdr.parsed_pkt.l3_proto;
     packet.ts = packet_header.ts;
 
@@ -361,6 +372,10 @@ void start_netmap_collection(process_packet_pointer func_ptr) {
 
     if (configuration_map.count("netmap_sampling_ratio") != 0) {
         netmap_sampling_ratio = convert_string_to_integer(configuration_map["netmap_sampling_ratio"]);
+    }
+
+    if (configuration_map.count("netmap_read_packet_length_from_ip_header") != 0) {
+        netmap_read_packet_length_from_ip_header = configuration_map["netmap_read_packet_length_from_ip_header"] == "on";
     }
 
     std::vector<std::string> interfaces_for_listen;
