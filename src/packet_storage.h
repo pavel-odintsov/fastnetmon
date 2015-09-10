@@ -12,11 +12,12 @@ class packet_storage_t {
             memory_pos = NULL;
             buffer_size = 0;
 
-            packet_size = 1500;
+            // TODO: fix hardcoded mtu size this!!!
+            max_packet_size = 1500;
         }
 
         bool allocate_buffer(unsigned int buffer_size_in_packets) {
-            unsigned int memory_size_in_bytes = buffer_size_in_packets * (packet_size + sizeof(fastnetmon_pcap_pkthdr))
+            unsigned int memory_size_in_bytes = buffer_size_in_packets * (max_packet_size + sizeof(fastnetmon_pcap_pkthdr))
                 + sizeof(fastnetmon_pcap_file_header);
 
             // std::cout << "We will allocate " << memory_size_in_bytes << std::endl;
@@ -62,14 +63,21 @@ class packet_storage_t {
             pcap_packet_header.ts_sec  = current_time.tv_sec;
             pcap_packet_header.ts_usec = current_time.tv_usec;
 
-            pcap_packet_header.incl_len = length;
+            // Store full length of packet
             pcap_packet_header.orig_len = length;
-            
+
+            if (length > max_packet_size) {
+                // We whould crop packet because it's too big
+                pcap_packet_header.incl_len = max_packet_size;
+            } else {
+                pcap_packet_header.incl_len = length;
+            }
+
             if (!this->write_binary_data(&pcap_packet_header, sizeof(pcap_packet_header))) {
                 return false;
             }
 
-            return (this->write_binary_data(payload_pointer, length)); 
+            return (this->write_binary_data(payload_pointer, pcap_packet_header.incl_len)); 
         }
 
         bool we_have_free_space_for_x_bytes(unsigned int length) {
@@ -84,8 +92,7 @@ class packet_storage_t {
         bool write_header() {
             struct fastnetmon_pcap_file_header pcap_header;
 
-            // TODO: fix hardcoded mtu size this!!!
-            fill_pcap_header(&pcap_header, 1500);
+            fill_pcap_header(&pcap_header, max_packet_size);
 
             return this->write_binary_data(&pcap_header, sizeof(pcap_header));
         }
@@ -110,11 +117,20 @@ class packet_storage_t {
         void* get_buffer_pointer() {
             return memory_pointer;
         }
+        
+        unsigned int get_max_packet_size() {
+            return this->max_packet_size;
+        }
+
+        void set_max_packet_size(unsigned int new_max_packet_size) {
+            this->max_packet_size = new_max_packet_size;
+        }
+
     private:
         unsigned char* memory_pointer;
         unsigned char* memory_pos;
         unsigned int buffer_size;
-        unsigned int packet_size;
+        unsigned int max_packet_size;
 };
 
 #endif

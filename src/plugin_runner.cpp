@@ -21,6 +21,14 @@
 #include "pfring_plugin/pfring_collector.h"
 #endif
 
+#ifdef FASTNETMON_ENABLE_AFPACKET
+#include "afpacket_plugin/afpacket_collector.h"
+#endif
+
+#ifdef SNABB_SWITCH
+#include "snabbswitch_plugin/snabbswitch_collector.h"
+#endif
+
 #include "netmap_plugin/netmap_collector.h"
 
 // log4cpp logging facility
@@ -97,7 +105,7 @@ int main(int argc, char* argv[]) {
     init_logging();
 
     if (argc < 2) {
-        std::cout << "Please specify sflow or netflow as param" << std::endl;
+        std::cout << "Please specify sflow, netflow, raw, dpi, snabbswitch, afpacket as param" << std::endl;
         return 1;
     }
 
@@ -127,12 +135,27 @@ int main(int argc, char* argv[]) {
     } else if (strstr(argv[1], "pcap") != NULL) {
         std::cout << "Starting pcap" << std::endl;
         start_pcap_collection(process_packet);
+    } else if (strstr(argv[1], "snabbswitch") != NULL) {
+        std::cout << "Starting snabbswitch" << std::endl;
+
+#ifdef SNABB_SWITCH
+        start_snabbswitch_collection(process_packet);
+#else
+        printf("SnabbSwitch support is not compiled here\n");
+#endif
     } else if (strstr(argv[1], "pfring") != NULL) {
 #ifdef PF_RING
         std::cout << "Starting pf_ring" << std::endl;
         start_pfring_collection(process_packet);
 #else
         std::cout << "PF_RING support disabled here" << std::endl; 
+#endif
+    } else if (strstr(argv[1], "afpacket") != NULL) {
+#ifdef FASTNETMON_ENABLE_AFPACKET
+        std::cout << "Starting afpacket" << std::endl;
+        start_afpacket_collection(process_packet);
+#else
+        printf("AF_PACKET is not supported here");
 #endif
     } else if (strstr(argv[1], "netmap") != NULL) {
         std::cout << "Starting netmap" << std::endl;

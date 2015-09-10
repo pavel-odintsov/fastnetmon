@@ -8,18 +8,20 @@ Chat: #fastnetmon at irc.freenode.net [web client](https://webchat.freenode.net/
 
 [Please fill survey, we need your voice!](https://docs.google.com/forms/d/1YoXQImMeEjBH-JPz3KYtcDwknHs8xrI538ObwSy9uZo/viewform)
 
+Detailed reference in Russian: [link](https://github.com/FastVPSEestiOu/fastnetmon/blob/master/docs/FastNetMon_Reference_Russian.pdf)
+
 License: GPLv2
 
-FastNetMon - A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
+FastNetMon - A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, SnabbSwitch, netmap, PF_RING, PCAP).
 
 What can we do? We can detect hosts in our own network with a large amount of packets per second/bytes per second or flow per second incoming or outgoing from certain hosts. And we can call an external script which can notify you, switch off a server or blackhole the client.
 
 - We are part of [CloudRouter](https://cloudrouter.org/cloudrouter/2015/07/09/fastnetmon.html) distribution
+- We are part of [official FreeBSD ports](https://freshports.org/net-mgmt/fastnetmon/), [manual install](docs/FreeBSD_INSTALL.md)
 - [VyOS based iso image with bundled FastNetMon](docs/VYOS_BINARY_ISO_IMAGE.md)
 - [Docker image](docs/DOCKER_INSTALL.md)
 - [Binary rpm packages for CentOS 6/7 and Fedora 21](docs/INSTALL_RPM_PACKAGES.md)
 - [Automatic install script for Debian/Ubuntu/CentOS/Fedora/Gentoo](docs/INSTALL.md)
-- [Manual install on FreeBSD and Dragonfly BSD](docs/FreeBSD_INSTALL.md)
 - [Manual install on Mac OS X](docs/MAC_OS_INSTALL.md)
 - [Manual install on Slackware](docs/SLACKWARE_INSTALL.md)
 - [Manual install for VyOS](docs/VyOS_INSTALL.md)
@@ -31,17 +33,20 @@ Supported packet capture engines:
 - NetFlow v5, v9
 - IPFIX
 - ![sFLOW](http://sflow.org/images/sflowlogo.gif) v4 (dev branch only), v5
-- Port mirror/SPAN capture with PF_RING (with ZC/DNA mode support [need license](http://www.ntop.org/products/pf_ring/)), NETMAP and PCAP
+- Port mirror/SPAN capture with PF_RING (with ZC/DNA mode support [need license](http://www.ntop.org/products/pf_ring/)), SnabbSwitch, NETMAP and PCAP
 
 You could look [comparison table](https://github.com/FastVPSEestiOu/fastnetmon/blob/master/docs/CAPTURE_BACKENDS.md) for all available packet capture engines.
 
 Features:
+- Complete [BGP Flow Spec support](docs/BGP_FLOW_SPEC.md), RFC 5575
 - Can process incoming and outgoing traffic
 - Can trigger block script if certain IP loads network with a large amount of packets/bytes/flows per second
 - Thresholds could be configured in per subnet basis with hostgroups feature
 - Could [announce blocked IPs](docs/EXABGP_INTEGRATION.md) to BGP router with [ExaBGP](https://github.com/Exa-Networks/exabgp)
-- Have integration with [Graphite](docs/GRAPHITE_INTEGRATION.md)
+- Full integration with [Graphite](docs/GRAPHITE_INTEGRATION.md) and [InfluxDB](docs/INFLUXDB_INTEGRATION.md)
+- Deep packet inspection for attack traffic
 - netmap support (open source; wire speed processing; only Intel hardware NICs or any hypervisor VM type)
+- SnabbSwitch support (open source, very flexible, LUA driven, very-very-very fast)
 - Could filter out NetFLOW v5 flows or sFLOW packets with script implemented in LUA (useful for port exclude)
 - Supports L2TP decapsulation, VLAN untagging and MPLS processing in mirror mode 
 - Can work on server/soft-router

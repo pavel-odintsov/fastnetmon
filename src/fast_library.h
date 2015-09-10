@@ -17,6 +17,8 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/regex.hpp>
 
+#include <json-c/json.h>
+
 // Boost libs
 #include <boost/algorithm/string.hpp>
 
@@ -37,7 +39,7 @@ typedef std::map<std::string, uint64_t> graphite_data_t;
 typedef std::vector<std::string> interfaces_list_t;
 typedef std::vector<std::string> ip_addresses_list_t;
 
-ip_addresses_list_t get_local_ip_addresses_list();
+ip_addresses_list_t get_local_ip_v4_addresses_list();
 ip_addresses_list_t get_ip_list_for_interface(std::string interface);
 interfaces_list_t get_interfaces_list();
 
@@ -91,6 +93,8 @@ bool read_pid_from_file(pid_t& pid, std::string pid_path);
 
 direction get_packet_direction(patricia_tree_t* lookup_tree, uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet, unsigned int& subnet_cidr_mask);
 
+direction get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_addr src_ipv6, struct in6_addr dst_ipv6);
+
 std::string convert_prefix_to_string_representation(prefix_t* prefix);
 std::string find_subnet_by_ip_in_string_format(patricia_tree_t* patricia_tree, std::string ip);
 std::string convert_subnet_to_string(subnet_t my_subnet);
@@ -98,6 +102,9 @@ std::string get_direction_name(direction direction_value);
 subnet_t convert_subnet_from_string_to_binary(std::string subnet_cidr);
 std::vector <std::string> split_strings_to_vector_by_comma(std::string raw_string);
 subnet_t convert_subnet_from_string_to_binary_with_cidr_format(std::string subnet_cidr);
+
+inline uint64_t read_tsc_cpu_register();
+uint64_t get_tsc_freq_with_sleep();
 
 #ifdef __linux__
 bool manage_interface_promisc_mode(std::string interface_name, bool switch_on);
@@ -107,5 +114,13 @@ bool manage_interface_promisc_mode(std::string interface_name, bool switch_on);
 lua_State* init_lua_jit(std::string lua_hooks_path);
 bool call_lua_function(std::string function_name, lua_State* lua_state_param, std::string client_addres_in_string_format, void* ptr);
 #endif
+
+std::string serialize_attack_description(attack_details& current_attack);
+attack_type_t detect_attack_type(attack_details& current_attack);
+std::string get_printable_attack_name(attack_type_t attack);
+std::string serialize_network_load_to_text(map_element& network_speed_meter, bool average);
+json_object* serialize_attack_description_to_json(attack_details& current_attack);
+json_object* serialize_network_load_to_json(map_element& network_speed_meter);
+std::string serialize_statistic_counters_about_attack(attack_details& current_attack);
 
 #endif

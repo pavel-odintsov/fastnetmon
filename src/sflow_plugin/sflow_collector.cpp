@@ -37,7 +37,7 @@
 #ifdef ENABLE_LUA_HOOKS
 lua_State* sflow_lua_state = NULL;
 
-bool sflow_lua_hooks_enabled = true;
+bool sflow_lua_hooks_enabled = false;
 std::string sflow_lua_hooks_path = "/usr/src/fastnetmon/src/sflow_hooks.lua";
 #endif
 
@@ -89,6 +89,8 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
 #ifdef ENABLE_LUA_HOOKS
     if (configuration_map.count("sflow_lua_hooks_path") != 0) {
         sflow_lua_hooks_path = configuration_map["sflow_lua_hooks_path"];
+
+        sflow_lua_hooks_enabled = true;
     }
 #endif
   
@@ -181,7 +183,7 @@ void start_sflow_collector(std::string interface_for_binding, unsigned int sflow
             sample.rawSampleLen = received_bytes;
 
             if (address_len == sizeof(struct sockaddr_in)) {
-                struct sockaddr_in* peer4 = (struct sockaddr_in*)&peer;
+                struct sockaddr_in* peer4 = (struct sockaddr_in*)&cliaddr;
                 sample.sourceIP.type = SFLADDRESSTYPE_IP_V4;
                 memcpy(&sample.sourceIP.address.ip_v4, &peer4->sin_addr, 4);
 
@@ -748,7 +750,7 @@ void decodeIPLayer4(SFSample* sample, uint8_t* ptr) {
             convert_ip_as_uint_to_string(sample->sourceIP.address.ip_v4.addr), (void*)sample)) {
             // We will process this packet
         } else {
-            logger << log4cpp::Priority::INFO << "We will drop this packets because LUA script decided to do it";
+            logger << log4cpp::Priority::DEBUG << "We will drop this packets because LUA script decided to do it";
             return;
         }    
     }    

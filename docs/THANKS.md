@@ -1,5 +1,6 @@
 Thanks file! For all peoples which helped this project :)
 - Luke Gorrie for SnabbSwitch and help with lightning speed packet processing :)
+- Vicente De Luca for redis_prefix and InfluxDB optimization
 - Andrei Ziltsov / FastVPS Eesti OU for testing and patience :)
 - Luca Deri for PF_RING toolkit!
 - Roberto Bertó for Docker images and docs about Junos

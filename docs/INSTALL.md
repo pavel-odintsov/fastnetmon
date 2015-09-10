@@ -3,6 +3,9 @@ For Debian 6, 7, 8 and CentOS 6, 7 and Fedora and Gentoo you should use the auto
 wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl 
 sudo perl fastnetmon_install.pl
 ```
+
+Please keep in mind! We track some information about your machine (os type and distro version). If you do not want to share this information, please add flag --do-not-track-me to intsall script call. But in this case we can't improve FastNetMon for your distribution.
+
 If you want to use netmap module, please install it: [netmap install](NETMAP_INSTALL.md) 
 
 It's REQUIRED to add all of your networks in CIDR notation (11.22.33.0/24) to the file /etc/networks_list in the form of one prefix per line. If you are running this software on an OpenVZ node, you may not need to specify networks explicitly, as we can read them from /proc/vz/veip.
@@ -42,3 +45,9 @@ chmod 755 /usr/local/bin/notify_about_attack.sh
 After copying the file, you need to open it and configure the 'email_notify' option as required.
 
 Guide for manual install (for unsupported platforms): [link](MANUAL_INSTALL.md)
+
+If you want unstable development branch, please use this syntax:
+```bash
+wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl 
+sudo perl fastnetmon_install.pl --use-git-master
+```

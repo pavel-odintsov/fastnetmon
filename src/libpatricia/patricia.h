@@ -104,6 +104,9 @@ ascii2prefix (int family, char *string);
 patricia_node_t *
 make_and_lookup (patricia_tree_t *tree, char *string);
 
+patricia_node_t *
+make_and_lookup_ipv6 (patricia_tree_t *tree, char *string);
+
 /* } */
 
 #define PATRICIA_MAXBITS	(sizeof(struct in6_addr) * 8)

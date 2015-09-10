@@ -420,7 +420,7 @@ L3:
         hdr->extended_hdr.parsed_pkt.ipv4_tos = ip->tos;
         fragment_offset = ip->frag_off & htons(IP_OFFSET); /* fragment, but not the first */
         ip_len = ip->ihl * 4;
-
+        hdr->extended_hdr.parsed_pkt.ip_total_size = ntohs(ip->tot_len);
         // Parse fragmentation info:
         // Very good examples about IPv4 flags: http://lwn.net/Articles/136319/
         hdr->extended_hdr.parsed_pkt.ip_fragmented = 0;
