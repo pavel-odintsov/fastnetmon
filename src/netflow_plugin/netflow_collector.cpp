@@ -34,7 +34,7 @@
 #ifdef ENABLE_LUA_HOOKS
 lua_State* netflow_lua_state = NULL;
 
-bool lua_hooks_enabled = true;
+bool lua_hooks_enabled = false;
 std::string lua_hooks_path = "/usr/src/fastnetmon/src/netflow_hooks.lua";
 #endif
 
@@ -974,6 +974,7 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len, std::string client_a
             // This interval in milliseconds, convert it to seconds
             int64_t interval_length = (fast_ntoh(nf5_flow->flow_finish) - fast_ntoh(nf5_flow->flow_start)) / 1000;
 
+            /*
             if (interval_length > 0) {
                 logger << log4cpp::Priority::INFO << "NetFlow v5 from: " << client_addres_in_string_format
                     << " start: " << fast_ntoh(nf5_flow->flow_start)
@@ -981,6 +982,7 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len, std::string client_a
                     << " interval length:" << interval_length 
                     << "\n";
             }
+            */
 
             if (interval_length == 0) {
                 // it's OK
@@ -1112,6 +1114,7 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
 #ifdef ENABLE_LUA_HOOKS
     if (configuration_map.count("netflow_lua_hooks_path") != 0) {
         lua_hooks_path = configuration_map["netflow_lua_hooks_path"];
+        lua_hooks_enabled = true;
     }
 #endif
 

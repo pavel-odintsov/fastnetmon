@@ -1,25 +1,6 @@
 # Redis backend
 
-I introduced Redis support for store information about attacks.
-
-How to compile:
-
-Install dependencies:
-```bash
-# Debian like distros
-apt-get install -y libhiredis-dev
-# RedHat like distros 
-yum install -y hiredis-devel
-```
-
-Uncomment lines regarding redis in CMakeLists.txt
-
-And compile:
-```bash
-cd /usr/src/fastnetmon/src/build
-cmake ..
-make
-```
+I introduced Redis support for storing information about attacks. Redis support is bundled to project installer now. Please use installer with flag --use-git-master if you want Redis support.
 
 Please call ```redis-cli``` and input following commands
 

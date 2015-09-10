@@ -16,7 +16,7 @@ graphite_prefix = fastnetmon
 
 First of all, please install all packages:
 ```bash
-apt-get install python-whisper graphite-carbon
+apt-get install -y python-whisper graphite-carbon
 ```
 
 Whisper - it's database for data. Graphite - service for storing and retrieving data from database. 
@@ -31,6 +31,8 @@ Create database, specify login/password and email here:
 graphite-manage syncdb
 ```
 
+Specify your timezone in file /etc/graphite/local_settings.py on line TIME_ZONE.
+
 Change owner:
 ```bash
 chown _graphite:_graphite /var/lib/graphite/graphite.db
@@ -38,10 +40,11 @@ chown _graphite:_graphite /var/lib/graphite/graphite.db
 
 Run it with apache:
 ```bash
-apt-get install libapache2-mod-wsgi
+apt-get install -y libapache2-mod-wsgi apache2-mpm-prefork
 cp /usr/share/graphite-web/apache2-graphite.conf  /etc/apache2/sites-available/graphite-web.conf
 a2dissite 000-default.conf
 a2ensite graphite-web
+a2enmod wsgi
 ```
 
 Enable load on startup:
@@ -54,7 +57,7 @@ Open site:
 http://ip.ad.dr.es
 
 Put test data to Graphite:
-```echo "test.bash.stats 42 `date +%s`" | nc 127.0.0.1 2003```
+```echo "test.bash.stats 42 `date +%s`" | nc -q0 127.0.0.1 2003```
 
 If you have issues with Carbon like this:
 ```bash
@@ -72,3 +75,36 @@ twisted.python.usage.UsageError: Unknown command: carbon-cache
 ```
 
 Please check this [link](http://stackoverflow.com/questions/27951317/install-graphite-statsd-getting-error-unknown-carbon-cache)
+
+Some useful graphics for Graphite.
+
+Total load:
+```bash
+fastnetmon.incoming.pps
+fastnetmon.outgoing.pps
+
+fastnetmon.incoming.mbps
+fastnetmon.outgoing.mbps
+```
+
+Top talkers:
+```bash
+highestMax(fastnetmon.*.outgoing.average.pps, 10)
+highestMax(fastnetmon.*.outgoing.average.mbps, 10)
+highestMax(fastnetmon.*.incoming.average.pps, 10)
+highestMax(fastnetmon.*.incoming.average.mbps, 10)
+```
+
+Also I recommend to configure Graphite this way.
+
+For big networks please enlarge number of created file in /etc/carbon/carbon.conf:
+```bash
+MAX_CREATES_PER_MINUTE = 5000
+```
+
+And if you want to store data every 5 seconds for 1 months please do following _before_ starting collection to Graphite in file /etc/carbon/storage-schemas.conf:
+```bash
+[default_5sec_for_1month]
+pattern = .*
+retentions = 5s:31d
+``` 

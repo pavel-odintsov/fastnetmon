@@ -36,6 +36,19 @@ struct fastnetmon_pcap_file_header {
         bpf_u_int32 linktype;   /* data link type (LINKTYPE_*) */
 };
 
+/*
+TODO: move to this code, get rid any bpf* custom types 
+struct fastnetmon_pcap_file_header {
+    uint32_t magic;
+    uint16_t version_major;
+    uint16_t version_minor;
+    int32_t  thiszone;
+    uint32_t sigfigs;
+    uint32_t snaplen;
+    uint32_t linktype;
+};
+*/
+
 
 // We can't use pcap_pkthdr from upstream because it uses 16 bytes timeval instead of 8 byte and
 // broke everything
@@ -46,7 +59,7 @@ struct fastnetmon_pcap_pkthdr {
     uint32_t orig_len; /* actual length of packet */
 };
 
-typedef void (*pcap_packet_parser_callback)(char* buffer, uint32_t len);
+typedef void (*pcap_packet_parser_callback)(char* buffer, uint32_t len, uint32_t snaplen);
 
 int pcap_reader(const char* pcap_file_path, pcap_packet_parser_callback  pcap_parse_packet_function_ptr);
 

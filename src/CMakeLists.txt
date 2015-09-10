@@ -5,6 +5,13 @@ cmake_minimum_required (VERSION 2.8)
 # Debian 7 - 2.8.9
 # CentOS 6 - 2.8.12
 
+# We should set compiler before project() call 
+if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
+    # We use custom compiler too
+    set(CMAKE_C_COMPILER "/opt/gcc520/bin/gcc")
+    set(CMAKE_CXX_COMPILER "/opt/gcc520/bin/g++")
+endif()
+
 project(FastNetMon)
 
 # Unfortunately, Debian Squeeze haven't support for this feature
@@ -15,15 +22,38 @@ project(FastNetMon)
 # Enable it and fix all warnigns!
 # add_definitions ("-Wall")
 
-set (Tutorial_VERSION_MAJOR 1)
-set (Tutorial_VERSION_MINOR 1)
+set (FASTNETMON_VERSION_MAJOR 1)
+set (FASTNETMON_VERSION_MINOR 1)
+
+# cmake -DENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT=ON .. 
+if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
+    set(BOOST_INCLUDEDIR "/opt/boost_1_58_0")
+    set(BOOST_LIBRARYDIR "/opt/boost_1_58_0/stage/lib/")
+
+    # It's really nice part of this custom build process :)
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11")
+
+    # Disable warning from Boost when compiling with gcc 5.2
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
+ 
+    # Specify full RPATH for build tree
+    SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+
+    # Create builds in current folder with install RPATH
+    SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+
+    SET(CMAKE_INSTALL_RPATH "/opt/gcc520/lib64;/opt/boost_1_58_0/stage/lib;/opt/libhiredis_0_13/lib;/opt/log4cpp1.1.1/lib;/opt/luajit_2.0.4/lib;/opt/ndpi/lib;/opt/pf_ring_6.0.3/lib;/opt/json-c-0.12/lib")
+endif()
 
 # It's pretty safe and provide big speedup for our packet processor and patricia code
 set(CMAKE_C_FLAGS_RELEASE "-O2")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
-# If you want C++ 11 support, please uncomment it
-# set(CMAKE_CXX_FLAGS_RELEASE "-std=c++11")
+set(HIREDIS_CUSTOM_INSTALL_PATH "/opt/libhiredis_0_13")
+set(LOG4CPP_CUSTOM_INSTALL_PATH "/opt/log4cpp1.1.1")
+set(JSONC_CUSTOM_INSTALL_PATH "/opt/json-c-0.12")
+set(PFRING_CUSTOM_INSTALL_PATH "/opt/pf_ring_6.0.3")
+set(LIBPCAP_CUSTOM_INSTALL_PATH "/opt/libpcap_1.7.4")
 
 set(FASTNETMON_PROFILER OFF)
 
@@ -64,13 +94,14 @@ if (ENABLE_PFRING_SUPPORT)
         set(PFRING_LIBRARIES pfring) 
     else() 
         # Set path to manually compiled PF_RING
-        set(PFRING_INCLUDE_DIRS /opt/pf_ring/include)
+        set(PFRING_INCLUDE_DIRS "${PFRING_CUSTOM_INSTALL_PATH}/include")
         set(PFRING_LIBRARIES pfring)
+        link_directories("${PFRING_CUSTOM_INSTALL_PATH}/lib")
     endif()
 
     add_definitions(-DPF_RING)
 
-    if (EXISTS "/opt/pf_ring/include/pfring_zc.h" OR EXISTS "/usr/local/include/pfring_zc.h")
+    if (EXISTS "${PFRING_CUSTOM_INSTALL_PATH}/include/pfring_zc.h" OR EXISTS "/usr/local/include/pfring_zc.h")
         message(STATUS "We found PF_RING ZC headers and will build PF_RING ZC support")
         # Enable ZC support
         add_definitions(-DPF_RING_ZC)
@@ -78,12 +109,10 @@ if (ENABLE_PFRING_SUPPORT)
         message(WARNING "We can't find PF_RING ZC header pfring_zc.h in folder /opt/pf_ring/include. Will not compile ZC support") 
     endif()
 
-    link_directories(/opt/pf_ring/lib)
     include_directories(${PFRING_INCLUDE_DIRS})
-endif()
 
-# If you need hardware locking features
-# add_definitions(-DHWFILTER_LOCKING)
+    message(STATUS "We have enabled PF_RING's hardware filtering option")
+endif()
 
 # Our LPM library
 add_library(patricia STATIC libpatricia/patricia.c)
@@ -99,6 +128,28 @@ add_library(ipfix_rfc STATIC ipfix_rfc.cpp)
 # Our packet parser
 add_library(fastnetmon_packet_parser STATIC fastnetmon_packet_parser.c)
 
+# -DENABLE_SNABBSWITCH_SUPPORT=ON ..
+# Please also comment out line: set(ENABLE_LUA_SUPPORT yes) if you want SnabbSwitch support
+if (ENABLE_SNABBSWITCH_SUPPORT) 
+    add_definitions(-DSNABB_SWITCH)
+    add_library(snabbswitch_plugin STATIC snabbswitch_plugin/snabbswitch_collector.cpp)
+
+    link_directories(/usr/src/snabbswitch/src)
+    target_link_libraries(snabbswitch_plugin snabb)
+endif()
+
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+    message(STATUS "You are running Linux and we can build AF_PACKET support")
+    set (ENABLE_AFPACKET_SUPPORT ON)
+endif()
+
+# -DENABLE_AFPACKET_SUPPORT=ON ..
+if (ENABLE_AFPACKET_SUPPORT)
+   add_definitions(-DFASTNETMON_ENABLE_AFPACKET) 
+
+    add_library(afpacket_plugin STATIC afpacket_plugin/afpacket_collector.cpp)
+endif()
+
 # sFLOW plugin
 add_library(sflow_plugin STATIC sflow_plugin/sflow_collector.cpp) 
 
@@ -106,8 +157,10 @@ add_library(sflow_plugin STATIC sflow_plugin/sflow_collector.cpp)
 add_library(netflow_plugin STATIC netflow_plugin/netflow_collector.cpp)
 target_link_libraries(netflow_plugin ipfix_rfc)
 
-# set (ENABLE_DPI_SUPPORT yes)
+set(ENABLE_DPI_SUPPORT YES)
 if (ENABLE_DPI_SUPPORT) 
+    message(STATUS "We will enable nDPI support")
+
     add_library(fast_dpi STATIC fast_dpi.cpp)
 
     set(NDPI_INCLUDE_DIRS "/opt/ndpi/include/libndpi-1.7.0")
@@ -124,15 +177,18 @@ endif()
 # We do not enable it by default, it's testing feature
 # If you want it please build with:
 # cmake -DENABLE_LUA_SUPPORT=ON .. 
+set(ENABLE_LUA_SUPPORT yes)
 if (ENABLE_LUA_SUPPORT)
     message(STATUS "We will enable LuaJIT support")
 
     add_definitions(-DENABLE_LUA_HOOKS)
+
+    link_directories("/opt/luajit_2.0.4/lib")
+    include_directories("/opt/luajit_2.0.4/include")
  
     target_link_libraries(netflow_plugin luajit-5.1)
     target_link_libraries(sflow_plugin luajit-5.1)
     target_link_libraries(fast_library luajit-5.1)
-    
 endif()
 
 # pcap plugin
@@ -146,6 +202,9 @@ if (ENABLE_PFRING_SUPPORT)
     target_link_libraries(pfring_plugin ${PFRING_LIBRARIES})
     target_link_libraries(pfring_plugin numa)
     target_link_libraries(pfring_plugin ${CMAKE_THREAD_LIBS_INIT})
+
+    # Add action for hardware filetring
+    add_library(pfring_hardware_filter_action STATIC actions/pfring_hardware_filter_action.cpp)
 endif()
 
 # example plugin
@@ -187,40 +246,69 @@ if(CURSES_FOUND)
     target_link_libraries(fastnetmon_client ${CURSES_LIBRARIES})
 endif()
 
-# apt-get install -y libhiredis-dev 
-# yum install -y hiredis-devel
-# Please uncomment this lines if you want enable Redis support
-#list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-#find_package(Hiredis QUIET)
-#if (HIREDIS_FOUND)
-#    message(STATUS "We could compile Redis support")
-#    add_definitions(-DREDIS)
-#    include_directories(${HIREDIS_INCLUDE_DIRS})
-#    target_link_libraries (fastnetmon ${HIREDIS_LIBRARIES})
+### Move this code to cmake module
+
+# Try to find hiredis in a specific folder
+find_path(HIREDIS_INCLUDES_FOLDER NAMES hiredis/hiredis.h PATHS "${HIREDIS_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
+
+# Try to find hiredis library path
+find_library(HIREDIS_LIBRARY_PATH NAMES hiredis PATHS "${HIREDIS_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+
+if (HIREDIS_INCLUDES_FOLDER AND HIREDIS_LIBRARY_PATH) 
+    message(STATUS "We found hiredis library and will build Redis support ${HIREDIS_INCLUDES_FOLDER} ${HIREDIS_LIBRARY_PATH}")
+
+    add_definitions(-DREDIS)
+    include_directories(${HIREDIS_INCLUDES_FOLDER})
+    target_link_libraries (fastnetmon ${HIREDIS_LIBRARY_PATH})
+else()
+    message(STATUS "We can't find hiredis library and will disable Redis support")
+endif()
+
+### Look for libpcap
+
+#find_path(LIBPCAP_INCLUDES_FOLDER NAMES pcap.h PATHS "${LIBPCAP_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
+
+#find_library(LIBPCAP_LIBRARY_PATH NAMES pcap PATHS "${LIBPCAP_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+
+#if (LIBPCAP_INCLUDES_FOLDER AND LIBPCAP_LIBRARY_PATH) 
+#    message(STATUS "We found pcap library ${LIBPCAP_LIBRARY_PATH}")
+
+#    include_directories(${LIBPCAP_INCLUDES_FOLDER})
+#else()
+#    message(FATAL_ERROR "We can't find pcap library")    
 #endif()
-# For CentOS 6 please use this code:
-# add_definitions(-DREDIS)
-# target_link_libraries (fastnetmon hiredis)
 
-# Standard path for Linux
-set(LOG4CPP_LIBRARY_PATH log4cpp)
+### Look for log4cpp
 
-# Non standard path on platforms where we compile log4cpp from sources
-if (WE_USE_CUSTOM_LOG4CPP) 
-    set(LOG4CPP_LIBRARY_PATH /opt/log4cpp1.1.1/lib/liblog4cpp.so)
-    include_directories(/opt/log4cpp1.1.1/include) 
+# Try to find log4cpp includes path
+find_path(LOG4CPP_INCLUDES_FOLDER NAMES log4cpp/Appender.hh PATHS "${LOG4CPP_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
+
+# Try to find log4cpp library path
+find_library(LOG4CPP_LIBRARY_PATH NAMES log4cpp PATHS "${LOG4CPP_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+
+if (LOG4CPP_INCLUDES_FOLDER AND LOG4CPP_LIBRARY_PATH)
+    include_directories(${LOG4CPP_INCLUDES_FOLDER})
+    message(STATUS "We have found log4cpp and will build project")
+else()
+    message(FATAL_ERROR "We can't find log4cpp. We can't build project")
 endif()
 
-# Try to find log4cpp library where it installed by mac ports
-if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-    FIND_LIBRARY(LOG4_CPP_LIRBARY_FOUNDER log4cpp /opt/local/lib REQUIRED)
-    set(LOG4CPP_LIBRARY_PATH ${LOG4_CPP_LIRBARY_FOUNDER}) 
+### Look for jsonc
+
+find_path(JSONC_INCLUDES_FOLDER NAMES json-c/json.h PATHS "${JSONC_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
+find_library(JSONC_LIBRARY_PATH NAMES json-c PATHS "${JSONC_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+
+if (JSONC_INCLUDES_FOLDER AND JSONC_LIBRARY_PATH)
+    include_directories(${JSONC_INCLUDES_FOLDER}) 
+    message(STATUS "We have found json-c library correctly: ${JSONC_LIBRARY_PATH}")
+else()
+    message(FATAL_ERROR "We can't find json-c library! Can't build project")
 endif()
 
-# Try to find log4cpp library where it installed by FreeBSD's and Dragonfly's pkg
-if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" OR ${CMAKE_SYSTEM_NAME} STREQUAL "DragonFly")
-    FIND_LIBRARY(LOG4_CPP_LIRBARY_FOUNDER log4cpp /usr/local/lib REQUIRED)
-    set(LOG4CPP_LIBRARY_PATH ${LOG4_CPP_LIRBARY_FOUNDER}) 
+target_link_libraries(fast_library ${JSONC_LIBRARY_PATH})
+
+if (ENABLE_DPI_SUPPORT)
+    target_link_libraries(fastnetmon fast_dpi)
 endif()
 
 target_link_libraries(fastnetmon ${LOG4CPP_LIBRARY_PATH})
@@ -242,7 +330,17 @@ target_link_libraries(fastnetmon ipfix_rfc)
 target_link_libraries(fastnetmon fast_library)
 
 if (ENABLE_PFRING_SUPPORT)
-target_link_libraries(fastnetmon pfring_plugin)
+    target_link_libraries(fastnetmon pfring_plugin)
+    # Link hardware filter too
+    target_link_libraries(fastnetmon pfring_hardware_filter_action)
+endif()
+
+if (ENABLE_SNABBSWITCH_SUPPORT)
+    target_link_libraries(fastnetmon snabbswitch_plugin)
+endif()
+
+if (ENABLE_AFPACKET_SUPPORT)
+    target_link_libraries(fastnetmon afpacket_plugin)
 endif()
 
 target_link_libraries(fastnetmon sflow_plugin netflow_plugin pcap_plugin example_plugin netmap_plugin)
@@ -250,6 +348,14 @@ target_link_libraries(fastnetmon sflow_plugin netflow_plugin pcap_plugin example
 # cmake .. -DBUILD_PLUGIN_RUNNER=ON
 if (BUILD_PLUGIN_RUNNER)
     add_executable(fastnetmon_plugin_runner plugin_runner.cpp)
+
+    if (ENABLE_SNABBSWITCH_SUPPORT) 
+        target_link_libraries(fastnetmon_plugin_runner snabbswitch_plugin)
+    endif()
+
+    if (ENABLE_AFPACKET_SUPPORT) 
+        target_link_libraries(fastnetmon_plugin_runner afpacket_plugin)
+    endif()
 
     target_link_libraries(fastnetmon_plugin_runner ${CMAKE_THREAD_LIBS_INIT})
     target_link_libraries(fastnetmon_plugin_runner patricia)
@@ -278,6 +384,7 @@ if (BUILD_PCAP_READER)
     target_link_libraries(fastnetmon_pcap_reader ${LOG4CPP_LIBRARY_PATH})
     target_link_libraries(fastnetmon_pcap_reader netflow_plugin)   
     target_link_libraries(fastnetmon_pcap_reader sflow_plugin)
+    target_link_libraries(fastnetmon_pcap_reader netmap_plugin)
 
     if (ENABLE_DPI_SUPPORT)
         target_link_libraries(fastnetmon_pcap_reader fast_dpi)

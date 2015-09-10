@@ -39,12 +39,23 @@
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
+// We will use this code from Global Symbols table (originally it's defined in netmap collector.cpp)
+bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet& packet);
+
 // Fake config
 std::map<std::string, std::string> configuration_map;
 
 std::string log_file_path = "/tmp/fastnetmon_pcap_reader.log";
 log4cpp::Category& logger = log4cpp::Category::getRoot();
 
+uint64_t total_unparsed_packets = 0;
+
+uint64_t dns_amplification_packets = 0;
+uint64_t ntp_amplification_packets = 0;
+uint64_t ssdp_amplification_packets = 0;
+
+uint64_t raw_parsed_packets = 0;
+uint64_t raw_unparsed_packets = 0;
 
 /* It's prototype for moc testing of FastNetMon, it's very useful for netflow or direct packet
  * parsers debug */
@@ -79,11 +90,11 @@ u_int32_t ndpi_size_flow_struct = 0;
 u_int32_t ndpi_size_id_struct = 0;
 #endif
 
-void pcap_parse_packet(char* buffer, uint32_t len) {
+void pcap_parse_packet(char* buffer, uint32_t len, uint32_t snap_len) {
     struct pfring_pkthdr packet_header;
     memset(&packet_header, 0, sizeof(packet_header));
     packet_header.len = len;
-    packet_header.caplen = len;
+    packet_header.caplen = snap_len;
 
     fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, 1, 0);
 
@@ -93,7 +104,7 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
 
     char* payload_ptr = packet_header.extended_hdr.parsed_pkt.offset.payload_offset + buffer;
 
-    if (packet_header.len <= packet_header.extended_hdr.parsed_pkt.offset.payload_offset) {
+    if (packet_header.len < packet_header.extended_hdr.parsed_pkt.offset.payload_offset) {
         printf("Something goes wrong! Offset %u is bigger than total packet length %u\n",
             packet_header.extended_hdr.parsed_pkt.offset.payload_offset, packet_header.len);
         return;
@@ -119,17 +130,33 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
         read_sflow_datagram(&sample);
     } else if (strcmp(flow_type, "raw") == 0) {
         // We do not need parsed data here
-        struct pfring_pkthdr packet_header;
-        memset(&packet_header, 0, sizeof(packet_header));
+        struct pfring_pkthdr raw_packet_header;
+        memset(&raw_packet_header, 0, sizeof(raw_packet_header));
 
-        packet_header.len = payload_length;
-        packet_header.caplen = payload_length;
+        raw_packet_header.len = len;
+        raw_packet_header.caplen = snap_len;
 
-        fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, 1, 0);
+        int parser_return_code = fastnetmon_parse_pkt((u_char*)buffer, &raw_packet_header, 4, 1, 0);
+
+        // We are not interested so much in l2 data and we interested only in l3 data here and more
+        if (parser_return_code < 3) {
+            printf("Parser failed for with code %d following packet with number %llu\n", parser_return_code, raw_unparsed_packets + raw_parsed_packets);
+            raw_unparsed_packets++;
+        } else {
+            raw_parsed_packets++;
+        }
 
         char print_buffer[512];
-        fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
-        printf("%s", print_buffer);
+        fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &raw_packet_header);
+        printf("Raw parser: %s", print_buffer);
+
+        simple_packet packet;
+        // TODO: add support for caplen here!
+        if (parse_raw_packet_to_simple_packet((u_char*)buffer, len, packet)) {
+            std::cout << "High level parser: " << print_simple_packet(packet) << std::endl;
+        } else {
+            printf("High level parser failed\n");
+        } 
     } else if (strcmp(flow_type, "dpi") == 0) {
 #ifdef ENABLE_DPI
         struct ndpi_id_struct *src = NULL;
@@ -156,7 +183,41 @@ void pcap_parse_packet(char* buffer, uint32_t len) {
 
         printf("Protocol: %s master protocol: %s\n", protocol_name, master_protocol_name);
 
-        free(flow);
+        if (detected_protocol.protocol == NDPI_PROTOCOL_DNS) {
+            // It's answer for ANY request with so much 
+            if (flow->protos.dns.query_type == 255 && flow->protos.dns.num_queries < flow->protos.dns.num_answers) {
+                dns_amplification_packets++;
+            }
+    
+            printf("It's DNS, we could check packet type. query_type: %d query_class: %d rsp_code: %d num answers: %d, num queries: %d\n",
+                flow->protos.dns.query_type,
+                flow->protos.dns.query_class,
+                flow->protos.dns.rsp_type,
+                flow->protos.dns.num_answers,
+                flow->protos.dns.num_queries
+            );
+
+            /*
+                struct {
+                    u_int8_t num_queries, num_answers, ret_code;
+                    u_int8_t bad_packet // the received packet looks bad
+                    u_int16_t query_type, query_class, rsp_type;
+                } dns;
+            */
+
+            
+        } else if (detected_protocol.protocol == NDPI_PROTOCOL_NTP) {
+            printf("Request type field: %d version: %d\n", flow->protos.ntp.request_code, flow->protos.ntp.version);
+
+            // Detect packets with type MON_GETLIST_1
+            if (flow->protos.ntp.version == 2 && flow->protos.ntp.request_code == 42) {
+                ntp_amplification_packets++;
+            }
+        } else if (detected_protocol.protocol == NDPI_PROTOCOL_SSDP) {
+            ssdp_amplification_packets++;
+        }
+
+        ndpi_free_flow(flow);
         free(dst);
         free(src);
 #endif  
@@ -190,6 +251,20 @@ int main(int argc, char** argv) {
     }
 #endif
     
-
     pcap_reader(argv[2], pcap_parse_packet);
+
+    if (strcmp(flow_type, "raw") == 0) {
+        printf("Parsed packets: %llu\n", raw_parsed_packets);
+        printf("Unparsed packets: %llu\n", raw_unparsed_packets);
+
+        printf("Total packets: %llu\n", raw_parsed_packets + raw_unparsed_packets);
+    }
+
+#ifdef ENABLE_DPI
+    if (strcmp(flow_type, "dpi") == 0) {
+        printf("DNS amplification packets: %lld\n", dns_amplification_packets);
+        printf("NTP amplification packets: %lld\n", ntp_amplification_packets);
+        printf("SSDP amplification packets: %lld\n", ssdp_amplification_packets);
+    }
+#endif
 }

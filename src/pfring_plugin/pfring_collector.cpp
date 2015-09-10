@@ -727,8 +727,10 @@ bool pf_ring_main_loop(const char* dev) {
 
 
     logger << log4cpp::Priority::INFO << "Successully binded to: " << dev;
+
+    // We need cast to int because in other way it will be interpreted as char :(
     logger << log4cpp::Priority::INFO
-           << "Device RX channels number: " << pfring_get_num_rx_channels(pf_ring_descr);
+           << "Device RX channels number: " << int(pfring_get_num_rx_channels(pf_ring_descr));
 
     u_int32_t version;
     // Set spplication name in /proc

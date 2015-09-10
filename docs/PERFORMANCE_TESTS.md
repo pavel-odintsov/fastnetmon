@@ -9,7 +9,7 @@
 | [Git commit](https://github.com/FastVPSEestiOu/fastnetmon/commit/0ab076deda7d8d0dc4739f7cc963dca84f62f9a1) | netmap | 7.6 MPPS 3482 mbps | E5-2407  2.20GHz 4 core, ixgbe driver from FastNetMon 10GE load: 100% of all cores | Debian Jessie | Single /24 255 IP| 10GE wire speed 14Mpps, 10GE | Connection tracking disabled. VT-D and hardware virtualization are disabled in BIOS |
 | [Git commit](https://github.com/FastVPSEestiOu/fastnetmon/commit/0ab076deda7d8d0dc4739f7cc963dca84f62f9a1) | netmap | 7.5 MPPS 3423 mbps | E5-2407  2.20GHz 4 core, ixgbe driver from FastNetMon 10GE load: 100% of all cores | Debian Jessie | Single /24 255 IP| 10GE wire speed 14Mpps, 10GE | Connection tracking disabled. VT-D and hardware virtualization are enabled in BIOS |
 | [Git commit](https://github.com/FastVPSEestiOu/fastnetmon/commit/0ab076deda7d8d0dc4739f7cc963dca84f62f9a1) | PF_RING ZC [git version](https://github.com/ntop/PF_RING/commit/b67a6f46a06e68f2bb6cc53e9d452cc2cbe5f18f) | 5.8 MPPS  2667 mbps | E5-2407  2.20GHz 4 core, ixgbe ZC driver from PF_RING 10GE load: 100% of all cores | Debian Jessie | Single /24 255 IP| 10GE wire speed 14Mpps, 10GE | Connection tracking disabled. VT-D and hardware virtualization are enabled in BIOS |
-
+| [Git commit](https://github.com/FastVPSEestiOu/fastnetmon/commit/96510ab094e73a7a3822b6a6c65268e77cbe9b94) | AF_PACKET | 1.6 MPPS  780 mbps | i7-3820, load: 100% of all cores | Debian Jessie | Single /24 255 IP| 10GE wire speed 14Mpps, 10GE | Connection tracking disabled. VT-D and hardware virtualization are enabled in BIOS |
 
 
 

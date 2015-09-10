@@ -1,0 +1,169 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index a65734b..8a52b0b 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -5,6 +5,13 @@ cmake_minimum_required (VERSION 2.8)
+ # Debian 7 - 2.8.9
+ # CentOS 6 - 2.8.12
+ 
++# We should set compiler berfor project() call 
++if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
++    # We use custom compiler too
++    set(CMAKE_C_COMPILER "/opt/gcc520/bin/gcc")
++    set(CMAKE_CXX_COMPILER "/opt/gcc520/bin/g++")
++endif()
++
+ project(FastNetMon)
+ 
+ # Unfortunately, Debian Squeeze haven't support for this feature
+@@ -20,11 +27,42 @@ set (FASTNETMON_VERSION_MINOR 1)
+ 
+ # cmake -DENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT=ON .. 
+ if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
+-    # We use custom compiler too
+-    set(CMAKE_C_COMPILER "/opt/gcc520/bin/gcc")
+-    set(CMAKE_CXX_COMPILER "/opt/gcc520/bin/g++")
++    # Set blank sysroot
++    #set(CMAKE_SYSROOT "/opt/glibc_2.22")
++
++    set(MY_LINK_DIRECTORIES "/opt/glibc_2.22/lib;/opt/gcc520/lib64;/opt/boost_1_58_0/stage/lib;/opt/libhiredis_0_13/lib;/opt/log4cpp1.1.1/lib;/opt/luajit_2.0.4/lib;/opt/ndpi/lib;/opt/pf_ring/lib;/opt/json-c-0.12/lib")
++    set(MY_INCLUDE_DIRECTORIES "/opt/glibc_2.22/include")
++
++    # TODO: onlt temp code
++    include_directories("/usr/include/x86_64-linux-gnu")
++    include_directories("/usr/include")
++    #include_directories("/usr/src/linux-headers-3.16.0-4-common/include/uapi")
++
++    # Remove all standard path's for C and C++ compilers
++    set(CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES "")
++    set(CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES "")
++    set(CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "")
++
++    set(CMAKE_C_IMPLICIT_LINK_DIRECTORIES "")
++    set(CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES "")
++    set(CMAKE_C_IMPLICIT_LINK_LIBRARIES "")
++
++    # Remove all default paths for platform
++    set(CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "")
++    set(CMAKE_SYSTEM_INCLUDE_PATH "${MY_INCLUDE_DIRECTORIES}")
++
++    set(CMAKE_C_IMPLICIT_LINK_DIRECTORIES "${MY_LINK_DIRECTORIES}")
++    set(CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES "${MY_LINK_DIRECTORIES}")
++    set(CMAKE_C_IMPLICIT_LINK_LIBRARIES "c")
++
++    # Specify path's to custom compiled gcc and glibc
++    set(CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "stdc++;gcc;gcc_s;m;c")
++    set(CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES "${MY_LINK_DIRECTORIES}")
++    set(CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES "${MY_LINK_DIRECTORIES}")
+ 
+     set(BOOST_INCLUDEDIR "/opt/boost_1_58_0")
++    include_directories("${BOOST_INCLUDEDIR}")
++
+     set(BOOST_LIBRARYDIR "/opt/boost_1_58_0/stage/lib/")
+ 
+     # It's really nice part of this custom build process :)
+@@ -32,6 +70,9 @@ if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
+ 
+     # Disable warning from Boost when compiling with gcc 5.2
+     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
++
++    # Specify custom ld-linux dynamic linker path
++    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wl,--dynamic-linker=/opt/glibc_2.22/lib/ld-linux-x86-64.so.2")
+  
+     # Specify full RPATH for build tree
+     SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+@@ -39,7 +80,7 @@ if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
+     # Create builds in current folder with install RPATH
+     SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+ 
+-    SET(CMAKE_INSTALL_RPATH "/opt/gcc520/lib64;/opt/boost_1_58_0/stage/lib;/opt/libhiredis_0_13/lib;/opt/log4cpp1.1.1/lib;/opt/luajit_2.0.4/lib;/opt/ndpi/lib;/opt/pf_ring/lib;/opt/json-c-0.12/lib")
++    SET(CMAKE_INSTALL_RPATH "${MY_LINK_DIRECTORIES}")
+ endif()
+ 
+ # It's pretty safe and provide big speedup for our packet processor and patricia code
+@@ -169,7 +210,15 @@ endif()
+ add_library(pcap_plugin STATIC pcap_plugin/pcap_collector.cpp)
+ target_link_libraries(pcap_plugin pcap)
+ 
+-find_package(Threads)
++#find_package(Threads)
++
++#if (Threads_FOUND) 
++#    message(STATUS "We found threads library")
++#else()
++#    message(FATAL_ERROR "We can't find threads library")
++#endif()
++# TODO: fix this hack
++set(CMAKE_THREAD_LIBS_INIT "-lpthread")
+ 
+ if (ENABLE_PFRING_SUPPORT) 
+     add_library(pfring_plugin STATIC pfring_plugin/pfring_collector.cpp)
+@@ -247,7 +296,7 @@ if (LOG4CPP_INCLUDES_FOLDER AND LOG4CPP_LIBRARY_PATH)
+     include_directories(${LOG4CPP_INCLUDES_FOLDER})
+     message(STATUS "We have found log4cpp and will build project")
+ else()
+-    message(STATUS "We can't find log4cpp. We can't build project")
++    message(FATAL_ERROR "We can't find log4cpp. We can't build project")
+ endif()
+ 
+ ### Look for jsonc
+@@ -259,7 +308,7 @@ if (JSONC_INCLUDES_FOLDER AND JSONC_LIBRARY_PATH)
+     include_directories(${JSONC_INCLUDES_FOLDER}) 
+     message(STATUS "We have found json-c library correctly: ${JSONC_LIBRARY_PATH}")
+ else()
+-    message(STATUS "We can't find json-c library! Can't build project")
++    message(FATAL_ERROR "We can't find json-c library! Can't build project")
+ endif()
+ 
+ target_link_libraries(fast_library ${JSONC_LIBRARY_PATH})
+diff --git a/src/tests/patch_for_custom_libc.patch b/src/tests/patch_for_custom_libc.patch
+index 6426400..c7ea4ff 100644
+--- a/src/tests/patch_for_custom_libc.patch
++++ b/src/tests/patch_for_custom_libc.patch
+@@ -1,46 +0,0 @@
+-diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+-index a65734b..406a5b9 100644
+---- a/src/CMakeLists.txt
+-+++ b/src/CMakeLists.txt
+-@@ -27,11 +27,32 @@ if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
+-     set(BOOST_INCLUDEDIR "/opt/boost_1_58_0")
+-     set(BOOST_LIBRARYDIR "/opt/boost_1_58_0/stage/lib/")
+- 
+-+    # Remove all system directories with default libraries
+-+    message(STATUS  "CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES=${CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES}")
+-+    set(CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES "")
+-+
+-+    message(STATUS "CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES = ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES}")
+-+    set(CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES "/opt/glibc_2.22/include")
+-+
+-+    set(CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES "/opt/glibc_2.22/lib;/opt/gcc520/lib64;/opt/glibc_2.22/lib;/opt/gcc520/lib/gcc/x86_64-unknown-linux-gnu/5.2.0")
+-+    include_directories("/opt/glibc_2.22/include")
+-+
+-+    message(STATUS "CMAKE_CXX_IMPLICIT_LINK_LIBRARIES=${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES}")
+-+    set(CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "")
+-+    set(CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "stdc++;gcc;gcc_s;m;c")
+-+
+-+    message(STATUS "CMAKE_CXX_IMPLICIT_LINK_LIBRARIES=${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES}")
+-+
+-     # It's really nice part of this custom build process :)
+-     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11")
+- 
+-     # Disable warning from Boost when compiling with gcc 5.2
+-     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
+-+
+-+    # Pass custom ld-linux for our own binary 
+-+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wl,--dynamic-linker=/opt/glibc_2.22/lib/ld-linux-x86-64.so.2")
+-+
+-+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -nodefaultlibs -nostdinc -nostdinc++")
+-  
+-     # Specify full RPATH for build tree
+-     SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+-@@ -39,7 +60,7 @@ if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
+-     # Create builds in current folder with install RPATH
+-     SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+- 
+--    SET(CMAKE_INSTALL_RPATH "/opt/gcc520/lib64;/opt/boost_1_58_0/stage/lib;/opt/libhiredis_0_13/lib;/opt/log4cpp1.1.1/lib;/opt/luajit_2.0.4/lib;/opt/ndpi/lib;/opt/pf_ring/lib;/opt/json-c-0.12/lib")
+-+    SET(CMAKE_INSTALL_RPATH "/opt/glibc_2.22/lib;/opt/gcc520/lib64;/opt/boost_1_58_0/stage/lib;/opt/libhiredis_0_13/lib;/opt/log4cpp1.1.1/lib;/opt/luajit_2.0.4/lib;/opt/ndpi/lib;/opt/pf_ring/lib;/opt/json-c-0.12/lib")
+- endif()
+- 
+- # It's pretty safe and provide big speedup for our packet processor and patricia code
