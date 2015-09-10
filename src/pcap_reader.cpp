@@ -39,11 +39,16 @@
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
+// We will use this code from Global Symbols table (originally it's defined in netmap collector.cpp)
+bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet& packet);
+
 // Fake config
 std::map<std::string, std::string> configuration_map;
 
 std::string log_file_path = "/tmp/fastnetmon_pcap_reader.log";
 log4cpp::Category& logger = log4cpp::Category::getRoot();
+
+uint64_t total_unparsed_packets = 0;
 
 uint64_t dns_amplification_packets = 0;
 uint64_t ntp_amplification_packets = 0;
@@ -143,7 +148,15 @@ void pcap_parse_packet(char* buffer, uint32_t len, uint32_t snap_len) {
 
         char print_buffer[512];
         fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &raw_packet_header);
-        printf("%s", print_buffer);
+        printf("Raw parser: %s", print_buffer);
+
+        simple_packet packet;
+        // TODO: add support for caplen here!
+        if (parse_raw_packet_to_simple_packet((u_char*)buffer, len, packet)) {
+            std::cout << "High level parser: " << print_simple_packet(packet) << std::endl;
+        } else {
+            printf("High level parser failed\n");
+        } 
     } else if (strcmp(flow_type, "dpi") == 0) {
 #ifdef ENABLE_DPI
         struct ndpi_id_struct *src = NULL;

@@ -384,6 +384,7 @@ if (BUILD_PCAP_READER)
     target_link_libraries(fastnetmon_pcap_reader ${LOG4CPP_LIBRARY_PATH})
     target_link_libraries(fastnetmon_pcap_reader netflow_plugin)   
     target_link_libraries(fastnetmon_pcap_reader sflow_plugin)
+    target_link_libraries(fastnetmon_pcap_reader netmap_plugin)
 
     if (ENABLE_DPI_SUPPORT)
         target_link_libraries(fastnetmon_pcap_reader fast_dpi)
