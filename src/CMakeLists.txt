@@ -139,8 +139,9 @@ if (ENABLE_SNABBSWITCH_SUPPORT)
 endif()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-    message(STATUS "You are running Linux and we can build AF_PACKET support")
-    set (ENABLE_AFPACKET_SUPPORT ON)
+    # We have issues with AF_PACKET in old kernels and remote it from default build now
+    #message(STATUS "You are running Linux and we can build AF_PACKET support")
+    #set (ENABLE_AFPACKET_SUPPORT ON)
 endif()
 
 # -DENABLE_AFPACKET_SUPPORT=ON ..
