@@ -3890,19 +3890,62 @@ bool we_should_ban_this_ip(map_element* average_speed_element, ban_settings_t cu
     bool attack_detected_by_bandwidth = false;
     bool attack_detected_by_flow = false;
     if (current_ban_settings.enable_ban_for_pps &&
-        exceed_pps_speed(average_speed_element->in_packets, average_speed_element->out_packets, current_ban_settings.ban_threshold_pps)){ 
+        exceed_pps_speed(average_speed_element->in_packets, average_speed_element->out_packets, current_ban_settings.ban_threshold_pps)) {
+        logger << log4cpp::Priority::INFO  << "We detected this attack by pps limit";
         return true;
     }
 
     if (current_ban_settings.enable_ban_for_bandwidth &&
         exceed_mbps_speed(average_speed_element->in_bytes, average_speed_element->out_bytes, current_ban_settings.ban_threshold_mbps)) { 
+        logger << log4cpp::Priority::INFO  << "We detected this attack by mbps limit";
         return true;
     }
 
     if (current_ban_settings.enable_ban_for_flows_per_second &&
-        exceed_flow_speed(average_speed_element->in_flows, average_speed_element->out_flows, current_ban_settings.ban_threshold_flows)) { 
+        exceed_flow_speed(average_speed_element->in_flows, average_speed_element->out_flows, current_ban_settings.ban_threshold_flows)) {
+        logger << log4cpp::Priority::INFO  << "We detected this attack by flow limit"; 
         return true;
     }
+
+    // We could try per protocol thresholds here
+
+    // Per protocol pps thresholds
+    if (current_ban_settings.enable_ban_for_tcp_pps && 
+        exceed_pps_speed(average_speed_element->tcp_in_packets, average_speed_element->tcp_out_packets, current_ban_settings.ban_threshold_tcp_pps)) {
+        logger << log4cpp::Priority::INFO  << "We detected this attack by tcp pps limit";
+        return true;
+    }
+
+    if (current_ban_settings.enable_ban_for_udp_pps && 
+        exceed_pps_speed(average_speed_element->udp_in_packets, average_speed_element->udp_out_packets, current_ban_settings.ban_threshold_udp_pps)) {
+        logger << log4cpp::Priority::INFO  << "We detected this attack by udp pps limit";
+        return true;
+    } 
+
+    if (current_ban_settings.enable_ban_for_icmp_pps && 
+        exceed_pps_speed(average_speed_element->icmp_in_packets, average_speed_element->icmp_out_packets, current_ban_settings.ban_threshold_icmp_pps)) {
+        logger << log4cpp::Priority::INFO  << "We detected this attack by icmp pps limit";
+        return true;
+    }     
+
+    // Per protocol bandwidth thresholds
+    if (current_ban_settings.enable_ban_for_tcp_bandwidth &&
+        exceed_mbps_speed(average_speed_element->tcp_in_bytes, average_speed_element->tcp_out_bytes, current_ban_settings.ban_threshold_tcp_mbps)) {
+        logger << log4cpp::Priority::INFO  << "We detected this attack by tcp mbps limit";
+        return true;
+    }
+
+    if (current_ban_settings.enable_ban_for_udp_bandwidth &&
+        exceed_mbps_speed(average_speed_element->udp_in_bytes, average_speed_element->udp_out_bytes, current_ban_settings.ban_threshold_udp_mbps)) {
+        logger << log4cpp::Priority::INFO  << "We detected this attack by udp mbps limit";
+        return true;
+    }  
+
+    if (current_ban_settings.enable_ban_for_icmp_bandwidth &&
+        exceed_mbps_speed(average_speed_element->icmp_in_bytes, average_speed_element->icmp_out_bytes, current_ban_settings.ban_threshold_icmp_mbps)) {
+        logger << log4cpp::Priority::INFO  << "We detected this attack by icmp mbps limit";
+        return true;
+    }  
 
     return false;
 }
