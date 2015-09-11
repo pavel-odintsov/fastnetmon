@@ -934,6 +934,8 @@ bool manage_interface_promisc_mode(std::string interface_name, bool switch_on) {
 
 }
 
+#endif
+
 #ifdef ENABLE_LUA_HOOKS
 lua_State* init_lua_jit(std::string lua_hooks_path) {
     extern log4cpp::Category& logger;
@@ -1229,5 +1231,3 @@ std::string serialize_statistic_counters_about_attack(attack_details& current_at
 
     return attack_description.str();
 }
-
-#endif
