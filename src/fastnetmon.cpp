@@ -3861,33 +3861,27 @@ ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::str
 
 // Return true when we should ban this IP
 bool we_should_ban_this_ip(map_element* average_speed_element, ban_settings_t current_ban_settings) {
-    uint64_t in_pps_average = average_speed_element->in_packets;
-    uint64_t out_pps_average = average_speed_element->out_packets;
-
-    uint64_t in_bps_average = average_speed_element->in_bytes;
-    uint64_t out_bps_average = average_speed_element->out_bytes;
-
-    uint64_t in_flows_average = average_speed_element->in_flows;
-    uint64_t out_flows_average = average_speed_element->out_flows;
-
     // we detect overspeed by packets
     bool attack_detected_by_pps = false;
     bool attack_detected_by_bandwidth = false;
     bool attack_detected_by_flow = false;
-    if (current_ban_settings.enable_ban_for_pps && (in_pps_average > current_ban_settings.ban_threshold_pps or
-        out_pps_average > current_ban_settings.ban_threshold_pps)) {
+    if (current_ban_settings.enable_ban_for_pps &&
+        (average_speed_element->in_packets > current_ban_settings.ban_threshold_pps or
+        average_speed_element->out_packets > current_ban_settings.ban_threshold_pps)) {
 
         attack_detected_by_pps = true;
     }
 
     // we detect overspeed by bandwidth
-    if (current_ban_settings.enable_ban_for_bandwidth && (convert_speed_to_mbps(in_bps_average) > current_ban_settings.ban_threshold_mbps or
-                                     convert_speed_to_mbps(out_bps_average) > current_ban_settings.ban_threshold_mbps)) {
+    if (current_ban_settings.enable_ban_for_bandwidth &&
+        (convert_speed_to_mbps(average_speed_element->in_bytes) > current_ban_settings.ban_threshold_mbps or
+        convert_speed_to_mbps(average_speed_element->out_bytes) > current_ban_settings.ban_threshold_mbps)) {
         attack_detected_by_bandwidth = true;
     }
 
     if (current_ban_settings.enable_ban_for_flows_per_second &&
-        (in_flows_average > current_ban_settings.ban_threshold_flows or out_flows_average > current_ban_settings.ban_threshold_flows)) {
+        (average_speed_element->in_flows > current_ban_settings.ban_threshold_flows or
+        average_speed_element->out_flows > current_ban_settings.ban_threshold_flows)) {
         attack_detected_by_flow = true;
     }
 
