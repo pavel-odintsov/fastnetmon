@@ -193,6 +193,16 @@ void init_global_ban_settings() {
     // We must ban client if it exceed 1GBps
     global_ban_settings.ban_threshold_mbps = 1000;
 
+    // Disable per protocol thresholds too
+    global_ban_settings.enable_ban_for_tcp_pps = false;
+    global_ban_settings.enable_ban_for_tcp_bandwidth = false;
+
+    global_ban_settings.enable_ban_for_udp_pps = false;
+    global_ban_settings.enable_ban_for_udp_bandwidth = false;
+
+    global_ban_settings.enable_ban_for_icmp_pps = false;
+    global_ban_settings.enable_ban_for_icmp_bandwidth = false;
+
     // Ban enable/disable flag
     global_ban_settings.enable_ban = true;
 }
@@ -3776,10 +3786,58 @@ ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::str
         ban_settings.enable_ban_for_pps = configuration_map[prefix + "ban_for_pps"] == "on";
     }
 
-    if (configuration_map.count(prefix + "ban_for_bandwidth") != 0) {
-        ban_settings.enable_ban_for_bandwidth = configuration_map[prefix + "ban_for_bandwidth"] == "on";
+    // Per protocol bandwidth triggers
+    if (configuration_map.count(prefix + "ban_for_tcp_bandwidth") != 0) {
+        ban_settings.enable_ban_for_tcp_bandwidth = configuration_map[prefix + "ban_for_tcp_bandwidth"] == "on";
     }
 
+    if (configuration_map.count(prefix + "ban_for_udp_bandwidth") != 0) { 
+        ban_settings.enable_ban_for_udp_bandwidth = configuration_map[prefix + "ban_for_udp_bandwidth"] == "on";
+    }   
+
+    if (configuration_map.count(prefix + "ban_for_icmp_bandwidth") != 0) { 
+        ban_settings.enable_ban_for_icmp_bandwidth = configuration_map[prefix + "ban_for_icmp_bandwidth"] == "on";
+    }   
+
+    // Per protocol pps ban triggers
+    if (configuration_map.count(prefix + "ban_for_tcp_pps") != 0) { 
+        ban_settings.enable_ban_for_tcp_pps = configuration_map[prefix + "ban_for_tcp_pps"] == "on";
+    }    
+
+    if (configuration_map.count(prefix + "ban_for_udp_pps") != 0) {
+        ban_settings.enable_ban_for_udp_pps = configuration_map[prefix + "ban_for_udp_pps"] == "on";
+    }
+
+    if (configuration_map.count(prefix + "ban_for_icmp_pps") != 0) {
+        ban_settings.enable_ban_for_icmp_pps = configuration_map[prefix + "ban_for_icmp_pps"] == "on";
+    }
+
+    // Pps per protocol thresholds
+    if (configuration_map.count(prefix + "threshold_tcp_pps") != 0) {
+        ban_settings.ban_threshold_tcp_pps = convert_string_to_integer(configuration_map[prefix + "threshold_tcp_pps"]);
+    }
+
+    if (configuration_map.count(prefix + "threshold_udp_pps") != 0) { 
+        ban_settings.ban_threshold_udp_pps = convert_string_to_integer(configuration_map[prefix + "threshold_udp_pps"]);
+    } 
+    
+    if (configuration_map.count(prefix + "threshold_icmp_pps") != 0) { 
+        ban_settings.ban_threshold_icmp_pps = convert_string_to_integer(configuration_map[prefix + "threshold_icmp_pps"]);
+    }
+
+    // Bandwidth per protocol thresholds 
+    if (configuration_map.count(prefix + "threshold_tcp_mbps") != 0) { 
+        ban_settings.ban_threshold_tcp_mbps = convert_string_to_integer(configuration_map[prefix + "threshold_tcp_mbps"]);
+    }    
+
+    if (configuration_map.count(prefix + "threshold_udp_mbps") != 0) {
+        ban_settings.ban_threshold_udp_mbps = convert_string_to_integer(configuration_map[prefix + "threshold_udp_mbps"]);
+    }
+    
+    if (configuration_map.count(prefix + "threshold_icmp_mbps") != 0) {
+        ban_settings.ban_threshold_icmp_mbps = convert_string_to_integer(configuration_map[prefix + "threshold_icmp_mbps"]);
+    }   
+ 
     if (configuration_map.count(prefix + "ban_for_flows") != 0) {
         ban_settings.enable_ban_for_flows_per_second = configuration_map[prefix + "ban_for_flows"] == "on";
     }

@@ -240,6 +240,12 @@ class ban_settings_t {
     public:
         ban_settings_t() : enable_ban(false),
             enable_ban_for_pps(false), enable_ban_for_bandwidth(false), enable_ban_for_flows_per_second(false),
+            enable_ban_for_tcp_pps(false), enable_ban_for_tcp_bandwidth(false),
+            enable_ban_for_udp_pps(false), enable_ban_for_udp_bandwidth(false),
+            enable_ban_for_icmp_pps(false), enable_ban_for_icmp_bandwidth(false),
+            ban_threshold_tcp_mbps(0), ban_threshold_tcp_pps(0),
+            ban_threshold_udp_mbps(0), ban_threshold_udp_pps(0),
+            ban_threshold_icmp_mbps(0), ban_threshold_icmp_pps(0),
             ban_threshold_mbps(0), ban_threshold_flows(0), ban_threshold_pps(0) {
 
         }
@@ -248,6 +254,24 @@ class ban_settings_t {
         bool enable_ban_for_pps;
         bool enable_ban_for_bandwidth;
         bool enable_ban_for_flows_per_second;
+
+        bool enable_ban_for_tcp_pps;
+        bool enable_ban_for_tcp_bandwidth;
+        
+        bool enable_ban_for_udp_pps;
+        bool enable_ban_for_udp_bandwidth;
+
+        bool enable_ban_for_icmp_pps;
+        bool enable_ban_for_icmp_bandwidth;
+
+        unsigned int ban_threshold_tcp_mbps;
+        unsigned int ban_threshold_tcp_pps;
+
+        unsigned int ban_threshold_udp_mbps;
+        unsigned int ban_threshold_udp_pps; 
+
+        unsigned int ban_threshold_icmp_mbps;
+        unsigned int ban_threshold_icmp_pps;
 
         unsigned int ban_threshold_mbps;
         unsigned int ban_threshold_flows;
