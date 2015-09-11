@@ -3859,6 +3859,30 @@ ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::str
 
 
 
+bool exceed_pps_speed(uint64_t in_counter, uint64_t out_counter, unsigned int threshold) {
+    if (in_counter > threshold or out_counter > threshold) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool exceed_flow_speed(uint64_t in_counter, uint64_t out_counter, unsigned int threshold) {
+    if (in_counter > threshold or out_counter > threshold) {
+        return true;
+    } else {
+        return false;
+    }  
+}
+
+bool exceed_mbps_speed(uint64_t in_counter, uint64_t out_counter, unsigned int threshold_mbps) {
+    if (convert_speed_to_mbps(in_counter) > threshold_mbps or convert_speed_to_mbps(out_counter) > threshold_mbps) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 // Return true when we should ban this IP
 bool we_should_ban_this_ip(map_element* average_speed_element, ban_settings_t current_ban_settings) {
     // we detect overspeed by packets
@@ -3866,26 +3890,21 @@ bool we_should_ban_this_ip(map_element* average_speed_element, ban_settings_t cu
     bool attack_detected_by_bandwidth = false;
     bool attack_detected_by_flow = false;
     if (current_ban_settings.enable_ban_for_pps &&
-        (average_speed_element->in_packets > current_ban_settings.ban_threshold_pps or
-        average_speed_element->out_packets > current_ban_settings.ban_threshold_pps)) {
-
-        attack_detected_by_pps = true;
+        exceed_pps_speed(average_speed_element->in_packets, average_speed_element->out_packets, current_ban_settings.ban_threshold_pps)){ 
+        return true;
     }
 
-    // we detect overspeed by bandwidth
     if (current_ban_settings.enable_ban_for_bandwidth &&
-        (convert_speed_to_mbps(average_speed_element->in_bytes) > current_ban_settings.ban_threshold_mbps or
-        convert_speed_to_mbps(average_speed_element->out_bytes) > current_ban_settings.ban_threshold_mbps)) {
-        attack_detected_by_bandwidth = true;
+        exceed_mbps_speed(average_speed_element->in_bytes, average_speed_element->out_bytes, current_ban_settings.ban_threshold_mbps)) { 
+        return true;
     }
 
     if (current_ban_settings.enable_ban_for_flows_per_second &&
-        (average_speed_element->in_flows > current_ban_settings.ban_threshold_flows or
-        average_speed_element->out_flows > current_ban_settings.ban_threshold_flows)) {
-        attack_detected_by_flow = true;
+        exceed_flow_speed(average_speed_element->in_flows, average_speed_element->out_flows, current_ban_settings.ban_threshold_flows)) { 
+        return true;
     }
 
-    return attack_detected_by_pps or attack_detected_by_bandwidth or attack_detected_by_flow;
+    return false;
 }
 
 std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type, std::string destination_ip) {
