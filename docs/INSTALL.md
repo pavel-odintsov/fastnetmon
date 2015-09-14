@@ -35,6 +35,7 @@ When an incoming or outgoing attack occurs, the program calls a bash script twic
 ```bash
 /usr/local/bin/notify_about_attack.sh
 ```
+
 The first time when threshold exceed (at this step we know IP, direction and power of attack). Second when we collect 100 packets for detailed audit of what happened.
 
 A sample script is provided and can be installed as follows:
@@ -43,6 +44,9 @@ cp /usr/src/fastnetmon/src/notify_about_attack.sh /usr/local/bin/notify_about_at
 chmod 755 /usr/local/bin/notify_about_attack.sh
 ```
 After copying the file, you need to open it and configure the 'email_notify' option as required.
+
+You can use an alternative python script: /usr/src/fastnetmon/src/scripts/fastnetmon_notify.py
+
 
 Guide for manual install (for unsupported platforms): [link](MANUAL_INSTALL.md)
 
