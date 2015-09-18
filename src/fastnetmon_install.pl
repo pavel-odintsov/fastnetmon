@@ -814,6 +814,7 @@ sub detect_distribution {
         for my $issue_line (@issue) {
             if ($issue_line =~ m/Welcome to the Proxmox Virtual Environment/) {
                 $is_proxmox = 1;
+                $appliance_name = 'proxmox';
                 last;
             }
         }
@@ -895,6 +896,8 @@ sub install_pf_ring {
         if ($appliance_name eq 'vyos') { 
             # VyOS uses another name for package for building kernel modules
             $kernel_headers_package_name = 'linux-vyatta-kbuild';
+        } elsif ($appliance_name eq 'proxmox') {
+            $kernel_headers_package_name = "pve-headers-$kernel_version";
         }
 
         push @debian_packages_for_pfring, $kernel_headers_package_name;
