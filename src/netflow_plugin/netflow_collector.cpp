@@ -181,7 +181,7 @@ int process_netflow_v10_options_template(u_int8_t* pkt, size_t len, u_int32_t so
 
     if (template_id <= 255) {
         logger << log4cpp::Priority::ERROR
-               << "Template ID for options template should be bigger then 255";
+               << "Template ID for options template should be bigger than 255";
         return 1;
     }
 
@@ -222,7 +222,7 @@ int process_netflow_v10_template(u_int8_t* pkt, size_t len, u_int32_t source_id,
         u_int total_size = 0;
         for (u_int i = 0; i < count; i++) {
             if (offset >= len) {
-                logger << log4cpp::Priority::ERROR << "short netflow v.10 flowset  template";
+                logger << log4cpp::Priority::ERROR << "short netflow v.10 flowset template";
                 return 1;
             }
 
@@ -286,7 +286,7 @@ int process_netflow_v9_template(u_int8_t* pkt, size_t len, u_int32_t source_id, 
         netflow9_template_records_map template_records_map;
         for (u_int i = 0; i < count; i++) {
             if (offset >= len) {
-                logger << log4cpp::Priority::ERROR << "short netflow v.9 flowset  template";
+                logger << log4cpp::Priority::ERROR << "short netflow v.9 flowset template";
                 return 1;
             }
 
@@ -662,8 +662,8 @@ int process_netflow_v10_data(u_int8_t* pkt,
     peer_nf10_find_template(source_id, flowset_id, client_addres_in_string_format);
 
     if (flowset_template == NULL) {
-        logger << log4cpp::Priority::INFO << "We haven't template for flowset_id: " << flowset_id
-               << " but it's not an error if this message go away in 5-10 seconds. We need some "
+        logger << log4cpp::Priority::INFO << "We don't have a template for flowset_id: " << flowset_id
+               << " but it's not an error if this message disappears in 5-10 seconds. We need some "
                   "time to learn it!";
 
         return 1;
@@ -709,8 +709,8 @@ int process_netflow_v9_data(u_int8_t* pkt, size_t len, struct NF9_HEADER* nf9_hd
     peer_nf9_find_template(source_id, flowset_id, client_addres_in_string_format);
 
     if (flowset_template == NULL) {
-        logger << log4cpp::Priority::INFO << "We haven't template for flowset_id: " << flowset_id
-               << " but it's not an error if this message go away in 5-10 seconds. We need some "
+        logger << log4cpp::Priority::INFO << "We don't have a template for flowset_id: " << flowset_id
+               << " but it's not an error if this message disappears in 5-10 seconds. We need some "
                   "time to learn it!";
         return 0;
     }
@@ -725,7 +725,7 @@ int process_netflow_v9_data(u_int8_t* pkt, size_t len, struct NF9_HEADER* nf9_hd
 
     if (num_flowsets == 0 || num_flowsets > 0x4000) {
         logger << log4cpp::Priority::ERROR
-               << "Invalid number of data flowset, strange number of flows: " << num_flowsets;
+               << "Invalid number of data flowsets, strange number of flows: " << num_flowsets;
         return 1;
     }
 
@@ -794,7 +794,7 @@ void process_netflow_packet_v10(u_int8_t* packet, u_int len, std::string client_
         case NF10_OPTIONS_FLOWSET_ID:
             // process_netflow_v10_options_template(packet + offset, flowset_len, source_id);
             logger << log4cpp::Priority::INFO
-                   << "I received ipfix options flowset id but I haven't support for it";
+                   << "Received ipfix options flowset id, which is not supported";
             /* Not implemented yet */
             break;
         default:
@@ -1063,7 +1063,7 @@ void process_netflow_packet(u_int8_t* packet, u_int len, std::string client_addr
         process_netflow_packet_v10(packet, len, client_addres_in_string_format);
         break;
     default:
-        logger << log4cpp::Priority::ERROR << "We did not support this version of netflow "
+        logger << log4cpp::Priority::ERROR << "We do not support this version of netflow "
                << ntohs(hdr->version);
         break;
     }
@@ -1103,7 +1103,7 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
     if (configuration_map.count("netflow_sampling_ratio") != 0) {
         sampling_rate = convert_string_to_integer(configuration_map["netflow_sampling_ratio"]);
 
-        logger << log4cpp::Priority::INFO << "We use custom sampling ratio for netflow: " << sampling_rate;
+        logger << log4cpp::Priority::INFO << "Using custom sampling ratio for netflow: " << sampling_rate;
     }
 
     if (configuration_map.count("netflow_divide_counters_on_interval_length") != 0) {
@@ -1182,7 +1182,7 @@ void start_netflow_collector(std::string netflow_host, unsigned int netflow_port
     int bind_result = bind(sockfd, servinfo->ai_addr, servinfo->ai_addrlen);
 
     if (bind_result) {
-        logger << log4cpp::Priority::ERROR << "Can't listen port: " << netflow_port << " on host "
+        logger << log4cpp::Priority::ERROR << "Can't listen on port: " << netflow_port << " on host "
                << netflow_host << " errno:" << errno << " error: " << strerror(errno);
         return;
     }
