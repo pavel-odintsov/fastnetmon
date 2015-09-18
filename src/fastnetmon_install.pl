@@ -808,7 +808,17 @@ sub detect_distribution {
         # Debian GNU/Linux 8 \n \l
         # Ubuntu 14.04.2 LTS \n \l
         # Welcome to VyOS - \n \l 
-        if ($issue_first_line =~ m/Debian/) {
+        my $is_proxmox = '';
+
+        # Really hard to detect https://github.com/proxmox/pve-manager/blob/master/bin/pvebanner
+        for my $issue_line (@issue) {
+            if ($issue_line =~ m/Welcome to the Proxmox Virtual Environment/) {
+                $is_proxmox = 1;
+                last;
+            }
+        }
+
+        if ($issue_first_line =~ m/Debian/ or $is_proxmox) {
             $distro_type = 'debian';
 
             $distro_version = `cat /etc/debian_version`;
