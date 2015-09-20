@@ -69,9 +69,7 @@ my $we_have_ndpi_support = '';
 my $we_have_luajit_support = '';
 my $we_have_hiredis_support = '';
 my $we_have_log4cpp_support = '';
-
-# Actually, we haven't PF_RING on some platforms
-my $we_have_pfring_support = 1;
+my $we_have_pfring_support = '';
 
 if ($we_use_code_from_master) {
     $we_have_ndpi_support = 1;
@@ -85,7 +83,7 @@ main();
 sub welcome_message {
     print "Hello, my dear Customer!\n\n";
 
-    print "We need about ten minutes of your time for installig FastNetMon toolkit\n";
+    print "We need about ten minutes of your time for installing FastNetMon toolkit\n";
     print "You could make coffee/tee or you will help project and fill this short survey:   http://bit.ly/fastnetmon_survey\n";
     print "I will be very glad if you spent this time and share your DDoS experience :)\n\n";
 }
@@ -128,6 +126,11 @@ sub main {
     if ($cpus_number > 1) { 
         print "You have really nice server with $cpus_number CPU's and we will use they all for build process :)\n";
         $make_options = "-j $cpus_number";
+    }
+
+    # We have PF_RING only for Linux
+    if ($os_type eq 'linux') {
+        $we_have_pfring_support = 1;
     }
 
     # CentOS base repository is very very poor and we need EPEL for some dependencies
@@ -248,7 +251,19 @@ sub exec_command {
 
 sub get_sha1_sum {
     my $path = shift;
-    my $output = `sha1sum $path`;
+
+    my $hasher_name = '';
+
+    if ($os_type eq 'macosx') {
+        $hasher_name = 'shasum';
+    } elsif ($os_type eq 'freebsd') {
+        $hasher_name = 'sha1';
+    } else {
+        # Linux
+        $hasher_name = 'sha1sum';
+    }
+
+    my $output = `$hasher_name $path`;
     chomp $output;
     
     my ($sha1) = ($output =~ m/^(\w+)\s+/);
@@ -505,8 +520,14 @@ sub install_luajit {
     print "Unpack Luajit\n";
     exec_command("tar -xf LuaJIT-2.0.4.tar.gz");
     chdir "LuaJIT-2.0.4";
-
-    exec_command("sed -i 's#export PREFIX= /usr/local#export PREFIX= /opt/luajit_2.0.4#' Makefile"); 
+    
+    if ($os_type eq 'macosx' or $os_type eq 'freebsd') {
+        # FreeBSD's sed has slightly different syntax
+        exec_command("sed -i -e 's#export PREFIX= /usr/local#export PREFIX= /opt/luajit_2.0.4#' Makefile");
+    } else {
+        # Standard Linux sed
+        exec_command("sed -i 's#export PREFIX= /usr/local#export PREFIX= /opt/luajit_2.0.4#' Makefile"); 
+    }
 
     print "Build and install Luajit\n";
     exec_command("make $make_options install");
@@ -539,7 +560,12 @@ sub install_lua_lpeg {
 
     # Set path
     print "Install lpeg library\n";
-    exec_command("sed -i 's#LUADIR = ../lua/#LUADIR = /opt/luajit_2.0.4/include/luajit-2.0#' makefile");
+    if ($os_type eq 'macosx' or $os_type eq 'freebsd') {
+        exec_command("sed -i -e 's#LUADIR = ../lua/#LUADIR = /opt/luajit_2.0.4/include/luajit-2.0#' makefile");
+    } else {
+        exec_command("sed -i 's#LUADIR = ../lua/#LUADIR = /opt/luajit_2.0.4/include/luajit-2.0#' makefile");
+    }
+
     exec_command("make $make_options");
     exec_command("cp lpeg.so /opt/luajit_2.0.4/lib/lua/5.1");
 }
@@ -566,9 +592,14 @@ sub install_json_c {
     exec_command("tar -xf $archive_name");
     chdir "json-c-json-c-0.12-20140410";
 
-    # Fix bugs (assigned but not used variable) which prevent code compilation 
-    exec_command("sed -i '355 s#^#//#' json_tokener.c");
-    exec_command("sed -i '360 s#^#//#' json_tokener.c");
+    # Fix bugs (assigned but not used variable) which prevent code compilation
+    if ($os_type eq 'macosx' or $os_type eq 'freebsd') {
+        exec_command("sed -i -e '355 s#^#//#' json_tokener.c");
+        exec_command("sed -i -e '360 s#^#//#' json_tokener.c");
+    } else { 
+        exec_command("sed -i '355 s#^#//#' json_tokener.c");
+        exec_command("sed -i '360 s#^#//#' json_tokener.c");
+    }
 
     print "Build it\n";
     exec_command("./configure --prefix=$install_path");
@@ -772,7 +803,11 @@ sub init_package_manager {
 sub put_library_path_to_ld_so {
     my ($ld_so_file_path, $library_path) = @_; 
 
-    open my $ld_so_conf_handle, ">", $ld_so_file_path or die "Can't open $! for writing\n";
+    if ($os_type eq 'macosx') {
+        return;
+    }
+
+    open my $ld_so_conf_handle, ">", $ld_so_file_path or die "Can't open file $ld_so_file_path $! for writing\n";
     print {$ld_so_conf_handle} $library_path;
     close $ld_so_conf_handle;
 
@@ -911,8 +946,7 @@ sub detect_distribution {
             $distro_version = $1; 
         }
 
-        print "We detected your OS as MacOS X $distro_version\n";
-        die "But this installer do not support it, please install manually\n";
+        print "We detected your OS as Mac OS X $distro_version\n";
     } elsif ($os_type eq 'freebsd') {
         print "We detected your OS as FreeBSD\n";
         die "But this installer do not support it, please install manually\n";
@@ -1200,7 +1234,12 @@ sub install_fastnetmon {
         print "Select $interfaces_as_list as active interfaces\n";
 
         print "Tune config\n";
-        exec_command("sed -i 's/interfaces.*/interfaces = $interfaces_as_list/' $fastnetmon_config_path");
+
+        if ($os_type eq 'macosx' or $os_type eq 'freebsd') {
+            exec_command("sed -i -e 's/interfaces.*/interfaces = $interfaces_as_list/' $fastnetmon_config_path");
+        } else {
+            exec_command("sed -i 's/interfaces.*/interfaces = $interfaces_as_list/' $fastnetmon_config_path");
+        }
     }
 
     print "If you have any issues, please check /var/log/fastnetmon.log file contents\n";
