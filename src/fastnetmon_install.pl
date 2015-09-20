@@ -30,6 +30,7 @@ my $ndpi_repository = 'https://github.com/pavel-odintsov/nDPI.git';
 my $stable_branch_name = 'v1.1.2';
 my $we_use_code_from_master = '';
 
+my $os_type = '';
 my $distro_type = ''; 
 my $distro_version = ''; 
 my $distro_architecture = '';
@@ -40,7 +41,7 @@ my $appliance_name = '';
 # So, you could disable this option but without this feature we could not improve FastNetMon for your distribution
 my $do_not_track_me = '';
 
-my $cpus_number = get_logical_cpus_number();
+my $cpus_number = 1;
 
 # We could pass options to make with this variable
 my $make_options = '';
@@ -49,12 +50,6 @@ my $make_options = '';
 my $configure_options = '';
 
 welcome_message();
-
-# We could get huge speed benefits with this option
-if ($cpus_number > 1) {
-    print "You have really nice server with $cpus_number CPU's and we will use they all for build process :)\n";
-    $make_options = "-j $cpus_number";
-}
 
 # We will build gcc, stdc++ and boost for this distribution from sources
 my $build_binary_environment = '';
@@ -96,12 +91,17 @@ sub welcome_message {
 }
 
 sub get_logical_cpus_number {
-    my @cpuinfo = `cat /proc/cpuinfo`;
-    chomp @cpuinfo;
+    if ($os_type eq 'linux') {
+        my @cpuinfo = `cat /proc/cpuinfo`;
+        chomp @cpuinfo;
         
-    my $cpus_number = scalar grep {/processor/} @cpuinfo;
+        my $cpus_number = scalar grep {/processor/} @cpuinfo;
     
-    return $cpus_number;
+        return $cpus_number;
+    } elsif ($os_type eq 'macosx' or $os_type eq 'freebsd') {
+        my $cpus_number = `sysctl -n hw.ncpu`;
+        chomp $cpus_number;
+    }
 }
 
 sub install_additional_repositories {
@@ -121,6 +121,14 @@ sub install_additional_repositories {
 ### Functions start here
 sub main {
     detect_distribution();
+
+    $cpus_number = get_logical_cpus_number();
+
+    # We could get huge speed benefits with this option
+    if ($cpus_number > 1) { 
+        print "You have really nice server with $cpus_number CPU's and we will use they all for build process :)\n";
+        $make_options = "-j $cpus_number";
+    }
 
     # CentOS base repository is very very poor and we need EPEL for some dependencies
     install_additional_repositories();
@@ -789,92 +797,126 @@ sub read_file {
 # Detect operating system of this machine
 sub detect_distribution { 
     # We use following global variables here:
-    # $distro_type, $distro_version, $appliance_name
+    # $os_type, $distro_type, $distro_version, $appliance_name
 
-    # x86_64 or i686
-    $distro_architecture = `uname -m`;
-    chomp $distro_architecture;
+    my $uname_s_output = `uname -s`;
+    chomp $uname_s_output;
 
-    if (-e "/etc/debian_version") {
-        # Well, on this step it could be Ubuntu or Debian
+    # uname -a output examples:
+    # FreeBSD  10.1-STABLE FreeBSD 10.1-STABLE #0 r278618: Thu Feb 12 13:55:09 UTC 2015     root@:/usr/obj/usr/src/sys/KERNELWITHNETMAP  amd64
+    # Darwin MacBook-Pro-Pavel.local 14.5.0 Darwin Kernel Version 14.5.0: Wed Jul 29 02:26:53 PDT 2015; root:xnu-2782.40.9~1/RELEASE_X86_64 x86_64
+    # Linux ubuntu 3.16.0-30-generic #40~14.04.1-Ubuntu SMP Thu Jan 15 17:43:14 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux
 
-        # We need check issue for more details 
-        my @issue = `cat /etc/issue`;
-        chomp @issue;
+    if ($uname_s_output =~ /FreeBSD/) {
+        $os_type = 'freebsd';
+    } elsif ($uname_s_output =~ /Darwin/) {
+        $os_type = 'macosx';
+    } elsif ($uname_s_output =~ /Linux/) {
+        $os_type = 'linux';
+    } else {
+        warn "Can't detect platform operating system\n";
+    }
 
-        my $issue_first_line = $issue[0];
+    if ($os_type eq 'linux') {
+        # x86_64 or i686
+        $distro_architecture = `uname -m`;
+        chomp $distro_architecture;
 
-        # Possible /etc/issue contents: 
-        # Debian GNU/Linux 8 \n \l
-        # Ubuntu 14.04.2 LTS \n \l
-        # Welcome to VyOS - \n \l 
-        my $is_proxmox = '';
+        if (-e "/etc/debian_version") {
+            # Well, on this step it could be Ubuntu or Debian
 
-        # Really hard to detect https://github.com/proxmox/pve-manager/blob/master/bin/pvebanner
-        for my $issue_line (@issue) {
-            if ($issue_line =~ m/Welcome to the Proxmox Virtual Environment/) {
-                $is_proxmox = 1;
-                $appliance_name = 'proxmox';
-                last;
+            # We need check issue for more details 
+            my @issue = `cat /etc/issue`;
+            chomp @issue;
+
+            my $issue_first_line = $issue[0];
+
+            # Possible /etc/issue contents: 
+            # Debian GNU/Linux 8 \n \l
+            # Ubuntu 14.04.2 LTS \n \l
+            # Welcome to VyOS - \n \l 
+            my $is_proxmox = '';
+
+            # Really hard to detect https://github.com/proxmox/pve-manager/blob/master/bin/pvebanner
+            for my $issue_line (@issue) {
+                if ($issue_line =~ m/Welcome to the Proxmox Virtual Environment/) {
+                    $is_proxmox = 1;
+                    $appliance_name = 'proxmox';
+                    last;
+                }
+            }
+
+            if ($issue_first_line =~ m/Debian/ or $is_proxmox) {
+                $distro_type = 'debian';
+
+                $distro_version = `cat /etc/debian_version`;
+                chomp $distro_version;
+
+                # Debian 6 example: 6.0.10
+                # We will try transform it to decimal number
+                if ($distro_version =~ /^(\d+\.\d+)\.\d+$/) {
+                    $distro_version = $1;
+                }
+            } elsif ($issue_first_line =~ m/Ubuntu (\d+(?:\.\d+)?)/) {
+                $distro_type = 'ubuntu';
+                $distro_version = $1;
+            } elsif ($issue_first_line =~ m/VyOS/) {
+                # Yes, VyOS is a Debian
+                $distro_type = 'debian';
+                $appliance_name = 'vyos';
+
+                my $vyos_distro_version = `cat /etc/debian_version`;
+                chomp $vyos_distro_version;
+
+                # VyOS have strange version and we should fix it
+                if ($vyos_distro_version =~ /^(\d+)\.\d+\.\d+$/) {
+                    $distro_version = $1;
+                }
             }
         }
 
-        if ($issue_first_line =~ m/Debian/ or $is_proxmox) {
-            $distro_type = 'debian';
+        if (-e "/etc/redhat-release") {
+            $distro_type = 'centos';
 
-            $distro_version = `cat /etc/debian_version`;
-            chomp $distro_version;
+            my $distro_version_raw = `cat /etc/redhat-release`;
+            chomp $distro_version_raw;
 
-            # Debian 6 example: 6.0.10
-            # We will try transform it to decimal number
-            if ($distro_version =~ /^(\d+\.\d+)\.\d+$/) {
-                $distro_version = $1;
-            }
-        } elsif ($issue_first_line =~ m/Ubuntu (\d+(?:\.\d+)?)/) {
-            $distro_type = 'ubuntu';
-            $distro_version = $1;
-        } elsif ($issue_first_line =~ m/VyOS/) {
-            # Yes, VyOS is a Debian
-            $distro_type = 'debian';
-            $appliance_name = 'vyos';
-
-            my $vyos_distro_version = `cat /etc/debian_version`;
-            chomp $vyos_distro_version;
-
-            # VyOS have strange version and we should fix it
-            if ($vyos_distro_version =~ /^(\d+)\.\d+\.\d+$/) {
+            # CentOS 6:
+            # CentOS release 6.6 (Final)
+            # CentOS 7:
+            # CentOS Linux release 7.0.1406 (Core) 
+            # Fedora release 21 (Twenty One)
+            if ($distro_version_raw =~ /(\d+)/) {
                 $distro_version = $1;
             }
         }
-    }
 
-    if (-e "/etc/redhat-release") {
-        $distro_type = 'centos';
+        if (-e "/etc/gentoo-release") {
+            $distro_type = 'gentoo';
 
-        my $distro_version_raw = `cat /etc/redhat-release`;
-        chomp $distro_version_raw;
+            my $distro_version_raw = `cat /etc/gentoo-release`;
+            chomp $distro_version_raw;
+        }
 
-        # CentOS 6:
-        # CentOS release 6.6 (Final)
-        # CentOS 7:
-        # CentOS Linux release 7.0.1406 (Core) 
-        # Fedora release 21 (Twenty One)
-        if ($distro_version_raw =~ /(\d+)/) {
-            $distro_version = $1;
-        }    
-    }
+        unless ($distro_type) {
+            die "This distro is unsupported, please do manual install";
+        }
 
-    if (-e "/etc/gentoo-release") {
-        $distro_type = 'gentoo';
+        print "We detected your OS as $distro_type Linux $distro_version\n";
+    } elsif ($os_type eq 'macosx') {
+        my $mac_os_versions_raw = `sw_vers -productVersion`;
+        chomp $mac_os_versions_raw;
 
-        my $distro_version_raw = `cat /etc/gentoo-release`;
-        chomp $distro_version_raw;
-    }
+        if ($mac_os_versions_raw =~ /(\d+\.\d+)/) {
+            $distro_version = $1; 
+        }
 
-    unless ($distro_type) {
-        die "This distro is unsupported, please do manual install";
-    }
-
+        print "We detected your OS as MacOS X $distro_version\n";
+        die "But this installer do not support it, please install manually\n";
+    } elsif ($os_type eq 'freebsd') {
+        print "We detected your OS as FreeBSD\n";
+        die "But this installer do not support it, please install manually\n";
+    } 
 }
 
 sub install_pf_ring {
