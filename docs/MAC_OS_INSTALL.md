@@ -6,14 +6,14 @@ Build on Mac OS 10.10 Yosemite.
 - Install Mac Ports: https://www.macports.org/install.php
 - Install dependencies: ```sudo port install boost log4cpp cmake```
 
-Build fastnetmon (we use installer script only for stable branch):
+Run installer script for stable branch:
 ```bash
-cd ~
-git clone https://github.com/FastVPSEestiOu/fastnetmon.git -b v1.1.2
-cd fastnetmon/src
-mkdir build
-cd build
-cmake ..
-make
+wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl 
+sudo perl fastnetmon_install.pl
 ```
 
+Run installer script for master branch:
+```bash
+wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl
+sudo perl fastnetmon_install.pl --use-git-master
+```
