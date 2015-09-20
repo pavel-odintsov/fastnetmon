@@ -144,6 +144,10 @@ sub main {
     # Refresh information about packages
     init_package_manager();
 
+    if ($os_type eq 'freebsd') {
+        exec_command("pkg install -y wget");
+    }
+
     send_tracking_information('started');
 
     if ($build_binary_environment) {
@@ -802,6 +806,10 @@ sub init_package_manager {
     print "Update package manager cache\n";
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
         exec_command("apt-get update");
+    }
+
+    if ($os_type eq 'freebsd') {
+        exec_command("pkg update");
     }
 }
 
