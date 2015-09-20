@@ -1160,6 +1160,8 @@ sub install_fastnetmon {
         if ($? != 0) {
             print "Emerge fail with code $?\n";
         }
+    } elsif ($os_type eq 'freebsd') {
+        exec_command("pkg install -y cmake git ncurses boost-all log4cpp");
     }
 
     print "Clone FastNetMon repo\n";
