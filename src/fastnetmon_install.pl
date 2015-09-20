@@ -962,7 +962,6 @@ sub detect_distribution {
         print "We detected your OS as Mac OS X $distro_version\n";
     } elsif ($os_type eq 'freebsd') {
         print "We detected your OS as FreeBSD\n";
-        die "But this installer do not support it, please install manually\n";
     } 
 }
 
