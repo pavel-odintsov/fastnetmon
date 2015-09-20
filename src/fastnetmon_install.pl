@@ -836,7 +836,7 @@ sub init_package_manager {
 sub put_library_path_to_ld_so {
     my ($ld_so_file_path, $library_path) = @_; 
 
-    if ($os_type eq 'macosx') {
+    if ($os_type eq 'macosx' or $os_type eq 'freebsd') {
         return;
     }
 
