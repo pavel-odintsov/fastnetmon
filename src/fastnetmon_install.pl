@@ -552,7 +552,12 @@ sub install_luajit {
     }
 
     print "Build and install Luajit\n";
-    exec_command("make $make_options install");
+    if ($os_type eq 'freebsd') {
+        exec_command("pkg install -y gcc");
+        exec_command('gmake CC=gcc48 CXX=g++48 CPP="gcc48 -E" install')
+    } else {
+        exec_command("make $make_options install");
+    }
 
     put_library_path_to_ld_so("/etc/ld.so.conf.d/luajit.conf", "/opt/luajit_2.0.4/lib");
 }
@@ -976,7 +981,14 @@ sub detect_distribution {
 
         print "We detected your OS as Mac OS X $distro_version\n";
     } elsif ($os_type eq 'freebsd') {
-        print "We detected your OS as FreeBSD\n";
+        my $freebsd_os_version_raw = `uname -r`;
+        chomp $freebsd_os_version_raw;
+
+        if ($freebsd_os_version_raw =~ /^(\d+)\.?/) {
+            $distro_version = $1;
+        }
+
+        print "We detected your OS as FreeBSD $distro_version\n";
     } 
 }
 
