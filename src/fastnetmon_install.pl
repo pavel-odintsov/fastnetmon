@@ -261,6 +261,17 @@ sub exec_command {
 sub get_sha1_sum {
     my $path = shift;
 
+    if ($os_type eq 'freebsd') {
+        use Digest::SHA;
+
+        # SHA1
+        my $sha = Digest::SHA->new(1);
+
+        $sha->addfile($path);
+
+        return $sha->hexdigest; 
+    }
+
     my $hasher_name = '';
 
     if ($os_type eq 'macosx') {
@@ -274,7 +285,7 @@ sub get_sha1_sum {
 
     my $output = `$hasher_name $path`;
     chomp $output;
-    
+   
     my ($sha1) = ($output =~ m/^(\w+)\s+/);
 
     return $sha1;
@@ -291,10 +302,12 @@ sub download_file {
     }
 
     if ($expected_sha1_checksumm) {
-        if (get_sha1_sum($path) eq $expected_sha1_checksumm) {
+        my $calculated_checksumm = get_sha1_sum($path);
+
+        if ($calculated_checksumm eq $expected_sha1_checksumm) {
             return 1;
         } else {
-            print "Downloaded archive has incorrect sha1\n";
+            print "Downloaded archive has incorrect sha1: $calculated_checksumm expected: $expected_sha1_checksumm\n";
             return '';
         }      
     } else {
