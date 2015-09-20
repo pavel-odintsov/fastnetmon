@@ -133,6 +133,11 @@ sub main {
         $we_have_pfring_support = 1;
     }
 
+    if ($os_type eq 'macosx') {
+        # Really strange issue https://github.com/FastVPSEestiOu/fastnetmon/issues/415 
+        $we_have_hiredis_support = 0;
+    }
+
     # CentOS base repository is very very poor and we need EPEL for some dependencies
     install_additional_repositories();
 
