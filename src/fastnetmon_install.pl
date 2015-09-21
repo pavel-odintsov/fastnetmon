@@ -234,7 +234,7 @@ sub send_tracking_information {
 
     unless ($do_not_track_me) {
         my $stats_url = "http://178.62.227.110/new_fastnetmon_installation";
-        my $post_data = "distro_type=$distro_type&distro_version=$distro_version&distro_architecture=$distro_architecture&step=$step&we_use_code_from_master=$we_use_code_from_master";
+        my $post_data = "distro_type=$distro_type&os_type=$os_type&distro_version=$distro_version&distro_architecture=$distro_architecture&step=$step&we_use_code_from_master=$we_use_code_from_master";
         my $user_agent = 'FastNetMon install tracker v1';
 
         `wget --post-data="$post_data" --user-agent="$user_agent" -q '$stats_url'`;
