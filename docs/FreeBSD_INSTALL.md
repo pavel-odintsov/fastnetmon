@@ -4,7 +4,7 @@ Stable version 1.1.2 is already in [official FreeBSD ports](https://freshports.o
 
 Please install wget:
 ```bash
-pkg install -y wget
+pkg install -y wget perl5
 ```
 
 Install stable 1.1.2 version:
