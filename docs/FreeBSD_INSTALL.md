@@ -2,15 +2,20 @@ FreeBSD 9, 10, 11 and Dragonfly BSD 4.0
 
 Stable version 1.1.2 is already in [official FreeBSD ports](https://freshports.org/net-mgmt/fastnetmon/) but if you want to hack it or install development version, please use this script.
 
+Please install wget:
+```bash
+pkg install -y wget
+```
+
 Install stable 1.1.2 version:
 ```bash
-curl https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon_install.pl -ofastnetmon_install.pl 
+wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl 
 sudo perl fastnetmon_install.pl
 ```
 
 Install development version:
 ```
-curl https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon_install.pl -ofastnetmon_install.pl 
+wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl 
 sudo perl fastnetmon_install.pl --use-git-master
 ```
 
