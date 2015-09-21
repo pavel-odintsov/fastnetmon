@@ -553,7 +553,7 @@ sub install_luajit {
 
     print "Build and install Luajit\n";
     if ($os_type eq 'freebsd') {
-        exec_command("pkg install -y gcc");
+        exec_command("pkg install -y gcc gmake");
         exec_command('gmake CC=gcc48 CXX=g++48 CPP="gcc48 -E" install')
     } else {
         exec_command("make $make_options install");
