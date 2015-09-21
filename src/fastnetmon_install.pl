@@ -1269,17 +1269,21 @@ sub install_fastnetmon {
     unless (-e $fastnetmon_config_path) {
         print "Create stub configuration file\n";
         exec_command("cp $fastnetmon_code_dir/fastnetmon.conf $fastnetmon_config_path");
-    
-        my @interfaces = get_active_network_interfaces();
-        my $interfaces_as_list = join ',', @interfaces;
-        print "Select $interfaces_as_list as active interfaces\n";
+  
+        # netmap will detach interface completely and will broke network
+        # So we do not configure it automatically 
+        if ($os_type ne 'freebsd') { 
+            my @interfaces = get_active_network_interfaces();
+            my $interfaces_as_list = join ',', @interfaces;
+            print "Select $interfaces_as_list as active interfaces\n";
 
-        print "Tune config\n";
+            print "Tune config\n";
 
-        if ($os_type eq 'macosx' or $os_type eq 'freebsd') {
-            exec_command("sed -i -e 's/interfaces.*/interfaces = $interfaces_as_list/' $fastnetmon_config_path");
-        } else {
-            exec_command("sed -i 's/interfaces.*/interfaces = $interfaces_as_list/' $fastnetmon_config_path");
+            if ($os_type eq 'macosx' or $os_type eq 'freebsd') {
+                exec_command("sed -i -e 's/interfaces.*/interfaces = $interfaces_as_list/' $fastnetmon_config_path");
+            } else {
+                exec_command("sed -i 's/interfaces.*/interfaces = $interfaces_as_list/' $fastnetmon_config_path");
+            }
         }
     }
 
