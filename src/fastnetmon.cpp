@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <new> 
 #include <signal.h>
+#include <getopt.h>
 #include <time.h>
 #include <math.h>
 
@@ -2347,13 +2348,28 @@ void redirect_fds() {
     int second_dup_result = dup(0);
 }
 
+void print_command_line_help() {
+    std::cout << "Usage: fastnetmon [--daemonize]" << std::endl;
+}
+
 int main(int argc, char** argv) {
     bool daemonize = false;
 
-    if (argc > 1) {
-        if (strstr(argv[1], "--daemonize") != NULL) {
+    struct option long_options[] = {
+        {"daemonize", no_argument, 0, 'd' },
+        {0,           0,           0,  0  }
+    };
+
+    int long_index = 0;
+
+    int current_option = 0;
+    while ((current_option = getopt_long_only(argc, argv, "", long_options, &long_index )) != -1) {
+        if (current_option == 'd') {
             daemonize = true;
-        }
+        } else {
+            print_command_line_help();
+            exit(EXIT_FAILURE);
+        } 
     }
 
     // We use ideas from here https://github.com/bmc/daemonize/blob/master/daemon.c
