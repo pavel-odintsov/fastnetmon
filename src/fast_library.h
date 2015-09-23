@@ -88,7 +88,7 @@ uint16_t fast_hton(uint16_t value);
 uint32_t fast_hton(uint32_t value);
 uint64_t fast_hton(uint64_t value);
 
-void print_pid_to_file(pid_t pid, std::string pid_path);
+bool print_pid_to_file(pid_t pid, std::string pid_path);
 bool read_pid_from_file(pid_t& pid, std::string pid_path);
 
 direction get_packet_direction(patricia_tree_t* lookup_tree, uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet, unsigned int& subnet_cidr_mask);
