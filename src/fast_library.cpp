@@ -551,13 +551,17 @@ std::vector<std::string> exec(std::string cmd) {
     return output_list;
 }
 
-void print_pid_to_file(pid_t pid, std::string pid_path) {
+bool print_pid_to_file(pid_t pid, std::string pid_path) {
     std::ofstream pid_file;
 
     pid_file.open(pid_path.c_str(), std::ios::trunc);
     if (pid_file.is_open()) {
         pid_file << pid << "\n";
         pid_file.close();
+
+        return true;
+    } else {
+        return false;    
     }
 }
 

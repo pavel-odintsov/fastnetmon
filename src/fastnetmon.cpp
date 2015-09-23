@@ -852,6 +852,10 @@ bool load_configuration_file() {
         }
     }
 
+    if (configuration_map.count("pid_path") != 0) {
+        pid_path = configuration_map["pid_path"];
+    }
+
     if (configuration_map.count("unban_only_if_attack_finished") != 0) {
         if (configuration_map["unban_only_if_attack_finished"] == "on") {
             unban_only_if_attack_finished = true;
@@ -2278,7 +2282,30 @@ std::string print_channel_speed(std::string traffic_type, direction packet_direc
     return stream.str();
 }
 
+bool file_is_appendable(std::string path) {
+    std::ofstream check_appendable_file;
+
+    check_appendable_file.open(path, std::ios::app);
+
+    if (check_appendable_file.is_open()) {
+        // all fine, just close file
+        check_appendable_file.close();
+    
+        return true;
+    } else {
+        return false;
+    }
+}
+
 void init_logging() {
+    // So log4cpp will never notify you if it could not write to log file due to permissions issues
+    // We will check it manually
+
+    if (!file_is_appendable(log_file_path)) {
+        std::cerr << "Can't open log file " << log_file_path << " for writing! Please check file/fodler permissions" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
     log4cpp::PatternLayout* layout = new log4cpp::PatternLayout();
     layout->setConversionPattern("%d [%p] %m%n");
 
@@ -2404,7 +2431,16 @@ int main(int argc, char** argv) {
 
     init_logging();
 
+    // Set default ban configuration
     init_global_ban_settings();
+
+    // We should read configurartion file _after_ logging initialization
+    bool load_config_result = load_configuration_file();
+
+    if (!load_config_result) {
+        fprintf(stderr, "Can't open config file %s, please create it!\n", global_config_path.c_str());
+        exit(1);
+    } 
 
     if (file_exists(pid_path)) {
         pid_t pid_from_file = 0;
@@ -2433,7 +2469,12 @@ int main(int argc, char** argv) {
     }
 
     // If we not failed in check steps we could run toolkit
-    print_pid_to_file(getpid(), pid_path);
+    bool print_pid_to_file_result = print_pid_to_file(getpid(), pid_path);
+
+    if (!print_pid_to_file_result) {
+        logger << log4cpp::Priority::ERROR << "Could not create pid file, please check permissions: " << pid_path; 
+        exit(EXIT_FAILURE);
+    }
 
 #ifdef ENABLE_DPI
     init_current_instance_of_ndpi();
@@ -2478,13 +2519,6 @@ int main(int argc, char** argv) {
     }
 
     logger << log4cpp::Priority::INFO << "Read configuration file";
-
-    bool load_config_result = load_configuration_file();
-
-    if (!load_config_result) {
-        fprintf(stderr, "Can't open config file %s, please create it!\n", global_config_path.c_str());
-        exit(1);
-    }
 
     // Reconfigure logging. We will enable specific logging methods here
     reconfigure_logging();
