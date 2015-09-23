@@ -8,6 +8,7 @@ exabgp = on
 exabgp_command_pipe = /var/run/exabgp.cmd
 exabgp_community = 65001:666
 exabgp_next_hop = 10.0.3.114
+exabgp_announce_host = on
 ```
 
 Secondly, you should install, configure and run ExaBGP toolkit.
