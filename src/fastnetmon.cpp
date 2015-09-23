@@ -2285,7 +2285,7 @@ std::string print_channel_speed(std::string traffic_type, direction packet_direc
 bool file_is_appendable(std::string path) {
     std::ofstream check_appendable_file;
 
-    check_appendable_file.open(path, std::ios::app);
+    check_appendable_file.open(path.c_str(), std::ios::app);
 
     if (check_appendable_file.is_open()) {
         // all fine, just close file
@@ -2302,7 +2302,7 @@ void init_logging() {
     // We will check it manually
 
     if (!file_is_appendable(log_file_path)) {
-        std::cerr << "Can't open log file " << log_file_path << " for writing! Please check file/fodler permissions" << std::endl;
+        std::cerr << "Can't open log file " << log_file_path << " for writing! Please check file and folder permissions" << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -2383,7 +2383,8 @@ int main(int argc, char** argv) {
     bool daemonize = false;
 
     struct option long_options[] = {
-        {"daemonize", no_argument, 0, 'd' },
+        {"daemonize",          no_argument,         0, 'd' },
+        {"configuration_file", required_argument,   0, 'c' },
         {0,           0,           0,  0  }
     };
 
@@ -2393,6 +2394,8 @@ int main(int argc, char** argv) {
     while ((current_option = getopt_long_only(argc, argv, "", long_options, &long_index )) != -1) {
         if (current_option == 'd') {
             daemonize = true;
+        } else if (current_option == 'c') { 
+            global_config_path = std::string(optarg);
         } else {
             print_command_line_help();
             exit(EXIT_FAILURE);
@@ -2438,7 +2441,7 @@ int main(int argc, char** argv) {
     bool load_config_result = load_configuration_file();
 
     if (!load_config_result) {
-        fprintf(stderr, "Can't open config file %s, please create it!\n", global_config_path.c_str());
+        std::cerr << "Can't open config file " << global_config_path << " please create it!" << std::endl;
         exit(1);
     } 
 
