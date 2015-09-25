@@ -123,4 +123,7 @@ json_object* serialize_attack_description_to_json(attack_details& current_attack
 json_object* serialize_network_load_to_json(map_element& network_speed_meter);
 std::string serialize_statistic_counters_about_attack(attack_details& current_attack);
 
+std::string dns_lookup(std::string domain_name);
+bool store_data_to_stats_server(unsigned short int graphite_port, std::string graphite_host, std::string buffer_as_string);
+
 #endif
