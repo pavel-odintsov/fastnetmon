@@ -23,6 +23,8 @@
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
+#include <boost/asio.hpp>
+
 #if defined(__APPLE__)
 #include <libkern/OSByteOrder.h>
 // Source: https://gist.github.com/pavel-odintsov/d13684600423d1c5e64e
@@ -1234,4 +1236,63 @@ std::string serialize_statistic_counters_about_attack(attack_details& current_at
                        << average_packet_size_for_outgoing_traffic << " bytes \n";
 
     return attack_description.str();
+}
+
+std::string dns_lookup(std::string domain_name) {
+    try {
+        boost::asio::io_service io_service;
+        boost::asio::ip::tcp::resolver resolver(io_service);
+
+        boost::asio::ip::tcp::resolver::query query(domain_name, "");
+
+        for (boost::asio::ip::tcp::resolver::iterator i = resolver.resolve(query);
+            i != boost::asio::ip::tcp::resolver::iterator();
+            ++i)
+        {   
+            boost::asio::ip::tcp::endpoint end = *i; 
+            return end.address().to_string();
+        }   
+    } catch (std::exception& e) {
+        return ""; 
+    }   
+
+    return ""; 
+}
+
+bool store_data_to_stats_server(unsigned short int graphite_port, std::string graphite_host, std::string buffer_as_string) {
+   int client_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (client_sockfd < 0) {
+        return false;
+    }
+
+    struct sockaddr_in serv_addr;
+    memset(&serv_addr, 0, sizeof(serv_addr));
+
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(graphite_port);
+
+    int pton_result = inet_pton(AF_INET, graphite_host.c_str(), &serv_addr.sin_addr);
+
+    if (pton_result <= 0) {
+        close(client_sockfd);
+        return false;
+    }
+
+    int connect_result = connect(client_sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+
+    if (connect_result < 0) {
+        close(client_sockfd);
+        return false;
+    }
+
+    int write_result = write(client_sockfd, buffer_as_string.c_str(), buffer_as_string.size());
+
+    close(client_sockfd);
+
+    if (write_result > 0) {
+        return true;
+    } else {
+        return false;
+    }
 }
