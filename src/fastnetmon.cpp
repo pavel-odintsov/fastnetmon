@@ -108,6 +108,8 @@
 
 time_t last_call_of_traffic_recalculation;
 
+std::string cli_stats_file_path = "/tmp/fastnetmon.dat";
+
 std::string reporting_server = "heartbeat.fastnetmon.io";
 
 unsigned int stats_thread_sleep_time = 3600;
@@ -859,6 +861,10 @@ bool load_configuration_file() {
 
     if (configuration_map.count("pid_path") != 0) {
         pid_path = configuration_map["pid_path"];
+    }
+
+    if (configuration_map.count("cli_stats_file_path") != 0) {
+        cli_stats_file_path = configuration_map["cli_stats_file_path"];
     }
 
     if (configuration_map.count("unban_only_if_attack_finished") != 0) {
@@ -2117,7 +2123,7 @@ void recalculate_speed() {
 
 void print_screen_contents_into_file(std::string screen_data_stats_param) {
     std::ofstream screen_data_file;
-    screen_data_file.open("/tmp/fastnetmon.dat", std::ios::trunc);
+    screen_data_file.open(cli_stats_file_path.c_str(), std::ios::trunc);
 
     if (screen_data_file.is_open()) {
         screen_data_file << screen_data_stats_param;
