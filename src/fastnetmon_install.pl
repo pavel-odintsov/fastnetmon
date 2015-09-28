@@ -35,6 +35,8 @@ my $distro_type = '';
 my $distro_version = ''; 
 my $distro_architecture = '';
 
+my $user_email = '';
+
 # Used for VyOS and different appliances based on rpm/deb
 my $appliance_name = ''; 
 
@@ -116,9 +118,30 @@ sub install_additional_repositories {
     }
 }
 
+sub get_user_email {
+    my $user_entered_valid_email = 0;
+
+    do {
+        print "\nPlease provide your email address at company domain for free tool activation.\nWe will not share your email with any third party companies.\nEmail: ";
+        my $raw_email = <STDIN>;
+        chomp $raw_email;
+        
+        if ($raw_email =~ /\@/ && length $raw_email > 3) {
+            $user_entered_valid_email = 1;
+            $user_email = $raw_email;
+        } else {
+            print "Sorry you have entered invalid email, please try again!\n";
+        }
+    } while !$user_entered_valid_email;
+
+    print "\nThank you so much!\n\n"; 
+}
+
 ### Functions start here
 sub main {
     detect_distribution();
+
+    get_user_email();
 
     $cpus_number = get_logical_cpus_number();
 
@@ -234,7 +257,7 @@ sub send_tracking_information {
 
     unless ($do_not_track_me) {
         my $stats_url = "http://178.62.227.110/new_fastnetmon_installation";
-        my $post_data = "distro_type=$distro_type&os_type=$os_type&distro_version=$distro_version&distro_architecture=$distro_architecture&step=$step&we_use_code_from_master=$we_use_code_from_master";
+        my $post_data = "distro_type=$distro_type&os_type=$os_type&distro_version=$distro_version&distro_architecture=$distro_architecture&step=$step&we_use_code_from_master=$we_use_code_from_master&user_email=$user_email";
         my $user_agent = 'FastNetMon install tracker v1';
 
         `wget --post-data="$post_data" --user-agent="$user_agent" -q '$stats_url'`;
