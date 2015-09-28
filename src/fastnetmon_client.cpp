@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+std::string cli_stats_file_path = "/tmp/fastnetmon.dat";
+
 int main() {
     // Init ncurses screen
     initscr();
@@ -33,12 +35,18 @@ int main() {
             exit(0);
         }
 
+        char* cli_stats_file_path_env = getenv("cli_stats_file_path");
+
+        if (cli_stats_file_path_env != NULL) {
+            cli_stats_file_path = std::string(cli_stats_file_path_env);
+        } 
+
         std::ifstream reading_file;
-        reading_file.open("/tmp/fastnetmon.dat", std::ifstream::in);
+        reading_file.open(cli_stats_file_path.c_str(), std::ifstream::in);
 
         if (!reading_file.is_open()) {
-            std::cout << "Can't open fastnetmon stats file";
-        }
+            std::cout << "Can't open fastnetmon stats file: " << cli_stats_file_path;
+        }   
 
         std::string line = "";
         std::stringstream screen_buffer;
