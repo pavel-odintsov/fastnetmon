@@ -119,6 +119,11 @@ sub install_additional_repositories {
 }
 
 sub get_user_email {
+    # http://docs.travis-ci.com/user/environment-variables/#Default-Environment-Variables
+    if (defined($ENV{'CONTINUOUS_INTEGRATION'}) && $ENV{'CONTINUOUS_INTEGRATION'} eq 'true') {
+        return;
+    }
+
     my $user_entered_valid_email = 0;
 
     do {
