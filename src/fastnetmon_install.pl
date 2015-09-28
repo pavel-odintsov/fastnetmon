@@ -119,12 +119,8 @@ sub install_additional_repositories {
 }
 
 sub get_user_email {
-    for my $key (keys %ENV) {
-        print "$key $ENV{$key}\n";
-    }
-
     # http://docs.travis-ci.com/user/environment-variables/#Default-Environment-Variables
-    if (defined($ENV{'CONTINUOUS_INTEGRATION'}) && $ENV{'CONTINUOUS_INTEGRATION'} eq 'true') {
+    if (defined($ENV{'TRAVIS'}) && $ENV{'TRAVIS'}) {
         return;
     }
 
