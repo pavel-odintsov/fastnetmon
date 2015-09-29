@@ -518,7 +518,7 @@ redisContext* redis_init_connection() {
     struct timeval timeout = { 1, 500000 }; // 1.5 seconds
     redisContext* redis_context = redisConnectWithTimeout(redis_host.c_str(), redis_port, timeout);
     if (redis_context->err) {
-        logger << log4cpp::Priority::INFO << "Connection error:" << redis_context->errstr;
+        logger << log4cpp::Priority::ERROR << "Redis connection error:" << redis_context->errstr;
         return NULL;
     }
 
@@ -540,7 +540,7 @@ void store_data_in_redis(std::string key_name, std::string attack_details) {
     redisContext* redis_context = redis_init_connection();
 
     if (!redis_context) {
-        logger << log4cpp::Priority::INFO << "Could not initiate connection to Redis";
+        logger << log4cpp::Priority::ERROR << "Could not initiate connection to Redis";
         return;
     }
 
