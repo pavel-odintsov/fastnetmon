@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <new> 
 #include <signal.h>
-#include <getopt.h>
 #include <time.h>
 #include <math.h>
 
@@ -75,6 +74,8 @@
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/regex.hpp>
+
+#include <boost/program_options.hpp>
 
 // log4cpp logging facility
 #include "log4cpp/RemoteSyslogAppender.hh"
@@ -2386,31 +2387,39 @@ void redirect_fds() {
     int second_dup_result = dup(0);
 }
 
-void print_command_line_help() {
-    std::cout << "Usage: fastnetmon [--daemonize]" << std::endl;
-}
-
 int main(int argc, char** argv) {
     bool daemonize = false;
 
-    struct option long_options[] = {
-        {"daemonize",          no_argument,         0, 'd' },
-        {"configuration_file", required_argument,   0, 'c' },
-        {0,           0,           0,  0  }
-    };
+    namespace po = boost::program_options;
 
-    int long_index = 0;
+    try {
+        po::options_description desc("Allowed options");
+        desc.add_options()
+            ("help", "produce help message")
+            ("daemonize", "detach from the terminal")
+            ("configuration_file", po::value<std::string>(), "set path to custom configuration file")
+        ;
 
-    int current_option = 0;
-    while ((current_option = getopt_long_only(argc, argv, "", long_options, &long_index )) != -1) {
-        if (current_option == 'd') {
-            daemonize = true;
-        } else if (current_option == 'c') { 
-            global_config_path = std::string(optarg);
-        } else {
-            print_command_line_help();
+        po::variables_map vm;
+        po::store(po::parse_command_line(argc, argv, desc), vm);
+        po::notify(vm);    
+
+        if (vm.count("help")) {
+            std::cout << desc << std::endl;
             exit(EXIT_FAILURE);
+        }
+
+        if (vm.count("daemonize")) {
+            daemonize = true;
+        }
+   
+        if (vm.count("configuration_file")) {
+            global_config_path = vm["configuration_file"].as<std::string>();
+            std::cout << "We will use custom path to configuration file: " << global_config_path << std::endl;
         } 
+    } catch (po::error& e) {
+        std::cerr << "ERROR: " << e.what() << std::endl << std::endl; 
+        exit(EXIT_FAILURE);
     }
 
     // We use ideas from here https://github.com/bmc/daemonize/blob/master/daemon.c
