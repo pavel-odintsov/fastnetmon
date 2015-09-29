@@ -17,11 +17,13 @@ Please keep in mind when run tool on OpenVZ because without root permissions too
 
 Debugging flags.
 
-DUMP_ALL_PACKETS will enable all packets dumping to console. It's very useful for testing tool on non standard platforms.
+DUMP_ALL_PACKETS will enable all packets dumping to /var/log/fastnetmon.log. It's very useful for testing tool on non standard platforms.
 
 ```bash
 DUMP_ALL_PACKETS=yes ./fastnetmon
 ```
+
+If you want to dump only "other" (we could not detect direction for this packets) packets, please use: DUMP_OTHER_PACKETS.
 
 Recommended configuration options for ixgbe Intel X540 driver (netmap mode):
 ```bash

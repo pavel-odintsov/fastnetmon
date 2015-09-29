@@ -257,6 +257,9 @@ bool DEBUG = 0;
 // flag about dumping all packets to log
 bool DEBUG_DUMP_ALL_PACKETS = false;
 
+// dump "other" packets
+bool DEBUG_DUMP_OTHER_PACKETS = false;
+
 // Period for update screen for console version of tool
 unsigned int check_period = 3;
 
@@ -1478,6 +1481,11 @@ void process_packet(simple_packet& current_packet) {
 
     direction packet_direction = get_packet_direction(lookup_tree_ipv4, current_packet.src_ip, current_packet.dst_ip, subnet, subnet_cidr_mask);
 
+    // It's useful in case when we can't find what packets do not processed correctly
+    if (DEBUG_DUMP_OTHER_PACKETS && packet_direction == OTHER) {
+        logger << log4cpp::Priority::INFO << "Dump other: " << print_simple_packet(current_packet);
+    }    
+
     // Skip processing of specific traffic direction
     if ((packet_direction == INCOMING && !process_incoming_traffic) or
         (packet_direction == OUTGOING && !process_outgoing_traffic)) {
@@ -1547,7 +1555,7 @@ void process_packet(simple_packet& current_packet) {
     uint64_t sampled_number_of_bytes = current_packet.length * current_packet.sample_ratio;
 
     __sync_fetch_and_add(&total_counters[packet_direction].packets, sampled_number_of_packets);
-    __sync_fetch_and_add(&total_counters[packet_direction].bytes, sampled_number_of_bytes);
+    __sync_fetch_and_add(&total_counters[packet_direction].bytes,   sampled_number_of_bytes);
 
     // Incerementi main and per protocol packet counters
     if (packet_direction == OUTGOING) {
@@ -2533,6 +2541,10 @@ int main(int argc, char** argv) {
 
     if (getenv("DUMP_ALL_PACKETS") != NULL) {
         DEBUG_DUMP_ALL_PACKETS = true;
+    }
+
+    if (getenv("DUMP_OTHER_PACKETS") != NULL) {
+        DEBUG_DUMP_OTHER_PACKETS = true;
     }
 
     if (sizeof(packed_conntrack_hash) != sizeof(uint64_t) or sizeof(packed_conntrack_hash) != 8) {
