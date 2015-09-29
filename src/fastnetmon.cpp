@@ -3906,6 +3906,14 @@ ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::str
         ban_settings.enable_ban_for_pps = configuration_map[prefix + "ban_for_pps"] == "on";
     }
 
+    if (configuration_map.count(prefix + "ban_for_bandwidth") != 0) {
+        ban_settings.enable_ban_for_bandwidth = configuration_map[prefix + "ban_for_bandwidth"] == "on";
+    }
+
+    if (configuration_map.count(prefix + "ban_for_flows") != 0) { 
+        ban_settings.enable_ban_for_flows_per_second = configuration_map[prefix + "ban_for_flows"] == "on";
+    }    
+
     // Per protocol bandwidth triggers
     if (configuration_map.count(prefix + "ban_for_tcp_bandwidth") != 0) {
         ban_settings.enable_ban_for_tcp_bandwidth = configuration_map[prefix + "ban_for_tcp_bandwidth"] == "on";
@@ -3958,10 +3966,6 @@ ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::str
         ban_settings.ban_threshold_icmp_mbps = convert_string_to_integer(configuration_map[prefix + "threshold_icmp_mbps"]);
     }   
  
-    if (configuration_map.count(prefix + "ban_for_flows") != 0) {
-        ban_settings.enable_ban_for_flows_per_second = configuration_map[prefix + "ban_for_flows"] == "on";
-    }
-
     if (configuration_map.count(prefix + "threshold_pps") != 0) {
         ban_settings.ban_threshold_pps = convert_string_to_integer(configuration_map[prefix + "threshold_pps"]);
     }
