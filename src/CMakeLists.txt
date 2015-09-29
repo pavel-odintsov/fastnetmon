@@ -228,7 +228,7 @@ add_executable(fastnetmon_client fastnetmon_client.cpp)
 # Enable detailed errors
 set(Boost_DETAILED_FAILURE_MSG ON)
 
-find_package(Boost COMPONENTS thread regex system REQUIRED)
+find_package(Boost COMPONENTS thread regex program_options system REQUIRED)
 
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
