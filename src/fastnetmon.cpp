@@ -101,6 +101,11 @@
 #include <hiredis/hiredis.h>
 #endif
 
+#ifdef MONGO
+#include <bson.h>
+#include <mongoc.h>
+#endif
+
 // #define IPV6_HASH_COUNTERS
 
 #ifdef IPV6_HASH_COUNTERS
@@ -153,6 +158,14 @@ struct ndpi_detection_module_struct* my_ndpi_struct = NULL;
 
 u_int32_t ndpi_size_flow_struct = 0;
 u_int32_t ndpi_size_id_struct = 0;
+#endif
+
+#ifdef MONGO
+std::string mondodb_host = "localhost";
+unsigned int mondodb_port = 27017;
+bool mongo_enabled = false;
+
+std::string mongo_database_name = "fastnetmon";
 #endif
 
 /* Configuration block, we must move it to configuration file  */
@@ -531,6 +544,58 @@ redisContext* redis_init_connection() {
     }
 
     return redis_context;
+}
+#endif
+
+#ifdef MONGO
+void store_data_in_mongo(std::string key_name, std::string attack_details_json) {
+    mongoc_client_t *client;
+    mongoc_collection_t *collection;
+    mongoc_cursor_t *cursor;
+    bson_error_t error;
+    bson_oid_t oid;
+    bson_t *doc;
+
+    mongoc_init ();
+
+    std::string collection_name = "attacks"; 
+    std::string connection_string = "mongodb://" + mondodb_host + ":" + convert_int_to_string(mondodb_port) + "/"; 
+
+    client = mongoc_client_new (connection_string.c_str());
+
+    if (!client) {
+        logger << log4cpp::Priority::ERROR << "Can't connect to MongoDB database";
+        return;
+    }
+    
+    bson_error_t bson_from_json_error;
+    bson_t* bson_data = bson_new_from_json((const uint8_t *)attack_details_json.c_str(), attack_details_json.size(), &bson_from_json_error);
+    if (!bson_data) {
+        logger << log4cpp::Priority::ERROR << "Could not convert JSON to BSON";
+        return;
+    }    
+
+    // logger << log4cpp::Priority::INFO << bson_as_json(bson_data, NULL);
+
+    collection = mongoc_client_get_collection (client, mongo_database_name.c_str(), collection_name.c_str());
+
+    doc = bson_new ();
+    bson_oid_init (&oid, NULL);
+    BSON_APPEND_OID (doc, "_id", &oid);
+    bson_append_document(doc,  key_name.c_str(), key_name.size(), bson_data);
+
+    // logger << log4cpp::Priority::INFO << bson_as_json(doc, NULL);
+
+    if (!mongoc_collection_insert (collection, MONGOC_INSERT_NONE, doc, NULL, &error)) {
+        logger << log4cpp::Priority::ERROR << "Could not store data to MongoDB: " << error.message;
+    }
+
+    // TODO: destroy bson_data too!
+
+    bson_destroy (doc);
+    mongoc_collection_destroy (collection);
+    mongoc_client_destroy (client);
+
 }
 #endif
 
@@ -1112,6 +1177,14 @@ bool load_configuration_file() {
             redis_enabled = true;
         } else {
             redis_enabled = false;
+        }
+    }
+#endif
+
+#ifdef MONGO
+    if (configuration_map.count("mongo_enabled") != 0) {
+        if (configuration_map["mongo_enabled"] == "on") {
+            mongo_enabled = true;
         }
     }
 #endif
@@ -3015,11 +3088,26 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
             redis_key_name = redis_prefix + "_" + client_ip_as_string + "_information";
         }
 
-        logger << log4cpp::Priority::INFO << "Start data save in redis in key: " << redis_key_name;
+        logger << log4cpp::Priority::INFO << "Start data save in Redis in key: " << redis_key_name;
         boost::thread redis_store_thread(store_data_in_redis, redis_key_name, basic_attack_information_in_json);
         redis_store_thread.detach();
-        logger << log4cpp::Priority::INFO << "Finish data save in redis in key: " << redis_key_name;
+        logger << log4cpp::Priority::INFO << "Finish data save in Redis in key: " << redis_key_name;
     }
+
+#ifdef MONGO
+    if (mongo_enabled) {
+        std::string mongo_key_name = client_ip_as_string + "_information_" +
+            print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
+
+        // We could not use dot in key names: http://docs.mongodb.org/manual/core/document/#dot-notation
+        std::replace(mongo_key_name.begin(), mongo_key_name.end(), '.', '_');
+
+        logger << log4cpp::Priority::INFO << "Start data save in Mongo in key: " << mongo_key_name;
+        boost::thread  mongo_store_thread(store_data_in_mongo, mongo_key_name, basic_attack_information_in_json);
+        mongo_store_thread.detach();
+        logger << log4cpp::Priority::INFO << "Finish data save in Mongo in key: " << mongo_key_name;
+    }
+#endif
 
     // If we have flow dump put in redis too
     if (redis_enabled && !flow_attack_details.empty()) {
