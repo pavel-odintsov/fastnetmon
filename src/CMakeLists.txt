@@ -71,7 +71,10 @@ if (FASTNETMON_PROFILER)
     set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${FASTNETMON_PROFILE_FLAGS}")
 endif()
 
-set(FASTNETMON_APPLICATION_VERSION "1.1.3 master")
+# Get last commit hash
+execute_process(COMMAND git rev-list HEAD COMMAND head -n 1 OUTPUT_VARIABLE GIT_LAST_COMMIT_HASH OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+set(FASTNETMON_APPLICATION_VERSION "1.1.3 master git-${GIT_LAST_COMMIT_HASH}")
 configure_file(fast_platform.h.template "${PROJECT_SOURCE_DIR}/fast_platform.h")
 
 # With this flag we can diable PF_RING build via console: cmake .. -DDISABLE_PF_RING_SUPPORT=ON
