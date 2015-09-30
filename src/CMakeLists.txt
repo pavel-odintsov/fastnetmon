@@ -42,7 +42,7 @@ if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
     # Create builds in current folder with install RPATH
     SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
-    SET(CMAKE_INSTALL_RPATH "/opt/gcc520/lib64;/opt/boost_1_58_0/stage/lib;/opt/libhiredis_0_13/lib;/opt/log4cpp1.1.1/lib;/opt/luajit_2.0.4/lib;/opt/ndpi/lib;/opt/pf_ring_6.0.3/lib;/opt/json-c-0.12/lib")
+    SET(CMAKE_INSTALL_RPATH "/opt/gcc520/lib64;/opt/boost_1_58_0/stage/lib;/opt/libhiredis_0_13/lib;/opt/log4cpp1.1.1/lib;/opt/luajit_2.0.4/lib;/opt/ndpi/lib;/opt/pf_ring_6.0.3/lib;/opt/json-c-0.12/lib;/opt/mongo_c_driver_1_1_9/lib")
 endif()
 
 # It's pretty safe and provide big speedup for our packet processor and patricia code
@@ -54,6 +54,7 @@ set(LOG4CPP_CUSTOM_INSTALL_PATH "/opt/log4cpp1.1.1")
 set(JSONC_CUSTOM_INSTALL_PATH "/opt/json-c-0.12")
 set(PFRING_CUSTOM_INSTALL_PATH "/opt/pf_ring_6.0.3")
 set(LIBPCAP_CUSTOM_INSTALL_PATH "/opt/libpcap_1.7.4")
+set(MONGO_C_CUSTOM_INSTALL_PATH "/opt/mongo_c_driver_1_1_9")
 
 set(FASTNETMON_PROFILER OFF)
 
@@ -263,6 +264,27 @@ if (HIREDIS_INCLUDES_FOLDER AND HIREDIS_LIBRARY_PATH)
     target_link_libraries (fastnetmon ${HIREDIS_LIBRARY_PATH})
 else()
     message(STATUS "We can't find hiredis library and will disable Redis support")
+endif()
+
+### Find mongo-c
+find_path(MONGOC_INCLUDES_FOLDER NAMES libmongoc-1.0/mongoc.h PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
+find_library(MONGOC_LIBRARY_PATH NAMES mongoc-1.0 PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+
+### find bson
+find_path(BSON_INCLUDES_FOLDER NAMES libbson-1.0/bson.h PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
+find_library(BSON_LIBRARY_PATH NAMES bson-1.0 PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+
+if (MONGOC_INCLUDES_FOLDER AND MONGOC_LIBRARY_PATH AND BSON_INCLUDES_FOLDER AND BSON_LIBRARY_PATH)
+    message(STATUS "We found mongo-c library ${MONGOC_INCLUDES_FOLDER} ${MONGOC_LIBRARY_PATH} ${BSON_INCLUDES_FOLDER} ${BSON_LIBRARY_PATH}")
+    add_definitions(-DMONGO)
+
+    # We add suffix name because cmake could not detect it correctly...
+    include_directories("${MONGOC_INCLUDES_FOLDER}/libmongoc-1.0")
+    include_directories("${BSON_INCLUDES_FOLDER}/libbson-1.0")
+
+    target_link_libraries(fastnetmon ${MONGOC_LIBRARY_PATH} ${BSON_LIBRARY_PATH})
+else()
+    message(WARNING "We can't find Mongo C library")
 endif()
 
 ### Look for libpcap
