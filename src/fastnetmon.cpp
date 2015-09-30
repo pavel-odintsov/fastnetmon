@@ -2404,6 +2404,7 @@ int main(int argc, char** argv) {
         po::options_description desc("Allowed options");
         desc.add_options()
             ("help", "produce help message")
+            ("version", "show version")
             ("daemonize", "detach from the terminal")
             ("configuration_file", po::value<std::string>(), "set path to custom configuration file")
         ;
@@ -2414,7 +2415,12 @@ int main(int argc, char** argv) {
 
         if (vm.count("help")) {
             std::cout << desc << std::endl;
-            exit(EXIT_FAILURE);
+            exit(EXIT_SUCCESS);
+        }
+
+        if (vm.count("version")) {
+            std::cout << "Version: " << fastnetmon_version << std::endl;
+            exit(EXIT_SUCCESS);
         }
 
         if (vm.count("daemonize")) {
