@@ -72,12 +72,14 @@ my $we_have_luajit_support = '';
 my $we_have_hiredis_support = '';
 my $we_have_log4cpp_support = '';
 my $we_have_pfring_support = '';
+my $we_have_mongo_support = '';
 
 if ($we_use_code_from_master) {
     $we_have_ndpi_support = 1;
     $we_have_luajit_support = 1;
     $we_have_hiredis_support = 1;
     $we_have_log4cpp_support = 1;
+    $we_have_mongo_support = 1;
 }
 
 main();
@@ -203,6 +205,10 @@ sub main {
 
     if ($we_have_hiredis_support) {
         install_hiredis();
+    }
+
+    if ($we_have_mongo_support) {
+        install_mongo_client();
     }
 
     if ($we_have_log4cpp_support) {
@@ -783,6 +789,28 @@ sub install_log4cpp {
 
     print "Add log4cpp to ld.so.conf\n";
     put_library_path_to_ld_so("/etc/ld.so.conf.d/log4cpp.conf", "$log4cpp_install_path/lib");
+}
+
+sub install_mongo_client {
+    my $distro_file_name = 'mongo-c-driver-1.1.9.tar.gz';
+    my $mongo_install_path = '/opt/mongo_c_driver_1_1_9';
+
+    chdir $temp_folder_for_building_project;
+    print "Download mongo\n";
+
+    my $mongo_download_result = download_file("https://github.com/mongodb/mongo-c-driver/releases/download/1.1.9/$distro_file_name",
+        $distro_file_name, '32452481be64a297e981846e433b2b492c302b34');
+    
+    unless ($mongo_download_result) {
+        die "Can't download mongo\n";
+    }
+
+    exec_command("tar -xf $distro_file_name");
+    print "Build mongo client\n";
+    chdir "mongo-c-driver-1.1.9";
+    exec_command("./configure --prefix=$mongo_install_path");
+
+    exec_command("make $make_options install");
 }
 
 sub install_hiredis {
