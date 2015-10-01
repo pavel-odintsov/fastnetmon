@@ -18,7 +18,7 @@ What can we do? We can detect hosts in our own network with a large amount of pa
 
 - We are part of [CloudRouter](https://cloudrouter.org/cloudrouter/2015/07/09/fastnetmon.html) distribution
 - We are part of [official FreeBSD ports](https://freshports.org/net-mgmt/fastnetmon/), [manual install](docs/FreeBSD_INSTALL.md)
-- [Amazon AMI imahe](docs/AMAZON.md)
+- [Amazon AMI image](docs/AMAZON.md)
 - [VyOS based iso image with bundled FastNetMon](docs/VYOS_BINARY_ISO_IMAGE.md)
 - [Docker image](docs/DOCKER_INSTALL.md)
 - [Binary rpm packages for CentOS 6/7 and Fedora 21](docs/INSTALL_RPM_PACKAGES.md)
