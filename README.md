@@ -44,6 +44,8 @@ Features:
 - Thresholds could be configured in per subnet basis with hostgroups feature
 - Could [announce blocked IPs](docs/EXABGP_INTEGRATION.md) to BGP router with [ExaBGP](https://github.com/Exa-Networks/exabgp)
 - Full integration with [Graphite](docs/GRAPHITE_INTEGRATION.md) and [InfluxDB](docs/INFLUXDB_INTEGRATION.md)
+- Redis integration
+- MongoDB integration
 - Deep packet inspection for attack traffic
 - netmap support (open source; wire speed processing; only Intel hardware NICs or any hypervisor VM type)
 - SnabbSwitch support (open source, very flexible, LUA driven, very-very-very fast)
