@@ -11,7 +11,7 @@ Build FastNetMon from Git's master branch.
 
 Enable it in configuration file:
 ```bash
-mongo_enabled = on
+mongodb_enabled = on
 ```
 
 Query data about attacks:

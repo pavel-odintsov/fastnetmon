@@ -161,11 +161,11 @@ u_int32_t ndpi_size_id_struct = 0;
 #endif
 
 #ifdef MONGO
-std::string mondodb_host = "localhost";
-unsigned int mondodb_port = 27017;
-bool mongo_enabled = false;
+std::string mongodb_host = "localhost";
+unsigned int mongodb_port = 27017;
+bool mongodb_enabled = false;
 
-std::string mongo_database_name = "fastnetmon";
+std::string mongodb_database_name = "fastnetmon";
 #endif
 
 /* Configuration block, we must move it to configuration file  */
@@ -559,7 +559,7 @@ void store_data_in_mongo(std::string key_name, std::string attack_details_json) 
     mongoc_init ();
 
     std::string collection_name = "attacks"; 
-    std::string connection_string = "mongodb://" + mondodb_host + ":" + convert_int_to_string(mondodb_port) + "/"; 
+    std::string connection_string = "mongodb://" + mongodb_host + ":" + convert_int_to_string(mongodb_port) + "/"; 
 
     client = mongoc_client_new (connection_string.c_str());
 
@@ -577,7 +577,7 @@ void store_data_in_mongo(std::string key_name, std::string attack_details_json) 
 
     // logger << log4cpp::Priority::INFO << bson_as_json(bson_data, NULL);
 
-    collection = mongoc_client_get_collection (client, mongo_database_name.c_str(), collection_name.c_str());
+    collection = mongoc_client_get_collection (client, mongodb_database_name.c_str(), collection_name.c_str());
 
     doc = bson_new ();
     bson_oid_init (&oid, NULL);
@@ -1182,10 +1182,22 @@ bool load_configuration_file() {
 #endif
 
 #ifdef MONGO
-    if (configuration_map.count("mongo_enabled") != 0) {
-        if (configuration_map["mongo_enabled"] == "on") {
-            mongo_enabled = true;
+    if (configuration_map.count("mongodb_enabled") != 0) {
+        if (configuration_map["mongodb_enabled"] == "on") {
+            mongodb_enabled = true;
         }
+    }
+
+    if (configuration_map.count("mongodb_host") != 0) {
+        mongodb_host = configuration_map["mongodb_host"];
+    }
+
+    if (configuration_map.count("mongodb_port") != 0) {
+        mongodb_port = convert_string_to_integer(configuration_map["mongodb_port"]);
+    }
+
+    if (configuration_map.count("mongodb_database_name") != 0) {
+        mongodb_database_name = configuration_map["mongodb_database_name"];
     }
 #endif
 
@@ -3101,7 +3113,7 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
     }
 
 #ifdef MONGO
-    if (mongo_enabled) {
+    if (mongodb_enabled) {
         std::string mongo_key_name = client_ip_as_string + "_information_" +
             print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
 
