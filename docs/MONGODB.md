@@ -7,19 +7,6 @@ Install MongoDB itself:
 apt-get install -y mongodb-server mongodb-clients
 ```
 
-Library compilation:
-```bash
-cd /usr/src
-wget https://github.com/mongodb/mongo-c-driver/releases/download/1.1.9/mongo-c-driver-1.1.9.tar.gz
-tar xzf mongo-c-driver-1.1.9.tar.gz
-cd mongo-c-driver-1.1.9
-./configure --prefix=/opt/mongo_c_driver_1_1_9
-make
-make install
-echo /opt/mongo_c_driver/lib > /etc/ld.so.conf.d/mongodb_c_driver.conf
-ldconfig
-```
-
 Build FastNetMon from Git's master branch.
 
 Enable it in configuration file:
@@ -27,7 +14,7 @@ Enable it in configuration file:
 mongo_enabled = on
 ```
 
-Query data about attack's:
+Query data about attacks:
 ```bash
 > use fastnetmon
 switched to db fastnetmon
