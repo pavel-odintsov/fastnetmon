@@ -296,7 +296,8 @@ sub get_sha1_sum {
     my $path = shift;
 
     if ($os_type eq 'freebsd') {
-        use Digest::SHA;
+        # # We should not use 'use' here because we haven't this package on non FreeBSD systems by default
+        require Digest::SHA;
 
         # SHA1
         my $sha = Digest::SHA->new(1);
