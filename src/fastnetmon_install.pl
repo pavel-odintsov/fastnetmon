@@ -76,6 +76,7 @@ my $we_have_mongo_support = '';
 my $we_have_protobuf_support = '';
 my $we_have_grpc_support = '';
 my $we_have_golang_support = '';
+my $we_have_gobgp_support = '';
 
 if ($we_use_code_from_master) {
     $we_have_ndpi_support = 1;
@@ -226,6 +227,10 @@ sub main {
         install_golang();
     }
 
+    if ($we_have_gobgp_support) {
+        install_gobgp();
+    }
+    
     if ($we_have_log4cpp_support) {
         install_log4cpp();
     }
@@ -832,6 +837,47 @@ sub install_grpc {
 
     print "Install gRPC\n";
     exec_command("make install prefix=$grpc_install_path"); 
+}
+
+sub install_gobgp {
+    chdir $temp_folder_for_building_project;
+
+    my $distro_file_name = 'v1.0.tar.gz';
+
+    my $gobgp_download_result = download_file("https://github.com/osrg/gobgp/archive/$distro_file_name",
+        $distro_file_name, 'daafc31b06d95611ca76f45630e5db140ba5d4c9');
+
+    unless ($gobgp_download_result) {
+        die "Can't download gobgp sources\n";
+    }
+
+    exec_command("tar -xf $distro_file_name");
+    chdir "gobgp-1.0";
+    chdir "gobgp/lib";
+
+    my $go_binary = '/usr/local/go/bin/go';
+
+    print "Build gobgp\n";
+    exec_command("GOPATH=\"$temp_folder_for_building_project/gofolder\" $go_binary get github.com/osrg/gobgp/gobgpd");
+    exec_command("GOPATH=\"$temp_folder_for_building_project/gofolder\" $go_binary get github.com/osrg/gobgp/gobgp");
+
+    print "Build gobgp library\n";
+    exec_command("$go_binary build -buildmode=c-shared -o libgobgp.so *.go");
+
+    my $libgobgp_install_path = '/opt/libgobgp_1_0_0';
+   
+    print "Install gobgp library\n"; 
+    mkdir "$libgobgp_install_path";
+    mkdir "$libgobgp_install_path/include";
+    mkdir "$libgobgp_install_path/lib";
+
+    exec_command("cp libgobgp.h $libgobgp_install_path/include");
+    exec_command("cp libgobgp.so $libgobgp_install_path/lib");
+
+    print "Install gobgp daemon files\n";
+    my $gobgp_install_path = '/opt/gobgp_1_0_0';
+    exec_command("cp $temp_folder_for_building_project/gofolder/bin/gobgp $gobgp_install_path");
+    exec_command("cp $temp_folder_for_building_project/gofolder/bin/gobgpd $gobgp_install_path");
 }
 
 sub install_golang {
