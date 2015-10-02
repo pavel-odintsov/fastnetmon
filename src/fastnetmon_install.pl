@@ -871,7 +871,7 @@ sub install_gobgp {
     exec_command("GOPATH=\"$temp_folder_for_building_project/gofolder\" $go_binary get github.com/osrg/gobgp/gobgp");
 
     print "Build gobgp library\n";
-    exec_command("$go_binary build -buildmode=c-shared -o libgobgp.so *.go");
+    exec_command("GOPATH=\"$temp_folder_for_building_project/gofolder\" $go_binary build -buildmode=c-shared -o libgobgp.so *.go");
 
     my $libgobgp_install_path = '/opt/libgobgp_1_0_0';
    
@@ -885,6 +885,8 @@ sub install_gobgp {
 
     print "Install gobgp daemon files\n";
     my $gobgp_install_path = '/opt/gobgp_1_0_0';
+
+    mkdir $gobgp_install_path;
     exec_command("cp $temp_folder_for_building_project/gofolder/bin/gobgp $gobgp_install_path");
     exec_command("cp $temp_folder_for_building_project/gofolder/bin/gobgpd $gobgp_install_path");
 }
