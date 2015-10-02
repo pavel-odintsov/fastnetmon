@@ -73,6 +73,8 @@ my $we_have_hiredis_support = '';
 my $we_have_log4cpp_support = '';
 my $we_have_pfring_support = '';
 my $we_have_mongo_support = '';
+my $we_have_protobuf_support = '';
+my $we_have_grpc_support = '';
 
 if ($we_use_code_from_master) {
     $we_have_ndpi_support = 1;
@@ -209,6 +211,14 @@ sub main {
 
     if ($we_have_mongo_support) {
         install_mongo_client();
+    }
+
+    if ($we_have_protobuf_support) {
+        install_protobuf();
+    }
+
+    if ($we_have_grpc_support) {
+        install_grpc();
     }
 
     if ($we_have_log4cpp_support) {
@@ -790,6 +800,66 @@ sub install_log4cpp {
 
     print "Add log4cpp to ld.so.conf\n";
     put_library_path_to_ld_so("/etc/ld.so.conf.d/log4cpp.conf", "$log4cpp_install_path/lib");
+}
+
+sub install_grpc {
+    # We use this commit because 0.11.1 is broken and do not build on CentOS 6 correctly
+    my $grpc_git_commit = "7a94236d698477636dd06282f12f706cad527029";
+    my $grpc_install_path = "/opt/grpc_0_11_1_$grpc_git_commit"; 
+
+    if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
+        apt_get('gcc', 'make', 'autoconf', 'automake', 'git', 'libtool', 'g++', 'python-all-dev', 'python-virtualenv');
+    }
+
+    # TODO: add deps for CentOS 
+    chdir $temp_folder_for_building_project;
+ 
+    print "Clone gRPC repository\n";
+    exec_command("git clone https://github.com/grpc/grpc.git");
+    chdir "grpc";
+
+    # For back compatibility with old git
+    exec_command("git checkout $grpc_git_commit");
+    exec_command("git submodule update --init");
+
+    print "Build gRPC\n";
+    exec_command("make $make_options");
+
+    print "Install gRPC\n";
+    exec_command("make install prefix=$grpc_install_path"); 
+}
+
+sub install_protobuf {
+    if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
+        apt_get('gcc', 'make', 'autoconf', 'automake', 'git', 'libtool', 'g++', 'curl');
+    }
+
+    # TODO: add deps for CentOS 
+
+    my $protobuf_install_path = '/opt/protobuf_3.0.0_alpha4';
+    my $distro_file_name = 'v3.0.0-alpha-4.tar.gz';
+
+    chdir $temp_folder_for_building_project;
+    print "Download protocol buffers\n";
+
+    my $protobuf_download_result = download_file("https://github.com/google/protobuf/archive/$distro_file_name",
+        $distro_file_name, 'd23048ba3218af21ba65fa39bfb6326f5bf9f7a4'); 
+
+    unless ($protobuf_download_result) {
+        die "Can't download protobuf\n";
+    }
+
+    print "Unpack protocol buffers\n";
+    exec_command("tar -xf $distro_file_name");
+
+    chdir "protobuf-3.0.0-alpha-4";
+    print "Configure protobuf\n";
+
+    exec_command("./autogen.sh");
+    exec_command("./configure --prefix=$protobuf_install_path");
+
+    print "Build protobuf\n";
+    exec_command("make $make_options install");
 }
 
 sub install_mongo_client {
