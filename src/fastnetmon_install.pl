@@ -75,6 +75,7 @@ my $we_have_pfring_support = '';
 my $we_have_mongo_support = '';
 my $we_have_protobuf_support = '';
 my $we_have_grpc_support = '';
+my $we_have_golang_support = '';
 
 if ($we_use_code_from_master) {
     $we_have_ndpi_support = 1;
@@ -219,6 +220,10 @@ sub main {
 
     if ($we_have_grpc_support) {
         install_grpc();
+    }
+
+    if ($we_have_golang_support) {
+        install_golang();
     }
 
     if ($we_have_log4cpp_support) {
@@ -827,6 +832,32 @@ sub install_grpc {
 
     print "Install gRPC\n";
     exec_command("make install prefix=$grpc_install_path"); 
+}
+
+sub install_golang {
+    chdir $temp_folder_for_building_project;
+
+    my $distro_file_name = '';
+    my $distro_file_hash = '';
+
+    if ($distro_architecture eq 'x86_64') {
+        $distro_file_name = "go1.5.1.linux-amd64.tar.gz";
+        $distro_file_hash = '46eecd290d8803887dec718c691cc243f2175fe0';
+    } elsif ($distro_architecture eq 'i686') {
+        $distro_file_name = 'go1.5.1.linux-386.tar.gz';
+        $distro_file_hash = '6ce7328f84a863f341876658538dfdf10aff86ee';
+    } else {
+        die "We haven't golang for your platform sorry :(\n";
+    }
+
+    my $golang_download_result = download_file("https://storage.googleapis.com/golang/$distro_file_name",
+        $distro_file_name, $distro_file_hash); 
+
+    unless ($golang_download_result) {
+        die "Can't download golanguage\n";
+    }
+
+    exec_command("tar -C /usr/local -xzf $distro_file_name");
 }
 
 sub install_protobuf {
