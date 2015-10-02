@@ -86,6 +86,15 @@ if ($we_use_code_from_master) {
     $we_have_mongo_support = 1;
 }
 
+my $enable_gobgp_backend = '';
+
+if ($enable_gobgp_backend) {
+    $we_have_protobuf_support = 1;
+    $we_have_grpc_support = 1;
+    $we_have_golang_support = 1;
+    $we_have_gobgp_support = 1;
+}
+
 main();
 
 sub welcome_message {
