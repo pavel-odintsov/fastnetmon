@@ -143,16 +143,28 @@ if (ENABLE_SNABBSWITCH_SUPPORT)
 endif()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-    # We have issues with AF_PACKET in old kernels and remote it from default build now
-    #message(STATUS "You are running Linux and we can build AF_PACKET support")
-    #set (ENABLE_AFPACKET_SUPPORT ON)
+    execute_process(COMMAND uname -r OUTPUT_VARIABLE LINUX_KERNEL_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
+    
+    # Extract major version number from Linux Kernel Version
+    string(REGEX MATCH "^[0-9]+\\.[0-9]+" KERNEL_VERSION_MATCHES ${LINUX_KERNEL_VERSION})
+    
+    # For tests
+    # set(KERNEL_VERSION_MATCHES "2.6.32")
+
+    # We need 3.7 or more recent kernel here because older kernels are buggy
+    # VERSION_GREATER comparator available from cmake 2.6.2
+    if (${KERNEL_VERSION_MATCHES} VERSION_GREATER "3.7") 
+        message(STATUS "You are running Linux with enough recent kernel and we can build AF_PACKET support")
+        set (ENABLE_AFPACKET_SUPPORT ON)
+    else()
+        message(STATUS "You are running old Linux kernel and we can't build AF_PACKET support")
+    endif()
 endif()
 
 # -DENABLE_AFPACKET_SUPPORT=ON ..
 if (ENABLE_AFPACKET_SUPPORT)
    add_definitions(-DFASTNETMON_ENABLE_AFPACKET) 
-
-    add_library(afpacket_plugin STATIC afpacket_plugin/afpacket_collector.cpp)
+   add_library(afpacket_plugin STATIC afpacket_plugin/afpacket_collector.cpp)
 endif()
 
 # sFLOW plugin
