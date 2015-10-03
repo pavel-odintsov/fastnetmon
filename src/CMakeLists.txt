@@ -5,6 +5,8 @@ cmake_minimum_required (VERSION 2.8)
 # Debian 7 - 2.8.9
 # CentOS 6 - 2.8.12
 
+### set(ENABLE_GOBGP_SUPPORT "yes")
+
 # We should set compiler before project() call 
 if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
     # We use custom compiler too
@@ -24,6 +26,11 @@ project(FastNetMon)
 
 set (FASTNETMON_VERSION_MAJOR 1)
 set (FASTNETMON_VERSION_MINOR 1)
+
+if (ENABLE_GOBGP_SUPPORT)
+    # We could not compile gRPC without C++ 11
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11")
+endif()
 
 # cmake -DENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT=ON .. 
 if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
@@ -45,9 +52,7 @@ if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
     SET(CMAKE_INSTALL_RPATH "/opt/gcc520/lib64;/opt/boost_1_58_0/stage/lib;/opt/libhiredis_0_13/lib;/opt/log4cpp1.1.1/lib;/opt/luajit_2.0.4/lib;/opt/ndpi/lib;/opt/pf_ring_6.0.3/lib;/opt/json-c-0.12/lib;/opt/mongo_c_driver_1_1_9/lib")
 endif()
 
-# It's pretty safe and provide big speedup for our packet processor and patricia code
-set(CMAKE_C_FLAGS_RELEASE "-O2")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+message(STATUS "C++ compilation flags: ${CMAKE_CXX_FLAGS_RELEASE}")
 
 set(HIREDIS_CUSTOM_INSTALL_PATH "/opt/libhiredis_0_13")
 set(LOG4CPP_CUSTOM_INSTALL_PATH "/opt/log4cpp1.1.1")
@@ -224,6 +229,32 @@ if (ENABLE_PFRING_SUPPORT)
     add_library(pfring_hardware_filter_action STATIC actions/pfring_hardware_filter_action.cpp)
 endif()
 
+if (ENABLE_GOBGP_SUPPORT)
+    set(GOBGP_CUSTOM_INSTALL_PATH "/opt/libgobgp_1_0_0")
+
+    find_path(GOBGP_INCLUDES_FOLDER NAMES libgobgp.h PATHS "${GOBGP_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
+    find_library(GOBGP_LIBRARY_PATH NAMES gobgp PATHS "${GOBGP_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+
+    set(GRPC_CUSTOM_INSTALL_PATH "/opt/grpc_0_11_1_7a94236d698477636dd06282f12f706cad527029")
+
+    find_path(GRPC_INCLUDES_FOLDER NAMES grpc/grpc.h PATHS "${GRPC_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
+    find_library(GRPC_LIBRARY_GRPC_PATH NAMES grpc PATHS "${GRPC_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+    find_library(GRPC_LIBRARY_GPR_PATH NAMES gpr PATHS "${GRPC_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+   
+    if (GRPC_INCLUDES_FOLDER AND GRPC_LIBRARY_GRPC_PATH AND GRPC_LIBRARY_GPR_PATH)
+        include_directories(${GRPC_INCLUDES_FOLDER})
+    endif() 
+    message(STATUS "grpc: ${GRPC_INCLUDES_FOLDER} ${GRPC_LIBRARY_GRPC_PATH} ${GRPC_LIBRARY_GPR_PATH}")
+
+    if (GOBGP_INCLUDES_FOLDER AND GOBGP_LIBRARY_PATH)
+        message(STATUS "We found libgobgp and will link it")
+        include_directories(${GOBGP_INCLUDES_FOLDER})
+        add_library(gobgp_action STATIC actions/gobgp_action.cpp)
+    else()
+        message(STATUS "Could not find libgobgp")
+    endif()
+endif()
+
 # example plugin
 add_library(example_plugin STATIC example_plugin/example_collector.cpp)
 
@@ -371,6 +402,10 @@ if (ENABLE_PFRING_SUPPORT)
     target_link_libraries(fastnetmon pfring_plugin)
     # Link hardware filter too
     target_link_libraries(fastnetmon pfring_hardware_filter_action)
+endif()
+
+if (ENABLE_GOBGP_SUPPORT)
+    target_link_libraries(fastnetmon gobgp_action)
 endif()
 
 if (ENABLE_SNABBSWITCH_SUPPORT)
