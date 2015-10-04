@@ -6,6 +6,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - MongoDB ready for production. Documentation: https://github.com/FastVPSEestiOu/fastnetmon/blob/master/docs/MONGODB.md
 
+## [Unreleased][unreleased] - 2015-09-29
+### Fixed 
+- Mbps volumetric attackps was not being blocked
+
 ## [Unreleased][unreleased] - 2015-09-28
 ### Added
 - Multiple instance support. Documentation: https://github.com/FastVPSEestiOu/fastnetmon/blob/master/docs/MULTIPE_INSTANCES.md
