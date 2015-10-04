@@ -1,0 +1,296 @@
+// Copyright (C) 2015 Nippon Telegraph and Telephone Corporation.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+// implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package gobgpapi;
+
+// Interface exported by the server.
+
+service GobgpApi {
+  rpc GetNeighbors(Arguments) returns (stream Peer) {}
+  rpc GetNeighbor(Arguments) returns (Peer) {}
+  rpc GetRib(Arguments) returns (stream Destination) {}
+  rpc Reset(Arguments) returns (Error) {}
+  rpc SoftReset(Arguments) returns (Error) {}
+  rpc SoftResetIn(Arguments) returns (Error) {}
+  rpc SoftResetOut(Arguments) returns (Error) {}
+  rpc Shutdown(Arguments) returns (Error) {}
+  rpc Enable(Arguments) returns (Error) {}
+  rpc Disable(Arguments) returns (Error) {}
+  rpc ModPath(stream ModPathArguments) returns (Error) {}
+  rpc GetNeighborPolicy(Arguments) returns (ApplyPolicy) {}
+  rpc ModNeighborPolicy(stream PolicyArguments) returns (stream Error) {}
+  rpc GetPolicyRoutePolicies(PolicyArguments) returns (stream PolicyDefinition) {}
+  rpc GetPolicyRoutePolicy(PolicyArguments) returns (PolicyDefinition) {}
+  rpc ModPolicyRoutePolicy(stream PolicyArguments) returns (stream Error) {}
+  rpc MonitorBestChanged(Arguments) returns (stream Destination) {}
+  rpc MonitorPeerState(Arguments) returns (stream Peer) {}
+  rpc GetMrt(MrtArguments) returns (stream MrtMessage) {}
+  rpc GetRPKI(Arguments) returns (stream RPKI) {}
+  rpc GetROA(Arguments) returns (stream ROA) {}
+  rpc GetVrfs(Arguments) returns (stream Vrf) {}
+  rpc ModVrf(ModVrfArguments) returns (Error) {}
+}
+
+message Error {
+    enum ErrorCode {
+        SUCCESS = 0;
+        FAIL = 1;
+    }
+    ErrorCode code = 1;
+    string msg = 2;
+}
+
+message Arguments {
+    Resource resource = 1;
+    uint32 rf = 2;
+    string name = 3;
+}
+
+message ModPathArguments {
+    Resource resource = 1;
+    string name = 2;
+    repeated Path paths = 3;
+}
+
+message PolicyArguments {
+    Resource resource = 1;
+    Operation operation = 2;
+    string neighbor_address = 3;
+    string name = 4;
+    PolicyDefinition policy_definition = 6;
+    ApplyPolicy apply_policy = 7;
+}
+
+message MrtArguments {
+    Resource resource = 1;
+    uint32 rf = 2;
+    uint64 interval = 3;
+    string neighbor_address = 4;
+}
+
+message ModVrfArguments {
+    Operation operation = 1;
+    Vrf vrf = 2;
+}
+
+enum Resource {
+    GLOBAL = 0;
+    LOCAL = 1;
+    ADJ_IN = 2;
+    ADJ_OUT = 3;
+    POLICY_PREFIX = 4;
+    POLICY_NEIGHBOR = 5;
+    POLICY_ASPATH = 6;
+    POLICY_COMMUNITY = 7;
+    POLICY_ROUTEPOLICY = 8;
+    POLICY_EXTCOMMUNITY = 9;
+    VRF = 10;
+}
+
+enum Operation {
+    ADD = 0;
+    DEL = 1;
+    DEL_ALL = 2;
+}
+
+message Path {
+    bytes nlri = 1;
+    repeated bytes pattrs = 2;
+    int64 age = 3;
+    bool best = 4;
+    bool is_withdraw = 5;
+    int32 validation = 6;
+    bool no_implicit_withdraw = 7;
+    uint32 rf = 8;
+    uint32 source_asn = 9;
+    string source_id = 10;
+}
+
+message Destination {
+    string prefix = 1;
+    repeated Path paths = 2;
+}
+
+message PeerConf {
+    string remote_ip = 1;
+    string id = 2;
+    uint32 remote_as = 3;
+    repeated bytes remote_cap = 6;
+    repeated bytes local_cap = 7;
+    uint32 holdtime = 8;
+    uint32 keepalive_interval = 9;
+}
+
+message PeerInfo {
+    string bgp_state = 1;
+    string admin_state = 2;
+    uint32 fsm_established_transitions = 3;
+    uint64 total_message_out = 4;
+    uint64 total_message_in = 5;
+    uint64 update_message_out = 6;
+    uint64 update_message_in = 7;
+    uint64 keep_alive_message_out = 8;
+    uint64 keep_alive_message_in = 9;
+    uint64 open_message_out = 10;
+    uint64 open_message_in = 11;
+    uint64 notification_out = 12;
+    uint64 notification_in = 13;
+    uint64 refresh_message_out = 14;
+    uint64 refresh_message_in = 15;
+    uint64 discarded_out = 16;
+    uint64 discarded_in = 17;
+    int64 uptime = 18;
+    int64 downtime = 19;
+    string last_error = 20;
+    uint32 received = 21;
+    uint32 accepted = 22;
+    uint32 advertized = 23;
+    uint32 out_q = 24;
+    uint32 flops = 25;
+    uint32 negotiated_holdtime = 26;
+    uint32 keepalive_interval = 27;
+}
+
+message Peer {
+    PeerConf conf = 1;
+    PeerInfo info = 2;
+}
+
+message Prefix {
+    string ip_prefix  = 1;
+    string mask_length_range = 2;
+}
+
+message PrefixSet {
+    string prefix_set_name = 1;
+    repeated Prefix prefix_list = 2;
+    string match_set_options = 3;
+}
+
+message Neighbor {
+    string address = 1;
+}
+
+message NeighborSet {
+    string neighbor_set_name = 1;
+    repeated Neighbor neighbor_list = 2;
+    string match_set_options = 3;
+}
+
+message AsPathLength {
+    string value = 1;
+    string operator = 2;
+}
+
+message AsPathSet {
+    string as_path_set_name = 1;
+    repeated string as_path_members = 2;
+    string match_set_options = 3;
+}
+
+message CommunitySet {
+    string community_set_name = 1;
+    repeated string community_members = 2;
+    string match_set_options = 3;
+}
+
+message ExtCommunitySet {
+    string ext_community_set_name = 1;
+    repeated string ext_community_members = 2;
+    string match_set_options = 3;
+}
+
+message Conditions {
+    PrefixSet match_prefix_set = 1;
+    NeighborSet match_neighbor_set = 2;
+    AsPathLength match_as_path_length = 3;
+    AsPathSet match_as_path_set = 4;
+    CommunitySet match_community_set = 5;
+    ExtCommunitySet match_ext_community_set = 6;
+}
+
+message CommunityAction {
+    repeated string communities = 1;
+    string options = 2;
+}
+
+message AsPrependAction {
+    string as = 1;
+    uint32 repeatn = 2;
+}
+
+message Actions {
+    string route_action = 1;
+    CommunityAction community = 2;
+    string med = 3;
+    AsPrependAction as_prepend = 4;
+    CommunityAction ext_community = 5;
+}
+
+message Statement {
+    string statement_neme = 1;
+    Conditions conditions = 2;
+    Actions actions = 3;
+}
+
+message PolicyDefinition {
+    string policy_definition_name = 1;
+    repeated Statement statement_list = 2;
+}
+
+message ApplyPolicy {
+    repeated PolicyDefinition import_policies = 1;
+    string default_import_policy = 2;
+    repeated PolicyDefinition export_policies = 3;
+    string default_export_policy = 4;
+    repeated PolicyDefinition in_policies = 5;
+    string default_in_policy = 6;
+}
+
+message MrtMessage {
+    bytes data = 1;
+}
+
+message RPKIConf {
+    string address = 1;
+}
+
+message RPKIState {
+    int64 uptime = 1;
+    int64 downtime = 2;
+    int32 received_ipv4 = 3;
+    int32 received_ipv6 = 4;
+}
+
+message RPKI {
+    RPKIConf conf = 1;
+    RPKIState state = 2;
+}
+
+message ROA {
+    uint32 as = 1;
+    uint32 prefixlen = 2;
+    uint32 maxlen = 3;
+    string prefix = 4;
+}
+
+message Vrf {
+    string name = 1;
+    bytes rd = 2;
+    repeated bytes import_rt = 3;
+    repeated bytes export_rt = 4;
+}

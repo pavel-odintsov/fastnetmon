@@ -243,8 +243,23 @@ if (ENABLE_GOBGP_SUPPORT)
    
     if (GRPC_INCLUDES_FOLDER AND GRPC_LIBRARY_GRPC_PATH AND GRPC_LIBRARY_GPR_PATH)
         include_directories(${GRPC_INCLUDES_FOLDER})
-    endif() 
+    else()
+        message(STATUS "Could not find gRPC library")
+    endif()
+
     message(STATUS "grpc: ${GRPC_INCLUDES_FOLDER} ${GRPC_LIBRARY_GRPC_PATH} ${GRPC_LIBRARY_GPR_PATH}")
+
+    message(STATUS ${PROJECT_BINARY_DIR})
+    set(PROTOC_BINARY "/opt/protobuf_3.0.0_alpha4/bin/protoc")
+    #set(PROTOC_BINARY "protoc")
+    set(GRPC_CPP_PLUGIN "${GRPC_CUSTOM_INSTALL_PATH}/bin/grpc_cpp_plugin")
+
+    set(PROTOC_COMPILATION_COMMAND "${PROTOC_BINARY} -I ${PROJECT_BINARY_DIR}/../actions --grpc_out=${PROJECT_BINARY_DIR}/../actions --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} ${PROJECT_BINARY_DIR}/../actions/gobgp_api_client.proto")
+    message(STATUS ${PROTOC_COMPILATION_COMMAND})
+
+    execute_process(COMMAND "${PROTOC_COMPILATION_COMMAND}" ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+    message(STATUS "Protoc return code: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
 
     if (GOBGP_INCLUDES_FOLDER AND GOBGP_LIBRARY_PATH)
         message(STATUS "We found libgobgp and will link it")
