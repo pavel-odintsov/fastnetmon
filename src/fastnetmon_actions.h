@@ -7,6 +7,8 @@
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
+#include "fast_library.h"
+
 // Get log4cpp logger from main programm
 extern log4cpp::Category& logger;
 

@@ -5,7 +5,7 @@ cmake_minimum_required (VERSION 2.8)
 # Debian 7 - 2.8.9
 # CentOS 6 - 2.8.12
 
-### set(ENABLE_GOBGP_SUPPORT "yes")
+# set(ENABLE_GOBGP_SUPPORT "yes")
 
 # We should set compiler before project() call 
 if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
