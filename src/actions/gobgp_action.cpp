@@ -38,9 +38,9 @@ class GrpcClient {
 
             gobgpapi::Destination current_destination;
 
-             logger << log4cpp::Priority::INFO << "List of announced prefixes for route family: " << route_family << std::endl << std::endl;
+             logger << log4cpp::Priority::INFO << "List of announced prefixes for route family: " << route_family;
             while (destinations_list->Read(&current_destination)) {
-                 logger << log4cpp::Priority::INFO  << "Prefix: " << current_destination.prefix() << std::endl;
+                 logger << log4cpp::Priority::INFO  << "Prefix: " << current_destination.prefix();
     
                 //std::cout << "Paths size: " << current_destination.paths_size() << std::endl;
 
@@ -67,13 +67,13 @@ class GrpcClient {
             
                 gobgp_lib_path.path_attributes = my_path_attributes;
 
-                 logger << log4cpp::Priority::INFO << "NLRI: " << decode_path(&gobgp_lib_path) << std::endl; 
+                 logger << log4cpp::Priority::INFO << "NLRI: " << decode_path(&gobgp_lib_path); 
             }
 
             Status status = destinations_list->Finish();
             if (!status.ok()) {
                 // error_message
-                 logger << log4cpp::Priority::INFO << "Problem with RPC: " << status.error_code() << " message " << status.error_message() << std::endl;
+                 logger << log4cpp::Priority::INFO << "Problem with RPC: " << status.error_code() << " message " << status.error_message();
             } else {
                 // std::cout << "RPC working well" << std::endl;
             }
@@ -141,7 +141,7 @@ class GrpcClient {
                 //std::cout << "modpath executed correctly" << std::cout; 
             } else {
                  logger << log4cpp::Priority::INFO << "modpath failed with code: " << status.error_code()
-                    << " message " << status.error_message() << std::endl;
+                    << " message " << status.error_message();
             }
         }
 
