@@ -44,7 +44,7 @@ Features:
 - Can trigger block script if certain IP loads network with a large amount of packets/bytes/flows per second
 - Thresholds could be configured in per subnet basis with hostgroups feature
 - Could [announce blocked IPs](docs/EXABGP_INTEGRATION.md) to BGP router with [ExaBGP](https://github.com/Exa-Networks/exabgp)
-- GoBGP integration for unicast IPv4 announces
+- GoBGP [integration](docs/GOBGP.md) for unicast IPv4 announces
 - Full integration with [Graphite](docs/GRAPHITE_INTEGRATION.md) and [InfluxDB](docs/INFLUXDB_INTEGRATION.md)
 - Redis integration
 - MongoDB integration
