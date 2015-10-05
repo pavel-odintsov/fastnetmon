@@ -231,43 +231,76 @@ endif()
 
 if (ENABLE_GOBGP_SUPPORT)
     set(GOBGP_CUSTOM_INSTALL_PATH "/opt/libgobgp_1_0_0")
+    set(GRPC_CUSTOM_INSTALL_PATH "/opt/grpc_0_11_1_7a94236d698477636dd06282f12f706cad527029")
+    set(PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH "/opt/protobuf_3.0.0_alpha4")
+
+    add_definitions(-DENABLE_GOBGP)
+    add_library(gobgp_action STATIC actions/gobgp_action.cpp)
 
     find_path(GOBGP_INCLUDES_FOLDER NAMES libgobgp.h PATHS "${GOBGP_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
     find_library(GOBGP_LIBRARY_PATH NAMES gobgp PATHS "${GOBGP_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
 
-    set(GRPC_CUSTOM_INSTALL_PATH "/opt/grpc_0_11_1_7a94236d698477636dd06282f12f706cad527029")
+    if (GOBGP_INCLUDES_FOLDER AND GOBGP_LIBRARY_PATH)
+        message(STATUS "We found libgobgp and will link it: ${GOBGP_INCLUDES_FOLDER} ${GOBGP_LIBRARY_PATH}")
+        target_link_libraries(gobgp_action ${GOBGP_LIBRARY_PATH})
+        include_directories(${GOBGP_INCLUDES_FOLDER})
+    else()
+        message(FATAL_ERROR "Could not find libgobgp")
+    endif()
 
     find_path(GRPC_INCLUDES_FOLDER NAMES grpc/grpc.h PATHS "${GRPC_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
     find_library(GRPC_LIBRARY_GRPC_PATH NAMES grpc PATHS "${GRPC_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
     find_library(GRPC_LIBRARY_GPR_PATH NAMES gpr PATHS "${GRPC_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
-   
-    if (GRPC_INCLUDES_FOLDER AND GRPC_LIBRARY_GRPC_PATH AND GRPC_LIBRARY_GPR_PATH)
+    find_library(GRPC_LIBRARY_GRPC_CPP_UNSECURE_PATH NAMES grpc++_unsecure PATHS "${GRPC_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH) 
+
+    if (GRPC_INCLUDES_FOLDER AND GRPC_LIBRARY_GRPC_PATH AND GRPC_LIBRARY_GPR_PATH AND GRPC_LIBRARY_GRPC_CPP_UNSECURE_PATH)
         include_directories(${GRPC_INCLUDES_FOLDER})
+        target_link_libraries(gobgp_action ${GRPC_LIBRARY_GRPC_PATH})
+        target_link_libraries(gobgp_action ${GRPC_LIBRARY_GPR_PATH})
+        target_link_libraries(gobgp_action ${GRPC_LIBRARY_GRPC_CPP_UNSECURE_PATH})
     else()
-        message(STATUS "Could not find gRPC library")
+        message(FATAL_ERROR "Could not find gRPC library")
     endif()
 
-    message(STATUS "grpc: ${GRPC_INCLUDES_FOLDER} ${GRPC_LIBRARY_GRPC_PATH} ${GRPC_LIBRARY_GPR_PATH}")
+    find_path(PROTOCOL_BUFFERS_INCLUDE_FOLDER NAMES "google/protobuf/stubs/common.h" PATHS "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/include")
 
-    message(STATUS ${PROJECT_BINARY_DIR})
-    set(PROTOC_BINARY "/opt/protobuf_3.0.0_alpha4/bin/protoc")
-    #set(PROTOC_BINARY "protoc")
+    find_library(PROTOCOL_BUFFERS_LIBRARY_PATH NAMES protobuf PATHS "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib") 
+
+    if (PROTOCOL_BUFFERS_INCLUDE_FOLDER AND PROTOCOL_BUFFERS_LIBRARY_PATH)
+        include_directories(${PROTOCOL_BUFFERS_INCLUDE_FOLDER}) 
+        target_link_libraries(gobgp_action ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
+    else()
+        message(FATAL_ERROR "Could not find protocol buffers")
+    endif()
+
+
+    # message(STATUS "grpc: ${GRPC_INCLUDES_FOLDER} ${GRPC_LIBRARY_GRPC_PATH} ${GRPC_LIBRARY_GPR_PATH}")
+    # message(STATUS ${PROJECT_BINARY_DIR})
+
+    find_program(PROTOC_BINARY protoc PATHS "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/bin" NO_DEFAULT_PATH)
+
+    if (PROTOC_BINARY)
+        message(STATUS "Found protoc protobuf compiler: ${PROTOC_BINARY}")
+    else()
+        message(FATAL_ERROR "Can't find protoc compiler")
+    endif()
+
     set(GRPC_CPP_PLUGIN "${GRPC_CUSTOM_INSTALL_PATH}/bin/grpc_cpp_plugin")
 
-    set(PROTOC_COMPILATION_COMMAND "${PROTOC_BINARY} -I ${PROJECT_BINARY_DIR}/../actions --grpc_out=${PROJECT_BINARY_DIR}/../actions --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} ${PROJECT_BINARY_DIR}/../actions/gobgp_api_client.proto")
-    message(STATUS ${PROTOC_COMPILATION_COMMAND})
+    execute_process(COMMAND ${PROTOC_BINARY} -I ${PROJECT_BINARY_DIR}/../actions --grpc_out=${PROJECT_BINARY_DIR}/../actions --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} ${PROJECT_BINARY_DIR}/../actions/gobgp_api_client.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-    execute_process(COMMAND "${PROTOC_COMPILATION_COMMAND}" ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
+    message(STATUS "Protoc return code: ${PROTOC_RETURN_CODE}")
 
-    message(STATUS "Protoc return code: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
+    execute_process(COMMAND ${PROTOC_BINARY} -I  ${PROJECT_BINARY_DIR}/../actions --cpp_out=${PROJECT_BINARY_DIR}/../actions ${PROJECT_BINARY_DIR}/../actions/gobgp_api_client.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-    if (GOBGP_INCLUDES_FOLDER AND GOBGP_LIBRARY_PATH)
-        message(STATUS "We found libgobgp and will link it")
-        include_directories(${GOBGP_INCLUDES_FOLDER})
-        add_library(gobgp_action STATIC actions/gobgp_action.cpp)
-    else()
-        message(STATUS "Could not find libgobgp")
-    endif()
+    message(STATUS "Protoc return code: ${PROTOC_RETURN_CODE} std err")
+
+    # Build gRPC and protocol bufffers libraries and link they to gobgp_action
+    add_library(gobgp_api_client_pb_cc STATIC actions/gobgp_api_client.pb.cc)
+    add_library(gobgp_api_client_grpc_pb_cc STATIC actions/gobgp_api_client.grpc.pb.cc)
+
+    target_link_libraries(gobgp_action gobgp_api_client_pb_cc)
+    target_link_libraries(gobgp_action gobgp_api_client_grpc_pb_cc)
 endif()
 
 # example plugin
