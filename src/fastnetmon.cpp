@@ -58,9 +58,12 @@
 #include "actions/pfring_hardware_filter_action.h"
 #endif
 
+#ifdef ENABLE_GOBGP
+#include "actions/gobgp_action.h"
+#endif
+
 // Yes, maybe it's not an good idea but with this we can guarantee working code in example plugin
 #include "example_plugin/example_collector.h"
-
 
 #include <algorithm>
 #include <iostream>
@@ -160,6 +163,10 @@ u_int32_t ndpi_size_flow_struct = 0;
 u_int32_t ndpi_size_id_struct = 0;
 #endif
 
+#ifdef ENABLE_GOBGP
+bool gobgp_enabled = false;
+#endif
+
 #ifdef MONGO
 std::string mongodb_host = "localhost";
 unsigned int mongodb_port = 27017;
@@ -231,7 +238,7 @@ void init_global_ban_settings() {
 bool enable_conection_tracking = true;
 
 bool enable_snabbswitch_collection = false;
-bool enable_afpacket_collection = true;
+bool enable_afpacket_collection = false;
 bool enable_data_collection_from_mirror = true;
 bool enable_netmap_collection = false;
 bool enable_sflow_collection = false;
@@ -961,6 +968,15 @@ bool load_configuration_file() {
     if (configuration_map.count("monitor_local_ip_addresses") != 0) {
         monitor_local_ip_addresses = configuration_map["monitor_local_ip_addresses"] == "on" ? true : false;
     }
+
+#ifdef ENABLE_GOBGP
+    // GoBGP configuration
+    if (configuration_map.count("gobgp") != 0) {
+        gobgp_enabled = configuration_map["gobgp"] == "on";
+    }
+#endif
+
+    // ExaBGP configuration
 
     if (configuration_map.count("exabgp") != 0) {
         if (configuration_map["exabgp"] == "on") {
@@ -2672,6 +2688,13 @@ int main(int argc, char** argv) {
 #endif
     // Init previous run date
     time(&last_call_of_traffic_recalculation);
+
+    // We call init for each action
+#ifdef ENABLE_GOBGP
+    if (gobgp_enabled) {
+        gobgp_action_init();
+    } 
+#endif
 
 #ifdef IPV6_HASH_COUNTERS
     service_thread_group.add_thread(new boost::thread(ipv6_traffic_processor));
