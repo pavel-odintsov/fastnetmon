@@ -1456,6 +1456,10 @@ sub install_fastnetmon {
         $cmake_params .= " -DBoost_NO_BOOST_CMAKE=BOOL:ON";
     }
 
+    if ($enable_gobgp_backend) {
+        $cmake_params .= " -DENABLE_GOBGP_SUPPORT=ON";
+    }
+
     # We should specify this option if we want to build with custom gcc compiler
     if ($build_binary_environment) {
         $cmake_params .= " -DENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT=ON ";
