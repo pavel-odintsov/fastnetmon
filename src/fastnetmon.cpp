@@ -3121,6 +3121,18 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
         logger << log4cpp::Priority::INFO << "Call to ExaBGP for ban client is finished: " << client_ip_as_string;
     }
 
+#ifdef ENABLE_GOBGP
+    if (gobgp_enabled) {
+        logger << log4cpp::Priority::INFO << "Call GoBGP for ban client started: " << client_ip_as_string;
+
+        boost::thread gobgp_thread(gobgp_ban_manage, "ban", client_ip_as_string, current_attack);
+        gobgp_thread.detach();
+
+        logger << log4cpp::Priority::INFO << "Call to GoBGP for ban client is finished: " << client_ip_as_string;
+    }
+#endif
+    
+
 #ifdef REDIS
     if (redis_enabled) {
         std::string redis_key_name = client_ip_as_string + "_information";
@@ -3321,7 +3333,18 @@ void call_unban_handlers(uint32_t client_ip, attack_details& current_attack) {
         exabgp_thread.detach();
 
         logger << log4cpp::Priority::INFO << "Call to ExaBGP for unban client is finished: " << client_ip_as_string;
-    }   
+    }
+
+#ifdef ENABLE_GOBGP
+    if (gobgp_enabled) {
+        logger << log4cpp::Priority::INFO << "Call GoBGP for unban client started: " << client_ip_as_string;
+
+        boost::thread gobgp_thread(gobgp_ban_manage, "unban", client_ip_as_string, current_attack);
+        gobgp_thread.detach();
+        
+        logger << log4cpp::Priority::INFO << "Call to GoBGP for unban client is finished: " << client_ip_as_string;
+    }
+#endif 
 }
 
 std::string print_ddos_attack_details() {

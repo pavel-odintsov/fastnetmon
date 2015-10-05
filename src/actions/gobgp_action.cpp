@@ -38,9 +38,9 @@ class GrpcClient {
 
             gobgpapi::Destination current_destination;
 
-            std::cout << "List of announced prefixes for route family: " << route_family << std::endl << std::endl;
+             logger << log4cpp::Priority::INFO << "List of announced prefixes for route family: " << route_family << std::endl << std::endl;
             while (destinations_list->Read(&current_destination)) {
-                std::cout << "Prefix: " << current_destination.prefix() << std::endl;
+                 logger << log4cpp::Priority::INFO  << "Prefix: " << current_destination.prefix() << std::endl;
     
                 //std::cout << "Paths size: " << current_destination.paths_size() << std::endl;
 
@@ -67,13 +67,13 @@ class GrpcClient {
             
                 gobgp_lib_path.path_attributes = my_path_attributes;
 
-                std::cout << "NLRI: " << decode_path(&gobgp_lib_path) << std::endl; 
+                 logger << log4cpp::Priority::INFO << "NLRI: " << decode_path(&gobgp_lib_path) << std::endl; 
             }
 
             Status status = destinations_list->Finish();
             if (!status.ok()) {
                 // error_message
-                std::cout << "Problem with RPC: " << status.error_code() << " message " << status.error_message() << std::endl;
+                 logger << log4cpp::Priority::INFO << "Problem with RPC: " << status.error_code() << " message " << status.error_message() << std::endl;
             } else {
                 // std::cout << "RPC working well" << std::endl;
             }
@@ -129,7 +129,7 @@ class GrpcClient {
             bool write_result = send_stream->Write(request);
 
             if (!write_result) {
-                std::cout << "Write to API failed\n";
+                 logger << log4cpp::Priority::INFO << "Write to API failed\n";
             }
 
             // Finish all writes
@@ -140,12 +140,12 @@ class GrpcClient {
             if (status.ok()) {
                 //std::cout << "modpath executed correctly" << std::cout; 
             } else {
-                std::cout << "modpath failed with code: " << status.error_code()
+                 logger << log4cpp::Priority::INFO << "modpath failed with code: " << status.error_code()
                     << " message " << status.error_message() << std::endl;
             }
         }
 
-        void AnnounceUnicastPrefix(std::string announced_prefix, std::string announced_prefix_nexthop) {
+        void AnnounceUnicastPrefix(std::string announced_prefix, std::string announced_prefix_nexthop, bool is_withdrawal) {
             const gobgpapi::ModPathArguments current_mod_path_arguments;
 
             unsigned int AFI_IP = 1;
@@ -153,8 +153,10 @@ class GrpcClient {
             unsigned int ipv4_unicast_route_family = AFI_IP<<16 | SAFI_UNICAST;
 
             gobgpapi::Path* current_path = new gobgpapi::Path;
-            // If you want withdraw, please use it 
-            // current_path->set_is_withdraw(true);
+
+            if (is_withdrawal) {
+                current_path->set_is_withdraw(true);
+            }
 
             /*
             buf:
@@ -172,8 +174,8 @@ class GrpcClient {
             path* path_c_struct = serialize_path(ipv4_unicast_route_family, (char*)announce_line.c_str());
 
             if (path_c_struct == NULL) {
-                std::cerr << "Could not generate path\n";
-                exit(-1);
+                logger << log4cpp::Priority::ERROR << "Could not generate path\n";
+                return;
             }
 
             // printf("Decoded NLRI output: %s, length %d raw string length: %d\n", decode_path(path_c_struct), path_c_struct->nlri.len, strlen(path_c_struct->nlri.value));
@@ -201,7 +203,8 @@ class GrpcClient {
             bool write_result = send_stream->Write(request);
 
             if (!write_result) {
-                std::cout << "Write to API failed\n";
+                logger << log4cpp::Priority::ERROR << "Write to API failed\n";
+                return;
             }
 
             // Finish all writes
@@ -212,8 +215,10 @@ class GrpcClient {
             if (status.ok()) {
                 //std::cout << "modpath executed correctly" << std::cout; 
             } else {
-                std::cout << "modpath failed with code: " << status.error_code()
-                    << " message " << status.error_message() << std::endl;
+                logger << log4cpp::Priority::ERROR << "modpath failed with code: " << status.error_code()
+                    << " message " << status.error_message();
+
+                return;
             }
         }
 
@@ -250,10 +255,25 @@ class GrpcClient {
 };
 
 GrpcClient* gobgp_client = NULL;
+std::string gobgp_nexthop = "0.0.0.0";
+bool gobgp_announce_whole_subnet = false;
+bool gobgp_announce_host = false;
 
 void gobgp_action_init() {
     logger << log4cpp::Priority::INFO << "GoBGP action module loaded"; 
     gobgp_client = new GrpcClient(grpc::CreateChannel("localhost:8080", grpc::InsecureCredentials()));
+
+    if (configuration_map.count("gobgp_next_hop")) {
+        gobgp_nexthop = configuration_map["gobgp_next_hop"];
+    }
+
+    if (configuration_map.count("gobgp_announce_host")) {
+        gobgp_announce_host = configuration_map["gobgp_announce_host"] == "on";
+    }
+
+    if (configuration_map.count("gobgp_announce_whole_subnet")) {
+        gobgp_announce_whole_subnet = configuration_map["gobgp_announce_whole_subnet"] == "on";
+    }
 }
 
 void gobgp_action_shutdown() {
@@ -261,7 +281,23 @@ void gobgp_action_shutdown() {
 }
 
 void gobgp_ban_manage(std::string action, std::string ip_as_string, attack_details current_attack) {
-    gobgp_client->AnnounceUnicastPrefix("10.10.20.33/32", "10.10.1.99"); 
-    // std::string subnet_as_string_with_mask = convert_subnet_to_string(current_attack.customer_network);
-    // std::string ip_as_string_with_mask = ip_as_string + "/32";
+    bool is_withdrawal = false;
+
+    if (action == "ban") {
+        is_withdrawal = false;
+    } else {
+        is_withdrawal = true;
+    }
+
+    if (gobgp_announce_whole_subnet) {
+        std::string subnet_as_string_with_mask = convert_subnet_to_string(current_attack.customer_network);
+
+        gobgp_client->AnnounceUnicastPrefix(subnet_as_string_with_mask, gobgp_nexthop, is_withdrawal);
+    }
+
+    if (gobgp_announce_host) {
+        std::string ip_as_string_with_mask = ip_as_string + "/32";
+
+        gobgp_client->AnnounceUnicastPrefix(ip_as_string_with_mask, gobgp_nexthop, is_withdrawal);
+    }
 }
