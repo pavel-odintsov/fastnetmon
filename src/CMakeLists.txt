@@ -29,6 +29,7 @@ set (FASTNETMON_VERSION_MINOR 1)
 
 if (ENABLE_GOBGP_SUPPORT)
     # We could not compile gRPC without C++ 11
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11")
 endif()
 
@@ -39,6 +40,7 @@ if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
 
     # It's really nice part of this custom build process :)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11")
 
     # Disable warning from Boost when compiling with gcc 5.2
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
