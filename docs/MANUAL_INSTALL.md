@@ -88,3 +88,9 @@ screen -S fastnetmon -d -m /root/fastnetmon/fastnetmon
 ```
 
 When incoming or outgoing attack arrives programm call bash script (when it exists): /usr/local/bin/notify_about_attack.sh two times. First time when threshold exceed (at this step we know IP, direction and power of attack). Second when we collect 100 packets for detailed audit what did happens.
+
+
+==Command Line Reference 
+* --version gives FNM version
+* --daemonize start in daemon mode
+* --configuration_file CONFIG_FILE specify alternative config file to read
