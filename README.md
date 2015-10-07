@@ -9,7 +9,12 @@ To enable netflow simply specify IP of server with installed FastNetMon and spec
 
 Why did we write this? Because we can't find any software for solving this problem in the open source world! 
 
+What is "flow" in FastNetMon terms? It's one or multiple udp, tcp, icmp connections with unique src IP, dst IP, src port, dst port and protocol.
+
 License: GPLv2
+
+[![Build Status](https://travis-ci.org/FastVPSEestiOu/fastnetmon.svg?branch=master)](https://travis-ci.org/FastVPSEestiOu/fastnetmon) [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/FastVPSEestiOu/fastnetmon?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) [![Stories in Progress](https://badge.waffle.io/FastVPSEestiOu/fastnetmon.svg?label=ready&title=Progress)](http://waffle.io/FastVPSEestiOu/fastnetmon)
+
 
 
 Project 
@@ -78,10 +83,6 @@ Running Fastnetmon
 - [Automatic install script for Mac OS X](docs/MAC_OS_INSTALL.md)
 - [Manual install on Slackware](docs/SLACKWARE_INSTALL.md)
 - [Manual install for VyOS](docs/VyOS_INSTALL.md)
-
-[![Build Status](https://travis-ci.org/FastVPSEestiOu/fastnetmon.svg?branch=master)](https://travis-ci.org/FastVPSEestiOu/fastnetmon) [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/FastVPSEestiOu/fastnetmon?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) [![Stories in Progress](https://badge.waffle.io/FastVPSEestiOu/fastnetmon.svg?label=ready&title=Progress)](http://waffle.io/FastVPSEestiOu/fastnetmon)
-What is "flow" in FastNetMon terms? It's one or multiple udp, tcp, icmp connections with unique src IP, dst IP, src port, dst port and protocol.
-
 
 Screenshoots
 ------------
