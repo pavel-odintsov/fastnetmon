@@ -1,6 +1,6 @@
 For Debian 6, 7, 8 and CentOS 6, 7 and Fedora and Gentoo you should use the automatic installer:
 ```bash
-wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl 
+wget https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl 
 sudo perl fastnetmon_install.pl
 ```
 
@@ -52,6 +52,6 @@ Guide for manual install (for unsupported platforms): [link](MANUAL_INSTALL.md)
 
 If you want unstable development branch, please use this syntax:
 ```bash
-wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl 
+wget https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl 
 sudo perl fastnetmon_install.pl --use-git-master
 ```
