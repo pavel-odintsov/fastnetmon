@@ -2,6 +2,8 @@
 #include "../fastnetmon_actions.h"
 #include "../fastnetmon_types.h"
 
+#include <dlfcn.h>
+
 extern "C" {
     // Gobgp library
     #include "libgobgp.h"
@@ -21,6 +23,13 @@ using grpc::Status;
 
 using gobgpapi::GobgpApi;
 
+// Create function pointers
+typedef path* (*serialize_path_dynamic_t)(int p0, char* p1);
+typedef char* (*decode_path_dynamic_t)(path* p0);
+
+serialize_path_dynamic_t serialize_path_dynamic = NULL;
+decode_path_dynamic_t decode_path_dynamic = NULL;
+
 class GrpcClient {
     public:
         GrpcClient(std::shared_ptr<Channel> channel) : stub_(GobgpApi::NewStub(channel)) {}
@@ -38,7 +47,7 @@ class GrpcClient {
 
             gobgpapi::Destination current_destination;
 
-             logger << log4cpp::Priority::INFO << "List of announced prefixes for route family: " << route_family;
+            logger << log4cpp::Priority::INFO << "List of announced prefixes for route family: " << route_family;
             while (destinations_list->Read(&current_destination)) {
                  logger << log4cpp::Priority::INFO  << "Prefix: " << current_destination.prefix();
     
@@ -67,7 +76,7 @@ class GrpcClient {
             
                 gobgp_lib_path.path_attributes = my_path_attributes;
 
-                 logger << log4cpp::Priority::INFO << "NLRI: " << decode_path(&gobgp_lib_path); 
+                 logger << log4cpp::Priority::INFO << "NLRI: " << decode_path_dynamic(&gobgp_lib_path); 
             }
 
             Status status = destinations_list->Finish();
@@ -101,9 +110,9 @@ class GrpcClient {
                 int   path_attributes_cap;
             */
 
-            path* path_c_struct = serialize_path(ipv4_flow_spec_route_family, (char*)"match destination 10.0.0.0/24 protocol tcp source 20.0.0.0/24 then redirect 10:10");
+            path* path_c_struct = serialize_path_dynamic(ipv4_flow_spec_route_family, (char*)"match destination 10.0.0.0/24 protocol tcp source 20.0.0.0/24 then redirect 10:10");
 
-            // printf("Decoded NLRI output: %s, length %d raw string length: %d\n", decode_path(path_c_struct), path_c_struct->nlri.len, strlen(path_c_struct->nlri.value));
+            // printf("Decoded NLRI output: %s, length %d raw string length: %d\n", decode_path_dynamic(path_c_struct), path_c_struct->nlri.len, strlen(path_c_struct->nlri.value));
 
             for (int path_attribute_number = 0; path_attribute_number < path_c_struct->path_attributes_len; path_attribute_number++) {
                 current_path->add_pattrs(path_c_struct->path_attributes[path_attribute_number]->value, 
@@ -171,14 +180,14 @@ class GrpcClient {
            
             std::string announce_line = announced_prefix + " nexthop " + announced_prefix_nexthop;
 
-            path* path_c_struct = serialize_path(ipv4_unicast_route_family, (char*)announce_line.c_str());
+            path* path_c_struct = serialize_path_dynamic(ipv4_unicast_route_family, (char*)announce_line.c_str());
 
             if (path_c_struct == NULL) {
                 logger << log4cpp::Priority::ERROR << "Could not generate path\n";
                 return;
             }
 
-            // printf("Decoded NLRI output: %s, length %d raw string length: %d\n", decode_path(path_c_struct), path_c_struct->nlri.len, strlen(path_c_struct->nlri.value));
+            // printf("Decoded NLRI output: %s, length %d raw string length: %d\n", decode_path_dynamic(path_c_struct), path_c_struct->nlri.len, strlen(path_c_struct->nlri.value));
 
             for (int path_attribute_number = 0; path_attribute_number < path_c_struct->path_attributes_len; path_attribute_number++) {
                 current_path->add_pattrs(path_c_struct->path_attributes[path_attribute_number]->value, 
@@ -273,6 +282,38 @@ void gobgp_action_init() {
 
     if (configuration_map.count("gobgp_announce_whole_subnet")) {
         gobgp_announce_whole_subnet = configuration_map["gobgp_announce_whole_subnet"] == "on";
+    }
+
+    // According to this bug report: https://github.com/golang/go/issues/12873 
+    // We have significant issues with popen, daemonization and Go's runtime
+
+    // We use non absoulte path here and linker will find it fir us
+    void* gobgdp_library_handle = dlopen("libgobgp.so", RTLD_NOW);
+
+    if (gobgdp_library_handle == NULL) {
+        logger << log4cpp::Priority::ERROR << "Could not load gobgp binary library";
+        exit(1);
+    } 
+
+    dlerror();    /* Clear any existing error */
+
+    /* According to the ISO C standard, casting between function
+        pointers and 'void *', as done above, produces undefined results.
+        POSIX.1-2003 and POSIX.1-2008 accepted this state of affairs and
+        proposed the following workaround:
+    */
+
+    serialize_path_dynamic = (serialize_path_dynamic_t)dlsym(gobgdp_library_handle, "serialize_path");
+    if (serialize_path_dynamic == NULL) {
+        logger << log4cpp::Priority::ERROR << "Could not load function serialize_path from the dynamic library";
+        exit(1);
+    }
+
+    decode_path_dynamic = (decode_path_dynamic_t)dlsym(gobgdp_library_handle, "decode_path");
+
+    if (decode_path_dynamic == NULL) {
+        logger << log4cpp::Priority::ERROR << "Could not load function decode_path from the dynamic library";
+        exit(1);
     }
 }
 
