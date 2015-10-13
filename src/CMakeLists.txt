@@ -310,6 +310,31 @@ if (ENABLE_GOBGP_SUPPORT)
 
     target_link_libraries(gobgp_action gobgp_api_client_pb_cc)
     target_link_libraries(gobgp_action gobgp_api_client_grpc_pb_cc)
+
+    # FastNetMon API
+    execute_process(COMMAND ${PROTOC_BINARY} -I ${PROJECT_BINARY_DIR}/.. --grpc_out=${PROJECT_BINARY_DIR}/.. --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} ${PROJECT_BINARY_DIR}/../fastnetmon.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+    execute_process(COMMAND ${PROTOC_BINARY} -I  ${PROJECT_BINARY_DIR}/.. --cpp_out=${PROJECT_BINARY_DIR}/.. ${PROJECT_BINARY_DIR}/../fastnetmon.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE) 
+
+    add_library(fastnetmon_grpc_pb_cc STATIC fastnetmon.grpc.pb.cc)
+    add_library(fastnetmon_pb_cc STATIC fastnetmon.pb.cc)
+
+    add_executable(api_server api_server.cpp)
+    add_executable(api_client api_client.cpp)
+
+    target_link_libraries(api_client ${GRPC_LIBRARY_GPR_PATH})
+    target_link_libraries(api_client ${GRPC_LIBRARY_GRPC_CPP_UNSECURE_PATH})
+    target_link_libraries(api_client ${GRPC_LIBRARY_GRPC_PATH})
+    target_link_libraries(api_client fastnetmon_grpc_pb_cc)
+    target_link_libraries(api_client fastnetmon_pb_cc)
+    target_link_libraries(api_client ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
+
+    target_link_libraries(api_server ${GRPC_LIBRARY_GPR_PATH})
+    target_link_libraries(api_server ${GRPC_LIBRARY_GRPC_CPP_UNSECURE_PATH})
+    target_link_libraries(api_server ${GRPC_LIBRARY_GRPC_PATH})
+    target_link_libraries(api_server fastnetmon_grpc_pb_cc)
+    target_link_libraries(api_server fastnetmon_pb_cc)
+    target_link_libraries(api_server ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
 endif()
 
 # example plugin
