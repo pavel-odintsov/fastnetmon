@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package fastmitigation;
+
+service Fastnetmon {
+    rpc GetBanlist (BanListRequest) returns (BanListReply) {}
+}
+
+message BanListRequest {
+    string name = 1;
+}
+
+message BanListReply {
+    string message = 1;
+}
