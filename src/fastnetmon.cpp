@@ -36,6 +36,11 @@
 #include "fast_dpi.h"
 #endif
 
+#ifdef FASTNETMON_API
+#include <grpc++/grpc++.h>
+#include "fastnetmon.grpc.pb.h"
+#endif
+
 // Plugins
 #include "sflow_plugin/sflow_collector.h"
 #include "netflow_plugin/netflow_collector.h"
@@ -113,6 +118,18 @@
 
 #ifdef IPV6_HASH_COUNTERS
 #include "concurrentqueue.h"
+#endif
+
+#ifdef FASTNETMON_API
+using grpc::Server;
+using grpc::ServerBuilder;
+using grpc::ServerContext;
+using grpc::Status;
+using fastmitigation::BanListRequest;
+using fastmitigation::BanListReply;
+using fastmitigation::Fastnetmon;
+
+bool enable_api = false;
 #endif
 
 time_t last_call_of_traffic_recalculation;
@@ -446,6 +463,61 @@ std::string print_channel_speed(std::string traffic_type, direction packet_direc
 void process_packet(simple_packet& current_packet);
 void traffic_draw_programm();
 void interruption_signal_handler(int signal_number);
+
+#ifdef FASTNETMON_API
+void silent_logging_function(gpr_log_func_args *args) {
+    // We do not want any logging here
+}
+
+// Logic and data behind the server's behavior.
+class GreeterServiceImpl final : public Fastnetmon::Service {
+    Status GetBanlist(::grpc::ServerContext* context, const ::fastmitigation::BanListRequest* request, ::grpc::ServerWriter< ::fastmitigation::BanListReply>* writer) override {
+        logger << log4cpp::Priority::INFO << "Incoming request";
+
+        BanListReply reply;
+        reply.set_ip_address("192.168.1.2/32");
+        writer->Write(reply);
+       
+        reply.set_ip_address("192.168.1.3/32");
+        writer->Write(reply); 
+
+        //reply->set_message(prefix + request->name());
+        return Status::OK;
+    }
+
+    Status ExecuteBan(ServerContext* context, const fastmitigation::ExecuteBanRequest* request, fastmitigation::ExecuteBanReply* reply) override {
+        logger << log4cpp::Priority::INFO << "We asked for ban for IP: " << request->ip_address();
+
+        return Status::OK;
+    }
+
+    Status ExecuteUnBan(ServerContext* context, const fastmitigation::ExecuteBanRequest* request, fastmitigation::ExecuteBanReply* reply) override {
+        logger << log4cpp::Priority::INFO << "We asked for unban for IP: " << request->ip_address();
+
+        return Status::OK;
+    }
+};
+
+void RunApiServer() {
+    std::string server_address("0.0.0.0:50051");
+    GreeterServiceImpl service;
+
+    ServerBuilder builder;
+    // Listen on the given address without any authentication mechanism.
+    builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
+    // Register "service" as the instance through which we'll communicate with
+    // clients. In this case it corresponds to an *synchronous* service.
+    builder.RegisterService(&service);
+    // Finally assemble the server.
+    std::unique_ptr<Server> server(builder.BuildAndStart());
+    logger << log4cpp::Priority::INFO << "API server listening on " << server_address;
+
+    // Wait for the server to shutdown. Note that some other thread must be
+    // responsible for shutting down the server for this call to ever return.
+    server->Wait();
+}
+#endif
+
 
 /* Class for custom comparison fields by different fields */
 template <typename T>
@@ -968,6 +1040,12 @@ bool load_configuration_file() {
     if (configuration_map.count("monitor_local_ip_addresses") != 0) {
         monitor_local_ip_addresses = configuration_map["monitor_local_ip_addresses"] == "on" ? true : false;
     }
+
+#ifdef FASTNETMON_API
+    if (configuration_map.count("enable_api") != 0) {
+        enable_api = configuration_map["enable_api"] == "on";
+    }
+#endif
 
 #ifdef ENABLE_GOBGP
     // GoBGP configuration
@@ -2569,6 +2647,10 @@ int main(int argc, char** argv) {
 
     init_logging();
 
+#ifdef FASTNETMON_API
+    gpr_set_log_function(silent_logging_function);
+#endif
+
     // Set default ban configuration
     init_global_ban_settings();
 
@@ -2698,6 +2780,12 @@ int main(int argc, char** argv) {
 
 #ifdef IPV6_HASH_COUNTERS
     service_thread_group.add_thread(new boost::thread(ipv6_traffic_processor));
+#endif
+
+#ifdef FASTNETMON_API
+    if (enable_api) {
+        service_thread_group.add_thread(new boost::thread(RunApiServer));
+    }
 #endif
 
     // Run screen draw thread

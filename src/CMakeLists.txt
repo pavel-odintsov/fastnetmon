@@ -27,6 +27,10 @@ project(FastNetMon)
 set (FASTNETMON_VERSION_MAJOR 1)
 set (FASTNETMON_VERSION_MINOR 1)
 
+# Main tool
+add_executable(fastnetmon fastnetmon.cpp)
+
+
 if (ENABLE_GOBGP_SUPPORT)
     # We could not compile gRPC without C++ 11
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11")
@@ -98,21 +102,16 @@ if (NOT DISABLE_PF_RING_SUPPORT)
 endif()
 
 if (ENABLE_PFRING_SUPPORT)
-    # work around for broken 6.0.3 (which in reality very old 6.0.3) from ntop packages
-    #if (WE_USE_PFRING_FROM_NTOP)
-    #    add_definitions(-DWE_USE_PFRING_FROM_NTOP) 
-    #endif()
+    # Set path to manually compiled PF_RING
+    set(PFRING_INCLUDE_DIRS "${PFRING_CUSTOM_INSTALL_PATH}/include")
 
-    if (WE_USE_PFRING_FROM_NTOP)
-        # Because ntop will add libs and headers to global paths
-        set(PFRING_LIBRARIES pfring) 
-    else() 
-        # Set path to manually compiled PF_RING
-        set(PFRING_INCLUDE_DIRS "${PFRING_CUSTOM_INSTALL_PATH}/include")
-        set(PFRING_LIBRARIES pfring)
-        link_directories("${PFRING_CUSTOM_INSTALL_PATH}/lib")
+    find_library(PFRING_LIBRARIES NAMES pfring PATHS "${PFRING_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+
+    if (NOT PFRING_LIBRARIES)
+        message(FATAL_ERROR "Could not find PF_RING")
     endif()
-
+    
+    link_directories("${PFRING_CUSTOM_INSTALL_PATH}/lib")
     add_definitions(-DPF_RING)
 
     if (EXISTS "${PFRING_CUSTOM_INSTALL_PATH}/include/pfring_zc.h" OR EXISTS "/usr/local/include/pfring_zc.h")
@@ -191,7 +190,12 @@ if (ENABLE_DPI_SUPPORT)
     add_library(fast_dpi STATIC fast_dpi.cpp)
 
     set(NDPI_INCLUDE_DIRS "/opt/ndpi/include/libndpi-1.7.0")
-    set(NDPI_LIBRARIES "ndpi")
+
+    find_library(NDPI_LIBRARIES NAMES ndpi PATHS "/opt/ndpi/lib" NO_DEFAULT_PATH)
+
+    if (NOT NDPI_LIBRARIES)
+        message(FATAL_ERROR "Could not find nDPI library")
+    endif()
 
     link_directories("/opt/ndpi/lib")
     include_directories(${NDPI_INCLUDE_DIRS})
@@ -210,12 +214,20 @@ if (ENABLE_LUA_SUPPORT)
 
     add_definitions(-DENABLE_LUA_HOOKS)
 
-    link_directories("/opt/luajit_2.0.4/lib")
-    include_directories("/opt/luajit_2.0.4/include")
- 
-    target_link_libraries(netflow_plugin luajit-5.1)
-    target_link_libraries(sflow_plugin luajit-5.1)
-    target_link_libraries(fast_library luajit-5.1)
+    set(LUAJIT_CUSTOM_INSTALL_PATH "/opt/luajit_2.0.4")
+
+    link_directories("${LUAJIT_CUSTOM_INSTALL_PATH}/lib")
+    include_directories("${LUAJIT_CUSTOM_INSTALL_PATH}/include")
+
+    find_library(LUAJIT_LIBRARY_PATH NAMES luajit-5.1 PATHS "${LUAJIT_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+
+    if (NOT LUAJIT_LIBRARY_PATH) 
+        message(FATAL_ERROR "Could not find luajit library")
+    endif()
+
+    target_link_libraries(netflow_plugin ${LUAJIT_LIBRARY_PATH})
+    target_link_libraries(sflow_plugin ${LUAJIT_LIBRARY_PATH})
+    target_link_libraries(fast_library ${LUAJIT_LIBRARY_PATH})
 endif()
 
 # pcap plugin
@@ -312,6 +324,8 @@ if (ENABLE_GOBGP_SUPPORT)
     target_link_libraries(gobgp_action gobgp_api_client_grpc_pb_cc)
 
     # FastNetMon API
+    add_definitions(-DFASTNETMON_API)    
+
     execute_process(COMMAND ${PROTOC_BINARY} -I ${PROJECT_BINARY_DIR}/.. --grpc_out=${PROJECT_BINARY_DIR}/.. --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} ${PROJECT_BINARY_DIR}/../fastnetmon.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     message(STATUS "Protoc return code: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
@@ -323,7 +337,6 @@ if (ENABLE_GOBGP_SUPPORT)
     add_library(fastnetmon_grpc_pb_cc STATIC fastnetmon.grpc.pb.cc)
     add_library(fastnetmon_pb_cc STATIC fastnetmon.pb.cc)
 
-    add_executable(api_server api_server.cpp)
     add_executable(fastnetmon_api_client fastnetmon_api_client.cpp)
 
     target_link_libraries(fastnetmon_api_client ${GRPC_LIBRARY_GPR_PATH})
@@ -333,12 +346,12 @@ if (ENABLE_GOBGP_SUPPORT)
     target_link_libraries(fastnetmon_api_client fastnetmon_pb_cc)
     target_link_libraries(fastnetmon_api_client ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
 
-    target_link_libraries(api_server ${GRPC_LIBRARY_GPR_PATH})
-    target_link_libraries(api_server ${GRPC_LIBRARY_GRPC_CPP_UNSECURE_PATH})
-    target_link_libraries(api_server ${GRPC_LIBRARY_GRPC_PATH})
-    target_link_libraries(api_server fastnetmon_grpc_pb_cc)
-    target_link_libraries(api_server fastnetmon_pb_cc)
-    target_link_libraries(api_server ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
+    target_link_libraries(fastnetmon ${GRPC_LIBRARY_GPR_PATH})
+    target_link_libraries(fastnetmon ${GRPC_LIBRARY_GRPC_CPP_UNSECURE_PATH})
+    target_link_libraries(fastnetmon ${GRPC_LIBRARY_GRPC_PATH})
+    target_link_libraries(fastnetmon fastnetmon_grpc_pb_cc)
+    target_link_libraries(fastnetmon fastnetmon_pb_cc)
+    target_link_libraries(fastnetmon ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
 endif()
 
 # example plugin
@@ -349,9 +362,6 @@ set(NETMAP_INCLUDE_DIRS "netmap_plugin/netmap_includes")
 include_directories(${NETMAP_INCLUDE_DIRS})
 add_library(netmap_plugin STATIC netmap_plugin/netmap_collector.cpp)
 target_link_libraries(netmap_plugin fastnetmon_packet_parser)
-
-# Main tool
-add_executable(fastnetmon fastnetmon.cpp)
 
 # Client tool
 add_executable(fastnetmon_client fastnetmon_client.cpp)
@@ -471,8 +481,8 @@ target_link_libraries(fastnetmon ${LOG4CPP_LIBRARY_PATH})
 target_link_libraries(fastnetmon ${CMAKE_THREAD_LIBS_INIT})
 
 if (ENABLE_LUA_SUPPORT)
-    target_link_libraries(fast_library luajit-5.1) 
-    target_link_libraries(fastnetmon luajit-5.1)
+    target_link_libraries(fast_library ${LUAJIT_LIBRARY_PATH}) 
+    target_link_libraries(fastnetmon ${LUAJIT_LIBRARY_PATH})
 endif()
 
 # Our libs
