@@ -16,10 +16,17 @@ using fastmitigation::Fastnetmon;
 
 // Logic and data behind the server's behavior.
 class GreeterServiceImpl final : public Fastnetmon::Service {
-    Status GetBanlist(ServerContext* context, const BanListRequest* request, BanListReply* reply) override {
+    Status GetBanlist(::grpc::ServerContext* context, const ::fastmitigation::BanListRequest* request, ::grpc::ServerWriter< ::fastmitigation::BanListReply>* writer) override {
         std::cout << "Incoming request" << std::endl;
-        std::string prefix("Hello ");
-        reply->set_message(prefix + request->name());
+
+        BanListReply reply;
+        reply.set_ip_address("192.168.1.2/32");
+        writer->Write(reply);
+       
+        reply.set_ip_address("192.168.1.3/32");
+        writer->Write(reply); 
+
+        //reply->set_message(prefix + request->name());
         return Status::OK;
     }
 };
