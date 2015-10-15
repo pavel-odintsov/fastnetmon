@@ -324,7 +324,7 @@ if (ENABLE_GOBGP_SUPPORT)
     add_library(fastnetmon_pb_cc STATIC fastnetmon.pb.cc)
 
     add_executable(api_server api_server.cpp)
-    add_executable(fastnetmon_api_client api_client.cpp)
+    add_executable(fastnetmon_api_client fastnetmon_api_client.cpp)
 
     target_link_libraries(fastnetmon_api_client ${GRPC_LIBRARY_GPR_PATH})
     target_link_libraries(fastnetmon_api_client ${GRPC_LIBRARY_GRPC_CPP_UNSECURE_PATH})
