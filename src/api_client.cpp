@@ -19,6 +19,28 @@ class GreeterClient {
     public:
         GreeterClient(std::shared_ptr<Channel> channel) : stub_(Fastnetmon::NewStub(channel)) {}
 
+        void ExecuteBan(std::string host) {
+            ClientContext context;
+            fastmitigation::ExecuteBanRequest request;
+            fastmitigation::ExecuteBanReply reply;
+
+            request.set_ip_address(host);
+
+            Status status = stub_->ExecuteBan(&context, request, &reply);
+
+            if (status.ok()) {
+                
+            } else {
+                if (status.error_code() == grpc::DEADLINE_EXCEEDED) {
+                    std::cerr << "Could not connect to API server. Timeout exceed" << std::endl;
+                    return;
+                } else {
+                    std::cerr << "RPC failed " + status.error_message();
+                    return;       
+                }
+            }
+        }
+
         void GetBanList() {
             // This request haven't any useful data
             BanListRequest request;
@@ -83,6 +105,14 @@ int main(int argc, char** argv) {
 
     if (request_command == "get_banlist") {
         greeter.GetBanList();
+    } else if (request_command == "ban") {
+        if (argc < 2) {
+            std::cerr << "Please provide banned IP" << std::endl;
+            return(1);
+        }
+
+        std::string ip_for_ban = argv[2];
+        greeter.ExecuteBan(ip_for_ban); 
     } else {
         std::cerr << "Unknown command" << std::endl;
     }
