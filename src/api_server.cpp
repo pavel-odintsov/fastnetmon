@@ -17,6 +17,7 @@ using fastmitigation::Fastnetmon;
 // Logic and data behind the server's behavior.
 class GreeterServiceImpl final : public Fastnetmon::Service {
     Status GetBanlist(ServerContext* context, const BanListRequest* request, BanListReply* reply) override {
+        std::cout << "Incoming request" << std::endl;
         std::string prefix("Hello ");
         reply->set_message(prefix + request->name());
         return Status::OK;
@@ -42,7 +43,13 @@ void RunServer() {
     server->Wait();
 }
 
+void silent_logging_function(gpr_log_func_args *args) {
+    // We do not want any logging here
+}
+
 int main(int argc, char** argv) {
+    gpr_set_log_function(silent_logging_function);
+
     RunServer();
 
     return 0;
