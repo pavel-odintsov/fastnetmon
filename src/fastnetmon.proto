@@ -5,6 +5,7 @@ package fastmitigation;
 service Fastnetmon {
     rpc GetBanlist(BanListRequest) returns (stream BanListReply) {}
     rpc ExecuteBan(ExecuteBanRequest) returns (ExecuteBanReply) {}
+    rpc ExecuteUnBan(ExecuteBanRequest) returns (ExecuteBanReply) {}
 }
 
 // We could not create RPC method without params
