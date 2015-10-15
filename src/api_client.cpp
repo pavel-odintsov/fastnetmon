@@ -19,15 +19,21 @@ class GreeterClient {
     public:
         GreeterClient(std::shared_ptr<Channel> channel) : stub_(Fastnetmon::NewStub(channel)) {}
 
-        void ExecuteBan(std::string host) {
+        void ExecuteBan(std::string host, bool is_ban) {
             ClientContext context;
             fastmitigation::ExecuteBanRequest request;
             fastmitigation::ExecuteBanReply reply;
 
             request.set_ip_address(host);
 
-            Status status = stub_->ExecuteBan(&context, request, &reply);
-
+            Status status;
+    
+            if (is_ban) {
+                status = stub_->ExecuteBan(&context, request, &reply);
+            } else {
+                status = stub_->ExecuteUnBan(&context, request, &reply);
+            }
+    
             if (status.ok()) {
                 
             } else {
@@ -105,14 +111,19 @@ int main(int argc, char** argv) {
 
     if (request_command == "get_banlist") {
         greeter.GetBanList();
-    } else if (request_command == "ban") {
+    } else if (request_command == "ban" or request_command == "unban") {
         if (argc < 2) {
-            std::cerr << "Please provide banned IP" << std::endl;
+            std::cerr << "Please provide IP for action" << std::endl;
             return(1);
         }
 
         std::string ip_for_ban = argv[2];
-        greeter.ExecuteBan(ip_for_ban); 
+
+        if (request_command == "ban") {
+            greeter.ExecuteBan(ip_for_ban, true);
+        } else {
+            greeter.ExecuteBan(ip_for_ban, false);
+        }
     } else {
         std::cerr << "Unknown command" << std::endl;
     }
