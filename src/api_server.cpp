@@ -29,6 +29,12 @@ class GreeterServiceImpl final : public Fastnetmon::Service {
         //reply->set_message(prefix + request->name());
         return Status::OK;
     }
+
+    Status ExecuteBan(ServerContext* context, const fastmitigation::ExecuteBanRequest* request, fastmitigation::ExecuteBanReply* reply) override {
+        std::cout << "We asked for ban for IP: " << request->ip_address() << std::endl;
+
+        return Status::OK;
+    }
 };
 
 void RunServer() {
