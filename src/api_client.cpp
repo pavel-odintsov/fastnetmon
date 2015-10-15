@@ -15,9 +15,9 @@ using fastmitigation::Fastnetmon;
 
 unsigned int client_connection_timeout = 5;
 
-class GreeterClient {
+class FastnetmonClient {
     public:
-        GreeterClient(std::shared_ptr<Channel> channel) : stub_(Fastnetmon::NewStub(channel)) {}
+        FastnetmonClient(std::shared_ptr<Channel> channel) : stub_(Fastnetmon::NewStub(channel)) {}
 
         void ExecuteBan(std::string host, bool is_ban) {
             ClientContext context;
@@ -105,12 +105,12 @@ int main(int argc, char** argv) {
     // are created. This channel models a connection to an endpoint (in this case,
     // localhost at port 50051). We indicate that the channel isn't authenticated
     // (use of InsecureCredentials()).
-    GreeterClient greeter( grpc::CreateChannel("localhost:50051", grpc::InsecureCredentials()));
+    FastnetmonClient fastnetmon( grpc::CreateChannel("localhost:50051", grpc::InsecureCredentials()));
 
     std::string request_command = argv[1];
 
     if (request_command == "get_banlist") {
-        greeter.GetBanList();
+        fastnetmon.GetBanList();
     } else if (request_command == "ban" or request_command == "unban") {
         if (argc < 2) {
             std::cerr << "Please provide IP for action" << std::endl;
@@ -120,9 +120,9 @@ int main(int argc, char** argv) {
         std::string ip_for_ban = argv[2];
 
         if (request_command == "ban") {
-            greeter.ExecuteBan(ip_for_ban, true);
+            fastnetmon.ExecuteBan(ip_for_ban, true);
         } else {
-            greeter.ExecuteBan(ip_for_ban, false);
+            fastnetmon.ExecuteBan(ip_for_ban, false);
         }
     } else {
         std::cerr << "Unknown command" << std::endl;
