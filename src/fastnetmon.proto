@@ -3,13 +3,14 @@ syntax = "proto3";
 package fastmitigation;
 
 service Fastnetmon {
-    rpc GetBanlist (BanListRequest) returns (BanListReply) {}
+    rpc GetBanlist(BanListRequest) returns (stream BanListReply) {}
 }
 
+// We could not create RPC method without params
 message BanListRequest {
-    string name = 1;
+
 }
 
 message BanListReply {
-    string message = 1;
+    string ip_address = 1;
 }
