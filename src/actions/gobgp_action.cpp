@@ -291,7 +291,7 @@ void gobgp_action_init() {
     void* gobgdp_library_handle = dlopen("libgobgp.so", RTLD_NOW);
 
     if (gobgdp_library_handle == NULL) {
-        logger << log4cpp::Priority::ERROR << "Could not load gobgp binary library";
+        logger << log4cpp::Priority::ERROR << "Could not load gobgp binary library: " << dlerror();
         exit(1);
     } 
 
