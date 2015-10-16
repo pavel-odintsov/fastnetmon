@@ -1,4 +1,4 @@
-### We have API builded on top of gRPC framework
+### We have API built on top of gRPC framework
 
 You could ban IP:
 ```bash
