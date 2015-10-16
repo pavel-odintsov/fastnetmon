@@ -493,7 +493,30 @@ class FastnetmonApiServiceImpl final : public Fastnetmon::Service {
     }
 
     Status ExecuteUnBan(ServerContext* context, const fastmitigation::ExecuteBanRequest* request, fastmitigation::ExecuteBanReply* reply) override {
-        logger << log4cpp::Priority::INFO << "We asked for unban for IP: " << request->ip_address();
+        logger << log4cpp::Priority::INFO << "API: We asked for unban for IP: " << request->ip_address();
+
+        if (!is_v4_host(request->ip_address())) {
+            logger << log4cpp::Priority::ERROR << "IP bad format";
+            return Status::CANCELLED;
+        }
+
+        uint32_t banned_ip = convert_ip_as_string_to_uint(request->ip_address());
+
+        if (ban_list.count(banned_ip) == 0) {
+            logger << log4cpp::Priority::ERROR << "API: Could not find IP in ban list";
+            return Status::CANCELLED;
+        }
+
+        banlist_item ban_details = ban_list[banned_ip];
+
+        logger << log4cpp::Priority::INFO << "API: call unban handlers";
+        call_unban_handlers(banned_ip, ban_details);
+
+        logger << log4cpp::Priority::INFO << "API: remove IP from ban list";
+
+        ban_list_mutex.lock();
+        ban_list.erase(banned_ip);
+        ban_list_mutex.unlock();
 
         return Status::OK;
     }
