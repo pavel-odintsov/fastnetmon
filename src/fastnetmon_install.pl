@@ -1468,8 +1468,13 @@ sub install_fastnetmon {
         $cmake_params .= " -DCMAKE_C_COMPILER=/opt/gcc520/bin/gcc -DCMAKE_CXX_COMPILER=/opt/gcc520/bin/g++ "; 
     }
 
-    exec_command("cmake .. $cmake_params");
-    exec_command("make $make_options");
+    if (defined($ENV{'TRAVIS'}) && $ENV{'TRAVIS'}) {
+        system("cmake .. $cmake_params");
+        system("make $make_options");
+    } else {
+        exec_command("cmake .. $cmake_params");
+        exec_command("make $make_options");
+    }
 
     my $fastnetmon_dir = "/opt/fastnetmon";
     my $fastnetmon_build_binary_path = "$fastnetmon_code_dir/build/fastnetmon";
