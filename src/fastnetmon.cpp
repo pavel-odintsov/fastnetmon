@@ -489,6 +489,27 @@ class FastnetmonApiServiceImpl final : public Fastnetmon::Service {
     Status ExecuteBan(ServerContext* context, const fastmitigation::ExecuteBanRequest* request, fastmitigation::ExecuteBanReply* reply) override {
         logger << log4cpp::Priority::INFO << "API we asked for ban for IP: " << request->ip_address();
 
+        if (!is_v4_host(request->ip_address())) {
+            logger << log4cpp::Priority::ERROR << "IP bad format";
+            return Status::CANCELLED;
+        }    
+
+        uint32_t client_ip = convert_ip_as_string_to_uint(request->ip_address());
+
+        struct attack_details current_attack;
+        ban_list_mutex.lock();
+        ban_list[client_ip] = current_attack;
+        ban_list_mutex.unlock();
+
+        ban_list_details_mutex.lock();
+        ban_list_details[client_ip] = std::vector<simple_packet>();
+        ban_list_details_mutex.unlock();
+
+        logger << log4cpp::Priority::INFO << "API call ban handlers manually";
+
+        std::string flow_attack_details = "manually triggered attack";
+        call_ban_handlers(client_ip, current_attack, flow_attack_details);
+
         return Status::OK;
     }
 
