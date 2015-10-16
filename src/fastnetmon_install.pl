@@ -1489,6 +1489,10 @@ sub install_fastnetmon {
     exec_command("cp $fastnetmon_build_binary_path $fastnetmon_dir/fastnetmon");
     exec_command("cp $fastnetmon_code_dir/build/fastnetmon_client $fastnetmon_dir/fastnetmon_client");
 
+    if (-e "$fastnetmon_code_dir/build/fastnetmon_api_client") {
+        exec_command("cp $fastnetmon_code_dir/build/fastnetmon_api_client $fastnetmon_dir/fastnetmon_api_client");
+    }
+
     my $fastnetmon_config_path = "/etc/fastnetmon.conf";
     unless (-e $fastnetmon_config_path) {
         print "Create stub configuration file\n";

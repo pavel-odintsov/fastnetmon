@@ -44,6 +44,7 @@ Features
 - Could [announce blocked IPs](docs/EXABGP_INTEGRATION.md) to BGP router with [ExaBGP](https://github.com/Exa-Networks/exabgp)
 - GoBGP [integration](docs/GOBGP.md) for unicast IPv4 announces
 - Full integration with [Graphite](docs/GRAPHITE_INTEGRATION.md) and [InfluxDB](docs/INFLUXDB_INTEGRATION.md)
+- API
 - Redis integration
 - MongoDB integration
 - Deep packet inspection for attack traffic
