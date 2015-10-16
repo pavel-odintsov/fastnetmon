@@ -38,6 +38,7 @@
 #endif
 
 boost::regex regular_expression_cidr_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+\\/\\d+$");
+boost::regex regular_expression_host_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+$");
 
 // convert string to integer
 int convert_string_to_integer(std::string line) {
@@ -214,6 +215,12 @@ bool is_cidr_subnet(const char* subnet) {
     } else {
         return false;
     }
+}
+
+bool is_v4_host(std::string host) {
+    boost::cmatch what;
+
+    return regex_match(host.c_str(), what, regular_expression_host_pattern);
 }
 
 // check file existence
