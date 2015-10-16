@@ -27,10 +27,6 @@ project(FastNetMon)
 set (FASTNETMON_VERSION_MAJOR 1)
 set (FASTNETMON_VERSION_MINOR 1)
 
-# Main tool
-add_executable(fastnetmon fastnetmon.cpp)
-
-
 if (ENABLE_GOBGP_SUPPORT)
     # We could not compile gRPC without C++ 11
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11")
@@ -84,6 +80,11 @@ if (FASTNETMON_PROFILER)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FASTNETMON_PROFILE_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${FASTNETMON_PROFILE_FLAGS}")
 endif()
+
+### Executables definition 
+
+# Main tool
+add_executable(fastnetmon fastnetmon.cpp)
 
 # Get last commit hash
 execute_process(COMMAND git rev-list HEAD COMMAND head -n 1 OUTPUT_VARIABLE GIT_LAST_COMMIT_HASH OUTPUT_STRIP_TRAILING_WHITESPACE)

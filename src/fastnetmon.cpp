@@ -129,6 +129,7 @@ using fastmitigation::BanListRequest;
 using fastmitigation::BanListReply;
 using fastmitigation::Fastnetmon;
 
+std::unique_ptr<Server> api_server;
 bool enable_api = false;
 #endif
 
@@ -470,7 +471,7 @@ void silent_logging_function(gpr_log_func_args *args) {
 }
 
 // Logic and data behind the server's behavior.
-class GreeterServiceImpl final : public Fastnetmon::Service {
+class FastnetmonApiServiceImpl final : public Fastnetmon::Service {
     Status GetBanlist(::grpc::ServerContext* context, const ::fastmitigation::BanListRequest* request, ::grpc::ServerWriter< ::fastmitigation::BanListReply>* writer) override {
         logger << log4cpp::Priority::INFO << "Incoming request";
 
@@ -498,23 +499,32 @@ class GreeterServiceImpl final : public Fastnetmon::Service {
     }
 };
 
-void RunApiServer() {
-    std::string server_address("0.0.0.0:50051");
-    GreeterServiceImpl service;
+// We could not define this variable in top of the file because we should define class before
+FastnetmonApiServiceImpl api_service;
 
+std::unique_ptr<Server> StartupApiServer() {
+    std::string server_address("0.0.0.0:50051");
     ServerBuilder builder;
     // Listen on the given address without any authentication mechanism.
     builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
     // Register "service" as the instance through which we'll communicate with
     // clients. In this case it corresponds to an *synchronous* service.
-    builder.RegisterService(&service);
+    builder.RegisterService(&api_service);
+
     // Finally assemble the server.
-    std::unique_ptr<Server> server(builder.BuildAndStart());
-    logger << log4cpp::Priority::INFO << "API server listening on " << server_address;
+    std::unique_ptr<Server> current_api_server(builder.BuildAndStart());
+    logger << log4cpp::Priority::INFO << "API server listening on " << server_address;     
+
+    return current_api_server;
+}
+
+void RunApiServer() {
+    api_server = StartupApiServer();
 
     // Wait for the server to shutdown. Note that some other thread must be
     // responsible for shutting down the server for this call to ever return.
-    server->Wait();
+    api_server->Wait();
+    logger << log4cpp::Priority::INFO << "API server got shutdown signal";
 }
 #endif
 
@@ -2866,6 +2876,9 @@ void interruption_signal_handler(int signal_number) {
      
     logger << log4cpp::Priority::INFO << "SIGNAL captured, prepare toolkit shutdown";
 
+    logger << log4cpp::Priority::INFO << "Send shutdown command to API server";
+    api_server->Shutdown();
+
     logger << log4cpp::Priority::INFO << "Interrupt service threads";   
     service_thread_group.interrupt_all();
 
@@ -2877,7 +2890,7 @@ void interruption_signal_handler(int signal_number) {
     
     logger << log4cpp::Priority::INFO << "Wait while they finished";
     packet_capture_plugin_thread_group.join_all();
-   
+  
     logger << log4cpp::Priority::INFO << "Shutdown main process"; 
 
     // TODO: we should REMOVE this exit command and wait for correct toolkit shutdown
