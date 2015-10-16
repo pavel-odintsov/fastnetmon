@@ -473,21 +473,21 @@ void silent_logging_function(gpr_log_func_args *args) {
 // Logic and data behind the server's behavior.
 class FastnetmonApiServiceImpl final : public Fastnetmon::Service {
     Status GetBanlist(::grpc::ServerContext* context, const ::fastmitigation::BanListRequest* request, ::grpc::ServerWriter< ::fastmitigation::BanListReply>* writer) override {
-        logger << log4cpp::Priority::INFO << "Incoming request";
+        logger << log4cpp::Priority::INFO << "API we asked for banlist";
 
-        BanListReply reply;
-        reply.set_ip_address("192.168.1.2/32");
-        writer->Write(reply);
-       
-        reply.set_ip_address("192.168.1.3/32");
-        writer->Write(reply); 
+        for (std::map<uint32_t, banlist_item>::iterator itr = ban_list.begin(); itr != ban_list.end(); ++itr) {
+            std::string client_ip_as_string = convert_ip_as_uint_to_string(itr->first);
 
-        //reply->set_message(prefix + request->name());
+            BanListReply reply;
+            reply.set_ip_address( client_ip_as_string + "/32" );
+            writer->Write(reply);
+        }       
+
         return Status::OK;
     }
 
     Status ExecuteBan(ServerContext* context, const fastmitigation::ExecuteBanRequest* request, fastmitigation::ExecuteBanReply* reply) override {
-        logger << log4cpp::Priority::INFO << "We asked for ban for IP: " << request->ip_address();
+        logger << log4cpp::Priority::INFO << "API we asked for ban for IP: " << request->ip_address();
 
         return Status::OK;
     }
