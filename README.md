@@ -24,7 +24,7 @@ Project
 - [Release Notes](docs/RELEASENOTES.md)
 - Chat: #fastnetmon at irc.freenode.net [web client](https://webchat.freenode.net/)
 - [Please fill survey, we need your voice!](https://docs.google.com/forms/d/1YoXQImMeEjBH-JPz3KYtcDwknHs8xrI538ObwSy9uZo/viewform)
-- Detailed reference in Russian: [link](https://github.com/FastVPSEestiOu/fastnetmon/blob/master/docs/FastNetMon_Reference_Russian.pdf)
+- Detailed reference in Russian: [link](docs/FastNetMon_Reference_Russian.pdf)
 
 Supported packet capture engines
 --------------------------------
@@ -33,7 +33,7 @@ Supported packet capture engines
 - ![sFLOW](http://sflow.org/images/sflowlogo.gif) v4 (dev branch only), v5
 - Port mirror/SPAN capture with PF_RING (with ZC/DNA mode support [need license](http://www.ntop.org/products/pf_ring/)), SnabbSwitch, NETMAP and PCAP
 
-You could look [comparison table](https://github.com/FastVPSEestiOu/fastnetmon/blob/master/docs/CAPTURE_BACKENDS.md) for all available packet capture engines.
+You could look [comparison table](docs/CAPTURE_BACKENDS.md) for all available packet capture engines.
 
 Features
 --------
@@ -54,7 +54,7 @@ Features
 - Supports L2TP decapsulation, VLAN untagging and MPLS processing in mirror mode 
 - Can work on server/soft-router
 - Can detect DoS/DDoS in 1-2 seconds
-- [Tested](https://github.com/FastVPSEestiOu/fastnetmon/blob/master/docs/PERFORMANCE_TESTS.md) up to 10GE with 12 Mpps on Intel i7 3820 with Intel NIC 82599
+- [Tested](docs/PERFORMANCE_TESTS.md) up to 10GE with 12 Mpps on Intel i7 3820 with Intel NIC 82599
 - Complete plugin support
 - Could capture attack fingerprint in pcap format
 - Have [complete support](docs/DETECTED_ATTACK_TYPES.md) for most popular attack types
