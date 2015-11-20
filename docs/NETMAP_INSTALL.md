@@ -49,3 +49,5 @@ ifconfig eth0 up
 ifconfig eth0 promisc
 ```
 
+You could use this script for automatic install netmap with all required drivers: https://gist.github.com/pavel-odintsov/6353bfd3bfd7dba2d99a 
+
