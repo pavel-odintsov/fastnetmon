@@ -2142,8 +2142,17 @@ void recalculate_speed() {
 
             map_element* current_average_speed_element = &PerSubnetAverageSpeedMap[current_subnet];
 
-            // Calculate average speed from per-second speed
-            build_average_speed_counters_from_speed_counters(current_average_speed_element, new_speed_element, exp_value, exp_power);
+            current_average_speed_element->in_bytes = uint64_t(new_speed_element.in_bytes +
+                exp_value_subnet * ((double)current_average_speed_element->in_bytes - (double)new_speed_element.in_bytes));
+
+            current_average_speed_element->out_bytes = uint64_t(new_speed_element.out_bytes +
+                exp_value_subnet * ((double)current_average_speed_element->out_bytes - (double)new_speed_element.out_bytes));
+
+            current_average_speed_element->in_packets = uint64_t(new_speed_element.in_packets +
+                exp_value_subnet * ((double)current_average_speed_element->in_packets - (double)new_speed_element.in_packets));
+ 
+            current_average_speed_element->out_packets = uint64_t(new_speed_element.out_packets +
+                exp_value_subnet * ((double)current_average_speed_element->out_packets - (double)new_speed_element.out_packets));
 
             // Update speed calculation structure
             PerSubnetSpeedMap[current_subnet] = new_speed_element;
@@ -2204,22 +2213,8 @@ void recalculate_speed() {
 
             map_element* current_average_speed_element = &SubnetVectorMapSpeedAverage[itr->first][current_index];
 
-            current_average_speed_element->in_bytes = uint64_t(
-            new_speed_element.in_bytes +
-            exp_value * ((double)current_average_speed_element->in_bytes - (double)new_speed_element.in_bytes));
-            current_average_speed_element->out_bytes =
-            uint64_t(new_speed_element.out_bytes +
-                     exp_value * ((double)current_average_speed_element->out_bytes -
-                                  (double)new_speed_element.out_bytes));
-
-            current_average_speed_element->in_packets =
-            uint64_t(new_speed_element.in_packets +
-                     exp_value * ((double)current_average_speed_element->in_packets -
-                                  (double)new_speed_element.in_packets));
-            current_average_speed_element->out_packets =
-            uint64_t(new_speed_element.out_packets +
-                     exp_value * ((double)current_average_speed_element->out_packets -
-                                  (double)new_speed_element.out_packets));
+            // Calculate average speed from per-second speed
+            build_average_speed_counters_from_speed_counters(current_average_speed_element, new_speed_element, exp_value, exp_power);
 
             if (enable_conection_tracking) {
                 current_average_speed_element->out_flows = uint64_t(
