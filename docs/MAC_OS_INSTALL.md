@@ -8,12 +8,12 @@ Build on Mac OS 10.10 Yosemite.
 
 Run installer script for stable branch:
 ```bash
-wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl 
+wget https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl 
 sudo perl fastnetmon_install.pl
 ```
 
 Run installer script for master branch:
 ```bash
-wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl
+wget https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl
 sudo perl fastnetmon_install.pl --use-git-master
 ```
