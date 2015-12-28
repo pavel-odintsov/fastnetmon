@@ -841,7 +841,11 @@ direction get_packet_direction(patricia_tree_t* lookup_tree, uint32_t src_ip, ui
 
     subnet = 0;
     if (our_ip_is_source && our_ip_is_destination) {
-        packet_direction = INTERNAL;
+        subnet = source_subnet;
+        subnet_cidr_mask = source_subnet_cidr_mask;
+        
+        //packet_direction = INTERNAL;
+        packet_direction = INCOMING;
     } else if (our_ip_is_source) {
         subnet = source_subnet;
         subnet_cidr_mask = source_subnet_cidr_mask;
