@@ -22,10 +22,15 @@ start() {
 stop() {
     ebegin "Stopping fastnetmon"
 
-    kill -9 `cat $PIDFILE`
-    RETVAL=$?
-
-    pidof fastnetmon | xargs kill -9
+    if [ -f $PIDFILE ]; then
+    	kill -9 $(cat $PIDFILE) 2>/dev/null
+	RETVAL=$?
+    fi
+    if [ -n $RETVAL ] && [ "$RETVAL" -ne "0" ]; then
+    	ACTUAL_PID=$(pidof fastnetmon)
+	[ -n $ACTUAL_PID ] && kill -9 $ACTUAL_PID 2>/dev/null
+	RETVAL=$?
+    fi
 
     rm -f "${PIDFILE}"
     eend $RETVAL
