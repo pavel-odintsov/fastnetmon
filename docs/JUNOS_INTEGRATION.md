@@ -23,7 +23,7 @@ You can check https://github.com/FastVPSEestiOu/fastnetmon/blob/master/docs/DOCK
 ```
 r1# show interfaces ge-1/0/4  
 unit 0 {
-    description netflow-coletor;
+    description netflow-collector;
     family inet {
         address 10.50.1.1/30;
     }
