@@ -7,7 +7,7 @@ Our topology is two MX80 routers, named r1 and r2. From each router connected di
 Fastnetmon server have 2 interfaces:
 10.50.1.2/30 - connected to r1
 10.50.1.6/30 - connected to r2
-
+c
 R1 have 1 transit connected to ge-1/0/0.0
 R2 have 1 transit connected to ge-1/0/0.0
 
@@ -32,18 +32,18 @@ unit 0 {
 
 
 r1# show interfaces ge-1/0/4 | display set 
-set interfaces ge-1/0/4 unit 0 description netflow-coletor
+set interfaces ge-1/0/4 unit 0 description netflow-collector
 set interfaces ge-1/0/4 unit 0 family inet address 10.50.1.1/30
 
 r2# show interfaces ge-1/0/4  
 unit 0 {
-    description netflow-coletor;
+    description netflow-collector;
     family inet {
         address 10.50.1.5/30;
     }
 }
 r2# show interfaces ge-1/0/4 | display set 
-set interfaces ge-1/0/4 unit 0 description netflow-coletor
+set interfaces ge-1/0/4 unit 0 description netflow-collector
 set interfaces ge-1/0/4 unit 0 family inet address 10.50.1.5/30
 ```
 
