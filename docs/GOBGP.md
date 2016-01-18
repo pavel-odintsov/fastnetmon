@@ -25,19 +25,23 @@ sudo perl fastnetmon_install.pl --use-git-master
 
 Create example configuration for GoBGPD in gobgpd.conf file in current directory:
 ```bash
-[Global]
-  [Global.GlobalConfig]
-    As = 65001
-    RouterId = "213.133.111.200"
+[global.config]
+  as = 65001
+  router-id = "213.133.111.200"
 
-[Neighbors]
-  [[Neighbors.NeighborList]]
-    [Neighbors.NeighborList.NeighborConfig]
-      NeighborAddress = "10.10.10.250"
-      PeerAs = 65001
-    [Neighbors.NeighborList.AfiSafis]
-      [[Neighbors.NeighborList.AfiSafis.AfiSafiList]]
-        AfiSafiName = "ipv4-unicast"
+  [global.apply-policy.config]
+    default-export-policy = "reject-route"
+
+[[neighbors]]
+  [neighbors.config]
+    neighbor-address = "10.10.10.250"
+    peer-as = 65001
+
+    [neighbors.ebgp-multihop.config]
+      enabled = true
+
+    [[neighbors.afi-safis]]
+      afi-safi-name = "ipv4-unicast"        
 ```
 
 Run it:
