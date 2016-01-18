@@ -29,9 +29,6 @@ Create example configuration for GoBGPD in gobgpd.conf file in current directory
   as = 65001
   router-id = "213.133.111.200"
 
-  [global.apply-policy.config]
-    default-export-policy = "reject-route"
-
 [[neighbors]]
   [neighbors.config]
     neighbor-address = "10.10.10.250"
