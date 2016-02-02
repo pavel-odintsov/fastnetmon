@@ -1,0 +1,17 @@
+#!/bin/sh
+
+PIDFILE=/var/run/fastnetmon.pid
+
+function check_fastnetmon_is_alive() {
+	while [ true ]; do
+		if [ ! -f $PIDFILE ] || [ "`pgrep -F $PIDFILE -c`" == 0 ]; then
+			# trigger restart 
+			
+			/etc/init.d/fastnetmon -D restart
+			/etc/init.d/iptables -D restart
+		fi
+		sleep 10
+	done
+}
+
+check_fastnetmon_is_alive >/dev/null 2>&1 &

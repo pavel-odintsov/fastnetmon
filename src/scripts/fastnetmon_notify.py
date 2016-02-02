@@ -6,11 +6,13 @@ from sys import stdin
 import optparse
 import sys
 import logging
+import socket
 
 LOG_FILE = "/var/log/fastnetmon-notify.log"
 MAIL_HOSTNAME="localhost"
 MAIL_FROM="infra@example.com"
 MAIL_TO="infra@example.com"
+HOSTNAME=socket.gethostbyaddr(socket.gethostname())[0]
 
 
 logger = logging.getLogger("DaemonLog")
@@ -53,7 +55,7 @@ def mail(subject, body):
 
 
 if action == "unban":
-    subject = "Fastnetmon Guard: IP %(client_ip_as_string)s unblocked because %(data_direction)s attack with power %(pps_as_string)d pps" % {
+    subject = "["+HOSTNAME+"] Fastnetmon Guard: IP %(client_ip_as_string)s unblocked because %(data_direction)s attack with power %(pps_as_string)d pps" % {
         'client_ip_as_string': client_ip_as_string,
         'data_direction': data_direction,
         'pps_as_string' : pps_as_string,
@@ -63,7 +65,7 @@ if action == "unban":
     mail(subject, "unban")
     sys.exit(0)
 elif action == "ban":
-    subject = "Fastnetmon Guard: IP %(client_ip_as_string)s blocked because %(data_direction)s attack with power %(pps_as_string)d pps" % {
+    subject = "["+HOSTNAME+"] Fastnetmon Guard: IP %(client_ip_as_string)s blocked because %(data_direction)s attack with power %(pps_as_string)d pps" % {
         'client_ip_as_string': client_ip_as_string,
         'data_direction': data_direction,
         'pps_as_string' : pps_as_string,
@@ -75,7 +77,7 @@ elif action == "ban":
 
     sys.exit(0)
 elif action == "attack_details":
-    subject = "Fastnetmon Guard: IP %(client_ip_as_string)s blocked because %(data_direction)s attack with power %(pps_as_string)d pps" % {
+    subject = "["+HOSTNAME+"] Fastnetmon Guard: IP %(client_ip_as_string)s blocked because %(data_direction)s attack with power %(pps_as_string)d pps" % {
         'client_ip_as_string': client_ip_as_string,
         'data_direction': data_direction,
         'pps_as_string' : pps_as_string,
