@@ -3,6 +3,7 @@ Thanks file! For all peoples which helped this project :)
 - Vicente De Luca for redis_prefix and InfluxDB optimization
 - Andrei Ziltsov / FastVPS Eesti OU for testing and patience :)
 - Luca Deri for PF_RING toolkit!
+- Elliot Morales Solé for improvements for ExaBGP integration 
 - Roberto Bertó for Docker images and docs about Junos
 - Alfredo Cardigliano for helping me with PF_RING libraries :)
 - To flowd project for awesome parsers for netflow v5/v9 https://code.google.com/p/flowd/
