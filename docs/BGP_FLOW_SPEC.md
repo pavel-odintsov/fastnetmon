@@ -3,7 +3,7 @@
 Clone code:
 ```bash
 cd /usr/src/
-git clone git clone https://github.com/Exa-Networks/exabgp.git
+git clone https://github.com/Exa-Networks/exabgp.git
 ```
 
 They are not compatible with ExaBGP 3.0
