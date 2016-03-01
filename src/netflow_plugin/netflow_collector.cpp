@@ -501,7 +501,7 @@ void nf10_flowset_to_store(u_int8_t* pkt, size_t len, struct NF10_HEADER* nf10_h
     packet.sample_ratio = sampling_rate;
 
     netflow_ipfix_struct data_in_ipfix_format;
-    memset(&data_in_ipfix_format, sizeof(netflow_ipfix_struct), 0);
+    memset(&data_in_ipfix_format, 0, sizeof(netflow_ipfix_struct));
 
     for (netflow9_template_records_map::iterator iter = field_template->records.begin();
          iter != field_template->records.end(); iter++) {
