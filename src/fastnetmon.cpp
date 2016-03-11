@@ -939,7 +939,7 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
         bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
 
         if (!graphite_put_result) {
-            logger << log4cpp::Priority::ERROR << "Can't store data to Graphite";
+            logger << log4cpp::Priority::ERROR << "Can't store host load data to Graphite";
         }
     }
 
@@ -2455,7 +2455,7 @@ std::string print_channel_speed(std::string traffic_type, direction packet_direc
             bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
 
             if (!graphite_put_result) {
-                logger << log4cpp::Priority::ERROR << "Can't store data to Graphite";
+                logger << log4cpp::Priority::ERROR << "Can't store total load data to Graphite";
             }
         }
     }
@@ -4518,4 +4518,3 @@ inline void build_average_speed_counters_from_speed_counters(
         new_speed_element.icmp_in_bytes +
         exp_value * ((double)current_average_speed_element->icmp_in_bytes - (double)new_speed_element.icmp_in_bytes));
 }
-
