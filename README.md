@@ -13,7 +13,7 @@ What is "flow" in FastNetMon terms? It's one or multiple udp, tcp, icmp connecti
 
 License: GPLv2
 
-[![Build Status](https://travis-ci.org/pavel-odintsov/fastnetmon.svg?branch=master)](https://travis-ci.org/pavel-odintsov/fastnetmon) [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/FastVPSEestiOu/fastnetmon?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) 
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/FastVPSEestiOu/fastnetmon?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) 
 
 
 
