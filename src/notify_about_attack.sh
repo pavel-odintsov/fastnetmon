@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 #
 # Hello, lovely FastNetMon customer! I'm really happy to see you here!
@@ -40,7 +40,7 @@ if [ "$4" = "ban" ]; then
     exit 0
 fi
 
-if [ "$4" == "attack_details" ]; then
+if [ "$4" = "attack_details" ]; then
     cat | mail -s "FastNetMon Guard: IP $1 blocked because $2 attack with power $3 pps" $email_notify;
     
     exit 0
