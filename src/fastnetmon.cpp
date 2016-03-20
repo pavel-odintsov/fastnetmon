@@ -2065,6 +2065,7 @@ ban_settings_t get_ban_settings_for_this_subnet(subnet_t subnet) {
 
     if (host_group_itr == subnet_to_host_groups.end()) {
         // We haven't host groups for all subnets, it's OK
+        logger << log4cpp::Priority::INFO << "We haven't custom host groups for this network. We will use global ban settings";
         return global_ban_settings;
     }
    
