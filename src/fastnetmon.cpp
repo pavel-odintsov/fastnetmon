@@ -2059,16 +2059,19 @@ void recalculate_speed_thread_handler() {
 }
 
 // Get ban settings for this subnet or return global ban settings
-ban_settings_t get_ban_settings_for_this_subnet(subnet_t subnet) {
+ban_settings_t get_ban_settings_for_this_subnet(subnet_t subnet, std::string& host_group_name) {
     // Try to find host group for this subnet
     subnet_to_host_group_map_t::iterator host_group_itr = subnet_to_host_groups.find( subnet );
 
     if (host_group_itr == subnet_to_host_groups.end()) {
         // We haven't host groups for all subnets, it's OK
-        logger << log4cpp::Priority::INFO << "We haven't custom host groups for this network. We will use global ban settings";
+        // logger << log4cpp::Priority::INFO << "We haven't custom host groups for this network. We will use global ban settings";
+        host_group_name = "global";
         return global_ban_settings;
     }
-   
+  
+    host_group_name = host_group_itr->second;
+ 
     // We found host group for this subnet
     host_group_ban_settings_map_t::iterator hostgroup_settings_itr = 
         host_group_ban_settings_map.find(host_group_itr->second);
@@ -2228,7 +2231,10 @@ void recalculate_speed() {
             }
 
             /* Moving average recalculation end */
-            ban_settings_t current_ban_settings = get_ban_settings_for_this_subnet( itr->first );
+            std::string host_group_name;
+            ban_settings_t current_ban_settings = get_ban_settings_for_this_subnet(itr->first, host_group_name);
+
+            logger << log4cpp::Priority::INFO << "We have found host group for this host as: " << host_group_name;  
 
             if (we_should_ban_this_ip(current_average_speed_element, current_ban_settings)) {
                 std::string flow_attack_details = "";
@@ -3350,7 +3356,8 @@ void cleanup_ban_list() {
                 map_element* average_speed_element = &itr_average_speed->second[shift_in_vector];  
 
                 // We get ban settings from host subnet
-                ban_settings_t current_ban_settings = get_ban_settings_for_this_subnet( itr->second.customer_network );
+                std::string host_group_name;
+                ban_settings_t current_ban_settings = get_ban_settings_for_this_subnet(itr->second.customer_network, host_group_name);
 
                 if (we_should_ban_this_ip(average_speed_element, current_ban_settings)) {
                     logger << log4cpp::Priority::ERROR << "Attack to IP " << client_ip_as_string
