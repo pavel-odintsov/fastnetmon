@@ -2234,9 +2234,9 @@ void recalculate_speed() {
             std::string host_group_name;
             ban_settings_t current_ban_settings = get_ban_settings_for_this_subnet(itr->first, host_group_name);
 
-            logger << log4cpp::Priority::INFO << "We have found host group for this host as: " << host_group_name;  
-
             if (we_should_ban_this_ip(current_average_speed_element, current_ban_settings)) {
+                logger << log4cpp::Priority::INFO << "We have found host group for this host as: " << host_group_name;  
+
                 std::string flow_attack_details = "";
 
                 if (enable_conection_tracking) {
