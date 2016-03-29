@@ -33,24 +33,34 @@ decode_path_dynamic_t decode_path_dynamic = NULL;
 class GrpcClient {
     public:
         GrpcClient(std::shared_ptr<Channel> channel) : stub_(GobgpApi::NewStub(channel)) {}
-
         void GetAllActiveAnnounces(unsigned int route_family) {
             ClientContext context;
-            gobgpapi::Arguments arguments;
+            gobgpapi::Table table;
 
-            arguments.set_rf(route_family);
+            table.set_family(route_family);
             // We could specify certain neighbor here
-            arguments.set_name("");
-            arguments.set_resource(gobgpapi::Resource::GLOBAL);
+            table.set_name("");
+            table.set_type(gobgpapi::Resource::GLOBAL);
 
-            auto destinations_list = stub_->GetRib(&context, arguments);
+            gobgpapi::Table response_table;
 
-            gobgpapi::Destination current_destination;
+            auto status = stub_->GetRib(&context, table, &response_table);
 
-            logger << log4cpp::Priority::INFO << "List of announced prefixes for route family: " << route_family;
-            while (destinations_list->Read(&current_destination)) {
-                 logger << log4cpp::Priority::INFO  << "Prefix: " << current_destination.prefix();
-    
+            if (!status.ok()) {
+                // error_message
+                logger << log4cpp::Priority::INFO << "Problem with RPC: " << status.error_code() << " message " << status.error_message();
+                //std::cout << "Problem with RPC: " << status.error_code() << " message " << status.error_message() << std::endl;
+                return;
+            } else {
+                // std::cout << "RPC working well" << std::endl;
+            } 
+
+            std::cout << "List of announced prefixes for route family: " << route_family << std::endl << std::endl;
+
+            for (auto current_destination : response_table.destinations()) {
+                logger << log4cpp::Priority::INFO << "Prefix: " << current_destination.prefix();
+                //std::cout << "Prefix: " << current_destination.prefix() << std::endl;
+
                 //std::cout << "Paths size: " << current_destination.paths_size() << std::endl;
 
                 gobgpapi::Path my_path = current_destination.paths(0);
@@ -76,19 +86,12 @@ class GrpcClient {
             
                 gobgp_lib_path.path_attributes = my_path_attributes;
 
-                 logger << log4cpp::Priority::INFO << "NLRI: " << decode_path_dynamic(&gobgp_lib_path); 
-            }
-
-            Status status = destinations_list->Finish();
-            if (!status.ok()) {
-                // error_message
-                 logger << log4cpp::Priority::INFO << "Problem with RPC: " << status.error_code() << " message " << status.error_message();
-            } else {
-                // std::cout << "RPC working well" << std::endl;
+                logger << log4cpp::Priority::INFO << "NLRI: " << decode_path_dynamic(&gobgp_lib_path);
+                //std::cout << "NLRI: " << decode_path(&gobgp_lib_path) << std::endl; 
             }
         }
-
-        void AnnounceFlowSpecPrefix() {
+        
+        void AnnounceFlowSpecPrefix(bool withdraw) {
             const gobgpapi::ModPathArguments current_mod_path_arguments;
 
             unsigned int AFI_IP = 1;
@@ -96,13 +99,13 @@ class GrpcClient {
             unsigned int ipv4_flow_spec_route_family = AFI_IP<<16 | SAFI_FLOW_SPEC_UNICAST;   
 
             gobgpapi::Path* current_path = new gobgpapi::Path;
-            // If you want withdraw, please use it 
-            // current_path->set_is_withdraw(true);
+            current_path->set_is_withdraw(withdraw);
 
             /*
             buf:
                 char *value;
                 int len;
+
             path:
                 buf   nlri;
                 buf** path_attributes;
@@ -110,9 +113,9 @@ class GrpcClient {
                 int   path_attributes_cap;
             */
 
-            path* path_c_struct = serialize_path_dynamic(ipv4_flow_spec_route_family, (char*)"match destination 10.0.0.0/24 protocol tcp source 20.0.0.0/24 then redirect 10:10");
+            path* path_c_struct = serialize_path(ipv4_flow_spec_route_family, (char*)"match destination 10.0.0.0/24 protocol tcp source 20.0.0.0/24 then redirect 10:10");
 
-            // printf("Decoded NLRI output: %s, length %d raw string length: %d\n", decode_path_dynamic(path_c_struct), path_c_struct->nlri.len, strlen(path_c_struct->nlri.value));
+            // printf("Decoded NLRI output: %s, length %d raw string length: %d\n", decode_path(path_c_struct), path_c_struct->nlri.len, strlen(path_c_struct->nlri.value));
 
             for (int path_attribute_number = 0; path_attribute_number < path_c_struct->path_attributes_len; path_attribute_number++) {
                 current_path->add_pattrs(path_c_struct->path_attributes[path_attribute_number]->value, 
@@ -121,10 +124,10 @@ class GrpcClient {
 
             current_path->set_nlri(path_c_struct->nlri.value, path_c_struct->nlri.len);
 
-            gobgpapi::ModPathArguments request;
+            gobgpapi::ModPathsArguments request;
             request.set_resource(gobgpapi::Resource::GLOBAL);
 
-            google::protobuf::RepeatedPtrField< ::gobgpapi::Path >* current_path_list = request.mutable_paths(); 
+            google::protobuf::RepeatedPtrField< ::gobgpapi::Path >* current_path_list = request.mutable_paths();
             current_path_list->AddAllocated(current_path);
             request.set_name("");
 
@@ -133,12 +136,13 @@ class GrpcClient {
             gobgpapi::Error return_error;
 
             // result is a std::unique_ptr<grpc::ClientWriter<gobgpapi::ModPathArguments> >
-            auto send_stream = stub_->ModPath(&context, &return_error);
+            auto send_stream = stub_->ModPaths(&context, &return_error);
 
             bool write_result = send_stream->Write(request);
 
             if (!write_result) {
-                 logger << log4cpp::Priority::INFO << "Write to API failed\n";
+                logger << log4cpp::Priority::INFO << "Write to API failed\n";
+                //std::cout << "Write to API failed\n";
             }
 
             // Finish all writes
@@ -149,8 +153,10 @@ class GrpcClient {
             if (status.ok()) {
                 //std::cout << "modpath executed correctly" << std::cout; 
             } else {
-                 logger << log4cpp::Priority::INFO << "modpath failed with code: " << status.error_code()
+                logger << log4cpp::Priority::INFO << "modpath failed with code: " << status.error_code()
                     << " message " << status.error_message();
+                //std::cout << "modpath failed with code: " << status.error_code()
+                //    << " message " << status.error_message() << std::endl;
             }
         }
 
@@ -162,7 +168,7 @@ class GrpcClient {
             unsigned int ipv4_unicast_route_family = AFI_IP<<16 | SAFI_UNICAST;
 
             gobgpapi::Path* current_path = new gobgpapi::Path;
-
+//            current_path->set_is_withdraw(withdraw);
             if (is_withdrawal) {
                 current_path->set_is_withdraw(true);
             }
@@ -171,15 +177,17 @@ class GrpcClient {
             buf:
                 char *value;
                 int len;
+
             path:
                 buf   nlri;
                 buf** path_attributes;
                 int   path_attributes_len;
                 int   path_attributes_cap;
             */
-           
+
             std::string announce_line = announced_prefix + " nexthop " + announced_prefix_nexthop;
 
+            // 10.10.20.33/22 nexthop 10.10.1.99/32 
             path* path_c_struct = serialize_path_dynamic(ipv4_unicast_route_family, (char*)announce_line.c_str());
 
             if (path_c_struct == NULL) {
@@ -187,7 +195,7 @@ class GrpcClient {
                 return;
             }
 
-            // printf("Decoded NLRI output: %s, length %d raw string length: %d\n", decode_path_dynamic(path_c_struct), path_c_struct->nlri.len, strlen(path_c_struct->nlri.value));
+            // printf("Decoded NLRI output: %s, length %d raw string length: %d\n", decode_path(path_c_struct), path_c_struct->nlri.len, strlen(path_c_struct->nlri.value));
 
             for (int path_attribute_number = 0; path_attribute_number < path_c_struct->path_attributes_len; path_attribute_number++) {
                 current_path->add_pattrs(path_c_struct->path_attributes[path_attribute_number]->value, 
@@ -196,7 +204,7 @@ class GrpcClient {
 
             current_path->set_nlri(path_c_struct->nlri.value, path_c_struct->nlri.len);
 
-            gobgpapi::ModPathArguments request;
+            gobgpapi::ModPathsArguments request;
             request.set_resource(gobgpapi::Resource::GLOBAL);
             google::protobuf::RepeatedPtrField< ::gobgpapi::Path >* current_path_list = request.mutable_paths(); 
             current_path_list->AddAllocated(current_path);
@@ -207,11 +215,12 @@ class GrpcClient {
             gobgpapi::Error return_error;
 
             // result is a std::unique_ptr<grpc::ClientWriter<api::ModPathArguments> >
-            auto send_stream = stub_->ModPath(&context, &return_error);
+            auto send_stream = stub_->ModPaths(&context, &return_error);
 
             bool write_result = send_stream->Write(request);
 
             if (!write_result) {
+                //std::cout << "Write to API failed\n";
                 logger << log4cpp::Priority::ERROR << "Write to API failed\n";
                 return;
             }
@@ -224,6 +233,8 @@ class GrpcClient {
             if (status.ok()) {
                 //std::cout << "modpath executed correctly" << std::cout; 
             } else {
+                //std::cout << "modpath failed with code: " << status.error_code()
+                //    << " message " << status.error_message() << std::endl;
                 logger << log4cpp::Priority::ERROR << "modpath failed with code: " << status.error_code()
                     << " message " << status.error_message();
 
@@ -231,9 +242,9 @@ class GrpcClient {
             }
         }
 
-        std::string GetAllNeighbor(std::string neighbor_ip) {
+        std::string GetNeighbor(std::string neighbor_ip) {
             gobgpapi::Arguments request;
-            request.set_rf(4);
+            request.set_family(4);
             request.set_name(neighbor_ip);
 
             ClientContext context;
@@ -243,12 +254,12 @@ class GrpcClient {
 
             if (status.ok()) {
                 gobgpapi::PeerConf peer_conf = peer.conf();
-                gobgpapi::PeerInfo peer_info = peer.info();
+                gobgpapi::PeerState peer_info = peer.info();
 
                 std::stringstream buffer;
   
                 buffer
-                    << "Peer AS: " << peer_conf.remote_as() << "\n"
+                    << "Peer AS: " << peer_conf.peer_as() << "\n"
                     << "Peer router id: " << peer_conf.id() << "\n"
                     << "Peer flops: " << peer_info.flops() << "\n"
                     << "BGP state: " << peer_info.bgp_state();
@@ -270,7 +281,8 @@ bool gobgp_announce_host = false;
 
 void gobgp_action_init() {
     logger << log4cpp::Priority::INFO << "GoBGP action module loaded"; 
-    gobgp_client = new GrpcClient(grpc::CreateChannel("localhost:8080", grpc::InsecureCredentials()));
+    gobgp_client = new GrpcClient(grpc::CreateChannel("localhost:50051", grpc::InsecureCredentials()));
+//    GrpcClient gobgp_client(grpc::CreateChannel("localhost:50051", grpc::InsecureCredentials()));
 
     if (configuration_map.count("gobgp_next_hop")) {
         gobgp_nexthop = configuration_map["gobgp_next_hop"];
