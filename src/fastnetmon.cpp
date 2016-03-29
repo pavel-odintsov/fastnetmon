@@ -545,7 +545,7 @@ class FastnetmonApiServiceImpl final : public Fastnetmon::Service {
 FastnetmonApiServiceImpl api_service;
 
 std::unique_ptr<Server> StartupApiServer() {
-    std::string server_address("0.0.0.0:50051");
+    std::string server_address("127.0.0.1:50052");
     ServerBuilder builder;
     // Listen on the given address without any authentication mechanism.
     builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
