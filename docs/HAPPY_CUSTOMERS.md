@@ -5,6 +5,7 @@
 - Moscow Datacenter COLOCAT.RU
 - Internet Service Provider MYVIRTUALSERVER.COM
 - Crea Nova Datacenter Finland, CREANOVA.ORG
+- Datahata Datacenter Belarus, DATAHATA.BY
 
 
 Do not hesitate to add your company! Pull requests with new companies! :) 
