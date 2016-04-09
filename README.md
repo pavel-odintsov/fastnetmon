@@ -79,7 +79,6 @@ Running Fastnetmon
 - [Amazon AMI image](docs/AMAZON.md)
 - [VyOS based iso image with bundled FastNetMon](docs/VYOS_BINARY_ISO_IMAGE.md)
 - [Docker image](docs/DOCKER_INSTALL.md)
-- [Binary rpm packages for CentOS 6/7 and Fedora 21](docs/INSTALL_RPM_PACKAGES.md)
 - [Automatic install script for Debian/Ubuntu/CentOS/Fedora/Gentoo](docs/INSTALL.md)
 - [Automatic install script for Mac OS X](docs/MAC_OS_INSTALL.md)
 - [Manual install on Slackware](docs/SLACKWARE_INSTALL.md)
