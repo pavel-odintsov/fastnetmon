@@ -1,3 +1,6 @@
+Please do not use this packages because they are outdated. Please use installer script instead
+==========
+
 We have precompiled packages for CentOS 6, CentOS 7 and Fedora 21 (unfortunately without PF_RING support).
 
 First of all, please install Epel repo for CentOS 6 and 7:
