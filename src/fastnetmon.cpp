@@ -137,7 +137,7 @@ time_t last_call_of_traffic_recalculation;
 
 std::string cli_stats_file_path = "/tmp/fastnetmon.dat";
 
-std::string reporting_server = "heartbeat.fastnetmon.io";
+std::string reporting_server = "heartbeat.stableit.ru";
 
 unsigned int stats_thread_sleep_time = 3600;
 unsigned int stats_thread_initial_call_delay = 30;
