@@ -2331,7 +2331,7 @@ void traffic_draw_programm() {
     }
 
     output_buffer << "FastNetMon " << fastnetmon_version
-                  << " FastVPS Eesti OU (c) VPS and dedicated: http://FastVPS.host"
+                  << " Pavel Odintsov: stableit.ru"
                   << "\n"
                   << "IPs ordered by: " << sort_parameter << "\n";
 
