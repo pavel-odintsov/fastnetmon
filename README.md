@@ -30,7 +30,7 @@ Supported packet capture engines
 --------------------------------
 - NetFlow v5, v9
 - IPFIX
-- ![sFLOW](http://sflow.org/images/sflowlogo.gif) v4 (dev branch only), v5
+- ![sFLOW](http://sflow.org/images/sflowlogo.gif) v4 (since 1.1.3), v5
 - Port mirror/SPAN capture with PF_RING (with ZC/DNA mode support [need license](http://www.ntop.org/products/pf_ring/)), SnabbSwitch, NETMAP and PCAP
 
 You can check out the [comparison table](docs/CAPTURE_BACKENDS.md) for all available packet capture engines.
