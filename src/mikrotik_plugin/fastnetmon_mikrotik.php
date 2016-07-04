@@ -27,16 +27,19 @@ define( "_VER", '1.0' );
 
 $fecha_now = date("Y-m-d H:i:s", time());
 
+/**NOTE: YOU NEED TO ENABLE THE API ACCESS ON ROUTER MIKROTIK */
 $cfg[ ip_mikrotik ] = "192.168.10.1"; // IP Mikrotik Router 
 $cfg[ api_user ]    = "api"; //user
 $cfg[ api_pass ]    = "api123"; //pass
+
+
 /*
 INPUT info
 This script will get following params:
-$1 client_ip_as_string
-$2 data_direction
-$3 pps_as_string
-$4 action (ban or unban)
+    $1 client_ip_as_string
+    $2 data_direction
+    $3 pps_as_string
+    $4 action (ban or unban)
 */
 $IP_ATTACK          = $argv[ 1 ];
 $DIRECTION_ATTACK   = $argv[ 2 ];
@@ -60,7 +63,7 @@ require_once "routeros_api.php";
 $API = new RouterosAPI();
 // $API->debug = true;
 if ( $API->connect( $cfg[ ip_mikrotik ], $cfg[ api_user ], $cfg[ api_pass ] ) ) {
-    //Blocking by route blackhole
+    //add Blocking by route blackhole
     if ( $ACTION_ATTACK == "ban" ) {
         $comment_rule = 'FastNetMon Guard: IP ' . $IP_ATTACK . ' blocked because ' . $DIRECTION_ATTACK . ' attack with power ' . $POWER_ATTACK . ' pps | at '.$fecha_now;
         $API->write( '/ip/route/add', false );
@@ -71,6 +74,7 @@ if ( $API->connect( $cfg[ ip_mikrotik ], $cfg[ api_user ], $cfg[ api_pass ] ) ) 
 
     }
     if ( $ACTION_ATTACK == "unban" ) {
+        // remove the blackhole rule 
         $comment_rule = 'FastNetMon Guard: IP ' . $IP_ATTACK . ' remove from blacklist ';
         $API->write( '/ip/route/print', false );
         $API->write( '?dst-address=' . $IP_ATTACK . "/32" );
@@ -86,13 +90,15 @@ if ( $API->connect( $cfg[ ip_mikrotik ], $cfg[ api_user ], $cfg[ api_pass ] ) ) 
     echo $msg;
     exit( 1 );
 }
+/**
+ * [_log Write a log file]
+ * @param  [type] $msg [text to log]
+ * @return [type]      
+ */
 function _log( $msg ) {
     $FILE_LOG_TMP = "/tmp/fastnetmon_api_mikrotik.log";
-    if ( !file_exists( $FILE_LOG_TMP ) ) {
-        exec( "echo `date` \"- [FASTNETMON] - " . $msg . " \" > " . $FILE_LOG_TMP );
-    } else {
-        exec( "echo `date` \"- [FASTNETMON] - " . $msg . " \" >> " . $FILE_LOG_TMP );
-    }
-    return;
+    if ( !file_exists( $FILE_LOG_TMP ) )    exec( "echo `date` \"- [FASTNETMON] - " . $msg . " \" > " . $FILE_LOG_TMP );
+    else exec( "echo `date` \"- [FASTNETMON] - " . $msg . " \" >> " . $FILE_LOG_TMP );
+     
 }
 ?>
