@@ -9,7 +9,7 @@ my $pf_ring_version = '6.0.3';
 my $pf_ring_url = "https://github.com/ntop/PF_RING/archive/v$pf_ring_version.tar.gz";
 
 my $fastnetmon_git_path = 'https://github.com/pavel-odintsov/fastnetmon.git';
-
+1.
 my $temp_folder_for_building_project = `mktemp -d /tmp/fastnetmon.build.dir.XXXXXXXXXX`;
 chomp $temp_folder_for_building_project;
 
@@ -27,7 +27,7 @@ my $install_log_path = '/tmp/fastnetmon_install.log';
 # But we have some patches for NTP and DNS protocols here
 my $ndpi_repository = 'https://github.com/pavel-odintsov/nDPI.git';
 
-my $stable_branch_name = 'v1.1.2';
+my $stable_branch_name = 'v1.1.3';
 my $we_use_code_from_master = '';
 
 my $os_type = '';
