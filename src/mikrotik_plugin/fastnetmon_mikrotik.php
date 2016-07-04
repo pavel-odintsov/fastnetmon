@@ -46,15 +46,14 @@ $ACTION_ATTACK      = $argv[ 4 ];
 if ( $argc <= 4 ) {
     $msg .= "MikroTik's API Integration for FastNetMon  - Ver: " . _VER . "\n";
     $msg .= "missing arguments";
-    $msg .= "php fastnetmon_logger.php [IP] [data_direction] [pps_as_string] [action]  \n";
+    $msg .= "php fastnetmon_mikrotik.php [IP] [data_direction] [pps_as_string] [action]  \n";
     echo $msg;
     exit( 1 );
 }
 //NOTE  help
 if ( $argv[ 1 ] == "help" ) {
     $msg = "MikroTik's API Integration for FastNetMon  - Ver: " . _VER;
-    echo $msg;
-    _log( $msg );
+    echo $msg;    
     exit( 1 );
 }
 require_once "routeros_api.php";
