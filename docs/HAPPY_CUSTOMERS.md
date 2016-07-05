@@ -7,5 +7,6 @@
 - Crea Nova Datacenter Finland, CREANOVA.ORG
 - Datahata Datacenter Belarus, DATAHATA.BY
 - SysEleven GmbH, SYSELEVEN.DE
+- DatHost AB, DATHOST.NET
 
 Do not hesitate to add your company! Pull requests with new companies! :) 
