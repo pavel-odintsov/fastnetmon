@@ -9,7 +9,7 @@ my $pf_ring_version = '6.0.3';
 my $pf_ring_url = "https://github.com/ntop/PF_RING/archive/v$pf_ring_version.tar.gz";
 
 my $fastnetmon_git_path = 'https://github.com/pavel-odintsov/fastnetmon.git';
-1.
+
 my $temp_folder_for_building_project = `mktemp -d /tmp/fastnetmon.build.dir.XXXXXXXXXX`;
 chomp $temp_folder_for_building_project;
 
