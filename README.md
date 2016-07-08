@@ -26,6 +26,8 @@ Project
 - [Please fill out the survey, we need your voice!](https://docs.google.com/forms/d/1YoXQImMeEjBH-JPz3KYtcDwknHs8xrI538ObwSy9uZo/viewform)
 - Detailed reference in Russian: [link](docs/FastNetMon_Reference_Russian.pdf)
 
+Plese keep in mind! We will ask your email from install script. Also FastNetMon will send your traffic speed to monitoring server each hour. We will keep this information secret and it's required only for monitoring number of customers and further toolkit optimizations.
+
 Supported packet capture engines
 --------------------------------
 - NetFlow v5, v9
