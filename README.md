@@ -26,8 +26,6 @@ Project
 - [Please fill out the survey, we need your voice!](https://docs.google.com/forms/d/1YoXQImMeEjBH-JPz3KYtcDwknHs8xrI538ObwSy9uZo/viewform)
 - Detailed reference in Russian: [link](docs/FastNetMon_Reference_Russian.pdf)
 
-FastNetMon collects anonymous hourly traffic volume statistics, which is sent to developers. This information won't be shared with 3rd parties and is only needed for further product improvements.
-
 Supported packet capture engines
 --------------------------------
 - NetFlow v5, v9
