@@ -137,8 +137,6 @@ time_t last_call_of_traffic_recalculation;
 
 std::string cli_stats_file_path = "/tmp/fastnetmon.dat";
 
-std::string reporting_server = "heartbeat.stableit.ru";
-
 unsigned int stats_thread_sleep_time = 3600;
 unsigned int stats_thread_initial_call_delay = 30;
 
@@ -430,7 +428,6 @@ void init_current_instance_of_ndpi();
 inline void build_average_speed_counters_from_speed_counters( map_element* current_average_speed_element, map_element& new_speed_element, double exp_value, double exp_power);
 inline void build_speed_counters_from_packet_counters(map_element& new_speed_element, map_element* vector_itr, double speed_calc_period);
 void execute_ip_ban(uint32_t client_ip, map_element average_speed_element, std::string flow_attack_details, subnet_t customer_subnet);
-void collect_stats();
 std::string get_attack_description_in_json(uint32_t client_ip, attack_details& current_attack);
 logging_configuration_t read_logging_settings(configuration_map_t configuration_map);
 std::string get_amplification_attack_type(amplification_attack_type_t attack_type);
@@ -2788,9 +2785,6 @@ int main(int argc, char** argv) {
         service_thread_group.add_thread(new boost::thread(cleanup_ban_list));
     }
 
-    // Run stats thread
-    service_thread_group.add_thread(new boost::thread(collect_stats));
-
 #ifdef PF_RING
     if (enable_data_collection_from_mirror) {
         packet_capture_plugin_thread_group.add_thread(new boost::thread(start_pfring_collection, process_packet));
@@ -3260,37 +3254,6 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
 #endif
 }
 
-void send_usage_data_to_reporting_server() {
-    std::stringstream request_stream;
-    request_stream << "GET " << "/heartbeat/stats?incoming_traffic_speed=" << total_speed_average_counters[INCOMING].bytes;
-    request_stream << "&outgoing_traffic_speed=" << total_speed_average_counters[OUTGOING].bytes;
-    request_stream << " HTTP/1.0\r\n";
-    request_stream << "Host: " << reporting_server << "\r\n";
-    request_stream << "Accept: */*\r\n";
-    request_stream << "Connection: close\r\n\r\n";
-
-    std::string reporting_server_ip_address = dns_lookup(reporting_server);
-
-    if (reporting_server_ip_address.empty()) {
-        logger << log4cpp::Priority::ERROR << "Stats server resolver failed, please check your DNS";
-        return;
-    }
-
-    bool result = store_data_to_stats_server(80, reporting_server_ip_address, request_stream.str());
-
-    if (!result) {
-        logger << log4cpp::Priority::ERROR << "Can't collect stats data";
-    }
-}
-
-void collect_stats() {
-    boost::this_thread::sleep(boost::posix_time::seconds(stats_thread_initial_call_delay));
-
-    while (true) {
-        send_usage_data_to_reporting_server(); 
-        boost::this_thread::sleep(boost::posix_time::seconds(stats_thread_sleep_time));
-    }
-}
 
 /* Thread for cleaning up ban list */
 void cleanup_ban_list() {
