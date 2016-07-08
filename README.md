@@ -26,7 +26,7 @@ Project
 - [Please fill out the survey, we need your voice!](https://docs.google.com/forms/d/1YoXQImMeEjBH-JPz3KYtcDwknHs8xrI538ObwSy9uZo/viewform)
 - Detailed reference in Russian: [link](docs/FastNetMon_Reference_Russian.pdf)
 
-Plese keep in mind! We will ask your email from install script. Also FastNetMon will send your traffic speed to monitoring server each hour. We will keep this information secret and it's required only for monitoring number of customers and further toolkit optimizations.
+FastNetMon collects anonymous hourly traffic volume statistics, which is sent to developers. This information won't be shared with 3rd parties and is only needed for further product improvements.
 
 Supported packet capture engines
 --------------------------------
