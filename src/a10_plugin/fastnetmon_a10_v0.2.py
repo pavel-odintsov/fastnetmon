@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# v0.2 created [ban |unban] [on ramp | off ramp action] for A10 TPS 
+# v0.2 created [ban | unban] [on ramp | off ramp action] for A10 TPS 
 # Eric Chou (ericc@a10networks.com)
 #
 
@@ -10,6 +10,8 @@ from sys import stdin
 import optparse
 import logging, json
 from a10 import axapi_auth, axapi_action
+from json_config.logoff import logoff_path
+from json_config.write_memory import write_mem_path
 
 LOG_FILE = "/var/log/fastnetmon-notify.log"
 
@@ -45,7 +47,10 @@ if action == "unban":
     except Exception as e: 
         logger.info("route not removed in unban, returned: " + str(e))
 
-    axapi_action(mitigator_base_url+'/axapi/v3/logoff', signature=signature)
+    # Commit config
+    axapi_action(mitigator_base_url+write_mem_path, signature=signature)
+    # Logoff
+    axapi_action(mitigator_base_url+logoff_path, signature=signature)
  
     sys.exit(0)
 
@@ -55,10 +60,8 @@ elif action == "ban":
     if zone_name in [i['zone-name'] for i in json.loads(r)['zone-list']]:
         r = axapi_action(mitigator_base_url+'/axapi/v3/ddos/dst/zone/'+zone_name, method="DELETE", signature=signature)
         logger.info(str(r))
-    axapi_action(mitigator_base_url+'/axapi/v3/logoff', signature=signature)
 
     # A10 Mitigation On Ramp 
-    mitigator_base_url, signature = axapi_auth(mitigator_ip, "admin", "a10")
     zone_name = client_ip_as_string + "_zone"
     ip_addr = client_ip_as_string
     port_num = 53
@@ -87,7 +90,6 @@ elif action == "ban":
                         "type":"pkt-rate",
                         "score":50,
                         "zone-threshold-num":1,
-                        "zone-violation-actions":"bmf_a10_script",
                       }
                     ],
                   },
@@ -124,9 +126,9 @@ elif action == "ban":
         logger("route not added: " + str(e))
 
     # Commit changes
-    axapi_action(mitigator_base_url+'/axapi/v3/write/memory', signature=signature)
+    axapi_action(mitigator_base_url+write_mem_path, signature=signature)
     # Log off
-    axapi_action(mitigator_base_url+'/axapi/v3/logoff', signature=signature)
+    axapi_action(mitigator_base_url+logoff_path, signature=signature)
     
     sys.exit(0)
 
