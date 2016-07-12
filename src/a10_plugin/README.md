@@ -26,6 +26,7 @@ Example Usage:
 
 - Ban action: 
 
+```
 a10-ubuntu3:~/fastnetmon/src/a10_plugin$ sudo python fastnetmon_a10_v0.2.py "10.10.10.10" "outgoing" "111111" "ban"
 
 TH4435-1#show ddos dst zone all-entries
@@ -51,13 +52,16 @@ TH4435-1#
 TH4435-1#sh run router bgp | i 10.10.10.10
   network 10.10.10.10/32
 TH4435-1#
+```
 
 - Unban action: 
 
 a10-ubuntu3:~/fastnetmon/src/a10_plugin$ sudo python fastnetmon_a10_v0.2.py "10.10.10.10" "outgoing" "111111" "unban"
 
+```
 TH4435-1#sh run router bgp | i 10.10.10.10
 TH4435-1#
+```
 
 
 
