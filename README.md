@@ -13,10 +13,6 @@ What is a "flow" in FastNetMon terms?  It's one or multiple UDP, TCP, or ICMP co
 
 License: GPLv2
 
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/FastVPSEestiOu/fastnetmon?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) 
-
-
-
 Project 
 -------
 - [Mailing list](https://groups.google.com/forum/#!forum/fastnetmon)
