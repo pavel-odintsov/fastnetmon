@@ -2,6 +2,7 @@
 
 #
 # v0.2 created [ban | unban] [on ramp | off ramp action] for A10 TPS 
+# v0.3 offload URI path and json_body into separate json_config files
 # Eric Chou (ericc@a10networks.com)
 #
 
@@ -12,6 +13,8 @@ import logging, json
 from a10 import axapi_auth, axapi_action
 from json_config.logoff import logoff_path
 from json_config.write_memory import write_mem_path
+from json_config.ddos_dst_zone import ddos_dst_zone_path, ddos_dst_zone
+from json_config.bgp import bgp_advertisement_path, bgp_advertisement
 
 LOG_FILE = "/var/log/fastnetmon-notify.log"
 
@@ -43,7 +46,7 @@ mitigator_base_url, signature = axapi_auth(mitigator_ip, "admin", "a10")
 
 if action == "unban":
     try: 
-        r = axapi_action(mitigator_base_url+'/axapi/v3/router/bgp/'+asn+'/network/ip-cidr/'+ip_addr+'%2F32', method="DELETE", signature=signature)
+        r = axapi_action(mitigator_base_url+bgp_advertisement+asn+'/network/ip-cidr/'+ip_addr+'%2F32', method="DELETE", signature=signature)
     except Exception as e: 
         logger.info("route not removed in unban, returned: " + str(e))
 
@@ -56,72 +59,23 @@ if action == "unban":
 
 elif action == "ban":
     
-    r = axapi_action(mitigator_base_url+'/axapi/v3/ddos/dst/zone/', method='GET', signature=signature)
+    r = axapi_action(mitigator_base_url+ddos_dst_zone_path, method='GET', signature=signature)
     if zone_name in [i['zone-name'] for i in json.loads(r)['zone-list']]:
-        r = axapi_action(mitigator_base_url+'/axapi/v3/ddos/dst/zone/'+zone_name, method="DELETE", signature=signature)
+        r = axapi_action(mitigator_base_url+ddos_dst_zone_path+zone_name, method="DELETE", signature=signature)
         logger.info(str(r))
 
     # A10 Mitigation On Ramp 
     zone_name = client_ip_as_string + "_zone"
     ip_addr = client_ip_as_string
-    port_num = 53
-    port_protocol = 'udp'
-    ddos_violation_action_payload = {
-      "zone-list": [
-        {
-          "zone-name":zone_name,
-          "ip": [
-            {
-              "ip-addr":ip_addr
-            }
-          ],
-          "operational-mode":"monitor",
-          "port": {
-            "zone-service-list": [
-              {
-                "port-num":port_num,
-                "protocol":port_protocol,
-                "level-list": [
-                  {
-                    "level-num":"0",
-                    "zone-escalation-score":1,
-                    "indicator-list": [
-                      {
-                        "type":"pkt-rate",
-                        "score":50,
-                        "zone-threshold-num":1,
-                      }
-                    ],
-                  },
-                  {
-                    "level-num":"1",
-                  }
-                ],
-              }
-            ],
-          },
-        }
-      ]
-    }   
+    returned_body = ddos_dst_zone(zone_name, ip_addr)
     try:
-        r = axapi_action(mitigator_base_url+'/axapi/v3/ddos/dst/zone', signature=signature, payload=ddos_violation_action_payload)
+        r = axapi_action(mitigator_base_url+ddos_dst_zone_path, signature=signature, payload=returned_body)
     except Exception as e:
         logger("zone not created: " + str(e))
 
-    route_advertisement = {
-      "bgp":
-        {
-          "network": {
-            "ip-cidr-list": [
-              {
-                "network-ipv4-cidr":ip_addr+"/32",
-              }
-            ]
-          },
-        }
-    }
+    route_advertisement = bgp_advertisement(ip_addr) 
     try: 
-        r = axapi_action(mitigator_base_url+'/axapi/v3/router/bgp/'+asn, payload=route_advertisement, signature=signature)
+        r = axapi_action(mitigator_base_url+bgp_advertisement_path+asn, payload=route_advertisement, signature=signature)
     except Exception as e:
         logger("route not added: " + str(e))
 
