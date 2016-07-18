@@ -1,0 +1,14 @@
+!
+ddos dst zone Test-Server
+  ip 210.0.0.10
+  operational-mode monitor
+  port 53 udp
+    level 0
+      zone-escalation-score 1
+      indicator pkt-rate
+        score 50
+        zone-threshold 1
+        zone-violation-actions bmf_a10_script
+    level 1
+!
+
