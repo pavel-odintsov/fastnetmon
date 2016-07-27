@@ -1,0 +1,5 @@
+*.py
+*.python
+*.egg
+*.egg-info/
+
