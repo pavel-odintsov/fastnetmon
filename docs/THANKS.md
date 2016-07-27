@@ -4,6 +4,7 @@ Thanks file! For all peoples which helped this project :)
 - Andrei Ziltsov / FastVPS Eesti OU for testing and patience :) And for syncing GoBGP's gRPC intergration with upstream. 
 - Luca Deri for PF_RING toolkit!
 - Max Dobladez for Mikritik API support in notify script handler. 
+- Eric Chou and Rich Groves for A10 Networks TPS integration plugin
 - Elliot Morales Solé for improvements for ExaBGP integration 
 - Roberto Bertó for Docker images and docs about Junos
 - Alfredo Cardigliano for helping me with PF_RING libraries :)
