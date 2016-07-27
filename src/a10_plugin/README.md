@@ -1,10 +1,10 @@
-Fastnetmon Plugin:  A10 Networks Thunder TPS Appliance AXAPIv3 integration for FastNetMon  
+#A10 Networks Thunder TPS Appliance AXAPIv3 integration for FastNetMon  
 
 This script connect to A10 Thunder TPS Appliance to create Protected Object and announce BGP route toward upstream router upon FastNetMon ban detection. 
 
 1. Indicate the fastnetmon_a10_xx.py script as the executed script under /etc/fastnetmon.conf, i.e. notify_script_path=<path>/fastnetmon_a10_v0.2.py.
-1a. Alternatively, place all files in a directory that is reachable by FastNetMon and indicate it as the executed script in /etc/fastnetmon.conf.
-2. Make sure both Python scripts are executable, i.e. "chmod +x a10.py fastnetmon_a10_v0.2.py"
+2. Alternatively, place all files in a directory that is reachable by FastNetMon and indicate it as the executed script in /etc/fastnetmon.conf.
+3. Make sure both Python scripts are executable, i.e. "chmod +x a10.py fastnetmon_a10_v0.2.py"
 
 Please modify the following: 
 
