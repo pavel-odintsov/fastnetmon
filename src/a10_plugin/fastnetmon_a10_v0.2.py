@@ -40,13 +40,13 @@ logger.info(" - " . join(sys.argv))
 mitigator_ip = "192.168.199.152"
 zone_name = client_ip_as_string + "_zone"
 ip_addr = client_ip_as_string
-asn="64513"
+asn="65003"
 mitigator_base_url, signature = axapi_auth(mitigator_ip, "admin", "a10")
 
 
 if action == "unban":
     try: 
-        r = axapi_action(mitigator_base_url+bgp_advertisement+asn+'/network/ip-cidr/'+ip_addr+'%2F32', method="DELETE", signature=signature)
+        r = axapi_action(mitigator_base_url+'/axapi/v3/router/bgp/'+asn+'/network/ip-cidr/172.31.201.2%2F32', method="DELETE", signature=signature)
     except Exception as e: 
         logger.info("route not removed in unban, returned: " + str(e))
 
@@ -57,7 +57,7 @@ if action == "unban":
  
     sys.exit(0)
 
-elif action == "ban":
+elif action == "ban" or action == "attack_details":
     
     r = axapi_action(mitigator_base_url+ddos_dst_zone_path, method='GET', signature=signature)
     if zone_name in [i['zone-name'] for i in json.loads(r)['zone-list']]:
@@ -85,11 +85,6 @@ elif action == "ban":
     axapi_action(mitigator_base_url+logoff_path, signature=signature)
     
     sys.exit(0)
-
-elif action == "attack_details":
-    
-    sys.exit(0)
-
 
 else:
     sys.exit(0)
