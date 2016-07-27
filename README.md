@@ -31,6 +31,11 @@ Supported packet capture engines
 
 You can check out the [comparison table](docs/CAPTURE_BACKENDS.md) for all available packet capture engines.
 
+Complete integration with following vendors 
+--------------------------------
+- [A10 Networks TPS integration](src/a10_plugin)
+- [MikroTik RouterOS](src/mikrotik_plugin)
+
 Features
 --------
 - Complete [BGP Flow Spec support](docs/BGP_FLOW_SPEC.md), RFC 5575
@@ -38,7 +43,6 @@ Features
 - Trigger block/notify script if an IP exceeds defined thresholds for packets/bytes/flows per second
 - Thresholds can be configured per-subnet with the hostgroups feature
 - [Announce blocked IPs](docs/EXABGP_INTEGRATION.md) via BGP to routers with [ExaBGP](https://github.com/Exa-Networks/exabgp)
-- [A10 Networks TPS integration](src/a10_plugin)
 - GoBGP [integration](docs/GOBGP.md) for unicast IPv4 announcements (you need build support manually).
 - Full integration with [Graphite](docs/GRAPHITE_INTEGRATION.md) and [InfluxDB](docs/INFLUXDB_INTEGRATION.md)
 - API (you need build support manually)
