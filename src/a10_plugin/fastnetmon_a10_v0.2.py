@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
 #
-# v0.2 created [ban | unban] [on ramp | off ramp action] for A10 TPS 
-# v0.3 offload URI path and json_body into separate json_config files
+# v0.1 created [ban | unban] [on ramp | off ramp action] for A10 TPS 
+# v0.2 offload URI path and json_body into separate json_config files
 # Eric Chou (ericc@a10networks.com)
 #
 
