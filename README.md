@@ -33,7 +33,7 @@ You can check out the [comparison table](docs/CAPTURE_BACKENDS.md) for all avail
 
 Complete integration with following vendors 
 --------------------------------
-- [A10 Networks TPS integration](src/a10_plugin)
+- [A10 Networks Thunder TPS Appliance integration](src/a10_plugin)
 - [MikroTik RouterOS](src/mikrotik_plugin)
 
 Features
