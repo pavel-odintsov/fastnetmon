@@ -1,0 +1,335 @@
+a10-url:/axapi/v3/admin
+{
+  "admin-list": [
+    {
+      "user":"admin",
+      "uuid":"57937c0c-06cb-11e6-86f7-000c2998bd62",
+      "password": {
+        "encrypted-in-module":"sCyT4priW1OZSg3m1RiAf0bOyZ0Odnf1rQRp+BHohemGp1YhW+V1NjwQjLjV2wDn",
+        "uuid":"57939002-06cb-11e6-86f7-000c2998bd62"
+      }
+    }
+  ]
+}
+
+a10-url:/axapi/v3/multi-config
+{
+  "multi-config": {
+    "enable":1,
+    "uuid":"f092f0a8-f579-11e5-9035-000c29188423"
+  }
+}       
+
+a10-url:/axapi/v3/monitor
+{
+  "monitor": {
+    "buffer-usage":91750,
+    "uuid":"cb839304-7f58-11e5-9c10-000c2969ee03"
+  }
+}
+
+a10-url:/axapi/v3/system
+{
+  "system": {
+    "anomaly-log":1,
+    "attack":1,
+    "attack-log":1,
+    "ddos-attack":1,
+    "ddos-log":1,
+    "uuid":"cb839782-7f58-11e5-9c10-000c2969ee03"
+  }
+}
+
+a10-url:/axapi/v3/class-list
+{
+  "class-list-list": [
+    {
+      "name":"ddos-block",
+      "file":1,
+      "uuid":"e30f55c2-d17d-11e5-a0c9-370c07f071f0"
+    }
+  ]
+}
+
+a10-url:/axapi/v3/hostname
+{
+  "hostname": {
+    "value":"tps-fastnetmon",
+    "uuid":"cb83a236-7f58-11e5-9c10-000c2969ee03"
+  }
+}
+
+a10-url:/axapi/v3/interface/management
+{
+  "management": {
+    "ip": {
+      "ipv4-address":"x.x.x.x",
+      "ipv4-netmask":"x.x.x.x",
+      "control-apps-use-mgmt-port":1,
+      "default-gateway":"x.x.x.x"
+    },
+    "action":"enable",
+    "uuid":"d0bdee32-7f58-11e5-8648-000c2969ee03"
+  }
+}
+
+a10-url:/axapi/v3/interface/ethernet
+{
+  "ethernet-list": [
+    {
+      "ifnum":1,
+      "name":"Inbound",
+      "action":"enable",
+      "uuid":"cb83a4e8-7f58-11e5-9c10-000c2969ee03",
+      "ddos": {
+        "inside":1,
+        "uuid":"2c639224-06cb-11e6-a5cd-000c2998bd62"
+      } 
+    },
+    {
+      "ifnum":2,
+      "name":"Outbound",
+      "uuid":"cb83a5e2-7f58-11e5-9c10-000c2969ee03"
+    }
+  ]
+}
+
+a10-url:/axapi/v3/glid
+{
+  "glid-list": [
+    {
+      "name":"1",
+      "description":"10gbps rate limiter",
+      "bit-rate-limit":10000000,
+      "uuid":"3b62871e-ff1c-11e5-92fe-000c29c261a5"
+    },
+    {
+      "name":"2",
+      "description":"1gbps rate limiter",
+      "bit-rate-limit":1000000,
+      "uuid":"f422ba0e-0641-11e6-88f9-000c29c261a5"
+    },
+    {
+      "name":"3",
+      "description":"100mbps rate limiter",
+      "bit-rate-limit":100000,
+      "uuid":"52f1d6ac-06cc-11e6-86f7-000c2998bd62"
+    }
+  ]
+}
+
+a10-url:/axapi/v3/ddos/protection
+{
+  "protection": {
+    "toggle":"enable",
+    "rate-interval":"1sec",
+    "uuid":"cb83a6c8-7f58-11e5-9c10-000c2969ee03"
+  }
+}
+
+a10-url:/axapi/v3/ddos/resource-tracking/cpu
+{       
+  "cpu": {
+    "enable":1,
+    "uuid":"2f7a3198-cd14-11e5-abab-000c29d5128f"
+  }
+}
+
+a10-url:/axapi/v3/ddos/zone-template/logging
+{
+  "logging-list": [
+    {
+      "logging-tmpl-name":"cef-logger",
+      "log-format-cef":1,
+      "enable-action-logging":1,
+      "uuid":"6573c09a-ff1c-11e5-92fe-000c29c261a5"
+    }
+  ]
+}
+
+a10-url:/axapi/v3/ddos/zone-template/tcp
+{
+  "tcp-list": [
+    {   
+      "name":"tcp-protect1",
+      "syn-authentication": {
+        "syn-auth-type":"send-rst",
+        "syn-auth-pass-action":"authenticate-src",
+        "syn-auth-fail-action":"drop"
+      },
+      "uuid":"3a627a92-06c7-11e6-a5cd-000c2998bd62"
+    }
+  ]
+}
+
+a10-url:/axapi/v3/ddos/zone-template/udp
+{
+  "udp-list": [
+    {
+      "name":"udp-protect1",
+      "spoof-detect-retry-timeout":5,
+      "spoof-detect-min-delay":2,
+      "spoof-detect-pass-action":"authenticate-src",
+      "spoof-detect-fail-action":"drop",
+      "known-resp-src-port-cfg": {
+        "known-resp-src-port":1,
+        "known-resp-src-port-action":"drop"
+      },
+      "uuid":"41a32342-06c7-11e6-a5cd-000c2998bd62"
+    }
+  ]
+}
+
+a10-url:/axapi/v3/ddos/src/default
+{
+  "default-list": [
+    {
+      "default-address-type":"ip",
+      "uuid":"88718bf0-d16c-11e5-a0c9-370c07f071f0"
+    },
+    {
+      "default-address-type":"ipv6",
+      "uuid":"c16cea34-d3d4-11e5-a730-000c29d5128f"
+    }
+  ]
+}
+
+a10-url:/axapi/v3/logging/syslog
+{
+  "syslog": {
+    "syslog-levelname":"information",
+    "uuid":"cb8468f6-7f58-11e5-9c10-000c2969ee03"
+  }
+}
+
+a10-url:/axapi/v3/logging/host/ipv4addr
+{
+  "ipv4addr-list": [
+    {
+      "host-ipv4":"x.x.x.x",
+      "uuid":"51393f4a-d31d-11e5-9967-000c29d5128f"
+    }
+  ]
+}
+
+a10-url:/axapi/v3/router/bgp
+{
+  "bgp-list": [
+    {
+      "as-number":2,
+      "bgp": {
+        "log-neighbor-changes":1,
+        "router-id":"x.x.x.x"
+      },
+      "uuid":"775fd5a2-0690-11e6-a0e2-000c29c261a5",
+      "neighbor": {
+        "ipv4-neighbor-list": [
+          {
+            "neighbor-ipv4":"x.x.x.x",
+            "nbr-remote-as":1,
+            "description":"upstream",
+            "neighbor-route-map-lists": [
+              {
+                "nbr-route-map":"ddos-advertise",
+                "nbr-rmap-direction":"out"
+              }
+            ],
+            "uuid":"824b2b74-0690-11e6-a0e2-000c29c261a5"
+          }
+        ]
+      }
+    }   
+  ]
+}
+
+a10-url:/axapi/v3/route-map
+{
+  "route-map-list": [
+    {
+      "tag":"ddos-advertise",
+      "action":"permit",
+      "sequence":1,
+      "uuid":"57903fe2-06cb-11e6-86f7-000c2998bd62"
+    }
+  ]
+}
+
+a10-url:/axapi/v3/sflow/setting
+{
+  "setting": {
+    "max-header":128,
+    "packet-sampling-rate":1000,
+    "uuid":"c36affaa-06ca-11e6-a5cd-000c2998bd62"
+  }     
+}
+
+a10-url:/axapi/v3/sflow/collector/ip
+{
+  "ip-list": [
+    {
+      "addr":"x.x.x.x",
+      "port":6343,
+      "use-mgmt-port":1,
+      "uuid":"ffd9531a-06ca-11e6-a5cd-000c2998bd62"
+    }
+  ]
+}
+
+a10-url:/axapi/v3/sflow/agent/address
+{
+  "address": {
+    "ip":"x.x.x.x",
+    "uuid":"fa5b10ba-06c8-11e6-a5cd-000c2998bd62"
+  }
+}
+        
+a10-url:/axapi/v3/sflow/sampling
+{
+  "sampling": {
+    "eth-list": [
+      {
+        "eth-start":1,
+        "eth-end":1
+      }
+    ],
+    "uuid":"c3714a04-06ca-11e6-a5cd-000c2998bd62"
+  }
+}
+
+a10-url:/axapi/v3/vcs-vblades/stat
+{
+  "stat-list": [
+    {
+      "vblade-id":1,
+      "uuid":"55d1650a-06cb-11e6-a9b6-000c2998bd62"
+    },
+    {
+      "vblade-id":2,
+      "uuid":"55d16532-06cb-11e6-a9b6-000c2998bd62"
+    },
+    {
+      "vblade-id":3,
+      "uuid":"55d16564-06cb-11e6-a9b6-000c2998bd62"
+    },
+    {
+      "vblade-id":4,
+      "uuid":"55d1658c-06cb-11e6-a9b6-000c2998bd62"
+    },
+    {
+      "vblade-id":5,
+      "uuid":"55d165be-06cb-11e6-a9b6-000c2998bd62"
+    },
+    {
+      "vblade-id":6,
+      "uuid":"55d165e6-06cb-11e6-a9b6-000c2998bd62"
+    },
+    {
+      "vblade-id":7,
+      "uuid":"55d1660e-06cb-11e6-a9b6-000c2998bd62"
+    },  
+    {
+      "vblade-id":8,
+      "uuid":"55d16636-06cb-11e6-a9b6-000c2998bd62"
+    }
+  ]
+}
