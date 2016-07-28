@@ -1,0 +1,53 @@
+multi-config enable
+!
+monitor buffer-usage 91750
+!
+system anomaly log
+system attack log
+system ddos-attack log
+!
+glid 1
+  description "10gbps rate limiter"
+  bit-rate-limit 10000000
+!
+glid 2
+  description "1gbps rate limiter"
+  bit-rate-limit 1000000
+!
+glid 3
+  description “100mbps rate limiter"
+  bit-rate-limit 100000
+!
+ddos protection enable
+ddos protection rate-interval 1sec
+!
+ddos resource-tracking cpu enable
+!
+ddos zone-template logging cef-logger
+  log-format-cef
+  enable-action-logging
+!
+ddos zone-template tcp tcp-protect1
+  syn-authentication send-rst
+  syn-authentication pass-action authenticate-src
+  syn-authentication fail-action drop
+!
+ddos zone-template udp udp-protect1
+  spoof-detect timeout 5
+  spoof-detect min-delay 2
+  spoof-detect pass-action authenticate-src
+  spoof-detect fail-action drop
+  known-resp-src-port action drop
+!
+logging host x.x.x.x
+!
+router bgp 2
+  bgp router-id x.x.x.x
+  bgp log-neighbor-changes
+  neighbor x.x.x.x remote-as 1
+  neighbor x.x.x.x description upstream
+  neighbor x.x.x.x route-map ddos-advertise out
+!
+route-map ddos-advertise permit 1
+!
+end
