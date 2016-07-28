@@ -1,0 +1,35 @@
+ddos dst zone xxxx
+  ip x.x.x.x
+  operational-mode monitor
+  bgp advertised
+  zone-template logging cef-logger
+  log enable periodic
+  ip-proto tcp
+    drop-frag-pkt
+  ip-proto udp
+    drop-frag-pkt
+  ip-proto icmp-v4
+    deny
+    detection-enable
+  ip-proto icmp-v6
+    deny
+    detection-enable
+  port other tcp
+    detection-enable
+    level 0
+      zone-escalation-score 10
+      indicator pkt-rate
+        score 20
+        zone-threshold 1
+    level 1
+      zone-escalation-score 10
+      zone-template tcp tcp-protect1
+  port other udp
+    detection-enable
+    level 0
+      zone-escalation-score 10
+      indicator pkt-rate
+        score 20
+        zone-threshold 1
+    level 1
+      zone-template udp udp-protect1
