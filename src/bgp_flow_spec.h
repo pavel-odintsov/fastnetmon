@@ -307,16 +307,18 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
         // More details regarding format: https://github.com/Exa-Networks/exabgp/blob/master/qa/conf/api-flow.run
         // https://plus.google.com/+ThomasMangin/posts/bL6w16BXcJ4
         // This format is INCOMPATIBLE with ExaBGP v3, please be careful!
+        // v4 rule example:
+        // announce flow route { match { source 10.0.0.2/32; destination 10.0.0.3/32; destination-port =3128; protocol tcp; } then { rate-limit 9600; } }'
         std::string serialize_single_line_exabgp_v4_configuration() {
             this->enabled_indents = false;
-            this->enble_block_headers = false;
+            //this->enble_block_headers = false;
             sentence_separator = " "; 
 
             return "flow route " + this->serialize_match() + this->serialize_then(); 
 
             sentence_separator = ";";
             this->enabled_indents = true;
-            this->enble_block_headers = true; 
+            //this->enble_block_headers = true; 
         }
 
         std::string serialize_complete_exabgp_configuration() {
