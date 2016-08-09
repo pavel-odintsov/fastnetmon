@@ -309,7 +309,6 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
         // This format is INCOMPATIBLE with ExaBGP v3, please be careful!
         // v4 rule example:
         // announce flow route { match { source 10.0.0.2/32; destination 10.0.0.3/32; destination-port =3128; protocol tcp; } then { rate-limit 9600; } }'
-        // announce flow route match {destination 1.2.3.4/32 protocol [ udp ] source-port [ =53 ] }then {discard }
         
         std::string serialize_single_line_exabgp_v4_configuration() {
             this->enabled_indents = false;
