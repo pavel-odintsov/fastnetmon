@@ -36,6 +36,8 @@ Complete integration with following vendors
 - [A10 Networks Thunder TPS Appliance integration](src/a10_plugin)
 - [MikroTik RouterOS](src/mikrotik_plugin)
 
+Travis status: ![Travis](https://travis-ci.org/pavel-odintsov/fastnetmon.svg?branch=master)
+
 Features
 --------
 - Complete [BGP Flow Spec support](docs/BGP_FLOW_SPEC.md), RFC 5575
