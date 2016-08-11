@@ -3621,7 +3621,9 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
 
     src = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
     dst = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
+
     flow = (struct ndpi_flow_struct *)malloc(ndpi_size_flow_struct); 
+    memset(flow, 0, ndpi_size_flow_struct);
 
 
     while (1) {
@@ -3649,7 +3651,6 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
 
         memset(src, 0, ndpi_size_id_struct);
         memset(dst, 0, ndpi_size_id_struct);
-        memset(flow, 0, ndpi_size_flow_struct);
 
         std::string parsed_packet_as_string;
 
@@ -3694,27 +3695,24 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
     // Attack type is unknown by default
 //    attack_type = AMPLIFICATION_ATTACK_UNKNOWN;
 
-    char buff[256];
-                                          
-    snprintf(&buff[0],sizeof(buff)-1,"DPI pkt stats: total:%llu DNS:%llu NTP:%llu SSDP:%llu SNMP:%llu",
-                                                  total_packets_number,
-                                                  dns_amplification_packets,
-                                                  ntp_amplification_packets,
-                                                  ssdp_amplification_packets,
-                                                  snmp_amplification_packets);
-    logger << log4cpp::Priority::INFO << buff;
+    logger << log4cpp::Priority::INFO 
+           << "DPI pkt stats: total:"  << total_packets_number
+                           << " DNS:"  << dns_amplification_packets
+                           << " NTP:"  << ntp_amplification_packets
+                           << " SSDP:" << ssdp_amplification_packets
+                           << " SNMP:" << snmp_amplification_packets;
                                        
     // Detect amplification attack type
-    if ( (double)dns_amplification_packets / (double)total_packets_number > 0.1) {
+    if ( (double)dns_amplification_packets / (double)total_packets_number > 0.2) {
 //        attack_type = AMPLIFICATION_ATTACK_DNS;
         launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_DNS, client_ip_as_string);        
-    } else if ( (double)ntp_amplification_packets / (double)total_packets_number > 0.1) {
+    } else if ( (double)ntp_amplification_packets / (double)total_packets_number > 0.2) {
 //        attack_type = AMPLIFICATION_ATTACK_NTP;
         launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_NTP, client_ip_as_string);        
-    } else if ( (double)ssdp_amplification_packets / (double)total_packets_number > 0.1) {
+    } else if ( (double)ssdp_amplification_packets / (double)total_packets_number > 0.2) {
 //        attack_type = AMPLIFICATION_ATTACK_SSDP;
         launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_SSDP, client_ip_as_string);        
-    } else if ( (double)snmp_amplification_packets / (double)total_packets_number > 0.1) {
+    } else if ( (double)snmp_amplification_packets / (double)total_packets_number > 0.2) {
 //        attack_type = AMPLIFICATION_ATTACK_SNMP;
         launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_SNMP, client_ip_as_string);        
     } else {
