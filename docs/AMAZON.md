@@ -1,5 +1,7 @@
 ### We have Amazon AMI images
 
+UPDATE: We've removed and deprecated Amazon images because it has ZERO interest. 
+
 Please use this community image:
 ```bash
 fastnetmon-git 1443707118

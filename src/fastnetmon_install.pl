@@ -17,6 +17,11 @@ unless ($temp_folder_for_building_project && -e $temp_folder_for_building_projec
     die "Can't create temp folder in /tmp for building project: $temp_folder_for_building_project\n";
 }
 
+# Hack for clang build on Travis 
+if (defined($ENV{'TRAVIS'}) && $ENV{'TRAVIS'}) {
+    $ENV{'PATH'} = "$ENV{PATH}:/usr/local/clang-3.5.0/bin";
+}
+
 my $start_time = time();
 
 my $fastnetmon_code_dir = "$temp_folder_for_building_project/fastnetmon/src";
@@ -67,24 +72,16 @@ GetOptions(
     'create-binary-bundle' => \$create_binary_bundle,
 );
 
-my $we_have_ndpi_support = '';
-my $we_have_luajit_support = '';
-my $we_have_hiredis_support = '';
-my $we_have_log4cpp_support = '';
+my $we_have_ndpi_support = '1';
+my $we_have_luajit_support = '1';
+my $we_have_hiredis_support = '1';
+my $we_have_log4cpp_support = '1';
 my $we_have_pfring_support = '';
-my $we_have_mongo_support = '';
+my $we_have_mongo_support = '1';
 my $we_have_protobuf_support = '';
 my $we_have_grpc_support = '';
 my $we_have_golang_support = '';
 my $we_have_gobgp_support = '';
-
-if ($we_use_code_from_master) {
-    $we_have_ndpi_support = 1;
-    $we_have_luajit_support = 1;
-    $we_have_hiredis_support = 1;
-    $we_have_log4cpp_support = 1;
-    $we_have_mongo_support = 1;
-}
 
 my $enable_gobgp_backend = '';
 
@@ -203,9 +200,7 @@ sub main {
         install_pf_ring();
     }
 
-    if ($we_use_code_from_master) {
-        install_json_c();
-    }   
+    install_json_c();
 
     if ($we_have_ndpi_support) {
         install_ndpi();
