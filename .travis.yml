@@ -1,3 +1,5 @@
+sudo: required
+dist: trusty
 language: cpp
 compiler:
   - gcc
@@ -6,7 +8,7 @@ before_install:
   - sudo apt-get update; true
 before_script:
   - pwd > /tmp/old_current_path
-  - sudo perl src/fastnetmon_install.pl --use-git-master
+  - sudo -i -E perl src/fastnetmon_install.pl --use-git-master
   - cd `cat /tmp/old_current_path`
   - cd src
 script: mkdir -p build; cd build; cmake ..; make

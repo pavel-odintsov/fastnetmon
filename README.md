@@ -13,10 +13,6 @@ What is a "flow" in FastNetMon terms?  It's one or multiple UDP, TCP, or ICMP co
 
 License: GPLv2
 
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/FastVPSEestiOu/fastnetmon?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) 
-
-
-
 Project 
 -------
 - [Mailing list](https://groups.google.com/forum/#!forum/fastnetmon)
@@ -34,6 +30,13 @@ Supported packet capture engines
 - Port mirror/SPAN capture with PF_RING (with ZC/DNA mode support [need license](http://www.ntop.org/products/pf_ring/)), SnabbSwitch, NETMAP and PCAP
 
 You can check out the [comparison table](docs/CAPTURE_BACKENDS.md) for all available packet capture engines.
+
+Complete integration with following vendors 
+--------------------------------
+- [A10 Networks Thunder TPS Appliance integration](src/a10_plugin)
+- [MikroTik RouterOS](src/mikrotik_plugin)
+
+Travis status: ![Travis](https://travis-ci.org/pavel-odintsov/fastnetmon.svg?branch=master)
 
 Features
 --------
@@ -62,7 +65,7 @@ Features
 Running Fastnetmon
 ------------------
 ### Supported platforms
-- Linux (Debian 6/7/8, CentOS 6/7, Ubuntu 12+)
+- Linux (Debian 6/7/8, CentOS 6/7, Ubuntu 12.04, 14.04)
 - FreeBSD 9, 10, 11 (only 1.1.2 release)
 - Mac OS X Yosemite (only 1.1.2 release)
 
