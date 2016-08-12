@@ -3621,10 +3621,7 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
 
     src = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
     dst = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
-
     flow = (struct ndpi_flow_struct *)malloc(ndpi_size_flow_struct); 
-    memset(flow, 0, ndpi_size_flow_struct);
-
 
     while (1) {
         struct fastnetmon_pcap_pkthdr pcap_packet_header;
@@ -3651,6 +3648,18 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
 
         memset(src, 0, ndpi_size_id_struct);
         memset(dst, 0, ndpi_size_id_struct);
+
+        // the flow must be reset to zero state - in other case the DPI will not detect all packets properly.
+        // To use flow properly there must be much more complicated code (with flow buffer for each flow probably)
+        // following code is copied from ndpi_free_flow() just to be sure there will be no memory leaks due to memset()
+        if (flow->http.url) {
+            ndpi_free(flow->http.url);
+        };
+        if (flow->http.content_type) {
+            ndpi_free(flow->http.content_type);
+        }
+        //
+        memset(flow, 0, ndpi_size_flow_struct);
 
         std::string parsed_packet_as_string;
 
