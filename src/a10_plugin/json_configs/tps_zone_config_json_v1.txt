@@ -15,18 +15,15 @@ a10-url:/axapi/v3/ddos/dst/zone
       },
       "log-enable":1,
       "log-periodic":1,
-      "uuid":"2d503b52-06cf-11e6-86f7-000c2998bd62",
       "ip-proto": {
         "proto-tcp-udp-list": [
           {
             "protocol":"tcp",
             "drop-frag-pkt":1,
-            "uuid":"2d6b9672-06cf-11e6-86f7-000c2998bd62"
           },
           {
             "protocol":"udp",
             "drop-frag-pkt":1,
-            "uuid":"2d6be0d2-06cf-11e6-86f7-000c2998bd62"
           }
         ],
         "proto-name-list": [
@@ -34,13 +31,11 @@ a10-url:/axapi/v3/ddos/dst/zone
             "protocol":"icmp-v4",
             "deny":1,
             "detection-enable":1,
-            "uuid":"2d6c202e-06cf-11e6-86f7-000c2998bd62"
           },
           {
             "protocol":"icmp-v6",
             "deny":1,
             "detection-enable":1,
-            "uuid":"2d6e1f0a-06cf-11e6-86f7-000c2998bd62"
           }
         ]
       },
@@ -50,18 +45,15 @@ a10-url:/axapi/v3/ddos/dst/zone
             "port-other":"other",
             "protocol":"tcp",
             "detection-enable":1,
-            "uuid":"2d6fe3f8-06cf-11e6-86f7-000c2998bd62",
             "level-list": [
               {
                 "level-num":"0",
                 "zone-escalation-score":10,
-                "uuid":"2d717506-06cf-11e6-86f7-000c2998bd62",
                 "indicator-list": [
                   {
                     "type":"pkt-rate",
                     "score":20,
                     "zone-threshold-num":1,
-                    "uuid":"2d72359a-06cf-11e6-86f7-000c2998bd62"
                   }
                 ]
               },
@@ -70,7 +62,6 @@ a10-url:/axapi/v3/ddos/dst/zone
                 "zone-template": {
                   "tcp":"tcp-protect1"
                 },
-                "uuid":"2d72f9bc-06cf-11e6-86f7-000c2998bd62"
               }
             ]
           },
@@ -78,18 +69,15 @@ a10-url:/axapi/v3/ddos/dst/zone
             "port-other":"other",
             "protocol":"udp",
             "detection-enable":1,
-            "uuid":"2d73a7cc-06cf-11e6-86f7-000c2998bd62",
             "level-list": [
               {
                 "level-num":"0",
                 "zone-escalation-score":10,
-                "uuid":"2d742dc8-06cf-11e6-86f7-000c2998bd62",
                 "indicator-list": [
                   {
                     "type":"pkt-rate",
                     "score":20,
                     "zone-threshold-num":1,
-                    "uuid":"2d754f64-06cf-11e6-86f7-000c2998bd62"
                   }
                 ]
               },
@@ -98,7 +86,6 @@ a10-url:/axapi/v3/ddos/dst/zone
                 "zone-template": {
                   "udp":"udp-protect1"
                 },
-                "uuid":"2d7646e4-06cf-11e6-86f7-000c2998bd62"
               }
             ]
           }
