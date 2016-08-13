@@ -1,0 +1,10 @@
+Change Logs: 
+
+[8/12/2016]
+- removed configs/dns_test_server.txt
+- added configs/tps_base_config_v1.txt and configs/tps_zone_config_v1.txt
+- modified README file to reflect the dependencies for items under configs/ folder. 
+- created change_log.txt
+- modify json_configs/ddos_dst_zone.py to match json_configs/tps_zone_config_json_v1.txt
+- Took out BGP network advertisement, use 'bgp advertise' under dst zone instead
+

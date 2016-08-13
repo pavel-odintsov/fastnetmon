@@ -1,4 +1,4 @@
-ystem anomaly log 
+system anomaly log 
 system attack log 
 system ddos-attack log 
 !
