@@ -17,11 +17,6 @@ unless ($temp_folder_for_building_project && -e $temp_folder_for_building_projec
     die "Can't create temp folder in /tmp for building project: $temp_folder_for_building_project\n";
 }
 
-# Hack for clang build on Travis 
-if (defined($ENV{'TRAVIS'}) && $ENV{'TRAVIS'}) {
-    $ENV{'PATH'} = "$ENV{PATH}:/usr/local/clang-3.5.0/bin";
-}
-
 my $start_time = time();
 
 my $fastnetmon_code_dir = "$temp_folder_for_building_project/fastnetmon/src";
