@@ -8,7 +8,7 @@ before_install:
   - sudo apt-get update; true
 before_script:
   - sudo -i -E perl $TRAVIS_BUILD_DIR/fastnetmon/src/fastnetmon_install.pl --use-git-master
-  - cd $TRAVIS_BUILD_DIR/fastnetmon/src
+  - cd $TRAVIS_BUILD_DIR/src
 script: mkdir -p build; cd build; cmake ..; make
 notifications:
   email:
