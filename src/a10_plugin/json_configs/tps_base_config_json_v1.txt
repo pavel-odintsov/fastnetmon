@@ -1,0 +1,298 @@
+a10-url:/axapi/v3/admin
+{
+  "admin-list": [
+    {
+      "user":"admin",
+      "uuid":"57937c0c-06cb-11e6-86f7-000c2998bd62",
+      "password": {
+        "encrypted-in-module":"sCyT4priW1OZSg3m1RiAf0bOyZ0Odnf1rQRp+BHohemGp1YhW+V1NjwQjLjV2wDn",
+      }
+    }
+  ]
+}
+
+a10-url:/axapi/v3/multi-config
+{
+  "multi-config": {
+    "enable":1,
+  }
+}       
+
+a10-url:/axapi/v3/monitor
+{
+  "monitor": {
+    "buffer-usage":91750,
+  }
+}
+
+a10-url:/axapi/v3/system
+{
+  "system": {
+    "anomaly-log":1,
+    "attack":1,
+    "attack-log":1,
+    "ddos-attack":1,
+    "ddos-log":1,
+  }
+}
+
+a10-url:/axapi/v3/class-list
+{
+  "class-list-list": [
+    {
+      "name":"ddos-block",
+      "file":1,
+    }
+  ]
+}
+
+a10-url:/axapi/v3/hostname
+{
+  "hostname": {
+    "value":"tps-fastnetmon",
+  }
+}
+
+a10-url:/axapi/v3/interface/management
+{
+  "management": {
+    "ip": {
+      "ipv4-address":"x.x.x.x",
+      "ipv4-netmask":"x.x.x.x",
+      "control-apps-use-mgmt-port":1,
+      "default-gateway":"x.x.x.x"
+    },
+    "action":"enable",
+  }
+}
+
+a10-url:/axapi/v3/interface/ethernet
+{
+  "ethernet-list": [
+    {
+      "ifnum":1,
+      "name":"Inbound",
+      "action":"enable",
+      "ddos": {
+        "inside":1,
+      } 
+    },
+    {
+      "ifnum":2,
+      "name":"Outbound",
+    }
+  ]
+}
+
+a10-url:/axapi/v3/glid
+{
+  "glid-list": [
+    {
+      "name":"1",
+      "description":"10gbps rate limiter",
+      "bit-rate-limit":10000000,
+    },
+    {
+      "name":"2",
+      "description":"1gbps rate limiter",
+      "bit-rate-limit":1000000,
+    },
+    {
+      "name":"3",
+      "description":"100mbps rate limiter",
+      "bit-rate-limit":100000,
+    }
+  ]
+}
+
+a10-url:/axapi/v3/ddos/protection
+{
+  "protection": {
+    "toggle":"enable",
+    "rate-interval":"1sec",
+  }
+}
+
+a10-url:/axapi/v3/ddos/resource-tracking/cpu
+{       
+  "cpu": {
+    "enable":1,
+  }
+}
+
+a10-url:/axapi/v3/ddos/zone-template/logging
+{
+  "logging-list": [
+    {
+      "logging-tmpl-name":"cef-logger",
+      "log-format-cef":1,
+      "enable-action-logging":1,
+    }
+  ]
+}
+
+a10-url:/axapi/v3/ddos/zone-template/tcp
+{
+  "tcp-list": [
+    {   
+      "name":"tcp-protect1",
+      "syn-authentication": {
+        "syn-auth-type":"send-rst",
+        "syn-auth-pass-action":"authenticate-src",
+        "syn-auth-fail-action":"drop"
+      },
+    }
+  ]
+}
+
+a10-url:/axapi/v3/ddos/zone-template/udp
+{
+  "udp-list": [
+    {
+      "name":"udp-protect1",
+      "spoof-detect-retry-timeout":5,
+      "spoof-detect-min-delay":2,
+      "spoof-detect-pass-action":"authenticate-src",
+      "spoof-detect-fail-action":"drop",
+      "known-resp-src-port-cfg": {
+        "known-resp-src-port":1,
+        "known-resp-src-port-action":"drop"
+      },
+    }
+  ]
+}
+
+a10-url:/axapi/v3/ddos/src/default
+{
+  "default-list": [
+    {
+      "default-address-type":"ip",
+    },
+    {
+      "default-address-type":"ipv6",
+    }
+  ]
+}
+
+a10-url:/axapi/v3/logging/syslog
+{
+  "syslog": {
+    "syslog-levelname":"information",
+  }
+}
+
+a10-url:/axapi/v3/logging/host/ipv4addr
+{
+  "ipv4addr-list": [
+    {
+      "host-ipv4":"x.x.x.x",
+    }
+  ]
+}
+
+a10-url:/axapi/v3/router/bgp
+{
+  "bgp-list": [
+    {
+      "as-number":2,
+      "bgp": {
+        "log-neighbor-changes":1,
+        "router-id":"x.x.x.x"
+      },
+      "neighbor": {
+        "ipv4-neighbor-list": [
+          {
+            "neighbor-ipv4":"x.x.x.x",
+            "nbr-remote-as":1,
+            "description":"upstream",
+            "neighbor-route-map-lists": [
+              {
+                "nbr-route-map":"ddos-advertise",
+                "nbr-rmap-direction":"out"
+              }
+            ],
+          }
+        ]
+      }
+    }   
+  ]
+}
+
+a10-url:/axapi/v3/route-map
+{
+  "route-map-list": [
+    {
+      "tag":"ddos-advertise",
+      "action":"permit",
+      "sequence":1,
+    }
+  ]
+}
+
+a10-url:/axapi/v3/sflow/setting
+{
+  "setting": {
+    "max-header":128,
+    "packet-sampling-rate":1000,
+  }     
+}
+
+a10-url:/axapi/v3/sflow/collector/ip
+{
+  "ip-list": [
+    {
+      "addr":"x.x.x.x",
+      "port":6343,
+      "use-mgmt-port":1,
+    }
+  ]
+}
+
+a10-url:/axapi/v3/sflow/agent/address
+{
+  "address": {
+    "ip":"x.x.x.x",
+  }
+}
+        
+a10-url:/axapi/v3/sflow/sampling
+{
+  "sampling": {
+    "eth-list": [
+      {
+        "eth-start":1,
+        "eth-end":1
+      }
+    ],
+  }
+}
+
+a10-url:/axapi/v3/vcs-vblades/stat
+{
+  "stat-list": [
+    {
+      "vblade-id":1,
+    },
+    {
+      "vblade-id":2,
+    },
+    {
+      "vblade-id":3,
+    },
+    {
+      "vblade-id":4,
+    },
+    {
+      "vblade-id":5,
+    },
+    {
+      "vblade-id":6,
+    },
+    {
+      "vblade-id":7,
+    },  
+    {
+      "vblade-id":8,
+    }
+  ]
+}

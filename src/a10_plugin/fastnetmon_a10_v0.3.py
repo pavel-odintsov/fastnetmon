@@ -1,8 +1,6 @@
 #!/usr/bin/python
 
 #
-# v0.2 created [ban | unban] [on ramp | off ramp action] for A10 TPS 
-# v0.3 offload URI path and json_body into separate json_config files
 # Eric Chou (ericc@a10networks.com)
 #
 
@@ -11,10 +9,9 @@ from sys import stdin
 import optparse
 import logging, json
 from a10 import axapi_auth, axapi_action
-from json_config.logoff import logoff_path
-from json_config.write_memory import write_mem_path
-from json_config.ddos_dst_zone import ddos_dst_zone_path, ddos_dst_zone
-from json_config.bgp import bgp_advertisement_path, bgp_advertisement
+from json_configs.logoff import logoff_path
+from json_configs.write_memory import write_mem_path
+from json_configs.ddos_dst_zone import ddos_dst_zone_path, ddos_dst_zone
 
 LOG_FILE = "/var/log/fastnetmon-notify.log"
 
@@ -40,15 +37,14 @@ logger.info(" - " . join(sys.argv))
 mitigator_ip = "192.168.199.152"
 zone_name = client_ip_as_string + "_zone"
 ip_addr = client_ip_as_string
-asn="65003"
 mitigator_base_url, signature = axapi_auth(mitigator_ip, "admin", "a10")
 
 
 if action == "unban":
     try: 
-        r = axapi_action(mitigator_base_url+'/axapi/v3/router/bgp/'+asn+'/network/ip-cidr/172.31.201.2%2F32', method="DELETE", signature=signature)
+        r = axapi_action(mitigator_base_url+ddos_dst_zone_path+zone_name, method="DELETE", signature=signature)
     except Exception as e: 
-        logger.info("route not removed in unban, returned: " + str(e))
+        logger.info("Zone not removed in unban, may not exist. Result: " + str(e))
 
     # Commit config
     axapi_action(mitigator_base_url+write_mem_path, signature=signature)
@@ -60,9 +56,12 @@ if action == "unban":
 elif action == "ban" or action == "attack_details":
     
     r = axapi_action(mitigator_base_url+ddos_dst_zone_path, method='GET', signature=signature)
-    if zone_name in [i['zone-name'] for i in json.loads(r)['zone-list']]:
-        r = axapi_action(mitigator_base_url+ddos_dst_zone_path+zone_name, method="DELETE", signature=signature)
-        logger.info(str(r))
+    try: 
+        if zone_name in [i['zone-name'] for i in json.loads(r)['zone-list']]:
+            r = axapi_action(mitigator_base_url+ddos_dst_zone_path+zone_name, method="DELETE", signature=signature)
+            logger.info(str(r))
+    except Exception as e:
+        logger.info("No Zone detected or something went wrong. Erorr: " + str(e))
 
     # A10 Mitigation On Ramp 
     zone_name = client_ip_as_string + "_zone"
@@ -71,13 +70,7 @@ elif action == "ban" or action == "attack_details":
     try:
         r = axapi_action(mitigator_base_url+ddos_dst_zone_path, signature=signature, payload=returned_body)
     except Exception as e:
-        logger("zone not created: " + str(e))
-
-    route_advertisement = bgp_advertisement(ip_addr) 
-    try: 
-        r = axapi_action(mitigator_base_url+bgp_advertisement_path+asn, payload=route_advertisement, signature=signature)
-    except Exception as e:
-        logger("route not added: " + str(e))
+        logger.info("zone not created: " + str(e))
 
     # Commit changes
     axapi_action(mitigator_base_url+write_mem_path, signature=signature)

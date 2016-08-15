@@ -1,0 +1,91 @@
+system anomaly log 
+system attack log 
+system ddos-attack log 
+!
+hostname tps-fastnetmon 
+!
+interface management 
+  ip address x.x.x.x x.x.x.x 
+  ip control-apps-use-mgmt-port 
+  ip default-gateway x.x.x.x 
+  enable 
+!
+interface ethernet 1 
+  name Inbound 
+  enable 
+  ddos outside 
+#Mitigation traffic comes in the "outside" port
+!
+interface ethernet 2 
+  name Outbound 
+!
+!
+#optional rate limiters to latch to zones if you know the highest aggregate rate
+glid 1 
+  description "10gbps rate limiter" 
+  bit-rate-limit 10000000 
+!
+glid 2 
+  description "1gbps rate limiter" 
+  bit-rate-limit 1000000 
+!
+glid 3 
+  description "100mbps rate limiter" 
+  bit-rate-limit 100000 
+!
+ddos protection enable 
+ddos protection rate-interval 1sec 
+!       
+ddos resource-tracking cpu enable 
+!
+#template to allow CEF logging toward a receiver such as ELK
+ddos zone-template logging cef-logger 
+  log-format-cef 
+  enable-action-logging 
+!
+#template for basic TCP SYN authentication
+ddos zone-template tcp tcp-protect1 
+  syn-authentication send-rst 
+  syn-authentication pass-action authenticate-src 
+  syn-authentication fail-action drop 
+!
+#template for UDP "authentication" and low ports filtering
+ddos zone-template udp udp-protect1 
+  spoof-detect timeout 5 
+  spoof-detect min-delay 2 
+  spoof-detect pass-action authenticate-src 
+  spoof-detect fail-action drop 
+  known-resp-src-port action drop 
+!
+ddos src default ip 
+!
+ddos src default ipv6 
+!       
+logging syslog information 
+!
+logging host x.x.x.x 
+!
+router bgp 2 
+  bgp log-neighbor-changes 
+  bgp router-id x.x.x.x 
+  neighbor x.x.x.x remote-as 1 
+  neighbor x.x.x.x description upstream
+#you must have this route map applied for auto announcements to work
+  neighbor x.x.x.x route-map ddos-advertise out 
+!
+#auto announcement route map enabled using "bgp advertised" in the zone config
+route-map ddos-advertise permit 1 
+!
+sflow setting max-header 128 
+sflow setting packet-sampling-rate 1000 
+!
+#set this to the IP of the FNM host
+sflow collector ip x.x.x.x 6343 use-mgmt-port 
+!
+sflow agent address x.x.x.x 
+!
+#This turns on packet sampling on the "outside" interface
+sflow sampling ethernet 1
+!       
+end
+
