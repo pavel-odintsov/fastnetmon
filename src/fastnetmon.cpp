@@ -3673,6 +3673,13 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
     
     close(filedesc);
 
+    logger << log4cpp::Priority::INFO 
+           << "DPI pkt stats: total:"  << total_packets_number
+                           << " DNS:"  << dns_amplification_packets
+                           << " NTP:"  << ntp_amplification_packets
+                           << " SSDP:" << ssdp_amplification_packets
+                           << " SNMP:" << snmp_amplification_packets;
+                                       
     amplification_attack_type_t attack_type;
 
     // Attack type in unknown by default
