@@ -3721,20 +3721,21 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
     attack_type = AMPLIFICATION_ATTACK_UNKNOWN;
 
     // Detect amplification attack type
-    if ( (double)dns_amplification_packets / (double)total_packets_number > 0.5) {
-        attack_type = AMPLIFICATION_ATTACK_DNS;
-    } else if ( (double)ntp_amplification_packets / (double)total_packets_number > 0.5) {
-        attack_type = AMPLIFICATION_ATTACK_NTP;
-    } else if ( (double)ssdp_amplification_packets / (double)total_packets_number > 0.5) {
-        attack_type = AMPLIFICATION_ATTACK_SSDP;
-    } else if ( (double)snmp_amplification_packets / (double)total_packets_number > 0.5) {
-        attack_type = AMPLIFICATION_ATTACK_SNMP;
-    }
-
-    if (attack_type == AMPLIFICATION_ATTACK_UNKNOWN) {
-        logger << log4cpp::Priority::ERROR << "We can't detect attack type with DPI it's not so criticial, only for your information";
+    if ( (double)dns_amplification_packets / (double)total_packets_number > 0.2) {
+        launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_DNS, client_ip_as_string);
+    } else if ( (double)ntp_amplification_packets / (double)total_packets_number > 0.2) {
+        launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_NTP, client_ip_as_string);
+    } else if ( (double)ssdp_amplification_packets / (double)total_packets_number > 0.2) {
+        launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_SSDP, client_ip_as_string);
+    } else if ( (double)snmp_amplification_packets / (double)total_packets_number > 0.2) {
+        launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_SNMP, client_ip_as_string);
     } else {
-        launch_bgp_flow_spec_rule(attack_typem client_ip_as_string);
+        /*TODO 
+            - full IP ban should be announced here !        
+            - and maybe some protocol/port based statistics could be used to filter new/unknown attacks...
+        */
+
+        logger << log4cpp::Priority::ERROR << "We can't detect attack type with DPI it's not so criticial, only for your information";
     }
 }
 
