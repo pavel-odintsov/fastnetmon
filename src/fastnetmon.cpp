@@ -3565,6 +3565,35 @@ void zeroify_ndpi_flow(struct ndpi_flow_struct* flow) {
     memset(flow, 0, ndpi_size_flow_struct);
 }
 
+// Run flow spec mitigation rule
+void launch_bgp_flow_spec_rule(amplification_attack_type_t attack_type, std::string client_ip_as_string) {
+    logger << log4cpp::Priority::INFO << "We detected this attack as: " << get_amplification_attack_type(attack_type);
+
+    std::string flow_spec_rule_text = generate_flow_spec_for_amplification_attack(attack_type, client_ip_as_string);
+
+    logger << log4cpp::Priority::INFO << "We have generated BGP Flow Spec rule for this attack: " << flow_spec_rule_text;
+
+    if (exabgp_flow_spec_announces) {
+        active_flow_spec_announces_t::iterator itr = active_flow_spec_announces.find(flow_spec_rule_text);
+
+        if (itr == active_flow_spec_announces.end()) {
+            // We havent this flow spec rule active yet
+
+            logger << log4cpp::Priority::INFO << "We will publish flow spec announce about this attack";
+            bool exabgp_publish_result = exabgp_flow_spec_ban_manage("ban", flow_spec_rule_text);
+
+            if (exabgp_publish_result) {
+                active_flow_spec_announces[ flow_spec_rule_text ] = 1;
+            }
+        } else {
+            // We have already blocked this attack
+            logger << log4cpp::Priority::INFO << "The same rule was already sent to ExaBGP formerly";
+        }
+    } else {
+          logger << log4cpp::Priority::INFO << "exabgp_flow_spec_announces disabled. We will not talk to ExaBGP";
+    }
+}
+
 // Not so pretty copy and paste from pcap_reader()
 // TODO: rewrite to memory parser
 void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstream& ss, std::string client_ip_as_string) {
@@ -3705,28 +3734,7 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
     if (attack_type == AMPLIFICATION_ATTACK_UNKNOWN) {
         logger << log4cpp::Priority::ERROR << "We can't detect attack type with DPI it's not so criticial, only for your information";
     } else {
-        logger << log4cpp::Priority::INFO << "We detected this attack as: " << get_amplification_attack_type(attack_type);
-    
-        std::string flow_spec_rule_text = generate_flow_spec_for_amplification_attack(attack_type, client_ip_as_string);
-
-        logger << log4cpp::Priority::INFO << "We have generated BGP Flow Spec rule for this attack: " << flow_spec_rule_text;
-
-        if (exabgp_flow_spec_announces) {
-            active_flow_spec_announces_t::iterator itr = active_flow_spec_announces.find(flow_spec_rule_text);
-
-            if (itr == active_flow_spec_announces.end()) {
-                // We havent this flow spec rule active yet
-
-                logger << log4cpp::Priority::INFO << "We will publish flow spec announce about this attack";
-                bool exabgp_publish_result = exabgp_flow_spec_ban_manage("ban", flow_spec_rule_text);
-
-                if (exabgp_publish_result) {
-                    active_flow_spec_announces[ flow_spec_rule_text ] = 1;
-                }
-            } else {
-                // We have already blocked this attack
-            }
-        }
+        launch_bgp_flow_spec_rule(attack_typem client_ip_as_string);
     }
 }
 
