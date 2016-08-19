@@ -3605,10 +3605,10 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
     struct ndpi_id_struct *src = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
     memset(src, 0, ndpi_size_id_struct);
 
-    struct ndpi_flow_struct* dst = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
+    struct ndpi_id_struct* dst = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
     memset(dst, 0, ndpi_size_id_struct);
 
-    struct ndpi_flow_struct* flow = (struct ndpi_flow_struct *)malloc(ndpi_size_flow_struct); 
+    struct ndpi_flow_struct* flow = (struct ndpi_flow_struct*)malloc(ndpi_size_flow_struct); 
     memset(flow, 0, ndpi_size_flow_struct);
 
     while (1) {
