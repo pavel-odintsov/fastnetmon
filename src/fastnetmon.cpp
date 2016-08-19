@@ -3552,6 +3552,19 @@ void init_current_instance_of_ndpi() {
     ndpi_size_flow_struct = ndpi_detection_get_sizeof_ndpi_flow_struct(); 
 }
 
+// Zeroify nDPI structure without memory leaks
+void zeroify_ndpi_flow(struct ndpi_flow_struct* flow) {
+    if (flow->http.url) {
+        ndpi_free(flow->http.url);
+    }
+
+    if (flow->http.content_type) {
+        ndpi_free(flow->http.content_type);
+    }
+
+    memset(flow, 0, ndpi_size_flow_struct);
+}
+
 // Not so pretty copy and paste from pcap_reader()
 // TODO: rewrite to memory parser
 void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstream& ss, std::string client_ip_as_string) {
@@ -3588,14 +3601,14 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
     uint64_t ssdp_amplification_packets = 0;
     uint64_t snmp_amplification_packets = 0;
 
-    struct ndpi_id_struct *src = NULL;
-    struct ndpi_id_struct *dst = NULL;
-    struct ndpi_flow_struct *flow = NULL;
 
-    src = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
-    dst = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
+    struct ndpi_id_struct *src = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
+    memset(src, 0, ndpi_size_id_struct);
 
-    flow = (struct ndpi_flow_struct *)malloc(ndpi_size_flow_struct); 
+    struct ndpi_flow_struct* dst = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
+    memset(dst, 0, ndpi_size_id_struct);
+
+    struct ndpi_flow_struct* flow = (struct ndpi_flow_struct *)malloc(ndpi_size_flow_struct); 
     memset(flow, 0, ndpi_size_flow_struct);
 
     while (1) {
@@ -3623,20 +3636,10 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
             return;
         }
 
-        memset(src, 0, ndpi_size_id_struct);
-        memset(dst, 0, ndpi_size_id_struct);
-
-        // the flow must be reset to zero state - in other case the DPI will not detect all packets properly.
+        // The flow must be reset to zero state - in other case the DPI will not detect all packets properly.
         // To use flow properly there must be much more complicated code (with flow buffer for each flow probably)
         // following code is copied from ndpi_free_flow() just to be sure there will be no memory leaks due to memset()
-        if (flow->http.url) {
-            ndpi_free(flow->http.url);
-        };
-        if (flow->http.content_type) {
-            ndpi_free(flow->http.content_type);
-        }
-        //
-        memset(flow, 0, ndpi_size_flow_struct);
+        zeroify_ndpi_flow(flow);
 
         std::string parsed_packet_as_string;
 
