@@ -3604,6 +3604,9 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
         read(filedesc, &pcap_packet_header, sizeof(struct fastnetmon_pcap_pkthdr));
 
         if (packet_header_readed_bytes != sizeof(struct fastnetmon_pcap_pkthdr)) {
+            if (packet_header_readed_bytes != 0) {
+                logger << log4cpp::Priority::INFO << "All packet read ? (" << packet_header_readed_bytes << ", " << errno << ")";
+            }
             // We haven't any packets
             break;
         }
