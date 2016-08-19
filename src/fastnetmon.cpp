@@ -3588,12 +3588,25 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
     uint64_t ssdp_amplification_packets = 0;
     uint64_t snmp_amplification_packets = 0;
 
+    struct ndpi_id_struct *src = NULL;
+    struct ndpi_id_struct *dst = NULL;
+    struct ndpi_flow_struct *flow = NULL;
+
+    src = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
+    dst = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
+
+    flow = (struct ndpi_flow_struct *)malloc(ndpi_size_flow_struct); 
+    memset(flow, 0, ndpi_size_flow_struct);
+
     while (1) {
         struct fastnetmon_pcap_pkthdr pcap_packet_header;
         ssize_t packet_header_readed_bytes =
         read(filedesc, &pcap_packet_header, sizeof(struct fastnetmon_pcap_pkthdr));
 
         if (packet_header_readed_bytes != sizeof(struct fastnetmon_pcap_pkthdr)) {
+            if (packet_header_readed_bytes != 0) {
+                logger << log4cpp::Priority::INFO << "All packet read ? (" << packet_header_readed_bytes << ", " << errno << ")";
+            }
             // We haven't any packets
             break;
         }
@@ -3610,17 +3623,19 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
             return;
         }
 
-        struct ndpi_id_struct *src = NULL;
-        struct ndpi_id_struct *dst = NULL;
-        struct ndpi_flow_struct *flow = NULL;
-
-        src = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
         memset(src, 0, ndpi_size_id_struct);
-
-        dst = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
         memset(dst, 0, ndpi_size_id_struct);
 
-        flow = (struct ndpi_flow_struct *)malloc(ndpi_size_flow_struct); 
+        // the flow must be reset to zero state - in other case the DPI will not detect all packets properly.
+        // To use flow properly there must be much more complicated code (with flow buffer for each flow probably)
+        // following code is copied from ndpi_free_flow() just to be sure there will be no memory leaks due to memset()
+        if (flow->http.url) {
+            ndpi_free(flow->http.url);
+        };
+        if (flow->http.content_type) {
+            ndpi_free(flow->http.content_type);
+        }
+        //
         memset(flow, 0, ndpi_size_flow_struct);
 
         std::string parsed_packet_as_string;
@@ -3651,16 +3666,23 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
 
         ss << parsed_packet_as_string << " protocol: " << protocol_name << " master_protocol: " << master_protocol_name << "\n";
 
-        // Free up all memory
-        ndpi_free_flow(flow);
-        free(dst);
-        free(src);
-        
-        close(filedesc);
-
         total_packets_number++;
     }
 
+    // Free up all memory
+    ndpi_free_flow(flow);
+    free(dst);
+    free(src);
+    
+    close(filedesc);
+
+    logger << log4cpp::Priority::INFO 
+           << "DPI pkt stats: total:"  << total_packets_number
+                           << " DNS:"  << dns_amplification_packets
+                           << " NTP:"  << ntp_amplification_packets
+                           << " SSDP:" << ssdp_amplification_packets
+                           << " SNMP:" << snmp_amplification_packets;
+                                       
     amplification_attack_type_t attack_type;
 
     // Attack type in unknown by default
