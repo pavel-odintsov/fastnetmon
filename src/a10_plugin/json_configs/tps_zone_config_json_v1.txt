@@ -2,10 +2,10 @@ a10-url:/axapi/v3/ddos/dst/zone
 {
   "zone-list": [
     {
-      "zone-name":"zone-x.x.x.x",
+      "zone-name”:"xxxx",
       "ip": [
         {
-          "ip-addr":"x.x.x.x"
+          "ip-addr”:”x.x.x.x"
         }
       ],
       "operational-mode":"monitor",
@@ -40,9 +40,9 @@ a10-url:/axapi/v3/ddos/dst/zone
         ]
       },
       "port": {
-        "zone-service-other-list": [
+        "zone-service-list": [
           {
-            "port-other":"other",
+            "port-num":20,
             "protocol":"tcp",
             "detection-enable":1,
             "level-list": [
@@ -66,7 +66,103 @@ a10-url:/axapi/v3/ddos/dst/zone
             ]
           },
           {
-            "port-other":"other",
+            "port-num":21,
+            "protocol":"tcp",
+            "detection-enable":1,
+            "level-list": [
+              {
+                "level-num":"0",
+                "zone-escalation-score":10,
+                "indicator-list": [
+                  {
+                    "type":"pkt-rate",
+                    "score":20,
+                    "zone-threshold-num":1,
+                  }
+                ]
+              },
+              {
+                "level-num":"1",
+                "zone-template": {
+                  "tcp":"tcp-protect1"
+                },
+              }
+            ]
+          },
+          {
+            "port-num":22,
+            "protocol":"tcp",
+            "detection-enable":1,
+            "level-list": [
+              {
+                "level-num":"0",
+                "zone-escalation-score":10,
+                "indicator-list": [
+                  {
+                    "type":"pkt-rate",
+                    "score":20,
+                    "zone-threshold-num":1,
+                  }
+                ]
+              },
+              {
+                "level-num":"1",
+                "zone-template": {
+                  "tcp":"tcp-protect1"
+                },
+              }
+            ]
+          },
+          {
+            "port-num":25,
+            "protocol":"tcp",
+            "detection-enable":1,
+            "level-list": [
+              {
+                "level-num":"0",
+                "zone-escalation-score":10,
+                "indicator-list": [
+                  {
+                    "type":"pkt-rate",
+                    "score":20,
+                    "zone-threshold-num":1,
+                  }
+                ]
+              },
+              {
+                "level-num":"1",
+                "zone-template": {
+                  "tcp":"tcp-protect1"
+                },
+              }
+            ]
+          },
+          {
+            "port-num":53,
+            "protocol":"tcp",
+            "detection-enable":1,
+            "level-list": [
+              {
+                "level-num":"0",
+                "zone-escalation-score":10,
+                "indicator-list": [
+                  {
+                    "type":"pkt-rate",
+                    "score":20,
+                    "zone-threshold-num":1,
+                  }
+                ]
+              },
+              {
+                "level-num":"1",
+                "zone-template": {
+                  "tcp":"tcp-protect1"
+                },
+              }
+            ]
+          },
+          {
+            "port-num":53,
             "protocol":"udp",
             "detection-enable":1,
             "level-list": [
@@ -88,10 +184,239 @@ a10-url:/axapi/v3/ddos/dst/zone
                 },
               }
             ]
+          },
+          {
+            "port-num":80,
+            "protocol":"tcp",
+            "detection-enable":1,
+            "level-list": [
+              {
+                "level-num":"0",
+                "zone-escalation-score":10,
+                "indicator-list": [
+                  {
+                    "type":"pkt-rate",
+                    "score":20,
+                    "zone-threshold-num":1,
+                  }
+                ]
+              },
+              {
+                "level-num":"1",
+                "zone-template": {
+                  "tcp":"tcp-protect1"
+                },
+              }
+            ]
+          },
+          {
+            "port-num":110,
+            "protocol":"tcp",
+            "detection-enable":1,
+            "level-list": [
+              {
+                "level-num":"0",
+                "zone-escalation-score":10,
+                "indicator-list": [
+                  {
+                    "type":"pkt-rate",
+                    "score":20,
+                    "zone-threshold-num":1,
+                  }
+                ]
+              },
+              {
+                "level-num":"1",
+                "zone-template": {
+                  "tcp":"tcp-protect1"
+                },
+              }
+            ]
+          },
+          {
+            "port-num":143,
+            "protocol":"tcp",
+            "detection-enable":1,
+            "level-list": [
+              {
+                "level-num":"0",
+                "zone-escalation-score":10,
+                "indicator-list": [
+                  {
+                    "type":"pkt-rate",
+                    "score":20,
+                    "zone-threshold-num":1,
+                  }
+                ]
+              },
+              {
+                "level-num":"1",
+                "zone-template": {
+                  "tcp":"tcp-protect1"
+                },
+              }
+            ]
+          },
+          {
+            "port-num":443,
+            "protocol":"tcp",
+            "detection-enable":1,
+            "level-list": [
+              {
+                "level-num":"0",
+                "zone-escalation-score":10,
+                "indicator-list": [
+                  {
+                    "type":"pkt-rate",
+                    "score":20,
+                    "zone-threshold-num":1,
+                  }
+                ]
+              },
+              {
+                "level-num":"1",
+                "zone-template": {
+                  "tcp":"tcp-protect1"
+                },
+              }
+            ]
+          },
+          {
+            "port-num":587,
+            "protocol":"tcp",
+            "detection-enable":1,
+            "level-list": [
+              {
+                "level-num":"0",
+                "zone-escalation-score":10,
+                "indicator-list": [
+                  {
+                    "type":"pkt-rate",
+                    "score":20,
+                    "zone-threshold-num":1,
+                  }
+                ]
+              },
+              {
+                "level-num":"1",
+                "zone-template": {
+                  "tcp":"tcp-protect1"
+                },
+              }
+            ]
+          },
+          {
+            "port-num":993,
+            "protocol":"tcp",
+            "detection-enable":1,
+            "level-list": [
+              {
+                "level-num":"0",
+                "zone-escalation-score":10,
+                "indicator-list": [
+                  {
+                    "type":"pkt-rate",
+                    "score":20,
+                    "zone-threshold-num":1,
+                  }
+                ]
+              },
+              {
+                "level-num":"1",
+                "zone-template": {
+                  "tcp":"tcp-protect1"
+                },
+              }
+            ]
+          },
+          {
+            "port-num":995,
+            "protocol":"tcp",
+            "detection-enable":1,
+            "level-list": [
+              {
+                "level-num":"0",
+                "zone-escalation-score":10,
+                "indicator-list": [
+                  {
+                    "type":"pkt-rate",
+                    "score":20,
+                    "zone-threshold-num":1,
+                  }
+                ]
+              },
+              {
+                "level-num":"1",
+                "zone-template": {
+                  "tcp":"tcp-protect1"
+                },
+              }
+            ]
+          },
+          {
+            "port-num":5060,
+            "protocol":"tcp",
+            "detection-enable":1,
+            "level-list": [
+              {
+                "level-num":"0",
+                "zone-escalation-score":10,
+                "indicator-list": [
+                  {
+                    "type":"pkt-rate",
+                    "score":20,
+                    "zone-threshold-num":1,
+                  }
+                ]
+              },
+              {
+                "level-num":"1",
+                "zone-template": {
+                  "tcp":"tcp-protect1"
+                },
+              }
+            ]
+          },
+          {
+            "port-num":5061,
+            "protocol":"tcp",
+            "detection-enable":1,
+            "level-list": [
+              {
+                "level-num":"0",
+                "zone-escalation-score":10,
+                "indicator-list": [
+                  {
+                    "type":"pkt-rate",
+                    "score":20,
+                    "zone-threshold-num":1,
+                  }
+                ]
+              },
+              {
+                "level-num":"1",
+                "zone-template": {
+                  "tcp":"tcp-protect1"
+                },
+              }
+            ]
+          }
+        ],
+        "zone-service-other-list": [
+          {
+            "port-other":"other",
+            "protocol":"tcp",
+            "detection-enable":1,
+            "deny":1,
+          },
+          {
+            "port-other":"other",
+            "protocol":"udp",
+            "detection-enable":1,
+            "deny":1,
           }
         ]
       }
     }
   ]
 }
-
