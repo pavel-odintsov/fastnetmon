@@ -3552,6 +3552,34 @@ void init_current_instance_of_ndpi() {
     ndpi_size_flow_struct = ndpi_detection_get_sizeof_ndpi_flow_struct(); 
 }
 
+void launch_bgp_flow_spec_rule(amplification_attack_type_t attack_type, std::string client_ip_as_string) {
+    logger << log4cpp::Priority::INFO << "We detected this attack as: " << get_amplification_attack_type(attack_type);
+
+    std::string flow_spec_rule_text = generate_flow_spec_for_amplification_attack(attack_type, client_ip_as_string);
+
+    logger << log4cpp::Priority::INFO << "We have generated BGP Flow Spec rule for this attack: " << flow_spec_rule_text;
+
+    if (exabgp_flow_spec_announces) {
+        active_flow_spec_announces_t::iterator itr = active_flow_spec_announces.find(flow_spec_rule_text);
+
+        if (itr == active_flow_spec_announces.end()) {
+            // We havent this flow spec rule active yet
+
+            logger << log4cpp::Priority::INFO << "We will publish flow spec announce about this attack";
+            bool exabgp_publish_result = exabgp_flow_spec_ban_manage("ban", flow_spec_rule_text);
+
+            if (exabgp_publish_result) {
+                active_flow_spec_announces[ flow_spec_rule_text ] = 1;
+            }
+        } else {
+            // We have already blocked this attack
+            logger << log4cpp::Priority::INFO << "The same rule was aready sent to ExaBGP formerly";
+        }
+    } else {
+          logger << log4cpp::Priority::INFO << "exabgp_flow_spec_announces disabled. We will not talk to ExaBGP";
+    }
+}
+
 // Not so pretty copy and paste from pcap_reader()
 // TODO: rewrite to memory parser
 void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstream& ss, std::string client_ip_as_string) {
@@ -3680,47 +3708,26 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
                            << " SSDP:" << ssdp_amplification_packets
                            << " SNMP:" << snmp_amplification_packets;
                                        
-    amplification_attack_type_t attack_type;
-
-    // Attack type in unknown by default
-    attack_type = AMPLIFICATION_ATTACK_UNKNOWN;
-
     // Detect amplification attack type
-    if ( (double)dns_amplification_packets / (double)total_packets_number > 0.5) {
-        attack_type = AMPLIFICATION_ATTACK_DNS;
-    } else if ( (double)ntp_amplification_packets / (double)total_packets_number > 0.5) {
-        attack_type = AMPLIFICATION_ATTACK_NTP;
-    } else if ( (double)ssdp_amplification_packets / (double)total_packets_number > 0.5) {
-        attack_type = AMPLIFICATION_ATTACK_SSDP;
-    } else if ( (double)snmp_amplification_packets / (double)total_packets_number > 0.5) {
-        attack_type = AMPLIFICATION_ATTACK_SNMP;
-    }
-
-    if (attack_type == AMPLIFICATION_ATTACK_UNKNOWN) {
-        logger << log4cpp::Priority::ERROR << "We can't detect attack type with DPI it's not so criticial, only for your information";
+    if ( (double)dns_amplification_packets / (double)total_packets_number > 0.2) {
+//        attack_type = AMPLIFICATION_ATTACK_DNS;
+        launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_DNS, client_ip_as_string);        
+    } else if ( (double)ntp_amplification_packets / (double)total_packets_number > 0.2) {
+//        attack_type = AMPLIFICATION_ATTACK_NTP;
+        launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_NTP, client_ip_as_string);        
+    } else if ( (double)ssdp_amplification_packets / (double)total_packets_number > 0.2) {
+//        attack_type = AMPLIFICATION_ATTACK_SSDP;
+        launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_SSDP, client_ip_as_string);        
+    } else if ( (double)snmp_amplification_packets / (double)total_packets_number > 0.2) {
+//        attack_type = AMPLIFICATION_ATTACK_SNMP;
+        launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_SNMP, client_ip_as_string);        
     } else {
-        logger << log4cpp::Priority::INFO << "We detected this attack as: " << get_amplification_attack_type(attack_type);
-    
-        std::string flow_spec_rule_text = generate_flow_spec_for_amplification_attack(attack_type, client_ip_as_string);
-
-        logger << log4cpp::Priority::INFO << "We have generated BGP Flow Spec rule for this attack: " << flow_spec_rule_text;
-
-        if (exabgp_flow_spec_announces) {
-            active_flow_spec_announces_t::iterator itr = active_flow_spec_announces.find(flow_spec_rule_text);
-
-            if (itr == active_flow_spec_announces.end()) {
-                // We havent this flow spec rule active yet
-
-                logger << log4cpp::Priority::INFO << "We will publish flow spec announce about this attack";
-                bool exabgp_publish_result = exabgp_flow_spec_ban_manage("ban", flow_spec_rule_text);
-
-                if (exabgp_publish_result) {
-                    active_flow_spec_announces[ flow_spec_rule_text ] = 1;
-                }
-            } else {
-                // We have already blocked this attack
-            }
-        }
+        logger << log4cpp::Priority::ERROR << "We can't detect attack type with DPI it's not so critical, only for your information";
+        
+        /*TODO 
+          - full IP ban should be announced here !        
+          - and maybe some protocol/port based statistics could be used to filter new/unknown attacks...
+        */
     }
 }
 
