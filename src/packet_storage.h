@@ -11,11 +11,51 @@ class packet_storage_t {
             memory_pointer = NULL;
             memory_pos = NULL;
             buffer_size = 0;
+            
+            read_pos	= NULL;
 
             // TODO: fix hardcoded mtu size this!!!
             max_packet_size = 1500;
         }
 
+        bool load_from_pcap_file(std::string pcap_file_path) {
+            deallocate_buffer();
+            
+            int filedesc = open(pcap_file_path.c_str(), O_RDONLY);
+            if (!filedesc) {
+              return false;
+            }
+            
+            struct stat stat_buff;
+            if ( fstat(filedesc, &stat_buff) < 0 ) {
+                close(filedesc);
+                return false;
+            }
+            
+            memory_pointer = (unsigned char*)malloc( stat_buff.st_size );
+                        
+            if (memory_pointer == NULL) {
+              return false;
+            }
+            
+            buffer_size = stat_buff.st_size;
+            memory_pos = memory_pointer;
+            read_pos = memory_pointer;
+            
+            ssize_t read_bytes = read(filedesc,memory_pointer,buffer_size);
+            
+            close(filedesc);
+            
+            if (read_bytes != buffer_size) {
+                deallocate_buffer();
+                return false;
+            }
+            
+            memory_pos = memory_pointer+buffer_size;
+            return true;
+                              
+        }
+        
         bool allocate_buffer(unsigned int buffer_size_in_packets) {
             unsigned int memory_size_in_bytes = buffer_size_in_packets * (max_packet_size + sizeof(fastnetmon_pcap_pkthdr))
                 + sizeof(fastnetmon_pcap_file_header);
@@ -27,6 +67,7 @@ class packet_storage_t {
             if (memory_pointer != NULL) {
                 this->buffer_size = memory_size_in_bytes;
                 memory_pos = memory_pointer;
+                read_pos = memory_pointer;
 
                 // Add header to newely allocated memory block
                 return this->write_header();
@@ -44,6 +85,28 @@ class packet_storage_t {
             } else {
                 return false;
             }
+        }
+
+        bool read_binary_data(void* data_pointer, unsigned int buffer_length, unsigned int bytes_to_read, long int *read_bytes) {
+
+            // uninitialized or on the end        
+            if (!read_pos || read_pos >= memory_pos) {
+                *read_bytes = 0;
+                return false;
+            };
+            
+            // requested data longer than stored ones
+            if (read_pos+bytes_to_read > memory_pos) {
+                *read_bytes = memory_pos - read_pos;
+            } else {
+                *read_bytes = bytes_to_read;
+            };
+            
+            memcpy(data_pointer,read_pos,*read_bytes);
+            
+            read_pos+= *read_bytes;
+
+            return true;
         }
 
         bool write_packet(void* payload_pointer, unsigned int length) {
@@ -97,6 +160,40 @@ class packet_storage_t {
             return this->write_binary_data(&pcap_header, sizeof(pcap_header));
         }
 
+        bool read_header(struct fastnetmon_pcap_file_header &pcap_file_header) {
+
+            long int read_bytes;
+
+            if ( this->read_binary_data(&pcap_file_header, sizeof(pcap_file_header), sizeof(pcap_file_header), &read_bytes) ) {
+
+                if ( read_bytes == sizeof(pcap_file_header) ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        
+        bool read_packet_header(struct fastnetmon_pcap_pkthdr &pcap_packet_header) {
+
+            unsigned int bytes_to_read = sizeof(pcap_packet_header);
+            long int read_bytes;
+            
+            if ( read_binary_data(&pcap_packet_header, sizeof(pcap_packet_header), bytes_to_read, &read_bytes) ) {
+                
+                if ( read_bytes == sizeof(pcap_packet_header) ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        bool read_packet_payload(void *payload_buffer, unsigned int buffer_size, unsigned int bytes_to_read, long int *read_bytes) {
+           
+            return read_binary_data(payload_buffer, buffer_size, bytes_to_read, read_bytes);
+
+        }
+        
         int64_t get_used_memory() {
             return memory_pos - memory_pointer;
         } 
@@ -110,6 +207,7 @@ class packet_storage_t {
             this->memory_pointer = NULL;   
             this->memory_pos = NULL;
             this->buffer_size = 0;
+            this->read_pos = NULL;
 
             return true;
         }
@@ -125,10 +223,19 @@ class packet_storage_t {
         void set_max_packet_size(unsigned int new_max_packet_size) {
             this->max_packet_size = new_max_packet_size;
         }
-
+        
+        void rewind_read_pos() {
+            read_pos = memory_pointer;
+        }
+        
+        int bytes_to_read() {
+            return memory_pos - read_pos;
+        }
+        
     private:
         unsigned char* memory_pointer;
         unsigned char* memory_pos;
+        unsigned char* read_pos;
         unsigned int buffer_size;
         unsigned int max_packet_size;
 };
