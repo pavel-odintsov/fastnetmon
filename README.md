@@ -73,6 +73,9 @@ Running Fastnetmon
 - x86 64 bit (recommended)
 - x86 32 bit
 
+### Hardware requirements
+- Least 1 GB of RAM for compilation purposes
+
 ### Router integration instructions
 - [Juniper MX Routers](docs/JUNOS_INTEGRATION.md)
 
