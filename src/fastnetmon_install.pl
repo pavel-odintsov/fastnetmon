@@ -1370,15 +1370,6 @@ sub install_fastnetmon {
             @fastnetmon_deps = (@fastnetmon_deps, 'boost-devel', 'boost-thread')
         }
 
-        if ($distro_version == 7) {
-            print "Your distro haven't log4cpp in stable EPEL packages and we install log4cpp from testing of EPEL\n";
-            # We should install log4cpp packages only in this order!
-            yum('https://kojipkgs.fedoraproject.org//packages/log4cpp/1.1.1/1.el7/x86_64/log4cpp-1.1.1-1.el7.x86_64.rpm',
-                'https://kojipkgs.fedoraproject.org//packages/log4cpp/1.1.1/1.el7/x86_64/log4cpp-devel-1.1.1-1.el7.x86_64.rpm'),
-        } else {
-            push @fastnetmon_deps, 'log4cpp-devel';
-        }
-
         yum(@fastnetmon_deps);
     } elsif ($distro_type eq 'gentoo') {
         my @fastnetmon_deps = ("dev-vcs/git", "gcc", "sys-libs/gpm", "sys-libs/ncurses", "dev-libs/log4cpp", "dev-libs/geoip", 
