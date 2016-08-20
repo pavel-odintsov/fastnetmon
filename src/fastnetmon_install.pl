@@ -1236,14 +1236,25 @@ sub install_pf_ring {
             }
         }
     } elsif ($distro_type eq 'centos') {
+        my @centos_dependency_packages = ('make', 'bison', 'flex', 'gcc', 'gcc-c++', 'dkms', 'numactl-devel', 'subversion');
+
+        # This package is not going to install devel headers for current kernel!
         my $kernel_package_name = 'kernel-devel';
 
         # Fix deplist for OpenVZ
         if ($kernel_version =~ /stab/) {
             $kernel_package_name = "vzkernel-devel-$kernel_version";
         }
-    
-        yum('make', 'bison', 'flex', $kernel_package_name, 'gcc', 'gcc-c++', 'dkms', 'numactl-devel', 'subversion');
+
+        push @centos_dependency_packages, $kernel_package_name;
+  
+        my $centos_kernel_version = `uname -r`;
+        chomp $centos_kernel_version;
+ 
+        # But this package will install kernel devel headers for current kernel version!
+        push @centos_dependency_packages, "$kernel_package_name-$centos_kernel_version";
+
+        yum(@centos_dependency_packages);
     } elsif ($distro_type eq 'gentoo') {
         my @gentoo_packages_for_pfring = ('subversion', 'sys-process/numactl', 'wget', 'tar');
 
