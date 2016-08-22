@@ -1,8 +1,7 @@
-ddos dst zone xxxx
+ddos dst zone xxxxxxx
   ip x.x.x.x
   operational-mode monitor
   bgp advertised
-#instructs ACOS to announce prefixes bound to the zone
   zone-template logging cef-logger
   log enable periodic
   ip-proto tcp
@@ -15,18 +14,52 @@ ddos dst zone xxxx
   ip-proto icmp-v6
     deny
     detection-enable
-  port other tcp
-#catch all for all ports. add more specific ports if you know the specifics of the service under attack
+  port 20 tcp
     detection-enable
     level 0
       zone-escalation-score 10
       indicator pkt-rate
         score 20
         zone-threshold 1
-#This allows TPS to create an incident automatically upon receiving the first packet for the zone
     level 1
       zone-template tcp tcp-protect1
-  port other udp
+  port 21 tcp
+    detection-enable
+    level 0
+      zone-escalation-score 10
+      indicator pkt-rate
+        score 20
+        zone-threshold 1
+    level 1
+      zone-template tcp tcp-protect1
+  port 22 tcp
+    detection-enable
+    level 0
+      zone-escalation-score 10
+      indicator pkt-rate
+        score 20
+        zone-threshold 1
+    level 1
+      zone-template tcp tcp-protect1
+  port 25 tcp
+    detection-enable
+    level 0
+      zone-escalation-score 10
+      indicator pkt-rate
+        score 20
+        zone-threshold 1
+    level 1
+      zone-template tcp tcp-protect1
+  port 53 tcp
+    detection-enable
+    level 0
+      zone-escalation-score 10
+      indicator pkt-rate
+        score 20
+        zone-threshold 1
+    level 1
+      zone-template tcp tcp-protect1
+  port 53 udp
     detection-enable
     level 0
       zone-escalation-score 10
@@ -35,3 +68,90 @@ ddos dst zone xxxx
         zone-threshold 1
     level 1
       zone-template udp udp-protect1
+  port 80 tcp
+    detection-enable
+    level 0
+      zone-escalation-score 10
+      indicator pkt-rate
+        score 20
+        zone-threshold 1
+    level 1
+      zone-template tcp tcp-protect1
+  port 110 tcp
+    detection-enable
+    level 0
+      zone-escalation-score 10
+      indicator pkt-rate
+        score 20
+        zone-threshold 1
+    level 1
+      zone-template tcp tcp-protect1
+  port 143 tcp
+    detection-enable
+    level 0
+      zone-escalation-score 10
+      indicator pkt-rate
+        score 20
+        zone-threshold 1
+    level 1
+      zone-template tcp tcp-protect1
+  port 443 tcp
+    detection-enable
+    level 0
+      zone-escalation-score 10
+      indicator pkt-rate
+        score 20
+        zone-threshold 1
+    level 1
+      zone-template tcp tcp-protect1
+  port 587 tcp
+    detection-enable
+    level 0
+      zone-escalation-score 10
+      indicator pkt-rate
+        score 20
+        zone-threshold 1
+    level 1
+      zone-template tcp tcp-protect1
+  port 993 tcp
+    detection-enable
+    level 0
+      zone-escalation-score 10
+      indicator pkt-rate
+        score 20
+        zone-threshold 1
+    level 1
+      zone-template tcp tcp-protect1
+  port 995 tcp
+    detection-enable
+    level 0
+      zone-escalation-score 10
+      indicator pkt-rate
+        score 20
+        zone-threshold 1
+    level 1
+      zone-template tcp tcp-protect1
+  port 5060 tcp
+    detection-enable
+    level 0
+      zone-escalation-score 10
+      indicator pkt-rate
+        score 20
+        zone-threshold 1
+    level 1
+      zone-template tcp tcp-protect1
+  port 5061 tcp
+    detection-enable
+    level 0
+      zone-escalation-score 10
+      indicator pkt-rate
+        score 20
+        zone-threshold 1
+    level 1
+      zone-template tcp tcp-protect1
+  port other tcp
+    detection-enable
+    deny
+  port other udp
+    detection-enable
+    deny
