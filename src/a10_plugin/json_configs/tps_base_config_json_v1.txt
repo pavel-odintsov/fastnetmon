@@ -3,7 +3,6 @@ a10-url:/axapi/v3/admin
   "admin-list": [
     {
       "user":"admin",
-      "uuid":"57937c0c-06cb-11e6-86f7-000c2998bd62",
       "password": {
         "encrypted-in-module":"sCyT4priW1OZSg3m1RiAf0bOyZ0Odnf1rQRp+BHohemGp1YhW+V1NjwQjLjV2wDn",
       }
@@ -16,7 +15,7 @@ a10-url:/axapi/v3/multi-config
   "multi-config": {
     "enable":1,
   }
-}       
+}
 
 a10-url:/axapi/v3/monitor
 {
@@ -36,16 +35,6 @@ a10-url:/axapi/v3/system
   }
 }
 
-a10-url:/axapi/v3/class-list
-{
-  "class-list-list": [
-    {
-      "name":"ddos-block",
-      "file":1,
-    }
-  ]
-}
-
 a10-url:/axapi/v3/hostname
 {
   "hostname": {
@@ -57,10 +46,10 @@ a10-url:/axapi/v3/interface/management
 {
   "management": {
     "ip": {
-      "ipv4-address":"x.x.x.x",
-      "ipv4-netmask":"x.x.x.x",
+      "ipv4-address”:”x.x.x.x",
+      "ipv4-netmask”:”x.x.x.x",
       "control-apps-use-mgmt-port":1,
-      "default-gateway":"x.x.x.x"
+      "default-gateway”:”x.x.x.x"
     },
     "action":"enable",
   }
@@ -73,9 +62,6 @@ a10-url:/axapi/v3/interface/ethernet
       "ifnum":1,
       "name":"Inbound",
       "action":"enable",
-      "ddos": {
-        "inside":1,
-      } 
     },
     {
       "ifnum":2,
@@ -114,7 +100,7 @@ a10-url:/axapi/v3/ddos/protection
 }
 
 a10-url:/axapi/v3/ddos/resource-tracking/cpu
-{       
+{
   "cpu": {
     "enable":1,
   }
@@ -134,7 +120,7 @@ a10-url:/axapi/v3/ddos/zone-template/logging
 a10-url:/axapi/v3/ddos/zone-template/tcp
 {
   "tcp-list": [
-    {   
+    {
       "name":"tcp-protect1",
       "syn-authentication": {
         "syn-auth-type":"send-rst",
@@ -174,6 +160,17 @@ a10-url:/axapi/v3/ddos/src/default
   ]
 }
 
+a10-url:/axapi/v3/ddos/dst/default
+{
+  "default-list": [
+    {
+      "default-address-type":"ip",
+    },
+    {
+      "default-address-type":"ipv6",
+    }
+  ]
+}
 a10-url:/axapi/v3/logging/syslog
 {
   "syslog": {
@@ -185,7 +182,9 @@ a10-url:/axapi/v3/logging/host/ipv4addr
 {
   "ipv4addr-list": [
     {
-      "host-ipv4":"x.x.x.x",
+      "host-ipv4”:”x.x.x.x",
+      "use-mgmt-port":1,
+      "tcp":0,
     }
   ]
 }
@@ -194,15 +193,15 @@ a10-url:/axapi/v3/router/bgp
 {
   "bgp-list": [
     {
-      "as-number":2,
+      "as-number”:x,
       "bgp": {
         "log-neighbor-changes":1,
-        "router-id":"x.x.x.x"
+        "router-id”:”x.x.x.x"
       },
       "neighbor": {
         "ipv4-neighbor-list": [
           {
-            "neighbor-ipv4":"x.x.x.x",
+            "neighbor-ipv4”:”x.x.x.x",
             "nbr-remote-as":1,
             "description":"upstream",
             "neighbor-route-map-lists": [
@@ -214,7 +213,7 @@ a10-url:/axapi/v3/router/bgp
           }
         ]
       }
-    }   
+    }
   ]
 }
 
@@ -234,14 +233,14 @@ a10-url:/axapi/v3/sflow/setting
   "setting": {
     "max-header":128,
     "packet-sampling-rate":1000,
-  }     
+  }
 }
 
 a10-url:/axapi/v3/sflow/collector/ip
 {
   "ip-list": [
     {
-      "addr":"x.x.x.x",
+      "addr”:”x.x.x.x",
       "port":6343,
       "use-mgmt-port":1,
     }
@@ -251,10 +250,10 @@ a10-url:/axapi/v3/sflow/collector/ip
 a10-url:/axapi/v3/sflow/agent/address
 {
   "address": {
-    "ip":"x.x.x.x",
+    "ip”:”x.x.x.x",
   }
 }
-        
+
 a10-url:/axapi/v3/sflow/sampling
 {
   "sampling": {
@@ -265,34 +264,4 @@ a10-url:/axapi/v3/sflow/sampling
       }
     ],
   }
-}
-
-a10-url:/axapi/v3/vcs-vblades/stat
-{
-  "stat-list": [
-    {
-      "vblade-id":1,
-    },
-    {
-      "vblade-id":2,
-    },
-    {
-      "vblade-id":3,
-    },
-    {
-      "vblade-id":4,
-    },
-    {
-      "vblade-id":5,
-    },
-    {
-      "vblade-id":6,
-    },
-    {
-      "vblade-id":7,
-    },  
-    {
-      "vblade-id":8,
-    }
-  ]
 }
