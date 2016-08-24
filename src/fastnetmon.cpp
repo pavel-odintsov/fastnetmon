@@ -3594,37 +3594,23 @@ void launch_bgp_flow_spec_rule(amplification_attack_type_t attack_type, std::str
     }
 }
 
-// Not so pretty copy and paste from pcap_reader()
-// TODO: rewrite to memory parser
-void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstream& ss, std::string client_ip_as_string) {
-    int filedesc = open(pcap_file_path.c_str(), O_RDONLY);
+void produce_dpi_dump_for_pcap_dump(attack_details& current_attack, std::stringstream& ss, std::string client_ip_as_string) {
 
-    if (filedesc <= 0) {
-        logger << log4cpp::Priority::ERROR << "Can't open file for DPI";
+    ssize_t read_bytes;
+    struct fastnetmon_pcap_file_header pcap_file_header;
+
+    // the read_pos pointer should be on the buffer start because no one should read from the buffer. So we can ommit rewind_read_pos() 
+    //current_attack.pcap_attack_dump.rewind_read_pos();
+    
+    if (! current_attack.pcap_attack_dump.read_header(pcap_file_header) ) {
+        logger << log4cpp::Priority::INFO << "produce_dpi_dump_for_pcap_dump: error reading pcap header. Stored bytes in pcap buffer:" << current_attack.pcap_attack_dump.get_used_memory();
         return;
-    }
-
-    struct fastnetmon_pcap_file_header pcap_header;
-    ssize_t file_header_readed_bytes = read(filedesc, &pcap_header, sizeof(struct fastnetmon_pcap_file_header));
-
-    if (file_header_readed_bytes != sizeof(struct fastnetmon_pcap_file_header)) {
-        logger << log4cpp::Priority::ERROR << "Can't read pcap file header";
-        return;
-    }   
-
-    // http://www.tcpdump.org/manpages/pcap-savefile.5.html
-    if (pcap_header.magic == 0xa1b2c3d4 or pcap_header.magic == 0xd4c3b2a1) {
-        // printf("Magic readed correctly\n");
-    } else {
-        logger << log4cpp::Priority::ERROR << "Magic in file header broken";
-        return;
-    }   
+    };
 
     // Buffer for packets
-    char packet_buffer[pcap_header.snaplen];
+    char packet_buffer[pcap_file_header.snaplen];
 
-    unsigned int total_packets_number = 0;
-
+    uint64_t total_packets_number = 0;
     uint64_t dns_amplification_packets = 0;
     uint64_t ntp_amplification_packets = 0;
     uint64_t ssdp_amplification_packets = 0;
@@ -3640,33 +3626,25 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
     struct ndpi_flow_struct* flow = (struct ndpi_flow_struct*)malloc(ndpi_size_flow_struct); 
     memset(flow, 0, ndpi_size_flow_struct);
 
-    while (1) {
+    while ( current_attack.pcap_attack_dump.bytes_to_read() ) {
         struct fastnetmon_pcap_pkthdr pcap_packet_header;
-        ssize_t packet_header_readed_bytes =
-        read(filedesc, &pcap_packet_header, sizeof(struct fastnetmon_pcap_pkthdr));
-
-        if (packet_header_readed_bytes != sizeof(struct fastnetmon_pcap_pkthdr)) {
-            if (packet_header_readed_bytes != 0) {
-                logger << log4cpp::Priority::INFO << "All packet read ? (" << packet_header_readed_bytes << ", " << errno << ")";
-            }
-            // We haven't any packets
+        if (! current_attack.pcap_attack_dump.read_packet_header(pcap_packet_header) ) {
+            logger << log4cpp::Priority::INFO << "produce_dpi_dump_for_pcap_dump: error reading packet header";
             break;
         }
-
-        if (pcap_packet_header.incl_len > pcap_header.snaplen) {
-            logger << log4cpp::Priority::ERROR << "Please enlarge packet buffer for DPI";
-            return;
+        
+        if (! current_attack.pcap_attack_dump.read_packet_payload(&packet_buffer, sizeof(packet_buffer), pcap_packet_header.incl_len, &read_bytes) ) {
+            if ( pcap_packet_header.incl_len != read_bytes ) {
+                logger << log4cpp::Priority::INFO << "produce_dpi_dump_for_pcap_dump: error reading packet payload";
+                break;
+            }
         }
+        
+        memset(src, 0, ndpi_size_id_struct);
+        memset(dst, 0, ndpi_size_id_struct);
 
-        ssize_t packet_payload_readed_bytes = read(filedesc, packet_buffer, pcap_packet_header.incl_len);
-
-        if (pcap_packet_header.incl_len != packet_payload_readed_bytes) {
-            logger << log4cpp::Priority::ERROR << "I read packet header but can't read packet payload";
-            return;
-        }
-
-        // The flow must be reset to zero state - in other case the DPI will not detect all packets properly.
-        // To use flow properly there must be much more complicated code (with flow buffer for each flow probably)
+        // the flow must be reset to zero state - in other case the DPI will not detect all packets properly. 
+        // To use flow properly there must be much more complicated code (with flow buffer for each flow probably)           
         // following code is copied from ndpi_free_flow() just to be sure there will be no memory leaks due to memset()
         zeroify_ndpi_flow(flow);
 
@@ -3706,8 +3684,6 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
     free(dst);
     free(src);
     
-    close(filedesc);
-
     logger << log4cpp::Priority::INFO 
            << "DPI pkt stats: total:"  << total_packets_number
                            << " DNS:"  << dns_amplification_packets
@@ -3715,11 +3691,6 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
                            << " SSDP:" << ssdp_amplification_packets
                            << " SNMP:" << snmp_amplification_packets;
                                        
-    amplification_attack_type_t attack_type;
-
-    // Attack type in unknown by default
-    attack_type = AMPLIFICATION_ATTACK_UNKNOWN;
-
     // Detect amplification attack type
     if ( (double)dns_amplification_packets / (double)total_packets_number > 0.2) {
         launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_DNS, client_ip_as_string);
@@ -3765,8 +3736,6 @@ void call_attack_details_handlers(uint32_t client_ip, attack_details& current_at
 
             close (pcap_fump_filedesc);   
  
-            // Freeup memory
-            current_attack.pcap_attack_dump.deallocate_buffer();
         }
     }
 
@@ -3778,11 +3747,14 @@ void call_attack_details_handlers(uint32_t client_ip, attack_details& current_at
 
         string_buffer_for_dpi_data << "\n\nDPI\n\n";
 
-        produce_dpi_dump_for_pcap_dump(attack_pcap_dump_path, string_buffer_for_dpi_data, client_ip_as_string);
+        produce_dpi_dump_for_pcap_dump(current_attack, string_buffer_for_dpi_data, client_ip_as_string);
 
         attack_fingerprint = attack_fingerprint + string_buffer_for_dpi_data.str();
     }
 #endif
+
+    // Freeup memory
+    current_attack.pcap_attack_dump.deallocate_buffer();
 
     print_attack_details_to_file(attack_fingerprint, client_ip_as_string, current_attack);
 
