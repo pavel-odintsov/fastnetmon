@@ -17,7 +17,7 @@ Project
 -------
 - [Mailing list](https://groups.google.com/forum/#!forum/fastnetmon)
 - [Roadmap](docs/ROADMAP.md)
-- [Release Notes](docs/RELEASENOTES.md)
+- [Release Notes](https://github.com/pavel-odintsov/fastnetmon/releases)
 - Chat: #fastnetmon at irc.freenode.net [web client](https://webchat.freenode.net/)
 - [Please fill out the survey, we need your voice!](https://docs.google.com/forms/d/1YoXQImMeEjBH-JPz3KYtcDwknHs8xrI538ObwSy9uZo/viewform)
 - Detailed reference in Russian: [link](docs/FastNetMon_Reference_Russian.pdf)
