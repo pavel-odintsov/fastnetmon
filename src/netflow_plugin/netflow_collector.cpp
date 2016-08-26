@@ -793,8 +793,8 @@ void process_netflow_packet_v10(u_int8_t* packet, u_int len, std::string client_
             break;
         case NF10_OPTIONS_FLOWSET_ID:
             // process_netflow_v10_options_template(packet + offset, flowset_len, source_id);
-            logger << log4cpp::Priority::INFO
-                   << "Received ipfix options flowset id, which is not supported";
+            //logger << log4cpp::Priority::INFO
+            //       << "Received ipfix options flowset id, which is not supported";
             /* Not implemented yet */
             break;
         default:
