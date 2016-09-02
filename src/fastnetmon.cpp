@@ -1045,7 +1045,7 @@ bool load_configuration_file(const char* filename) {
             for(size_t i=0; i < globbuf.gl_pathc; i++) {
                 logger << log4cpp::Priority::INFO << "Reading additional config file <"
                     << globbuf.gl_pathv[i] << ">";
-                if(!load_configuration_file(globbuf.gl_pathv[i].c_str())) {
+                if(!load_configuration_file(globbuf.gl_pathv[i])) {
                     logger << log4cpp::Priority::ERROR << "Failed to parse config file <"
                         << globbuf.gl_pathv[i] << "> correctly, exiting.";
                     return false;
