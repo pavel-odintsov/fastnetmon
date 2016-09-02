@@ -1013,7 +1013,7 @@ void parse_hostgroups(std::string name, std::string value) {
 // Load configuration
 
 
-bool load_configuration_file(char* filename) {
+bool load_configuration_file(const char* filename) {
     logger << log4cpp::Priority::INFO << "Opening config file <"
         << filename << ">";
 
@@ -1040,12 +1040,12 @@ bool load_configuration_file(char* filename) {
     if(parsed_config[0] == "include") {
         // Adapting code from the accepted answer at http://stackoverflow.com/questions/15085633
         glob_t globbuf;
-        int err = glob(parsed_config[1], 0, NULL, &globbuf);
+        int err = glob(parsed_config[1].c_str(), 0, NULL, &globbuf);
         if(err == 0) {
             for(size_t i=0; i < globbuf.gl_pathc; i++) {
-                logger << log4cpp:Priority::INFO << "Reading additional config file <"
+                logger << log4cpp::Priority::INFO << "Reading additional config file <"
                     << globbuf.gl_pathv[i] << ">";
-                if(!load_configuration(globbuf.gl_pathv[i])) {
+                if(!load_configuration_file(globbuf.gl_pathv[i].c_str())) {
                     logger << log4cpp::Priority::ERROR << "Failed to parse config file <"
                         << globbuf.gl_pathv[i] << "> correctly, exiting.";
                     return false;
