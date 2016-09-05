@@ -445,7 +445,7 @@ bool we_should_ban_this_ip(map_element* current_average_speed_element, ban_setti
 unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp);
 void print_attack_details_to_file(std::string details, std::string client_ip_as_string, attack_details current_attack);
 std::string print_ban_thresholds(ban_settings_t current_ban_settings);
-bool load_configuration_file(char* filename);
+bool load_configuration_file(const char* filename);
 std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, std::string client_ip);
 void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_data,
                                               packed_conntrack_hash* unpacked_data);
