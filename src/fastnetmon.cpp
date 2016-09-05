@@ -1046,6 +1046,7 @@ bool load_configuration_file(const char* filename) {
                 logger << log4cpp::Priority::INFO << "Reading additional config file <"
                     << globbuf.gl_pathv[i] << ">";
                 if(!load_configuration_file(globbuf.gl_pathv[i])) {
+                    // If one file fails to load, fail the entire sequence.
                     logger << log4cpp::Priority::ERROR << "Failed to parse config file <"
                         << globbuf.gl_pathv[i] << "> correctly, exiting.";
                     return false;
