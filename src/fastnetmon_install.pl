@@ -160,7 +160,7 @@ sub main {
 
     # We could get huge speed benefits with this option
     if ($cpus_number > 1) { 
-        print "You have really nice server with $cpus_number CPU's and we will use they all for build process :)\n";
+        print "You have really nice server with $cpus_number CPU's and we will use them all for build process :)\n";
         $make_options = "-j $cpus_number";
     }
 
