@@ -108,7 +108,6 @@ Example of [notification email](docs/ATTACK_REPORT_EXAMPLE.md) about detected at
 
 How I can help project?
 -----------------------
-- We are looking for a maintainer for the Debian and Fedora/EPEL packages
 - Test it! 
 - Share your experience
 - Share your use cases
