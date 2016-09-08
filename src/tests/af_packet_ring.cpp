@@ -210,6 +210,7 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
 
     if (bind_result == -1) {
         printf("Can't bind to AF_PACKET socket\n");
+        free(rd);
         return -1;
     }
  
@@ -224,6 +225,7 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
 
         if (setsockopt_fanout < 0) {
             printf("Can't configure fanout\n");
+            free(rd);
             return -1;
         }
     }
@@ -251,6 +253,7 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
         current_block_num = (current_block_num + 1) % blocknum;
     }   
 
+    free(rd);
     return packet_socket;
 }
 

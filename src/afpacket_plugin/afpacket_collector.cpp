@@ -227,6 +227,7 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
 
     if (bind_result == -1) {
         logger << log4cpp::Priority::ERROR << "Can't bind to AF_PACKET socket";
+        free(rd);
         return -1;
     }
  
@@ -241,6 +242,7 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
 
         if (setsockopt_fanout < 0) {
             logger << log4cpp::Priority::ERROR << "Can't configure fanout error number: "<< errno << " error: " << strerror(errno);
+            free(rd);
             return -1;
         }
     }
@@ -268,6 +270,7 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
         current_block_num = (current_block_num + 1) % blocknum;
     }   
 
+    free(rd);
     return packet_socket;
 }
 

@@ -192,6 +192,7 @@ class GrpcClient {
 
             if (path_c_struct == NULL) {
                 logger << log4cpp::Priority::ERROR << "Could not generate path\n";
+                delete current_path;
                 return;
             }
 
