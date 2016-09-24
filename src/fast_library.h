@@ -127,4 +127,25 @@ std::string serialize_statistic_counters_about_attack(attack_details& current_at
 std::string dns_lookup(std::string domain_name);
 bool store_data_to_stats_server(unsigned short int graphite_port, std::string graphite_host, std::string buffer_as_string);
 
+/*
+source: http://stackoverflow.com/questions/216823/whats-the-best-way-to-trim-stdstring/25385766#25385766
+*/
+// trim from end of string (right)
+inline std::string& rtrim(std::string& s, const char* t = " \t\n\r\f\v")
+{
+    s.erase(s.find_last_not_of(t) + 1);
+    return s;
+}
+// trim from beginning of string (left)
+inline std::string& ltrim(std::string& s, const char* t = " \t\n\r\f\v")
+{
+    s.erase(0, s.find_first_not_of(t));
+    return s;
+}
+// trim from both ends of string (left & right)
+inline std::string& trim(std::string& s, const char* t = " \t\n\r\f\v")
+{
+    return ltrim(rtrim(s, t), t);
+}
+
 #endif
