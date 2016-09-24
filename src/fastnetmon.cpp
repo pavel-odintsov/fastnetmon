@@ -3207,7 +3207,6 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
         logger << log4cpp::Priority::INFO << "Call to GoBGP for ban client is finished: " << client_ip_as_string;
     }
 #endif
-    
 
 #ifdef REDIS
     if (redis_enabled) {
@@ -3221,7 +3220,22 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
         boost::thread redis_store_thread(store_data_in_redis, redis_key_name, basic_attack_information_in_json);
         redis_store_thread.detach();
         logger << log4cpp::Priority::INFO << "Finish data save in Redis in key: " << redis_key_name;
+
+        // If we have flow dump put in redis too
+        if (!flow_attack_details.empty()) {
+            std::string redis_key_name = client_ip_as_string + "_flow_dump";
+
+            if (!redis_prefix.empty()) {
+                redis_key_name = redis_prefix + "_" + client_ip_as_string + "_flow_dump";
+            }
+
+            logger << log4cpp::Priority::INFO << "Start data save in redis in key: " << redis_key_name;
+            boost::thread redis_store_thread(store_data_in_redis, redis_key_name, flow_attack_details);
+            redis_store_thread.detach();
+            logger << log4cpp::Priority::INFO << "Finish data save in redis in key: " << redis_key_name;
+        }
     }
+#endif
 
 #ifdef MONGO
     if (mongodb_enabled) {
@@ -3235,21 +3249,6 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
         boost::thread  mongo_store_thread(store_data_in_mongo, mongo_key_name, basic_attack_information_in_json);
         mongo_store_thread.detach();
         logger << log4cpp::Priority::INFO << "Finish data save in Mongo in key: " << mongo_key_name;
-    }
-#endif
-
-    // If we have flow dump put in redis too
-    if (redis_enabled && !flow_attack_details.empty()) {
-        std::string redis_key_name = client_ip_as_string + "_flow_dump";
-
-        if (!redis_prefix.empty()) {
-            redis_key_name = redis_prefix + "_" + client_ip_as_string + "_flow_dump";
-        }
-
-        logger << log4cpp::Priority::INFO << "Start data save in redis in key: " << redis_key_name;
-        boost::thread redis_store_thread(store_data_in_redis, redis_key_name, flow_attack_details);
-        redis_store_thread.detach();
-        logger << log4cpp::Priority::INFO << "Finish data save in redis in key: " << redis_key_name;
     }
 #endif
 }
