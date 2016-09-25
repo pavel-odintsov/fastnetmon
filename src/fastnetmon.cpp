@@ -1015,9 +1015,9 @@ void parse_hostgroups(std::string name, std::string value) {
         << host_groups[ host_group_name ].size() << " subnets";
 }
 
-const char * CONFIG_DIRECTIVE_INCLUDE_FILE = "include_file";
+const char * const CONFIG_DIRECTIVE_INCLUDE_FILE = "include_file";
 
-bool configuration_is_include_file_directive(const string & s) {
+bool configuration_is_include_file_directive(const std::string & s) {
     return (s.find(CONFIG_DIRECTIVE_INCLUDE_FILE) == 0);
 }
 
@@ -1050,7 +1050,7 @@ bool load_configuration_file() {
             break;
 
         std::vector<std::string> parsed_config;
-        boost::split(parsed_config, line, boost::is_any_of(" \t"), boost::token_compress_on);
+        boost::split(parsed_config, *fit, boost::is_any_of(" \t"), boost::token_compress_on);
         if(parsed_config.size() == 2) {
             boost::algorithm::trim(parsed_config[0]);
             boost::algorithm::trim(parsed_config[1]);
