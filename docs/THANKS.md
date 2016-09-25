@@ -24,3 +24,4 @@ Thanks file! For all peoples which helped this project :)
 - Dmitry Marakasov for FreeBSD port
 - Dmitry Baturin for huge help with building iso image with VyOS
 - mdpuma for help with Gentoo installer
+- Dmitry Kaminsky for help with configuration sanity checks and fixing redis bug
