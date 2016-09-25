@@ -978,7 +978,11 @@ void parse_hostgroups(std::string name, std::string value) {
 
     if (splitted_new_host_group.size() != 2) {
         logger << log4cpp::Priority::ERROR << "We can't parse new host group";
+        return;
     }
+
+    boost::algorithm::trim(splitted_new_host_group[0]);
+    boost::algorithm::trim(splitted_new_host_group[1]);
 
     std::string host_group_name = splitted_new_host_group[0];
 
