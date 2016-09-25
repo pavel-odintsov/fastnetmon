@@ -954,6 +954,7 @@ std::vector<std::string> read_file_to_vector(std::string file_name) {
     reading_file.open(file_name.c_str(), std::ifstream::in);
     if (reading_file.is_open()) {
         while (getline(reading_file, line)) {
+            trim(line);
             data.push_back(line);
         }
     } else {
@@ -1022,14 +1023,18 @@ bool load_configuration_file() {
     while (getline(config_file, line)) {
         std::vector<std::string> parsed_config;
 
+        trim(line);
+
         if (line.find("#") == 0 or line.empty()) {
             // Ignore comments line
             continue;
         }
 
-        boost::split(parsed_config, line, boost::is_any_of(" ="), boost::token_compress_on);
+        boost::split(parsed_config, line, boost::is_any_of("="), boost::token_compress_on);
 
         if (parsed_config.size() == 2) {
+            trim(parsed_config[0]);
+            trim(parsed_config[1]);
             configuration_map[parsed_config[0]] = parsed_config[1];
             
             // Well, we parse host groups here
