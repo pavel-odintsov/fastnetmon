@@ -1015,25 +1015,85 @@ void parse_hostgroups(std::string name, std::string value) {
         << host_groups[ host_group_name ].size() << " subnets";
 }
 
+const char * CONFIG_DIRECTIVE_INCLUDE_FILE = "include_file";
+
+bool configuration_is_include_file_directive(const string & s) {
+    return (s.find(CONFIG_DIRECTIVE_INCLUDE_FILE) == 0);
+}
+
 // Load configuration
 bool load_configuration_file() {
-    std::ifstream config_file(global_config_path.c_str());
-    std::string line;
-
-    if (!config_file.is_open()) {
-        logger << log4cpp::Priority::ERROR << "Can't open config file";
+    if (file_exists(global_config_path) == false) {
+        logger << log4cpp::Priority::ERROR << "Config file does not exist";
         return false;
     }
 
-    while (getline(config_file, line)) {
+    std::vector<std::string> lines_from_config = read_file_to_vector(global_config_path);
+    if(lines_from_config.size() == 0) {
+        logger << log4cpp::Priority::ERROR << "Config file is empty";
+        return false;
+    }
+
+    // process derectives:
+    //   - 'include path_to_file_to_be_included' - replace this item with items from file
+    // In this loop we have to break if nothing found and return from function to prevent dead loop!
+    while(true) {
+        // find line which may be 'include' directive
+        std::vector<std::string>::iterator fit = std::find_if(
+            lines_from_config.begin(),
+            lines_from_config.end(),
+            configuration_is_include_file_directive
+        );
+
+        // if no lines with directive - exit loop
+        if(fit == lines_from_config.end())
+            break;
+
         std::vector<std::string> parsed_config;
-        boost::algorithm::trim(line);
+        boost::split(parsed_config, line, boost::is_any_of(" \t"), boost::token_compress_on);
+        if(parsed_config.size() == 2) {
+            boost::algorithm::trim(parsed_config[0]);
+            boost::algorithm::trim(parsed_config[1]);
+            if(parsed_config[0].compare(CONFIG_DIRECTIVE_INCLUDE_FILE) == 0) {
+                std::vector<std::string> lines_from_included_config = read_file_to_vector(parsed_config[1]);
+                try {
+                    lines_from_config.insert(
+                        fit,
+                        lines_from_included_config.begin(),
+                        lines_from_included_config.end()
+                    );
+                    fit += lines_from_included_config.size();
+                    lines_from_config.erase(fit);
+                } catch(...) {
+                    // exception
+                    logger << log4cpp::Priority::ERROR << "Config '" << CONFIG_DIRECTIVE_INCLUDE_FILE 
+                        << "' update failed";
+                    return false;
+                }
+            } else {
+                // error bad include directive
+                logger << log4cpp::Priority::ERROR << "Config directive is unknown";
+                return false;
+            }
+        } else {
+            // error bad include directive
+            logger << log4cpp::Priority::ERROR << "Config directive '" << CONFIG_DIRECTIVE_INCLUDE_FILE
+                << "' has wrong format";
+            return false;
+        }
+    }
+
+    for(std::vector<std::string>::iterator it = lines_from_config.begin();
+            it != lines_from_config.end();
+            it ++) {
+        std::string line = *it;
 
         if (line.find("#") == 0 or line.empty()) {
             // Ignore comments line
             continue;
         }
 
+        std::vector<std::string> parsed_config;
         boost::split(parsed_config, line, boost::is_any_of("="), boost::token_compress_on);
 
         if (parsed_config.size() == 2) {
