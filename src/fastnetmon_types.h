@@ -60,6 +60,7 @@ class logging_configuration_t {
         bool remote_syslog_logging;
         std::string remote_syslog_server;
         unsigned int remote_syslog_port;
+        std::string local_file_path;
 };
 
 typedef std::pair<uint32_t, uint32_t> subnet_t;
