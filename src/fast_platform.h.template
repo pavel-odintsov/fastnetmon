@@ -10,7 +10,7 @@ std::string fastnetmon_version = "${FASTNETMON_APPLICATION_VERSION}";
 std::string pid_path = "/var/run/fastnetmon.pid";
 std::string global_config_path = "/etc/fastnetmon.conf";
 
-std::string log_file_path = "/var/log/fastnetmon.log";
+std::string template_log_file_path = "/var/log/fastnetmon-temp.log";
 std::string attack_details_folder = "/var/log/fastnetmon_attacks";
 
 // Default path to notify script

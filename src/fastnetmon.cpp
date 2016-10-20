@@ -2496,7 +2496,7 @@ void init_logging() {
     // So log4cpp will never notify you if it could not write to log file due to permissions issues
     // We will check it manually
 
-    if (!file_is_appendable(log_file_path)) {
+    if (!file_is_appendable(logging_configuration.local_file_path)) {
         std::cerr << "Can't open log file " << log_file_path << " for writing! Please check file and folder permissions" << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -4123,6 +4123,14 @@ logging_configuration_t read_logging_settings(configuration_map_t configuration_
             logging_configuration_temp.remote_syslog_logging = false;
         }
     }
+
+    if (configuration_map.count("logging:log_file_path") != 0) {
+        logging_configuration_temp.local_file_path = configuration_map["logging:log_file_path"];
+    }
+    else {
+	logging_configuration_temp.local_file_path = template_log_file_path;
+    }	
+
 
     if (logging_configuration_temp.local_syslog_logging) {
         logger << log4cpp::Priority::INFO << "We have configured local syslog logging corectly";
