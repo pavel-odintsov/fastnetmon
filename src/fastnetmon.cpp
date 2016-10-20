@@ -2497,14 +2497,14 @@ void init_logging() {
     // We will check it manually
 
     if (!file_is_appendable(logging_configuration.local_file_path)) {
-        std::cerr << "Can't open log file " << log_file_path << " for writing! Please check file and folder permissions" << std::endl;
+        std::cerr << "Can't open log file " << logging_configuration.local_file_path << " for writing! Please check file and folder permissions" << std::endl;
         exit(EXIT_FAILURE);
     }
 
     log4cpp::PatternLayout* layout = new log4cpp::PatternLayout();
     layout->setConversionPattern("%d [%p] %m%n");
 
-    log4cpp::Appender* appender = new log4cpp::FileAppender("default", log_file_path);
+    log4cpp::Appender* appender = new log4cpp::FileAppender("default", logging_configuration.local_file_path );
     appender->setLayout(layout);
 
     logger.setPriority(log4cpp::Priority::INFO);
