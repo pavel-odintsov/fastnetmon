@@ -2496,7 +2496,7 @@ void init_logging() {
     // We will check it manually
 
     if (!file_is_appendable(logging_configuration.local_file_path)) {
-        std::cerr << "Can't open log file " + logging_configuration.local_file_path + " for writing! Please check file and folder permissions"; 
+        std::cerr << "Can't open log file " << logging_configuration.local_file_path << " for writing! Please check file and folder permissions"; 
         exit(EXIT_FAILURE);
     }
 
@@ -2639,7 +2639,6 @@ int main(int argc, char** argv) {
 
     // enable core dumps
     enable_core_dumps();
-
 
 #ifdef FASTNETMON_API
     gpr_set_log_function(silent_logging_function);
