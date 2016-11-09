@@ -2582,6 +2582,7 @@ int main(int argc, char** argv) {
             ("version", "show version")
             ("daemonize", "detach from the terminal")
             ("configuration_file", po::value<std::string>(), "set path to custom configuration file")
+            ("log_file", po::value<std::string>(), "set path to custom log file")
         ;
 
         po::variables_map vm;
@@ -2606,6 +2607,11 @@ int main(int argc, char** argv) {
             global_config_path = vm["configuration_file"].as<std::string>();
             std::cout << "We will use custom path to configuration file: " << global_config_path << std::endl;
         } 
+        
+        if (vm.count("log_file")) {
+            log_file_path = vm["log_file"].as<std::string>();
+            std::cout << "We will use custom path to log file: " << log_file_path << std::endl;
+        }
     } catch (po::error& e) {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl; 
         exit(EXIT_FAILURE);
