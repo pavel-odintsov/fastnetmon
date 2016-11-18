@@ -2514,8 +2514,12 @@ void init_logging() {
 }
 
 void reconfigure_logging() {
+    log4cpp::PatternLayout* layout = new log4cpp::PatternLayout();
+    layout->setConversionPattern("[%p] %m%n");
+
     if (logging_configuration.local_syslog_logging) {
         log4cpp::Appender* local_syslog_appender = new log4cpp::SyslogAppender("fastnetmon", "fastnetmon", LOG_USER);
+	local_syslog_appender->setLayout(layout);
         logger.addAppender(local_syslog_appender);
 
         logger << log4cpp::Priority::INFO << "We start local syslog logging corectly";
@@ -2525,6 +2529,7 @@ void reconfigure_logging() {
         log4cpp::Appender* remote_syslog_appender = new log4cpp::RemoteSyslogAppender(
             "fastnetmon", "fastnetmon", logging_configuration.remote_syslog_server, LOG_USER, logging_configuration.remote_syslog_port); 
 
+	remote_syslog_appender->setLayout(layout);
         logger.addAppender(remote_syslog_appender);
         
         logger << log4cpp::Priority::INFO << "We start remote syslog logging corectly";
