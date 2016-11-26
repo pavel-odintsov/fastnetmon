@@ -4095,7 +4095,7 @@ void print_attack_details_to_file(std::string details, std::string client_ip_as_
     std::ofstream my_attack_details_file;
 
     std::string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
-    std::string attack_dump_path = attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string;
+    std::string attack_dump_path = attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string + ".txt";
 
     my_attack_details_file.open(attack_dump_path.c_str(), std::ios::app);
 
