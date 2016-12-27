@@ -69,6 +69,7 @@ if ( $API->connect( $cfg[ ip_mikrotik ], $cfg[ api_user ], $cfg[ api_pass ] ) ) 
         $API->write( '/ip/route/add', false );
         $API->write( '=dst-address=' . $IP_ATTACK, false );
         $API->write( '=type=blackhole', false );
+        $API->write( '=bgp-communities=65535:666', false );
         $API->write( '=comment=' . $comment_rule );
         $ret = $API->read();
 
