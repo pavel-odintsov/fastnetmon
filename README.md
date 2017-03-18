@@ -34,7 +34,7 @@ You can check out the [comparison table](docs/CAPTURE_BACKENDS.md) for all avail
 Complete integration with following vendors 
 --------------------------------
 - [A10 Networks Thunder TPS Appliance integration](src/a10_plugin)
-- [MikroTik RouterOS](src/mikrotik_plugin)
+- [MikroTik RouterOS](src/mikrotik_plugin) Please use only RouterOS 6.38 or newer versions.
 
 Travis status: ![Travis](https://travis-ci.org/pavel-odintsov/fastnetmon.svg?branch=master)
 
