@@ -34,7 +34,7 @@ logger.info(" - " . join(sys.argv))
 
 
 # A10 Mitigator Information
-mitigator_ip = "192.168.199.152"
+mitigator_ip = "192.168.199.150"
 zone_name = client_ip_as_string + "_zone"
 ip_addr = client_ip_as_string
 mitigator_base_url, signature = axapi_auth(mitigator_ip, "admin", "a10")
