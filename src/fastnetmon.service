@@ -6,6 +6,8 @@ After=syslog.target network.target remote-fs.target
 Type=forking
 ExecStart=/opt/fastnetmon/fastnetmon --daemonize
 PIDFile=/run/fastnetmon.pid
+Restart=on-failure
+RestartSec=3
 
 #ExecReload=/bin/kill -s HUP $MAINPID
 #ExecStop=/bin/kill -s QUIT $MAINPID
