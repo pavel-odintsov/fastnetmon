@@ -71,6 +71,9 @@ if ( $API->connect( $cfg[ ip_mikrotik ], $cfg[ api_user ], $cfg[ api_pass ] ) ) 
         $API->write( '=type=blackhole', false );
         $API->write( '=bgp-communities=65535:666', false );
         $API->write( '=comment=' . $comment_rule );
+        // Log to router syslog. Useful for alerting and Graylog reporting
+        $API->write( '/log/info', false );
+        $API->write( '=message=' . $comment_rule );
         $ret = $API->read();
 
     }
@@ -82,6 +85,9 @@ if ( $API->connect( $cfg[ ip_mikrotik ], $cfg[ api_user ], $cfg[ api_pass ] ) ) 
         $ID_ARRAY = $API->read();
         $API->write( '/ip/route/remove', false );
         $API->write( '=.id=' . $ID_ARRAY[ 0 ][ '.id' ] );
+        // Log to router syslog. Useful for alerting and Graylog reporting
+        $API->write( '/log/info', false );
+        $API->write( '=message=' . $comment_rule );
         $ret = $API->read();
     }
     if ($ret) _log( $comment_rule );
