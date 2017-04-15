@@ -90,11 +90,10 @@ if ($enable_gobgp_backend) {
 main();
 
 sub welcome_message {
-    print "Hello, my dear Customer!\n\n";
-
+    print "Hi there!\n\n";
     print "We need about ten minutes of your time for installing FastNetMon toolkit\n";
-    print "You could make coffee/tee or you will help project and fill this short survey:   http://bit.ly/fastnetmon_survey\n";
-    print "I would be very glad if you spent this time and shared your DDoS experience :)\n\n";
+    print "Also we have FastNetMon Advanced version with big number of improvements: https://fastnetmon.com/fastnetmon-advanced/\n";
+    print "You could order free one-month trial for Advanced version here https://fastnetmon.com/trial/\n\n";
     print "In case of any issues with install script please share file $install_log_path with developers\n";
 }
 
