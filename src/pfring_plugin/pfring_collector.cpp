@@ -37,7 +37,7 @@
 
 uint32_t pfring_sampling_ratio = 1; 
 
-// Get log4cpp logger from main programm
+// Get log4cpp logger from main program
 extern log4cpp::Category& logger;
 
 extern uint64_t total_unparsed_packets;
@@ -286,7 +286,7 @@ void pfring_main_packet_process_task() {
 
     if (!pf_ring_init_result) {
         // Internal error in PF_RING
-        logger << log4cpp::Priority::ERROR << "PF_RING initilization failed, exit from programm";
+        logger << log4cpp::Priority::ERROR << "PF_RING initilization failed, exit from program";
         exit(1);
     }
 }
@@ -739,7 +739,7 @@ bool pf_ring_main_loop(const char* dev) {
 
     if (pfring_set_application_name_result != 0) {
         logger << log4cpp::Priority::ERROR
-               << "Can't set programm name for PF_RING: pfring_set_application_name";
+               << "Can't set program name for PF_RING: pfring_set_application_name";
     }
 
     pfring_version(pf_ring_descr, &version);
