@@ -3755,7 +3755,7 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
             - and maybe some protocol/port based statistics could be used to filter new/unknown attacks...
         */
 
-        logger << log4cpp::Priority::ERROR << "We can't detect attack type with DPI it's not so criticial, only for your information";
+        logger << log4cpp::Priority::ERROR << "We can't detect attack type with DPI. It's not so critical, only for your information";
     }
 }
 
