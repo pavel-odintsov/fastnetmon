@@ -43,10 +43,10 @@
 #include <linux/if_packet.h>
 #include <net/ethernet.h> /* the L2 protocols */
 
-// Get log4cpp logger from main programm
+// Get log4cpp logger from main program
 extern log4cpp::Category& logger;
 
-// Pass unparsed packets number to main programm
+// Pass unparsed packets number to main program
 extern uint64_t total_unparsed_packets;
 
 // Global configuration map

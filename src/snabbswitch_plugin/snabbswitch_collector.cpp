@@ -44,10 +44,10 @@ int start_snabb_switch(int snabb_argc, const char **snabb_argv);
 }
 #endif
 
-// Get log4cpp logger from main programm
+// Get log4cpp logger from main program
 extern log4cpp::Category& logger;
 
-// Pass unparsed packets number to main programm
+// Pass unparsed packets number to main program
 extern uint64_t total_unparsed_packets;
 
 // Global configuration map

@@ -38,7 +38,7 @@ bool lua_hooks_enabled = false;
 std::string lua_hooks_path = "/usr/src/fastnetmon/src/netflow_hooks.lua";
 #endif
 
-// Get it from main programm
+// Get it from main program
 extern log4cpp::Category& logger;
 
 // Global configuration map

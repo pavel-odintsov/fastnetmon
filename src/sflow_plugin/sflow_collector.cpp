@@ -46,7 +46,7 @@ std::string sflow_lua_hooks_path = "/usr/src/fastnetmon/src/sflow_hooks.lua";
 std::string plugin_name = "sflow";
 std::string plugin_log_prefix = plugin_name + ": ";
 
-// Get logger from main programm
+// Get logger from main program
 extern log4cpp::Category& logger;
 
 // Global configuration map

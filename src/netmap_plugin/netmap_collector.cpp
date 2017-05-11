@@ -62,10 +62,10 @@ uint32_t netmap_sampling_ratio = 1;
 void netmap_thread(struct nm_desc* netmap_descriptor, int netmap_thread);
 void consume_pkt(u_char* buffer, int len, int thread_number);
 
-// Get log4cpp logger from main programm
+// Get log4cpp logger from main program
 extern log4cpp::Category& logger;
 
-// Pass unparsed packets number to main programm
+// Pass unparsed packets number to main program
 extern uint64_t total_unparsed_packets;
 
 // Global configuration map

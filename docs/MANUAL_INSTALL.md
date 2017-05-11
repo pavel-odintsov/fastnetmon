@@ -68,7 +68,7 @@ echo "/opt/pf_ring/lib" > /etc/ld.so.conf.d/pf_ring.conf
 ldconfig -v
 ```
 
-It's REQUIRED to add all your networks in CIDR form to file /etc/networks_list if form when one subnet on one line. Please aggregate your networks because long networks list will significatly slow down programm. And please change REDIS_SUPPORT = yes to no in Makefile if you do not need traffic counting feature. When you running this software in OpenVZ node you may did not specify networks explicitly, we can read it from file /proc/vz/veip.
+It's REQUIRED to add all your networks in CIDR form to file /etc/networks_list if form when one subnet on one line. Please aggregate your networks because long networks list will significatly slow down program. And please change REDIS_SUPPORT = yes to no in Makefile if you do not need traffic counting feature. When you running this software in OpenVZ node you may did not specify networks explicitly, we can read it from file /proc/vz/veip.
 
 You can add whitelist subnets in similar form to /etc/networks_whitelist (CIDR masks too).
 
@@ -82,12 +82,12 @@ Start it:
 ./fastnetmon eth1,eth2
 ```
 
-Enable programm start on server startup, please add to /etc/rc.local this lines:
+Enable program start on server startup, please add to /etc/rc.local this lines:
 ```bash
 screen -S fastnetmon -d -m /root/fastnetmon/fastnetmon
 ```
 
-When incoming or outgoing attack arrives programm call bash script (when it exists): /usr/local/bin/notify_about_attack.sh two times. First time when threshold exceed (at this step we know IP, direction and power of attack). Second when we collect 100 packets for detailed audit what did happens.
+When incoming or outgoing attack arrives program call bash script (when it exists): /usr/local/bin/notify_about_attack.sh two times. First time when threshold exceed (at this step we know IP, direction and power of attack). Second when we collect 100 packets for detailed audit what did happens.
 
 
 ==Command Line Reference 

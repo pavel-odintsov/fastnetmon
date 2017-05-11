@@ -315,7 +315,7 @@ bool print_average_traffic_counts = true;
 // Key used for sorting clients in output.  Allowed sort params: packets/bytes/flows
 std::string sort_parameter = "packets";
 
-// Number of lines in programm output
+// Number of lines in program output
 unsigned int max_ips_in_list = 7;
 
 // Number of lines for sending ben attack details to email
@@ -458,7 +458,7 @@ std::string print_ddos_attack_details();
 void recalculate_speed();
 std::string print_channel_speed(std::string traffic_type, direction packet_direction);
 void process_packet(simple_packet& current_packet);
-void traffic_draw_programm();
+void traffic_draw_program();
 void interruption_signal_handler(int signal_number);
 
 #ifdef FASTNETMON_API
@@ -625,7 +625,7 @@ void sigpipe_handler_for_popen(int signo) {
 bool exec_with_stdin_params(std::string cmd, std::string params) {
     FILE* pipe = popen(cmd.c_str(), "w");
     if (!pipe) {
-        logger << log4cpp::Priority::ERROR << "Can't execute programm " << cmd
+        logger << log4cpp::Priority::ERROR << "Can't execute program " << cmd
                << " error code: " << errno << " error text: " << strerror(errno);
         return false;
     }
@@ -636,7 +636,7 @@ bool exec_with_stdin_params(std::string cmd, std::string params) {
         pclose(pipe);
         return true;
     } else {
-        logger << log4cpp::Priority::ERROR << "Can't pass data to stdin of programm " << cmd;
+        logger << log4cpp::Priority::ERROR << "Can't pass data to stdin of program " << cmd;
         pclose(pipe);
         return false;
     }
@@ -2051,7 +2051,7 @@ void screen_draw_thread() {
         // Available only from boost 1.54: boost::this_thread::sleep_for(
         // boost::chrono::seconds(check_period) );
         boost::this_thread::sleep(boost::posix_time::seconds(check_period));
-        traffic_draw_programm();
+        traffic_draw_program();
     }
 }
 
@@ -2107,7 +2107,7 @@ void recalculate_speed() {
     double time_difference = difftime(start_time, last_call_of_traffic_recalculation);
 
     if (time_difference < 1) {
-        // It could occur on programm start
+        // It could occur on program start
         logger << log4cpp::Priority::INFO
                << "We skip one iteration of speed_calc because it runs so early!";
         return;
@@ -2313,11 +2313,11 @@ void print_screen_contents_into_file(std::string screen_data_stats_param) {
         screen_data_file << screen_data_stats_param;
         screen_data_file.close();
     } else {
-        logger << log4cpp::Priority::ERROR << "Can't print programm screen into file";
+        logger << log4cpp::Priority::ERROR << "Can't print program screen into file";
     }
 }
 
-void traffic_draw_programm() {
+void traffic_draw_program() {
     std::stringstream output_buffer;
 
     // logger<<log4cpp::Priority::INFO<<"Draw table call";
@@ -2550,7 +2550,7 @@ int do_fork() {
         break;
     default:
         // We should close master process with _exit(0)
-        // We should not call exit() because it will destroy all global variables for programm
+        // We should not call exit() because it will destroy all global variables for program
         _exit(0);
     }
 
@@ -2865,7 +2865,7 @@ void free_up_all_resources() {
     Destroy_Patricia(whitelist_tree_ipv6, (void_fn_t)0);
 }
 
-// For correct programm shutdown by CTRL+C
+// For correct program shutdown by CTRL+C
 void interruption_signal_handler(int signal_number) {
      
     logger << log4cpp::Priority::INFO << "SIGNAL captured, prepare toolkit shutdown";
@@ -3755,7 +3755,7 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
             - and maybe some protocol/port based statistics could be used to filter new/unknown attacks...
         */
 
-        logger << log4cpp::Priority::ERROR << "We can't detect attack type with DPI it's not so criticial, only for your information";
+        logger << log4cpp::Priority::ERROR << "We can't detect attack type with DPI. It's not so critical, only for your information";
     }
 }
 

@@ -59,7 +59,7 @@ int main() {
     pfring_set_application_name(pf_ring_descr, (char*)"fastnetmon");
 
     if (pfring_set_application_name_result != 0) {
-        std::cout << "Can't set programm name for PF_RING: pfring_set_application_name";
+        std::cout << "Can't set program name for PF_RING: pfring_set_application_name";
     }
 
     pfring_version(pf_ring_descr, &version);
