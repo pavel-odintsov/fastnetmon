@@ -785,6 +785,8 @@ direction get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_add
     found_patrica_node = NULL;
     prefix_for_check_address.add.sin6 = src_ipv6;
 
+    found_patrica_node = patricia_search_best2(lookup_tree, &prefix_for_check_address, 1);
+    
     if (found_patrica_node) {
         our_ip_is_source = true;
     }
