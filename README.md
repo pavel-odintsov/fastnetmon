@@ -66,7 +66,7 @@ Running Fastnetmon
 ------------------
 ### Supported platforms
 - Linux (Debian 6/7/8, CentOS 6/7, Ubuntu 12.04, 14.04, 16.04)
-- FreeBSD 9, 10, 11 (only 1.1.2 release)
+- FreeBSD 9, 10, 11 (please use version from ports)
 - Mac OS X Yosemite (only 1.1.2 release)
 
 ### Supported architectures
