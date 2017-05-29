@@ -27,6 +27,9 @@ project(FastNetMon)
 set (FASTNETMON_VERSION_MAJOR 1)
 set (FASTNETMON_VERSION_MINOR 1)
 
+set(CMAKE_INSTALL_SYSTEMD_SERVICEDIR "/lib/systemd/system"
+  CACHE PATH "Location for systemd service files")
+
 if (ENABLE_GOBGP_SUPPORT)
     # We could not compile gRPC without C++ 11
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11")
@@ -599,6 +602,10 @@ install(FILES networks_whitelist DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}")
 # man pages
 install(FILES man/fastnetmon.1 DESTINATION /usr/share/man/man1)
 install(FILES man/fastnetmon_client.1 DESTINATION /usr/share/man/man1)
+
+# service files
+configure_file(fastnetmon.service.in "${CMAKE_CURRENT_BINARY_DIR}/fastnetmon.service" @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/fastnetmon.service" DESTINATION ${CMAKE_INSTALL_SYSTEMD_SERVICEDIR})
 
 # Configure cpack package builder
 # Run it with: cd build; cpack -G DEB ..

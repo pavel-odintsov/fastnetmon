@@ -4,7 +4,7 @@ After=syslog.target network.target remote-fs.target
  
 [Service]
 Type=forking
-ExecStart=/opt/fastnetmon/fastnetmon --daemonize
+ExecStart=@CMAKE_INSTALL_SBINDIR@/fastnetmon --daemonize
 PIDFile=/run/fastnetmon.pid
 Restart=on-failure
 RestartSec=3
