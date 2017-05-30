@@ -1286,7 +1286,6 @@ bool load_configuration_file() {
 
     // Read global ban configuration
     global_ban_settings = read_ban_settings(configuration_map, "");
-
     logging_configuration = read_logging_settings(configuration_map);
 
     // logger << log4cpp::Priority::INFO << "We read global ban settings: " << print_ban_thresholds(global_ban_settings);
@@ -2496,15 +2495,15 @@ void init_logging() {
     // So log4cpp will never notify you if it could not write to log file due to permissions issues
     // We will check it manually
 
-    if (!file_is_appendable(log_file_path)) {
-        std::cerr << "Can't open log file " << log_file_path << " for writing! Please check file and folder permissions" << std::endl;
+    if (!file_is_appendable(logging_configuration.local_file_path)) {
+        std::cerr << "Can't open log file " << logging_configuration.local_file_path << " for writing! Please check file and folder permissions" << std::endl; 
         exit(EXIT_FAILURE);
     }
 
     log4cpp::PatternLayout* layout = new log4cpp::PatternLayout();
     layout->setConversionPattern("%d [%p] %m%n");
 
-    log4cpp::Appender* appender = new log4cpp::FileAppender("default", log_file_path);
+    log4cpp::Appender* appender = new log4cpp::FileAppender("default", logging_configuration.local_file_path );
     appender->setLayout(layout);
 
     logger.setPriority(log4cpp::Priority::INFO);
@@ -2652,8 +2651,6 @@ int main(int argc, char** argv) {
     // enable core dumps
     enable_core_dumps();
 
-    init_logging();
-
 #ifdef FASTNETMON_API
     gpr_set_log_function(silent_logging_function);
 #endif
@@ -2663,6 +2660,8 @@ int main(int argc, char** argv) {
 
     // We should read configurartion file _after_ logging initialization
     bool load_config_result = load_configuration_file();
+    
+    init_logging();
 
     if (!load_config_result) {
         std::cerr << "Can't open config file " << global_config_path << " please create it!" << std::endl;
@@ -4134,6 +4133,13 @@ logging_configuration_t read_logging_settings(configuration_map_t configuration_
             logging_configuration_temp.remote_syslog_logging = false;
         }
     }
+
+    if (configuration_map.count("logging:log_file_path") != 0) {
+        logging_configuration_temp.local_file_path = configuration_map["logging:log_file_path"];
+    }
+    else {
+	logging_configuration_temp.local_file_path = template_log_file_path;
+    }	
 
     if (logging_configuration_temp.local_syslog_logging) {
         logger << log4cpp::Priority::INFO << "We have configured local syslog logging corectly";
