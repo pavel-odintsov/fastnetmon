@@ -10,6 +10,7 @@
 #include <signal.h>
 #include <time.h>
 #include <math.h>
+#include <glob.h>
 
 #include <sys/socket.h>
 #include <sys/resource.h>
@@ -445,7 +446,7 @@ bool we_should_ban_this_ip(map_element* current_average_speed_element, ban_setti
 unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp);
 void print_attack_details_to_file(std::string details, std::string client_ip_as_string, attack_details current_attack);
 std::string print_ban_thresholds(ban_settings_t current_ban_settings);
-bool load_configuration_file();
+bool load_configuration_file(const char* filename);
 std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, std::string client_ip);
 void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_data,
                                               packed_conntrack_hash* unpacked_data);
@@ -1016,12 +1017,19 @@ void parse_hostgroups(std::string name, std::string value) {
 }
 
 // Load configuration
-bool load_configuration_file() {
-    std::ifstream config_file(global_config_path.c_str());
+
+
+bool load_configuration_file(const char* filename) {
+    logger << log4cpp::Priority::INFO << "Opening config file <"
+        << filename << ">";
+
+	std::ifstream config_file(filename);
+
     std::string line;
 
     if (!config_file.is_open()) {
-        logger << log4cpp::Priority::ERROR << "Can't open config file";
+        logger << log4cpp::Priority::ERROR << "Can't open config file <"
+            << filename << ">: " << strerror(errno);
         return false;
     }
 
@@ -1035,6 +1043,26 @@ bool load_configuration_file() {
         }
 
         boost::split(parsed_config, line, boost::is_any_of("="), boost::token_compress_on);
+
+    if(parsed_config[0] == "include") {
+        // Adapting code from the accepted answer at http://stackoverflow.com/questions/15085633
+        glob_t globbuf;
+        int err = glob(parsed_config[1].c_str(), 0, NULL, &globbuf);
+        if(err == 0) {
+            for(size_t i=0; i < globbuf.gl_pathc; i++) {
+                logger << log4cpp::Priority::INFO << "Reading additional config file <"
+                    << globbuf.gl_pathv[i] << ">";
+                if(!load_configuration_file(globbuf.gl_pathv[i])) {
+                    // If one file fails to load, fail the entire sequence.
+                    logger << log4cpp::Priority::ERROR << "Failed to parse config file <"
+                        << globbuf.gl_pathv[i] << "> correctly, exiting.";
+                    return false;
+                }
+            }
+            globfree(&globbuf);
+        }
+        continue;
+    }
 
         if (parsed_config.size() == 2) {
             boost::algorithm::trim(parsed_config[0]);
@@ -2661,8 +2689,8 @@ int main(int argc, char** argv) {
     // Set default ban configuration
     init_global_ban_settings();
 
-    // We should read configurartion file _after_ logging initialization
-    bool load_config_result = load_configuration_file();
+    // We should read configuration file _after_ logging initialization
+    bool load_config_result = load_configuration_file(global_config_path.c_str());
 
     if (!load_config_result) {
         std::cerr << "Can't open config file " << global_config_path << " please create it!" << std::endl;
