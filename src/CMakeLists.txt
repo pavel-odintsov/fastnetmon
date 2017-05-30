@@ -84,6 +84,8 @@ if (FASTNETMON_PROFILER)
     set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${FASTNETMON_PROFILE_FLAGS}")
 endif()
 
+execute_process(COMMAND sh -c ". /etc/os-release; echo $ID" OUTPUT_VARIABLE OS_ID ERROR_QUIET)
+
 ### Executables definition 
 
 # Main tool
@@ -606,6 +608,10 @@ install(FILES man/fastnetmon_client.1 DESTINATION /usr/share/man/man1)
 # service files
 configure_file(fastnetmon.service.in "${CMAKE_CURRENT_BINARY_DIR}/fastnetmon.service" @ONLY)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/fastnetmon.service" DESTINATION ${CMAKE_INSTALL_SYSTEMD_SERVICEDIR})
+
+if (${OS_ID} MATCHES debian|ubuntu)
+install(FILES fastnetmon_init_script_debian_6_7 DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/init.d RENAME fastnetmon)
+endif()
 
 # Configure cpack package builder
 # Run it with: cd build; cpack -G DEB ..
