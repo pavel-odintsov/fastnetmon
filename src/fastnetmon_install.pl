@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Getopt::Long;
+use File::Basename;
 
 my $pf_ring_version = '6.0.3';
 my $pf_ring_url = "https://github.com/ntop/PF_RING/archive/v$pf_ring_version.tar.gz";
@@ -29,6 +30,11 @@ my $ndpi_repository = 'https://github.com/pavel-odintsov/nDPI.git';
 
 my $stable_branch_name = 'v1.1.3';
 my $we_use_code_from_master = '';
+
+# By default use mirror
+my $use_mirror = 1;
+
+my $mirror_url = 'https://github.com/pavel-odintsov/fastnetmon_dependencies/raw/master/files'; 
 
 my $os_type = '';
 my $distro_type = ''; 
@@ -347,6 +353,14 @@ sub get_sha1_sum {
 
 sub download_file {
     my ($url, $path, $expected_sha1_checksumm) = @_;
+
+    # We use pretty strange format for $path and need to sue special function to extract it
+    my ($path_filename, $path_dirs, $path_suffix) = fileparse($path);
+
+    # $path_filename
+    if ($use_mirror) {
+        $url = $mirror_url . "/" . $path_filename;
+    }
 
     `wget --no-check-certificate --quiet '$url' -O$path`;
 
