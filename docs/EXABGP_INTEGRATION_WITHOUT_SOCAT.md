@@ -33,12 +33,13 @@ For PIPE API we need create this script: ```vim /etc/exabgp/exabgp_pipe_provider
 Script code here:
 ```bash
 
-```#!/bin/sh
+#!/bin/sh
 FIFO="/var/run/exabgp.cmd"
+EXABGP_PID="`cat /var/run/exabgp.pid`"
 
 rm -f $FIFO
 mkfifo $FIFO
-tail -f $FIFO
+tail -f $FIFO --pid=$EXABGP_PID
 ```
 
 Set exec flag for script: ```chmod +x /etc/exabgp/exabgp_pipe_provider.sh```
