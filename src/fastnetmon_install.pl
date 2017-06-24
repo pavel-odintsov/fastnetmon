@@ -1485,6 +1485,11 @@ sub install_fastnetmon {
         $cmake_params .= " -DCMAKE_C_COMPILER=/opt/gcc520/bin/gcc -DCMAKE_CXX_COMPILER=/opt/gcc520/bin/g++ "; 
     }
 
+    # Bump version in cmake build system
+    if ($use_modern_pf_ring) {
+        system("sed -i 's/pf_ring_6.0.3/pf_ring_$pf_ring_version/' ../CMakeLists.txt")
+    }
+
     if (defined($ENV{'TRAVIS'}) && $ENV{'TRAVIS'}) {
         system("cmake .. $cmake_params");
         system("make $make_options");
