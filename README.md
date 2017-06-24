@@ -65,7 +65,7 @@ Features
 Running Fastnetmon
 ------------------
 ### Supported platforms
-- Linux (Debian 6/7/8, CentOS 6/7, Ubuntu 12.04, 14.04, 16.04)
+- Linux (Debian 6/7/8/9, CentOS 6/7, Ubuntu 12.04, 14.04, 16.04)
 - FreeBSD 9, 10, 11 (please use version from ports)
 - Mac OS X Yosemite (only 1.1.2 release)
 
@@ -74,7 +74,7 @@ Running Fastnetmon
 - x86 32 bit
 
 ### Hardware requirements
-- Least 1 GB of RAM for compilation purposes
+- At least 1 GB of RAM for compilation purposes
 
 ### Router integration instructions
 - [Juniper MX Routers](docs/JUNOS_INTEGRATION.md)
