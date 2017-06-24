@@ -8,6 +8,7 @@ use File::Basename;
 
 my $pf_ring_version = '6.0.3';
 my $pf_ring_url = "https://github.com/ntop/PF_RING/archive/v$pf_ring_version.tar.gz";
+my $pf_ring_sha = '9fb8080defd1a079ad5f0097e8a8adb5bc264d00';
 
 my $fastnetmon_git_path = 'https://github.com/pavel-odintsov/fastnetmon.git';
 
@@ -65,13 +66,23 @@ my $build_binary_environment = '';
 # With this option we could build full binary package
 my $create_binary_bundle = '';
 
+my $use_modern_pf_ring = '';
+
 # Get options from command line
 GetOptions(
     'use-git-master' => \$we_use_code_from_master,
     'do-not-track-me' => \$do_not_track_me,
     'build-binary-environment' => \$build_binary_environment,
     'create-binary-bundle' => \$create_binary_bundle,
+    'use-modern-pf-ring' => \$use_modern_pf_ring,
 );
+
+# Bump PF_RING version
+if ($use_modern_pf_ring) {
+    $pf_ring_version = '6.6.0';
+    $pf_ring_url = "https://github.com/ntop/PF_RING/archive/$pf_ring_version.tar.gz";
+    $pf_ring_sha = '79ff86e48df857e4e884646accfc97bdcdc54b04';
+}
 
 my $we_have_ndpi_support = '1';
 my $we_have_luajit_support = '1';
@@ -1283,7 +1294,7 @@ sub install_pf_ring {
     my $we_could_install_kernel_modules = 1;
     if ($we_could_install_kernel_modules) {
         print "Download PF_RING $pf_ring_version sources\n";
-        my $pfring_download_result = download_file($pf_ring_url, $pf_ring_archive_path, '9fb8080defd1a079ad5f0097e8a8adb5bc264d00');  
+        my $pfring_download_result = download_file($pf_ring_url, $pf_ring_archive_path, $pf_ring_sha);
 
         unless ($pfring_download_result) {
             die "Can't download PF_RING sources\n";
