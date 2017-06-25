@@ -1,5 +1,7 @@
 ### Here you could download prepared VyOS based (1.1.5) x86_64 iso image with bundled FastNetMon 1.1.2:
 
+Sorry but we decided to demount these servers. If you need this image please raise GitHub issue about it or use fastnetmon_install.pl instead.
+
 Download here (243Mb): [iso](http://178.62.227.110/fastnetmon_binary_repository/vyos/VyOS_1.1.5_FastNetMon_1.1.2.iso)
 
 Sha-1 checksum: 7faf883672dd2b034ced440175a2f49ecb0080c7
