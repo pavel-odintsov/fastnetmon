@@ -104,9 +104,6 @@ subnet_t convert_subnet_from_string_to_binary(std::string subnet_cidr);
 std::vector <std::string> split_strings_to_vector_by_comma(std::string raw_string);
 subnet_t convert_subnet_from_string_to_binary_with_cidr_format(std::string subnet_cidr);
 
-inline uint64_t read_tsc_cpu_register();
-uint64_t get_tsc_freq_with_sleep();
-
 #ifdef __linux__
 bool manage_interface_promisc_mode(std::string interface_name, bool switch_on);
 #endif
