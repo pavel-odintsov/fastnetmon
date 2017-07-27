@@ -1,6 +1,6 @@
 Source: fastnetmon
 Maintainer: Pavel Odintsov <pavel.odintsov@gmail.com>
-Section: misc
+Section: net
 Priority: optional
 Standards-Version: 3.9.6
 # debhelper 8 - squeeze, 9 - wheezy/jessie 
