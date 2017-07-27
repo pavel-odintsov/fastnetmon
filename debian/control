@@ -9,7 +9,7 @@ Homepage: https://fastnetmon.com/
 
 Package: fastnetmon
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libboost-thread-dev, libboost-system-dev, libboost-regex-dev, libpcap-dev, liblog4cpp5-dev 
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Very fast DDoS analyzer with sflow/netflow/mirror support
  FastNetMon is a very high performance distributed denial-of-service attack
  (DDoS attack) detector built on top of multiple packet capture engines:
