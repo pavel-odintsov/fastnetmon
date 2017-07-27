@@ -39,8 +39,7 @@
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
-// We will use this code from Global Symbols table (originally it's defined in netmap collector.cpp)
-bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet& packet);
+#include "unified_parser.hpp"
 
 // Fake config
 std::map<std::string, std::string> configuration_map;
@@ -152,7 +151,7 @@ void pcap_parse_packet(char* buffer, uint32_t len, uint32_t snap_len) {
 
         simple_packet packet;
         // TODO: add support for caplen here!
-        if (parse_raw_packet_to_simple_packet((u_char*)buffer, len, packet)) {
+        if (parse_raw_packet_to_simple_packet((u_char*)buffer, len, packet, false)) {
             std::cout << "High level parser: " << print_simple_packet(packet) << std::endl;
         } else {
             printf("High level parser failed\n");

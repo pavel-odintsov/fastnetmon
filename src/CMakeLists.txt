@@ -151,6 +151,10 @@ add_library(fastnetmon_pcap_format STATIC fastnetmon_pcap_format.cpp)
 # Our tools library
 add_library(fast_library STATIC fast_library.cpp)
 
+# Our parser
+add_library(unified_parser STATIC unified_parser.cpp)
+target_link_libraries(unified_parser fastnetmon_packet_parser)
+
 # Our ipfix database library
 add_library(ipfix_rfc STATIC ipfix_rfc.cpp)
 
@@ -190,6 +194,7 @@ endif()
 if (ENABLE_AFPACKET_SUPPORT)
    add_definitions(-DFASTNETMON_ENABLE_AFPACKET) 
    add_library(afpacket_plugin STATIC afpacket_plugin/afpacket_collector.cpp)
+   target_link_libraries(afpacket_plugin unified_parser)
 endif()
 
 # sFLOW plugin
@@ -511,6 +516,9 @@ target_link_libraries(fastnetmon ipfix_rfc)
 
 # Link to our functions
 target_link_libraries(fastnetmon fast_library)
+
+# link to our unified parser
+target_link_libraries(fastnetmon unified_parser)
 
 if (ENABLE_PFRING_SUPPORT)
     target_link_libraries(fastnetmon pfring_plugin)

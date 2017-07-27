@@ -43,6 +43,10 @@
 #include <linux/if_packet.h>
 #include <net/ethernet.h> /* the L2 protocols */
 
+#include "../unified_parser.hpp"
+
+bool afpacket_read_packet_length_from_ip_header = false;
+
 // Get log4cpp logger from main program
 extern log4cpp::Category& logger;
 
@@ -66,9 +70,6 @@ struct block_desc {
     uint32_t offset_to_priv;
     struct tpacket_hdr_v1 h1;
 };
-
-// We will use this code from Global Symbols table (originally it's defined in netmap collector.cpp)
-bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet& packet);
 
 // Get interface number by name
 int get_interface_number_by_device_name(int socket_fd, std::string interface_name) {
@@ -116,7 +117,7 @@ void walk_block(struct block_desc *pbd, const int block_num) {
         u_char* data_pointer = (u_char*)((uint8_t *) ppd + ppd->tp_mac);
 
         simple_packet packet;
-        int parser_result = parse_raw_packet_to_simple_packet((u_char*)data_pointer, ppd->tp_snaplen, packet); 
+        int parser_result = parse_raw_packet_to_simple_packet((u_char*)data_pointer, ppd->tp_snaplen, packet, afpacket_read_packet_length_from_ip_header); 
 
         //char print_buffer[512];
         //fastnetmon_print_parsed_pkt(print_buffer, 512, data_pointer, &packet_header);
@@ -285,6 +286,10 @@ bool afpacket_execute_strict_cpu_affinity = true;
 void start_afpacket_collection(process_packet_pointer func_ptr) {
     logger << log4cpp::Priority::INFO << "AF_PACKET plugin started";
     afpacket_process_func_ptr = func_ptr;
+
+    if (configuration_map.count("netmap_read_packet_length_from_ip_header") != 0) {
+        afpacket_read_packet_length_from_ip_header = configuration_map["netmap_read_packet_length_from_ip_header"] == "on";
+    }
 
     std::string interfaces_list = "";
 

@@ -33,6 +33,8 @@
 
 #include "snabbswitch_collector.h"
 
+#include "unified_parser.hpp"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -71,13 +73,10 @@ struct firehose_rdesc {
     uint16_t vlan;
 } __attribute__((packed));
 
-// We will use this code from Global Symbols table (originally it's defined in netmap collector.cpp)
-bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet& packet);
-
 void firehose_packet(const char *pciaddr, char *data, int length) {
     simple_packet packet;
 
-    if (!parse_raw_packet_to_simple_packet((u_char*)data, length, packet)) {
+    if (!parse_raw_packet_to_simple_packet((u_char*)data, length, packet, false)) {
         total_unparsed_packets++;
 
         return;
