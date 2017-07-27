@@ -45,7 +45,10 @@
 #include "sflow_plugin/sflow_collector.h"
 #include "netflow_plugin/netflow_collector.h"
 #include "pcap_plugin/pcap_collector.h"
+
+#ifdef NETMAP_PLUGIN
 #include "netmap_plugin/netmap_collector.h"
+#endif
 
 #ifdef PF_RING
 #include "pfring_plugin/pfring_collector.h"
@@ -2812,10 +2815,12 @@ int main(int argc, char** argv) {
     }
 #endif
 
+#ifdef NETMAP_PLUGIN
     // netmap processing
     if (enable_netmap_collection) {
         packet_capture_plugin_thread_group.add_thread(new boost::thread(start_netmap_collection, process_packet));
     }
+#endif
 
 #ifdef SNABB_SWITCH 
     if (enable_snabbswitch_collection) {

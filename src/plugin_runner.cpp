@@ -29,7 +29,9 @@
 #include "snabbswitch_plugin/snabbswitch_collector.h"
 #endif
 
+#ifdef NETMAP_PLUGIN
 #include "netmap_plugin/netmap_collector.h"
+#endif
 
 // log4cpp logging facility
 #include "log4cpp/Category.hh"

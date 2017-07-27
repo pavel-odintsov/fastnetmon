@@ -97,7 +97,7 @@ execute_process(COMMAND git rev-list HEAD COMMAND head -n 1 OUTPUT_VARIABLE GIT_
 set(FASTNETMON_APPLICATION_VERSION "1.1.3 master git-${GIT_LAST_COMMIT_HASH}")
 configure_file(fast_platform.h.template "${PROJECT_SOURCE_DIR}/fast_platform.h")
 
-# With this flag we can diable PF_RING build via console: cmake .. -DDISABLE_PF_RING_SUPPORT=ON
+# With this flag we can disable PF_RING build via console: cmake .. -DDISABLE_PF_RING_SUPPORT=ON
 if (NOT DISABLE_PF_RING_SUPPORT) 
     if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
         message(STATUS "You are running Linux and we can build PF_RING support")
@@ -105,6 +105,16 @@ if (NOT DISABLE_PF_RING_SUPPORT)
     else()
         message(WARNING "You are running not an Linux and we can't build PF_RING support")
     endif() 
+endif()
+
+# With this flag we could disable Netmap build this way: cmake .. -DDISABLE_NETMAP_SUPPORT=ON
+if (NOT DISABLE_NETMAP_SUPPORT)
+    set (ENABLE_NETMAP_SUPPORT ON)
+endif()
+
+if (ENABLE_NETMAP_SUPPORT)
+    message(STATUS "We will build Netmap support for you")
+    add_definitions(-DNETMAP_PLUGIN)
 endif()
 
 if (ENABLE_PFRING_SUPPORT)
@@ -363,11 +373,13 @@ endif()
 # example plugin
 add_library(example_plugin STATIC example_plugin/example_collector.cpp)
 
-# Netmap plugin
-set(NETMAP_INCLUDE_DIRS "netmap_plugin/netmap_includes")
-include_directories(${NETMAP_INCLUDE_DIRS})
-add_library(netmap_plugin STATIC netmap_plugin/netmap_collector.cpp)
-target_link_libraries(netmap_plugin fastnetmon_packet_parser)
+if (ENABLE_NETMAP_SUPPORT)
+    # Netmap plugin
+    set(NETMAP_INCLUDE_DIRS "netmap_plugin/netmap_includes")
+    include_directories(${NETMAP_INCLUDE_DIRS})
+    add_library(netmap_plugin STATIC netmap_plugin/netmap_collector.cpp)
+    target_link_libraries(netmap_plugin fastnetmon_packet_parser)
+endif()
 
 # Client tool
 add_executable(fastnetmon_client fastnetmon_client.cpp)
@@ -518,7 +530,11 @@ if (ENABLE_AFPACKET_SUPPORT)
     target_link_libraries(fastnetmon afpacket_plugin)
 endif()
 
-target_link_libraries(fastnetmon sflow_plugin netflow_plugin pcap_plugin example_plugin netmap_plugin)
+target_link_libraries(fastnetmon sflow_plugin netflow_plugin pcap_plugin example_plugin)
+
+if (ENABLE_NETMAP_SUPPORT)
+    target_link_libraries(fastnetmon netmap_plugin)
+endif()
 
 # cmake .. -DBUILD_PLUGIN_RUNNER=ON
 if (BUILD_PLUGIN_RUNNER)
@@ -539,7 +555,11 @@ if (BUILD_PLUGIN_RUNNER)
     target_link_libraries(fastnetmon_plugin_runner fast_library)
 
     # Add all plugins
-    target_link_libraries(fastnetmon_plugin_runner sflow_plugin netflow_plugin pcap_plugin example_plugin netmap_plugin)
+    target_link_libraries(fastnetmon_plugin_runner sflow_plugin netflow_plugin pcap_plugin example_plugin)
+
+    if (ENABLE_NETMAP_SUPPORT)
+        target_link_libraries(fastnetmon_plugin_runner netmap_plugin)
+    endif()
 
     if (ENABLE_PFRING_SUPPORT)
         target_link_libraries(fastnetmon_plugin_runner ${PFRING_LIBRARIES})
@@ -559,7 +579,10 @@ if (BUILD_PCAP_READER)
     target_link_libraries(fastnetmon_pcap_reader ${LOG4CPP_LIBRARY_PATH})
     target_link_libraries(fastnetmon_pcap_reader netflow_plugin)   
     target_link_libraries(fastnetmon_pcap_reader sflow_plugin)
-    target_link_libraries(fastnetmon_pcap_reader netmap_plugin)
+
+    if (ENABLE_NETMAP_SUPPORT)
+        target_link_libraries(fastnetmon_pcap_reader netmap_plugin)
+    endif()
 
     if (ENABLE_DPI_SUPPORT)
         target_link_libraries(fastnetmon_pcap_reader fast_dpi)
