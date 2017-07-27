@@ -5,6 +5,7 @@ Priority: optional
 Standards-Version: 3.9.6
 # debhelper 8 - squeeze, 9 - wheezy/jessie 
 Build-Depends: debhelper (>= 8), cmake, libboost-thread-dev,  libboost-system-dev, libboost-regex-dev, libpcap-dev, liblog4cpp5-dev, libboost-all-dev, libgpm-dev, libncurses5-dev, libgeoip-dev, clang, cmake
+Homepage: https://fastnetmon.com/
 
 Package: fastnetmon
 Architecture: any
