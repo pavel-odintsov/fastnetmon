@@ -588,6 +588,11 @@ bool read_pid_from_file(pid_t& pid, std::string pid_path) {
 }
 
 bool store_data_to_graphite(unsigned short int graphite_port, std::string graphite_host, graphite_data_t graphite_data) {
+    // Do not bother Graphite if we do not have any metrics here
+    if (graphite_data.size() == 0) {
+        return true;
+    }
+
     int client_sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
     if (client_sockfd < 0) {
