@@ -3,13 +3,24 @@ Maintainer: Pavel Odintsov <pavel.odintsov@gmail.com>
 Section: net
 Priority: optional
 Standards-Version: 3.9.6
-# debhelper 8 - squeeze, 9 - wheezy/jessie 
-Build-Depends: debhelper (>= 8), cmake, libboost-thread-dev,  libboost-system-dev, libboost-regex-dev, libpcap-dev, liblog4cpp5-dev, libboost-all-dev, libgpm-dev, libncurses5-dev, libgeoip-dev, clang, cmake
+# debhelper 8 - squeeze, 9 - wheezy/jessie
+Build-Depends: clang,
+               cmake,
+               debhelper (>= 8),
+               libboost-all-dev,
+               libboost-regex-dev,
+               libboost-system-dev,
+               libboost-thread-dev,
+               libgeoip-dev,
+               libgpm-dev,
+               liblog4cpp5-dev,
+               libncurses5-dev,
+               libpcap-dev
 Homepage: https://fastnetmon.com/
 
 Package: fastnetmon
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: Very fast DDoS analyzer with sflow/netflow/mirror support
  FastNetMon is a very high performance distributed denial-of-service attack
  (DDoS attack) detector built on top of multiple packet capture engines:
