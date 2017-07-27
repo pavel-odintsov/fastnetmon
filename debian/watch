@@ -1,0 +1,3 @@
+version=3
+opts=dversionmangle=s/\+dfsg// \
+https://github.com/pavel-odintsov/fastnetmon/releases .*/v(\d\S+)\.tar\.gz
