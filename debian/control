@@ -2,7 +2,7 @@ Source: fastnetmon
 Maintainer: Pavel Odintsov <pavel.odintsov@gmail.com>
 Section: net
 Priority: optional
-Standards-Version: 3.9.6
+Standards-Version: 4.0.0
 # debhelper 8 - squeeze, 9 - wheezy/jessie
 Build-Depends: clang,
                cmake,
