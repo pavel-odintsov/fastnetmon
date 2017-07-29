@@ -6,6 +6,8 @@ use warnings;
 use Getopt::Long;
 use File::Basename;
 
+use Term::ANSIColor;
+
 my $pf_ring_version = '6.0.3';
 my $pf_ring_url = "https://github.com/ntop/PF_RING/archive/v$pf_ring_version.tar.gz";
 my $pf_ring_sha = '9fb8080defd1a079ad5f0097e8a8adb5bc264d00';
@@ -107,11 +109,34 @@ if ($enable_gobgp_backend) {
 main();
 
 sub welcome_message {
+    # Clear screen
+    print "\033[2J";
+    # Jump to 0.0 position
+    print "\033[0;0H";
+
+    print color('bold green');
     print "Hi there!\n\n";
-    print "We need about ten minutes of your time for installing FastNetMon toolkit\n";
-    print "Also we have FastNetMon Advanced version with big number of improvements: https://fastnetmon.com/fastnetmon-advanced/\n";
-    print "You could order free one-month trial for Advanced version here https://fastnetmon.com/trial/\n\n";
-    print "In case of any issues with install script please share file $install_log_path with developers\n";
+    print color('reset');
+    
+    print "We need about ten minutes of your time for installing FastNetMon toolkit\n\n";
+    print "Also, we have ";
+
+    print color('bold cyan');
+    print "FastNetMon Advanced";
+    print color('reset');
+
+    print " version with big number of improvements: ";
+
+    print color('bold cyan');
+    print "https://fastnetmon.com/fastnetmon-advanced/\n\n";
+    print color('reset');
+
+    print "You could order free one-month trial for Advanced version here ";
+    print color('bold cyan');
+    print "https://fastnetmon.com/trial/\n\n";
+    print color('reset');
+
+    print "In case of any issues with install script please use https://github.com/pavel-odintsov/fastnetmon to report them\n\n";
 }
 
 sub get_logical_cpus_number {
@@ -151,7 +176,14 @@ sub get_user_email {
     my $user_entered_valid_email = 0;
 
     do {
-        print "\nPlease provide your email address at company domain for free tool activation.\nWe will not share your email with any third party companies.\nEmail: ";
+        print "\n";
+        print "Please provide your business email address to receive important information about security updates\n";
+        print "In addition, we could send promotional messages to this email (very rare)\n";
+        print "We will provide an option to disable any email from us\n";
+        print "We will not share your email with any third party companies.\n\n";
+        print "If you continue install process you accept our subscription rules automatically\n\n";
+        
+        print "Email: ";
         my $raw_email = <STDIN>;
         chomp $raw_email;
         
