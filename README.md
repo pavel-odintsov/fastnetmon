@@ -1,4 +1,4 @@
-FastNetMon
+FastNetMon Community Edition
 ===========
 FastNetMon - A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, SnabbSwitch, netmap, PF_RING, PCAP).
 
@@ -15,6 +15,7 @@ License: GPLv2
 
 Project 
 -------
+- [Official site](https://fastnetmon.com)
 - [Mailing list](https://groups.google.com/forum/#!forum/fastnetmon)
 - [Release Notes](https://github.com/pavel-odintsov/fastnetmon/releases)
 - If you want add an [idea](https://fastnetmon.fider.io/)
