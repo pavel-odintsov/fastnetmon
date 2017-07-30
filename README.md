@@ -17,6 +17,7 @@ Project
 -------
 - [Mailing list](https://groups.google.com/forum/#!forum/fastnetmon)
 - [Release Notes](https://github.com/pavel-odintsov/fastnetmon/releases)
+- If you want add an [idea](https://fastnetmon.fider.io/)
 - Chat: #fastnetmon at irc.freenode.net [web client](https://webchat.freenode.net/)
 - Detailed reference in Russian: [link](docs/FastNetMon_Reference_Russian.pdf)
 
