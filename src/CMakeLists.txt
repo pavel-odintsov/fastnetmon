@@ -229,7 +229,7 @@ endif()
 # We do not enable it by default, it's testing feature
 # If you want it please build with:
 # cmake -DENABLE_LUA_SUPPORT=ON .. 
-set(ENABLE_LUA_SUPPORT yes)
+set(ENABLE_LUA_SUPPORT yes CACHE BOOL "Enable Lua support")
 if (ENABLE_LUA_SUPPORT)
     message(STATUS "We will enable LuaJIT support")
 
