@@ -17,6 +17,7 @@ Project
 -------
 - [Official site](https://fastnetmon.com)
 - [Mailing list](https://groups.google.com/forum/#!forum/fastnetmon)
+- [FastNetMon Advanced, commercial edition](https://fastnetmon.com/fastnetmon-advanced/)
 - [Release Notes](https://github.com/pavel-odintsov/fastnetmon/releases)
 - If you want add an [idea](https://fastnetmon.fider.io/)
 - Chat: #fastnetmon at irc.freenode.net [web client](https://webchat.freenode.net/)
