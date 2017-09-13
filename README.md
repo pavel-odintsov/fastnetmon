@@ -17,6 +17,7 @@ Project
 -------
 - [Official site](https://fastnetmon.com)
 - [Mailing list](https://groups.google.com/forum/#!forum/fastnetmon)
+- [Slack](https://join.slack.com/t/fastnetmon/shared_invite/MjM3NDUwNzY4NjA5LTE1MDQ4MzE5NTAtYmU4MjYyYWNiZQ)
 - [FastNetMon Advanced, commercial edition](https://fastnetmon.com/fastnetmon-advanced/)
 - [Release Notes](https://github.com/pavel-odintsov/fastnetmon/releases)
 - If you want add an [idea](https://fastnetmon.fider.io/)
