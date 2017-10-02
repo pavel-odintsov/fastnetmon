@@ -1428,7 +1428,7 @@ sub install_fastnetmon {
 
         apt_get(@fastnetmon_deps);
     } elsif ($distro_type eq 'centos') {
-        my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++', 'GeoIP-devel',
+        my @fastnetmon_deps = ('git', 'make', 'net-tools', 'gcc', 'gcc-c++', 'GeoIP-devel',
             'ncurses-devel', 'glibc-static', 'ncurses-static', 'libpcap-devel', 'gpm-static',
             'gpm-devel', 'cmake', 'pkgconfig', 'hiredis-devel',
         );
