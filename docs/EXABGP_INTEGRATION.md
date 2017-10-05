@@ -13,11 +13,13 @@ exabgp_announce_host = on
 
 Secondly, you should install, configure and run ExaBGP toolkit.
 
-Install ExaBGP:
+Install ExaBGP 3:
 ```bash
 apt-get install python-pip
-pip install exabgp
+pip install exabgp==3.4.20
 ```
+
+All our instructions suitable only for ExaBGP 3.
 
 Install socat (if you haven't socat for your platform, please check this [manual](EXABGP_INTEGRATION_WITHOUT_SOCAT.md)):
 ```bash
