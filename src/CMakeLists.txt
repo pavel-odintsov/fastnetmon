@@ -240,15 +240,17 @@ if (ENABLE_LUA_SUPPORT)
     link_directories("${LUAJIT_CUSTOM_INSTALL_PATH}/lib")
     include_directories("${LUAJIT_CUSTOM_INSTALL_PATH}/include")
 
+    find_path(LUAJIT_INCLUDES_FOLDER NAMES lua.hpp PATHS "${LUAJIT_CUSTOM_INSTALL_PATH}/include" PATH_SUFFIXES luajit-2.0 luajit-2.1)
     find_library(LUAJIT_LIBRARY_PATH NAMES luajit-5.1 PATHS "${LUAJIT_CUSTOM_INSTALL_PATH}/lib")
 
-    if (NOT LUAJIT_LIBRARY_PATH) 
+    if (NOT LUAJIT_LIBRARY_PATH AND NOT LUAJIT_INCLUDES_FOLDER) 
         message(FATAL_ERROR "Could not find luajit library")
     endif()
 
     target_link_libraries(netflow_plugin ${LUAJIT_LIBRARY_PATH})
     target_link_libraries(sflow_plugin ${LUAJIT_LIBRARY_PATH})
     target_link_libraries(fast_library ${LUAJIT_LIBRARY_PATH})
+    include_directories(${LUAJIT_INCLUDES_FOLDER})
 endif()
 
 # pcap plugin

@@ -28,7 +28,7 @@
 #include "log4cpp/Priority.hh"
 
 #ifdef ENABLE_LUA_HOOKS
-#include <luajit-2.0/lua.hpp>
+#include <lua.hpp>
 #endif
 
 #ifdef ENABLE_LUA_HOOKS
