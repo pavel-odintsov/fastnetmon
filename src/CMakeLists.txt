@@ -68,6 +68,7 @@ set(JSONC_CUSTOM_INSTALL_PATH "/opt/json-c-0.12")
 set(PFRING_CUSTOM_INSTALL_PATH "/opt/pf_ring_6.0.3")
 set(LIBPCAP_CUSTOM_INSTALL_PATH "/opt/libpcap_1.7.4")
 set(MONGO_C_CUSTOM_INSTALL_PATH "/opt/mongo_c_driver_1_1_9")
+set(NDPI_CUSTOM_INSTALL_PATH "/opt/ndpi")
 
 set(FASTNETMON_PROFILER OFF)
 
@@ -210,9 +211,8 @@ if (ENABLE_DPI_SUPPORT)
 
     add_library(fast_dpi STATIC fast_dpi.cpp)
 
-    set(NDPI_INCLUDE_DIRS "/opt/ndpi/include/libndpi-1.7.1")
-
     find_library(NDPI_LIBRARIES NAMES ndpi PATHS "/opt/ndpi/lib")
+    find_path(NDPI_INCLUDE_DIRS NAMES libndpi/ndpi_api.h PATHS "${NDPI_CUSTOM_INSTALL_PATH}/include/libndpi-1.7.1" PATH_SUFFIXES libndpi-2.1.0)
 
     if (NOT NDPI_LIBRARIES)
         message(FATAL_ERROR "Could not find nDPI library")
