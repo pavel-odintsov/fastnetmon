@@ -212,7 +212,7 @@ if (ENABLE_DPI_SUPPORT)
     add_library(fast_dpi STATIC fast_dpi.cpp)
 
     find_library(NDPI_LIBRARIES NAMES ndpi PATHS "/opt/ndpi/lib")
-    find_path(NDPI_INCLUDE_DIRS NAMES libndpi/ndpi_api.h PATHS "${NDPI_CUSTOM_INSTALL_PATH}/include/libndpi-1.7.1" PATH_SUFFIXES libndpi-2.1.0)
+    find_path(NDPI_INCLUDE_DIRS NAMES libndpi/ndpi_api.h PATHS "${NDPI_CUSTOM_INSTALL_PATH}/include/libndpi-1.7.1" PATH_SUFFIXES libndpi-1.7.0)
 
     if (NOT NDPI_LIBRARIES)
         message(FATAL_ERROR "Could not find nDPI library")
