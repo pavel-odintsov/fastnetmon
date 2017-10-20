@@ -210,6 +210,11 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
 
     mapped_buffer = (uint8_t*)mmap(NULL, req.tp_block_size * req.tp_block_nr, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_LOCKED, packet_socket, 0);
 
+    // Musl libc (Alpine Linux) doesn't seem to like MAP_LOCKED, retry without it
+    if (mapped_buffer == MAP_FAILED && errno == EAGAIN) {
+        mapped_buffer = (uint8_t*)mmap(NULL, req.tp_block_size * req.tp_block_nr, PROT_READ | PROT_WRITE, MAP_SHARED, packet_socket, 0);
+    }
+
     if (mapped_buffer == MAP_FAILED) {
         logger << log4cpp::Priority::ERROR << "MMAP failed";
         return -1;
