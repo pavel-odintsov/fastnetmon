@@ -2765,6 +2765,12 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
+    // Setup SIGTERM handler
+    if (signal(SIGTERM, interruption_signal_handler) == SIG_ERR) {
+        logger << log4cpp::Priority::ERROR << "Can't setup SIGTERM handler";
+        exit(1);
+    }
+
     /* Without this SIGPIPE error could shutdown toolkit on call of exec_with_stdin_params */
     if (signal(SIGPIPE, sigpipe_handler_for_popen) == SIG_ERR) {
         logger << log4cpp::Priority::ERROR << "Can't setup SIGPIPE handler";
