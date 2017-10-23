@@ -2698,12 +2698,12 @@ int main(int argc, char** argv) {
         // no pid file
     }
 
-    // If we not failed in check steps we could run toolkit
-    bool print_pid_to_file_result = print_pid_to_file(getpid(), pid_path);
-
-    if (!print_pid_to_file_result) {
-        logger << log4cpp::Priority::ERROR << "Could not create pid file, please check permissions: " << pid_path; 
-        exit(EXIT_FAILURE);
+    if (pid_path != "") {
+        // If we not failed in check steps we could run toolkit
+        if (!print_pid_to_file(getpid(), pid_path)) {
+            logger << log4cpp::Priority::ERROR << "Could not create pid file, please check permissions: " << pid_path; 
+            exit(EXIT_FAILURE);
+        }
     }
 
 #ifdef ENABLE_DPI
