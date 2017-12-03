@@ -7,7 +7,7 @@ Please install wget:
 pkg install -y wget perl5
 ```
 
-Install stable 1.1.2 version:
+Install stable 1.1.3 version:
 ```bash
 wget --no-check-certificate https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl 
 sudo perl fastnetmon_install.pl
