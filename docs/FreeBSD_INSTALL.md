@@ -1,6 +1,6 @@
 FreeBSD 9, 10, 11 and Dragonfly BSD 4.0
 
-Stable version 1.1.2 is already in [official FreeBSD ports](https://freshports.org/net-mgmt/fastnetmon/) but if you want to hack it or install development version, please use this script.
+Stable version 1.1.3 is already in [official FreeBSD ports](https://freshports.org/net-mgmt/fastnetmon/) but if you want to hack it or install development version, please use this script.
 
 Please install wget:
 ```bash
