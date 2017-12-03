@@ -50,7 +50,7 @@ Features
 - GoBGP [integration](https://fastnetmon.com/docs/gobgp-integration/) for unicast IPv4 announcements (you need build support manually).
 - Full integration with [Graphite](https://fastnetmon.com/docs/graphite_integration/) and [InfluxDB](https://fastnetmon.com/docs/influxdb_integration/)
 - API (you need build support manually)
-- Redis integration
+- [Redis](https://fastnetmon.com/docs/redis/) integration
 - [MongoDB](https://fastnetmon.com/docs/mongodb/) integration
 - Deep packet inspection for attack traffic
 - netmap support (open source; wire speed processing; only Intel hardware NICs or any hypervisor VM type)
