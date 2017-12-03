@@ -1,4 +1,4 @@
-Build on Mac OS 10.10 Yosemite.
+Build on Mac OS 10.13 High Sierra.
 
 - Install XCode https://itunes.apple.com/us/app/xcode/id497799835 with Mac App Store
 - Update XCode to latest version with App Store
