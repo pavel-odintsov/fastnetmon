@@ -79,7 +79,7 @@ Running Fastnetmon
 - At least 1 GB of RAM for compilation purposes
 
 ### Router integration instructions
-- [Juniper MX Routers](docs/JUNOS_INTEGRATION.md)
+- [Juniper MX Routers](https://fastnetmon.com/docs/junos_integration/)
 
 ### Distributions supported
 - We are part of the [CloudRouter](https://cloudrouter.org/cloudrouter/2015/07/09/fastnetmon.html) distribution
