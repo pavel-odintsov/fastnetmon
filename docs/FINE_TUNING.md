@@ -1,3 +1,5 @@
+### FastNetMon fine tuning
+
 I recommend you to disable CPU freq scaling for gain max performance (max frequency):
 ```bash
 echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
@@ -133,5 +135,3 @@ Performance tuning:
 How I can enable ZC support for PF_RING? Please install DNA/ZC dreivers, load they and add interface name with zc prefix in config file (i.e. zc:eth3)
 
 For development new code, please check .clang-format as code guide example.
-
-You can find more info and graphics [here](http://forum.nag.ru/forum/index.php?showtopic=89703)
