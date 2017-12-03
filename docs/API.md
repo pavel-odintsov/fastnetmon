@@ -1,6 +1,6 @@
 ### We have API built on top of gRPC framework
 
-It's very-very developer feature and we do not support it right now. You could use instructions from [GoBGP integration](https://fastnetmon.com/docs/gobgp-integration/) and enable it.
+It's very-very developer feature and we do not support it right now. It was built only for developers. You could use instructions from [GoBGP integration](https://fastnetmon.com/docs/gobgp-integration/) and enable it.
 
 Enable API in configuration file:
 ```bash
