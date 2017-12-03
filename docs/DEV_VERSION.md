@@ -1,4 +1,4 @@
-### How I can switch to current Git version?
+### How I can switch to current development version?
 
 First of all, please install FastNetMon with automatic installer [here](https://fastnetmon.com/install/)
 
