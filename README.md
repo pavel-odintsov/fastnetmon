@@ -22,7 +22,7 @@ Project
 - [Release Notes](https://github.com/pavel-odintsov/fastnetmon/releases)
 - If you want add an [idea](https://fastnetmon.fider.io/)
 - Chat: #fastnetmon at irc.freenode.net [web client](https://webchat.freenode.net/)
-- Detailed reference in Russian: [link](docs/FastNetMon_Reference_Russian.pdf)
+- Detailed reference in Russian: [link](https://fastnetmon.com/wp-content/uploads/2017/07/FastNetMon_Reference_Russian.pdf)
 
 Supported packet capture engines
 --------------------------------
