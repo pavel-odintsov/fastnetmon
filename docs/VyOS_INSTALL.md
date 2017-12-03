@@ -23,6 +23,6 @@ Update packages list:```sudo apt-get update```
 
 Run installer with curl:
 ```bash
-curl https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon_install.pl > fastnetmon_install.pl
+curl https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon_install.pl > fastnetmon_install.pl
 sudo perl fastnetmon_install.pl
 ```
