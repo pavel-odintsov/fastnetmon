@@ -7,8 +7,6 @@ What can we do? We can detect hosts in our networks sending or receiving large v
 To enable sFLOW, simply specify IP of the server running FastNetMon and specify (configurable) port 6343
 To enable netflow, simply specify IP of the server running FastNetMon and specify (configurable) port 2055
 
-Why did we write this? Because we can't find any software for solving this problem in the open source world! 
-
 What is a "flow" in FastNetMon terms?  It's one or multiple UDP, TCP, or ICMP connections with unique src IP, dst IP, src port, dst port, and protocol.
 
 License: GPLv2
@@ -19,7 +17,6 @@ Project
 - [Mailing list](https://groups.google.com/forum/#!forum/fastnetmon)
 - [Slack](https://join.slack.com/t/fastnetmon/shared_invite/MjM3NDUwNzY4NjA5LTE1MDQ4MzE5NTAtYmU4MjYyYWNiZQ)
 - [FastNetMon Advanced, commercial edition](https://fastnetmon.com/fastnetmon-advanced/)
-- [Release Notes](https://github.com/pavel-odintsov/fastnetmon/releases)
 - If you want add an [idea](https://fastnetmon.fider.io/)
 - Chat: #fastnetmon at irc.freenode.net [web client](https://webchat.freenode.net/)
 - Detailed reference in Russian: [link](https://fastnetmon.com/wp-content/uploads/2017/07/FastNetMon_Reference_Russian.pdf)
