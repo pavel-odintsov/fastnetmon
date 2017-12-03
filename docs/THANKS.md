@@ -13,7 +13,7 @@ Thanks file! For all peoples which helped this project :)
 - Roland Dobbins rdobbins at arbor.net for mitivating to add flow support
 - waszi for testing DNA/ZC mode
 - Martin Stoyanov for guides for Slackware
-- Andreas Begemann for debugging issue https://github.com/FastVPSEestiOu/fastnetmon/issues/90
+- Andreas Begemann for debugging issue https://github.com/pavel-odintsov/fastnetmon/issues/90
 - Anatoliy Poloz for VMs with FreebSD 9, 10, 11
 - Cojacfar / https://github.com/Cojacfar help with documentation transaltion! 
 - Thomas Mangin for help with ExaBGP integration

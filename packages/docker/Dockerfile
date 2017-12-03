@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN pip install exabgp
 
-RUN cd /usr/src; git clone https://github.com/FastVPSEestiOu/fastnetmon.git
+RUN cd /usr/src; git clone https://github.com/pavel-odintsov/fastnetmon.git
 
 #COPY exabgp_blackhole.conf /etc/exabgp_blackhole.conf
 

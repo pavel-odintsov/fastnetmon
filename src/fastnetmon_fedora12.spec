@@ -5,7 +5,7 @@
 
 %global  fastnetmon_commit       86b951b6dffae0fc1e6cbf66fe5f0f4aa61aaa5a
 %global  fastnetmon_project_name fastnetmon
-%global  fastnetmon_company      FastVPSEestiOu
+%global  fastnetmon_company      FastNetMon LTD
 
 Name:              fastnetmon
 Version:           1.1.1
@@ -14,7 +14,7 @@ Release:           1%{?dist}
 Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
 Group:             System Environment/Daemons
 License:           GPLv2
-URL:               https://github.com/FastVPSEestiOu/fastnetmon
+URL:               https://fastnetmon.com
 
 Source0:       https://github.com/%{fastnetmon_company}/%{name}/archive/%{fastnetmon_commit}/%{name}-%{fastnetmon_commit}.tar.gz
 

@@ -7,7 +7,7 @@ docker pull robertoberto/fastnetmon
 First, get fastnetmon.conf from github, edit it after download.
 
 ```
-wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon.conf -O /etc/fastnetmon.conf
+wget https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon.conf -O /etc/fastnetmon.conf
 ```
 
 
@@ -89,7 +89,7 @@ docker run \
 -t panubo/postfix
 ```
 
-When you link another container with docker other container name will be added to /etc/hosts pointing to its internal IP. So you can use python script notify (https://github.com/FastVPSEestiOu/fastnetmon/blob/master/src/scripts/fastnetmon_notify.py), instead of bash one.
+When you link another container with docker other container name will be added to /etc/hosts pointing to its internal IP. So you can use python script notify (https://github.com/pavel-odintsov/fastnetmon/blob/master/src/scripts/fastnetmon_notify.py), instead of bash one.
 
 Just change MAIL_HOSTNAME="localhost" to MAIL_HOSTNAME="postfix" if you start fastnetmon docker container with --link postfix:postfix and create another docker instance with panubo/postfix as --name postfix, for example.
 
@@ -121,8 +121,8 @@ touch /var/log/fastnetmon_attacks /var/log/fastnetmon.log /etc/networks_list /et
 cp /etc/fastnetmon.conf /etc/fastnetmon.conf.bkp
 cp /usr/local/fastnetmon/fastnetmon_notify.py /usr/local/fastnetmon/fastnetmon_notify.py.bkp
 
-wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/scripts/fastnetmon_notify.py -O /usr/local/fastnetmon/fastnetmon_notify.py 
+wget https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/scripts/fastnetmon_notify.py -O /usr/local/fastnetmon/fastnetmon_notify.py 
 chmod +x /usr/local/fastnetmon/fastnetmon_notify.py 
-wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon.conf -O /etc/fastnetmon.conf
+wget https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon.conf -O /etc/fastnetmon.conf
 ```
 

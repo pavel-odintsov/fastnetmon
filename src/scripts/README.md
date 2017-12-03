@@ -7,10 +7,10 @@ pip install exabgp
 ```
 - Download configs and scripts:
 ```bash
-wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/scripts/exabgp_network_collector.conf -O/etc/exabgp_network_collector.conf
-wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/scripts/bgp_network_retriever.py -O/usr/local/bin/bgp_network_retriever.py
+wget https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/scripts/exabgp_network_collector.conf -O/etc/exabgp_network_collector.conf
+wget https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/scripts/bgp_network_retriever.py -O/usr/local/bin/bgp_network_retriever.py
 
-wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/scripts/bgp_network_collector.py -O/usr/local/bin/bgp_network_collector.py
+wget https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/scripts/bgp_network_collector.py -O/usr/local/bin/bgp_network_collector.py
 
 chmod +x /usr/local/bin/bgp_network_retriever.py /usr/local/bin/bgp_network_collector.py
 ```

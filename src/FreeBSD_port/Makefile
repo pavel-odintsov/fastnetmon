@@ -15,7 +15,7 @@ LIB_DEPENDS=	liblog4cpp.so:${PORTSDIR}/devel/log4cpp \
 		libboost_regex.so:${PORTSDIR}/devel/boost-libs
 
 USE_GITHUB=	yes
-GH_ACCOUNT=	FastVPSEestiOu
+GH_ACCOUNT=	pavel-odintsov
 
 # TODO: enable this after updating /usr/ports/{UIDs,GIDs}
 #USERS=		fastnetmon

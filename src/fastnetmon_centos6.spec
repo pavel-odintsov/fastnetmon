@@ -14,11 +14,11 @@ Release:           1%{?dist}
 Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
 Group:             System Environment/Daemons
 License:           GPLv2
-URL:               https://github.com/FastVPSEestiOu/fastnetmon
+URL:               https://fastnetmon.com
 
 # Top level fodler inside archive should be named as "fastnetmon-1.1.1" 
-#Source0:           https://github.com/FastVPSEestiOu/fastnetmon/archive/v%{version}.tar.gz
-Source0:            https://github.com/FastVPSEestiOu/fastnetmon/archive/fastnetmon-%{version}.tar.gz
+#Source0:           https://github.com/pavel-odintsov/fastnetmon/archive/v%{version}.tar.gz
+Source0:            https://github.com/pavel-odintsov/fastnetmon/archive/fastnetmon-%{version}.tar.gz
 
 # Yes, it's bad idea to specify fixed version of PF_RING but they have strange issue when we use another library version 
 

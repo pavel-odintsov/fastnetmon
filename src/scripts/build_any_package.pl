@@ -129,7 +129,7 @@ DOC
     # Copy bundle to build tree
     `cp $archive_name $rpm_sources_path/archive.tar.gz`;
 
-    `wget --no-check-certificate https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon.conf -O$rpm_sources_path/fastnetmon.conf`;
+    `wget --no-check-certificate https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon.conf -O$rpm_sources_path/fastnetmon.conf`;
    
     open my $system_v_init_fl, ">", "$rpm_sources_path/system_v_init";
     print {$system_v_init_fl} $system_v_init_script;
@@ -167,7 +167,7 @@ Release:           1%{?dist}
 Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
 Group:             System Environment/Daemons
 License:           GPLv2
-URL:               https://github.com/FastVPSEestiOu/fastnetmon
+URL:               https://fastnetmon.com
 
 # Top level fodler inside archive should be named as "fastnetmon-1.1.1" 
 Source0:           http://178.62.227.110/fastnetmon_binary_repository/test_binary_builds/this_fake_path_do_not_check_it/archive.tar.gz
@@ -282,7 +282,7 @@ Release:           1%{?dist}
 Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
 Group:             System Environment/Daemons
 License:           GPLv2
-URL:               https://github.com/FastVPSEestiOu/fastnetmon
+URL:               https://fastnetmon.com
 
 # Top level fodler inside archive should be named as "fastnetmon-1.1.1" 
 Source0:           http://178.62.227.110/fastnetmon_binary_repository/test_binary_builds/this_fake_path_do_not_check_it/archive.tar.gz
@@ -525,7 +525,7 @@ DOC
 
     # Create folder for config
     mkdir("$folder_for_build/etc");
-    print `wget --no-check-certificate https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon.conf -O$folder_for_build/etc/fastnetmon.conf`;
+    print `wget --no-check-certificate https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon.conf -O$folder_for_build/etc/fastnetmon.conf`;
 
     `cp $archive_name $folder_for_build/archive.tar.gz`;
 

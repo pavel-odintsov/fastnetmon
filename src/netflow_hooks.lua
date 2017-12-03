@@ -9,7 +9,7 @@ local json = require("json")
 local ffi = require("ffi")
 
 -- Load declaration from the inside separate header file
--- This code should be in sync with https://github.com/FastVPSEestiOu/fastnetmon/blob/master/src/netflow_plugin/netflow.h
+-- This code should be in sync with https://github.com/pavel-odintsov/fastnetmon/blob/master/src/netflow_plugin/netflow.h
 -- And we use uintXX_t instead u_intXX_t here
 ffi.cdef([[typedef struct __attribute__((packed)) NF5_FLOW {
     uint32_t src_ip, dest_ip, nexthop_ip;

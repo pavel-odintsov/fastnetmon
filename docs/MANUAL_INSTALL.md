@@ -44,7 +44,7 @@ Install FastNetMon:
    # For compiling on CentOS please remove line "STATIC = -static" from file Makefile and replace line "LIBS += -lboost_thread" by line "LIBS += -lboost_thread-mt"
 
    cd /usr/src
-   git clone https://github.com/FastVPSEestiOu/fastnetmon.git
+   git clone https://github.com/pavel-odintsov/fastnetmon.git
    cd fastnetmon/src
 ```
 

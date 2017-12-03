@@ -579,7 +579,7 @@ void nf10_flowset_to_store(u_int8_t* pkt, size_t len, struct NF10_HEADER* nf10_h
 }
 
 void nf9_flowset_to_store(u_int8_t* pkt, size_t len, struct NF9_HEADER* nf9_hdr, netflow9_template_records_map& template_records) {
-    // Should be done according to https://github.com/FastVPSEestiOu/fastnetmon/issues/147
+    // Should be done according to https://github.com/pavel-odintsov/fastnetmon/issues/147
     // if (template->total_len > len)
     //    return 1;
 

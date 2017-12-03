@@ -218,7 +218,7 @@ sub main {
     }
 
     if ($os_type eq 'macosx') {
-        # Really strange issue https://github.com/FastVPSEestiOu/fastnetmon/issues/415 
+        # Really strange issue https://github.com/pavel-odintsov/fastnetmon/issues/415 
         $we_have_hiredis_support = 0;
     }
 
