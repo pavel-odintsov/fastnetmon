@@ -46,9 +46,9 @@ Features
 - Process and distinguish incoming and/or outgoing traffic
 - Trigger block/notify script if an IP exceeds defined thresholds for packets/bytes/flows per second
 - Thresholds can be configured per-subnet with the hostgroups feature
-- [Announce blocked IPs](docs/EXABGP_INTEGRATION.md) via BGP to routers with [ExaBGP](https://github.com/Exa-Networks/exabgp)
-- GoBGP [integration](docs/GOBGP.md) for unicast IPv4 announcements (you need build support manually).
-- Full integration with [Graphite](docs/GRAPHITE_INTEGRATION.md) and [InfluxDB](docs/INFLUXDB_INTEGRATION.md)
+- [Announce blocked IPs](https://fastnetmon.com/docs/exabgp_integration/) via BGP to routers with [ExaBGP](https://github.com/Exa-Networks/exabgp)
+- GoBGP [integration](https://fastnetmon.com/docs/gobgp-integration/) for unicast IPv4 announcements (you need build support manually).
+- Full integration with [Graphite](https://fastnetmon.com/docs/graphite_integration/) and [InfluxDB](https://fastnetmon.com/docs/influxdb_integration/)
 - API (you need build support manually)
 - Redis integration
 - MongoDB integration
