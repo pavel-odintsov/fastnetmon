@@ -4,16 +4,10 @@ Build on Mac OS 10.10 Yosemite.
 - Update XCode to latest version with App Store
 - Agree to Xcode license in Terminal: ```sudo xcodebuild -license```
 - Install [Home Brew](https://brew.sh)
-- Install dependencies: ```sudo port install boost log4cpp cmake ndpi```
+- Install dependencies: ```brew install boost log4cpp cmake ndpi```
 
 Run installer script for stable branch:
 ```bash
 wget https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl 
 sudo perl fastnetmon_install.pl
-```
-
-Run installer script for master branch:
-```bash
-wget https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl
-sudo perl fastnetmon_install.pl --use-git-master
 ```
