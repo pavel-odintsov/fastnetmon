@@ -76,7 +76,7 @@ fastnetmon_client
 Also you can build your own image using Dockerfile at packages/docker
 
 ```
-cd packages/docker
+cd src
 docker build .
 ```
 
