@@ -3,7 +3,7 @@ I recommend you to disable CPU freq scaling for gain max performance (max freque
 echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 ```
 
-You can use script [irq_balance_manually.sh](https://github.com/FastVPSEestiOu/fastnetmon/blob/master/src/irq_balance_manually.sh) for irq balancing on heavy loaded networks.
+You can use script [irq_balance_manually.sh](https://github.com/pavel-odintsov/fastnetmon/blob/master/src/irq_balance_manually.sh) for irq balancing on heavy loaded networks.
 
 Running tool without root permissions:
 ```bash
