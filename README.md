@@ -68,7 +68,7 @@ Running Fastnetmon
 ------------------
 ### Supported platforms
 - Linux (Debian 6/7/8/9, CentOS 6/7, Ubuntu 12.04, 14.04, 16.04)
-- FreeBSD 9, 10, 11 (please use version from ports)
+- FreeBSD 9, 10, 11: [offciail port](https://www.freshports.org/net-mgmt/fastnetmon/).
 - Mac OS X Yosemite (only 1.1.2 release)
 
 ### Supported architectures
@@ -83,7 +83,7 @@ Running Fastnetmon
 
 ### Distributions supported
 - We are part of the [CloudRouter](https://cloudrouter.org/cloudrouter/2015/07/09/fastnetmon.html) distribution
-- We are part in the [official FreeBSD ports collection](https://freshports.org/net-mgmt/fastnetmon/), [manual install](docs/FreeBSD_INSTALL.md)
+- We are part in the [official FreeBSD ports collection](https://freshports.org/net-mgmt/fastnetmon/)
 - [Docker image](docs/DOCKER_INSTALL.md)
 - [Automatic install script for Debian/Ubuntu/CentOS/Fedora/Gentoo](https://fastnetmon.com/install/)
 - [Automatic install script for Mac OS X](docs/MAC_OS_INSTALL.md)
