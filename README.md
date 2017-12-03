@@ -84,8 +84,6 @@ Running Fastnetmon
 ### Distributions supported
 - We are part of the [CloudRouter](https://cloudrouter.org/cloudrouter/2015/07/09/fastnetmon.html) distribution
 - We are part in the [official FreeBSD ports collection](https://freshports.org/net-mgmt/fastnetmon/), [manual install](docs/FreeBSD_INSTALL.md)
-- [Amazon AMI image](docs/AMAZON.md)
-- [VyOS based ISO image with bundled FastNetMon](docs/VYOS_BINARY_ISO_IMAGE.md)
 - [Docker image](docs/DOCKER_INSTALL.md)
 - [Automatic install script for Debian/Ubuntu/CentOS/Fedora/Gentoo](docs/INSTALL.md)
 - [Automatic install script for Mac OS X](docs/MAC_OS_INSTALL.md)
@@ -105,7 +103,7 @@ Example CPU load on Intel i7 2600 with Intel X540/82599 NIC at 400 kpps load:
 Example deployment scheme:
 ![Network diagramm](docs/images/network_map.png)
 
-Example of [notification email](docs/ATTACK_REPORT_EXAMPLE.md) about detected attack.
+Example of [notification email](https://fastnetmon.com/docs/attack_report_example/) about detected attack.
 
 Author: [Pavel Odintsov](http://uk.linkedin.com/in/podintsov/)
 
