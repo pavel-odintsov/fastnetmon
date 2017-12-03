@@ -85,7 +85,7 @@ Running Fastnetmon
 - We are part of the [CloudRouter](https://cloudrouter.org/cloudrouter/2015/07/09/fastnetmon.html) distribution
 - We are part in the [official FreeBSD ports collection](https://freshports.org/net-mgmt/fastnetmon/), [manual install](docs/FreeBSD_INSTALL.md)
 - [Docker image](docs/DOCKER_INSTALL.md)
-- [Automatic install script for Debian/Ubuntu/CentOS/Fedora/Gentoo](docs/INSTALL.md)
+- [Automatic install script for Debian/Ubuntu/CentOS/Fedora/Gentoo](https://fastnetmon.com/install/)
 - [Automatic install script for Mac OS X](docs/MAC_OS_INSTALL.md)
 - [Manual install on Slackware](docs/SLACKWARE_INSTALL.md)
 - [Manual install for VyOS](docs/VyOS_INSTALL.md)
