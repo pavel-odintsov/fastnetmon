@@ -31,7 +31,7 @@ Supported packet capture engines
 - ![sFLOW](http://sflow.org/images/sflowlogo.gif) v4 (since 1.1.3), v5
 - Port mirror/SPAN capture with PF_RING (with ZC/DNA mode support [need license](http://www.ntop.org/products/pf_ring/)), SnabbSwitch, NETMAP and PCAP
 
-You can check out the [comparison table](docs/CAPTURE_BACKENDS.md) for all available packet capture engines.
+You can check out the [comparison table](https://fastnetmon.com/docs/capture_backends/) for all available packet capture engines.
 
 Complete integration with following vendors 
 --------------------------------
