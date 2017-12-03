@@ -59,7 +59,7 @@ Features
 - Supports L2TP decapsulation, VLAN untagging and MPLS processing in mirror mode 
 - Works on server/soft-router
 - Detects DoS/DDoS in as little as 1-2 seconds
-- [Tested](docs/PERFORMANCE_TESTS.md) up to 10Gb with 12 Mpps on Intel i7 3820 with Intel NIC 82599
+- [Tested](https://fastnetmon.com/docs/performance_tests/) up to 10Gb with 12 Mpps on Intel i7 3820 with Intel NIC 82599
 - Complete plugin support
 - Captures attack fingerprints in PCAP format
 - [Complete support](docs/DETECTED_ATTACK_TYPES.md) for most popular attack types
