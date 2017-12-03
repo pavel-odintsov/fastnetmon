@@ -62,7 +62,7 @@ Features
 - [Tested](https://fastnetmon.com/docs/performance_tests/) up to 10Gb with 12 Mpps on Intel i7 3820 with Intel NIC 82599
 - Complete plugin support
 - Captures attack fingerprints in PCAP format
-- [Complete support](docs/DETECTED_ATTACK_TYPES.md) for most popular attack types
+- [Complete support](https://fastnetmon.com/docs/detected_attack_types/) for most popular attack types
 
 Running Fastnetmon
 ------------------
