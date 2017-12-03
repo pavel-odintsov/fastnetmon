@@ -1,4 +1,4 @@
-Installing netmap in FreeBSD
+### Installing netmap module for FreeBSD kernel
 
 Try to build kernel module for current kernel:
 ```bash
