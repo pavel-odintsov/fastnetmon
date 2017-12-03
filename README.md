@@ -51,7 +51,7 @@ Features
 - Full integration with [Graphite](https://fastnetmon.com/docs/graphite_integration/) and [InfluxDB](https://fastnetmon.com/docs/influxdb_integration/)
 - API (you need build support manually)
 - Redis integration
-- MongoDB integration
+- [MongoDB](https://fastnetmon.com/docs/mongodb/) integration
 - Deep packet inspection for attack traffic
 - netmap support (open source; wire speed processing; only Intel hardware NICs or any hypervisor VM type)
 - SnabbSwitch support (open source, very flexible, LUA driven, very-very-very fast)
