@@ -1,4 +1,8 @@
 
+### Installing FastNetMon into Docker 
+
+NB! It's community contributed code and we do not have any guarantees about images content
+
 You can run docker from pre-built image:
 ```
 docker pull robertoberto/fastnetmon
