@@ -107,14 +107,6 @@ Example deployment scheme:
 
 Example of [notification email](docs/ATTACK_REPORT_EXAMPLE.md) about detected attack.
 
+Author: [Pavel Odintsov](http://uk.linkedin.com/in/podintsov/)
 
-How I can help project?
------------------------
-- Test it! 
-- Share your experience
-- Share your use cases
-- Share your improvements
-- Test it with different equipment
-- Create feature requests
-
-Author: [Pavel Odintsov](http://ru.linkedin.com/in/podintsov/) pavel.odintsov at gmail.com [Follow my Twitter](https://twitter.com/odintsov_pavel)
+Follow us at [Twitter](https://twitter.com/fastnetmon) and [LinkedIn](https://www.linkedin.com/company/fastnetmon/)
