@@ -1,4 +1,4 @@
-### Developer notes 
+### FastNetMon Developer notes 
 
 FastNetMon has pretty huge list of supported platforms but we focused on following platforms:
 * CentOS 6/7
