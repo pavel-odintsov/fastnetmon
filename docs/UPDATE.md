@@ -1,6 +1,6 @@
 # How to update to next version?
 
-Well, if you need update from stable branch to developer branch, please follow [this reference](https://github.com/FastVPSEestiOu/fastnetmon/blob/master/docs/DEV_VERSION.md). 
+Well, if you need update from stable branch to developer branch, please follow [this reference](https://github.com/pavel-odintsov/fastnetmon/blob/master/docs/DEV_VERSION.md). 
 
 Please be aware! Binary packages could be out of date. 
 
