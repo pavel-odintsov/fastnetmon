@@ -3,7 +3,6 @@
 - Crea Nova Datacenter Finland, CREANOVA.ORG
 - Datahata Datacenter Belarus, DATAHATA.BY
 - DatHost AB, DATHOST.NET
-- Domain Name Registrar REG.RU
 - FastVPS Eesti OU
 - Internet Service Provider MYVIRTUALSERVER.COM
 - Moscow Datacenter COLOCAT.RU
