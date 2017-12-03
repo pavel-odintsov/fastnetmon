@@ -1,1 +1,1 @@
-We deprecated this guide. Please us automatic install script instead. 
+We deprecated this guide. Please us automatic [install script](https://fastnetmon.com/install/) instead.
