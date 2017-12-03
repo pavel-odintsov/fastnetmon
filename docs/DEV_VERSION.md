@@ -1,6 +1,6 @@
 ### How I can switch to current Git version?
 
-First of all, please install FastNetMon with automatic installer [here](https://github.com/pavel-odintsov/fastnetmon/blob/master/docs/INSTALL.md)
+First of all, please install FastNetMon with automatic installer [here](https://fastnetmon.com/install/)
 
 Than switch to master branch and rebuild toolkit:
 ```bash
