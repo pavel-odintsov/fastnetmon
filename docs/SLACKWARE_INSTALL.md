@@ -59,7 +59,7 @@ Now you have all you need for compiling fastnetmon.
 
 ```bash
 cd /usr/src
-git clone https://github.com/FastVPSEestiOu/fastnetmon.git
+git clone https://github.com/pavel-odintsov/fastnetmon.git
 cd fastnetmon/src
 In file CMakeLists.txt coment out the line:
 target_link_libraries(fastnetmon pcap)
