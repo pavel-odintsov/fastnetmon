@@ -1,15 +1,1 @@
-### How I can switch to current development version?
-
-First of all, please install FastNetMon with automatic installer [here](https://fastnetmon.com/install/)
-
-Than switch to master branch and rebuild toolkit:
-```bash
-cd /usr/src/fastnetmon
-git checkout master
-cd src/build
-cmake ..
-make
-./fastnetmon 
-```
-
-You could use ```git log``` command for checking about last commits and compare with [GitHub](https://github.com/pavel-odintsov/fastnetmon/commits/master)
+Page moved to our new [site](https://fastnetmon.com/fastnetmon-community-developer-version/)
