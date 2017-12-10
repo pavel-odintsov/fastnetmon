@@ -81,11 +81,11 @@ Running Fastnetmon
 ### Distributions supported
 - We are part of the [CloudRouter](https://cloudrouter.org/cloudrouter/2015/07/09/fastnetmon.html) distribution
 - We are part in the [official FreeBSD ports collection](https://freshports.org/net-mgmt/fastnetmon/)
-- [Docker image](docs/DOCKER_INSTALL.md)
+- [Docker image](https://fastnetmon.com/fastnetmon-community-docker-install/)
 - [Automatic install script for Debian/Ubuntu/CentOS/Fedora/Gentoo](https://fastnetmon.com/install/)
-- [Automatic install script for Mac OS X](docs/MAC_OS_INSTALL.md)
-- [Manual install on Slackware](docs/SLACKWARE_INSTALL.md)
-- [Manual install for VyOS](docs/VyOS_INSTALL.md)
+- [Automatic install script for Mac OS X](https://fastnetmon.com/fastnetmon-macos/)
+- [Manual install on Slackware](https://fastnetmon.com/fastnetmon-community-slackware-install/)
+- [Manual install for VyOS](https://fastnetmon.com/fastnetmon-community-install-on-vyos-1-1-5/)
 
 Screenshoots
 ------------
