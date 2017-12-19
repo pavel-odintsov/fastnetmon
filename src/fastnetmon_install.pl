@@ -1433,6 +1433,10 @@ sub install_fastnetmon {
             'gpm-devel', 'cmake', 'pkgconfig', 'hiredis-devel',
         );
 
+        if ($distro_type eq 'centos' && int($distro_version) == 7) {
+            push @fastnetmon_deps, 'net-tools';
+        }
+
         # Do not install Boost when we build it manually
         unless ($build_binary_environment) {
             @fastnetmon_deps = (@fastnetmon_deps, 'boost-devel', 'boost-thread')
