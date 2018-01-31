@@ -3699,24 +3699,29 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
 
         ndpi_protocol detected_protocol = dpi_parse_packet(packet_buffer, pcap_packet_header.orig_len, pcap_packet_header.incl_len, src, dst, flow, parsed_packet_as_string);
 
-        char* protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.protocol);
+#if NDPI_MAJOR >= 2
+        u_int16_t app_protocol = detected_protocol.app_protocol;
+#else
+        u_int16_t app_protocol = detected_protocol.protocol;
+#endif
+        char* protocol_name = ndpi_get_proto_name(my_ndpi_struct, app_protocol);
         char* master_protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.master_protocol); 
 
-        if (detected_protocol.protocol == NDPI_PROTOCOL_DNS) {
+        if (app_protocol == NDPI_PROTOCOL_DNS) {
             // It's answer for ANY request with so much
             if (flow->protos.dns.query_type == 255 && flow->protos.dns.num_queries < flow->protos.dns.num_answers) {
                 dns_amplification_packets++;
             }
 
-        } else if (detected_protocol.protocol == NDPI_PROTOCOL_NTP) {
+        } else if (app_protocol == NDPI_PROTOCOL_NTP) {
             // Detect packets with type MON_GETLIST_1
             if (flow->protos.ntp.version == 2 && flow->protos.ntp.request_code == 42) {
                 ntp_amplification_packets++;
             }
-        } else if (detected_protocol.protocol == NDPI_PROTOCOL_SSDP) {
+        } else if (app_protocol == NDPI_PROTOCOL_SSDP) {
             // So, this protocol completely unexpected in WAN networks
             ssdp_amplification_packets++;
-        } else if (detected_protocol.protocol == NDPI_PROTOCOL_SNMP) {
+        } else if (app_protocol == NDPI_PROTOCOL_SNMP) {
             // TODO: we need detailed tests for SNMP!
             snmp_amplification_packets++;
         }
