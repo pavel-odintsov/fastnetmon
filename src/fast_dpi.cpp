@@ -35,7 +35,11 @@ struct ndpi_detection_module_struct* init_ndpi() {
     u_int32_t detection_tick_resolution = 1000;
     
     struct ndpi_detection_module_struct* my_ndpi_struct =
+#if NDPI_MAJOR >= 2
+        ndpi_init_detection_module();
+#else
         ndpi_init_detection_module(detection_tick_resolution, malloc, free, debug_printf);
+#endif
 
     if (my_ndpi_struct == NULL) {
         // printf("Can't init nDPI");
