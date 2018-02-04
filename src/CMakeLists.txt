@@ -97,6 +97,13 @@ execute_process(COMMAND git rev-list HEAD COMMAND head -n 1 OUTPUT_VARIABLE GIT_
 set(FASTNETMON_APPLICATION_VERSION "1.1.3 master git-${GIT_LAST_COMMIT_HASH}")
 configure_file(fast_platform.h.template "${PROJECT_SOURCE_DIR}/fast_platform.h")
 
+# Use new Memory Model Aware Atomic Operations
+# You could enable it using: cmake .. -DUSE_NEW_ATOMIC_BUILTINS=ON
+if (USE_NEW_ATOMIC_BUILTINS)
+    message(STATUS "Will use new memory model aware atomic builtins")
+    add_definitions(-DUSE_NEW_ATOMIC_BUILTINS) 
+endif() 
+
 # With this flag we can disable PF_RING build via console: cmake .. -DDISABLE_PF_RING_SUPPORT=ON
 if (NOT DISABLE_PF_RING_SUPPORT) 
     if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
