@@ -148,7 +148,6 @@ void receiver(std::string interface_for_listening) {
 
     if (netmap_descriptor == NULL) {
         logger.error("Can't open netmap device %s", interface.c_str());
-        exit(1);
         return;
     }
 
@@ -197,7 +196,7 @@ void receiver(std::string interface_for_listening) {
 
         if (new_nmd == NULL) {
             logger.error("Can't open netmap descriptor for netmap per hardware queue thread");
-            exit(1);
+            return;
         }
 
         logger.info("My first ring is %d and last ring id is %d I'm thread %d",
