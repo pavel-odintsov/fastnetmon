@@ -7,7 +7,7 @@
 
 std::string fastnetmon_version = "${FASTNETMON_APPLICATION_VERSION}";
 
-std::string pid_path = "/var/run/fastnetmon.pid";
+std::string pid_path = "";
 std::string global_config_path = "/etc/fastnetmon.conf";
 
 std::string log_file_path = "/var/log/fastnetmon.log";

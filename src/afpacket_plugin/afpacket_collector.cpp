@@ -210,6 +210,11 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
 
     mapped_buffer = (uint8_t*)mmap(NULL, req.tp_block_size * req.tp_block_nr, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_LOCKED, packet_socket, 0);
 
+    // Musl libc (Alpine Linux) doesn't seem to like MAP_LOCKED, retry without it
+    if (mapped_buffer == MAP_FAILED && errno == EAGAIN) {
+        mapped_buffer = (uint8_t*)mmap(NULL, req.tp_block_size * req.tp_block_nr, PROT_READ | PROT_WRITE, MAP_SHARED, packet_socket, 0);
+    }
+
     if (mapped_buffer == MAP_FAILED) {
         logger << log4cpp::Priority::ERROR << "MMAP failed";
         return -1;
@@ -259,8 +264,12 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
         struct block_desc *pbd = (struct block_desc *) rd[current_block_num].iov_base;
  
         if ((pbd->h1.block_status & TP_STATUS_USER) == 0) {
-            poll(&pfd, 1, -1);
-
+            try {
+                poll(&pfd, 1, 500);
+                boost::this_thread::interruption_point();
+            } catch (const boost::thread_interrupted&) {
+                break;
+	    }
             continue;
         }   
 
@@ -324,7 +333,7 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
         for (int cpu = 0; cpu < num_cpus; cpu++) {
 
 // Well, we have thread attributes from Boost 1.50
-#if defined(BOOST_THREAD_PLATFORM_PTHREAD) && BOOST_VERSION / 100 % 1000 >= 50
+#if defined(BOOST_THREAD_PLATFORM_PTHREAD) && BOOST_VERSION / 100 % 1000 >= 50 && defined(__GLIBC__)
             boost::thread::attributes thread_attrs;
 
             if (afpacket_execute_strict_cpu_affinity) {
@@ -359,4 +368,6 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
     } else {    
         start_af_packet_capture(capture_interface, 0);
     }
+    // Exit thread. Whithout this it doesn't seem to join.
+    exit(0);
 }

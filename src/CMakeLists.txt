@@ -71,6 +71,7 @@ set(JSONC_CUSTOM_INSTALL_PATH "/opt/json-c-0.12")
 set(PFRING_CUSTOM_INSTALL_PATH "/opt/pf_ring_6.0.3")
 set(LIBPCAP_CUSTOM_INSTALL_PATH "/opt/libpcap_1.7.4")
 set(MONGO_C_CUSTOM_INSTALL_PATH "/opt/mongo_c_driver_1_1_9")
+set(NDPI_CUSTOM_INSTALL_PATH "/opt/ndpi")
 
 set(FASTNETMON_PROFILER OFF)
 
@@ -147,7 +148,7 @@ if (ENABLE_PFRING_SUPPORT)
     # Set path to manually compiled PF_RING
     set(PFRING_INCLUDE_DIRS "${PFRING_CUSTOM_INSTALL_PATH}/include")
 
-    find_library(PFRING_LIBRARIES NAMES pfring PATHS "${PFRING_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+    find_library(PFRING_LIBRARIES NAMES pfring PATHS "${PFRING_CUSTOM_INSTALL_PATH}/lib")
 
     if (NOT PFRING_LIBRARIES)
         message(FATAL_ERROR "Could not find PF_RING")
@@ -236,9 +237,8 @@ if (ENABLE_DPI_SUPPORT)
 
     add_library(fast_dpi STATIC fast_dpi.cpp)
 
-    set(NDPI_INCLUDE_DIRS "/opt/ndpi/include/libndpi-1.7.1")
-
-    find_library(NDPI_LIBRARIES NAMES ndpi PATHS "/opt/ndpi/lib" NO_DEFAULT_PATH)
+    find_library(NDPI_LIBRARIES NAMES ndpi PATHS "/opt/ndpi/lib")
+    find_path(NDPI_INCLUDE_DIRS NAMES libndpi/ndpi_api.h PATHS "${NDPI_CUSTOM_INSTALL_PATH}/include/libndpi-1.7.1" PATH_SUFFIXES libndpi-1.7.0)
 
     if (NOT NDPI_LIBRARIES)
         message(FATAL_ERROR "Could not find nDPI library")
@@ -266,15 +266,17 @@ if (ENABLE_LUA_SUPPORT)
     link_directories("${LUAJIT_CUSTOM_INSTALL_PATH}/lib")
     include_directories("${LUAJIT_CUSTOM_INSTALL_PATH}/include")
 
-    find_library(LUAJIT_LIBRARY_PATH NAMES luajit-5.1 PATHS "${LUAJIT_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+    find_path(LUAJIT_INCLUDES_FOLDER NAMES lua.hpp PATHS "${LUAJIT_CUSTOM_INSTALL_PATH}/include" PATH_SUFFIXES luajit-2.0 luajit-2.1)
+    find_library(LUAJIT_LIBRARY_PATH NAMES luajit-5.1 PATHS "${LUAJIT_CUSTOM_INSTALL_PATH}/lib")
 
-    if (NOT LUAJIT_LIBRARY_PATH) 
+    if (NOT LUAJIT_LIBRARY_PATH AND NOT LUAJIT_INCLUDES_FOLDER) 
         message(FATAL_ERROR "Could not find luajit library")
     endif()
 
     target_link_libraries(netflow_plugin ${LUAJIT_LIBRARY_PATH})
     target_link_libraries(sflow_plugin ${LUAJIT_LIBRARY_PATH})
     target_link_libraries(fast_library ${LUAJIT_LIBRARY_PATH})
+    include_directories(${LUAJIT_INCLUDES_FOLDER})
 endif()
 
 # pcap plugin
@@ -301,8 +303,8 @@ if (ENABLE_GOBGP_SUPPORT)
     add_definitions(-DENABLE_GOBGP)
     add_library(gobgp_action STATIC actions/gobgp_action.cpp)
 
-    find_path(GOBGP_INCLUDES_FOLDER NAMES libgobgp.h PATHS "${GOBGP_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
-    find_library(GOBGP_LIBRARY_PATH NAMES gobgp PATHS "${GOBGP_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+    find_path(GOBGP_INCLUDES_FOLDER NAMES libgobgp.h PATHS "${GOBGP_CUSTOM_INSTALL_PATH}/include")
+    find_library(GOBGP_LIBRARY_PATH NAMES gobgp PATHS "${GOBGP_CUSTOM_INSTALL_PATH}/lib")
 
     if (GOBGP_INCLUDES_FOLDER AND GOBGP_LIBRARY_PATH)
         message(STATUS "We found libgobgp and will link it: ${GOBGP_INCLUDES_FOLDER} ${GOBGP_LIBRARY_PATH}")
@@ -316,10 +318,10 @@ if (ENABLE_GOBGP_SUPPORT)
         message(FATAL_ERROR "Could not find libgobgp")
     endif()
 
-    find_path(GRPC_INCLUDES_FOLDER NAMES grpc/grpc.h PATHS "${GRPC_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
-    find_library(GRPC_LIBRARY_GRPC_PATH NAMES grpc PATHS "${GRPC_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
-    find_library(GRPC_LIBRARY_GPR_PATH NAMES gpr PATHS "${GRPC_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
-    find_library(GRPC_LIBRARY_GRPC_CPP_UNSECURE_PATH NAMES grpc++_unsecure PATHS "${GRPC_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH) 
+    find_path(GRPC_INCLUDES_FOLDER NAMES grpc/grpc.h PATHS "${GRPC_CUSTOM_INSTALL_PATH}/include")
+    find_library(GRPC_LIBRARY_GRPC_PATH NAMES grpc PATHS "${GRPC_CUSTOM_INSTALL_PATH}/lib")
+    find_library(GRPC_LIBRARY_GPR_PATH NAMES gpr PATHS "${GRPC_CUSTOM_INSTALL_PATH}/lib")
+    find_library(GRPC_LIBRARY_GRPC_CPP_UNSECURE_PATH NAMES grpc++_unsecure PATHS "${GRPC_CUSTOM_INSTALL_PATH}/lib") 
 
     if (GRPC_INCLUDES_FOLDER AND GRPC_LIBRARY_GRPC_PATH AND GRPC_LIBRARY_GPR_PATH AND GRPC_LIBRARY_GRPC_CPP_UNSECURE_PATH)
         include_directories(${GRPC_INCLUDES_FOLDER})
@@ -345,7 +347,7 @@ if (ENABLE_GOBGP_SUPPORT)
     # message(STATUS "grpc: ${GRPC_INCLUDES_FOLDER} ${GRPC_LIBRARY_GRPC_PATH} ${GRPC_LIBRARY_GPR_PATH}")
     # message(STATUS ${PROJECT_BINARY_DIR})
 
-    find_program(PROTOC_BINARY protoc PATHS "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/bin" NO_DEFAULT_PATH)
+    find_program(PROTOC_BINARY protoc PATHS "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/bin")
 
     if (PROTOC_BINARY)
         message(STATUS "Found protoc protobuf compiler: ${PROTOC_BINARY}")
@@ -442,10 +444,10 @@ endif()
 ### Move this code to cmake module
 
 # Try to find hiredis in a specific folder
-find_path(HIREDIS_INCLUDES_FOLDER NAMES hiredis/hiredis.h PATHS "${HIREDIS_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
+find_path(HIREDIS_INCLUDES_FOLDER NAMES hiredis/hiredis.h PATHS "${HIREDIS_CUSTOM_INSTALL_PATH}/include")
 
 # Try to find hiredis library path
-find_library(HIREDIS_LIBRARY_PATH NAMES hiredis PATHS "${HIREDIS_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+find_library(HIREDIS_LIBRARY_PATH NAMES hiredis PATHS "${HIREDIS_CUSTOM_INSTALL_PATH}/lib")
 
 if (HIREDIS_INCLUDES_FOLDER AND HIREDIS_LIBRARY_PATH) 
     message(STATUS "We found hiredis library and will build Redis support ${HIREDIS_INCLUDES_FOLDER} ${HIREDIS_LIBRARY_PATH}")
@@ -458,12 +460,12 @@ else()
 endif()
 
 ### Find mongo-c
-find_path(MONGOC_INCLUDES_FOLDER NAMES libmongoc-1.0/mongoc.h PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
-find_library(MONGOC_LIBRARY_PATH NAMES mongoc-1.0 PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+find_path(MONGOC_INCLUDES_FOLDER NAMES libmongoc-1.0/mongoc.h PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/include")
+find_library(MONGOC_LIBRARY_PATH NAMES mongoc-1.0 PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/lib")
 
 ### find bson
-find_path(BSON_INCLUDES_FOLDER NAMES libbson-1.0/bson.h PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
-find_library(BSON_LIBRARY_PATH NAMES bson-1.0 PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+find_path(BSON_INCLUDES_FOLDER NAMES libbson-1.0/bson.h PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/include")
+find_library(BSON_LIBRARY_PATH NAMES bson-1.0 PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/lib")
 
 if (MONGOC_INCLUDES_FOLDER AND MONGOC_LIBRARY_PATH AND BSON_INCLUDES_FOLDER AND BSON_LIBRARY_PATH)
     message(STATUS "We found mongo-c library ${MONGOC_INCLUDES_FOLDER} ${MONGOC_LIBRARY_PATH} ${BSON_INCLUDES_FOLDER} ${BSON_LIBRARY_PATH}")
@@ -495,10 +497,10 @@ endif()
 ### Look for log4cpp
 
 # Try to find log4cpp includes path
-find_path(LOG4CPP_INCLUDES_FOLDER NAMES log4cpp/Appender.hh PATHS "${LOG4CPP_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
+find_path(LOG4CPP_INCLUDES_FOLDER NAMES log4cpp/Appender.hh PATHS "${LOG4CPP_CUSTOM_INSTALL_PATH}/include")
 
 # Try to find log4cpp library path
-find_library(LOG4CPP_LIBRARY_PATH NAMES log4cpp PATHS "${LOG4CPP_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+find_library(LOG4CPP_LIBRARY_PATH NAMES log4cpp PATHS "${LOG4CPP_CUSTOM_INSTALL_PATH}/lib")
 
 if (LOG4CPP_INCLUDES_FOLDER AND LOG4CPP_LIBRARY_PATH)
     include_directories(${LOG4CPP_INCLUDES_FOLDER})
@@ -509,8 +511,8 @@ endif()
 
 ### Look for jsonc
 
-find_path(JSONC_INCLUDES_FOLDER NAMES json-c/json.h PATHS "${JSONC_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
-find_library(JSONC_LIBRARY_PATH NAMES json-c PATHS "${JSONC_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+find_path(JSONC_INCLUDES_FOLDER NAMES json-c/json.h PATHS "${JSONC_CUSTOM_INSTALL_PATH}/include")
+find_library(JSONC_LIBRARY_PATH NAMES json-c PATHS "${JSONC_CUSTOM_INSTALL_PATH}/lib")
 
 if (JSONC_INCLUDES_FOLDER AND JSONC_LIBRARY_PATH)
     include_directories(${JSONC_INCLUDES_FOLDER}) 

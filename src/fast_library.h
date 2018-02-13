@@ -25,7 +25,7 @@
 #include "libpatricia/patricia.h"
 
 #ifdef ENABLE_LUA_HOOKS
-#include <luajit-2.0/lua.hpp>
+#include <lua.hpp>
 #endif
 
 #define TCP_FIN_FLAG_SHIFT 1
