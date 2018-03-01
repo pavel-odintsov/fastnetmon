@@ -3042,7 +3042,7 @@ void exabgp_prefix_ban_manage(std::string action, std::string prefix_as_string_w
     char bgp_message[256];    
 
     if (action == "ban") {
-        sprintf(bgp_message, "announce route %s next-hop %s community %s\n",
+        sprintf(bgp_message, "announce route %s next-hop %s %s\n",
             prefix_as_string_with_mask.c_str(), exabgp_next_hop.c_str(), exabgp_community.c_str());
     } else {
         sprintf(bgp_message, "withdraw route %s next-hop %s\n", prefix_as_string_with_mask.c_str(), exabgp_next_hop.c_str());
