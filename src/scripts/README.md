@@ -1,4 +1,4 @@
-### Here you could find nice scripts for subnet's collection from the BGP router server
+### Here you can find some nice scripts for subnet's collection from the BGP route server
 
 - Clone ExaBGP master's repository:
 ```bash
@@ -19,5 +19,5 @@ chmod +x /usr/local/bin/bgp_network_retriever.py /usr/local/bin/bgp_network_coll
 cd /usr/src/exabgp
 env exabgp.log.level=DEBUG exabgp.daemon.user=root exabgp.tcp.bind="0.0.0.0" exabgp.tcp.port=179 exabgp.daemon.daemonize=false exabgp.daemon.pid=/var/run/exabgp.pid exabgp.log.destination=/var/log/exabgp.log exabgp /etc/exabgp_network_collector.conf
 ```
-- Wait few minutes while all announces received (depends on router server size)
+- Wait a few minutes while all route announcements are received (depends on router server size)
 - Retrieve learned networks from database (/var/lib/bgp_network_collector.db): ```python /usr/local/bin/bgp_network_retriever.py```
