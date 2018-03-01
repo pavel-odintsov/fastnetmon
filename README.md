@@ -1,6 +1,6 @@
 FastNetMon Community Edition
 ===========
-FastNetMon - A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, SnabbSwitch, netmap, PF_RING, PCAP).
+FastNetMon - A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFlow, SnabbSwitch, netmap, PF_RING, PCAP).
 
 What do we do?
 --------------
@@ -13,10 +13,10 @@ Integration with flow systems
 -----------------------------
 At a very high level integration with FastNetMon is fairly simple. In both cases the work flow is the same and the main difference being the port numbers provided. The port numbers are configurable.
 
-#### sFLOW
+#### sFlow
 Configure the IP of the server running FastNetMon using port 6343. This port number is configurable.
 
-#### netflow
+#### Netflow
 Configure the IP of the server running FastNetMon using port 2055. This port number is configurable.
 
 
@@ -36,7 +36,7 @@ Supported packet capture engines
 --------------------------------
 - NetFlow v5, v9
 - IPFIX
-- ![sFLOW](http://sflow.org/images/sflowlogo.gif) v4 (since 1.1.3), v5
+- ![sFlow](http://sflow.org/images/sflowlogo.gif) v4 (since 1.1.3), v5
 - Port mirror/SPAN capture with PF_RING (with ZC/DNA mode support [need license](http://www.ntop.org/products/pf_ring/)), SnabbSwitch, NETMAP and PCAP
 
 You can check out the [comparison table](https://fastnetmon.com/docs/capture_backends/) for all available packet capture engines.
