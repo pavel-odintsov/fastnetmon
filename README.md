@@ -50,7 +50,7 @@ Travis status: ![Travis](https://travis-ci.org/pavel-odintsov/fastnetmon.svg?bra
 
 Features
 --------
-- Complete [BGP Flowspec support](https://fastnetmon.com/docs/bgp_flow_spec/), RFC 5575
+- Complete [BGP Flow Spec support](https://fastnetmon.com/docs/bgp_flow_spec/), RFC 5575
 - Process and distinguish incoming and/or outgoing traffic
 - Trigger block/notify script if an IP exceeds defined thresholds for packets/bytes/flows per second
 - Thresholds can be configured per-subnet with the hostgroups feature
