@@ -138,7 +138,7 @@ sub welcome_message {
 
     print "In case of any issues with install script please use ";
     print color('bold cyan');
-    print "https://fastnetmon.com/contact/?utm_source=community_install_script&utm_medium=email"
+    print "https://fastnetmon.com/contact/?utm_source=community_install_script&utm_medium=email";
     print color('reset');
     print " to report them\n\n";
 }
