@@ -136,7 +136,11 @@ sub welcome_message {
     print "https://fastnetmon.com/trial/?utm_source=community_install_script&utm_medium=email\n\n";
     print color('reset');
 
-    print "In case of any issues with install script please use https://fastnetmon.com/contact/?utm_source=community_install_script&utm_medium=email to report them\n\n";
+    print "In case of any issues with install script please use ";
+    print color('bold cyan');
+    print "https://fastnetmon.com/contact/?utm_source=community_install_script&utm_medium=email"
+    print color('reset');
+    print " to report them\n\n";
 }
 
 sub get_logical_cpus_number {
