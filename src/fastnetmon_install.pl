@@ -128,15 +128,15 @@ sub welcome_message {
     print " version with big number of improvements: ";
 
     print color('bold cyan');
-    print "https://fastnetmon.com/fastnetmon-advanced/\n\n";
+    print "https://fastnetmon.com/fastnetmon-advanced/?utm_source=community_install_script&utm_medium=email\n\n";
     print color('reset');
 
     print "You could order free one-month trial for Advanced version here ";
     print color('bold cyan');
-    print "https://fastnetmon.com/trial/\n\n";
+    print "https://fastnetmon.com/trial/?utm_source=community_install_script&utm_medium=email\n\n";
     print color('reset');
 
-    print "In case of any issues with install script please use https://github.com/pavel-odintsov/fastnetmon to report them\n\n";
+    print "In case of any issues with install script please use https://fastnetmon.com/contact/?utm_source=community_install_script&utm_medium=email to report them\n\n";
 }
 
 sub get_logical_cpus_number {
