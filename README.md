@@ -21,8 +21,9 @@ Configure the IP of the server running FastNetMon using port 6343. This port num
 #### Netflow
 Configure the IP of the server running FastNetMon using port 2055. This port number is configurable.
 
-
 License: GPLv2
+
+Official [mirror at GitLab](https://gitlab.com/fastnetmon/fastnetmon)
 
 Project 
 -------
