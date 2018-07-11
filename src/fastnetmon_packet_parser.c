@@ -7,12 +7,14 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <netinet/in.h> // in6_addr
+#ifndef __OpenBSD__
 #include <net/ethernet.h>
+#endif
 #include <string.h> // memcpy
 #include <stdio.h>
 #include <arpa/inet.h> // inet_ntop
 
-#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__DragonFly__)
+#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__DragonFly__) || defined(__OpenBSD__)
 #include <sys/socket.h> // AF_INET6
 #endif
 
@@ -191,7 +193,7 @@ char* _intoa(unsigned int addr, char* buf, u_short bufLen);
 static char* in6toa(struct in6_addr addr6);
 char* proto2str(u_short proto);
 
-#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__DragonFly__)
+#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__DragonFly__) || defined(__OpenBSD__)
 /* This code from /usr/includes/linux/if_ether.h Linus file */
 #define ETH_ALEN 6 /* Octets in one ethernet addr   */
 #define ETH_P_IP 0x0800 /* Internet Protocol packet     */
@@ -210,7 +212,7 @@ struct ethhdr {
 
 #endif
 
-#if defined(__FreeBSD__) || defined(__APPLE__)
+#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__OpenBSD__)
 u_int32_t pfring_hash_pkt(struct pfring_pkthdr* hdr) {
     if (hdr->extended_hdr.parsed_pkt.tunnel.tunnel_id == NO_TUNNEL_ID) {
         return hdr->extended_hdr.parsed_pkt.vlan_id + hdr->extended_hdr.parsed_pkt.l3_proto +
