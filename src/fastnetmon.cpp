@@ -19,6 +19,7 @@
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
 #include <netinet/ip_icmp.h>
+#include <net/if_arp.h> // struct arphdr
 #include <netinet/if_ether.h>
 #include <netinet/in.h>
 

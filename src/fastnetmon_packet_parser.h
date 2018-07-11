@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include <netinet/in.h> // in6_addr
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(__OpenBSD__)
 // For Mac OS X here we can find definition of "struct timeval"
 #include <sys/time.h>
 #endif
