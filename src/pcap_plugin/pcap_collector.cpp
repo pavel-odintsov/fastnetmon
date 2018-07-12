@@ -42,6 +42,10 @@ unsigned int DATA_SHIFT_VALUE = 14;
 /* 802.1Q VLAN tags are 4 bytes long. */
 #define VLAN_HDRLEN 4
 
+#ifndef DLT_LINUX_SLL
+#define DLT_LINUX_SLL	113
+#endif
+
 extern log4cpp::Category& logger;
 extern std::map<std::string, std::string> configuration_map;
 
