@@ -133,10 +133,7 @@ if (NOT DISABLE_PF_RING_SUPPORT)
     endif() 
 endif()
 
-# With this flag we could disable Netmap build this way: cmake .. -DDISABLE_NETMAP_SUPPORT=ON
-if (NOT DISABLE_NETMAP_SUPPORT)
-    set (ENABLE_NETMAP_SUPPORT ON)
-endif()
+option(ENABLE_NETMAP_SUPPORT "Enable Netmap support" ON)
 
 if (ENABLE_NETMAP_SUPPORT)
     message(STATUS "We will build Netmap support for you")
@@ -230,7 +227,7 @@ add_library(sflow_plugin STATIC sflow_plugin/sflow_collector.cpp)
 add_library(netflow_plugin STATIC netflow_plugin/netflow_collector.cpp)
 target_link_libraries(netflow_plugin ipfix_rfc)
 
-set(ENABLE_DPI_SUPPORT YES)
+option(ENABLE_DPI_SUPPORT "Enable Deep Packet Inspection support" ON)
 if (ENABLE_DPI_SUPPORT) 
     message(STATUS "We will enable nDPI support")
 
@@ -255,7 +252,7 @@ endif()
 # We do not enable it by default, it's testing feature
 # If you want it please build with:
 # cmake -DENABLE_LUA_SUPPORT=ON .. 
-set(ENABLE_LUA_SUPPORT yes CACHE BOOL "Enable Lua support")
+option(ENABLE_LUA_SUPPORT "Enable Lua support" ON)
 if (ENABLE_LUA_SUPPORT)
     message(STATUS "We will enable LuaJIT support")
 
