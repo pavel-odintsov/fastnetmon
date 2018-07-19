@@ -324,7 +324,7 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
         for (int cpu = 0; cpu < num_cpus; cpu++) {
 
 // Well, we have thread attributes from Boost 1.50
-#if defined(BOOST_THREAD_PLATFORM_PTHREAD) && BOOST_VERSION / 100 % 1000 >= 50
+#if defined(BOOST_THREAD_PLATFORM_PTHREAD) && BOOST_VERSION / 100 % 1000 >= 50 && defined(__GLIBC__)
             boost::thread::attributes thread_attrs;
 
             if (afpacket_execute_strict_cpu_affinity) {
