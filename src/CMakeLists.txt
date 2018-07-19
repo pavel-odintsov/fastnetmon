@@ -23,6 +23,7 @@ project(FastNetMon)
 
 include(CheckCXXCompilerFlag)
 include(CheckLibraryExists)
+include(FindPkgConfig)
 
 # Enable it and fix all warnigns!
 # add_definitions ("-Wall")
@@ -491,15 +492,23 @@ endif()
 
 ### Look for log4cpp
 
-# Try to find log4cpp includes path
+# Try to find log4cpp includes path in the custom path
 find_path(LOG4CPP_INCLUDES_FOLDER NAMES log4cpp/Appender.hh PATHS "${LOG4CPP_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
-
-# Try to find log4cpp library path
 find_library(LOG4CPP_LIBRARY_PATH NAMES log4cpp PATHS "${LOG4CPP_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
 
 if (LOG4CPP_INCLUDES_FOLDER AND LOG4CPP_LIBRARY_PATH)
     include_directories(${LOG4CPP_INCLUDES_FOLDER})
-    message(STATUS "We have found log4cpp and will build project")
+    message(STATUS "We have found a custom log4cpp in ${LOG4CPP_CUSTOM_INSTALL_PATH} and will build project")
+
+# Try to find log4cpp paths using pkg-config
+elseif (PKG_CONFIG_FOUND)
+    pkg_search_module(LOG4CPP log4cpp)
+    if(LOG4CPP_FOUND)
+        message(STATUS "We have found log4cpp on your system")
+        include_directories(LOG4CPP_INCLUDEDIR)
+	find_library(LOG4CPP_LIBRARY_PATH NAMES log4cpp PATHS "${LOG4CPP_LIBDIR}" NO_DEFAULT_PATH)
+    endif()
+
 else()
     message(FATAL_ERROR "We can't find log4cpp. We can't build project")
 endif()
