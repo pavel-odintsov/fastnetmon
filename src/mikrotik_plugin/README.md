@@ -17,6 +17,11 @@ Installation
 #### Prerequisite
 You must have a user with API access on the router
 
+Install php to your server:
+```
+sudo apt-get install php-cli php
+```
+
 #### Process
 1.  Configure the router in the ```fastnetmon_mikrotik.php``` file
 ```
