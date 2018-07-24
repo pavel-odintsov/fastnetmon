@@ -33,6 +33,15 @@ $cfg[ api_pass ]    = "api123"; // password
 
 This is the first buggy version, you are welcome to add more features.
 
+3. Set executable bit ```sudo chmod +x /etc/fastnetmon/scripts/notify_about_attack.sh```
+
+4. For FastNetMon Advanced, please disable details:
+
+```
+sudo fcli set main notify_script_pass_details disable
+sudo fcli commit
+```
+
 Changelog
 ---------
 v1.0 - 4 Jul 16 - Initial version
