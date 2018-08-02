@@ -68,7 +68,7 @@ uint64_t MurmurHash64A(const void* key, int len, uint64_t seed);
 std::string print_tcp_flags(uint8_t flag_value);
 int timeval_subtract(struct timeval* result, struct timeval* x, struct timeval* y);
 bool folder_exists(std::string path);
-bool is_cidr_subnet(const char* subnet);
+bool is_cidr_subnet(std::string subnet);
 bool is_v4_host(std::string host);
 bool file_exists(std::string path);
 uint32_t convert_cidr_to_binary_netmask(unsigned int cidr);
