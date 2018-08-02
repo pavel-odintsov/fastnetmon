@@ -1493,25 +1493,29 @@ void zeroify_all_flow_counters() {
 
 bool load_our_networks_list() {
     if (file_exists(white_list_path)) {
-        unsigned int el = 0;
+
+        unsigned int network_entries = 0;
         std::vector<std::string> network_list_from_config = read_file_to_vector(white_list_path);
 
         for (std::vector<std::string>::iterator ii = network_list_from_config.begin();
              ii != network_list_from_config.end(); ++ii) {
-            if (ii->length() > 0) {
-                if (is_v4_host(*ii)) {
-                    logger << log4cpp::Priority::INFO << "Assuming /32 netmask for " << *ii;
-                    *ii += "/32";
-                } else if (!is_cidr_subnet(*ii)) {
-                    logger << log4cpp::Priority::ERROR << "Can't parse line from whitelist: " << *ii;
-                    continue;
-                }
-                ++el;
-                make_and_lookup(whitelist_tree_ipv4, const_cast<char*> (ii->c_str()));
+            std::string text_subnet = *ii;
+            if (!text_subnet.length() > 0) {
+                break;
             }
+            if (is_v4_host(text_subnet)) {
+                logger << log4cpp::Priority::INFO << "Assuming /32 netmask for " << text_subnet;
+                text_subnet += "/32";
+            } else if (!is_cidr_subnet(text_subnet)) {
+                logger << log4cpp::Priority::ERROR << "Can't parse line from whitelist: " << text_subnet;
+                continue;
+            }
+            ++network_entries;
+            make_and_lookup(whitelist_tree_ipv4, const_cast<char*> (text_subnet.c_str()));
+
         }
 
-        logger << log4cpp::Priority::INFO << "We loaded " << el
+        logger << log4cpp::Priority::INFO << "We loaded " << network_entries
                << " networks from whitelist file";
     }
 
