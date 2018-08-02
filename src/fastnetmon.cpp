@@ -1493,18 +1493,25 @@ void zeroify_all_flow_counters() {
 
 bool load_our_networks_list() {
     if (file_exists(white_list_path)) {
+        unsigned int el = 0;
         std::vector<std::string> network_list_from_config = read_file_to_vector(white_list_path);
 
         for (std::vector<std::string>::iterator ii = network_list_from_config.begin();
              ii != network_list_from_config.end(); ++ii) {
-            if (ii->length() > 0 && is_cidr_subnet(ii->c_str())) {
-                make_and_lookup(whitelist_tree_ipv4, const_cast<char*>(ii->c_str()));
-            } else {
-                logger << log4cpp::Priority::ERROR << "Can't parse line from whitelist: " << *ii;
+            if (ii->length() > 0) {
+                if (is_v4_host(*ii)) {
+                    logger << log4cpp::Priority::INFO << "Assuming /32 netmask for " << *ii;
+                    *ii += "/32";
+                } else if (!is_cidr_subnet(*ii)) {
+                    logger << log4cpp::Priority::ERROR << "Can't parse line from whitelist: " << *ii;
+                    continue;
+                }
+                ++el;
+                make_and_lookup(whitelist_tree_ipv4, const_cast<char*> (ii->c_str()));
             }
         }
 
-        logger << log4cpp::Priority::INFO << "We loaded " << network_list_from_config.size()
+        logger << log4cpp::Priority::INFO << "We loaded " << el
                << " networks from whitelist file";
     }
 
@@ -1600,7 +1607,7 @@ bool load_our_networks_list() {
     for (std::vector<std::string>::iterator ii = networks_list_ipv4_as_string.begin();
          ii != networks_list_ipv4_as_string.end(); ++ii) {
         
-        if (!is_cidr_subnet(ii->c_str())) {
+        if (!is_cidr_subnet(*ii)) {
             logger << log4cpp::Priority::ERROR << "Can't parse line from subnet list: '" << *ii << "'";
             continue;
         }
@@ -1633,7 +1640,7 @@ bool load_our_networks_list() {
 
     for (std::vector<std::string>::iterator ii = networks_list_ipv6_as_string.begin();
          ii != networks_list_ipv6_as_string.end(); ++ii) {
-            
+
         // TODO: add IPv6 subnet format validation
         make_and_lookup_ipv6(lookup_tree_ipv6, (char*)ii->c_str()); 
     }

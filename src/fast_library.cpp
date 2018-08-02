@@ -208,13 +208,10 @@ uint32_t convert_cidr_to_binary_netmask(unsigned int cidr) {
 }
 
 
-bool is_cidr_subnet(const char* subnet) {
+bool is_cidr_subnet(std::string subnet) {
     boost::cmatch what;
-    if (regex_match(subnet, what, regular_expression_cidr_pattern)) {
-        return true;
-    } else {
-        return false;
-    }
+
+    return regex_match(subnet.c_str(), what, regular_expression_cidr_pattern);
 }
 
 bool is_v4_host(std::string host) {
