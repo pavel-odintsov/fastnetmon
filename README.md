@@ -9,7 +9,7 @@ What do we do?
 We detect hosts in the deployed network sending or receiving large volumes of traffic, packets/bytes/flows, per second and
 perform a configurable action to handle that event. These configurable actions include notifying you, switching off the server, or blackholing the client.
 
-What is a "flow" in FastNetMon terms?  It's one or more ICMP, UDP, or TCP connections with can be identified by via its unique src IP, dst IP, src port, dst port, and protocol usage.
+Flow is one or more ICMP, UDP, or TCP packets which can be identified via their unique src IP, dst IP, src port, dst port, and protocol fields.
 
 Integration with flow systems
 -----------------------------
