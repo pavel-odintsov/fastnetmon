@@ -182,7 +182,8 @@ sub get_user_email {
     do {
         print "\n";
         print "Please provide your business email address to receive important information about security updates\n";
-        print "In addition, we could send promotional messages to this email (very rare)\n";
+        print "In addition, we can send promotional messages to this email (very rare)\n";
+        print "You can find our privacy policy here https://fastnetmon.com/privacy-policy/\n";
         print "We will provide an option to disable any email from us\n";
         print "We will not share your email with any third party companies.\n\n";
         print "If you continue install process you accept our subscription rules automatically\n\n";
