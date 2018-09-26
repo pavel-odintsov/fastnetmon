@@ -1284,3 +1284,7 @@ bool store_data_to_stats_server(unsigned short int graphite_port, std::string gr
         return false;
     }
 }
+
+uint32_t convert_hex_as_string_to_uint(std::string hex) {
+    return std::strtoul(hex.c_str(), 0, 16);
+}
