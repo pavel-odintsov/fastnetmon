@@ -53,7 +53,7 @@ std::string convert_int_to_string(int value);
 std::string print_ipv6_address(struct in6_addr& ipv6_address);
 std::string print_simple_packet(simple_packet packet);
 std::string convert_timeval_to_date(struct timeval tv);
-uint32_t convert_hex_as_string_to_uint(std::string hex);
+bool convert_hex_as_string_to_uint(std::string hex, uint32_t& value);
 
 int extract_bit_value(uint8_t num, int bit);
 int extract_bit_value(uint16_t num, int bit);
