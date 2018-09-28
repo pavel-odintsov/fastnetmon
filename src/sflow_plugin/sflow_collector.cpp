@@ -41,6 +41,12 @@ bool sflow_lua_hooks_enabled = false;
 std::string sflow_lua_hooks_path = "/usr/src/fastnetmon/src/sflow_hooks.lua";
 #endif
 
+// Ethertype of outer tag in QinQ
+uint32_t sflow_qinq_ethertype = 0x8100;
+
+// Disable QinQ processing by default
+bool sflow_qinq_process = false;
+
 // sFLOW v4 specification: http://www.sflow.org/rfc3176.txt
 
 std::string plugin_name = "sflow";
@@ -84,6 +90,24 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
 
     if (configuration_map.count("sflow_host") != 0) {
         interface_for_binding = configuration_map["sflow_host"];
+    }
+
+    if (configuration_map.count("sflow_qinq_process") != 0) {
+        if (configuration_map["sflow_qinq_process"] == "on") {
+
+            sflow_qinq_process = true;
+            logger << log4cpp::Priority::INFO << plugin_log_prefix << "qinq processing enabled";
+
+            if (configuration_map.count("sflow_qinq_ethertype") != 0) {
+                if (convert_hex_as_string_to_uint(configuration_map["sflow_qinq_ethertype"], sflow_qinq_ethertype)) {
+                    logger << log4cpp::Priority::WARN << plugin_log_prefix
+                           << "can't parse value in sflow_qinq_ethertype variable";
+                    logger << log4cpp::Priority::INFO << plugin_log_prefix
+                           << "disable qinq processing";
+                    sflow_qinq_process = false;
+                }
+            }
+        }
     }
 
 #ifdef ENABLE_LUA_HOOKS
@@ -535,8 +559,21 @@ void decode_link_layer(SFSample* sample) {
     type_len = (ptr[0] << 8) + ptr[1];
     ptr += 2;
 
+    if (sflow_qinq_process && type_len == sflow_qinq_ethertype && ((ptr[2] << 8) + ptr[3]) == 0x8100) {
+        /* Outer VLAN tag - next two bytes */
+        uint32_t vlanData = (ptr[0] << 8) + ptr[1];
+        uint32_t vlan = vlanData & 0x0fff;
+        uint32_t priority = vlanData >> 13;
+        ptr += 2;
+
+        sample->in_outer_vlan = vlan;
+        /* now get the type_len again (next two bytes) */
+        type_len = (ptr[0] << 8) + ptr[1];
+        ptr += 2;
+    }
+
     if (type_len == 0x8100) {
-        /* VLAN  - next two bytes */
+        /* Inner VLAN tag - next two bytes */
         uint32_t vlanData = (ptr[0] << 8) + ptr[1];
         uint32_t vlan = vlanData & 0x0fff;
         uint32_t priority = vlanData >> 13;

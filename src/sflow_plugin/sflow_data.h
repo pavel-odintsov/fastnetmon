@@ -151,6 +151,7 @@ typedef struct _SFSample {
     uint8_t eth_dst[8];
 
     /* vlan */
+    uint32_t in_outer_vlan;
     uint32_t in_vlan;
     uint32_t in_priority;
     uint32_t internalPriority;

@@ -1284,3 +1284,12 @@ bool store_data_to_stats_server(unsigned short int graphite_port, std::string gr
         return false;
     }
 }
+
+bool convert_hex_as_string_to_uint(std::string hex, uint32_t& value) {
+    std::stringstream ss;
+
+    ss << std::hex << hex;
+    ss >> value;
+
+    return ss.fail();
+}
