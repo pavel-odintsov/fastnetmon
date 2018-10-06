@@ -35,6 +35,12 @@ Project
 - Chat: #fastnetmon at irc.freenode.net [web client](https://webchat.freenode.net/)
 - Detailed reference in Russian: [link](https://fastnetmon.com/wp-content/uploads/2017/07/FastNetMon_Reference_Russian.pdf)
 
+Follow us at social media:
+-------
+- [Twitter](https://twitter.com/fastnetmon)
+- [LinkedIn](https://www.linkedin.com/company/fastnetmon/)
+- [Facebook](https://www.facebook.com/fastnetmon/)
+
 Supported packet capture engines
 --------------------------------
 - NetFlow v5, v9
@@ -117,5 +123,3 @@ Example deployment scheme:
 Example of [notification email](https://fastnetmon.com/docs/attack_report_example/) about detected attack:
 
 Author: [Pavel Odintsov](http://uk.linkedin.com/in/podintsov/)
-
-Follow us at [Twitter](https://twitter.com/fastnetmon) and [LinkedIn](https://www.linkedin.com/company/fastnetmon/)
