@@ -739,9 +739,11 @@ sub install_json_c {
     if ($os_type eq 'macosx' or $os_type eq 'freebsd') {
         exec_command("sed -i -e '355 s#^#//#' json_tokener.c");
         exec_command("sed -i -e '360 s#^#//#' json_tokener.c");
+		exec_command("sed -i -e '381 s/AM_CFLAGS =/AM_CFLAGS = -Wimplicit-fallthrough=0/ ' Makefile.in");
     } else { 
         exec_command("sed -i '355 s#^#//#' json_tokener.c");
         exec_command("sed -i '360 s#^#//#' json_tokener.c");
+		exec_command("sed -i '381 s/AM_CFLAGS =/AM_CFLAGS = -Wimplicit-fallthrough=0/ ' Makefile.in");
     }
 
     print "Build it\n";
