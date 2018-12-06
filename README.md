@@ -52,6 +52,7 @@ You can check out the [comparison table](https://fastnetmon.com/docs/capture_bac
 
 Complete integration with the following vendors 
 --------------------------------
+- [Juniper integration](src/juniper_plugin)
 - [A10 Networks Thunder TPS Appliance integration](src/a10_plugin)
 - [MikroTik RouterOS](src/mikrotik_plugin) Please use only recent versions of RouterOS!
 
