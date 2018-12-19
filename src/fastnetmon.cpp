@@ -2418,6 +2418,9 @@ void print_screen_contents_into_file(std::string screen_data_stats_param) {
     screen_data_file.open(cli_stats_file_path.c_str(), std::ios::trunc);
 
     if (screen_data_file.is_open()) {
+        // Set 660 permissions to file for security reasons
+        chmod(cli_stats_file_path.c_str(), S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);	    
+	    
         screen_data_file << screen_data_stats_param;
         screen_data_file.close();
     } else {
