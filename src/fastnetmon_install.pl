@@ -742,6 +742,11 @@ sub install_json_c {
     } else { 
         exec_command("sed -i '355 s#^#//#' json_tokener.c");
         exec_command("sed -i '360 s#^#//#' json_tokener.c");
+        
+        # Workaround complaints from fresh compilers
+        if ($distro_type eq 'ubuntu' && $distro_version eq '18.04') {
+            exec_command("sed -i -e '381 s/AM_CFLAGS =/AM_CFLAGS = -Wimplicit-fallthrough=0/ ' Makefile.in");
+        }
     }
 
     print "Build it\n";
