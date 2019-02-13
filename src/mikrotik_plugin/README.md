@@ -31,12 +31,19 @@ $cfg[ api_pass ]    = "api123"; // password
 ```
 2. Change the ```notify_about_attack.sh``` with the new to run the PHP script
 
-This is the first buggy version, you are welcome to add more features.
+This is the first version, you are welcome to add more features.
 
 3. Set executable bit ```sudo chmod +x /etc/fastnetmon/scripts/notify_about_attack.sh```
 
-4. For FastNetMon Advanced, please disable details:
+4. For FastNetMon Advanced, specify this script as callback: 
 
+```
+sudo fcli set main notify_script_enabled enable
+sudo fcli set main notify_script_path /etc/fastnetmon/scripts/notify_about_attack.sh
+sudo fcli set main notify_script_format text
+sudo fcli commit
+```
+And disablle passing detaisl to this script:
 ```
 sudo fcli set main notify_script_pass_details disable
 sudo fcli commit
