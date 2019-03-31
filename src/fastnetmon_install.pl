@@ -31,7 +31,7 @@ my $install_log_path = '/tmp/fastnetmon_install.log';
 # But we have some patches for NTP and DNS protocols here
 my $ndpi_repository = 'https://github.com/pavel-odintsov/nDPI.git';
 
-my $stable_branch_name = 'v1.1.3';
+my $stable_branch_name = 'v1.1.4';
 my $we_use_code_from_master = '';
 
 # By default use mirror
