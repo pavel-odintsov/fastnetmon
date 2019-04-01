@@ -660,8 +660,10 @@ install(FILES man/fastnetmon.1 DESTINATION /usr/share/man/man1)
 install(FILES man/fastnetmon_client.1 DESTINATION /usr/share/man/man1)
 
 # service files
-configure_file(fastnetmon.service.in "${CMAKE_CURRENT_BINARY_DIR}/fastnetmon.service" @ONLY)
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/fastnetmon.service" DESTINATION ${CMAKE_INSTALL_SYSTEMD_SERVICEDIR})
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    configure_file(fastnetmon.service.in "${CMAKE_CURRENT_BINARY_DIR}/fastnetmon.service" @ONLY)
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/fastnetmon.service" DESTINATION ${CMAKE_INSTALL_SYSTEMD_SERVICEDIR})
+endif()
 
 if (${OS_ID} MATCHES debian|ubuntu)
 install(FILES fastnetmon_init_script_debian_6_7 DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/init.d RENAME fastnetmon)
