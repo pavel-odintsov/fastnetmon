@@ -31,7 +31,7 @@ Project
 - [Mailing list](https://groups.google.com/forum/#!forum/fastnetmon)
 - [Slack](https://join.slack.com/t/fastnetmon/shared_invite/MjM3NDUwNzY4NjA5LTE1MDQ4MzE5NTAtYmU4MjYyYWNiZQ)
 - [FastNetMon Advanced, Commercial Edition](https://fastnetmon.com/fastnetmon-advanced/)
-- If you want add an [idea](https://fastnetmon.fider.io/)
+- [FastNetMon Advanced and Community difference table](https://fastnetmon.com/compare-community-and-advanced/)
 - Chat: #fastnetmon at irc.freenode.net [web client](https://webchat.freenode.net/)
 - Detailed reference in Russian: [link](https://fastnetmon.com/wp-content/uploads/2017/07/FastNetMon_Reference_Russian.pdf)
 
