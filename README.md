@@ -119,7 +119,7 @@ Example CPU load on Intel i7-2600 with Intel X540/82599 NIC at 400Kpps load:
 ![Cpu consumption](docs/images/fastnetmon_stats.png)
 
 Example deployment scheme:
-![Network diagramm](docs/images/network_map.png)
+![Network diagramm](docs/images/deploy.png)
 
 Example of [notification email](https://fastnetmon.com/docs/attack_report_example/) about detected attack:
 
