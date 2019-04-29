@@ -20,7 +20,7 @@
  * v1.0 - 4 Jul 16 - initial version
  ******************************/
 //sin errores
-error_reporting( 0 );
+// error_reporting( 0 );
 // error_reporting( E_ALL );
 // ini_set( 'display_errors', 'On' );
 define( "_VER", '1.0' );
