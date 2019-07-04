@@ -2449,7 +2449,7 @@ void traffic_draw_program() {
     }
 
     output_buffer << "FastNetMon " << fastnetmon_version
-                  << " Pavel Odintsov: fastnetmon.com"
+                  << " HizHosting Monitoring: HizHositing.com"
                   << "\n"
                   << "IPs ordered by: " << sort_parameter << "\n";
 
