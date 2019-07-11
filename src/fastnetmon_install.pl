@@ -87,7 +87,7 @@ if ($use_modern_pf_ring) {
 }
 
 my $we_have_ndpi_support = '1';
-my $we_have_luajit_support = '1';
+my $we_have_luajit_support = '';
 my $we_have_hiredis_support = '1';
 my $we_have_log4cpp_support = '1';
 my $we_have_pfring_support = '';
@@ -1579,6 +1579,11 @@ sub install_fastnetmon {
     # Bump version in cmake build system
     if ($use_modern_pf_ring) {
         system("sed -i 's/pf_ring_6.0.3/pf_ring_$pf_ring_version/' ../CMakeLists.txt")
+    }
+
+    # We do not need LUA by default
+    unless ($we_have_luajit_support) {
+        $cmake_params .= " -DENABLE_LUA_SUPPORT=OFF ";
     }
 
     if (defined($ENV{'TRAVIS'}) && $ENV{'TRAVIS'}) {
