@@ -249,6 +249,8 @@ sub main {
         # Switch off sflow and netflow plugins enabled by default
         system("sed -i 's/sflow = on/sflow = off/' /etc/fastnetmon.conf");
         system("sed -i 's/netflow = on/netflow = off/' /etc/fastnetmon.conf");
+        # Remove trailing space in Debian/Ubuntu configuration, it was fixed in upstream
+        system("sed -i 's/ban_for_tcp_pps = off /ban_for_tcp_pps = off/' /etc/fastnetmon.conf");
 
         # Apply changes
         system("systemctl restart fastnetmon");
