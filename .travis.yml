@@ -9,7 +9,7 @@ before_install:
 before_script:
   - sudo -i -E perl $TRAVIS_BUILD_DIR/src/fastnetmon_install.pl --use-git-master
   - cd $TRAVIS_BUILD_DIR/src
-script: mkdir -p build; cd build; cmake .. -DDISABLE_PF_RING_SUPPORT=ON; make
+script: mkdir -p build; cd build; cmake .. -DDISABLE_PF_RING_SUPPORT=ON -DENABLE_LUA_SUPPORT=OFF; make
 notifications:
   email:
     recipients:
