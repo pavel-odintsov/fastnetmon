@@ -140,6 +140,8 @@ class bgp_flow_spec_action_t {
                 return "discard" + sentence_separator;
             } else if (this->action_type == FLOW_SPEC_ACTION_RATE_LIMIT) {
                 return "rate-limit " + convert_int_to_string(this->rate_limit) + sentence_separator; 
+            } else {
+                return "accept" + sentence_separator;
             }
         } 
     private:
