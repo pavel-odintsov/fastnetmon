@@ -254,9 +254,11 @@ sub main {
         system("systemctl restart fastnetmon");
 
         print "FastNetMon was installed and started correctly\n";
-        print "You can find configuration file at /etc/fastnetmon.conf\n";
-        print "You can restart FastNetMon this way: systemctl restart fastnetmon\n";
-        print "You can run client tool this way: fastnetmon_client\n";
+        print "Below you can find some useful commands and paths\n\n";
+        print "Main configuration file: /etc/fastnetmon.conf\n";
+        print "Daemon restart command: systemctl restart fastnetmon\n";
+        print "Client tool: fastnetmon_client\n";
+        print "Log file: /var/log/fastnetmon.log\n";
 
         send_tracking_information('finished');
         exit(0);
