@@ -212,8 +212,8 @@ sub main {
     $cpus_number = get_logical_cpus_number();
 
     # We could get huge speed benefits with this option
-    if ($cpus_number > 1) { 
-        print "You have really nice server with $cpus_number CPU's and we will use them all for build process :)\n";
+    if ($cpus_number > 8) {
+        print "You have really nice server with $cpus_number CPUs and we will use them all for build process :)\n";
         $make_options = "-j $cpus_number";
     }
 
@@ -238,6 +238,18 @@ sub main {
     }
 
     send_tracking_information('started');
+
+    # For these Ubuntu version we have FastNetMon in standard repos, will use it instead
+    if ($distro_type eq 'ubuntu' && (
+        $distro_version =~ m/^18\.04/ or
+        $distro_version =~ m/^19\.04/)) {
+
+        apt_get("fastnetmon");
+
+        send_tracking_information('finished');
+        exit(0);
+    }
+
 
     if ($build_binary_environment) {
         install_gcc();
