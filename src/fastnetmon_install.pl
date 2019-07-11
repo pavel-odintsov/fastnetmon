@@ -217,9 +217,15 @@ sub main {
         $make_options = "-j $cpus_number";
     }
 
-    # We have PF_RING only for Linux
+    # We use PF_RING only for very old Linux distros, all new one should use AF_PACKET
     if ($os_type eq 'linux') {
-        $we_have_pfring_support = 1;
+        if ($distro_type eq 'ubuntu' && $distro_version =~ m/^12\.04/) {
+            $we_have_pfring_support = 1;
+        }
+
+        if ($distro_type eq 'centos' && $distro_version == 6) {
+            $we_have_pfring_support = 1;
+        }
     }
 
     if ($os_type eq 'macosx') {
@@ -1604,22 +1610,6 @@ sub install_fastnetmon {
     unless (-e $fastnetmon_config_path) {
         print "Create stub configuration file\n";
         exec_command("cp $fastnetmon_code_dir/fastnetmon.conf $fastnetmon_config_path");
-  
-        # netmap will detach interface completely and will broke network
-        # So we do not configure it automatically 
-        if ($os_type ne 'freebsd') { 
-            my @interfaces = get_active_network_interfaces();
-            my $interfaces_as_list = join ',', @interfaces;
-            print "Select $interfaces_as_list as active interfaces\n";
-
-            print "Tune config\n";
-
-            if ($os_type eq 'macosx' or $os_type eq 'freebsd') {
-                exec_command("sed -i -e 's/interfaces.*/interfaces = $interfaces_as_list/' $fastnetmon_config_path");
-            } else {
-                exec_command("sed -i 's/interfaces.*/interfaces = $interfaces_as_list/' $fastnetmon_config_path");
-            }
-        }
     }
 
     print "If you have any issues, please check /var/log/fastnetmon.log file contents\n";
@@ -1631,23 +1621,5 @@ sub install_fastnetmon {
     unless ($init_script_result) {
         print "You can run fastnetmon with command: $fastnetmon_dir/fastnetmon\n";
     }
-}
-
-sub get_active_network_interfaces {
-    my @interfaces = `LANG=C netstat -i|egrep -v 'lo|Iface|Kernel'|awk '{print \$1}'`;
-    chomp @interfaces;
-
-    my @clean_interfaces = ();
-
-    for my $iface (@interfaces) {
-        # skip aliases
-        if ($iface =~ /:/) {
-            next;
-        }
-
-        push @clean_interfaces, $iface;
-    }
-
-    return  @clean_interfaces;
 }
 
