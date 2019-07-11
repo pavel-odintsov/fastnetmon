@@ -250,6 +250,9 @@ sub main {
         system("sed -i 's/sflow = on/sflow = off/' /etc/fastnetmon.conf");
         system("sed -i 's/netflow = on/netflow = off/' /etc/fastnetmon.conf");
 
+        # Apply changes
+        system("systemctl restart fastnetmon");
+
         print "FastNetMon was installed and started correctly\n";
         print "You can find configuration file at /etc/fastnetmon.conf\n";
         print "You can restart FastNetMon this way: systemctl restart fastnetmon\n";
