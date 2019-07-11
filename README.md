@@ -93,9 +93,8 @@ Features
 Running Fastnetmon
 ------------------
 ### Supported platforms
-- Linux (Debian 6/7/8/9, CentOS 6/7, Ubuntu 12.04, 14.04, 16.04)
-- FreeBSD 9, 10, 11: [official port](https://www.freshports.org/net-mgmt/fastnetmon/).
-- Mac OS X Yosemite (only 1.1.2 release)
+- Linux (Debian, CentOS, Ubuntu)
+- FreeBSD: [official port](https://www.freshports.org/net-mgmt/fastnetmon/).
 
 ### Supported architectures
 - x86 64-bit (recommended)
