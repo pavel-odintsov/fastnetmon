@@ -239,11 +239,22 @@ sub main {
 
     send_tracking_information('started');
 
+    my $install_from_official_distro = '';
+
     # For these Ubuntu version we have FastNetMon in standard repos, will use it instead
     if ($distro_type eq 'ubuntu' && (
         $distro_version =~ m/^18\.04/ or
         $distro_version =~ m/^19\.04/)) {
 
+         $install_from_official_distro = 1;
+    }
+
+    # For Debian 9 we also have FastNetMon in standard repos
+    if ($distro_type eq 'debian' && $distro_version =~ m/^10\.0/) {
+        $install_from_official_distro = 1;
+    }
+
+    if ($install_from_official_distro) {
         apt_get("fastnetmon");
 
         # Switch off sflow and netflow plugins enabled by default
