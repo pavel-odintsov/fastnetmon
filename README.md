@@ -2,7 +2,7 @@
 
 Community Edition
 ===========
-FastNetMon - A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFlow, SnabbSwitch, netmap, PF_RING, PCAP).
+FastNetMon - A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFlow, AF_PACKET, SnabbSwitch, netmap, PF_RING (obsoleted), PCAP).
 
 What do we do?
 --------------
@@ -49,8 +49,12 @@ Supported packet capture engines
 --------------------------------
 - NetFlow v5, v9
 - IPFIX
-- ![sFlow](http://sflow.org/images/sflowlogo.gif) v4 (since 1.1.3), v5
-- Port mirror/SPAN capture with PF_RING (with ZC/DNA mode support [need license](http://www.ntop.org/products/pf_ring/)), SnabbSwitch, NETMAP and PCAP
+- ![sFlow](http://sflow.org/images/sflowlogo.gif) v4, v5
+- PCAP
+- AF_PACKET
+- Netmap
+- SnabbSwitch (experimental) 
+- PF_RING / PF_RING ZC (obsoleted, not recommented, please use AF_PACKET instead) 
 
 You can check out the [comparison table](https://fastnetmon.com/docs/capture_backends/) for all available packet capture engines.
 
