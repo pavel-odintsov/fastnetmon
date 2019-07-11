@@ -246,6 +246,15 @@ sub main {
 
         apt_get("fastnetmon");
 
+        # Switch off sflow and netflow plugins enabled by default
+        system("sed -i 's/sflow = on/sflow = off/' /etc/fastnetmon.conf");
+        system("sed -i 's/netflow = on/netflow = off/' /etc/fastnetmon.conf");
+
+        print "FastNetMon was installed and started correctly\n";
+        print "You can find configuration file at /etc/fastnetmon.conf\n";
+        print "You can restart FastNetMon this way: systemctl restart fastnetmon\n";
+        print "You can run client tool this way: fastnetmon_client\n";
+
         send_tracking_information('finished');
         exit(0);
     }
