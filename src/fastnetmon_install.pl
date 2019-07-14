@@ -845,7 +845,24 @@ sub install_lua_json {
 
 sub install_init_scripts {
     # Init file for any systemd aware distro
-    if ( ($distro_type eq 'debian' && $distro_version > 7) or ($distro_type eq 'centos' && $distro_version >= 7) ) {
+    my $systemd_distro = '';
+
+    # All new versions of Debian use systemd
+    if ($distro_type eq 'debian' && $distro_version > 7) {
+        $systemd_distro = 1;
+    }
+
+    # All new versions of CentOS/RHEL use systemd
+    if ($distro_type eq 'centos' && $distro_version >= 7) {
+        $systemd_distro = 1;
+    }
+
+    # Some heuristic approach for Debian-like distros
+    if (-e "/bin/systemd") {
+        $systemd_distro = 1;
+    }
+
+    if ($systemd_distro) {
         my $systemd_service_path = "/etc/systemd/system/fastnetmon.service";
         exec_command("cp $fastnetmon_code_dir/fastnetmon.service $systemd_service_path");
 
