@@ -348,7 +348,7 @@ sub main {
 
         apt_get(@debian_packages_for_build);
     } elsif ($distro_type eq 'centos') {
-        my @centos_dependency_packages = ('make', 'gcc');
+        my @centos_dependency_packages = ('make', 'gcc', 'gcc-c++');
 
         yum(@centos_dependency_packages);
     }
@@ -778,12 +778,18 @@ sub install_log4cpp {
 
     print "Build log4cpp\n";
 
+    my $configure_res = '';
+
     # TODO: we need some more reliable way to specify options here
     if ($configure_options) {
-        exec_command("$configure_options ./configure --prefix=$log4cpp_install_path");
+        $configure_res = exec_command("$configure_options ./configure --prefix=$log4cpp_install_path");
     } else {
-        exec_command("./configure --prefix=$log4cpp_install_path");
-    }    
+        $configure_res = exec_command("./configure --prefix=$log4cpp_install_path");
+    }
+
+    if (!$configure_res) {
+        fast_die("Cannot configure log4cpp");
+    }
 
     exec_command("make $make_options install"); 
 
