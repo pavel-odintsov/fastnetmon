@@ -26,6 +26,8 @@ my $distro_architecture = '';
 
 my $user_email = '';
 
+my $install_log_path = "/tmp/fastnetmon_install_$$.log";
+
 # So, you could disable this option but without this feature we could not improve FastNetMon for your distribution
 my $do_not_track_me = '';
 
@@ -38,7 +40,7 @@ sub send_tracking_information {
         my $user_agent = 'FastNetMon install tracker v1';
 
         `wget --post-data="$post_data" --user-agent="$user_agent" -q '$stats_url'`;
-    }    
+    } 
 }
 
 
@@ -46,10 +48,16 @@ sub send_tracking_information {
 sub fast_die {
     my $message = shift;
 
-    die "$message\n";
-
 	# Report failed installs
 	send_tracking_information("error");
+
+    # Send detailed report about issue to Sentry
+    unless ($do_not_track_me) {
+        system("SENTRY_DSN=https://121eca215532431cb7521eafdbca23d3:292cfd7ac2af46a7bc32356141e62592\@sentry.io/1504559 /opt/sentry-cli " .
+            " send-event -m \"$message\" --logfile $install_log_path");
+    }
+
+    die "$message\n";
 }
 
 my $pf_ring_version = '6.0.3';
@@ -68,8 +76,6 @@ unless ($temp_folder_for_building_project && -e $temp_folder_for_building_projec
 my $start_time = time();
 
 my $fastnetmon_code_dir = "$temp_folder_for_building_project/fastnetmon/src";
-
-my $install_log_path = '/tmp/fastnetmon_install.log';
 
 # Official mirror: https://github.com/ntop/nDPI.git
 # But we have some patches for NTP and DNS protocols here
@@ -235,11 +241,33 @@ sub get_user_email {
     print "\nThank you so much!\n\n"; 
 }
 
+# Installs Sentry for error tracking
+sub install_sentry {
+    my $machine_arch = `uname -m`;
+    chomp $machine_arch;
+
+    my $download_res = system("wget --quiet 'https://downloads.sentry-cdn.com/sentry-cli/1.46.0/sentry-cli-Linux-$machine_arch' -O/opt/sentry-cli");
+
+    if ($download_res != 0) {
+        warn "Cannot download Sentry";
+    }
+
+    system("chmod +x /opt/sentry-cli");
+}
+
 ### Functions start here
 sub main {
+    # Open log file
+    open my $global_log, ">", $install_log_path;
+    print {$global_log} "Install started";
+
     detect_distribution();
 
     get_user_email();
+
+    install_sentry();
+
+    fast_die("Emergency test report");
 
     $cpus_number = get_logical_cpus_number();
 
