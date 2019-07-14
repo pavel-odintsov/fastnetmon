@@ -822,9 +822,9 @@ sub install_init_scripts {
 
     if ($systemd_distro) {
         my $systemd_service_path = "/etc/systemd/system/fastnetmon.service";
-        exec_command("cp $fastnetmon_code_dir/fastnetmon.service $systemd_service_path");
+        exec_command("cp $fastnetmon_code_dir/fastnetmon.service.in $systemd_service_path");
 
-        exec_command("sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $systemd_service_path");
+        exec_command("sed -i 's#\@CMAKE_INSTALL_SBINDIR\@#/opt/fastnetmon#' $systemd_service_path");
 
         print "We found systemd enabled distro and created service: fastnetmon.service\n";
         print "You could run it with command: systemctl start fastnetmon.service\n";
