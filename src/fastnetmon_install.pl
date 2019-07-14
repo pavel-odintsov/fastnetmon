@@ -1450,10 +1450,10 @@ sub install_fastnetmon {
         system("make $make_options");
     } else {
         print "Run cmake to generate make file\n";
-        system("cmake .. $cmake_params 2>&1 | tee $install_log_path");
+        system("cmake .. $cmake_params 2>&1 | tee -a $install_log_path");
 
         print "Run make to build FastNetMon\n";
-        system("make $make_options 2>&1 | tee $install_log_path");
+        system("make $make_options 2>&1 | tee -a $install_log_path");
     }
 
     my $fastnetmon_dir = "/opt/fastnetmon";
