@@ -71,16 +71,12 @@ my $configure_options = '';
 
 welcome_message();
 
-# We will build gcc, stdc++ and boost for this distribution from sources
-my $build_binary_environment = '';
-
 my $use_modern_pf_ring = '';
 
 # Get options from command line
 GetOptions(
     'use-git-master' => \$we_use_code_from_master,
     'do-not-track-me' => \$do_not_track_me,
-    'build-binary-environment' => \$build_binary_environment,
     'use-modern-pf-ring' => \$use_modern_pf_ring,
 );
 
@@ -296,12 +292,6 @@ sub main {
     }
 
 
-    if ($build_binary_environment) {
-        install_gcc();
-        install_boost_builder();
-        install_boost();
-    }
-
     if ($we_have_pfring_support) {
         install_pf_ring();
     }
@@ -492,169 +482,6 @@ sub install_binary_gcc {
     unlink($distribution_file_name);
 
     return 1;
-}
-
-sub install_gcc {
-    my $result = install_binary_gcc();
-
-    # Add new compiler to configure options
-    # It's mandatory for log4cpp
-    $configure_options = "CC=/opt/gcc520/bin/gcc CXX=/opt/gcc520/bin/g++";
-
-    # More detailes about jam lookup: http://www.boost.org/build/doc/html/bbv2/overview/configuration.html
-
-    # We use non standard gcc compiler for Boost builder and Boost and specify it this way
-    open my $fl, ">", "/root/user-config.jam" or die "Can't open $! file for writing manifest\n";
-    print {$fl} "using gcc : 5.2 : /opt/gcc520/bin/g++ ;\n";
-    close $fl;
-
-    # When we run it with vzctl exec we ahve broken env and should put config in /etc too
-    open my $etcfl, ">", "/etc/user-config.jam" or die "Can't open $! file for writing manifest\n";
-    print {$etcfl} "using gcc : 5.2 : /opt/gcc520/bin/g++ ;\n";
-    close $etcfl; 
-
-    # Install gcc from sources
-    if ($distro_type eq 'debian') {
-        my @dependency_list = ('libmpfr-dev', 'libmpc-dev');
-
-        if ($distro_version <= 7) {
-            # We have another name for Debian 6 Squeeze
-            push @dependency_list, 'libgmp3-dev';
-        } else {
-            push @dependency_list, 'libgmp-dev';
-        }
-
-        apt_get(@dependency_list);
-    } elsif ($distro_type eq 'ubuntu') {
-        my @dependency_list = ('libmpfr-dev', 'libmpc-dev', 'libgmp-dev');
-
-        apt_get(@dependency_list);
-    } elsif ($distro_type eq 'centos') {
-        if ($distro_version == 6) { 
-            # We haven't libmpc in base repository here and should enable EPEL
-            yum('https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm');
-        }    
-
-        my @dependency_list = ('gmp-devel', 'mpfr-devel', 'libmpc-devel');
-
-        yum(@dependency_list);
-    } 
-
-    # Please be careful! This libs required for binary version of gcc! We should install they!
-    # Do not call source compilation in this case
-    if ($result) {
-        return;
-    }    
-
-    print "Download gcc archive\n";
-    chdir $temp_folder_for_building_project;
-
-    my $archive_file_name = 'gcc-5.2.0.tar.gz';
-    my $gcc_download_result = download_file("ftp://ftp.mpi-sb.mpg.de/pub/gnu/mirror/gcc.gnu.org/pub/gcc/releases/gcc-5.2.0/$archive_file_name", $archive_file_name, '713211883406b3839bdba4a22e7111a0cff5d09b');
-
-    unless ($gcc_download_result) {
-        die "Can't download gcc sources\n";
-    }
-
-    print "Unpack archive\n";
-    exec_command("tar -xf $archive_file_name");
-    exec_command("mkdir $temp_folder_for_building_project/gcc-5.2.0-objdir");
-
-    chdir "$temp_folder_for_building_project/gcc-5.2.0-objdir";
-
-    print "Configure build system\n";
-    exec_command("$temp_folder_for_building_project/gcc-5.2.0/configure --prefix=/opt/gcc520 --enable-languages=c,c++ --disable-multilib");
-
-    print "Build gcc\n";
-    exec_command("make $make_options");
-    exec_command("make $make_options install");
-
-    # We do not add it to ld.so.conf.d path because it could broke system
-}
-
-sub install_boost {
-    chdir '/opt';
-    my $archive_file_name = 'boost_1_58_0.tar.gz';
-
-    print "Install Boost dependencies\n";
-
-    # libicu dependencies
-    if ($distro_type eq 'ubuntu') {
-
-        if ($distro_version eq '14.04') {
-            apt_get('libicu52');
-        }
-
-        if ($distro_version eq '12.04') {
-            apt_get('libicu48');
-        }
-    }
-
-    print "Download Boost source code\n";
-    my $boost_download_result = download_file("http://downloads.sourceforge.net/project/boost/boost/1.58.0/boost_1_58_0.tar.gz?r=http%3A%2F%2Fwww.boost.org%2Fusers%2Fhistory%2Fversion_1_58_0.html&ts=1439207367&use_mirror=cznic", $archive_file_name, 'a27b010b9d5de0c07df9dddc9c336767725b1e6b');
-
-    unless ($boost_download_result) {
-        die "Can't download Boost source code\n";
-    }
-
-    print "Unpack Boost source code\n";
-    exec_command("tar -xf $archive_file_name");
-    
-    # Remove archive
-    unlink "$archive_file_name";
-
-    chdir "boost_1_58_0";
-
-    print "Build Boost\n";
-    # We have troubles when run this code with vzctl exec so we should add custom compiler in path 
-    # So without HOME=/root nothing worked correctly due to another "openvz" feature
-    my $b2_build_result = exec_command("HOME=/root PATH=\$PATH:/opt/gcc520/bin /opt/boost_build1.5.8/bin/b2 -j$cpus_number --build-dir=/tmp/boost_build_temp_directory_1_5_8 toolset=gcc-5.2 link=shared --without-test --without-python --without-wave --without-graph --without-coroutine --without-math --without-log --without-graph_parallel --without-mpi"); 
-
-    # We should not do this check because b2 build return bad return code even in success case... when it can't build few non important targets
-    unless ($b2_build_result) {
-        ### die "Can't execute b2 build correctly\n";
-    }
-}
-
-sub install_boost_builder { 
-    chdir $temp_folder_for_building_project;
-
-    # We need libc headers for compilation of this code
-    if ($distro_type eq 'centos') {
-        yum('glibc-devel');
-    }
-
-    # We use another name because it uses same name as boost distribution
-    my $archive_file_name = 'boost-builder-1.58.0.tar.gz';
-
-    print "Download boost builder\n";
-    my $boost_build_result = download_file("https://github.com/boostorg/build/archive/boost-1.58.0.tar.gz", $archive_file_name,
-        'e86375ed83ed07a79a33c76e80e8648d969b3218');
-
-    unless ($boost_build_result) {
-        die "Can't download boost builder\n";
-    }
-
-    print "Unpack boost builder\n";
-    exec_command("tar -xf $archive_file_name");
-
-    chdir "build-boost-1.58.0";
-
-    print "Build Boost builder\n";
-    # We haven't system compiler here and we will use custom gcc for compilation here
-    my $bootstrap_result = exec_command("CC=/opt/gcc520/bin/gcc CXX=/opt/gcc520/bin/g++ ./bootstrap.sh --with-toolset=cc");
-
-    unless ($bootstrap_result) {
-        die "bootstrap of Boost Builder failed, please check logs\n";
-    }
-
-    # We should specify toolset here if we want to do build with custom compiler
-    # We have troubles when run this code with vzctl exec so we should add custom compiler in path 
-    my $b2_install_result = exec_command("PATH=\$PATH:/opt/gcc520/bin ./b2 install --prefix=/opt/boost_build1.5.8 toolset=gcc");
-    
-    unless ($b2_install_result) {
-        die "Can't execute b2 install\n";
-    }
 }
 
 sub install_luajit {
@@ -1462,14 +1289,11 @@ sub install_fastnetmon {
             "liblog4cpp5-dev", "libnuma-dev", "libgeoip-dev","libpcap-dev", "cmake", "pkg-config", "libhiredis-dev",
         );
 
-        # Do not install Boost when we build it manually
-        unless ($build_binary_environment) {
-            # We add this dependencies because package libboost-all-dev is broken on VyOS
-            if ($appliance_name eq 'vyos') {
-                push @fastnetmon_deps, ('libboost-regex-dev', 'libboost-system-dev', 'libboost-thread-dev');
-            } else {
-                push @fastnetmon_deps, "libboost-all-dev";
-            }
+        # We add this dependencies because package libboost-all-dev is broken on VyOS
+        if ($appliance_name eq 'vyos') {
+            push @fastnetmon_deps, ('libboost-regex-dev', 'libboost-system-dev', 'libboost-thread-dev');
+        } else {
+            push @fastnetmon_deps, "libboost-all-dev";
         }
 
         apt_get(@fastnetmon_deps);
@@ -1483,10 +1307,7 @@ sub install_fastnetmon {
             push @fastnetmon_deps, 'net-tools';
         }
 
-        # Do not install Boost when we build it manually
-        unless ($build_binary_environment) {
-            @fastnetmon_deps = (@fastnetmon_deps, 'boost-devel', 'boost-thread')
-        }
+        @fastnetmon_deps = (@fastnetmon_deps, 'boost-devel', 'boost-thread');
 
         yum(@fastnetmon_deps);
     } elsif ($distro_type eq 'gentoo') {
@@ -1549,7 +1370,7 @@ sub install_fastnetmon {
         $cmake_params .= " -DDISABLE_PF_RING_SUPPORT=ON";
     }
 
-    if ($distro_type eq 'centos' && $distro_version == 6 && !$build_binary_environment) {
+    if ($distro_type eq 'centos' && $distro_version == 6) {
         # Disable cmake script from Boost package because it's broken:
         # http://public.kitware.com/Bug/view.php?id=15270
         $cmake_params .= " -DBoost_NO_BOOST_CMAKE=BOOL:ON";
@@ -1557,14 +1378,6 @@ sub install_fastnetmon {
 
     if ($enable_gobgp_backend) {
         $cmake_params .= " -DENABLE_GOBGP_SUPPORT=ON";
-    }
-
-    # We should specify this option if we want to build with custom gcc compiler
-    if ($build_binary_environment) {
-        $cmake_params .= " -DENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT=ON ";
-
-        # We should specify compilir this way
-        $cmake_params .= " -DCMAKE_C_COMPILER=/opt/gcc520/bin/gcc -DCMAKE_CXX_COMPILER=/opt/gcc520/bin/g++ "; 
     }
 
     # Bump version in cmake build system
