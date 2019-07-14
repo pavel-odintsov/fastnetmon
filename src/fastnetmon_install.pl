@@ -1409,6 +1409,11 @@ sub install_fastnetmon {
         system("sed -i 's/pf_ring_6.0.3/pf_ring_$pf_ring_version/' ../CMakeLists.txt")
     }
 
+    # Fix dependencies for Netmap in 1.1.4
+    if ($distro_type eq 'centos' && int($distro_version) == 6) {
+        system("sed -i 's/netmap_plugin fastnetmon_packet_parser/netmap_plugin fastnetmon_packet_parser unified_parser/' ../CMakeLists.txt")
+    }
+
     # We do not need LUA by default
     unless ($we_have_luajit_support) {
         $cmake_params .= " -DENABLE_LUA_SUPPORT=OFF ";
