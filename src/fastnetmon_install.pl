@@ -6,7 +6,16 @@ use warnings;
 use Getopt::Long;
 use File::Basename;
 
-use Term::ANSIColor;
+my $have_ansi_color = '';
+
+# We should handle cases when customer does not have perl modules package installed
+BEGIN {
+    unless (eval "use Term::ANSIColor") {
+        warn "Cannot load module Term::ANSIColor";
+    }
+
+    $have_ansi_color = 1;
+}
 
 my $pf_ring_version = '6.0.3';
 my $pf_ring_url = "https://github.com/ntop/PF_RING/archive/v$pf_ring_version.tar.gz";
@@ -108,38 +117,45 @@ if ($enable_gobgp_backend) {
 
 main();
 
+# Applies colors to terminal if we have this module
+sub fast_color {
+    if ($have_ansi_color) {
+        color(@_);
+    }
+}
+
 sub welcome_message {
     # Clear screen
     print "\033[2J";
     # Jump to 0.0 position
     print "\033[0;0H";
 
-    print color('bold green');
+    print fast_color('bold green');
     print "Hi there!\n\n";
-    print color('reset');
+    print fast_color('reset');
     
     print "We need about ten minutes of your time for installing FastNetMon toolkit\n\n";
     print "Also, we have ";
 
-    print color('bold cyan');
+    print fast_color('bold cyan');
     print "FastNetMon Advanced";
-    print color('reset');
+    print fast_color('reset');
 
     print " version with big number of improvements: ";
 
-    print color('bold cyan');
+    print fast_color('bold cyan');
     print "https://fastnetmon.com/fastnetmon-advanced/?utm_source=community_install_script&utm_medium=email\n\n";
-    print color('reset');
+    print fast_color('reset');
 
     print "You could order free one-month trial for Advanced version here ";
-    print color('bold cyan');
+    print fast_color('bold cyan');
     print "https://fastnetmon.com/trial/?utm_source=community_install_script&utm_medium=email\n\n";
-    print color('reset');
+    print fast_color('reset');
 
     print "In case of any issues with install script please use ";
-    print color('bold cyan');
+    print fast_color('bold cyan');
     print "https://fastnetmon.com/contact/?utm_source=community_install_script&utm_medium=email";
-    print color('reset');
+    print fast_color('reset');
     print " to report them\n\n";
 }
 
