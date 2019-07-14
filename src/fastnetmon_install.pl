@@ -57,7 +57,7 @@ sub fast_die {
             " send-event -m \"$message\" --logfile $install_log_path");
     }
 
-    die "$message\n";
+    die "$message Please share $install_log_path with FastNetMon team at GitHub to get help: https://github.com/pavel-odintsov/fastnetmon/issues/new\n";
 }
 
 my $pf_ring_version = '6.0.3';
