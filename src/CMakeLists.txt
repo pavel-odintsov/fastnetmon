@@ -407,6 +407,7 @@ if (ENABLE_NETMAP_SUPPORT)
     include_directories(${NETMAP_INCLUDE_DIRS})
     add_library(netmap_plugin STATIC netmap_plugin/netmap_collector.cpp)
     target_link_libraries(netmap_plugin fastnetmon_packet_parser)
+    target_link_libraries(netmap_plugin unified_parser)
 endif()
 
 # Client tool
