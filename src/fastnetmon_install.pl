@@ -267,8 +267,6 @@ sub main {
 
     install_sentry();
 
-    fast_die("Emergency test report");
-
     $cpus_number = get_logical_cpus_number();
 
     # We could get huge speed benefits with this option
