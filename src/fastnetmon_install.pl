@@ -17,11 +17,39 @@ BEGIN {
     $have_ansi_color = 1;
 }
 
+my $we_use_code_from_master = '';
+
+my $os_type = '';
+my $distro_type = '';  
+my $distro_version = '';  
+my $distro_architecture = '';
+
+my $user_email = '';
+
+# So, you could disable this option but without this feature we could not improve FastNetMon for your distribution
+my $do_not_track_me = '';
+
+sub send_tracking_information {
+    my $step = shift;
+
+    unless ($do_not_track_me) {
+        my $stats_url = "http://178.62.227.110/new_fastnetmon_installation";
+        my $post_data = "distro_type=$distro_type&os_type=$os_type&distro_version=$distro_version&distro_architecture=$distro_architecture&step=$step&we_use_code_from_master=$we_use_code_from_master&user_email=$user_email";
+        my $user_agent = 'FastNetMon install tracker v1';
+
+        `wget --post-data="$post_data" --user-agent="$user_agent" -q '$stats_url'`;
+    }    
+}
+
+
 # die wrapper to send message to tracking server
 sub fast_die {
     my $message = shift;
 
     die "$message\n";
+
+	# Report failed installs
+	send_tracking_information("error");
 }
 
 my $pf_ring_version = '6.0.3';
@@ -48,25 +76,14 @@ my $install_log_path = '/tmp/fastnetmon_install.log';
 my $ndpi_repository = 'https://github.com/pavel-odintsov/nDPI.git';
 
 my $stable_branch_name = 'v1.1.4';
-my $we_use_code_from_master = '';
 
 # By default use mirror
 my $use_mirror = 1;
 
 my $mirror_url = 'https://github.com/pavel-odintsov/fastnetmon_dependencies/raw/master/files'; 
 
-my $os_type = '';
-my $distro_type = ''; 
-my $distro_version = ''; 
-my $distro_architecture = '';
-
-my $user_email = '';
-
 # Used for VyOS and different appliances based on rpm/deb
 my $appliance_name = ''; 
-
-# So, you could disable this option but without this feature we could not improve FastNetMon for your distribution
-my $do_not_track_me = '';
 
 my $cpus_number = 1;
 
@@ -362,18 +379,6 @@ sub main {
     my $pretty_install_time_in_minutes = sprintf("%.2f", $install_time / 60);
 
     print "We have built project in $pretty_install_time_in_minutes minutes\n";
-}
-
-sub send_tracking_information {
-    my $step = shift;
-
-    unless ($do_not_track_me) {
-        my $stats_url = "http://178.62.227.110/new_fastnetmon_installation";
-        my $post_data = "distro_type=$distro_type&os_type=$os_type&distro_version=$distro_version&distro_architecture=$distro_architecture&step=$step&we_use_code_from_master=$we_use_code_from_master&user_email=$user_email";
-        my $user_agent = 'FastNetMon install tracker v1';
-
-        `wget --post-data="$post_data" --user-agent="$user_agent" -q '$stats_url'`;
-    }
 }
 
 sub exec_command {
