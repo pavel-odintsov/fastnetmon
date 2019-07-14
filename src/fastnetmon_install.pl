@@ -17,6 +17,13 @@ BEGIN {
     $have_ansi_color = 1;
 }
 
+# die wrapper to send message to tracking server
+sub fast_die {
+    my $message = shift;
+
+    die "$message\n";
+}
+
 my $pf_ring_version = '6.0.3';
 my $pf_ring_url = "https://github.com/ntop/PF_RING/archive/v$pf_ring_version.tar.gz";
 my $pf_ring_sha = '9fb8080defd1a079ad5f0097e8a8adb5bc264d00';
@@ -27,7 +34,7 @@ my $temp_folder_for_building_project = `mktemp -d /tmp/fastnetmon.build.dir.XXXX
 chomp $temp_folder_for_building_project;
 
 unless ($temp_folder_for_building_project && -e $temp_folder_for_building_project) {
-    die "Can't create temp folder in /tmp for building project: $temp_folder_for_building_project\n";
+    fast_die("Can't create temp folder in /tmp for building project: $temp_folder_for_building_project");
 }
 
 my $start_time = time();
@@ -510,7 +517,7 @@ sub install_luajit {
     ); 
 
     unless ($luajit_download_result) {
-        die "Can't download luajit\n";
+        fast_die("Can't download luajit");
     }
 
     print "Unpack Luajit\n";
@@ -553,7 +560,7 @@ sub install_lua_lpeg {
         $archive_file_name, '69eda40623cb479b4a30fb3720302d3a75f45577'); 
 
     unless ($lpeg_download_result) {
-        die "Can't download lpeg\n";
+        fast_die("Can't download lpeg");
     }
 
     exec_command("tar -xf lpeg-0.12.2.tar.gz");
@@ -586,7 +593,7 @@ sub install_json_c {
         'b33872f8b2837c7909e9bd8734855669c57a67ce');
 
     unless ($json_c_download_result) {
-        die "Can't download json-c sources\n";
+        fast_die("Can't download json-c sources");
     }
     
     print "Uncompress it\n";       
@@ -629,7 +636,7 @@ sub install_lua_json {
         '53455f697c3f1d7cc955202062e97bbafbea0779');
 
     unless ($lua_json_download_result) {
-        die "Can't download lua json\n";
+        fast_die("Can't download lua json");
     }
 
     exec_command("tar -xf $archive_file_name");
@@ -731,7 +738,7 @@ sub install_log4cpp {
     my $log4cpp_download_result = download_file($log4cpp_url, $distro_file_name, '23aa5bd7d6f79992c92bad3e1c6d64a34f8fcf68');
 
     unless ($log4cpp_download_result) {
-        die "Can't download log4cpp\n";
+        fast_die("Can't download log4cpp");
     }
 
     print "Unpack log4cpp sources\n";
@@ -789,7 +796,7 @@ sub install_gobgp {
         $distro_file_name, 'daafc31b06d95611ca76f45630e5db140ba5d4c9');
 
     unless ($gobgp_download_result) {
-        die "Can't download gobgp sources\n";
+        fast_die("Can't download gobgp sources");
     }
 
     exec_command("tar -xf $distro_file_name");
@@ -836,14 +843,14 @@ sub install_golang {
         $distro_file_name = 'go1.5.1.linux-386.tar.gz';
         $distro_file_hash = '6ce7328f84a863f341876658538dfdf10aff86ee';
     } else {
-        die "We haven't golang for your platform sorry :(\n";
+        fast_die("We haven't golang for your platform sorry :(");
     }
 
     my $golang_download_result = download_file("https://storage.googleapis.com/golang/$distro_file_name",
         $distro_file_name, $distro_file_hash); 
 
     unless ($golang_download_result) {
-        die "Can't download golanguage\n";
+        fast_die("Can't download golanguage");
     }
 
     exec_command("tar -C /usr/local -xzf $distro_file_name");
@@ -866,7 +873,7 @@ sub install_protobuf {
         $distro_file_name, 'd23048ba3218af21ba65fa39bfb6326f5bf9f7a4'); 
 
     unless ($protobuf_download_result) {
-        die "Can't download protobuf\n";
+        fast_die("Can't download protobuf");
     }
 
     print "Unpack protocol buffers\n";
@@ -893,7 +900,7 @@ sub install_mongo_client {
         $distro_file_name, '32452481be64a297e981846e433b2b492c302b34');
     
     unless ($mongo_download_result) {
-        die "Can't download mongo\n";
+        fast_die("Can't download mongo");
     }
 
     exec_command("tar -xf $distro_file_name");
@@ -915,7 +922,7 @@ sub install_hiredis {
         $disto_file_name, '737c4ed101096c5ec47fcaeba847664352d16204');
 
     unless ($hiredis_download_result) {
-        die "Can't download hiredis\n";
+        fast_die("Can't download hiredis");
     }
 
     exec_command("tar -xf $disto_file_name");
@@ -987,7 +994,7 @@ sub put_library_path_to_ld_so {
         return;
     }
 
-    open my $ld_so_conf_handle, ">", $ld_so_file_path or die "Can't open file $ld_so_file_path $! for writing\n";
+    open my $ld_so_conf_handle, ">", $ld_so_file_path or fast_die("Can't open file $ld_so_file_path $! for writing");
     print {$ld_so_conf_handle} $library_path;
     close $ld_so_conf_handle;
 
@@ -1114,7 +1121,7 @@ sub detect_distribution {
         }
 
         unless ($distro_type) {
-            die "This distro is unsupported, please do manual install";
+            fast_die("This distro is unsupported, please do manual install");
         }
 
         print "We detected your OS as $distro_type Linux $distro_version\n";
@@ -1214,7 +1221,7 @@ sub install_pf_ring {
         my $pfring_download_result = download_file($pf_ring_url, $pf_ring_archive_path, $pf_ring_sha);
 
         unless ($pfring_download_result) {
-            die "Can't download PF_RING sources\n";
+            fast_die("Can't download PF_RING sources");
         }
  
         my $archive_file_name = $pf_ring_archive_path;
@@ -1360,7 +1367,7 @@ sub install_fastnetmon {
         }
 
         if ($? != 0) {
-            die "Can't clone source code\n";
+            fast_die("Can't clone source code");
         }
     }
 
@@ -1414,7 +1421,7 @@ sub install_fastnetmon {
     my $fastnetmon_build_binary_path = "$fastnetmon_code_dir/build/fastnetmon";
 
     unless (-e $fastnetmon_build_binary_path) {
-        die "Can't build fastnetmon!";
+        fast_die("Can't build fastnetmon!");
     }
 
     mkdir $fastnetmon_dir;
