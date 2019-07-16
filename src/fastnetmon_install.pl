@@ -265,6 +265,12 @@ sub main {
 
     get_user_email();
 
+    # Set environment variables to collect more information about installation failures
+
+    $ENV{'FASTNETMON_DISTRO_TYPE'} = $distro_type;
+    $ENV{'FASTNETMON_DISTRO_VERSION'} = $distro_version;
+    $ENV{'FASTNETMON_USER'} = $user_email;
+
     install_sentry();
 
     $cpus_number = get_logical_cpus_number();
