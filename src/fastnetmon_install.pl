@@ -205,7 +205,12 @@ sub install_additional_repositories {
         if ($distro_version == 7) {
             print "Install EPEL repository for your system\n"; 
             yum('https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm');
-        } 
+        }
+
+        if ($distro_version == 8) {
+            print "Install EPEL repository for your system\n";
+            yum('https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm');
+        }
     }
 }
 
