@@ -4380,9 +4380,7 @@ bool exceed_mbps_speed(uint64_t in_counter, uint64_t out_counter, unsigned int t
 // Return true when we should ban this IP
 bool we_should_ban_this_ip(map_element* average_speed_element, ban_settings_t current_ban_settings) {
     // we detect overspeed by packets
-    bool attack_detected_by_pps = false;
-    bool attack_detected_by_bandwidth = false;
-    bool attack_detected_by_flow = false;
+
     if (current_ban_settings.enable_ban_for_pps &&
         exceed_pps_speed(average_speed_element->in_packets, average_speed_element->out_packets, current_ban_settings.ban_threshold_pps)) {
         logger << log4cpp::Priority::DEBUG  << "We detected this attack by pps limit";
