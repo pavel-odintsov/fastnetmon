@@ -907,10 +907,10 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
                 direction_as_string = "outgoing";
             }
 
-            std::string ip_as_string_with_dash_delimiters = client_ip_as_string;
+
             // Replace dots by dashes
-            std::replace(ip_as_string_with_dash_delimiters.begin(),
-                ip_as_string_with_dash_delimiters.end(), '.', '_');
+            std::replace(client_ip_as_string.begin(),
+            		client_ip_as_string.end(), '.', '_');
 
             std::string graphite_current_prefix = graphite_prefix + ".hosts." + ip_as_string_with_dash_delimiters + "." + direction_as_string;
 
@@ -4133,21 +4133,21 @@ std::string print_subnet_load() {
             << subnet_as_string;
            
         if (graphite_enabled) {
-            std::string subnet_as_string_as_dash_delimiters = subnet_as_string;
+
 
             // Replace dots by dashes
-            std::replace(subnet_as_string_as_dash_delimiters.begin(),
-                subnet_as_string_as_dash_delimiters.end(), '.', '_');
+            std::replace(subnet_as_string.begin(),
+            		subnet_as_string.end(), '.', '_');
 
             // Replace / by dashes too
-            std::replace(subnet_as_string_as_dash_delimiters.begin(),
-                subnet_as_string_as_dash_delimiters.end(), '/', '_');
+            std::replace(subnet_as_string.begin(),
+            		subnet_as_string.end(), '/', '_');
 
-            graphite_data[ graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".incoming.pps" ] = speed->in_packets;
-            graphite_data[ graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".outgoing.pps" ] = speed->out_packets; 
+            graphite_data[ graphite_prefix + ".networks." + subnet_as_string + ".incoming.pps" ] = speed->in_packets;
+            graphite_data[ graphite_prefix + ".networks." + subnet_as_string + ".outgoing.pps" ] = speed->out_packets;
 
-            graphite_data[ graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".incoming.bps" ] = speed->in_bytes * 8; 
-            graphite_data[ graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".outgoing.bps" ] = speed->out_bytes * 8;
+            graphite_data[ graphite_prefix + ".networks." + subnet_as_string + ".incoming.bps" ] = speed->in_bytes * 8;
+            graphite_data[ graphite_prefix + ".networks." + subnet_as_string + ".outgoing.bps" ] = speed->out_bytes * 8;
         }
     
         buffer
