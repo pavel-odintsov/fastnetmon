@@ -912,7 +912,7 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
             std::replace(client_ip_as_string.begin(),
             		client_ip_as_string.end(), '.', '_');
 
-            std::string graphite_current_prefix = graphite_prefix + ".hosts." + ip_as_string_with_dash_delimiters + "." + direction_as_string;
+            std::string graphite_current_prefix = graphite_prefix + ".hosts." + client_ip_as_string + "." + direction_as_string;
 
             if (print_average_traffic_counts) {
                 graphite_current_prefix = graphite_current_prefix + ".average";
