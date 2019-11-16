@@ -523,7 +523,7 @@ std::string convert_timeval_to_date(struct timeval tv) {
 
 
 uint64_t convert_speed_to_mbps(uint64_t speed_in_bps) {
-    return uint64_t((double)speed_in_bps / 1024 / 1024 * 8);
+    return uint64_t((double)speed_in_bps / 1000 / 1000 * 8);
 }
 
 std::string get_protocol_name_by_number(unsigned int proto_number) {
