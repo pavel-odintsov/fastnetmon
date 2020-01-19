@@ -324,8 +324,8 @@ sub main {
          $install_from_official_distro = 1;
     }
 
-    # For Debian 9 we also have FastNetMon in standard repos
-    if ($distro_type eq 'debian' && $distro_version =~ m/^10\.0/) {
+    # For Debian Buster we also have FastNetMon in standard repos
+    if ($distro_type eq 'debian' && $distro_version =~ m/^10\./) {
         $install_from_official_distro = 1;
     }
 
