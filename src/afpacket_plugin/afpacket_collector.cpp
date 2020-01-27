@@ -326,7 +326,7 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
 
         logger << log4cpp::Priority::INFO << "AF_PACKET will listen on " << capture_interface << " interface";
 
-        auto af_packet_interface_thread = new boost::thread(start_af_packet_capture_for_interface, capture_interface, fanout_group_id, num_cpus);
+        boost::thread* af_packet_interface_thread = new boost::thread(start_af_packet_capture_for_interface, capture_interface, fanout_group_id, num_cpus);
 
         af_packet_main_threads.add_thread(af_packet_interface_thread);
     }
