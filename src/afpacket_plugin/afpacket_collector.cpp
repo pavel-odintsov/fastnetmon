@@ -310,16 +310,28 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
         return;
     }
 
-    if (interfaces_for_listen.size() > 1) {
-        logger << log4cpp::Priority::WARN << "We support only single interface for AF_PACKET, sorry!";
+    // Thread group for all "master" processes
+    boost::thread_group af_packet_main_threads;
+
+    for (int i = 0; i < interfaces_for_listen.size(); i++) {
+        // Use process id to identify particular fanout group
+        int group_identifier = getpid();
+
+        // And add number for current interface to distinguish them
+        group_identifier += i;
+
+        int fanout_group_id = group_identifier & 0xffff; 
+
+        std::string capture_interface = interfaces_for_listen[i];
+
+        logger << log4cpp::Priority::INFO << "AF_PACKET will listen on " << capture_interface << " interface";
+
+        auto af_packet_interface_thread = new boost::thread(start_af_packet_capture_for_interface, capture_interface, fanout_group_id, num_cpus);
+
+        af_packet_main_threads.add_thread(af_packet_interface_thread);
     }
 
-    std::string capture_interface = interfaces_for_listen[0];
-
-    int fanout_group_id = getpid() & 0xffff;
-
-    // It will block execution thread
-    start_af_packet_capture_for_interface(capture_interface, fanout_group_id, num_cpus);
+    af_packet_main_threads.join_all();
 }
 
 // Starts traffic capture for particular interface
