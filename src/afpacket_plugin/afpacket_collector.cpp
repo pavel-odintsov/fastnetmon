@@ -281,7 +281,7 @@ void get_af_packet_stats() {
 }
 
 // Could get some speed up on NUMA servers
-bool afpacket_execute_strict_cpu_affinity = true;
+bool afpacket_execute_strict_cpu_affinity = false;
 
 void start_afpacket_collection(process_packet_pointer func_ptr) {
     logger << log4cpp::Priority::INFO << "AF_PACKET plugin started";
