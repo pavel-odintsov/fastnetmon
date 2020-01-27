@@ -287,6 +287,9 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
     logger << log4cpp::Priority::INFO << "AF_PACKET plugin started";
     afpacket_process_func_ptr = func_ptr;
 
+    unsigned int num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+    logger.info("We have %d cpus for AF_PACKET", num_cpus);
+
     if (configuration_map.count("netmap_read_packet_length_from_ip_header") != 0) {
         afpacket_read_packet_length_from_ip_header = configuration_map["netmap_read_packet_length_from_ip_header"] == "on";
     }
@@ -315,9 +318,6 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
 
     int fanout_group_id = getpid() & 0xffff;
 
-    unsigned int num_cpus = sysconf(_SC_NPROCESSORS_ONLN);;
-    logger.info("We have %d cpus for AF_PACKET", num_cpus);
-
     if (num_cpus == 1) {
         logger << log4cpp::Priority::INFO << "Disable AF_PACKET fanout because you have only single CPU";
  
@@ -328,6 +328,8 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
         boost::thread_group packet_receiver_thread_group;
 
         for (int cpu = 0; cpu < num_cpus; cpu++) {
+            logger << log4cpp::Priority::INFO << "Start AF_PACKET worker process for " << capture_interface
+                << " with fanout group id " << fanout_group_id << " on CPU " << cpu;
 
 // Well, we have thread attributes from Boost 1.50
 #if defined(BOOST_THREAD_PLATFORM_PTHREAD) && BOOST_VERSION / 100 % 1000 >= 50 && defined(__GLIBC__)
@@ -354,10 +356,12 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
                 new boost::thread(thread_attrs, boost::bind(start_af_packet_capture, capture_interface, fanout, fanout_group_id))
             );
 #else
+            bool fanout = true;
+
             logger.error("Sorry but CPU affinity did not supported for your platform");
 
             packet_receiver_thread_group.add_thread(
-                new boost::thread(start_af_packet_capture, capture_interface, fanout_group_id) 
+                new boost::thread(start_af_packet_capture, capture_interface, fanout, fanout_group_id)
             );
 #endif
         }
