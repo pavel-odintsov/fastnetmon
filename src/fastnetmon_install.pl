@@ -329,7 +329,7 @@ sub main {
         $install_from_official_distro = 1;
     }
 
-    if ($install_from_official_distro) {
+    if ($install_from_official_distro && !$we_use_code_from_master) {
         apt_get("fastnetmon");
 
         # Switch off sflow and netflow plugins enabled by default
