@@ -134,7 +134,7 @@ void walk_block(struct block_desc *pbd, const int block_num) {
     }
 }
 
-int setup_socket(std::string interface_name, int fanout_group_id) {
+int setup_socket(std::string interface_name, bool enable_fanout, int fanout_group_id) {
     // More details here: http://man7.org/linux/man-pages/man7/packet.7.html
     // We could use SOCK_RAW or SOCK_DGRAM for second argument
     // SOCK_RAW - raw packets pass from the kernel
@@ -231,7 +231,7 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
         return -1;
     }
  
-   if (fanout_group_id) {
+   if (enable_fanout) {
         // PACKET_FANOUT_LB - round robin
         // PACKET_FANOUT_CPU - send packets to CPU where packet arrived
         int fanout_type = PACKET_FANOUT_CPU; 
@@ -272,8 +272,8 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
     return packet_socket;
 }
 
-void start_af_packet_capture(std::string interface_name, int fanout_group_id) {
-    setup_socket(interface_name, fanout_group_id); 
+void start_af_packet_capture(std::string interface_name, bool enable_fanout, int fanout_group_id) {
+    setup_socket(interface_name, enable_fanout, fanout_group_id);
 }
 
 void get_af_packet_stats() {
@@ -318,7 +318,13 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
     unsigned int num_cpus = sysconf(_SC_NPROCESSORS_ONLN);;
     logger.info("We have %d cpus for AF_PACKET", num_cpus);
 
-    if (num_cpus > 1) {
+    if (num_cpus == 1) {
+        logger << log4cpp::Priority::INFO << "Disable AF_PACKET fanout because you have only single CPU";
+ 
+        bool fanout = false;
+        start_af_packet_capture(capture_interface, fanout, 0);
+    } else {
+        // We have two or more CPUs
         boost::thread_group packet_receiver_thread_group;
 
         for (int cpu = 0; cpu < num_cpus; cpu++) {
@@ -342,8 +348,10 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
                 } 
             }
 
+            bool fanout = true;
+
             packet_receiver_thread_group.add_thread(
-                new boost::thread(thread_attrs, boost::bind(start_af_packet_capture, capture_interface, fanout_group_id))
+                new boost::thread(thread_attrs, boost::bind(start_af_packet_capture, capture_interface, fanout, fanout_group_id))
             );
 #else
             logger.error("Sorry but CPU affinity did not supported for your platform");
@@ -356,7 +364,5 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
 
         // Wait all processes for finish
         packet_receiver_thread_group.join_all();
-    } else {    
-        start_af_packet_capture(capture_interface, 0);
     }
 }
