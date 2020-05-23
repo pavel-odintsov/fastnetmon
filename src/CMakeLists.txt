@@ -61,8 +61,7 @@ SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
 # Create builds in current folder with install RPATH
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
-# /opt/libgobgp_1_0_0/lib should be mentioned here explicitly!!!! We link it in runtime
-SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};/opt/libhiredis_0_13/lib;/opt/log4cpp1.1.1/lib;/opt/luajit_2.0.4/lib;/opt/ndpi/lib;/opt/pf_ring_6.0.3/lib;/opt/json-c-0.13/lib;/opt/mongo_c_driver_1_1_9/lib;/opt/libgobgp_1_0_0/lib;/opt/grpc_0_11_1_7a94236d698477636dd06282f12f706cad527029/lib;/opt/protobuf_3.0.0_alpha4/lib")
+SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};/opt/libhiredis_0_13/lib;/opt/log4cpp1.1.1/lib;/opt/luajit_2.0.4/lib;/opt/ndpi/lib;/opt/pf_ring_6.0.3/lib;/opt/json-c-0.13/lib;/opt/mongo_c_driver_1_1_9/lib;/opt/grpc_0_11_1_7a94236d698477636dd06282f12f706cad527029/lib;/opt/protobuf_3.0.0_alpha4/lib")
 
 message(STATUS "C++ compilation flags: ${CMAKE_CXX_FLAGS_RELEASE}")
 
@@ -285,27 +284,11 @@ if (ENABLE_PFRING_SUPPORT)
 endif()
 
 if (ENABLE_GOBGP_SUPPORT)
-    set(GOBGP_CUSTOM_INSTALL_PATH "/opt/libgobgp_1_0_0")
     set(GRPC_CUSTOM_INSTALL_PATH "/opt/grpc_0_11_1_7a94236d698477636dd06282f12f706cad527029")
     set(PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH "/opt/protobuf_3.0.0_alpha4")
 
     add_definitions(-DENABLE_GOBGP)
     add_library(gobgp_action STATIC actions/gobgp_action.cpp)
-
-    find_path(GOBGP_INCLUDES_FOLDER NAMES libgobgp.h PATHS "${GOBGP_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
-    find_library(GOBGP_LIBRARY_PATH NAMES gobgp PATHS "${GOBGP_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
-
-    if (GOBGP_INCLUDES_FOLDER AND GOBGP_LIBRARY_PATH)
-        message(STATUS "We found libgobgp and will link it: ${GOBGP_INCLUDES_FOLDER} ${GOBGP_LIBRARY_PATH}")
-    
-        ### We do not link with it in compilation time because it broke daemonization code and pope
-        ### So we use runtime dynamic linking
-        ### target_link_libraries(gobgp_action ${GOBGP_LIBRARY_PATH})
-        target_link_libraries(gobgp_action dl)
-        include_directories(${GOBGP_INCLUDES_FOLDER})
-    else()
-        message(FATAL_ERROR "Could not find libgobgp")
-    endif()
 
     find_path(GRPC_INCLUDES_FOLDER NAMES grpc/grpc.h PATHS "${GRPC_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
     find_library(GRPC_LIBRARY_GRPC_PATH NAMES grpc PATHS "${GRPC_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
