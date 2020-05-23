@@ -1302,3 +1302,22 @@ bool convert_hex_as_string_to_uint(std::string hex, uint32_t& value) {
 
     return ss.fail();
 }
+
+// Get interface number by name
+bool get_interface_number_by_device_name(int socket_fd, std::string interface_name, int& interface_number) {
+    struct ifreq ifr;
+    memset(&ifr, 0, sizeof(ifr));
+
+    if (interface_name.size() > IFNAMSIZ) {
+        return false;
+    }
+
+    strncpy(ifr.ifr_name, interface_name.c_str(), sizeof(ifr.ifr_name));
+
+    if (ioctl(socket_fd, SIOCGIFINDEX, &ifr) == -1) {
+        return false;
+    }
+
+    interface_number = ifr.ifr_ifindex;
+    return true;
+}

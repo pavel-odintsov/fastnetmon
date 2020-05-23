@@ -111,25 +111,7 @@ int get_fanout_by_name(std::string fanout_name) {
         // Return default one
         logger << log4cpp::Priority::ERROR << "Unknown FANOUT mode: " << fanout_name << " switched to default (CPU)";
         return PACKET_FANOUT_CPU;
-     }
-}
-
-// Get interface number by name
-int get_interface_number_by_device_name(int socket_fd, std::string interface_name) {
-    struct ifreq ifr;
-    memset(&ifr, 0, sizeof(ifr));
-
-    if (interface_name.size() > IFNAMSIZ) {
-        return -1;
     }
-
-    strncpy(ifr.ifr_name, interface_name.c_str(), sizeof(ifr.ifr_name));
-
-    if (ioctl(socket_fd, SIOCGIFINDEX, &ifr) == -1) {
-        return -1;
-    }
-
-    return ifr.ifr_ifindex;
 }
 
 void flush_block(struct block_desc* pbd) {
@@ -204,9 +186,12 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
         return false;
     }
 
-    int interface_number = get_interface_number_by_device_name(packet_socket, interface_name);
+    int interface_number = 0;
 
-    if (interface_number == -1) {
+    bool get_interface_number_result =
+    get_interface_number_by_device_name(packet_socket, interface_name, interface_number);
+
+    if (!get_interface_number_result) {
         logger << log4cpp::Priority::ERROR << "Can't get interface number by interface name for " << interface_name;
         return false;
     }
@@ -355,7 +340,7 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
     }
 
     if (configuration_map.count("mirror_af_packet_fanout_mode") != 0) {
-	// Set FANOUT mode
+        // Set FANOUT mode
         fanout_type = get_fanout_by_name(configuration_map["mirror_af_packet_fanout_mode"]);
     }
 
