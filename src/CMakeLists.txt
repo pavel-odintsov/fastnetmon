@@ -5,8 +5,6 @@ cmake_minimum_required (VERSION 2.8)
 # Debian 7 - 2.8.9
 # CentOS 6 - 2.8.12
 
-# set(ENABLE_GOBGP_SUPPORT "yes")
-
 # We should set compiler before project() call 
 if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
     # We use custom compiler too
@@ -32,6 +30,9 @@ set (FASTNETMON_VERSION_MINOR 1)
 
 set(CMAKE_INSTALL_SYSTEMD_SERVICEDIR "/lib/systemd/system"
   CACHE PATH "Location for systemd service files")
+
+# With this flag we can enable GoBGP build via console: cmake .. -DENABLE_GOBGP_SUPPORT=ON
+option(ENABLE_GOBGP_SUPPORT "Enable GoBGP support build" OFF)
 
 if (ENABLE_GOBGP_SUPPORT)
     # We could not compile gRPC without C++ 11
