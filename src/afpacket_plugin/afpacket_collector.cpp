@@ -59,6 +59,9 @@ extern std::map<std::string, std::string> configuration_map;
 // This variable name should be uniq for every plugin!
 process_packet_pointer afpacket_process_func_ptr = NULL;
 
+// Default sampling rate
+uint32_t mirror_af_packet_custom_sampling_rate = 1; 
+
 // 4194304 bytes
 unsigned int blocksiz = 1 << 22; 
 // 2048 bytes
@@ -118,6 +121,11 @@ void walk_block(struct block_desc *pbd, const int block_num) {
 
         simple_packet packet;
         int parser_result = parse_raw_packet_to_simple_packet((u_char*)data_pointer, ppd->tp_snaplen, packet, afpacket_read_packet_length_from_ip_header); 
+
+	// Override default sample rate by rate specified in configuration	
+	if (mirror_af_packet_custom_sampling_rate > 1) {
+	    packet.sample_ratio = mirror_af_packet_custom_sampling_rate;
+	}
 
         //char print_buffer[512];
         //fastnetmon_print_parsed_pkt(print_buffer, 512, data_pointer, &packet_header);
@@ -298,6 +306,10 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
 
     if (configuration_map.count("interfaces") != 0) {
         interfaces_list = configuration_map["interfaces"];
+    }
+
+    if (configuration_map.count("mirror_af_packet_custom_sampling_rate") != 0) {
+    	mirror_af_packet_custom_sampling_rate = convert_string_to_integer(configuration_map["mirror_af_packet_custom_sampling_rate"]);	    
     }
 
     std::vector<std::string> interfaces_for_listen;
