@@ -1,14 +1,14 @@
+#include <fcntl.h>
+#include <iostream>
+#include <sstream>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <iostream>
-#include <unistd.h>
-#include <fcntl.h>
-#include <stdint.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <string>
-#include <sstream>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "fastnetmon_pcap_format.h"
 
@@ -16,26 +16,26 @@
 #include "fast_dpi.h"
 #endif
 
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 
 #include "netflow_plugin/netflow_collector.h"
 #include "sflow_plugin/sflow_collector.h"
 
-#include "sflow_plugin/sflow_data.h"
 #include "sflow_plugin/sflow.h"
+#include "sflow_plugin/sflow_data.h"
 
+#include "fast_library.h"
 #include "fastnetmon_packet_parser.h"
 #include "fastnetmon_types.h"
-#include "fast_library.h"
 
-#include "log4cpp/Category.hh"
 #include "log4cpp/Appender.hh"
-#include "log4cpp/FileAppender.hh"
-#include "log4cpp/OstreamAppender.hh"
-#include "log4cpp/Layout.hh"
 #include "log4cpp/BasicLayout.hh"
+#include "log4cpp/Category.hh"
+#include "log4cpp/FileAppender.hh"
+#include "log4cpp/Layout.hh"
+#include "log4cpp/OstreamAppender.hh"
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
@@ -105,7 +105,7 @@ void pcap_parse_packet(char* buffer, uint32_t len, uint32_t snap_len) {
 
     if (packet_header.len < packet_header.extended_hdr.parsed_pkt.offset.payload_offset) {
         printf("Something goes wrong! Offset %u is bigger than total packet length %u\n",
-            packet_header.extended_hdr.parsed_pkt.offset.payload_offset, packet_header.len);
+               packet_header.extended_hdr.parsed_pkt.offset.payload_offset, packet_header.len);
         return;
     }
 
@@ -139,7 +139,8 @@ void pcap_parse_packet(char* buffer, uint32_t len, uint32_t snap_len) {
 
         // We are not interested so much in l2 data and we interested only in l3 data here and more
         if (parser_return_code < 3) {
-            printf("Parser failed for with code %d following packet with number %llu\n", parser_return_code, raw_unparsed_packets + raw_parsed_packets);
+            printf("Parser failed for with code %d following packet with number %llu\n",
+                   parser_return_code, raw_unparsed_packets + raw_parsed_packets);
             raw_unparsed_packets++;
         } else {
             raw_parsed_packets++;
@@ -155,12 +156,12 @@ void pcap_parse_packet(char* buffer, uint32_t len, uint32_t snap_len) {
             std::cout << "High level parser: " << print_simple_packet(packet) << std::endl;
         } else {
             printf("High level parser failed\n");
-        } 
+        }
     } else if (strcmp(flow_type, "dpi") == 0) {
 #ifdef ENABLE_DPI
-        struct ndpi_id_struct *src = NULL;
-        struct ndpi_id_struct *dst = NULL;
-        struct ndpi_flow_struct *flow = NULL;
+        struct ndpi_id_struct* src = NULL;
+        struct ndpi_id_struct* dst = NULL;
+        struct ndpi_flow_struct* flow = NULL;
 
         src = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
         memset(src, 0, ndpi_size_id_struct);
@@ -168,33 +169,32 @@ void pcap_parse_packet(char* buffer, uint32_t len, uint32_t snap_len) {
         dst = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
         memset(dst, 0, ndpi_size_id_struct);
 
-        flow = (struct ndpi_flow_struct *)malloc(ndpi_size_flow_struct); 
+        flow = (struct ndpi_flow_struct*)malloc(ndpi_size_flow_struct);
         memset(flow, 0, ndpi_size_flow_struct);
 
         uint32_t current_tickt = 0;
         uint8_t* iph = (uint8_t*)(&buffer[packet_header.extended_hdr.parsed_pkt.offset.l3_offset]);
-        unsigned int ipsize = packet_header.len; 
+        unsigned int ipsize = packet_header.len;
 
-        ndpi_protocol detected_protocol = ndpi_detection_process_packet(my_ndpi_struct, flow, iph, ipsize, current_tickt, src, dst);
+        ndpi_protocol detected_protocol =
+        ndpi_detection_process_packet(my_ndpi_struct, flow, iph, ipsize, current_tickt, src, dst);
 
         char* protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.protocol);
-        char* master_protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.master_protocol); 
+        char* master_protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.master_protocol);
 
         printf("Protocol: %s master protocol: %s\n", protocol_name, master_protocol_name);
 
         if (detected_protocol.protocol == NDPI_PROTOCOL_DNS) {
-            // It's answer for ANY request with so much 
-            if (flow->protos.dns.query_type == 255 && flow->protos.dns.num_queries < flow->protos.dns.num_answers) {
+            // It's answer for ANY request with so much
+            if (flow->protos.dns.query_type == 255 &&
+                flow->protos.dns.num_queries < flow->protos.dns.num_answers) {
                 dns_amplification_packets++;
             }
-    
-            printf("It's DNS, we could check packet type. query_type: %d query_class: %d rsp_code: %d num answers: %d, num queries: %d\n",
-                flow->protos.dns.query_type,
-                flow->protos.dns.query_class,
-                flow->protos.dns.rsp_type,
-                flow->protos.dns.num_answers,
-                flow->protos.dns.num_queries
-            );
+
+            printf("It's DNS, we could check packet type. query_type: %d query_class: %d rsp_code: "
+                   "%d num answers: %d, num queries: %d\n",
+                   flow->protos.dns.query_type, flow->protos.dns.query_class, flow->protos.dns.rsp_type,
+                   flow->protos.dns.num_answers, flow->protos.dns.num_queries);
 
             /*
                 struct {
@@ -204,9 +204,10 @@ void pcap_parse_packet(char* buffer, uint32_t len, uint32_t snap_len) {
                 } dns;
             */
 
-            
+
         } else if (detected_protocol.protocol == NDPI_PROTOCOL_NTP) {
-            printf("Request type field: %d version: %d\n", flow->protos.ntp.request_code, flow->protos.ntp.version);
+            printf("Request type field: %d version: %d\n", flow->protos.ntp.request_code,
+                   flow->protos.ntp.version);
 
             // Detect packets with type MON_GETLIST_1
             if (flow->protos.ntp.version == 2 && flow->protos.ntp.request_code == 42) {
@@ -219,7 +220,7 @@ void pcap_parse_packet(char* buffer, uint32_t len, uint32_t snap_len) {
         ndpi_free_flow(flow);
         free(dst);
         free(src);
-#endif  
+#endif
     } else {
         printf("We do not support this flow type: %s\n", flow_type);
     }
@@ -232,7 +233,7 @@ int main(int argc, char** argv) {
         printf("Please provide flow type: sflow, netflow, raw or dpi and path to pcap dump\n");
         exit(1);
     }
-    
+
     flow_type = argv[1];
     printf("We will process file: %s as %s dump\n", argv[2], argv[1]);
 
@@ -245,11 +246,11 @@ int main(int argc, char** argv) {
             exit(0);
         }
 
-        ndpi_size_id_struct   = ndpi_detection_get_sizeof_ndpi_id_struct();
+        ndpi_size_id_struct = ndpi_detection_get_sizeof_ndpi_id_struct();
         ndpi_size_flow_struct = ndpi_detection_get_sizeof_ndpi_flow_struct();
     }
 #endif
-    
+
     pcap_reader(argv[2], pcap_parse_packet);
 
     if (strcmp(flow_type, "raw") == 0) {

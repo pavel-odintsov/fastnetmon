@@ -149,47 +149,47 @@
  * struct nmreq overlays a struct ifreq (just the name)
  */
 struct nmreq {
-	char		nr_name[IFNAMSIZ];
-	uint32_t	nr_version;	/* API version */
-	uint32_t	nr_offset;	/* nifp offset in the shared region */
-	uint32_t	nr_memsize;	/* size of the shared region */
-	uint32_t	nr_tx_slots;	/* slots in tx rings */
-	uint32_t	nr_rx_slots;	/* slots in rx rings */
-	uint16_t	nr_tx_rings;	/* number of tx rings */
-	uint16_t	nr_rx_rings;	/* number of rx rings */
+    char nr_name[IFNAMSIZ];
+    uint32_t nr_version; /* API version */
+    uint32_t nr_offset; /* nifp offset in the shared region */
+    uint32_t nr_memsize; /* size of the shared region */
+    uint32_t nr_tx_slots; /* slots in tx rings */
+    uint32_t nr_rx_slots; /* slots in rx rings */
+    uint16_t nr_tx_rings; /* number of tx rings */
+    uint16_t nr_rx_rings; /* number of rx rings */
 
-	uint16_t	nr_ringid;	/* ring(s) we care about */
-#define NETMAP_HW_RING		0x4000	/* single NIC ring pair */
-#define NETMAP_SW_RING		0x2000	/* only host ring pair */
+    uint16_t nr_ringid; /* ring(s) we care about */
+#define NETMAP_HW_RING 0x4000 /* single NIC ring pair */
+#define NETMAP_SW_RING 0x2000 /* only host ring pair */
 
-#define NETMAP_RING_MASK	0x0fff	/* the ring number */
+#define NETMAP_RING_MASK 0x0fff /* the ring number */
 
-#define NETMAP_NO_TX_POLL	0x1000	/* no automatic txsync on poll */
+#define NETMAP_NO_TX_POLL 0x1000 /* no automatic txsync on poll */
 
-#define NETMAP_DO_RX_POLL	0x8000	/* DO automatic rxsync on poll */
+#define NETMAP_DO_RX_POLL 0x8000 /* DO automatic rxsync on poll */
 
-	uint16_t	nr_cmd;
-#define NETMAP_BDG_ATTACH	1	/* attach the NIC */
-#define NETMAP_BDG_DETACH	2	/* detach the NIC */
-#define NETMAP_BDG_REGOPS	3	/* register bridge callbacks */
-#define NETMAP_BDG_LIST		4	/* get bridge's info */
-#define NETMAP_BDG_VNET_HDR     5       /* set the port virtio-net-hdr length */
-#define NETMAP_BDG_NEWIF	6	/* create a virtual port */
-#define NETMAP_BDG_DELIF	7	/* destroy a virtual port */
-#define NETMAP_PT_HOST_CREATE	8	/* create ptnetmap kthreads */
-#define NETMAP_PT_HOST_DELETE	9	/* delete ptnetmap kthreads */
-#define NETMAP_BDG_POLLING_ON	10	/* delete polling kthread */
-#define NETMAP_BDG_POLLING_OFF	11	/* delete polling kthread */
-#define NETMAP_VNET_HDR_GET	12      /* get the port virtio-net-hdr length */
-	uint16_t	nr_arg1;	/* extra arguments */
-#define NETMAP_BDG_HOST		1	/* nr_arg1 value for NETMAP_BDG_ATTACH */
+    uint16_t nr_cmd;
+#define NETMAP_BDG_ATTACH 1 /* attach the NIC */
+#define NETMAP_BDG_DETACH 2 /* detach the NIC */
+#define NETMAP_BDG_REGOPS 3 /* register bridge callbacks */
+#define NETMAP_BDG_LIST 4 /* get bridge's info */
+#define NETMAP_BDG_VNET_HDR 5 /* set the port virtio-net-hdr length */
+#define NETMAP_BDG_NEWIF 6 /* create a virtual port */
+#define NETMAP_BDG_DELIF 7 /* destroy a virtual port */
+#define NETMAP_PT_HOST_CREATE 8 /* create ptnetmap kthreads */
+#define NETMAP_PT_HOST_DELETE 9 /* delete ptnetmap kthreads */
+#define NETMAP_BDG_POLLING_ON 10 /* delete polling kthread */
+#define NETMAP_BDG_POLLING_OFF 11 /* delete polling kthread */
+#define NETMAP_VNET_HDR_GET 12 /* get the port virtio-net-hdr length */
+    uint16_t nr_arg1; /* extra arguments */
+#define NETMAP_BDG_HOST 1 /* nr_arg1 value for NETMAP_BDG_ATTACH */
 
-	uint16_t	nr_arg2;	/* id of the memory allocator */
-	uint32_t	nr_arg3;	/* req. extra buffers in NIOCREGIF */
-	uint32_t	nr_flags;	/* specify NR_REG_* mode and other flags */
-#define NR_REG_MASK		0xf /* to extract NR_REG_* mode from nr_flags */
-	/* various modes, extends nr_ringid */
-	uint32_t	spare2[1];
+    uint16_t nr_arg2; /* id of the memory allocator */
+    uint32_t nr_arg3; /* req. extra buffers in NIOCREGIF */
+    uint32_t nr_flags; /* specify NR_REG_* mode and other flags */
+#define NR_REG_MASK 0xf /* to extract NR_REG_* mode from nr_flags */
+    /* various modes, extends nr_ringid */
+    uint32_t spare2[1];
 };
 
 #ifdef _WIN32
@@ -199,17 +199,16 @@ struct nmreq {
  * We therefore redefine them in a convenient way to use for DeviceIoControl
  * signatures.
  */
-#undef _IO	// ws2def.h
+#undef _IO // ws2def.h
 #define _WIN_NM_IOCTL_TYPE 40000
-#define _IO(_c, _n)	CTL_CODE(_WIN_NM_IOCTL_TYPE, ((_n) + 0x800) , \
-		METHOD_BUFFERED, FILE_ANY_ACCESS  )
-#define _IO_direct(_c, _n)	CTL_CODE(_WIN_NM_IOCTL_TYPE, ((_n) + 0x800) , \
-		METHOD_OUT_DIRECT, FILE_ANY_ACCESS  )
+#define _IO(_c, _n) CTL_CODE(_WIN_NM_IOCTL_TYPE, ((_n) + 0x800), METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define _IO_direct(_c, _n) \
+    CTL_CODE(_WIN_NM_IOCTL_TYPE, ((_n) + 0x800), METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
 
-#define _IOWR(_c, _n, _s)	_IO(_c, _n)
+#define _IOWR(_c, _n, _s) _IO(_c, _n)
 
 /* We havesome internal sysctl in addition to the externally visible ones */
-#define NETMAP_MMAP _IO_direct('i', 160)	// note METHOD_OUT_DIRECT
+#define NETMAP_MMAP _IO_direct('i', 160) // note METHOD_OUT_DIRECT
 #define NETMAP_POLL _IO('i', 162)
 
 /* and also two setsockopt for sysctl emulation */
@@ -218,18 +217,18 @@ struct nmreq {
 
 
 /* These linknames are for the Netmap Core Driver */
-#define NETMAP_NT_DEVICE_NAME			L"\\Device\\NETMAP"
-#define NETMAP_DOS_DEVICE_NAME			L"\\DosDevices\\netmap"
+#define NETMAP_NT_DEVICE_NAME L"\\Device\\NETMAP"
+#define NETMAP_DOS_DEVICE_NAME L"\\DosDevices\\netmap"
 
 /* Definition of a structure used to pass a virtual address within an IOCTL */
 typedef struct _MEMORY_ENTRY {
-	PVOID       pUsermodeVirtualAddress;
+    PVOID pUsermodeVirtualAddress;
 } MEMORY_ENTRY, *PMEMORY_ENTRY;
 
 typedef struct _POLL_REQUEST_DATA {
-	int events;
-	int timeout;
-	int revents;
+    int events;
+    int timeout;
+    int revents;
 } POLL_REQUEST_DATA;
 #endif /* _WIN32 */
 
@@ -240,8 +239,8 @@ typedef struct _POLL_REQUEST_DATA {
  */
 #define NM_IFRDATA_LEN 256
 struct nm_ifreq {
-	char nifr_name[IFNAMSIZ];
-	char data[NM_IFRDATA_LEN];
+    char nifr_name[IFNAMSIZ];
+    char data[NM_IFRDATA_LEN];
 };
 
 /*
@@ -250,8 +249,8 @@ struct nm_ifreq {
  * data structure we pass. We put some spares in the structure
  * to ease compatibility with other versions
  */
-#define NIOCGINFO	_IOWR('i', 145, struct nmreq) /* return IF info */
-#define NIOCREGIF	_IOWR('i', 146, struct nmreq) /* interface register */
-#define NIOCCONFIG	_IOWR('i',150, struct nm_ifreq) /* for ext. modules */
+#define NIOCGINFO _IOWR('i', 145, struct nmreq) /* return IF info */
+#define NIOCREGIF _IOWR('i', 146, struct nmreq) /* interface register */
+#define NIOCCONFIG _IOWR('i', 150, struct nm_ifreq) /* for ext. modules */
 
 #endif /* _NET_NETMAP_LEGACY_H_ */

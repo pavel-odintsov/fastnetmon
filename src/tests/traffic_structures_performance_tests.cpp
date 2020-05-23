@@ -1,13 +1,13 @@
-#include <map>
+#include <functional>
+#include <iomanip>
 #include <iostream>
-#include <unistd.h>
+#include <locale.h>
+#include <map>
 #include <stdint.h>
 #include <sys/time.h>
+#include <unistd.h>
 #include <unordered_map>
-#include <iomanip> 
-#include <locale.h>
 #include <vector>
-#include <functional>
 
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
@@ -96,8 +96,8 @@ void packet_collector_thread_boost_unordered_map() {
 #ifdef enable_mutexex_in_test
             data_counter_mutex.unlock();
 #endif
-        }   
-    }   
+        }
+    }
 }
 
 void packet_collector_thread_unordered_map() {
@@ -124,8 +124,8 @@ void packet_collector_thread_google_dense_hash_map_preallocated() {
 #ifdef enable_mutexex_in_test
             data_counter_mutex.unlock();
 #endif
-        }   
-    }   
+        }
+    }
 }
 
 void packet_collector_thread_google_dense_hash_map() {
@@ -152,8 +152,8 @@ void packet_collector_thread_unordered_map_preallocated() {
 #ifdef enable_mutexex_in_test
             data_counter_mutex.unlock();
 #endif
-        }   
-    }   
+        }
+    }
 }
 
 void packet_collector_thread_flat_map_preallocated() {
@@ -166,8 +166,8 @@ void packet_collector_thread_flat_map_preallocated() {
 #ifdef enable_mutexex_in_test
             data_counter_mutex.unlock();
 #endif
-        }   
-    }   
+        }
+    }
 }
 
 void packet_collector_thread_vector() {
@@ -230,17 +230,17 @@ int run_tests(void (*tested_function)(void)) {
         threads[i]->join();
     }
 
-    //cout << "All threads finished" << endl;
+    // cout << "All threads finished" << endl;
 
     timeval finish_time;
     gettimeofday(&finish_time, NULL);
-    
+
     double total_operations = number_of_ips * number_of_retries * number_of_threads;
 
     // We use ' for pretty print of long numbers
     // http://stackoverflow.com/questions/1499156/convert-astronomically-large-numbers-into-human-readable-form-in-c-c
     setlocale(LC_NUMERIC, "en_US.utf-8"); /* important */
-    
+
     timeval interval;
     timeval_subtract(&interval, &finish_time, &start_time);
 
@@ -248,7 +248,8 @@ int run_tests(void (*tested_function)(void)) {
     double used_time = (double)interval.tv_sec + (double)interval.tv_usec / 1000000;
     // printf("We spent %f seconds\n", used_time);
 
-    double ops_per_second = total_operations / used_time;;
+    double ops_per_second = total_operations / used_time;
+    ;
     double mega_ops_per_second = ops_per_second / 1000 / 1000;
 
     printf("%'.1f mega ops per second\n", mega_ops_per_second);
@@ -278,7 +279,7 @@ int main() {
         DataCounterBoostUnordered.clear();
 
         // Boost flat_map
-        DataCounterBoostFlatMap.reserve( number_of_ips );
+        DataCounterBoostFlatMap.reserve(number_of_ips);
         std::cout << "boost::container::flat_map with preallocated elements: ";
         run_tests(packet_collector_thread_flat_map_preallocated);
         DataCounterBoostFlatMap.clear();
@@ -289,7 +290,7 @@ int main() {
     DataCounterUnordered.clear();
 
     // Preallocate hash buckets
-    DataCounterUnorderedPreallocated.reserve( number_of_ips );
+    DataCounterUnorderedPreallocated.reserve(number_of_ips);
     std::cout << "std::unordered_map C++11 preallocated buckets: ";
     run_tests(packet_collector_thread_unordered_map_preallocated);
     DataCounterUnorderedPreallocated.clear();
@@ -302,12 +303,12 @@ int main() {
     std::cout << "google:dense_hashmap preallocated buckets: ";
     // We use UINT32_MAX as "empty" here, not a good idea but OK for tests
     DataCounterGoogleDensehashMapPreallocated.set_empty_key(UINT32_MAX); // We will got assert without it!
-    DataCounterGoogleDensehashMapPreallocated.resize( number_of_ips );
+    DataCounterGoogleDensehashMapPreallocated.resize(number_of_ips);
     run_tests(packet_collector_thread_google_dense_hash_map_preallocated);
     DataCounterGoogleDensehashMapPreallocated.clear();
 
     // Preallocate vector
-    DataCounterVector.reserve( number_of_ips );
+    DataCounterVector.reserve(number_of_ips);
     std::cout << "std::vector preallocated: ";
     run_tests(packet_collector_thread_vector);
     DataCounterVector.clear();

@@ -2,17 +2,17 @@
 
 /* This code is copy & paste from PF_RING user space library licensed under LGPL terms */
 
-#include <sys/types.h> // For support uint32_t, uint16_t
-#include <sys/time.h> // gettimeofday
+#include <netinet/in.h> // in6_addr
 #include <stdint.h>
 #include <stdlib.h>
-#include <netinet/in.h> // in6_addr
+#include <sys/time.h> // gettimeofday
+#include <sys/types.h> // For support uint32_t, uint16_t
 #ifndef __OpenBSD__
 #include <net/ethernet.h>
 #endif
-#include <string.h> // memcpy
-#include <stdio.h>
 #include <arpa/inet.h> // inet_ntop
+#include <stdio.h>
+#include <string.h> // memcpy
 
 #if defined(__FreeBSD__) || defined(__APPLE__) || defined(__DragonFly__) || defined(__OpenBSD__)
 #include <sys/socket.h> // AF_INET6
@@ -280,8 +280,7 @@ static int __pfring_parse_tunneled_pkt(u_char* pkt, struct pfring_pkthdr* hdr, u
         hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_src.v4 = ntohl(tunneled_ip->saddr);
         hdr->extended_hdr.parsed_pkt.tunnel.tunneled_ip_dst.v4 = ntohl(tunneled_ip->daddr);
 
-        fragment_offset =
-        tunneled_ip->frag_off & htons(IP_OFFSET); /* fragment, but not the first */
+        fragment_offset = tunneled_ip->frag_off & htons(IP_OFFSET); /* fragment, but not the first */
         ip_len = tunneled_ip->ihl * 4;
         tunnel_offset += ip_len;
 
@@ -640,8 +639,7 @@ L4:
 TIMESTAMP:
 
     if (add_timestamp && hdr->ts.tv_sec == 0)
-        gettimeofday(&hdr->ts,
-                     NULL); /* TODO What about using clock_gettime(CLOCK_REALTIME, ts) ? */
+        gettimeofday(&hdr->ts, NULL); /* TODO What about using clock_gettime(CLOCK_REALTIME, ts) ? */
 
     if (add_hash && hdr->extended_hdr.pkt_hash == 0)
         hdr->extended_hdr.pkt_hash = pfring_hash_pkt(hdr);
@@ -684,8 +682,8 @@ int fastnetmon_print_parsed_pkt(char* buff, u_int buff_len, const u_char* p, con
                               proto2str(h->extended_hdr.parsed_pkt.l3_proto));
 
         if (h->extended_hdr.parsed_pkt.tunnel.tunnel_id != NO_TUNNEL_ID) {
-            buff_used += snprintf(&buff[buff_used], buff_len - buff_used,
-                                  "[TEID=0x%08X][tunneled_proto=%s]", h->extended_hdr.parsed_pkt.tunnel.tunnel_id,
+            buff_used += snprintf(&buff[buff_used], buff_len - buff_used, "[TEID=0x%08X][tunneled_proto=%s]",
+                                  h->extended_hdr.parsed_pkt.tunnel.tunnel_id,
                                   proto2str(h->extended_hdr.parsed_pkt.tunnel.tunneled_proto));
 
             if (h->extended_hdr.parsed_pkt.eth_type == 0x0800 /* IPv4*/) {
@@ -708,9 +706,9 @@ int fastnetmon_print_parsed_pkt(char* buff, u_int buff_len, const u_char* p, con
         buff_used += snprintf(&buff[buff_used], buff_len - buff_used, "[ip_fragmented: %d]",
                               h->extended_hdr.parsed_pkt.ip_fragmented);
 
-        buff_used += snprintf(&buff[buff_used], buff_len - buff_used,
-                              "[hash=%u][tos=%d][tcp_seq_num=%u]", h->extended_hdr.pkt_hash,
-                              h->extended_hdr.parsed_pkt.ipv4_tos, h->extended_hdr.parsed_pkt.tcp.seq_num);
+        buff_used += snprintf(&buff[buff_used], buff_len - buff_used, "[hash=%u][tos=%d][tcp_seq_num=%u]",
+                              h->extended_hdr.pkt_hash, h->extended_hdr.parsed_pkt.ipv4_tos,
+                              h->extended_hdr.parsed_pkt.tcp.seq_num);
 
     } else if (h->extended_hdr.parsed_pkt.eth_type == 0x0806 /* ARP */) {
         buff_used += snprintf(&buff[buff_used], buff_len - buff_used, "[ARP]");
@@ -730,9 +728,10 @@ int fastnetmon_print_parsed_pkt(char* buff, u_int buff_len, const u_char* p, con
     }
 
     buff_used +=
-    snprintf(&buff[buff_used], buff_len - buff_used, " [caplen=%d][len=%d][parsed_header_len=%d]["
-                                                     "eth_offset=%d][l3_offset=%d][l4_offset=%d]["
-                                                     "payload_offset=%d]\n",
+    snprintf(&buff[buff_used], buff_len - buff_used,
+             " [caplen=%d][len=%d][parsed_header_len=%d]["
+             "eth_offset=%d][l3_offset=%d][l4_offset=%d]["
+             "payload_offset=%d]\n",
              h->caplen, h->len, h->extended_hdr.parsed_header_len,
              h->extended_hdr.parsed_pkt.offset.eth_offset, h->extended_hdr.parsed_pkt.offset.l3_offset,
              h->extended_hdr.parsed_pkt.offset.l4_offset, h->extended_hdr.parsed_pkt.offset.payload_offset);
@@ -773,7 +772,7 @@ char* intoa(unsigned int addr) {
 }
 
 char* _intoa(unsigned int addr, char* buf, u_short bufLen) {
-    char* cp, *retStr;
+    char *cp, *retStr;
     u_int byte;
     int n;
 

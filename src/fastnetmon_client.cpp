@@ -1,11 +1,11 @@
-#include <iostream>
-#include <sstream>
 #include <fstream>
-#include <string>
-#include <unistd.h>
+#include <iostream>
 #include <ncurses.h>
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
+#include <unistd.h>
 
 std::string cli_stats_file_path = "/tmp/fastnetmon.dat";
 
@@ -39,14 +39,14 @@ int main() {
 
         if (cli_stats_file_path_env != NULL) {
             cli_stats_file_path = std::string(cli_stats_file_path_env);
-        } 
+        }
 
         std::ifstream reading_file;
         reading_file.open(cli_stats_file_path.c_str(), std::ifstream::in);
 
         if (!reading_file.is_open()) {
             std::cout << "Can't open fastnetmon stats file: " << cli_stats_file_path;
-        }   
+        }
 
         std::string line = "";
         std::stringstream screen_buffer;

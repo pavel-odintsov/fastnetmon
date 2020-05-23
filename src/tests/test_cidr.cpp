@@ -1,11 +1,11 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <string>
 #include <arpa/inet.h>
 #include <iostream>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 uint32_t convert_cidr_to_binary_netmask(unsigned int cidr) {
     uint32_t binary_netmask = 0xFFFFFFFF;

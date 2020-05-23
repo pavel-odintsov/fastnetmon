@@ -14,9 +14,13 @@
 extern "C" {
 #endif
 
-typedef struct { uint32_t addr; } SFLIPv4;
+typedef struct {
+    uint32_t addr;
+} SFLIPv4;
 
-typedef struct { u_char addr[16]; } SFLIPv6;
+typedef struct {
+    u_char addr[16];
+} SFLIPv6;
 
 typedef union _SFLAddress_value {
     SFLIPv4 ip_v4;
@@ -539,13 +543,19 @@ typedef struct {
 
 #define SFLAPP_MAX_STATUS_LEN 32
 
-typedef struct { SFLString actor; } SFLSampled_APP_ACTOR;
+typedef struct {
+    SFLString actor;
+} SFLSampled_APP_ACTOR;
 
 #define SFLAPP_MAX_ACTOR_LEN 64
 
-typedef struct _SFLExtended_vni { uint32_t vni; /* virtual network identifier */ } SFLExtended_vni;
+typedef struct _SFLExtended_vni {
+    uint32_t vni; /* virtual network identifier */
+} SFLExtended_vni;
 
-typedef struct _SFLExtended_decap { uint32_t innerHeaderOffset; } SFLExtended_decap;
+typedef struct _SFLExtended_decap {
+    uint32_t innerHeaderOffset;
+} SFLExtended_decap;
 
 enum SFLFlow_type_tag {
     /* enterprise = 0, format = ... */
@@ -879,7 +889,9 @@ enum SFLOS_name {
     SFLOS_solaris = 12
 };
 
-typedef struct _SFLMacAddress { uint8_t mac[8]; } SFLMacAddress;
+typedef struct _SFLMacAddress {
+    uint8_t mac[8];
+} SFLMacAddress;
 
 typedef struct _SFLAdaptor {
     uint32_t ifIndex;
@@ -1253,7 +1265,9 @@ typedef struct _SFLLACP_counters {
 
 /* port name */
 /* opaque = counter_data; enterprise = 0; format = 1005 */
-typedef struct { SFLString portName; } SFLPortName;
+typedef struct {
+    SFLString portName;
+} SFLPortName;
 
 #define SFL_MAX_PORTNAME_LEN 255
 

@@ -1,12 +1,9 @@
-#!env bash
+#/usr/bin/bash
 
-# Exclude:
-# netmap_plugin/netmap_includes/net/netmap.h
-# netmap_plugin/netmap_includes/net/netmap_user.h
-# libpatricia/patricia.c
-# libpatricia/patricia.h
-
-# for i in `find . |egrep "\.cpp$"`; do clang-format -i $i ;done
-# for i in `find . |egrep "\.c$"`; do clang-format -i $i ;done
-# for i in `find . |egrep "\.h$"`; do clang-format -i $i ;done
+echo "We will reformat all your code"
+for file in `find /home/odintsov/repos/fastnetmon_github/src -type f | egrep '\.(c|cpp|hpp|h)$' | egrep -vf /home/odintsov/repos/fastnetmon_github/src/.clang_formatter_excludes`;
+do
+    echo "Reformattting $file";
+    clang-format -style=file -i $file;
+done
 

@@ -1,34 +1,34 @@
 /* Author: pavel.odintsov@gmail.com */
 /* License: GPLv2 */
 
+#include <errno.h>
+#include <math.h>
+#include <new>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <string.h>
-#include <unistd.h>
-#include <new> 
-#include <signal.h>
 #include <time.h>
-#include <math.h>
+#include <unistd.h>
 
-#include <sys/socket.h>
-#include <sys/resource.h>
-#include <sys/stat.h>
 #include <arpa/inet.h>
-#include <netinet/ip.h>
-#include <netinet/tcp.h>
-#include <netinet/udp.h>
-#include <netinet/ip_icmp.h>
 #include <net/if_arp.h> // struct arphdr
 #include <netinet/if_ether.h>
 #include <netinet/in.h>
+#include <netinet/ip.h>
+#include <netinet/ip_icmp.h>
+#include <netinet/tcp.h>
+#include <netinet/udp.h>
+#include <sys/resource.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
 
-#include "libpatricia/patricia.h"
-#include "fastnetmon_types.h"
-#include "fastnetmon_packet_parser.h"
-#include "fast_library.h"
-#include "packet_storage.h"
 #include "bgp_flow_spec.h"
+#include "fast_library.h"
+#include "fastnetmon_packet_parser.h"
+#include "fastnetmon_types.h"
+#include "libpatricia/patricia.h"
+#include "packet_storage.h"
 
 // Here we store variables which differs for different paltforms
 #include "fast_platform.h"
@@ -38,14 +38,14 @@
 #endif
 
 #ifdef FASTNETMON_API
-#include <grpc++/grpc++.h>
 #include "fastnetmon.grpc.pb.h"
+#include <grpc++/grpc++.h>
 #endif
 
 // Plugins
-#include "sflow_plugin/sflow_collector.h"
 #include "netflow_plugin/netflow_collector.h"
 #include "pcap_plugin/pcap_collector.h"
+#include "sflow_plugin/sflow_collector.h"
 
 #ifdef NETMAP_PLUGIN
 #include "netmap_plugin/netmap_collector.h"
@@ -75,31 +75,31 @@
 #include "example_plugin/example_collector.h"
 
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <map>
-#include <fstream>
 
-#include <vector>
-#include <utility>
 #include <sstream>
+#include <utility>
+#include <vector>
 
+#include <boost/regex.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
-#include <boost/regex.hpp>
 
 #include <boost/program_options.hpp>
 
 // log4cpp logging facility
-#include "log4cpp/RemoteSyslogAppender.hh"
-#include "log4cpp/SyslogAppender.hh"
-#include "log4cpp/Category.hh"
 #include "log4cpp/Appender.hh"
-#include "log4cpp/FileAppender.hh"
-#include "log4cpp/OstreamAppender.hh"
-#include "log4cpp/Layout.hh"
 #include "log4cpp/BasicLayout.hh"
+#include "log4cpp/Category.hh"
+#include "log4cpp/FileAppender.hh"
+#include "log4cpp/Layout.hh"
+#include "log4cpp/OstreamAppender.hh"
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
+#include "log4cpp/RemoteSyslogAppender.hh"
+#include "log4cpp/SyslogAppender.hh"
 
 
 // Boost libs
@@ -126,13 +126,13 @@
 #endif
 
 #ifdef FASTNETMON_API
+using fastmitigation::BanListReply;
+using fastmitigation::BanListRequest;
+using fastmitigation::Fastnetmon;
 using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
 using grpc::Status;
-using fastmitigation::BanListRequest;
-using fastmitigation::BanListReply;
-using fastmitigation::Fastnetmon;
 
 std::unique_ptr<Server> api_server;
 bool enable_api = false;
@@ -152,7 +152,7 @@ bool notify_script_pass_details = true;
 
 bool pfring_hardware_filters_enabled = false;
 
-bool notify_script_enabled = true; 
+bool notify_script_enabled = true;
 
 // We could collect attack dumps in pcap format
 bool collect_attack_pcap_dumps = false;
@@ -210,7 +210,7 @@ bool redis_enabled = false;
 
 bool monitor_local_ip_addresses = true;
 
-// This flag could enable print of ban actions and thresholds on the client's screen 
+// This flag could enable print of ban actions and thresholds on the client's screen
 bool print_configuration_params_on_the_screen = false;
 
 // Trigger for enable or disable traffic counting for whole subnets
@@ -288,10 +288,10 @@ GeoIP* geo_ip = NULL;
 #endif
 
 // IPv4 lookup trees
-patricia_tree_t* lookup_tree_ipv4, *whitelist_tree_ipv4;
+patricia_tree_t *lookup_tree_ipv4, *whitelist_tree_ipv4;
 
 // IPv6 lookup trees
-patricia_tree_t* lookup_tree_ipv6, *whitelist_tree_ipv6;
+patricia_tree_t *lookup_tree_ipv6, *whitelist_tree_ipv6;
 
 bool DEBUG = 0;
 
@@ -379,7 +379,7 @@ boost::mutex flow_counter;
 std::map<uint64_t, int> FlowCounter;
 
 // Struct for string speed per IP
-map_of_vector_counters SubnetVectorMapSpeed; 
+map_of_vector_counters SubnetVectorMapSpeed;
 
 // Struct for storing average speed per IP for specified interval
 map_of_vector_counters SubnetVectorMapSpeedAverage;
@@ -430,20 +430,28 @@ bool process_outgoing_traffic = true;
 void init_current_instance_of_ndpi();
 #endif
 
-inline void build_average_speed_counters_from_speed_counters( map_element* current_average_speed_element, map_element& new_speed_element, double exp_value, double exp_power);
-inline void build_speed_counters_from_packet_counters(map_element& new_speed_element, map_element* vector_itr, double speed_calc_period);
+inline void build_average_speed_counters_from_speed_counters(map_element* current_average_speed_element,
+                                                             map_element& new_speed_element,
+                                                             double exp_value,
+                                                             double exp_power);
+inline void build_speed_counters_from_packet_counters(map_element& new_speed_element,
+                                                      map_element* vector_itr,
+                                                      double speed_calc_period);
 void execute_ip_ban(uint32_t client_ip, map_element average_speed_element, std::string flow_attack_details, subnet_t customer_subnet);
 std::string get_attack_description_in_json(uint32_t client_ip, attack_details& current_attack);
 logging_configuration_t read_logging_settings(configuration_map_t configuration_map);
 std::string get_amplification_attack_type(amplification_attack_type_t attack_type);
-std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type, std::string destination_ip);
+std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type,
+                                                        std::string destination_ip);
 bool exabgp_flow_spec_ban_manage(std::string action, std::string flow_spec_rule_as_text);
 void call_attack_details_handlers(uint32_t client_ip, attack_details& current_attack, std::string attack_fingerprint);
 void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::string flow_attack_details);
 void call_unban_handlers(uint32_t client_ip, attack_details& current_attack);
 ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::string host_group_name = "");
-void exabgp_prefix_ban_manage(std::string action, std::string prefix_as_string_with_mask, std::string exabgp_next_hop,
-    std::string exabgp_community);
+void exabgp_prefix_ban_manage(std::string action,
+                              std::string prefix_as_string_with_mask,
+                              std::string exabgp_next_hop,
+                              std::string exabgp_community);
 std::string print_subnet_load();
 bool we_should_ban_this_ip(map_element* current_average_speed_element, ban_settings_t current_ban_settings);
 unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp);
@@ -466,33 +474,37 @@ void traffic_draw_program();
 void interruption_signal_handler(int signal_number);
 
 #ifdef FASTNETMON_API
-void silent_logging_function(gpr_log_func_args *args) {
+void silent_logging_function(gpr_log_func_args* args) {
     // We do not want any logging here
 }
 
 // Logic and data behind the server's behavior.
 class FastnetmonApiServiceImpl final : public Fastnetmon::Service {
-    Status GetBanlist(::grpc::ServerContext* context, const ::fastmitigation::BanListRequest* request, ::grpc::ServerWriter< ::fastmitigation::BanListReply>* writer) override {
+    Status GetBanlist(::grpc::ServerContext* context,
+                      const ::fastmitigation::BanListRequest* request,
+                      ::grpc::ServerWriter< ::fastmitigation::BanListReply>* writer) override {
         logger << log4cpp::Priority::INFO << "API we asked for banlist";
 
         for (std::map<uint32_t, banlist_item>::iterator itr = ban_list.begin(); itr != ban_list.end(); ++itr) {
             std::string client_ip_as_string = convert_ip_as_uint_to_string(itr->first);
 
             BanListReply reply;
-            reply.set_ip_address( client_ip_as_string + "/32" );
+            reply.set_ip_address(client_ip_as_string + "/32");
             writer->Write(reply);
-        }       
+        }
 
         return Status::OK;
     }
 
-    Status ExecuteBan(ServerContext* context, const fastmitigation::ExecuteBanRequest* request, fastmitigation::ExecuteBanReply* reply) override {
+    Status ExecuteBan(ServerContext* context,
+                      const fastmitigation::ExecuteBanRequest* request,
+                      fastmitigation::ExecuteBanReply* reply) override {
         logger << log4cpp::Priority::INFO << "API we asked for ban for IP: " << request->ip_address();
 
         if (!is_v4_host(request->ip_address())) {
             logger << log4cpp::Priority::ERROR << "IP bad format";
             return Status::CANCELLED;
-        }    
+        }
 
         uint32_t client_ip = convert_ip_as_string_to_uint(request->ip_address());
 
@@ -513,7 +525,9 @@ class FastnetmonApiServiceImpl final : public Fastnetmon::Service {
         return Status::OK;
     }
 
-    Status ExecuteUnBan(ServerContext* context, const fastmitigation::ExecuteBanRequest* request, fastmitigation::ExecuteBanReply* reply) override {
+    Status ExecuteUnBan(ServerContext* context,
+                        const fastmitigation::ExecuteBanRequest* request,
+                        fastmitigation::ExecuteBanReply* reply) override {
         logger << log4cpp::Priority::INFO << "API: We asked for unban for IP: " << request->ip_address();
 
         if (!is_v4_host(request->ip_address())) {
@@ -557,7 +571,7 @@ std::unique_ptr<Server> StartupApiServer() {
 
     // Finally assemble the server.
     std::unique_ptr<Server> current_api_server(builder.BuildAndStart());
-    logger << log4cpp::Priority::INFO << "API server listening on " << server_address;     
+    logger << log4cpp::Priority::INFO << "API server listening on " << server_address;
 
     return current_api_server;
 }
@@ -574,8 +588,7 @@ void RunApiServer() {
 
 
 /* Class for custom comparison fields by different fields */
-template <typename T>
-class TrafficComparatorClass {
+template <typename T> class TrafficComparatorClass {
     private:
     sort_type sort_field;
     direction sort_direction;
@@ -618,8 +631,10 @@ class TrafficComparatorClass {
 };
 
 void sigpipe_handler_for_popen(int signo) {
-    logger << log4cpp::Priority::ERROR << "Sorry but we experienced error with popen. "
-           << "Please check your scripts. They should receive data on stdin! Optionally you could disable passing any details with configuration param: notify_script_pass_details = no";
+    logger
+    << log4cpp::Priority::ERROR << "Sorry but we experienced error with popen. "
+    << "Please check your scripts. They should receive data on stdin! Optionally you could disable "
+       "passing any details with configuration param: notify_script_pass_details = no";
 
     // Well, we do not need exit here because we have another options to notifying about atatck
     // exit(1);
@@ -682,53 +697,55 @@ redisContext* redis_init_connection() {
 
 #ifdef MONGO
 void store_data_in_mongo(std::string key_name, std::string attack_details_json) {
-    mongoc_client_t *client;
-    mongoc_collection_t *collection;
-    mongoc_cursor_t *cursor;
+    mongoc_client_t* client;
+    mongoc_collection_t* collection;
+    mongoc_cursor_t* cursor;
     bson_error_t error;
     bson_oid_t oid;
-    bson_t *doc;
+    bson_t* doc;
 
-    mongoc_init ();
+    mongoc_init();
 
-    std::string collection_name = "attacks"; 
-    std::string connection_string = "mongodb://" + mongodb_host + ":" + convert_int_to_string(mongodb_port) + "/"; 
+    std::string collection_name = "attacks";
+    std::string connection_string =
+    "mongodb://" + mongodb_host + ":" + convert_int_to_string(mongodb_port) + "/";
 
-    client = mongoc_client_new (connection_string.c_str());
+    client = mongoc_client_new(connection_string.c_str());
 
     if (!client) {
         logger << log4cpp::Priority::ERROR << "Can't connect to MongoDB database";
         return;
     }
-    
+
     bson_error_t bson_from_json_error;
-    bson_t* bson_data = bson_new_from_json((const uint8_t *)attack_details_json.c_str(), attack_details_json.size(), &bson_from_json_error);
+    bson_t* bson_data = bson_new_from_json((const uint8_t*)attack_details_json.c_str(),
+                                           attack_details_json.size(), &bson_from_json_error);
     if (!bson_data) {
         logger << log4cpp::Priority::ERROR << "Could not convert JSON to BSON";
         return;
-    }    
+    }
 
     // logger << log4cpp::Priority::INFO << bson_as_json(bson_data, NULL);
 
-    collection = mongoc_client_get_collection (client, mongodb_database_name.c_str(), collection_name.c_str());
+    collection =
+    mongoc_client_get_collection(client, mongodb_database_name.c_str(), collection_name.c_str());
 
-    doc = bson_new ();
-    bson_oid_init (&oid, NULL);
-    BSON_APPEND_OID (doc, "_id", &oid);
-    bson_append_document(doc,  key_name.c_str(), key_name.size(), bson_data);
+    doc = bson_new();
+    bson_oid_init(&oid, NULL);
+    BSON_APPEND_OID(doc, "_id", &oid);
+    bson_append_document(doc, key_name.c_str(), key_name.size(), bson_data);
 
     // logger << log4cpp::Priority::INFO << bson_as_json(doc, NULL);
 
-    if (!mongoc_collection_insert (collection, MONGOC_INSERT_NONE, doc, NULL, &error)) {
+    if (!mongoc_collection_insert(collection, MONGOC_INSERT_NONE, doc, NULL, &error)) {
         logger << log4cpp::Priority::ERROR << "Could not store data to MongoDB: " << error.message;
     }
 
     // TODO: destroy bson_data too!
 
-    bson_destroy (doc);
-    mongoc_collection_destroy (collection);
-    mongoc_client_destroy (client);
-
+    bson_destroy(doc);
+    mongoc_collection_destroy(collection);
+    mongoc_client_destroy(client);
 }
 #endif
 
@@ -746,13 +763,15 @@ void store_data_in_redis(std::string key_name, std::string attack_details) {
 
     // If we store data correctly ...
     if (!reply) {
-        logger << log4cpp::Priority::ERROR << "Can't increment traffic in redis error_code: " << redis_context->err
-            << " error_string: " << redis_context->errstr;
+        logger << log4cpp::Priority::ERROR
+               << "Can't increment traffic in redis error_code: " << redis_context->err
+               << " error_string: " << redis_context->errstr;
 
         // Handle redis server restart corectly
         if (redis_context->err == 1 or redis_context->err == 3) {
             // Connection refused
-            logger << log4cpp::Priority::ERROR << "Unfortunately we can't store data in Redis because server reject connection";
+            logger << log4cpp::Priority::ERROR
+                   << "Unfortunately we can't store data in Redis because server reject connection";
         }
     } else {
         freeReplyObject(reply);
@@ -784,8 +803,10 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
     memset(&zero_map_element, 0, sizeof(zero_map_element));
 
     unsigned int count_of_zero_speed_packets = 0;
-    for (map_of_vector_counters::iterator itr = current_speed_map->begin(); itr != current_speed_map->end(); ++itr) {
-        for (vector_of_counters::iterator vector_itr = itr->second.begin(); vector_itr != itr->second.end(); ++vector_itr) {
+    for (map_of_vector_counters::iterator itr = current_speed_map->begin();
+         itr != current_speed_map->end(); ++itr) {
+        for (vector_of_counters::iterator vector_itr = itr->second.begin();
+             vector_itr != itr->second.end(); ++vector_itr) {
             int current_index = vector_itr - itr->second.begin();
 
             // convert to host order for math operations
@@ -794,7 +815,7 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
 
             // covnert to our standard network byte order
             uint32_t client_ip = htonl(client_ip_in_host_bytes_order);
-            
+
             // Do not add zero speed packets to sort list
             if (memcmp((void*)&zero_map_element, &*vector_itr, sizeof(map_element)) != 0) {
                 vector_for_sort.push_back(std::make_pair(client_ip, *vector_itr));
@@ -803,7 +824,7 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
             }
         }
     }
-   
+
     // Sort only first X elements in this vector
     unsigned int shift_for_sort = max_ips_in_list;
 
@@ -815,21 +836,23 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
             shift_for_sort = vector_size;
         }
 
-        std::partial_sort(vector_for_sort.begin(), vector_for_sort.begin() + shift_for_sort, vector_for_sort.end(),
-                  TrafficComparatorClass<pair_of_map_elements>(data_direction, sort_item));
+        std::partial_sort(vector_for_sort.begin(), vector_for_sort.begin() + shift_for_sort,
+                          vector_for_sort.end(),
+                          TrafficComparatorClass<pair_of_map_elements>(data_direction, sort_item));
     } else {
         logger << log4cpp::Priority::ERROR << "Unexpected bahaviour on sort function";
         return "Internal error";
     }
 
     unsigned int element_number = 0;
-    
+
     // In this loop we print only top X talkers in our subnet to screen buffer
-    for (std::vector<pair_of_map_elements>::iterator ii = vector_for_sort.begin(); ii != vector_for_sort.end(); ++ii) {
+    for (std::vector<pair_of_map_elements>::iterator ii = vector_for_sort.begin();
+         ii != vector_for_sort.end(); ++ii) {
         // Print first max_ips_in_list elements in list, we will show top X "huge" channel loaders
         if (element_number >= max_ips_in_list) {
             break;
-        } 
+        }
 
         uint32_t client_ip = (*ii).first;
         std::string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
@@ -867,7 +890,7 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
         output_buffer << std::setw(6) << pps << " pps ";
         output_buffer << std::setw(6) << mbps << " mbps ";
         output_buffer << std::setw(6) << flows << " flows ";
-        
+
         output_buffer << is_banned << std::endl;
 
         element_number++;
@@ -877,7 +900,8 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
 
     // TODO: add graphite operations time to the config file
     if (graphite_enabled) {
-        for (std::vector<pair_of_map_elements>::iterator ii = vector_for_sort.begin(); ii != vector_for_sort.end(); ++ii) {
+        for (std::vector<pair_of_map_elements>::iterator ii = vector_for_sort.begin();
+             ii != vector_for_sort.end(); ++ii) {
             uint32_t client_ip = (*ii).first;
             std::string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
 
@@ -910,9 +934,10 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
             std::string ip_as_string_with_dash_delimiters = client_ip_as_string;
             // Replace dots by dashes
             std::replace(ip_as_string_with_dash_delimiters.begin(),
-                ip_as_string_with_dash_delimiters.end(), '.', '_');
+                         ip_as_string_with_dash_delimiters.end(), '.', '_');
 
-            std::string graphite_current_prefix = graphite_prefix + ".hosts." + ip_as_string_with_dash_delimiters + "." + direction_as_string;
+            std::string graphite_current_prefix =
+            graphite_prefix + ".hosts." + ip_as_string_with_dash_delimiters + "." + direction_as_string;
 
             if (print_average_traffic_counts) {
                 graphite_current_prefix = graphite_current_prefix + ".average";
@@ -920,22 +945,22 @@ std::string draw_table(direction data_direction, bool do_redis_update, sort_type
 
             // We do not store zero data to Graphite
             if (pps != 0) {
-                graphite_data[ graphite_current_prefix + ".pps"   ] = pps;
+                graphite_data[graphite_current_prefix + ".pps"] = pps;
             }
 
             if (bps != 0) {
-                graphite_data[ graphite_current_prefix + ".bps"  ]  = bps * 8;
+                graphite_data[graphite_current_prefix + ".bps"] = bps * 8;
             }
-    
+
             if (flows != 0) {
-                graphite_data[ graphite_current_prefix + ".flows" ] = flows;
+                graphite_data[graphite_current_prefix + ".flows"] = flows;
             }
         }
     }
 
     // TODO: we should switch to piclke format instead text
     // TODO: we should check packet size for Graphite
-    // logger << log4cpp::Priority::INFO << "We will write " << graphite_data.size() << " records to Graphite"; 
+    // logger << log4cpp::Priority::INFO << "We will write " << graphite_data.size() << " records to Graphite";
 
     if (graphite_enabled) {
         bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
@@ -991,32 +1016,35 @@ void parse_hostgroups(std::string name, std::string value) {
     std::string host_group_name = splitted_new_host_group[0];
 
     if (host_groups.count(host_group_name) > 0) {
-        logger << log4cpp::Priority::WARN << "We already have this host group (" << host_group_name << "). Please check!"; 
+        logger << log4cpp::Priority::WARN << "We already have this host group (" << host_group_name
+               << "). Please check!";
         return;
     }
 
     // Split networks
-    std::vector<std::string> hostgroup_subnets = split_strings_to_vector_by_comma(splitted_new_host_group[1]);
-    for (std::vector<std::string>::iterator itr = hostgroup_subnets.begin(); itr != hostgroup_subnets.end(); ++itr) {
+    std::vector<std::string> hostgroup_subnets =
+    split_strings_to_vector_by_comma(splitted_new_host_group[1]);
+    for (std::vector<std::string>::iterator itr = hostgroup_subnets.begin();
+         itr != hostgroup_subnets.end(); ++itr) {
         subnet_t subnet = convert_subnet_from_string_to_binary_with_cidr_format(*itr);
-       
-        host_groups[ host_group_name ].push_back( subnet ); 
-        
-        logger << log4cpp::Priority::WARN << "We add subnet " << convert_subnet_to_string( subnet )
-            << " to host group " << host_group_name;
+
+        host_groups[host_group_name].push_back(subnet);
+
+        logger << log4cpp::Priority::WARN << "We add subnet " << convert_subnet_to_string(subnet)
+               << " to host group " << host_group_name;
 
         // And add to subnet to host group lookup hash
         if (subnet_to_host_groups.count(subnet) > 0) {
-            // Huston, we have problem! Subnet to host group mapping should map single subnet to single group! 
+            // Huston, we have problem! Subnet to host group mapping should map single subnet to single group!
             logger << log4cpp::Priority::WARN << "Seems you have specified single subnet " << *itr
-                << " to multiple host groups, please fix it, it's prohibited";
+                   << " to multiple host groups, please fix it, it's prohibited";
         } else {
-            subnet_to_host_groups[ subnet ] = host_group_name;
-        } 
+            subnet_to_host_groups[subnet] = host_group_name;
+        }
     }
 
-    logger << log4cpp::Priority::INFO << "We have created host group " << host_group_name << " with "
-        << host_groups[ host_group_name ].size() << " subnets";
+    logger << log4cpp::Priority::INFO << "We have created host group " << host_group_name
+           << " with " << host_groups[host_group_name].size() << " subnets";
 }
 
 // Load configuration
@@ -1043,9 +1071,9 @@ bool load_configuration_file() {
         if (parsed_config.size() == 2) {
             boost::algorithm::trim(parsed_config[0]);
             boost::algorithm::trim(parsed_config[1]);
-            
+
             configuration_map[parsed_config[0]] = parsed_config[1];
-            
+
             // Well, we parse host groups here
             parse_hostgroups(parsed_config[0], parsed_config[1]);
         } else {
@@ -1081,12 +1109,12 @@ bool load_configuration_file() {
     if (configuration_map.count("unban_only_if_attack_finished") != 0) {
         if (configuration_map["unban_only_if_attack_finished"] == "on") {
             unban_only_if_attack_finished = true;
-        } else { 
+        } else {
             unban_only_if_attack_finished = false;
         }
     }
 
-    if(configuration_map.count("graphite_prefix") != 0) {
+    if (configuration_map.count("graphite_prefix") != 0) {
         graphite_prefix = configuration_map["graphite_prefix"];
     }
 
@@ -1138,7 +1166,7 @@ bool load_configuration_file() {
         } else {
             exabgp_community_subnet = exabgp_community;
         }
-        
+
         if (configuration_map.count("exabgp_community_host")) {
             exabgp_community_host = configuration_map["exabgp_community_host"];
         } else {
@@ -1146,27 +1174,28 @@ bool load_configuration_file() {
         }
 
         if (exabgp_enabled && exabgp_announce_whole_subnet && exabgp_community_subnet.empty()) {
-            logger << log4cpp::Priority::ERROR
-                << "You enabled exabgp for subnet but not specified community, we disable exabgp support";
+            logger << log4cpp::Priority::ERROR << "You enabled exabgp for subnet but not specified community, we disable exabgp support";
 
             exabgp_enabled = false;
         }
 
         if (exabgp_enabled && exabgp_announce_host && exabgp_community_host.empty()) {
-            logger << log4cpp::Priority::ERROR
-                << "You enabled exabgp for host but not specified community, we disable exabgp support";
+            logger
+            << log4cpp::Priority::ERROR
+            << "You enabled exabgp for host but not specified community, we disable exabgp support";
 
             exabgp_enabled = false;
-        } 
+        }
     }
 
     if (exabgp_enabled) {
         exabgp_command_pipe = configuration_map["exabgp_command_pipe"];
 
         if (exabgp_command_pipe.empty()) {
-            logger << log4cpp::Priority::ERROR << "You enabled exabgp but not specified "
-                                                  "exabgp_command_pipe, so we disable exabgp "
-                                                  "support";
+            logger << log4cpp::Priority::ERROR
+                   << "You enabled exabgp but not specified "
+                      "exabgp_command_pipe, so we disable exabgp "
+                      "support";
 
             exabgp_enabled = false;
         }
@@ -1238,7 +1267,7 @@ bool load_configuration_file() {
     }
 
     if (configuration_map.count("graphite_number_of_ips") != 0) {
-        logger << log4cpp::Priority::ERROR << "Sorry, you have used deprecated function graphite_number_of_ips";  
+        logger << log4cpp::Priority::ERROR << "Sorry, you have used deprecated function graphite_number_of_ips";
     }
 
     if (configuration_map.count("process_incoming_traffic") != 0) {
@@ -1267,16 +1296,17 @@ bool load_configuration_file() {
 
     if (configuration_map.count("mirror_snabbswitch") != 0) {
         enable_snabbswitch_collection = configuration_map["mirror_snabbswitch"] == "on";
-    } 
+    }
 
     if (configuration_map.count("mirror_afpacket") != 0) {
         enable_afpacket_collection = configuration_map["mirror_afpacket"] == "on";
     }
 
     if (enable_netmap_collection && enable_data_collection_from_mirror) {
-        logger << log4cpp::Priority::ERROR << "You have enabled pfring and netmap data collection "
-                                              "from mirror which strictly prohibited, please "
-                                              "select one";
+        logger << log4cpp::Priority::ERROR
+               << "You have enabled pfring and netmap data collection "
+                  "from mirror which strictly prohibited, please "
+                  "select one";
         exit(1);
     }
 
@@ -1296,14 +1326,15 @@ bool load_configuration_file() {
     // logger << log4cpp::Priority::INFO << "We read global ban settings: " << print_ban_thresholds(global_ban_settings);
 
     // Read host group ban settings
-    for (host_group_map_t::iterator hostgroup_itr = host_groups.begin(); hostgroup_itr != host_groups.end(); ++hostgroup_itr) {
+    for (host_group_map_t::iterator hostgroup_itr = host_groups.begin();
+         hostgroup_itr != host_groups.end(); ++hostgroup_itr) {
         std::string host_group_name = hostgroup_itr->first;
 
         logger << log4cpp::Priority::INFO << "We will read ban settings for " << host_group_name;
 
-        host_group_ban_settings_map[ host_group_name ] =  read_ban_settings(configuration_map, host_group_name);
+        host_group_ban_settings_map[host_group_name] = read_ban_settings(configuration_map, host_group_name);
 
-        //logger << log4cpp::Priority::INFO << "We read " << host_group_name << " ban settings "
+        // logger << log4cpp::Priority::INFO << "We read " << host_group_name << " ban settings "
         //    << print_ban_thresholds(host_group_ban_settings_map[ host_group_name ]);
     }
 
@@ -1330,7 +1361,8 @@ bool load_configuration_file() {
 
     if (configuration_map.count("redis_enabled") != 0) {
         // We use yes and on because it's stupid typo :(
-        if (configuration_map["redis_enabled"] == "on" or configuration_map["redis_enabled"] == "yes") {
+        if (configuration_map["redis_enabled"] == "on" or
+            configuration_map["redis_enabled"] == "yes") {
             redis_enabled = true;
         } else {
             redis_enabled = false;
@@ -1396,9 +1428,10 @@ bool load_configuration_file() {
 
     if (configuration_map.count("process_pcap_attack_dumps_with_dpi") != 0) {
         if (collect_attack_pcap_dumps) {
-            process_pcap_attack_dumps_with_dpi = configuration_map["process_pcap_attack_dumps_with_dpi"] == "on" ? true : false;
+            process_pcap_attack_dumps_with_dpi =
+            configuration_map["process_pcap_attack_dumps_with_dpi"] == "on" ? true : false;
         }
-    } 
+    }
 
     return true;
 }
@@ -1437,8 +1470,8 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
 
     // Initilize our counters with fill constructor
     try {
-        SubnetVectorMap[current_subnet]             = vector_of_counters(network_size_in_ips, zero_map_element);
-        SubnetVectorMapSpeed[current_subnet]        = vector_of_counters(network_size_in_ips, zero_map_element);
+        SubnetVectorMap[current_subnet] = vector_of_counters(network_size_in_ips, zero_map_element);
+        SubnetVectorMapSpeed[current_subnet] = vector_of_counters(network_size_in_ips, zero_map_element);
         SubnetVectorMapSpeedAverage[current_subnet] = vector_of_counters(network_size_in_ips, zero_map_element);
     } catch (std::bad_alloc& ba) {
         logger << log4cpp::Priority::ERROR << "Can't allocate memory for counters";
@@ -1510,12 +1543,10 @@ bool load_our_networks_list() {
                 continue;
             }
             network_entries++;
-            make_and_lookup(whitelist_tree_ipv4, const_cast<char*> (text_subnet.c_str()));
-
+            make_and_lookup(whitelist_tree_ipv4, const_cast<char*>(text_subnet.c_str()));
         }
 
-        logger << log4cpp::Priority::INFO << "We loaded " << network_entries
-               << " networks from whitelist file";
+        logger << log4cpp::Priority::INFO << "We loaded " << network_entries << " networks from whitelist file";
     }
 
     std::vector<std::string> networks_list_ipv4_as_string;
@@ -1533,7 +1564,7 @@ bool load_our_networks_list() {
             }
 
             /*
-                Example data for this lines: 
+                Example data for this lines:
                 2a03:f480:1:17:0:0:0:19          0
                             185.4.72.40          0
             */
@@ -1561,12 +1592,11 @@ bool load_our_networks_list() {
                << " IPv4 networks from /proc/vz/veip";
 
         logger << log4cpp::Priority::INFO << "We loaded " << networks_list_ipv6_as_string.size()
-                << " IPv6 networks from /proc/vz/veip";
+               << " IPv6 networks from /proc/vz/veip";
     }
 
     if (monitor_local_ip_addresses && file_exists("/sbin/ip")) {
-        logger << log4cpp::Priority::INFO
-               << "We are working on Linux and could use ip tool for detecting local IP's";
+        logger << log4cpp::Priority::INFO << "We are working on Linux and could use ip tool for detecting local IP's";
 
         ip_addresses_list_t ip_list = get_local_ip_v4_addresses_list();
 
@@ -1582,19 +1612,20 @@ bool load_our_networks_list() {
     if (file_exists(networks_list_path)) {
         std::vector<std::string> network_list_from_config = read_file_to_vector(networks_list_path);
 
-        for (std::vector<std::string>::iterator line_itr = network_list_from_config.begin(); line_itr != network_list_from_config.end(); ++line_itr) {
+        for (std::vector<std::string>::iterator line_itr = network_list_from_config.begin();
+             line_itr != network_list_from_config.end(); ++line_itr) {
 
-            if (line_itr->length() == 0) { 
+            if (line_itr->length() == 0) {
                 // Skip blank lines in subnet list file silently
                 continue;
-            }    
+            }
 
             if (strstr(line_itr->c_str(), ":") == NULL) {
                 networks_list_ipv4_as_string.push_back(*line_itr);
             } else {
                 networks_list_ipv6_as_string.push_back(*line_itr);
             }
-        } 
+        }
 
         logger << log4cpp::Priority::INFO << "We loaded " << network_list_from_config.size()
                << " networks from networks file";
@@ -1609,7 +1640,7 @@ bool load_our_networks_list() {
 
     for (std::vector<std::string>::iterator ii = networks_list_ipv4_as_string.begin();
          ii != networks_list_ipv4_as_string.end(); ++ii) {
-        
+
         if (!is_cidr_subnet(*ii)) {
             logger << log4cpp::Priority::ERROR << "Can't parse line from subnet list: '" << *ii << "'";
             continue;
@@ -1632,8 +1663,8 @@ bool load_our_networks_list() {
             std::string new_network_address_as_string =
             convert_ip_as_uint_to_string(generated_subnet_address) + "/" + convert_int_to_string(cidr_mask);
 
-            logger << log4cpp::Priority::WARN << "We will use " << new_network_address_as_string << " instead of "
-                   << network_address_in_cidr_form << " because it's host address";
+            logger << log4cpp::Priority::WARN << "We will use " << new_network_address_as_string
+                   << " instead of " << network_address_in_cidr_form << " because it's host address";
 
             network_address_in_cidr_form = new_network_address_as_string;
         }
@@ -1645,17 +1676,17 @@ bool load_our_networks_list() {
          ii != networks_list_ipv6_as_string.end(); ++ii) {
 
         // TODO: add IPv6 subnet format validation
-        make_and_lookup_ipv6(lookup_tree_ipv6, (char*)ii->c_str()); 
+        make_and_lookup_ipv6(lookup_tree_ipv6, (char*)ii->c_str());
     }
 
-    logger << log4cpp::Priority::INFO
-           << "Total number of monitored hosts (total size of all networks): " << total_number_of_hosts_in_our_networks;
+    logger << log4cpp::Priority::INFO << "Total number of monitored hosts (total size of all networks): "
+           << total_number_of_hosts_in_our_networks;
 
     // 3 - speed counter, average speed counter and data counter
     uint64_t memory_requirements = 3 * sizeof(map_element) * total_number_of_hosts_in_our_networks / 1024 / 1024;
 
-    logger << log4cpp::Priority::INFO
-        << "We need " << memory_requirements << " MB of memory for storing counters for your networks";
+    logger << log4cpp::Priority::INFO << "We need " << memory_requirements
+           << " MB of memory for storing counters for your networks";
 
     /* Preallocate data structures */
     patricia_process(lookup_tree_ipv4, (void_fn_t)subnet_vectors_allocator);
@@ -1666,7 +1697,7 @@ bool load_our_networks_list() {
 
     logger << log4cpp::Priority::INFO << "We loaded " << networks_list_ipv4_as_string.size()
            << " IPv4 subnets to our in-memory list of networks";
-    
+
     return true;
 }
 
@@ -1690,15 +1721,18 @@ void ipv6_traffic_processor() {
 
                 direction packet_direction = packets_from_queue[i].packet_direction;
 
-                uint64_t sampled_number_of_packets = packets_from_queue[i].number_of_packets * packets_from_queue[i].sample_ratio;
-                uint64_t sampled_number_of_bytes = packets_from_queue[i].length * packets_from_queue[i].sample_ratio;
+                uint64_t sampled_number_of_packets =
+                packets_from_queue[i].number_of_packets * packets_from_queue[i].sample_ratio;
+                uint64_t sampled_number_of_bytes =
+                packets_from_queue[i].length * packets_from_queue[i].sample_ratio;
 
 #ifdef USE_NEW_ATOMIC_BUILTINS
-                __atomic_add_fetch(&total_counters[packet_direction].packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-                __atomic_add_fetch(&total_counters[packet_direction].bytes,   sampled_number_of_bytes, __ATOMIC_RELAXED);
+                __atomic_add_fetch(&total_counters[packet_direction].packets,
+                                   sampled_number_of_packets, __ATOMIC_RELAXED);
+                __atomic_add_fetch(&total_counters[packet_direction].bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
 #else
                 __sync_fetch_and_add(&total_counters[packet_direction].packets, sampled_number_of_packets);
-                __sync_fetch_and_add(&total_counters[packet_direction].bytes,   sampled_number_of_bytes);
+                __sync_fetch_and_add(&total_counters[packet_direction].bytes, sampled_number_of_bytes);
 #endif
 
                 if (packet_direction != OTHER) {
@@ -1707,7 +1741,7 @@ void ipv6_traffic_processor() {
 #else
                     __sync_fetch_and_add(&our_ipv6_packets, 1);
 #endif
-                }       
+                }
             }
         }
     }
@@ -1724,7 +1758,8 @@ void process_packet(simple_packet& current_packet) {
 
     if (current_packet.ip_protocol_version == 6) {
 #ifdef IPV6_HASH_COUNTERS
-        current_packet.packet_direction = get_packet_direction_ipv6(lookup_tree_ipv6, current_packet.src_ipv6, current_packet.dst_ipv6);
+        current_packet.packet_direction =
+        get_packet_direction_ipv6(lookup_tree_ipv6, current_packet.src_ipv6, current_packet.dst_ipv6);
 
         // TODO: move to bulk operations here!
         multi_process_queue_for_ipv6_counters.enqueue(current_packet);
@@ -1733,7 +1768,7 @@ void process_packet(simple_packet& current_packet) {
 
 #ifdef USE_NEW_ATOMIC_BUILTINS
         __atomic_add_fetch(&total_ipv6_packets, 1, __ATOMIC_RELAXED);
-#else       
+#else
         __sync_fetch_and_add(&total_ipv6_packets, 1);
 #endif
 
@@ -1751,12 +1786,13 @@ void process_packet(simple_packet& current_packet) {
     unsigned long subnet = 0;
     unsigned int subnet_cidr_mask = 0;
 
-    direction packet_direction = get_packet_direction(lookup_tree_ipv4, current_packet.src_ip, current_packet.dst_ip, subnet, subnet_cidr_mask);
+    direction packet_direction = get_packet_direction(lookup_tree_ipv4, current_packet.src_ip,
+                                                      current_packet.dst_ip, subnet, subnet_cidr_mask);
 
     // It's useful in case when we can't find what packets do not processed correctly
     if (DEBUG_DUMP_OTHER_PACKETS && packet_direction == OTHER) {
         logger << log4cpp::Priority::INFO << "Dump other: " << print_simple_packet(current_packet);
-    }    
+    }
 
     // Skip processing of specific traffic direction
     if ((packet_direction == INCOMING && !process_incoming_traffic) or
@@ -1764,7 +1800,7 @@ void process_packet(simple_packet& current_packet) {
         return;
     }
 
-    subnet_t current_subnet = std::make_pair(subnet, subnet_cidr_mask); 
+    subnet_t current_subnet = std::make_pair(subnet, subnet_cidr_mask);
 
     uint32_t subnet_in_host_byte_order = 0;
     // We operate in host bytes order and need to convert subnet
@@ -1809,8 +1845,7 @@ void process_packet(simple_packet& current_packet) {
             itr_flow = SubnetVectorMapFlow.find(current_subnet);
 
             if (itr_flow == SubnetVectorMapFlow.end()) {
-                logger << log4cpp::Priority::ERROR
-                       << "Can't find vector address in subnet flow map";
+                logger << log4cpp::Priority::ERROR << "Can't find vector address in subnet flow map";
                 return;
             }
         }
@@ -1828,10 +1863,10 @@ void process_packet(simple_packet& current_packet) {
 
 #ifdef USE_NEW_ATOMIC_BUILTINS
     __atomic_add_fetch(&total_counters[packet_direction].packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-    __atomic_add_fetch(&total_counters[packet_direction].bytes,   sampled_number_of_bytes, __ATOMIC_RELAXED);
+    __atomic_add_fetch(&total_counters[packet_direction].bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
 #else
-    __sync_fetch_and_add(&total_counters[packet_direction].packets, sampled_number_of_packets); 
-    __sync_fetch_and_add(&total_counters[packet_direction].bytes,   sampled_number_of_bytes);
+    __sync_fetch_and_add(&total_counters[packet_direction].packets, sampled_number_of_packets);
+    __sync_fetch_and_add(&total_counters[packet_direction].bytes, sampled_number_of_bytes);
 #endif
 
     // Incerementi main and per protocol packet counters
@@ -1842,8 +1877,7 @@ void process_packet(simple_packet& current_packet) {
             logger << log4cpp::Priority::ERROR << "We tried to access to element with index " << shift_in_vector
                    << " which located outside allocated vector with size " << itr->second.size();
 
-            logger << log4cpp::Priority::ERROR
-                   << "We expect issues with this packet in OUTGOING direction: "
+            logger << log4cpp::Priority::ERROR << "We expect issues with this packet in OUTGOING direction: "
                    << print_simple_packet(current_packet);
 
             return;
@@ -1875,10 +1909,10 @@ void process_packet(simple_packet& current_packet) {
         if (enable_subnet_counters) {
 #ifdef USE_NEW_ATOMIC_BUILTINS
             __atomic_add_fetch(&subnet_counter->out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-            __atomic_add_fetch(&subnet_counter->out_bytes,   sampled_number_of_bytes, __ATOMIC_RELAXED);
+            __atomic_add_fetch(&subnet_counter->out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
 #else
             __sync_fetch_and_add(&subnet_counter->out_packets, sampled_number_of_packets);
-            __sync_fetch_and_add(&subnet_counter->out_bytes,   sampled_number_of_bytes);
+            __sync_fetch_and_add(&subnet_counter->out_bytes, sampled_number_of_bytes);
 #endif
         }
 
@@ -1897,7 +1931,7 @@ void process_packet(simple_packet& current_packet) {
                 // this code SHOULD NOT be called without mutex!
                 if (current_packet.packet_payload_length > 0 && current_packet.packet_payload_pointer != NULL) {
                     ban_list[current_packet.src_ip].pcap_attack_dump.write_packet(current_packet.packet_payload_pointer,
-                        current_packet.packet_payload_length);
+                                                                                  current_packet.packet_payload_length);
                 }
             }
 
@@ -1984,8 +2018,7 @@ void process_packet(simple_packet& current_packet) {
             logger << log4cpp::Priority::ERROR << "We tried to access to element with index " << shift_in_vector
                    << " which located outside allocated vector with size " << itr->second.size();
 
-            logger << log4cpp::Priority::ERROR
-                   << "We expect issues with this packet in INCOMING direction: "
+            logger << log4cpp::Priority::ERROR << "We expect issues with this packet in INCOMING direction: "
                    << print_simple_packet(current_packet);
 
             return;
@@ -2005,10 +2038,10 @@ void process_packet(simple_packet& current_packet) {
         if (enable_subnet_counters) {
 #ifdef USE_NEW_ATOMIC_BUILTINS
             __atomic_add_fetch(&subnet_counter->in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-            __atomic_add_fetch(&subnet_counter->in_bytes,   sampled_number_of_bytes, __ATOMIC_RELAXED);
+            __atomic_add_fetch(&subnet_counter->in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
 #else
             __sync_fetch_and_add(&subnet_counter->in_packets, sampled_number_of_packets);
-            __sync_fetch_and_add(&subnet_counter->in_bytes,   sampled_number_of_bytes);
+            __sync_fetch_and_add(&subnet_counter->in_bytes, sampled_number_of_bytes);
 #endif
         }
 
@@ -2050,9 +2083,9 @@ void process_packet(simple_packet& current_packet) {
                 // this code SHOULD NOT be called without mutex!
                 if (current_packet.packet_payload_length > 0 && current_packet.packet_payload_pointer != NULL) {
                     ban_list[current_packet.dst_ip].pcap_attack_dump.write_packet(current_packet.packet_payload_pointer,
-                        current_packet.packet_payload_length);
-                }    
-            }    
+                                                                                  current_packet.packet_payload_length);
+                }
+            }
 
             ban_list_details[current_packet.dst_ip].push_back(current_packet);
             ban_list_details_mutex.unlock();
@@ -2176,7 +2209,7 @@ void recalculate_speed_thread_handler() {
 // Get ban settings for this subnet or return global ban settings
 ban_settings_t get_ban_settings_for_this_subnet(subnet_t subnet, std::string& host_group_name) {
     // Try to find host group for this subnet
-    subnet_to_host_group_map_t::iterator host_group_itr = subnet_to_host_groups.find( subnet );
+    subnet_to_host_group_map_t::iterator host_group_itr = subnet_to_host_groups.find(subnet);
 
     if (host_group_itr == subnet_to_host_groups.end()) {
         // We haven't host groups for all subnets, it's OK
@@ -2184,18 +2217,19 @@ ban_settings_t get_ban_settings_for_this_subnet(subnet_t subnet, std::string& ho
         host_group_name = "global";
         return global_ban_settings;
     }
-  
+
     host_group_name = host_group_itr->second;
- 
+
     // We found host group for this subnet
-    host_group_ban_settings_map_t::iterator hostgroup_settings_itr = 
-        host_group_ban_settings_map.find(host_group_itr->second);
+    host_group_ban_settings_map_t::iterator hostgroup_settings_itr =
+    host_group_ban_settings_map.find(host_group_itr->second);
 
     if (hostgroup_settings_itr == host_group_ban_settings_map.end()) {
-        logger << log4cpp::Priority::ERROR << "We can't find ban settings for host group " << host_group_itr->second;
+        logger << log4cpp::Priority::ERROR << "We can't find ban settings for host group "
+               << host_group_itr->second;
         return global_ban_settings;
     }
-            
+
     // We found ban settings for this host group and use they instead global
     return hostgroup_settings_itr->second;
 }
@@ -2216,8 +2250,7 @@ void recalculate_speed() {
 
     if (time_difference < 1) {
         // It could occur on program start
-        logger << log4cpp::Priority::INFO
-               << "We skip one iteration of speed_calc because it runs so early!";
+        logger << log4cpp::Priority::INFO << "We skip one iteration of speed_calc because it runs so early!";
         return;
     } else if (int(time_difference) == int(speed_calc_period)) {
         // All fine, we run on time
@@ -2234,25 +2267,26 @@ void recalculate_speed() {
     uint64_t outgoing_total_flows = 0;
 
     if (enable_subnet_counters) {
-        for (map_for_subnet_counters::iterator itr = PerSubnetSpeedMap.begin(); itr != PerSubnetSpeedMap.end(); ++itr) {
+        for (map_for_subnet_counters::iterator itr = PerSubnetSpeedMap.begin();
+             itr != PerSubnetSpeedMap.end(); ++itr) {
             subnet_t current_subnet = itr->first;
 
             map_for_subnet_counters::iterator iter_subnet = PerSubnetCountersMap.find(current_subnet);
 
             if (iter_subnet == PerSubnetCountersMap.end()) {
-                logger << log4cpp::Priority::INFO<<"Can't find traffic counters for subnet";
+                logger << log4cpp::Priority::INFO << "Can't find traffic counters for subnet";
                 break;
             }
 
-            subnet_counter_t* subnet_traffic = &iter_subnet->second; 
+            subnet_counter_t* subnet_traffic = &iter_subnet->second;
 
             subnet_counter_t new_speed_element;
 
             new_speed_element.in_packets = uint64_t((double)subnet_traffic->in_packets / speed_calc_period);
-            new_speed_element.in_bytes   = uint64_t((double)subnet_traffic->in_bytes   / speed_calc_period); 
+            new_speed_element.in_bytes = uint64_t((double)subnet_traffic->in_bytes / speed_calc_period);
 
             new_speed_element.out_packets = uint64_t((double)subnet_traffic->out_packets / speed_calc_period);
-            new_speed_element.out_bytes   = uint64_t((double)subnet_traffic->out_bytes   / speed_calc_period);   
+            new_speed_element.out_bytes = uint64_t((double)subnet_traffic->out_bytes / speed_calc_period);
 
             /* Moving average recalculation for subnets */
             /* http://en.wikipedia.org/wiki/Moving_average#Application_to_measuring_computer_performance */
@@ -2261,23 +2295,28 @@ void recalculate_speed() {
 
             map_element* current_average_speed_element = &PerSubnetAverageSpeedMap[current_subnet];
 
-            current_average_speed_element->in_bytes = uint64_t(new_speed_element.in_bytes +
-                exp_value_subnet * ((double)current_average_speed_element->in_bytes - (double)new_speed_element.in_bytes));
+            current_average_speed_element->in_bytes = uint64_t(
+            new_speed_element.in_bytes + exp_value_subnet * ((double)current_average_speed_element->in_bytes -
+                                                             (double)new_speed_element.in_bytes));
 
-            current_average_speed_element->out_bytes = uint64_t(new_speed_element.out_bytes +
-                exp_value_subnet * ((double)current_average_speed_element->out_bytes - (double)new_speed_element.out_bytes));
+            current_average_speed_element->out_bytes = uint64_t(
+            new_speed_element.out_bytes + exp_value_subnet * ((double)current_average_speed_element->out_bytes -
+                                                              (double)new_speed_element.out_bytes));
 
-            current_average_speed_element->in_packets = uint64_t(new_speed_element.in_packets +
-                exp_value_subnet * ((double)current_average_speed_element->in_packets - (double)new_speed_element.in_packets));
- 
-            current_average_speed_element->out_packets = uint64_t(new_speed_element.out_packets +
-                exp_value_subnet * ((double)current_average_speed_element->out_packets - (double)new_speed_element.out_packets));
+            current_average_speed_element->in_packets = uint64_t(
+            new_speed_element.in_packets + exp_value_subnet * ((double)current_average_speed_element->in_packets -
+                                                               (double)new_speed_element.in_packets));
+
+            current_average_speed_element->out_packets =
+            uint64_t(new_speed_element.out_packets +
+                     exp_value_subnet * ((double)current_average_speed_element->out_packets -
+                                         (double)new_speed_element.out_packets));
 
             // Update speed calculation structure
             PerSubnetSpeedMap[current_subnet] = new_speed_element;
             *subnet_traffic = zero_map_element;
 
-            //logger << log4cpp::Priority::INFO<<convert_subnet_to_string(current_subnet)
+            // logger << log4cpp::Priority::INFO<<convert_subnet_to_string(current_subnet)
             //    << "in pps: " << new_speed_element.in_packets << " out pps: " << new_speed_element.out_packets;
         }
     }
@@ -2298,20 +2337,21 @@ void recalculate_speed() {
             uint32_t client_ip = htonl(client_ip_in_host_bytes_order);
 
             // Calculate speed for IP or whole subnet
-            build_speed_counters_from_packet_counters(new_speed_element, & *vector_itr, speed_calc_period);
+            build_speed_counters_from_packet_counters(new_speed_element, &*vector_itr, speed_calc_period);
 
             conntrack_main_struct* flow_counter_ptr = &SubnetVectorMapFlow[itr->first][current_index];
 
             if (enable_conection_tracking) {
                 // todo: optimize this operations!
                 // it's really bad and SLOW CODE
-                uint64_t total_out_flows =
-                    (uint64_t)flow_counter_ptr->out_tcp.size() + (uint64_t)flow_counter_ptr->out_udp.size() +
-                    (uint64_t)flow_counter_ptr->out_icmp.size() + (uint64_t)flow_counter_ptr->out_other.size();
+                uint64_t total_out_flows = (uint64_t)flow_counter_ptr->out_tcp.size() +
+                                           (uint64_t)flow_counter_ptr->out_udp.size() +
+                                           (uint64_t)flow_counter_ptr->out_icmp.size() +
+                                           (uint64_t)flow_counter_ptr->out_other.size();
 
                 uint64_t total_in_flows =
-                    (uint64_t)flow_counter_ptr->in_tcp.size() + (uint64_t)flow_counter_ptr->in_udp.size() +
-                    (uint64_t)flow_counter_ptr->in_icmp.size() + (uint64_t)flow_counter_ptr->in_other.size();
+                (uint64_t)flow_counter_ptr->in_tcp.size() + (uint64_t)flow_counter_ptr->in_udp.size() +
+                (uint64_t)flow_counter_ptr->in_icmp.size() + (uint64_t)flow_counter_ptr->in_other.size();
 
                 new_speed_element.out_flows = uint64_t((double)total_out_flows / speed_calc_period);
                 new_speed_element.in_flows = uint64_t((double)total_in_flows / speed_calc_period);
@@ -2333,16 +2373,17 @@ void recalculate_speed() {
             map_element* current_average_speed_element = &SubnetVectorMapSpeedAverage[itr->first][current_index];
 
             // Calculate average speed from per-second speed
-            build_average_speed_counters_from_speed_counters(current_average_speed_element, new_speed_element, exp_value, exp_power);
+            build_average_speed_counters_from_speed_counters(current_average_speed_element,
+                                                             new_speed_element, exp_value, exp_power);
 
             if (enable_conection_tracking) {
                 current_average_speed_element->out_flows = uint64_t(
-                    new_speed_element.out_flows +
-                    exp_value * ((double)current_average_speed_element->out_flows - (double)new_speed_element.out_flows));
+                new_speed_element.out_flows + exp_value * ((double)current_average_speed_element->out_flows -
+                                                           (double)new_speed_element.out_flows));
 
                 current_average_speed_element->in_flows = uint64_t(
-                    new_speed_element.in_flows +
-                    exp_value * ((double)current_average_speed_element->in_flows - (double)new_speed_element.in_flows));
+                new_speed_element.in_flows + exp_value * ((double)current_average_speed_element->in_flows -
+                                                          (double)new_speed_element.in_flows));
             }
 
             /* Moving average recalculation end */
@@ -2350,7 +2391,8 @@ void recalculate_speed() {
             ban_settings_t current_ban_settings = get_ban_settings_for_this_subnet(itr->first, host_group_name);
 
             if (we_should_ban_this_ip(current_average_speed_element, current_ban_settings)) {
-                logger << log4cpp::Priority::DEBUG << "We have found host group for this host as: " << host_group_name;  
+                logger << log4cpp::Priority::DEBUG
+                       << "We have found host group for this host as: " << host_group_name;
 
                 std::string flow_attack_details = "";
 
@@ -2393,11 +2435,14 @@ void recalculate_speed() {
         double exp_power = -speed_calc_period / average_calculation_amount;
         double exp_value = exp(exp_power);
 
-        total_speed_average_counters[index].bytes = uint64_t(total_speed_counters[index].bytes + exp_value * 
-            ((double) total_speed_average_counters[index].bytes - (double) total_speed_counters[index].bytes));
+        total_speed_average_counters[index].bytes = uint64_t(
+        total_speed_counters[index].bytes + exp_value * ((double)total_speed_average_counters[index].bytes -
+                                                         (double)total_speed_counters[index].bytes));
 
-        total_speed_average_counters[index].packets = uint64_t(total_speed_counters[index].packets + exp_value *  
-            ((double) total_speed_average_counters[index].packets - (double) total_speed_counters[index].packets));  
+        total_speed_average_counters[index].packets =
+        uint64_t(total_speed_counters[index].packets +
+                 exp_value * ((double)total_speed_average_counters[index].packets -
+                              (double)total_speed_counters[index].packets));
 
         // nullify data counters after speed calculation
         total_counters[index].bytes = 0;
@@ -2419,8 +2464,8 @@ void print_screen_contents_into_file(std::string screen_data_stats_param) {
 
     if (screen_data_file.is_open()) {
         // Set 660 permissions to file for security reasons
-        chmod(cli_stats_file_path.c_str(), S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);	    
-	    
+        chmod(cli_stats_file_path.c_str(), S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+
         screen_data_file << screen_data_stats_param;
         screen_data_file.close();
     } else {
@@ -2448,8 +2493,7 @@ void traffic_draw_program() {
         sorter = PACKETS;
     }
 
-    output_buffer << "FastNetMon " << fastnetmon_version
-                  << " Pavel Odintsov: fastnetmon.com"
+    output_buffer << "FastNetMon " << fastnetmon_version << " Pavel Odintsov: fastnetmon.com"
                   << "\n"
                   << "IPs ordered by: " << sort_parameter << "\n";
 
@@ -2483,7 +2527,8 @@ void traffic_draw_program() {
                   << speed_calculation_time.tv_usec << " microseconds\n";
 
     if (speed_calculation_time.tv_sec > 0) {
-        output_buffer << "ALERT! Toolkit working incorrectly! We should calculate speed in ~1 second\n";
+        output_buffer
+        << "ALERT! Toolkit working incorrectly! We should calculate speed in ~1 second\n";
     }
 
 #ifdef IPV6_HASH_COUNTERS
@@ -2496,7 +2541,7 @@ void traffic_draw_program() {
     // Print backend stats
     if (enable_pcap_collection) {
         output_buffer << get_pcap_stats() << "\n";
-    }  
+    }
 
 #ifdef PF_RING
     if (enable_data_collection_from_mirror) {
@@ -2567,11 +2612,13 @@ std::string print_channel_speed(std::string traffic_type, direction packet_direc
             if (packet_direction == INCOMING) {
                 direction_as_string = "incoming";
 
-                graphite_data[graphite_prefix + ".total." + direction_as_string + ".flows"] = incoming_total_flows_speed;
+                graphite_data[graphite_prefix + ".total." + direction_as_string + ".flows"] =
+                incoming_total_flows_speed;
             } else if (packet_direction == OUTGOING) {
                 direction_as_string = "outgoing";
 
-                graphite_data[graphite_prefix + ".total." + direction_as_string + ".flows"] = outgoing_total_flows_speed;
+                graphite_data[graphite_prefix + ".total." + direction_as_string + ".flows"] =
+                outgoing_total_flows_speed;
             }
 
             graphite_data[graphite_prefix + ".total." + direction_as_string + ".pps"] = speed_in_pps;
@@ -2596,7 +2643,7 @@ bool file_is_appendable(std::string path) {
     if (check_appendable_file.is_open()) {
         // all fine, just close file
         check_appendable_file.close();
-    
+
         return true;
     } else {
         return false;
@@ -2608,7 +2655,8 @@ void init_logging() {
     // We will check it manually
 
     if (!file_is_appendable(log_file_path)) {
-        std::cerr << "Can't open log file " << log_file_path << " for writing! Please check file and folder permissions" << std::endl;
+        std::cerr << "Can't open log file " << log_file_path
+                  << " for writing! Please check file and folder permissions" << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -2629,20 +2677,22 @@ void reconfigure_logging() {
     layout->setConversionPattern("[%p] %m%n");
 
     if (logging_configuration.local_syslog_logging) {
-        log4cpp::Appender* local_syslog_appender = new log4cpp::SyslogAppender("fastnetmon", "fastnetmon", LOG_USER);
-	local_syslog_appender->setLayout(layout);
+        log4cpp::Appender* local_syslog_appender =
+        new log4cpp::SyslogAppender("fastnetmon", "fastnetmon", LOG_USER);
+        local_syslog_appender->setLayout(layout);
         logger.addAppender(local_syslog_appender);
 
         logger << log4cpp::Priority::INFO << "We start local syslog logging corectly";
-    }   
-     
-    if (logging_configuration.remote_syslog_logging) {
-        log4cpp::Appender* remote_syslog_appender = new log4cpp::RemoteSyslogAppender(
-            "fastnetmon", "fastnetmon", logging_configuration.remote_syslog_server, LOG_USER, logging_configuration.remote_syslog_port); 
+    }
 
-	remote_syslog_appender->setLayout(layout);
+    if (logging_configuration.remote_syslog_logging) {
+        log4cpp::Appender* remote_syslog_appender =
+        new log4cpp::RemoteSyslogAppender("fastnetmon", "fastnetmon", logging_configuration.remote_syslog_server,
+                                          LOG_USER, logging_configuration.remote_syslog_port);
+
+        remote_syslog_appender->setLayout(layout);
         logger.addAppender(remote_syslog_appender);
-        
+
         logger << log4cpp::Priority::INFO << "We start remote syslog logging corectly";
     }
 }
@@ -2682,7 +2732,7 @@ void redirect_fds() {
 
     // Create copy of zero decriptor for 1 and 2 fd's
     // We do not need return codes here but we need do it for suppressing complaints from compiler
-    int first_dup_result  = dup(0);
+    int first_dup_result = dup(0);
     int second_dup_result = dup(0);
 }
 
@@ -2692,18 +2742,19 @@ int main(int argc, char** argv) {
     namespace po = boost::program_options;
 
     try {
+        // clang-format off
         po::options_description desc("Allowed options");
         desc.add_options()
-            ("help", "produce help message")
-            ("version", "show version")
-            ("daemonize", "detach from the terminal")
-            ("configuration_file", po::value<std::string>(), "set path to custom configuration file")
-            ("log_file", po::value<std::string>(), "set path to custom log file")
-        ;
+		("help", "produce help message")
+		("version", "show version")
+		("daemonize", "detach from the terminal")
+		("configuration_file", po::value<std::string>(),"set path to custom configuration file")
+		("log_file", po::value<std::string>(), "set path to custom log file");
+        // clang-format on
 
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, desc), vm);
-        po::notify(vm);    
+        po::notify(vm);
 
         if (vm.count("help")) {
             std::cout << desc << std::endl;
@@ -2718,18 +2769,18 @@ int main(int argc, char** argv) {
         if (vm.count("daemonize")) {
             daemonize = true;
         }
-   
+
         if (vm.count("configuration_file")) {
             global_config_path = vm["configuration_file"].as<std::string>();
             std::cout << "We will use custom path to configuration file: " << global_config_path << std::endl;
-        } 
-        
+        }
+
         if (vm.count("log_file")) {
             log_file_path = vm["log_file"].as<std::string>();
             std::cout << "We will use custom path to log file: " << log_file_path << std::endl;
         }
     } catch (po::error& e) {
-        std::cerr << "ERROR: " << e.what() << std::endl << std::endl; 
+        std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -2778,7 +2829,7 @@ int main(int argc, char** argv) {
     if (!load_config_result) {
         std::cerr << "Can't open config file " << global_config_path << " please create it!" << std::endl;
         exit(1);
-    } 
+    }
 
     if (file_exists(pid_path)) {
         pid_t pid_from_file = 0;
@@ -2810,7 +2861,7 @@ int main(int argc, char** argv) {
     bool print_pid_to_file_result = print_pid_to_file(getpid(), pid_path);
 
     if (!print_pid_to_file_result) {
-        logger << log4cpp::Priority::ERROR << "Could not create pid file, please check permissions: " << pid_path; 
+        logger << log4cpp::Priority::ERROR << "Could not create pid file, please check permissions: " << pid_path;
         exit(EXIT_FAILURE);
     }
 
@@ -2833,7 +2884,7 @@ int main(int argc, char** argv) {
         total_speed_counters[index].packets = 0;
 
         total_speed_average_counters[index].bytes = 0;
-        total_speed_average_counters[index].packets = 0; 
+        total_speed_average_counters[index].packets = 0;
     }
 
     /* Create folder for attack details */
@@ -2893,7 +2944,7 @@ int main(int argc, char** argv) {
 #ifdef ENABLE_GOBGP
     if (gobgp_enabled) {
         gobgp_action_init();
-    } 
+    }
 #endif
 
 #ifdef IPV6_HASH_COUNTERS
@@ -2908,7 +2959,7 @@ int main(int argc, char** argv) {
 
     // Run screen draw thread
     service_thread_group.add_thread(new boost::thread(screen_draw_thread));
-    
+
     // start thread for recalculating speed in realtime
     service_thread_group.add_thread(new boost::thread(recalculate_speed_thread_handler));
 
@@ -2930,7 +2981,7 @@ int main(int argc, char** argv) {
     }
 #endif
 
-#ifdef SNABB_SWITCH 
+#ifdef SNABB_SWITCH
     if (enable_snabbswitch_collection) {
         packet_capture_plugin_thread_group.add_thread(new boost::thread(start_snabbswitch_collection, process_packet));
     }
@@ -2980,7 +3031,7 @@ void free_up_all_resources() {
 
 // For correct program shutdown by CTRL+C
 void interruption_signal_handler(int signal_number) {
-     
+
     logger << log4cpp::Priority::INFO << "SIGNAL captured, prepare toolkit shutdown";
 
 #ifdef FASTNETMON_API
@@ -2988,19 +3039,19 @@ void interruption_signal_handler(int signal_number) {
     api_server->Shutdown();
 #endif
 
-    logger << log4cpp::Priority::INFO << "Interrupt service threads";   
+    logger << log4cpp::Priority::INFO << "Interrupt service threads";
     service_thread_group.interrupt_all();
 
     logger << log4cpp::Priority::INFO << "Wait while they finished";
     service_thread_group.join_all();
 
     logger << log4cpp::Priority::INFO << "Interrupt packet capture treads";
-    packet_capture_plugin_thread_group.interrupt_all(); 
-    
+    packet_capture_plugin_thread_group.interrupt_all();
+
     logger << log4cpp::Priority::INFO << "Wait while they finished";
     packet_capture_plugin_thread_group.join_all();
-  
-    logger << log4cpp::Priority::INFO << "Shutdown main process"; 
+
+    logger << log4cpp::Priority::INFO << "Shutdown main process";
 
     // TODO: we should REMOVE this exit command and wait for correct toolkit shutdown
     exit(1);
@@ -3049,21 +3100,24 @@ void exabgp_ban_manage(std::string action, std::string ip_as_string, attack_deta
 }
 
 // Low level ExaBGP ban management
-void exabgp_prefix_ban_manage(std::string action, std::string prefix_as_string_with_mask,
-    std::string exabgp_next_hop, std::string exabgp_community) {
+void exabgp_prefix_ban_manage(std::string action,
+                              std::string prefix_as_string_with_mask,
+                              std::string exabgp_next_hop,
+                              std::string exabgp_community) {
 
     /* Buffer for BGP message */
-    char bgp_message[256];    
+    char bgp_message[256];
 
     if (action == "ban") {
         sprintf(bgp_message, "announce route %s next-hop %s community %s\n",
-            prefix_as_string_with_mask.c_str(), exabgp_next_hop.c_str(), exabgp_community.c_str());
+                prefix_as_string_with_mask.c_str(), exabgp_next_hop.c_str(), exabgp_community.c_str());
     } else {
-        sprintf(bgp_message, "withdraw route %s next-hop %s\n", prefix_as_string_with_mask.c_str(), exabgp_next_hop.c_str());
-    }    
+        sprintf(bgp_message, "withdraw route %s next-hop %s\n", prefix_as_string_with_mask.c_str(),
+                exabgp_next_hop.c_str());
+    }
 
     logger << log4cpp::Priority::INFO << "ExaBGP announce message: " << bgp_message;
- 
+
     int exabgp_pipe = open(exabgp_command_pipe.c_str(), O_WRONLY);
 
     if (exabgp_pipe <= 0) {
@@ -3091,7 +3145,7 @@ bool exabgp_flow_spec_ban_manage(std::string action, std::string flow_spec_rule_
     }
 
     // Trailing \n is very important!
-    std::string bgp_message = announce_action + " " + flow_spec_rule_as_text + "\n"; 
+    std::string bgp_message = announce_action + " " + flow_spec_rule_as_text + "\n";
 
     int exabgp_pipe = open(exabgp_command_pipe.c_str(), O_WRONLY);
 
@@ -3155,8 +3209,7 @@ void execute_ip_ban(uint32_t client_ip, map_element average_speed_element, std::
 
     if (ban_list.count(client_ip) > 0) {
         if (ban_list[client_ip].attack_direction != data_direction) {
-            logger << log4cpp::Priority::INFO
-                   << "We expected very strange situation: attack direction for "
+            logger << log4cpp::Priority::INFO << "We expected very strange situation: attack direction for "
                    << convert_ip_as_uint_to_string(client_ip) << " was changed";
 
             return;
@@ -3184,11 +3237,8 @@ void execute_ip_ban(uint32_t client_ip, map_element average_speed_element, std::
     std::string data_direction_as_string = get_direction_name(data_direction);
 
     logger << log4cpp::Priority::INFO << "We run execute_ip_ban code with following params "
-        << " in_pps: "  << in_pps
-        << " out_pps: " << out_pps
-        << " in_bps: "  << in_bps
-        << " out_bps: " << out_bps
-        << " and we decide it's " << data_direction_as_string << " attack";
+           << " in_pps: " << in_pps << " out_pps: " << out_pps << " in_bps: " << in_bps
+           << " out_bps: " << out_bps << " and we decide it's " << data_direction_as_string << " attack";
 
     std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
     std::string pps_as_string = convert_int_to_string(pps);
@@ -3250,13 +3300,14 @@ void execute_ip_ban(uint32_t client_ip, map_element average_speed_element, std::
     current_attack.average_out_flows = average_speed_element.out_flows;
 
     if (collect_attack_pcap_dumps) {
-        bool buffer_allocation_result = current_attack.pcap_attack_dump.allocate_buffer( number_of_packets_for_pcap_attack_dump );
+        bool buffer_allocation_result =
+        current_attack.pcap_attack_dump.allocate_buffer(number_of_packets_for_pcap_attack_dump);
 
         if (!buffer_allocation_result) {
-            logger << log4cpp::Priority::ERROR << "Can't allocate buffer for attack, switch off this option completely ";
-            collect_attack_pcap_dumps = false; 
+            logger << log4cpp::Priority::ERROR
+                   << "Can't allocate buffer for attack, switch off this option completely ";
+            collect_attack_pcap_dumps = false;
         }
-        
     }
 
     ban_list_mutex.lock();
@@ -3273,15 +3324,15 @@ void execute_ip_ban(uint32_t client_ip, map_element average_speed_element, std::
     call_ban_handlers(client_ip, ban_list[client_ip], flow_attack_details);
 }
 
-void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::string flow_attack_details) { 
+void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::string flow_attack_details) {
     std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
     std::string pps_as_string = convert_int_to_string(current_attack.attack_power);
     std::string data_direction_as_string = get_direction_name(current_attack.attack_direction);
 
     bool store_attack_details_to_file = true;
-    
+
     std::string basic_attack_information = get_attack_description(client_ip, current_attack);
-    
+
     std::string basic_attack_information_in_json = get_attack_description_in_json(client_ip, current_attack);
 
     std::string full_attack_description = basic_attack_information + flow_attack_details;
@@ -3292,8 +3343,7 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
 
     if (pfring_hardware_filters_enabled) {
 #ifdef PF_RING
-        logger << log4cpp::Priority::INFO
-            << "We will block traffic to/from this IP with hardware filters";
+        logger << log4cpp::Priority::INFO << "We will block traffic to/from this IP with hardware filters";
         pfring_hardware_filter_action_block(client_ip_as_string);
 #else
         logger << log4cpp::Priority::ERROR << "You haven't compiled PF_RING hardware filters support";
@@ -3302,8 +3352,7 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
 
     if (notify_script_enabled) {
         std::string script_call_params = notify_script_path + " " + client_ip_as_string + " " +
-                                         data_direction_as_string + " " + pps_as_string +
-                                         " " + "ban";
+                                         data_direction_as_string + " " + pps_as_string + " " + "ban";
         logger << log4cpp::Priority::INFO << "Call script for ban client: " << client_ip_as_string;
 
         // We should execute external script in separate thread because any lag in this code will be
@@ -3374,13 +3423,13 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
 #ifdef MONGO
     if (mongodb_enabled) {
         std::string mongo_key_name = client_ip_as_string + "_information_" +
-            print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
+                                     print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
 
         // We could not use dot in key names: http://docs.mongodb.org/manual/core/document/#dot-notation
         std::replace(mongo_key_name.begin(), mongo_key_name.end(), '.', '_');
 
         logger << log4cpp::Priority::INFO << "Start data save in Mongo in key: " << mongo_key_name;
-        boost::thread  mongo_store_thread(store_data_in_mongo, mongo_key_name, basic_attack_information_in_json);
+        boost::thread mongo_store_thread(store_data_in_mongo, mongo_key_name, basic_attack_information_in_json);
         mongo_store_thread.detach();
         logger << log4cpp::Priority::INFO << "Finish data save in Mongo in key: " << mongo_key_name;
     }
@@ -3394,11 +3443,13 @@ void cleanup_ban_list() {
     if (unban_iteration_sleep_time > global_ban_time) {
         unban_iteration_sleep_time = int(global_ban_time / 2);
 
-        logger << log4cpp::Priority::INFO << "You are using enough small ban time " << global_ban_time
-            << " we need reduce unban_iteration_sleep_time twices to " << unban_iteration_sleep_time << " seconds";
+        logger << log4cpp::Priority::INFO << "You are using enough small ban time "
+               << global_ban_time << " we need reduce unban_iteration_sleep_time twices to "
+               << unban_iteration_sleep_time << " seconds";
     }
 
-    logger << log4cpp::Priority::INFO << "Run banlist cleanup thread, we will awake every " << unban_iteration_sleep_time << " seconds";
+    logger << log4cpp::Priority::INFO << "Run banlist cleanup thread, we will awake every "
+           << unban_iteration_sleep_time << " seconds";
 
     while (true) {
         boost::this_thread::sleep(boost::posix_time::seconds(unban_iteration_sleep_time));
@@ -3420,7 +3471,7 @@ void cleanup_ban_list() {
             int ban_time = itr->second.ban_time;
 
             // Yes, we reached end of ban time for this customer
-            bool we_could_unban_this_ip = time_difference > ban_time; 
+            bool we_could_unban_this_ip = time_difference > ban_time;
 
             // We haven't reached time for unban yet
             if (!we_could_unban_this_ip) {
@@ -3430,12 +3481,12 @@ void cleanup_ban_list() {
             // Check about ongoing attack
             if (unban_only_if_attack_finished) {
                 std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
-                uint32_t subnet_in_host_byte_order = ntohl(itr->second.customer_network.first); 
+                uint32_t subnet_in_host_byte_order = ntohl(itr->second.customer_network.first);
                 int64_t shift_in_vector = (int64_t)ntohl(client_ip) - (int64_t)subnet_in_host_byte_order;
-    
-                // Try to find average speed element 
+
+                // Try to find average speed element
                 map_of_vector_counters::iterator itr_average_speed =
-                    SubnetVectorMapSpeedAverage.find(itr->second.customer_network); 
+                SubnetVectorMapSpeedAverage.find(itr->second.customer_network);
 
                 if (itr_average_speed == SubnetVectorMapSpeedAverage.end()) {
                     logger << log4cpp::Priority::ERROR << "Can't find vector address in subnet map for unban function";
@@ -3443,26 +3494,28 @@ void cleanup_ban_list() {
                 }
 
                 if (shift_in_vector < 0 or shift_in_vector >= itr_average_speed->second.size()) {
-                    logger << log4cpp::Priority::ERROR << "We tried to access to element with index " << shift_in_vector
-                        << " which located outside allocated vector with size " << itr_average_speed->second.size();
+                    logger << log4cpp::Priority::ERROR << "We tried to access to element with index "
+                           << shift_in_vector << " which located outside allocated vector with size "
+                           << itr_average_speed->second.size();
 
                     continue;
                 }
 
-                map_element* average_speed_element = &itr_average_speed->second[shift_in_vector];  
+                map_element* average_speed_element = &itr_average_speed->second[shift_in_vector];
 
                 // We get ban settings from host subnet
                 std::string host_group_name;
-                ban_settings_t current_ban_settings = get_ban_settings_for_this_subnet(itr->second.customer_network, host_group_name);
+                ban_settings_t current_ban_settings =
+                get_ban_settings_for_this_subnet(itr->second.customer_network, host_group_name);
 
                 if (we_should_ban_this_ip(average_speed_element, current_ban_settings)) {
                     logger << log4cpp::Priority::ERROR << "Attack to IP " << client_ip_as_string
-                        << " still going! We should not unblock this host";
+                           << " still going! We should not unblock this host";
 
                     // Well, we still saw attack, skip to next iteration
                     continue;
                 }
-            } 
+            }
 
             // Add this IP to remove list
             // We will remove keyas really after this loop
@@ -3473,10 +3526,11 @@ void cleanup_ban_list() {
         }
 
         // Remove all unbanned hosts from the ban list
-        for (std::vector<uint32_t>::iterator itr = ban_list_items_for_erase.begin(); itr != ban_list_items_for_erase.end(); ++itr) {
+        for (std::vector<uint32_t>::iterator itr = ban_list_items_for_erase.begin();
+             itr != ban_list_items_for_erase.end(); ++itr) {
             ban_list_mutex.lock();
             ban_list.erase(*itr);
-            ban_list_mutex.unlock(); 
+            ban_list_mutex.unlock();
         }
     }
 }
@@ -3485,14 +3539,14 @@ void call_unban_handlers(uint32_t client_ip, attack_details& current_attack) {
     std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
 
     logger << log4cpp::Priority::INFO << "We will unban banned IP: " << client_ip_as_string
-        << " because it ban time " << current_attack.ban_time << " seconds is ended";
+           << " because it ban time " << current_attack.ban_time << " seconds is ended";
 
     if (notify_script_enabled) {
-        std::string data_direction_as_string = get_direction_name(current_attack.attack_direction); 
+        std::string data_direction_as_string = get_direction_name(current_attack.attack_direction);
         std::string pps_as_string = convert_int_to_string(current_attack.attack_power);
 
-        std::string script_call_params = notify_script_path + " " + client_ip_as_string +
-            " " + data_direction_as_string + " " +  pps_as_string + " unban";
+        std::string script_call_params = notify_script_path + " " + client_ip_as_string + " " +
+                                         data_direction_as_string + " " + pps_as_string + " unban";
 
         logger << log4cpp::Priority::INFO << "Call script for unban client: " << client_ip_as_string;
 
@@ -3502,11 +3556,10 @@ void call_unban_handlers(uint32_t client_ip, attack_details& current_attack) {
         exec_thread.detach();
 
         logger << log4cpp::Priority::INFO << "Script for unban client is finished: " << client_ip_as_string;
-    }   
+    }
 
     if (exabgp_enabled) {
-        logger << log4cpp::Priority::INFO
-               << "Call ExaBGP for unban client started: " << client_ip_as_string;
+        logger << log4cpp::Priority::INFO << "Call ExaBGP for unban client started: " << client_ip_as_string;
 
         boost::thread exabgp_thread(exabgp_ban_manage, "unban", client_ip_as_string, current_attack);
         exabgp_thread.detach();
@@ -3520,10 +3573,10 @@ void call_unban_handlers(uint32_t client_ip, attack_details& current_attack) {
 
         boost::thread gobgp_thread(gobgp_ban_manage, "unban", client_ip_as_string, current_attack);
         gobgp_thread.detach();
-        
+
         logger << log4cpp::Priority::INFO << "Call to GoBGP for unban client is finished: " << client_ip_as_string;
     }
-#endif 
+#endif
 }
 
 std::string print_ddos_attack_details() {
@@ -3536,9 +3589,8 @@ std::string print_ddos_attack_details() {
         std::string max_pps_as_string = convert_int_to_string(((*ii).second).max_attack_power);
         std::string attack_direction = get_direction_name(((*ii).second).attack_direction);
 
-        output_buffer << client_ip_as_string << "/" << max_pps_as_string << " pps "
-                      << attack_direction << " at "
-                      << print_time_t_in_fastnetmon_format(ii->second.ban_timestamp) << std::endl;
+        output_buffer << client_ip_as_string << "/" << max_pps_as_string << " pps " << attack_direction
+                      << " at " << print_time_t_in_fastnetmon_format(ii->second.ban_timestamp) << std::endl;
 
         send_attack_details(client_ip, (*ii).second);
     }
@@ -3556,32 +3608,34 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
     if (enable_subnet_counters) {
         // Got subnet tracking structure
         // TODO: we suppose case "no key exists" is not possible
-        map_element network_speed_meter = PerSubnetSpeedMap[ current_attack.customer_network ];
-        map_element average_network_speed_meter = PerSubnetAverageSpeedMap[ current_attack.customer_network ];
+        map_element network_speed_meter = PerSubnetSpeedMap[current_attack.customer_network];
+        map_element average_network_speed_meter = PerSubnetAverageSpeedMap[current_attack.customer_network];
 
-        attack_description <<"Network: " << convert_subnet_to_string(current_attack.customer_network) << "\n";
+        attack_description << "Network: " << convert_subnet_to_string(current_attack.customer_network) << "\n";
 
         attack_description << serialize_network_load_to_text(network_speed_meter, false);
         attack_description << serialize_network_load_to_text(average_network_speed_meter, true);
     }
 
     attack_description << serialize_statistic_counters_about_attack(current_attack);
-    
+
     return attack_description.str();
 }
 
 std::string get_attack_description_in_json(uint32_t client_ip, attack_details& current_attack) {
     json_object* jobj = json_object_new_object();
 
-    json_object_object_add(jobj, "ip", json_object_new_string(convert_ip_as_uint_to_string(client_ip).c_str()));
-    json_object_object_add(jobj, "attack_details", serialize_attack_description_to_json(current_attack) ); 
+    json_object_object_add(jobj, "ip",
+                           json_object_new_string(convert_ip_as_uint_to_string(client_ip).c_str()));
+    json_object_object_add(jobj, "attack_details", serialize_attack_description_to_json(current_attack));
 
     if (enable_subnet_counters) {
-        map_element network_speed_meter = PerSubnetSpeedMap[ current_attack.customer_network ];
-        map_element average_network_speed_meter = PerSubnetAverageSpeedMap[ current_attack.customer_network ];
+        map_element network_speed_meter = PerSubnetSpeedMap[current_attack.customer_network];
+        map_element average_network_speed_meter = PerSubnetAverageSpeedMap[current_attack.customer_network];
 
         json_object_object_add(jobj, "network_load", serialize_network_load_to_json(network_speed_meter));
-        json_object_object_add(jobj, "network_average_load", serialize_network_load_to_json(average_network_speed_meter));
+        json_object_object_add(jobj, "network_average_load",
+                               serialize_network_load_to_json(average_network_speed_meter));
     }
 
     // So we haven't statistic_counters here but from my point of view they are useless
@@ -3598,17 +3652,18 @@ std::string generate_simple_packets_dump(std::vector<simple_packet>& ban_list_de
     std::stringstream attack_details;
 
     std::map<unsigned int, unsigned int> protocol_counter;
-    for (std::vector<simple_packet>::iterator iii = ban_list_details.begin(); iii != ban_list_details.end(); ++iii) {
-            attack_details << print_simple_packet(*iii);
+    for (std::vector<simple_packet>::iterator iii = ban_list_details.begin();
+         iii != ban_list_details.end(); ++iii) {
+        attack_details << print_simple_packet(*iii);
 
         protocol_counter[iii->protocol]++;
-    }    
+    }
 
     std::map<unsigned int, unsigned int>::iterator max_proto =
     std::max_element(protocol_counter.begin(), protocol_counter.end(), protocol_counter.value_comp());
     /*
     attack_details
-        << "\n" 
+        << "\n"
         << "We got more packets (" << max_proto->second << " from " << ban_details_records_count
         << ") for protocol: " << get_protocol_name_by_number(max_proto->first) << "\n";
     */
@@ -3627,12 +3682,12 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
 
         attack_details << get_attack_description(client_ip, current_attack_details) << "\n\n";
         attack_details << generate_simple_packets_dump(ban_list_details[client_ip]);
-        
+
         logger << log4cpp::Priority::INFO << "Attack with direction: " << attack_direction
                << " IP: " << client_ip_as_string << " Power: " << pps_as_string
                << " traffic samples collected";
 
-        call_attack_details_handlers(client_ip, current_attack_details, attack_details.str()); 
+        call_attack_details_handlers(client_ip, current_attack_details, attack_details.str());
 
         // TODO: here we have definitely RACE CONDITION!!! FIX IT
 
@@ -3640,12 +3695,18 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
         ban_list_details_mutex.lock();
         ban_list_details.erase(client_ip);
         ban_list_details_mutex.unlock();
-    }    
+    }
 }
 
 #ifdef ENABLE_DPI
 // Parse raw binary stand-alone packet with nDPI
-ndpi_protocol dpi_parse_packet(char* buffer, uint32_t len, uint32_t snap_len, struct ndpi_id_struct *src, struct ndpi_id_struct *dst, struct ndpi_flow_struct *flow, std::string& parsed_packet_as_string) {
+ndpi_protocol dpi_parse_packet(char* buffer,
+                               uint32_t len,
+                               uint32_t snap_len,
+                               struct ndpi_id_struct* src,
+                               struct ndpi_id_struct* dst,
+                               struct ndpi_flow_struct* flow,
+                               std::string& parsed_packet_as_string) {
     struct pfring_pkthdr packet_header;
     memset(&packet_header, 0, sizeof(packet_header));
     packet_header.len = len;
@@ -3655,16 +3716,17 @@ ndpi_protocol dpi_parse_packet(char* buffer, uint32_t len, uint32_t snap_len, st
 
     uint32_t current_tickt = 0;
     uint8_t* iph = (uint8_t*)(&buffer[packet_header.extended_hdr.parsed_pkt.offset.l3_offset]);
-    unsigned int ipsize = packet_header.len; 
+    unsigned int ipsize = packet_header.len;
 
-    ndpi_protocol detected_protocol = ndpi_detection_process_packet(my_ndpi_struct, flow, iph, ipsize, current_tickt, src, dst);
+    ndpi_protocol detected_protocol =
+    ndpi_detection_process_packet(my_ndpi_struct, flow, iph, ipsize, current_tickt, src, dst);
 
-    // So bad approach :( 
+    // So bad approach :(
     char print_buffer[512];
     fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
 
     parsed_packet_as_string = std::string(print_buffer);
- 
+
     return detected_protocol;
 }
 #endif
@@ -3681,8 +3743,8 @@ void init_current_instance_of_ndpi() {
     }
 
     // Load sizes of main parsing structures
-    ndpi_size_id_struct   = ndpi_detection_get_sizeof_ndpi_id_struct();
-    ndpi_size_flow_struct = ndpi_detection_get_sizeof_ndpi_flow_struct(); 
+    ndpi_size_id_struct = ndpi_detection_get_sizeof_ndpi_id_struct();
+    ndpi_size_flow_struct = ndpi_detection_get_sizeof_ndpi_flow_struct();
 }
 
 // Zeroify nDPI structure without memory leaks
@@ -3700,11 +3762,14 @@ void zeroify_ndpi_flow(struct ndpi_flow_struct* flow) {
 
 // Run flow spec mitigation rule
 void launch_bgp_flow_spec_rule(amplification_attack_type_t attack_type, std::string client_ip_as_string) {
-    logger << log4cpp::Priority::INFO << "We detected this attack as: " << get_amplification_attack_type(attack_type);
+    logger << log4cpp::Priority::INFO
+           << "We detected this attack as: " << get_amplification_attack_type(attack_type);
 
-    std::string flow_spec_rule_text = generate_flow_spec_for_amplification_attack(attack_type, client_ip_as_string);
+    std::string flow_spec_rule_text =
+    generate_flow_spec_for_amplification_attack(attack_type, client_ip_as_string);
 
-    logger << log4cpp::Priority::INFO << "We have generated BGP Flow Spec rule for this attack: " << flow_spec_rule_text;
+    logger << log4cpp::Priority::INFO
+           << "We have generated BGP Flow Spec rule for this attack: " << flow_spec_rule_text;
 
     if (exabgp_flow_spec_announces) {
         active_flow_spec_announces_t::iterator itr = active_flow_spec_announces.find(flow_spec_rule_text);
@@ -3716,14 +3781,14 @@ void launch_bgp_flow_spec_rule(amplification_attack_type_t attack_type, std::str
             bool exabgp_publish_result = exabgp_flow_spec_ban_manage("ban", flow_spec_rule_text);
 
             if (exabgp_publish_result) {
-                active_flow_spec_announces[ flow_spec_rule_text ] = 1;
+                active_flow_spec_announces[flow_spec_rule_text] = 1;
             }
         } else {
             // We have already blocked this attack
             logger << log4cpp::Priority::INFO << "The same rule was already sent to ExaBGP formerly";
         }
     } else {
-          logger << log4cpp::Priority::INFO << "exabgp_flow_spec_announces disabled. We will not talk to ExaBGP";
+        logger << log4cpp::Priority::INFO << "exabgp_flow_spec_announces disabled. We will not talk to ExaBGP";
     }
 }
 
@@ -3738,12 +3803,13 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
     }
 
     struct fastnetmon_pcap_file_header pcap_header;
-    ssize_t file_header_readed_bytes = read(filedesc, &pcap_header, sizeof(struct fastnetmon_pcap_file_header));
+    ssize_t file_header_readed_bytes =
+    read(filedesc, &pcap_header, sizeof(struct fastnetmon_pcap_file_header));
 
     if (file_header_readed_bytes != sizeof(struct fastnetmon_pcap_file_header)) {
         logger << log4cpp::Priority::ERROR << "Can't read pcap file header";
         return;
-    }   
+    }
 
     // http://www.tcpdump.org/manpages/pcap-savefile.5.html
     if (pcap_header.magic == 0xa1b2c3d4 or pcap_header.magic == 0xd4c3b2a1) {
@@ -3751,7 +3817,7 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
     } else {
         logger << log4cpp::Priority::ERROR << "Magic in file header broken";
         return;
-    }   
+    }
 
     // Buffer for packets
     char packet_buffer[pcap_header.snaplen];
@@ -3764,13 +3830,13 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
     uint64_t snmp_amplification_packets = 0;
 
 
-    struct ndpi_id_struct *src = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
+    struct ndpi_id_struct* src = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
     memset(src, 0, ndpi_size_id_struct);
 
     struct ndpi_id_struct* dst = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
     memset(dst, 0, ndpi_size_id_struct);
 
-    struct ndpi_flow_struct* flow = (struct ndpi_flow_struct*)malloc(ndpi_size_flow_struct); 
+    struct ndpi_flow_struct* flow = (struct ndpi_flow_struct*)malloc(ndpi_size_flow_struct);
     memset(flow, 0, ndpi_size_flow_struct);
 
     while (1) {
@@ -3780,7 +3846,8 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
 
         if (packet_header_readed_bytes != sizeof(struct fastnetmon_pcap_pkthdr)) {
             if (packet_header_readed_bytes != 0) {
-                logger << log4cpp::Priority::INFO << "All packet read ? (" << packet_header_readed_bytes << ", " << errno << ")";
+                logger << log4cpp::Priority::INFO << "All packet read ? ("
+                       << packet_header_readed_bytes << ", " << errno << ")";
             }
             // We haven't any packets
             break;
@@ -3805,7 +3872,9 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
 
         std::string parsed_packet_as_string;
 
-        ndpi_protocol detected_protocol = dpi_parse_packet(packet_buffer, pcap_packet_header.orig_len, pcap_packet_header.incl_len, src, dst, flow, parsed_packet_as_string);
+        ndpi_protocol detected_protocol =
+        dpi_parse_packet(packet_buffer, pcap_packet_header.orig_len, pcap_packet_header.incl_len,
+                         src, dst, flow, parsed_packet_as_string);
 
 #if NDPI_MAJOR >= 2
         u_int16_t app_protocol = detected_protocol.app_protocol;
@@ -3813,11 +3882,12 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
         u_int16_t app_protocol = detected_protocol.protocol;
 #endif
         char* protocol_name = ndpi_get_proto_name(my_ndpi_struct, app_protocol);
-        char* master_protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.master_protocol); 
+        char* master_protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.master_protocol);
 
         if (app_protocol == NDPI_PROTOCOL_DNS) {
             // It's answer for ANY request with so much
-            if (flow->protos.dns.query_type == 255 && flow->protos.dns.num_queries < flow->protos.dns.num_answers) {
+            if (flow->protos.dns.query_type == 255 &&
+                flow->protos.dns.num_queries < flow->protos.dns.num_answers) {
                 dns_amplification_packets++;
             }
 
@@ -3834,7 +3904,8 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
             snmp_amplification_packets++;
         }
 
-        ss << parsed_packet_as_string << " protocol: " << protocol_name << " master_protocol: " << master_protocol_name << "\n";
+        ss << parsed_packet_as_string << " protocol: " << protocol_name
+           << " master_protocol: " << master_protocol_name << "\n";
 
         total_packets_number++;
     }
@@ -3843,66 +3914,66 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
     ndpi_free_flow(flow);
     free(dst);
     free(src);
-    
+
     close(filedesc);
 
-    logger << log4cpp::Priority::INFO 
-           << "DPI pkt stats: total:"  << total_packets_number
-                           << " DNS:"  << dns_amplification_packets
-                           << " NTP:"  << ntp_amplification_packets
-                           << " SSDP:" << ssdp_amplification_packets
-                           << " SNMP:" << snmp_amplification_packets;
-                                       
+    logger << log4cpp::Priority::INFO << "DPI pkt stats: total:" << total_packets_number
+           << " DNS:" << dns_amplification_packets << " NTP:" << ntp_amplification_packets
+           << " SSDP:" << ssdp_amplification_packets << " SNMP:" << snmp_amplification_packets;
+
     amplification_attack_type_t attack_type;
 
     // Attack type in unknown by default
     attack_type = AMPLIFICATION_ATTACK_UNKNOWN;
 
     // Detect amplification attack type
-    if ( (double)dns_amplification_packets / (double)total_packets_number > 0.2) {
+    if ((double)dns_amplification_packets / (double)total_packets_number > 0.2) {
         launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_DNS, client_ip_as_string);
-    } else if ( (double)ntp_amplification_packets / (double)total_packets_number > 0.2) {
+    } else if ((double)ntp_amplification_packets / (double)total_packets_number > 0.2) {
         launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_NTP, client_ip_as_string);
-    } else if ( (double)ssdp_amplification_packets / (double)total_packets_number > 0.2) {
+    } else if ((double)ssdp_amplification_packets / (double)total_packets_number > 0.2) {
         launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_SSDP, client_ip_as_string);
-    } else if ( (double)snmp_amplification_packets / (double)total_packets_number > 0.2) {
+    } else if ((double)snmp_amplification_packets / (double)total_packets_number > 0.2) {
         launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_SNMP, client_ip_as_string);
     } else {
-        /*TODO 
-            - full IP ban should be announced here !        
+        /*TODO
+            - full IP ban should be announced here !
             - and maybe some protocol/port based statistics could be used to filter new/unknown attacks...
         */
 
-        logger << log4cpp::Priority::ERROR << "We can't detect attack type with DPI. It's not so critical, only for your information";
+        logger
+        << log4cpp::Priority::ERROR
+        << "We can't detect attack type with DPI. It's not so critical, only for your information";
     }
 }
 
 #endif
 
-void call_attack_details_handlers(uint32_t client_ip, attack_details& current_attack, std::string attack_fingerprint) { 
+void call_attack_details_handlers(uint32_t client_ip, attack_details& current_attack, std::string attack_fingerprint) {
     std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
     std::string attack_direction = get_direction_name(current_attack.attack_direction);
     std::string pps_as_string = convert_int_to_string(current_attack.attack_power);
 
     // We place this variables here because we need this paths from DPI parser code
     std::string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
-    std::string attack_pcap_dump_path = attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string + ".pcap"; 
+    std::string attack_pcap_dump_path =
+    attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string + ".pcap";
 
     if (collect_attack_pcap_dumps) {
-        int pcap_fump_filedesc = open(attack_pcap_dump_path.c_str(), O_WRONLY|O_CREAT, S_IRUSR|S_IWUSR);
+        int pcap_fump_filedesc = open(attack_pcap_dump_path.c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
         if (pcap_fump_filedesc <= 0) {
             logger << log4cpp::Priority::ERROR << "Can't open file for storing pcap dump: " << attack_pcap_dump_path;
         } else {
-            ssize_t wrote_bytes = write(pcap_fump_filedesc,
-                (void*)current_attack.pcap_attack_dump.get_buffer_pointer(),
-                current_attack.pcap_attack_dump.get_used_memory());
-            
+            ssize_t wrote_bytes =
+            write(pcap_fump_filedesc, (void*)current_attack.pcap_attack_dump.get_buffer_pointer(),
+                  current_attack.pcap_attack_dump.get_used_memory());
+
             if (wrote_bytes != current_attack.pcap_attack_dump.get_used_memory()) {
-                 logger << log4cpp::Priority::ERROR << "Can't wrote all attack details to the disk correctly"; 
+                logger << log4cpp::Priority::ERROR << "Can't wrote all attack details to the disk correctly";
             }
 
-            close (pcap_fump_filedesc);   
- 
+            close(pcap_fump_filedesc);
+
             // Freeup memory
             current_attack.pcap_attack_dump.deallocate_buffer();
         }
@@ -3926,34 +3997,34 @@ void call_attack_details_handlers(uint32_t client_ip, attack_details& current_at
 
     // Pass attack details to script
     if (notify_script_enabled) {
-            logger << log4cpp::Priority::INFO
-                   << "Call script for notify about attack details for: " << client_ip_as_string;
+        logger << log4cpp::Priority::INFO
+               << "Call script for notify about attack details for: " << client_ip_as_string;
 
-            std::string script_params = notify_script_path + " " + client_ip_as_string + " " +
-                                        attack_direction + " " + pps_as_string + " attack_details";
+        std::string script_params = notify_script_path + " " + client_ip_as_string + " " +
+                                    attack_direction + " " + pps_as_string + " attack_details";
 
-            // We should execute external script in separate thread because any lag in this code
-            // will be very distructive
-            boost::thread exec_with_params_thread(exec_with_stdin_params, script_params, attack_fingerprint);
-            exec_with_params_thread.detach();
+        // We should execute external script in separate thread because any lag in this code
+        // will be very distructive
+        boost::thread exec_with_params_thread(exec_with_stdin_params, script_params, attack_fingerprint);
+        exec_with_params_thread.detach();
 
-            logger << log4cpp::Priority::INFO
-                   << "Script for notify about attack details is finished: " << client_ip_as_string;
-        }
+        logger << log4cpp::Priority::INFO
+               << "Script for notify about attack details is finished: " << client_ip_as_string;
+    }
 
 #ifdef REDIS
-        if (redis_enabled) {
-            std::string redis_key_name = client_ip_as_string + "_packets_dump";
+    if (redis_enabled) {
+        std::string redis_key_name = client_ip_as_string + "_packets_dump";
 
-            if (!redis_prefix.empty()) {
-                redis_key_name = redis_prefix + "_" + client_ip_as_string + "_packets_dump";
-            }
-
-            logger << log4cpp::Priority::INFO << "Start data save in redis for key: " << redis_key_name;
-            boost::thread redis_store_thread(store_data_in_redis, redis_key_name, attack_fingerprint);
-            redis_store_thread.detach();
-            logger << log4cpp::Priority::INFO << "Finish data save in redis for key: " << redis_key_name;
+        if (!redis_prefix.empty()) {
+            redis_key_name = redis_prefix + "_" + client_ip_as_string + "_packets_dump";
         }
+
+        logger << log4cpp::Priority::INFO << "Start data save in redis for key: " << redis_key_name;
+        boost::thread redis_store_thread(store_data_in_redis, redis_key_name, attack_fingerprint);
+        redis_store_thread.detach();
+        logger << log4cpp::Priority::INFO << "Finish data save in redis for key: " << redis_key_name;
+    }
 #endif
 }
 
@@ -4109,59 +4180,59 @@ std::string print_subnet_load() {
     } else {
         logger << log4cpp::Priority::INFO << "Unexpected sorter type: " << sort_parameter;
         sorter = PACKETS;
-    }  
+    }
 
     std::vector<pair_of_map_for_subnet_counters_elements_t> vector_for_sort;
     vector_for_sort.reserve(PerSubnetSpeedMap.size());
 
-    for (map_for_subnet_counters::iterator itr = PerSubnetSpeedMap.begin(); itr != PerSubnetSpeedMap.end(); ++itr) {
+    for (map_for_subnet_counters::iterator itr = PerSubnetSpeedMap.begin();
+         itr != PerSubnetSpeedMap.end(); ++itr) {
         vector_for_sort.push_back(std::make_pair(itr->first, itr->second));
     }
 
     std::sort(vector_for_sort.begin(), vector_for_sort.end(),
-        TrafficComparatorClass<pair_of_map_for_subnet_counters_elements_t>(INCOMING, sorter));
+              TrafficComparatorClass<pair_of_map_for_subnet_counters_elements_t>(INCOMING, sorter));
 
     graphite_data_t graphite_data;
 
-    for (std::vector<pair_of_map_for_subnet_counters_elements_t>::iterator itr = vector_for_sort.begin(); itr != vector_for_sort.end(); ++itr) {
-        map_element* speed = &itr->second; 
+    for (std::vector<pair_of_map_for_subnet_counters_elements_t>::iterator itr = vector_for_sort.begin();
+         itr != vector_for_sort.end(); ++itr) {
+        map_element* speed = &itr->second;
         std::string subnet_as_string = convert_subnet_to_string(itr->first);
 
-        buffer
-            << std::setw(18)
-            << std::left
-            << subnet_as_string;
-           
+        buffer << std::setw(18) << std::left << subnet_as_string;
+
         if (graphite_enabled) {
             std::string subnet_as_string_as_dash_delimiters = subnet_as_string;
 
             // Replace dots by dashes
             std::replace(subnet_as_string_as_dash_delimiters.begin(),
-                subnet_as_string_as_dash_delimiters.end(), '.', '_');
+                         subnet_as_string_as_dash_delimiters.end(), '.', '_');
 
             // Replace / by dashes too
             std::replace(subnet_as_string_as_dash_delimiters.begin(),
-                subnet_as_string_as_dash_delimiters.end(), '/', '_');
+                         subnet_as_string_as_dash_delimiters.end(), '/', '_');
 
-            graphite_data[ graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".incoming.pps" ] = speed->in_packets;
-            graphite_data[ graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".outgoing.pps" ] = speed->out_packets; 
+            graphite_data[graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".incoming.pps"] =
+            speed->in_packets;
+            graphite_data[graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".outgoing.pps"] =
+            speed->out_packets;
 
-            graphite_data[ graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".incoming.bps" ] = speed->in_bytes * 8; 
-            graphite_data[ graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".outgoing.bps" ] = speed->out_bytes * 8;
+            graphite_data[graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".incoming.bps"] =
+            speed->in_bytes * 8;
+            graphite_data[graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".outgoing.bps"] =
+            speed->out_bytes * 8;
         }
-    
-        buffer
-            << " "
-            << "pps in: "   << std::setw(8) << speed->in_packets
-            << " out: "     << std::setw(8) << speed->out_packets
-            << " mbps in: " << std::setw(5) << convert_speed_to_mbps(speed->in_bytes)
-            << " out: "     << std::setw(5) << convert_speed_to_mbps(speed->out_bytes)
-            << "\n";
+
+        buffer << " "
+               << "pps in: " << std::setw(8) << speed->in_packets << " out: " << std::setw(8)
+               << speed->out_packets << " mbps in: " << std::setw(5) << convert_speed_to_mbps(speed->in_bytes)
+               << " out: " << std::setw(5) << convert_speed_to_mbps(speed->out_bytes) << "\n";
     }
 
     if (graphite_enabled) {
         bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
-        
+
         if (!graphite_put_result) {
             logger << log4cpp::Priority::ERROR << "Can't store network load data to Graphite";
         }
@@ -4213,7 +4284,8 @@ void print_attack_details_to_file(std::string details, std::string client_ip_as_
     std::ofstream my_attack_details_file;
 
     std::string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
-    std::string attack_dump_path = attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string + ".txt";
+    std::string attack_dump_path =
+    attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string + ".txt";
 
     my_attack_details_file.open(attack_dump_path.c_str(), std::ios::app);
 
@@ -4229,23 +4301,28 @@ logging_configuration_t read_logging_settings(configuration_map_t configuration_
     logging_configuration_t logging_configuration_temp;
 
     if (configuration_map.count("logging:local_syslog_logging") != 0) {
-        logging_configuration_temp.local_syslog_logging = configuration_map["logging:local_syslog_logging"] == "on";
+        logging_configuration_temp.local_syslog_logging =
+        configuration_map["logging:local_syslog_logging"] == "on";
     }
 
-    if (configuration_map.count("logging:remote_syslog_logging") != 0) { 
-        logging_configuration_temp.remote_syslog_logging = configuration_map["logging:remote_syslog_logging"] == "on";
-    } 
+    if (configuration_map.count("logging:remote_syslog_logging") != 0) {
+        logging_configuration_temp.remote_syslog_logging =
+        configuration_map["logging:remote_syslog_logging"] == "on";
+    }
 
     if (configuration_map.count("logging:remote_syslog_server") != 0) {
-        logging_configuration_temp.remote_syslog_server = configuration_map["logging:remote_syslog_server"];
+        logging_configuration_temp.remote_syslog_server =
+        configuration_map["logging:remote_syslog_server"];
     }
 
     if (configuration_map.count("logging:remote_syslog_port") != 0) {
-        logging_configuration_temp.remote_syslog_port = convert_string_to_integer(configuration_map["logging:remote_syslog_port"]);
+        logging_configuration_temp.remote_syslog_port =
+        convert_string_to_integer(configuration_map["logging:remote_syslog_port"]);
     }
 
     if (logging_configuration_temp.remote_syslog_logging) {
-        if (logging_configuration_temp.remote_syslog_port > 0 && !logging_configuration_temp.remote_syslog_server.empty()) {
+        if (logging_configuration_temp.remote_syslog_port > 0 &&
+            !logging_configuration_temp.remote_syslog_server.empty()) {
             logger << log4cpp::Priority::INFO << "We have configured remote syslog logging corectly";
         } else {
             logger << log4cpp::Priority::ERROR << "You have enabled remote logging but haven't specified port or host";
@@ -4266,7 +4343,7 @@ ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::str
     std::string prefix = "";
     if (host_group_name != "") {
         prefix = host_group_name + "_";
-    } 
+    }
 
     if (configuration_map.count(prefix + "enable_ban") != 0) {
         ban_settings.enable_ban = configuration_map[prefix + "enable_ban"] == "on";
@@ -4280,77 +4357,90 @@ ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::str
         ban_settings.enable_ban_for_bandwidth = configuration_map[prefix + "ban_for_bandwidth"] == "on";
     }
 
-    if (configuration_map.count(prefix + "ban_for_flows") != 0) { 
-        ban_settings.enable_ban_for_flows_per_second = configuration_map[prefix + "ban_for_flows"] == "on";
-    }    
+    if (configuration_map.count(prefix + "ban_for_flows") != 0) {
+        ban_settings.enable_ban_for_flows_per_second =
+        configuration_map[prefix + "ban_for_flows"] == "on";
+    }
 
     // Per protocol bandwidth triggers
     if (configuration_map.count(prefix + "ban_for_tcp_bandwidth") != 0) {
-        ban_settings.enable_ban_for_tcp_bandwidth = configuration_map[prefix + "ban_for_tcp_bandwidth"] == "on";
+        ban_settings.enable_ban_for_tcp_bandwidth =
+        configuration_map[prefix + "ban_for_tcp_bandwidth"] == "on";
     }
 
-    if (configuration_map.count(prefix + "ban_for_udp_bandwidth") != 0) { 
-        ban_settings.enable_ban_for_udp_bandwidth = configuration_map[prefix + "ban_for_udp_bandwidth"] == "on";
-    }   
+    if (configuration_map.count(prefix + "ban_for_udp_bandwidth") != 0) {
+        ban_settings.enable_ban_for_udp_bandwidth =
+        configuration_map[prefix + "ban_for_udp_bandwidth"] == "on";
+    }
 
-    if (configuration_map.count(prefix + "ban_for_icmp_bandwidth") != 0) { 
-        ban_settings.enable_ban_for_icmp_bandwidth = configuration_map[prefix + "ban_for_icmp_bandwidth"] == "on";
-    }   
+    if (configuration_map.count(prefix + "ban_for_icmp_bandwidth") != 0) {
+        ban_settings.enable_ban_for_icmp_bandwidth =
+        configuration_map[prefix + "ban_for_icmp_bandwidth"] == "on";
+    }
 
     // Per protocol pps ban triggers
-    if (configuration_map.count(prefix + "ban_for_tcp_pps") != 0) { 
+    if (configuration_map.count(prefix + "ban_for_tcp_pps") != 0) {
         ban_settings.enable_ban_for_tcp_pps = configuration_map[prefix + "ban_for_tcp_pps"] == "on";
-    }    
+    }
 
     if (configuration_map.count(prefix + "ban_for_udp_pps") != 0) {
         ban_settings.enable_ban_for_udp_pps = configuration_map[prefix + "ban_for_udp_pps"] == "on";
     }
 
     if (configuration_map.count(prefix + "ban_for_icmp_pps") != 0) {
-        ban_settings.enable_ban_for_icmp_pps = configuration_map[prefix + "ban_for_icmp_pps"] == "on";
+        ban_settings.enable_ban_for_icmp_pps =
+        configuration_map[prefix + "ban_for_icmp_pps"] == "on";
     }
 
     // Pps per protocol thresholds
     if (configuration_map.count(prefix + "threshold_tcp_pps") != 0) {
-        ban_settings.ban_threshold_tcp_pps = convert_string_to_integer(configuration_map[prefix + "threshold_tcp_pps"]);
+        ban_settings.ban_threshold_tcp_pps =
+        convert_string_to_integer(configuration_map[prefix + "threshold_tcp_pps"]);
     }
 
-    if (configuration_map.count(prefix + "threshold_udp_pps") != 0) { 
-        ban_settings.ban_threshold_udp_pps = convert_string_to_integer(configuration_map[prefix + "threshold_udp_pps"]);
-    } 
-    
-    if (configuration_map.count(prefix + "threshold_icmp_pps") != 0) { 
-        ban_settings.ban_threshold_icmp_pps = convert_string_to_integer(configuration_map[prefix + "threshold_icmp_pps"]);
+    if (configuration_map.count(prefix + "threshold_udp_pps") != 0) {
+        ban_settings.ban_threshold_udp_pps =
+        convert_string_to_integer(configuration_map[prefix + "threshold_udp_pps"]);
     }
 
-    // Bandwidth per protocol thresholds 
-    if (configuration_map.count(prefix + "threshold_tcp_mbps") != 0) { 
-        ban_settings.ban_threshold_tcp_mbps = convert_string_to_integer(configuration_map[prefix + "threshold_tcp_mbps"]);
-    }    
+    if (configuration_map.count(prefix + "threshold_icmp_pps") != 0) {
+        ban_settings.ban_threshold_icmp_pps =
+        convert_string_to_integer(configuration_map[prefix + "threshold_icmp_pps"]);
+    }
+
+    // Bandwidth per protocol thresholds
+    if (configuration_map.count(prefix + "threshold_tcp_mbps") != 0) {
+        ban_settings.ban_threshold_tcp_mbps =
+        convert_string_to_integer(configuration_map[prefix + "threshold_tcp_mbps"]);
+    }
 
     if (configuration_map.count(prefix + "threshold_udp_mbps") != 0) {
-        ban_settings.ban_threshold_udp_mbps = convert_string_to_integer(configuration_map[prefix + "threshold_udp_mbps"]);
+        ban_settings.ban_threshold_udp_mbps =
+        convert_string_to_integer(configuration_map[prefix + "threshold_udp_mbps"]);
     }
-    
+
     if (configuration_map.count(prefix + "threshold_icmp_mbps") != 0) {
-        ban_settings.ban_threshold_icmp_mbps = convert_string_to_integer(configuration_map[prefix + "threshold_icmp_mbps"]);
-    }   
- 
+        ban_settings.ban_threshold_icmp_mbps =
+        convert_string_to_integer(configuration_map[prefix + "threshold_icmp_mbps"]);
+    }
+
     if (configuration_map.count(prefix + "threshold_pps") != 0) {
-        ban_settings.ban_threshold_pps = convert_string_to_integer(configuration_map[prefix + "threshold_pps"]);
+        ban_settings.ban_threshold_pps =
+        convert_string_to_integer(configuration_map[prefix + "threshold_pps"]);
     }
 
     if (configuration_map.count(prefix + "threshold_mbps") != 0) {
-        ban_settings.ban_threshold_mbps = convert_string_to_integer(configuration_map[prefix + "threshold_mbps"]);
+        ban_settings.ban_threshold_mbps =
+        convert_string_to_integer(configuration_map[prefix + "threshold_mbps"]);
     }
 
     if (configuration_map.count(prefix + "threshold_flows") != 0) {
-        ban_settings.ban_threshold_flows = convert_string_to_integer(configuration_map[prefix + "threshold_flows"]);
+        ban_settings.ban_threshold_flows =
+        convert_string_to_integer(configuration_map[prefix + "threshold_flows"]);
     }
 
     return ban_settings;
 }
-
 
 
 bool exceed_pps_speed(uint64_t in_counter, uint64_t out_counter, unsigned int threshold) {
@@ -4366,7 +4456,7 @@ bool exceed_flow_speed(uint64_t in_counter, uint64_t out_counter, unsigned int t
         return true;
     } else {
         return false;
-    }  
+    }
 }
 
 bool exceed_mbps_speed(uint64_t in_counter, uint64_t out_counter, unsigned int threshold_mbps) {
@@ -4382,67 +4472,77 @@ bool we_should_ban_this_ip(map_element* average_speed_element, ban_settings_t cu
     // we detect overspeed by packets
 
     if (current_ban_settings.enable_ban_for_pps &&
-        exceed_pps_speed(average_speed_element->in_packets, average_speed_element->out_packets, current_ban_settings.ban_threshold_pps)) {
-        logger << log4cpp::Priority::DEBUG  << "We detected this attack by pps limit";
+        exceed_pps_speed(average_speed_element->in_packets, average_speed_element->out_packets,
+                         current_ban_settings.ban_threshold_pps)) {
+        logger << log4cpp::Priority::DEBUG << "We detected this attack by pps limit";
         return true;
     }
 
     if (current_ban_settings.enable_ban_for_bandwidth &&
-        exceed_mbps_speed(average_speed_element->in_bytes, average_speed_element->out_bytes, current_ban_settings.ban_threshold_mbps)) { 
-        logger << log4cpp::Priority::DEBUG  << "We detected this attack by mbps limit";
+        exceed_mbps_speed(average_speed_element->in_bytes, average_speed_element->out_bytes,
+                          current_ban_settings.ban_threshold_mbps)) {
+        logger << log4cpp::Priority::DEBUG << "We detected this attack by mbps limit";
         return true;
     }
 
     if (current_ban_settings.enable_ban_for_flows_per_second &&
-        exceed_flow_speed(average_speed_element->in_flows, average_speed_element->out_flows, current_ban_settings.ban_threshold_flows)) {
-        logger << log4cpp::Priority::DEBUG  << "We detected this attack by flow limit"; 
+        exceed_flow_speed(average_speed_element->in_flows, average_speed_element->out_flows,
+                          current_ban_settings.ban_threshold_flows)) {
+        logger << log4cpp::Priority::DEBUG << "We detected this attack by flow limit";
         return true;
     }
 
     // We could try per protocol thresholds here
 
     // Per protocol pps thresholds
-    if (current_ban_settings.enable_ban_for_tcp_pps && 
-        exceed_pps_speed(average_speed_element->tcp_in_packets, average_speed_element->tcp_out_packets, current_ban_settings.ban_threshold_tcp_pps)) {
-        logger << log4cpp::Priority::DEBUG  << "We detected this attack by tcp pps limit";
+    if (current_ban_settings.enable_ban_for_tcp_pps &&
+        exceed_pps_speed(average_speed_element->tcp_in_packets, average_speed_element->tcp_out_packets,
+                         current_ban_settings.ban_threshold_tcp_pps)) {
+        logger << log4cpp::Priority::DEBUG << "We detected this attack by tcp pps limit";
         return true;
     }
 
-    if (current_ban_settings.enable_ban_for_udp_pps && 
-        exceed_pps_speed(average_speed_element->udp_in_packets, average_speed_element->udp_out_packets, current_ban_settings.ban_threshold_udp_pps)) {
-        logger << log4cpp::Priority::DEBUG  << "We detected this attack by udp pps limit";
+    if (current_ban_settings.enable_ban_for_udp_pps &&
+        exceed_pps_speed(average_speed_element->udp_in_packets, average_speed_element->udp_out_packets,
+                         current_ban_settings.ban_threshold_udp_pps)) {
+        logger << log4cpp::Priority::DEBUG << "We detected this attack by udp pps limit";
         return true;
-    } 
+    }
 
-    if (current_ban_settings.enable_ban_for_icmp_pps && 
-        exceed_pps_speed(average_speed_element->icmp_in_packets, average_speed_element->icmp_out_packets, current_ban_settings.ban_threshold_icmp_pps)) {
-        logger << log4cpp::Priority::DEBUG  << "We detected this attack by icmp pps limit";
+    if (current_ban_settings.enable_ban_for_icmp_pps &&
+        exceed_pps_speed(average_speed_element->icmp_in_packets, average_speed_element->icmp_out_packets,
+                         current_ban_settings.ban_threshold_icmp_pps)) {
+        logger << log4cpp::Priority::DEBUG << "We detected this attack by icmp pps limit";
         return true;
-    }     
+    }
 
     // Per protocol bandwidth thresholds
     if (current_ban_settings.enable_ban_for_tcp_bandwidth &&
-        exceed_mbps_speed(average_speed_element->tcp_in_bytes, average_speed_element->tcp_out_bytes, current_ban_settings.ban_threshold_tcp_mbps)) {
-        logger << log4cpp::Priority::DEBUG  << "We detected this attack by tcp mbps limit";
+        exceed_mbps_speed(average_speed_element->tcp_in_bytes, average_speed_element->tcp_out_bytes,
+                          current_ban_settings.ban_threshold_tcp_mbps)) {
+        logger << log4cpp::Priority::DEBUG << "We detected this attack by tcp mbps limit";
         return true;
     }
 
     if (current_ban_settings.enable_ban_for_udp_bandwidth &&
-        exceed_mbps_speed(average_speed_element->udp_in_bytes, average_speed_element->udp_out_bytes, current_ban_settings.ban_threshold_udp_mbps)) {
-        logger << log4cpp::Priority::DEBUG  << "We detected this attack by udp mbps limit";
+        exceed_mbps_speed(average_speed_element->udp_in_bytes, average_speed_element->udp_out_bytes,
+                          current_ban_settings.ban_threshold_udp_mbps)) {
+        logger << log4cpp::Priority::DEBUG << "We detected this attack by udp mbps limit";
         return true;
-    }  
+    }
 
     if (current_ban_settings.enable_ban_for_icmp_bandwidth &&
-        exceed_mbps_speed(average_speed_element->icmp_in_bytes, average_speed_element->icmp_out_bytes, current_ban_settings.ban_threshold_icmp_mbps)) {
-        logger << log4cpp::Priority::DEBUG  << "We detected this attack by icmp mbps limit";
+        exceed_mbps_speed(average_speed_element->icmp_in_bytes, average_speed_element->icmp_out_bytes,
+                          current_ban_settings.ban_threshold_icmp_mbps)) {
+        logger << log4cpp::Priority::DEBUG << "We detected this attack by icmp mbps limit";
         return true;
-    }  
+    }
 
     return false;
 }
 
-std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type, std::string destination_ip) {
+std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type,
+                                                        std::string destination_ip) {
     exabgp_flow_spec_rule_t exabgp_rule;
 
     bgp_flow_spec_action_t my_action;
@@ -4451,14 +4551,15 @@ std::string generate_flow_spec_for_amplification_attack(amplification_attack_typ
     my_action.set_type(FLOW_SPEC_ACTION_DISCARD);
 
     // Assign action to the rule
-    exabgp_rule.set_action( my_action ); 
+    exabgp_rule.set_action(my_action);
 
     // TODO: rewrite!
-    exabgp_rule.set_destination_subnet( convert_subnet_from_string_to_binary_with_cidr_format( destination_ip + "/32") );
-    
+    exabgp_rule.set_destination_subnet(
+    convert_subnet_from_string_to_binary_with_cidr_format(destination_ip + "/32"));
+
     // We use only UDP here
     exabgp_rule.add_protocol(FLOW_SPEC_PROTOCOL_UDP);
-    
+
     if (amplification_attack_type == AMPLIFICATION_ATTACK_DNS) {
         exabgp_rule.add_source_port(53);
     } else if (amplification_attack_type == AMPLIFICATION_ATTACK_NTP) {
@@ -4469,7 +4570,7 @@ std::string generate_flow_spec_for_amplification_attack(amplification_attack_typ
         exabgp_rule.add_source_port(161);
     } else if (amplification_attack_type == AMPLIFICATION_ATTACK_CHARGEN) {
         exabgp_rule.add_source_port(19);
-    } 
+    }
 
     return exabgp_rule.serialize_single_line_exabgp_v4_configuration();
 }
@@ -4493,7 +4594,9 @@ std::string get_amplification_attack_type(amplification_attack_type_t attack_typ
 }
 
 // We calculate speed from packet counters here
-inline void build_speed_counters_from_packet_counters(map_element& new_speed_element, map_element* vector_itr, double speed_calc_period) {
+inline void build_speed_counters_from_packet_counters(map_element& new_speed_element,
+                                                      map_element* vector_itr,
+                                                      double speed_calc_period) {
     // calculate_speed(new_speed_element speed_element, vector_itr* );
     new_speed_element.in_packets = uint64_t((double)vector_itr->in_packets / speed_calc_period);
     new_speed_element.out_packets = uint64_t((double)vector_itr->out_packets / speed_calc_period);
@@ -4516,147 +4619,144 @@ inline void build_speed_counters_from_packet_counters(map_element& new_speed_ele
 
     // TCP
     new_speed_element.tcp_in_packets = uint64_t((double)vector_itr->tcp_in_packets / speed_calc_period);
-    new_speed_element.tcp_out_packets =
-    uint64_t((double)vector_itr->tcp_out_packets / speed_calc_period);
+    new_speed_element.tcp_out_packets = uint64_t((double)vector_itr->tcp_out_packets / speed_calc_period);
 
     new_speed_element.tcp_in_bytes = uint64_t((double)vector_itr->tcp_in_bytes / speed_calc_period);
     new_speed_element.tcp_out_bytes = uint64_t((double)vector_itr->tcp_out_bytes / speed_calc_period);
 
     // TCP syn
-    new_speed_element.tcp_syn_in_packets =
-    uint64_t((double)vector_itr->tcp_syn_in_packets / speed_calc_period);
+    new_speed_element.tcp_syn_in_packets = uint64_t((double)vector_itr->tcp_syn_in_packets / speed_calc_period);
     new_speed_element.tcp_syn_out_packets =
     uint64_t((double)vector_itr->tcp_syn_out_packets / speed_calc_period);
 
-    new_speed_element.tcp_syn_in_bytes =
-    uint64_t((double)vector_itr->tcp_syn_in_bytes / speed_calc_period);
-    new_speed_element.tcp_syn_out_bytes =
-    uint64_t((double)vector_itr->tcp_syn_out_bytes / speed_calc_period);
+    new_speed_element.tcp_syn_in_bytes = uint64_t((double)vector_itr->tcp_syn_in_bytes / speed_calc_period);
+    new_speed_element.tcp_syn_out_bytes = uint64_t((double)vector_itr->tcp_syn_out_bytes / speed_calc_period);
 
     // UDP
     new_speed_element.udp_in_packets = uint64_t((double)vector_itr->udp_in_packets / speed_calc_period);
-    new_speed_element.udp_out_packets =
-    uint64_t((double)vector_itr->udp_out_packets / speed_calc_period);
+    new_speed_element.udp_out_packets = uint64_t((double)vector_itr->udp_out_packets / speed_calc_period);
 
     new_speed_element.udp_in_bytes = uint64_t((double)vector_itr->udp_in_bytes / speed_calc_period);
     new_speed_element.udp_out_bytes = uint64_t((double)vector_itr->udp_out_bytes / speed_calc_period);
 
     // ICMP
-    new_speed_element.icmp_in_packets =
-    uint64_t((double)vector_itr->icmp_in_packets / speed_calc_period);
-    new_speed_element.icmp_out_packets =
-    uint64_t((double)vector_itr->icmp_out_packets / speed_calc_period);
+    new_speed_element.icmp_in_packets = uint64_t((double)vector_itr->icmp_in_packets / speed_calc_period);
+    new_speed_element.icmp_out_packets = uint64_t((double)vector_itr->icmp_out_packets / speed_calc_period);
 
     new_speed_element.icmp_in_bytes = uint64_t((double)vector_itr->icmp_in_bytes / speed_calc_period);
     new_speed_element.icmp_out_bytes = uint64_t((double)vector_itr->icmp_out_bytes / speed_calc_period);
 }
 
-inline void build_average_speed_counters_from_speed_counters(
-    map_element* current_average_speed_element,
-    map_element& new_speed_element, 
-    double exp_value,
-    double exp_power) {
+inline void build_average_speed_counters_from_speed_counters(map_element* current_average_speed_element,
+                                                             map_element& new_speed_element,
+                                                             double exp_value,
+                                                             double exp_power) {
 
     // Global bytes counters
-    current_average_speed_element->in_bytes = uint64_t(
-        new_speed_element.in_bytes +
-        exp_value * ((double)current_average_speed_element->in_bytes - (double)new_speed_element.in_bytes));
-     
-    current_average_speed_element->out_bytes = uint64_t(
-        new_speed_element.out_bytes +
-        exp_value * ((double)current_average_speed_element->out_bytes - (double)new_speed_element.out_bytes));
+    current_average_speed_element->in_bytes =
+    uint64_t(new_speed_element.in_bytes + exp_value * ((double)current_average_speed_element->in_bytes -
+                                                       (double)new_speed_element.in_bytes));
+
+    current_average_speed_element->out_bytes =
+    uint64_t(new_speed_element.out_bytes + exp_value * ((double)current_average_speed_element->out_bytes -
+                                                        (double)new_speed_element.out_bytes));
 
     // Global packet counters
-    current_average_speed_element->in_packets = uint64_t(
-        new_speed_element.in_packets +
-        exp_value * ((double)current_average_speed_element->in_packets - (double)new_speed_element.in_packets));
+    current_average_speed_element->in_packets =
+    uint64_t(new_speed_element.in_packets + exp_value * ((double)current_average_speed_element->in_packets -
+                                                         (double)new_speed_element.in_packets));
 
-    current_average_speed_element->out_packets = uint64_t(
-        new_speed_element.out_packets +
-        exp_value * ((double)current_average_speed_element->out_packets - (double)new_speed_element.out_packets));
+    current_average_speed_element->out_packets =
+    uint64_t(new_speed_element.out_packets + exp_value * ((double)current_average_speed_element->out_packets -
+                                                          (double)new_speed_element.out_packets));
 
     // Per packet type packet counters for in traffic
-   current_average_speed_element->fragmented_in_packets = uint64_t(
-        new_speed_element.fragmented_in_packets +
-        exp_value * ((double)current_average_speed_element->fragmented_in_packets - (double)new_speed_element.fragmented_in_packets));
+    current_average_speed_element->fragmented_in_packets =
+    uint64_t(new_speed_element.fragmented_in_packets +
+             exp_value * ((double)current_average_speed_element->fragmented_in_packets -
+                          (double)new_speed_element.fragmented_in_packets));
 
-    current_average_speed_element->tcp_in_packets = uint64_t(
-        new_speed_element.tcp_in_packets +
-        exp_value * ((double)current_average_speed_element->tcp_in_packets - (double)new_speed_element.tcp_in_packets));
+    current_average_speed_element->tcp_in_packets =
+    uint64_t(new_speed_element.tcp_in_packets + exp_value * ((double)current_average_speed_element->tcp_in_packets -
+                                                             (double)new_speed_element.tcp_in_packets));
 
-    current_average_speed_element->tcp_syn_in_packets = uint64_t(
-        new_speed_element.tcp_syn_in_packets +
-        exp_value * ((double)current_average_speed_element->tcp_syn_in_packets - (double)new_speed_element.tcp_syn_in_packets));
+    current_average_speed_element->tcp_syn_in_packets =
+    uint64_t(new_speed_element.tcp_syn_in_packets +
+             exp_value * ((double)current_average_speed_element->tcp_syn_in_packets -
+                          (double)new_speed_element.tcp_syn_in_packets));
 
-    current_average_speed_element->udp_in_packets = uint64_t(
-        new_speed_element.udp_in_packets +
-        exp_value * ((double)current_average_speed_element->udp_in_packets - (double)new_speed_element.udp_in_packets));
+    current_average_speed_element->udp_in_packets =
+    uint64_t(new_speed_element.udp_in_packets + exp_value * ((double)current_average_speed_element->udp_in_packets -
+                                                             (double)new_speed_element.udp_in_packets));
 
-    current_average_speed_element->icmp_in_packets = uint64_t(
-        new_speed_element.icmp_in_packets +
-        exp_value * ((double)current_average_speed_element->icmp_in_packets - (double)new_speed_element.icmp_in_packets));
+    current_average_speed_element->icmp_in_packets =
+    uint64_t(new_speed_element.icmp_in_packets + exp_value * ((double)current_average_speed_element->icmp_in_packets -
+                                                              (double)new_speed_element.icmp_in_packets));
 
     // Per packet type packets counters for out
-    current_average_speed_element->fragmented_out_packets = uint64_t(
-        new_speed_element.fragmented_out_packets +
-        exp_value * ((double)current_average_speed_element->fragmented_out_packets - (double)new_speed_element.fragmented_out_packets));
+    current_average_speed_element->fragmented_out_packets =
+    uint64_t(new_speed_element.fragmented_out_packets +
+             exp_value * ((double)current_average_speed_element->fragmented_out_packets -
+                          (double)new_speed_element.fragmented_out_packets));
 
-    current_average_speed_element->tcp_out_packets = uint64_t(
-        new_speed_element.tcp_out_packets +
-        exp_value * ((double)current_average_speed_element->tcp_out_packets - (double)new_speed_element.tcp_out_packets));
+    current_average_speed_element->tcp_out_packets =
+    uint64_t(new_speed_element.tcp_out_packets + exp_value * ((double)current_average_speed_element->tcp_out_packets -
+                                                              (double)new_speed_element.tcp_out_packets));
 
-    current_average_speed_element->tcp_syn_out_packets = uint64_t(
-        new_speed_element.tcp_syn_out_packets +
-        exp_value * ((double)current_average_speed_element->tcp_syn_out_packets - (double)new_speed_element.tcp_syn_out_packets));
+    current_average_speed_element->tcp_syn_out_packets =
+    uint64_t(new_speed_element.tcp_syn_out_packets +
+             exp_value * ((double)current_average_speed_element->tcp_syn_out_packets -
+                          (double)new_speed_element.tcp_syn_out_packets));
 
-    current_average_speed_element->udp_out_packets = uint64_t(
-        new_speed_element.udp_out_packets +
-        exp_value * ((double)current_average_speed_element->udp_out_packets - (double)new_speed_element.udp_out_packets));
+    current_average_speed_element->udp_out_packets =
+    uint64_t(new_speed_element.udp_out_packets + exp_value * ((double)current_average_speed_element->udp_out_packets -
+                                                              (double)new_speed_element.udp_out_packets));
 
     current_average_speed_element->icmp_out_packets = uint64_t(
-        new_speed_element.icmp_out_packets +
-        exp_value * ((double)current_average_speed_element->icmp_out_packets - (double)new_speed_element.icmp_out_packets));
+    new_speed_element.icmp_out_packets + exp_value * ((double)current_average_speed_element->icmp_out_packets -
+                                                      (double)new_speed_element.icmp_out_packets));
 
     // Per packet type bytes counter for out
-    current_average_speed_element->fragmented_out_bytes = uint64_t(
-        new_speed_element.fragmented_out_bytes +
-        exp_value * ((double)current_average_speed_element->fragmented_out_bytes - (double)new_speed_element.fragmented_out_bytes));
+    current_average_speed_element->fragmented_out_bytes =
+    uint64_t(new_speed_element.fragmented_out_bytes +
+             exp_value * ((double)current_average_speed_element->fragmented_out_bytes -
+                          (double)new_speed_element.fragmented_out_bytes));
 
-    current_average_speed_element->tcp_out_bytes = uint64_t(
-        new_speed_element.tcp_out_bytes +
-        exp_value * ((double)current_average_speed_element->tcp_out_bytes - (double)new_speed_element.tcp_out_bytes));
+    current_average_speed_element->tcp_out_bytes =
+    uint64_t(new_speed_element.tcp_out_bytes + exp_value * ((double)current_average_speed_element->tcp_out_bytes -
+                                                            (double)new_speed_element.tcp_out_bytes));
 
     current_average_speed_element->tcp_syn_out_bytes = uint64_t(
-        new_speed_element.tcp_syn_out_bytes +
-        exp_value * ((double)current_average_speed_element->tcp_syn_out_bytes - (double)new_speed_element.tcp_syn_out_bytes));
+    new_speed_element.tcp_syn_out_bytes + exp_value * ((double)current_average_speed_element->tcp_syn_out_bytes -
+                                                       (double)new_speed_element.tcp_syn_out_bytes));
 
-    current_average_speed_element->udp_out_bytes = uint64_t(
-        new_speed_element.udp_out_bytes +
-        exp_value * ((double)current_average_speed_element->udp_out_bytes - (double)new_speed_element.udp_out_bytes));
+    current_average_speed_element->udp_out_bytes =
+    uint64_t(new_speed_element.udp_out_bytes + exp_value * ((double)current_average_speed_element->udp_out_bytes -
+                                                            (double)new_speed_element.udp_out_bytes));
 
-    current_average_speed_element->icmp_out_bytes = uint64_t(
-        new_speed_element.icmp_out_bytes +
-        exp_value * ((double)current_average_speed_element->icmp_out_bytes - (double)new_speed_element.icmp_out_bytes));
+    current_average_speed_element->icmp_out_bytes =
+    uint64_t(new_speed_element.icmp_out_bytes + exp_value * ((double)current_average_speed_element->icmp_out_bytes -
+                                                             (double)new_speed_element.icmp_out_bytes));
 
     // Per packet type bytes counter for in
-    current_average_speed_element->fragmented_in_bytes = uint64_t(
-        new_speed_element.fragmented_in_bytes +
-        exp_value * ((double)current_average_speed_element->fragmented_in_bytes - (double)new_speed_element.fragmented_in_bytes));
+    current_average_speed_element->fragmented_in_bytes =
+    uint64_t(new_speed_element.fragmented_in_bytes +
+             exp_value * ((double)current_average_speed_element->fragmented_in_bytes -
+                          (double)new_speed_element.fragmented_in_bytes));
 
-    current_average_speed_element->tcp_in_bytes = uint64_t(
-        new_speed_element.tcp_in_bytes +
-        exp_value * ((double)current_average_speed_element->tcp_in_bytes - (double)new_speed_element.tcp_in_bytes));
+    current_average_speed_element->tcp_in_bytes =
+    uint64_t(new_speed_element.tcp_in_bytes + exp_value * ((double)current_average_speed_element->tcp_in_bytes -
+                                                           (double)new_speed_element.tcp_in_bytes));
 
     current_average_speed_element->tcp_syn_in_bytes = uint64_t(
-        new_speed_element.tcp_syn_in_bytes +
-        exp_value * ((double)current_average_speed_element->tcp_syn_in_bytes - (double)new_speed_element.tcp_syn_in_bytes));
+    new_speed_element.tcp_syn_in_bytes + exp_value * ((double)current_average_speed_element->tcp_syn_in_bytes -
+                                                      (double)new_speed_element.tcp_syn_in_bytes));
 
-    current_average_speed_element->udp_in_bytes = uint64_t(
-        new_speed_element.udp_in_bytes +
-        exp_value * ((double)current_average_speed_element->udp_in_bytes - (double)new_speed_element.udp_in_bytes));
+    current_average_speed_element->udp_in_bytes =
+    uint64_t(new_speed_element.udp_in_bytes + exp_value * ((double)current_average_speed_element->udp_in_bytes -
+                                                           (double)new_speed_element.udp_in_bytes));
 
-    current_average_speed_element->icmp_in_bytes = uint64_t(
-        new_speed_element.icmp_in_bytes +
-        exp_value * ((double)current_average_speed_element->icmp_in_bytes - (double)new_speed_element.icmp_in_bytes));
+    current_average_speed_element->icmp_in_bytes =
+    uint64_t(new_speed_element.icmp_in_bytes + exp_value * ((double)current_average_speed_element->icmp_in_bytes -
+                                                            (double)new_speed_element.icmp_in_bytes));
 }
-

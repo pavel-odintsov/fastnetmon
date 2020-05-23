@@ -3,19 +3,19 @@
 
 #include "fastnetmon_types.h"
 
-#include <stdint.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <string>
 #include <iostream>
 #include <map>
-#include <vector>
-#include <utility>
 #include <sstream>
+#include <stdint.h>
+#include <string>
+#include <sys/types.h>
+#include <unistd.h>
+#include <utility>
+#include <vector>
 
+#include <boost/regex.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
-#include <boost/regex.hpp>
 
 #include <json-c/json.h>
 
@@ -93,7 +93,11 @@ uint64_t fast_hton(uint64_t value);
 bool print_pid_to_file(pid_t pid, std::string pid_path);
 bool read_pid_from_file(pid_t& pid, std::string pid_path);
 
-direction get_packet_direction(patricia_tree_t* lookup_tree, uint32_t src_ip, uint32_t dst_ip, unsigned long& subnet, unsigned int& subnet_cidr_mask);
+direction get_packet_direction(patricia_tree_t* lookup_tree,
+                               uint32_t src_ip,
+                               uint32_t dst_ip,
+                               unsigned long& subnet,
+                               unsigned int& subnet_cidr_mask);
 
 direction get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_addr src_ipv6, struct in6_addr dst_ipv6);
 
@@ -102,7 +106,7 @@ std::string find_subnet_by_ip_in_string_format(patricia_tree_t* patricia_tree, s
 std::string convert_subnet_to_string(subnet_t my_subnet);
 std::string get_direction_name(direction direction_value);
 subnet_t convert_subnet_from_string_to_binary(std::string subnet_cidr);
-std::vector <std::string> split_strings_to_vector_by_comma(std::string raw_string);
+std::vector<std::string> split_strings_to_vector_by_comma(std::string raw_string);
 subnet_t convert_subnet_from_string_to_binary_with_cidr_format(std::string subnet_cidr);
 
 #ifdef __linux__
@@ -111,7 +115,10 @@ bool manage_interface_promisc_mode(std::string interface_name, bool switch_on);
 
 #ifdef ENABLE_LUA_HOOKS
 lua_State* init_lua_jit(std::string lua_hooks_path);
-bool call_lua_function(std::string function_name, lua_State* lua_state_param, std::string client_addres_in_string_format, void* ptr);
+bool call_lua_function(std::string function_name,
+                       lua_State* lua_state_param,
+                       std::string client_addres_in_string_format,
+                       void* ptr);
 #endif
 
 std::string serialize_attack_description(attack_details& current_attack);

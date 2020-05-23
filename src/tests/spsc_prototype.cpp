@@ -1,21 +1,21 @@
+#include <arpa/inet.h>
 #include <inttypes.h>
-#include <sys/types.h>
-#include <stdio.h>
-#include <string.h>
 #include <iterator>
-#include <sstream>
-#include <stdlib.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
-#include <arpa/inet.h>
+#include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
-#include "../libpatricia/patricia.h"
-#include "../fastnetmon_types.h"
 #include "../fast_library.h"
+#include "../fastnetmon_types.h"
+#include "../libpatricia/patricia.h"
 #include "../netflow_plugin/netflow_collector.h"
-#include "../sflow_plugin/sflow_collector.h"
 #include "../pcap_plugin/pcap_collector.h"
+#include "../sflow_plugin/sflow_collector.h"
 
 #ifdef PF_RING
 #include "../pfring_plugin/pfring_collector.h"
@@ -23,23 +23,23 @@
 
 #include "../netmap_plugin/netmap_collector.h"
 
-#include <boost/thread/thread.hpp>
-#include <boost/lockfree/spsc_queue.hpp>
 #include <boost/atomic.hpp>
+#include <boost/lockfree/spsc_queue.hpp>
+#include <boost/thread/thread.hpp>
 
 // log4cpp logging facility
-#include "log4cpp/Category.hh"
 #include "log4cpp/Appender.hh"
-#include "log4cpp/FileAppender.hh"
-#include "log4cpp/OstreamAppender.hh"
-#include "log4cpp/Layout.hh"
 #include "log4cpp/BasicLayout.hh"
+#include "log4cpp/Category.hh"
+#include "log4cpp/FileAppender.hh"
+#include "log4cpp/Layout.hh"
+#include "log4cpp/OstreamAppender.hh"
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
-#include <boost/thread/thread.hpp>
-#include <boost/lockfree/spsc_queue.hpp>
 #include <boost/atomic.hpp>
+#include <boost/lockfree/spsc_queue.hpp>
+#include <boost/thread/thread.hpp>
 #include <unordered_map>
 
 #include <fstream>
@@ -47,7 +47,7 @@
 using namespace std;
 
 typedef simple_packet* simple_packet_shared_ptr_t;
-typedef boost::lockfree::spsc_queue< simple_packet_shared_ptr_t,  boost::lockfree::capacity<1048576> > my_spsc_queue_t;
+typedef boost::lockfree::spsc_queue<simple_packet_shared_ptr_t, boost::lockfree::capacity<1048576> > my_spsc_queue_t;
 
 uint64_t total_unparsed_packets = 0;
 
@@ -85,25 +85,25 @@ uint64_t received_packets = 0;
 
 void process_packet(simple_packet& current_packet) {
     //__sync_fetch_and_add(&received_packets, 1);
-    //std::cout << print_simple_packet(current_packet);
+    // std::cout << print_simple_packet(current_packet);
 }
 
 
 std::unordered_map<uint32_t, int> map_counter;
 void traffic_processor() {
     simple_packet_shared_ptr_t packet;
-    //map_counter.reserve(16000000);
+    // map_counter.reserve(16000000);
 
     while (1) {
-        for (int i = 0; i < 8; i ++) {
+        for (int i = 0; i < 8; i++) {
             // while (!my_spsc_queue[thread_number].push(packet));
 
             while (my_spsc_queue[i].pop(packet)) {
-                //std::cout << print_simple_packet(packet);
-                //map_counter[packet.src_ip]++;
+                // std::cout << print_simple_packet(packet);
+                // map_counter[packet.src_ip]++;
                 __sync_fetch_and_add(&received_packets, 1);
                 delete packet;
-                //alloc[i].deallocate(packet, 1);
+                // alloc[i].deallocate(packet, 1);
             }
         }
     }
@@ -112,19 +112,19 @@ void traffic_processor() {
 void speed_printer() {
     while (true) {
         uint64_t packets_before = received_packets;
-        
-        boost::this_thread::sleep(boost::posix_time::seconds(1));       
-        
+
+        boost::this_thread::sleep(boost::posix_time::seconds(1));
+
         uint64_t packets_after = received_packets;
         uint64_t pps = packets_after - packets_before;
- 
+
         printf("We process: %llu pps\n", pps);
     }
 }
 
 int main(int argc, char* argv[]) {
-    boost::thread speed_printer_thread( speed_printer );
-    boost::thread traffic_processor_thread(traffic_processor); 
+    boost::thread speed_printer_thread(speed_printer);
+    boost::thread traffic_processor_thread(traffic_processor);
 
     init_logging();
 
@@ -132,8 +132,7 @@ int main(int argc, char* argv[]) {
     // We use fake interface name here because netmap could make server unreachable :)
     configuration_map["interfaces"] = "eth5";
     start_netmap_collection(process_packet);
-    
+
     traffic_processor_thread.join();
     speed_printer_thread.join();
 }
-

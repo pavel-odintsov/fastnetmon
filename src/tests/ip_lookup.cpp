@@ -1,36 +1,32 @@
-#include <iostream>
-#include <vector>
-#include <string>
-#include <map>
-#include <utility>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <errno.h>
-#include <string.h>
-#include <unistd.h>
+#include <iostream>
+#include <map>
 #include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <string>
 #include <time.h>
+#include <unistd.h>
+#include <utility>
+#include <vector>
 
-#include <sys/socket.h>
 #include <arpa/inet.h>
-#include <netinet/ip.h>
-#include <netinet/tcp.h>
-#include <netinet/udp.h>
-#include <netinet/ip_icmp.h>
 #include <netinet/if_ether.h>
 #include <netinet/in.h>
+#include <netinet/ip.h>
+#include <netinet/ip_icmp.h>
+#include <netinet/tcp.h>
+#include <netinet/udp.h>
+#include <sys/socket.h>
 
 #include <algorithm>
 #include <iostream>
 #include <map>
-#include <unordered_map>
-#include <vector>
-#include <utility>
 #include <sstream>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <boost/algorithm/string.hpp>
 
@@ -99,7 +95,7 @@ int get_bit(uint32_t number, uint32_t ip) {
 
 typedef struct leaf {
     bool bit;
-    struct leaf* right, *left;
+    struct leaf *right, *left;
 } tree_leaf;
 
 #include <bitset>
@@ -184,9 +180,8 @@ bool fast_ip_lookup(tree_leaf* root, uint32_t ip) {
         // Current node is terminal node
         if ((temp_root->left == NULL && temp_root->right == NULL)) {
             if (bits_matched > 0) {
-                // if we havent child elemets (leaf is terinal) and we have match for single bit at lease
-                // thus, we found mask!
-                // std::cout<<"Bits matched: "<<bits_matched<<endl;
+                // if we havent child elemets (leaf is terinal) and we have match for single bit at
+                // lease thus, we found mask! std::cout<<"Bits matched: "<<bits_matched<<endl;
                 return true;
             } else {
                 // traversal and we haven't found anything
@@ -219,13 +214,12 @@ bool fast_ip_lookup(tree_leaf* root, uint32_t ip) {
         }
     }
 
-    // We will repeat same checks as in begin of function. But we need it because 
+    // We will repeat same checks as in begin of function. But we need it because
     // we could pass cycle and do not hit any terminals - both childs become zeroes
     if ((temp_root->left == NULL && temp_root->right == NULL)) {
         if (bits_matched > 0) {
-            // if we havent child elemets (leaf is terinal) and we have match for single bit at lease
-            // thus, we found mask!
-            // std::cout<<"Bits matched: "<<bits_matched<<endl;
+            // if we havent child elemets (leaf is terinal) and we have match for single bit at
+            // lease thus, we found mask! std::cout<<"Bits matched: "<<bits_matched<<endl;
             return true;
         } else {
             // traversal finished and we haven't found anything
