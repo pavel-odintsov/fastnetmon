@@ -123,15 +123,8 @@ if (NOT HAVE__ATOMIC_ADD_FETCH)
     endif()
 endif()
 
-# With this flag we can disable PF_RING build via console: cmake .. -DDISABLE_PF_RING_SUPPORT=ON
-if (NOT DISABLE_PF_RING_SUPPORT) 
-    if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-        message(STATUS "You are running Linux and we can build PF_RING support")
-        set (ENABLE_PFRING_SUPPORT ON)
-    else()
-        message(WARNING "You are running not an Linux and we can't build PF_RING support")
-    endif() 
-endif()
+# With this flag we can enable PF_RING build via console: cmake .. -DENABLE_PF_RING_SUPPORT=ON
+option(ENABLE_PF_RING_SUPPORT "Enable PF_RING build" OFF)
 
 option(ENABLE_NETMAP_SUPPORT "Enable Netmap support" ON)
 
@@ -140,7 +133,7 @@ if (ENABLE_NETMAP_SUPPORT)
     add_definitions(-DNETMAP_PLUGIN)
 endif()
 
-if (ENABLE_PFRING_SUPPORT)
+if (ENABLE_PF_RING_SUPPORT)
     # Set path to manually compiled PF_RING
     set(PFRING_INCLUDE_DIRS "${PFRING_CUSTOM_INSTALL_PATH}/include")
 
