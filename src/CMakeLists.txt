@@ -61,7 +61,7 @@ SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
 # Create builds in current folder with install RPATH
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
-SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};/opt/libhiredis_0_13/lib;/opt/log4cpp1.1.1/lib;/opt/luajit_2.0.4/lib;/opt/ndpi/lib;/opt/pf_ring_6.0.3/lib;/opt/json-c-0.13/lib;/opt/mongo_c_driver_1_1_9/lib;/opt/grpc_0_11_1_7a94236d698477636dd06282f12f706cad527029/lib;/opt/protobuf_3.11.4/lib")
+SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};/opt/libhiredis_0_13/lib;/opt/log4cpp1.1.1/lib;/opt/luajit_2.0.4/lib;/opt/ndpi/lib;/opt/pf_ring_6.0.3/lib;/opt/json-c-0.13/lib;/opt/mongo_c_driver_1_1_9/lib;/opt/grpc_1_27_3_e73882dc0fcedab1ffe789e44ed6254819639ce3/lib;/opt/protobuf_3.11.4/lib")
 
 message(STATUS "C++ compilation flags: ${CMAKE_CXX_FLAGS_RELEASE}")
 
@@ -284,7 +284,7 @@ if (ENABLE_PFRING_SUPPORT)
 endif()
 
 if (ENABLE_GOBGP_SUPPORT)
-    set(GRPC_CUSTOM_INSTALL_PATH "/opt/grpc_0_11_1_7a94236d698477636dd06282f12f706cad527029")
+    set(GRPC_CUSTOM_INSTALL_PATH "/opt/grpc_1_27_3_e73882dc0fcedab1ffe789e44ed6254819639ce3")
     set(PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH "/opt/protobuf_3.11.4")
 
     add_definitions(-DENABLE_GOBGP)

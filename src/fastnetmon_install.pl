@@ -808,29 +808,41 @@ sub install_log4cpp {
 }
 
 sub install_grpc {
-    my $grpc_git_commit = "7a94236d698477636dd06282f12f706cad527029";
-    my $grpc_install_path = "/opt/grpc_0_11_1_$grpc_git_commit"; 
-
-    if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
+   if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
         apt_get('gcc', 'make', 'autoconf', 'automake', 'git', 'libtool', 'g++', 'python-all-dev', 'python-virtualenv');
     }
 
     # TODO: add deps for CentOS 
+
+    # Here we are storing revisions of code which are using multiple times in code
+    # https://github.com/grpc/grpc/releases/tag/v1.27.3
+    my $grpc_git_commit = "e73882dc0fcedab1ffe789e44ed6254819639ce3";
+
+    my $grpc_install_path = "/opt/grpc_1_27_3_$grpc_git_commit";
+
     chdir $temp_folder_for_building_project;
- 
+
     print "Clone gRPC repository\n";
     exec_command("git clone https://github.com/grpc/grpc.git");
     chdir "grpc";
 
     # For back compatibility with old git
     exec_command("git checkout $grpc_git_commit");
+
+    print "Update project submodules\n";
     exec_command("git submodule update --init");
 
     print "Build gRPC\n";
-    exec_command("make $make_options");
+    my $make_result = exec_command("make $make_options");
+
+    unless ($make_result) {
+        die "Could not build gRPC: make failed";
+    }
 
     print "Install gRPC\n";
-    exec_command("make install prefix=$grpc_install_path"); 
+    exec_command("make install prefix=$grpc_install_path");
+
+    1;
 }
 
 sub install_gobgp {
