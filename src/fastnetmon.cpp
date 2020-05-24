@@ -577,6 +577,7 @@ std::unique_ptr<Server> StartupApiServer() {
 }
 
 void RunApiServer() {
+    logger << log4cpp::Priority::INFO << "Launch API server";
     api_server = StartupApiServer();
 
     // Wait for the server to shutdown. Note that some other thread must be
