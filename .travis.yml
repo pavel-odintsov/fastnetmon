@@ -20,6 +20,7 @@ matrix:
     compiler: gcc
   - dist: xenial
     os: linux
+    compiler: gcc
   - dist: bionic
     os: linux
     compiler: gcc
