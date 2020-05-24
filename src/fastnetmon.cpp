@@ -38,8 +38,19 @@
 #endif
 
 #ifdef FASTNETMON_API
+
+#ifdef __GNUC__
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif  // __GNUC__
+
 #include "fastnetmon.grpc.pb.h"
 #include <grpc++/grpc++.h>
+
+#ifdef __GNUC__
+  #pragma GCC diagnostic pop
+#endif  // __GNUC__
+
 #endif
 
 // Plugins
