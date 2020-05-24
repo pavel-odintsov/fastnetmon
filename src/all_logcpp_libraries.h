@@ -1,6 +1,6 @@
 #ifdef __GNUC__
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wdeprecated"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated"
 #endif
 
 #include <log4cpp/Appender.hh>
@@ -15,5 +15,5 @@
 #include <log4cpp/SyslogAppender.hh>
 
 #ifdef __GNUC__
-  #pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
 #endif
