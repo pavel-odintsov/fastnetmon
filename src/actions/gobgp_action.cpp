@@ -2,20 +2,16 @@
 #include "../fastnetmon_actions.h"
 #include "../fastnetmon_types.h"
 
-#include <dlfcn.h>
-
-extern "C" {
-// Gobgp library
-#include "libgobgp.h"
-}
-
 #include <grpc++/channel.h>
 #include <grpc++/client_context.h>
 #include <grpc++/create_channel.h>
 #include <grpc++/security/credentials.h>
 #include <grpc/grpc.h>
 
-#include "gobgp_api_client.grpc.pb.h"
+#include "gobgp.grpc.pb.h"
+#include "attribute.pb.h"
+
+unsigned int gobgp_client_connection_timeout = 5;
 
 using grpc::Channel;
 using grpc::ClientContext;
@@ -23,18 +19,12 @@ using grpc::Status;
 
 using gobgpapi::GobgpApi;
 
-// Create function pointers
-typedef path* (*serialize_path_dynamic_t)(int p0, char* p1);
-typedef char* (*decode_path_dynamic_t)(path* p0);
-
-serialize_path_dynamic_t serialize_path_dynamic = NULL;
-decode_path_dynamic_t decode_path_dynamic = NULL;
-
 class GrpcClient {
     public:
     GrpcClient(std::shared_ptr<Channel> channel) : stub_(GobgpApi::NewStub(channel)) {
     }
     void GetAllActiveAnnounces(unsigned int route_family) {
+	/*
         ClientContext context;
         gobgpapi::Table table;
 
@@ -92,9 +82,11 @@ class GrpcClient {
             logger << log4cpp::Priority::INFO << "NLRI: " << decode_path_dynamic(&gobgp_lib_path);
             // std::cout << "NLRI: " << decode_path(&gobgp_lib_path) << std::endl;
         }
+	*/
     }
 
     void AnnounceFlowSpecPrefix(bool withdraw) {
+        /*	
         const gobgpapi::ModPathArguments current_mod_path_arguments;
 
         unsigned int AFI_IP = 1;
@@ -103,6 +95,7 @@ class GrpcClient {
 
         gobgpapi::Path* current_path = new gobgpapi::Path;
         current_path->set_is_withdraw(withdraw);
+        */
 
         /*
         buf:
@@ -116,6 +109,7 @@ class GrpcClient {
             int   path_attributes_cap;
         */
 
+	/*
         path* path_c_struct =
         serialize_path_dynamic(ipv4_flow_spec_route_family,
                                (char*)"match destination 10.0.0.0/24 protocol tcp source "
@@ -165,93 +159,82 @@ class GrpcClient {
             // std::cout << "modpath failed with code: " << status.error_code()
             //    << " message " << status.error_message() << std::endl;
         }
+	*/
     }
 
-    void AnnounceUnicastPrefix(std::string announced_prefix, std::string announced_prefix_nexthop, bool is_withdrawal) {
-        const gobgpapi::ModPathArguments current_mod_path_arguments;
+    bool AnnounceUnicastPrefix(std::string announced_address, std::string announced_prefix_nexthop, bool is_withdrawal, unsigned int cidr_mask) {
+	grpc::ClientContext context;
 
-        unsigned int AFI_IP = 1;
-        unsigned int SAFI_UNICAST = 1;
-        unsigned int ipv4_unicast_route_family = AFI_IP << 16 | SAFI_UNICAST;
+	// Set timeout for API
+	std::chrono::system_clock::time_point deadline =
+            std::chrono::system_clock::now() + std::chrono::seconds(gobgp_client_connection_timeout);
+	context.set_deadline(deadline);
 
-        gobgpapi::Path* current_path = new gobgpapi::Path;
-        //            current_path->set_is_withdraw(withdraw);
-        if (is_withdrawal) {
+	auto gobgp_ipv4_unicast_route_family = new gobgpapi::Family;
+	gobgp_ipv4_unicast_route_family->set_afi(gobgpapi::Family::AFI_IP);
+	gobgp_ipv4_unicast_route_family->set_safi(gobgpapi::Family::SAFI_UNICAST);
+
+	gobgpapi::AddPathRequest request;
+        request.set_table_type(gobgpapi::TableType::GLOBAL);
+
+	gobgpapi::Path* current_path = new gobgpapi::Path;
+
+        current_path->set_allocated_family(gobgp_ipv4_unicast_route_family);
+
+	if (is_withdrawal) {
             current_path->set_is_withdraw(true);
-        }
+	}
 
-        /*
-        buf:
-            char *value;
-            int len;
+        // Configure required announce
+	google::protobuf::Any *current_nlri = new google::protobuf::Any;
+	gobgpapi::IPAddressPrefix current_ipaddrprefix;
+	current_ipaddrprefix.set_prefix(announced_address);
+	current_ipaddrprefix.set_prefix_len(cidr_mask);
 
-        path:
-            buf   nlri;
-            buf** path_attributes;
-            int   path_attributes_len;
-            int   path_attributes_cap;
+	current_nlri->PackFrom(current_ipaddrprefix);
+	current_path->set_allocated_nlri(current_nlri);
+
+        // Updating OriginAttribute info for current_path
+	google::protobuf::Any *current_origin = current_path->add_pattrs();
+	gobgpapi::OriginAttribute current_origin_t;
+	current_origin_t.set_origin(0);
+	current_origin->PackFrom(current_origin_t);
+
+        // Updating NextHopAttribute info for current_path
+	google::protobuf::Any *current_next_hop = current_path->add_pattrs();
+	gobgpapi::NextHopAttribute current_next_hop_t;
+	current_next_hop_t.set_next_hop(announced_prefix_nexthop);
+	current_next_hop->PackFrom(current_next_hop_t);
+	
+	/*
+	// Updating CommunitiesAttribute for current_path
+	google::protobuf::Any *current_communities = current_path->add_pattrs();
+	gobgpapi::CommunitiesAttribute current_communities_t;
+	current_communities_t.add_communities(100);
+	current_communities->PackFrom(current_communities_t);
         */
 
-        std::string announce_line = announced_prefix + " nexthop " + announced_prefix_nexthop;
+        request.set_allocated_path(current_path);
 
-        // 10.10.20.33/22 nexthop 10.10.1.99/32
-        path* path_c_struct =
-        serialize_path_dynamic(ipv4_unicast_route_family, (char*)announce_line.c_str());
+	gobgpapi::AddPathResponse response;
 
-        if (path_c_struct == NULL) {
-            logger << log4cpp::Priority::ERROR << "Could not generate path\n";
-            return;
+        // Don't be confused by name, it also can withdraw announces
+        auto status = stub_->AddPath(&context, request, &response);
+
+        if (!status.ok()) {
+            logger << log4cpp::Priority::ERROR << "AddPath request to BGP daemon failed with code: " << status.error_code()
+               << " message " << status.error_message();
+
+           return false;
         }
 
-        // printf("Decoded NLRI output: %s, length %d raw string length: %d\n", decode_path(path_c_struct), path_c_struct->nlri.len, strlen(path_c_struct->nlri.value));
 
-        for (int path_attribute_number = 0;
-             path_attribute_number < path_c_struct->path_attributes_len; path_attribute_number++) {
-            current_path->add_pattrs(path_c_struct->path_attributes[path_attribute_number]->value,
-                                     path_c_struct->path_attributes[path_attribute_number]->len);
-        }
-
-        current_path->set_nlri(path_c_struct->nlri.value, path_c_struct->nlri.len);
-
-        gobgpapi::ModPathsArguments request;
-        request.set_resource(gobgpapi::Resource::GLOBAL);
-        google::protobuf::RepeatedPtrField< ::gobgpapi::Path>* current_path_list = request.mutable_paths();
-        current_path_list->AddAllocated(current_path);
-        request.set_name("");
-
-        ClientContext context;
-
-        gobgpapi::Error return_error;
-
-        // result is a std::unique_ptr<grpc::ClientWriter<api::ModPathArguments> >
-        auto send_stream = stub_->ModPaths(&context, &return_error);
-
-        bool write_result = send_stream->Write(request);
-
-        if (!write_result) {
-            // std::cout << "Write to API failed\n";
-            logger << log4cpp::Priority::ERROR << "Write to API failed\n";
-            return;
-        }
-
-        // Finish all writes
-        send_stream->WritesDone();
-
-        auto status = send_stream->Finish();
-
-        if (status.ok()) {
-            // std::cout << "modpath executed correctly" << std::cout;
-        } else {
-            // std::cout << "modpath failed with code: " << status.error_code()
-            //    << " message " << status.error_message() << std::endl;
-            logger << log4cpp::Priority::ERROR << "modpath failed with code: " << status.error_code()
-                   << " message " << status.error_message();
-
-            return;
-        }
+	return true;
     }
 
     std::string GetNeighbor(std::string neighbor_ip) {
+	return "not implemented";
+	/*
         gobgpapi::Arguments request;
         request.set_family(4);
         request.set_name(neighbor_ip);
@@ -276,6 +259,7 @@ class GrpcClient {
         } else {
             return "Something wrong";
         }
+	*/
     }
 
     private:
@@ -289,8 +273,7 @@ bool gobgp_announce_host = false;
 
 void gobgp_action_init() {
     logger << log4cpp::Priority::INFO << "GoBGP action module loaded";
-    gobgp_client = new GrpcClient(grpc::CreateChannel("localhost:50051", grpc::InsecureCredentials()));
-    //    GrpcClient gobgp_client(grpc::CreateChannel("localhost:50051", grpc::InsecureCredentials()));
+    gobgp_client = new GrpcClient(grpc::CreateChannel("localhost:50051", grpc::InsecureChannelCredentials()));
 
     if (configuration_map.count("gobgp_next_hop")) {
         gobgp_nexthop = configuration_map["gobgp_next_hop"];
@@ -302,39 +285,6 @@ void gobgp_action_init() {
 
     if (configuration_map.count("gobgp_announce_whole_subnet")) {
         gobgp_announce_whole_subnet = configuration_map["gobgp_announce_whole_subnet"] == "on";
-    }
-
-    // According to this bug report: https://github.com/golang/go/issues/12873
-    // We have significant issues with popen, daemonization and Go's runtime
-
-    // We use non absoulte path here and linker will find it fir us
-    void* gobgdp_library_handle = dlopen("libgobgp.so", RTLD_NOW);
-
-    if (gobgdp_library_handle == NULL) {
-        logger << log4cpp::Priority::ERROR << "Could not load gobgp binary library: " << dlerror();
-        exit(1);
-    }
-
-    dlerror(); /* Clear any existing error */
-
-    /* According to the ISO C standard, casting between function
-        pointers and 'void *', as done above, produces undefined results.
-        POSIX.1-2003 and POSIX.1-2008 accepted this state of affairs and
-        proposed the following workaround:
-    */
-
-    serialize_path_dynamic =
-    (serialize_path_dynamic_t)dlsym(gobgdp_library_handle, "serialize_path");
-    if (serialize_path_dynamic == NULL) {
-        logger << log4cpp::Priority::ERROR << "Could not load function serialize_path from the dynamic library";
-        exit(1);
-    }
-
-    decode_path_dynamic = (decode_path_dynamic_t)dlsym(gobgdp_library_handle, "decode_path");
-
-    if (decode_path_dynamic == NULL) {
-        logger << log4cpp::Priority::ERROR << "Could not load function decode_path from the dynamic library";
-        exit(1);
     }
 }
 
@@ -354,12 +304,13 @@ void gobgp_ban_manage(std::string action, std::string ip_as_string, attack_detai
     if (gobgp_announce_whole_subnet) {
         std::string subnet_as_string_with_mask = convert_subnet_to_string(current_attack.customer_network);
 
-        gobgp_client->AnnounceUnicastPrefix(subnet_as_string_with_mask, gobgp_nexthop, is_withdrawal);
+	logger << log4cpp::Priority::ERROR << "Per network GoBGP announces are not supported yet";
+        // gobgp_client->AnnounceUnicastPrefix(subnet_as_string_with_mask, gobgp_nexthop, is_withdrawal, );
     }
 
     if (gobgp_announce_host) {
         std::string ip_as_string_with_mask = ip_as_string + "/32";
 
-        gobgp_client->AnnounceUnicastPrefix(ip_as_string_with_mask, gobgp_nexthop, is_withdrawal);
+        gobgp_client->AnnounceUnicastPrefix(ip_as_string, gobgp_nexthop, is_withdrawal, 32);
     }
 }

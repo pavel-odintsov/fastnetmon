@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
     // are created. This channel models a connection to an endpoint (in this case,
     // localhost at port 50051). We indicate that the channel isn't authenticated
     // (use of InsecureCredentials()).
-    FastnetmonClient fastnetmon(grpc::CreateChannel("localhost:50052", grpc::InsecureCredentials()));
+    FastnetmonClient fastnetmon(grpc::CreateChannel("localhost:50052", grpc::InsecureChannelCredentials()));
 
     std::string request_command = argv[1];
 
