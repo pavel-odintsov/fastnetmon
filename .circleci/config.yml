@@ -7,7 +7,10 @@ jobs:
       - checkout
       - run: apt-get update; true
       - run: apt-get install -y perl wget
-      - run: perl src/fastnetmon_install.pl --use-git-master
+      - run:
+          name: install_dependencies
+          no_output_timeout: 20m
+          command: perl src/fastnetmon_install.pl --use-git-master
       - run: cd src; mkdir -p build; cd build; cmake ..; make
 workflows:
   version: 2

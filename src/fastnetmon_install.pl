@@ -1445,7 +1445,7 @@ sub install_fastnetmon {
         $cmake_params .= " -DENABLE_LUA_SUPPORT=OFF ";
     }
 
-    if (defined($ENV{'TRAVIS'}) && $ENV{'TRAVIS'}) {
+    if ((defined($ENV{'TRAVIS'}) && $ENV{'TRAVIS'}) or (defined($ENV{'CI'}) && $ENV{'CI'})) {
         system("cmake .. $cmake_params");
         system("make $make_options");
     } else {
