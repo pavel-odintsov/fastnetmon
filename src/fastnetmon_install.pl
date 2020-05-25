@@ -224,6 +224,10 @@ sub install_additional_repositories {
         if ($distro_version == 8) {
             print "Install EPEL repository for your system\n";
             yum('https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm');
+
+	    # Part of devel libraries was moved here https://github.com/pavel-odintsov/fastnetmon/issues/801
+	    print "Enable PowerTools repo\n";
+	    system("yum config-manager --set-enabled PowerTools");
         }
     }
 }
