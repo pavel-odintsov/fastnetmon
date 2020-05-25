@@ -11,10 +11,10 @@ my $have_ansi_color = '';
 # We should handle cases when customer does not have perl modules package installed
 BEGIN {
     unless (eval "use Term::ANSIColor") {
-        warn "Cannot load module Term::ANSIColor";
+	# warn "Cannot load module Term::ANSIColor";
+    } else {
+        $have_ansi_color = 1;
     }
-
-    $have_ansi_color = 1;
 }
 
 my $we_use_code_from_master = '';
