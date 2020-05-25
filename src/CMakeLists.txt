@@ -151,7 +151,7 @@ if (ENABLE_PF_RING_SUPPORT)
         # Enable ZC support
         add_definitions(-DPF_RING_ZC)
     else()
-        message(WARNING "We can't find PF_RING ZC header pfring_zc.h in folder /opt/pf_ring/include. Will not compile ZC support") 
+        message(WARNING "We can't find PF_RING ZC header pfring_zc.h. Will not compile ZC support") 
     endif()
 
     include_directories(${PFRING_INCLUDE_DIRS})
