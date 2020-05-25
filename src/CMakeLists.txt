@@ -187,23 +187,20 @@ if (ENABLE_SNABBSWITCH_SUPPORT)
     target_link_libraries(snabbswitch_plugin snabb)
 endif()
 
-if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-    execute_process(COMMAND uname -r OUTPUT_VARIABLE LINUX_KERNEL_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
-    
-    # Extract major version number from Linux Kernel Version
-    string(REGEX MATCH "^[0-9]+\\.[0-9]+" KERNEL_VERSION_MATCHES ${LINUX_KERNEL_VERSION})
-    
-    # For tests
-    # set(KERNEL_VERSION_MATCHES "2.6.32")
+CHECK_CXX_SOURCE_COMPILES("
+#include <cstdint>
+#include <linux/if_packet.h>
+int main() {
+    return TPACKET_V3;
+}
+" HAVE_TPACKET_V3)
 
-    # We need 3.7 or more recent kernel here because older kernels are buggy
-    # VERSION_GREATER comparator available from cmake 2.6.2
-    if (${KERNEL_VERSION_MATCHES} VERSION_GREATER "3.7") 
-        message(STATUS "You are running Linux with enough recent kernel and we can build AF_PACKET support")
-        set (ENABLE_AFPACKET_SUPPORT ON)
-    else()
-        message(STATUS "You are running old Linux kernel and we can't build AF_PACKET support")
-    endif()
+
+if (${HAVE_TPACKET_V3})
+    message(STATUS "Your system has support for AF_PACKET v3")
+    set (ENABLE_AFPACKET_SUPPORT ON)
+else()
+    message(STATUS "Your system does not support AF_PACKET v3, disabled it")
 endif()
 
 # -DENABLE_AFPACKET_SUPPORT=ON ..
