@@ -115,6 +115,75 @@ jobs:
           paths:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
+  centos6:
+    docker:
+      - image: centos:centos6.9
+    steps:
+      - checkout
+      - run: apt-get update; true
+      - run: apt-get install -y perl wget
+      - run:
+          name: install_required_packages
+          no_output_timeout: 20m
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+      - restore_cache:
+          keys:
+            - centos6_dependencies_25_05_2020
+      - run:
+          name: install_dependencies
+          no_output_timeout: 20m
+          command: perl src/fastnetmon_install.pl --use-git-master
+      - save_cache:
+          key: centos6_dependencies_25_05_2020
+          paths:
+            - /opt
+      - run: cd src; mkdir -p build; cd build; cmake ..; make
+  centos7:
+    docker:
+      - image: centos:centos7.8.2003
+    steps:
+      - checkout
+      - run: apt-get update; true
+      - run: apt-get install -y perl wget
+      - run:
+          name: install_required_packages
+          no_output_timeout: 20m
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+      - restore_cache:
+          keys:
+            - centos7_dependencies_25_05_2020
+      - run:
+          name: install_dependencies
+          no_output_timeout: 20m
+          command: perl src/fastnetmon_install.pl --use-git-master
+      - save_cache:
+          key: centos7_dependencies_25_05_2020
+          paths:
+            - /opt
+      - run: cd src; mkdir -p build; cd build; cmake ..; make
+  centos8:
+    docker:
+      - image: centos:centos8.1.1911
+    steps:
+      - checkout
+      - run: apt-get update; true
+      - run: apt-get install -y perl wget
+      - run:
+          name: install_required_packages
+          no_output_timeout: 20m
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+      - restore_cache:
+          keys:
+            - centos8_dependencies_25_05_2020
+      - run:
+          name: install_dependencies
+          no_output_timeout: 20m
+          command: perl src/fastnetmon_install.pl --use-git-master
+      - save_cache:
+          key: centos8_dependencies_25_05_2020
+          paths:
+            - /opt
+      - run: cd src; mkdir -p build; cd build; cmake ..; make
 workflows:
   version: 2
   all_distros:
@@ -124,3 +193,6 @@ workflows:
       - ubuntu1604
       - ubuntu1804
       - ubuntu2004
+      - centos6
+      - centos7
+      - centos8
