@@ -106,6 +106,8 @@ my $show_help = '';
 my $enable_gobgp_backend = '';
 my $enable_api = '';
 
+my $install_dependency_packages_only = '';
+
 # Get options from command line
 GetOptions(
     'use-git-master' => \$we_use_code_from_master,
@@ -114,10 +116,11 @@ GetOptions(
     'gobgp' => \$enable_gobgp_backend,
     'api' => \$enable_api,
     'help' => \$show_help,
+    'install_dependency_packages_only' => \$install_dependency_packages_only, 
 );
 
 if ($show_help) {
-    print "We have following options:\n--use-git-master\n--do-not-track-me\n--use-modern-pf-ring\n--gobgp\n--api\n--help\n";
+    print "We have following options:\n--use-git-master\n--do-not-track-me\n--use-modern-pf-ring\n--gobgp\n--api\n--install_dependency_packages_only\n--help\n";
     exit (0);
 }
 
@@ -379,48 +382,80 @@ sub main {
 
         yum(@centos_dependency_packages);
     }
+ 
+    # Install only depencdency packages, we need it to cache installed packages in CI
+    if ($install_dependency_packages_only) {
+        if ($we_have_pfring_support) {
+            install_pf_ring_dependencies();
+    	}
 
+	if ($we_have_ndpi_support) {
+            install_ndpi_dependencies();
+        }
 
-    if ($we_have_pfring_support) {
-        install_pf_ring();
-    }
+	if ($we_have_luajit_support) {
+            install_luajit_dependencies();
+	}
 
-    install_json_c();
+	if ($we_have_protobuf_support) {
+            install_protobuf_dependencies();
+	}
 
-    if ($we_have_ndpi_support) {
-        install_ndpi();
-    }
+	if ($we_have_grpc_support) {
+            install_grpc_dependencies();
+	}
 
-    if ($we_have_luajit_support) {
-        install_luajit();
-        install_luajit_libs();
-    }
+	install_fastnetmon_dependencies();
+    } else {
 
-    if ($we_have_hiredis_support) {
-        install_hiredis();
-    }
+        if ($we_have_pfring_support) {
+       	   install_pf_ring_dependencies();
+           install_pf_ring();
+        }
 
-    if ($we_have_mongo_support) {
-        install_mongo_client();
-    }
+        install_json_c();
 
-    if ($we_have_protobuf_support) {
-        install_protobuf();
-    }
+        if ($we_have_ndpi_support) {
+	   install_ndpi_dependencies();
+           install_ndpi();
+        }
 
-    if ($we_have_grpc_support) {
-        install_grpc();
-    }
+        if ($we_have_luajit_support) {
+	   install_luajit_dependencies();
 
-    if ($we_have_gobgp_support) {
-        install_gobgp();
-    }
+           install_luajit();
+           install_luajit_libs();
+        }
+
+        if ($we_have_hiredis_support) {
+           install_hiredis();
+        }
+
+        if ($we_have_mongo_support) {
+            install_mongo_client();
+        }
+
+        if ($we_have_protobuf_support) {
+	   install_protobuf_dependencies();
+           install_protobuf();
+        }
+
+        if ($we_have_grpc_support) {
+	    install_grpc_dependencies();
+            install_grpc();
+        }
+
+        if ($we_have_gobgp_support) {
+            install_gobgp();
+        }
     
-    if ($we_have_log4cpp_support) {
-        install_log4cpp();
-    }
+        if ($we_have_log4cpp_support) {
+            install_log4cpp();
+        }
 
-    install_fastnetmon();
+        install_fastnetmon_dependencies();
+        install_fastnetmon();
+    }
 
     send_tracking_information('finished');
 
@@ -513,48 +548,10 @@ sub download_file {
     }     
 }
 
-sub install_binary_gcc {
-    my $binary_repository_path = 'http://213.133.111.200/fastnetmon_gcc_toolchain';
-    my $package_distro_version = '';
-
-    if ($distro_type eq 'debian') {
-        # Debian 6: 6.0.10
-        # Debian 7: 7.8
-        # Debian 8: 8.1
-
-        if ($distro_version =~ m/^(6)/) {
-            $package_distro_version = $1;
-        } else {
-            $package_distro_version = int($distro_version);
-        }
-    } elsif ($distro_type eq 'ubuntu') {
-        $package_distro_version = $distro_version;
-    } elsif ($distro_type eq 'centos') {
-        $package_distro_version = $distro_version;
+sub install_luajit_dependencies {
+    if ($os_type eq 'freebsd') {
+        exec_command("pkg install -y gcc gmake");
     }
-
-    chdir $temp_folder_for_building_project;
-
-    my $distribution_file_name = "gcc-5.2.0-$distro_type-$package_distro_version-$distro_architecture.tar.gz"; 
-    my $full_path = "$binary_repository_path/$distribution_file_name";
-
-    print "We will try to download prebuilded binary gcc package for your distribution\n";
-    print "We will download from $full_path\n";
-    my $gcc_binary_download_result = download_file($full_path, $distribution_file_name);
-
-    unless ($gcc_binary_download_result) {
-        print "Download failed, skip to source compilation\n";
-        return '';
-    }
-
-    print "Unpack gcc binary package\n";
-    # Unpack file to opt
-    exec_command("tar -xf $distribution_file_name -C /opt"); 
-
-    # Remove archive
-    unlink($distribution_file_name);
-
-    return 1;
 }
 
 sub install_luajit {
@@ -588,7 +585,6 @@ sub install_luajit {
 
     print "Build and install Luajit\n";
     if ($os_type eq 'freebsd') {
-        exec_command("pkg install -y gcc gmake");
         exec_command('gmake CC=gcc48 CXX=g++48 CPP="gcc48 -E" install')
     } else {
         exec_command("make $make_options install");
@@ -635,7 +631,6 @@ sub install_lua_lpeg {
 sub install_json_c {
     my $archive_name  = 'json-c-0.13-20171207.tar.gz';
     my $install_path = '/opt/json-c-0.13';
-
 
     print "Install json library\n";
 
@@ -815,13 +810,13 @@ sub install_log4cpp {
     put_library_path_to_ld_so("/etc/ld.so.conf.d/log4cpp.conf", "$log4cpp_install_path/lib");
 }
 
-sub install_grpc {
-   if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
+sub install_grpc_dependencies {
+    if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
         apt_get('gcc', 'make', 'autoconf', 'automake', 'git', 'libtool', 'g++', 'python-all-dev', 'python-virtualenv');
     }
+}
 
-    # TODO: add deps for CentOS 
-
+sub install_grpc {
     # Here we are storing revisions of code which are using multiple times in code
     # https://github.com/grpc/grpc/releases/tag/v1.27.3
     my $grpc_git_commit = "e73882dc0fcedab1ffe789e44ed6254819639ce3";
@@ -888,13 +883,14 @@ sub install_gobgp {
     exec_command("cp gobgpd $gobgp_install_path");
 }
 
-sub install_protobuf {
-    chdir $temp_folder_for_building_project;
-
-    # TODO: add deps for CentOS
+sub install_protobuf_dependencies {
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
         apt_get('make', 'autoconf', 'automake', 'git', 'libtool', 'curl', "g++");
     }
+}
+
+sub install_protobuf {
+    chdir $temp_folder_for_building_project;
 
     my $protobuf_install_path = "/opt/protobuf_3.11.4";
 
@@ -973,7 +969,7 @@ sub install_hiredis {
 }
 
 # We use global variable $ndpi_repository here
-sub install_ndpi {
+sub install_ndpi_dependencies {
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
         apt_get('git', 'autoconf', 'libtool', 'automake', 'libpcap-dev');
     } elsif ($distro_type eq 'centos') {
@@ -982,7 +978,10 @@ sub install_ndpi {
     } elsif ($os_type eq 'freebsd') {
         exec_command("pkg install -y git autoconf automake libtool");
     } 
+}
 
+# We use global variable $ndpi_repository here
+sub install_ndpi {
     print "Download nDPI\n";
     if (-e "$temp_folder_for_building_project/nDPI") {
         # Get new code from the repository
@@ -1183,10 +1182,7 @@ sub detect_distribution {
     } 
 }
 
-sub install_pf_ring {
-    my $pf_ring_archive_path = "$temp_folder_for_building_project/PF_RING-$pf_ring_version.tar.gz";
-    my $pf_ring_sources_path = "$temp_folder_for_building_project/PF_RING-$pf_ring_version";
-
+sub install_pf_ring_dependencies {
     my $kernel_version = `uname -r`;
     chomp $kernel_version;
 
@@ -1250,9 +1246,15 @@ sub install_pf_ring {
             print "Emerge fail with code $?\n";
         }
     }
+}
+
+sub install_pf_ring {
+    my $pf_ring_archive_path = "$temp_folder_for_building_project/PF_RING-$pf_ring_version.tar.gz";
+    my $pf_ring_sources_path = "$temp_folder_for_building_project/PF_RING-$pf_ring_version";
 
     # Sometimes we do not want to build kernel module (Docker, KVM and other cases)
     my $we_could_install_kernel_modules = 1;
+    
     if ($we_could_install_kernel_modules) {
         print "Download PF_RING $pf_ring_version sources\n";
         my $pfring_download_result = download_file($pf_ring_url, $pf_ring_archive_path, $pf_ring_sha);
@@ -1337,7 +1339,7 @@ sub yum {
     }
 }
 
-sub install_fastnetmon {
+sub install_fastnetmon_dependencies {
     print "Install FastNetMon dependency list\n";
 
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
@@ -1380,7 +1382,9 @@ sub install_fastnetmon {
     } elsif ($os_type eq 'freebsd') {
         exec_command("pkg install -y cmake git ncurses boost-all log4cpp");
     }
+}
 
+sub install_fastnetmon {
     print "Clone FastNetMon repo\n";
     chdir $temp_folder_for_building_project;
 
