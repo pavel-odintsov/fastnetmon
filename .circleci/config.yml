@@ -152,7 +152,7 @@ jobs:
           command: perl src/fastnetmon_install.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - centos6_dependencies_26_05_2020
+            - centos6_dependencies_27_05_2020
       - run:
           name: install_dependencies
           no_output_timeout: 20m
@@ -162,9 +162,10 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: centos6_dependencies_26_05_2020
+          key: centos6_dependencies_27_05_2020
           paths:
             - /opt
+            - /usr/include/linux/pf_ring.h
       - run: cd src; mkdir -p build; cd build; cmake ..; make
       - run: /opt/fastnetmon/fastnetmon --configuration_check
   centos7:
