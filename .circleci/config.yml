@@ -16,7 +16,7 @@ jobs:
             - ubuntu2004_dependencies_26_05_2020
       - run:
           name: install_dependencies
-          no_output_timeout: 20m
+          no_output_timeout: 35m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - run:
           name: collect_debug
@@ -44,7 +44,7 @@ jobs:
             - ubuntu1804_dependencies_26_05_2020
       - run:
           name: install_dependencies
-          no_output_timeout: 20m
+          no_output_timeout: 35m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - run:
           name: collect_debug
@@ -72,7 +72,7 @@ jobs:
             - ubuntu1604_dependencies_26_05_2020
       - run:
           name: install_dependencies
-          no_output_timeout: 20m
+          no_output_timeout: 35m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - run:
           name: collect_debug
@@ -93,7 +93,7 @@ jobs:
       - run: apt-get install -y perl wget
       - run:
           name: install_required_packages
-          no_output_timeout: 20m
+          no_output_timeout: 35m
           command: perl src/fastnetmon_install.pl --install_dependency_packages_only
       - restore_cache:
           keys:
@@ -128,7 +128,7 @@ jobs:
             - debian10_dependencies_26_05_2020
       - run:
           name: install_dependencies
-          no_output_timeout: 20m
+          no_output_timeout: 35m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - run:
           name: collect_debug
@@ -182,7 +182,7 @@ jobs:
             - centos7_dependencies_26_05_2020
       - run:
           name: install_dependencies
-          no_output_timeout: 20m
+          no_output_timeout: 35m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - run:
           name: collect_debug
@@ -213,7 +213,7 @@ jobs:
             - centos8_dependencies_26_05_2020
       - run:
           name: install_dependencies
-          no_output_timeout: 20m
+          no_output_timeout: 35m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - save_cache:
           key: centos8_dependencies_26_05_2020
