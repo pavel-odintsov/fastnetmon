@@ -601,8 +601,6 @@ sub install_luajit {
     } else {
         exec_command("make $make_options install");
     }
-
-    put_library_path_to_ld_so("/etc/ld.so.conf.d/luajit.conf", "/opt/luajit_2.0.4/lib");
 }
 
 sub install_luajit_libs {
@@ -680,8 +678,6 @@ sub install_json_c {
 
     print "Install it\n";
     exec_command("make $make_options install");
-
-    put_library_path_to_ld_so("/etc/ld.so.conf.d/json-c.conf", "$install_path/lib");
 }
 
 sub install_lua_json {
@@ -827,9 +823,6 @@ sub install_log4cpp {
     }
 
     exec_command("make $make_options install"); 
-
-    print "Add log4cpp to ld.so.conf\n";
-    put_library_path_to_ld_so("/etc/ld.so.conf.d/log4cpp.conf", "$log4cpp_install_path/lib");
 }
 
 sub install_grpc_dependencies {
@@ -866,7 +859,7 @@ sub install_grpc {
     my $make_result = exec_command("make $make_options");
 
     unless ($make_result) {
-        die "Could not build gRPC: make failed";
+        die "Could not build gRPC: make failed\n";
     }
 
     print "Install gRPC\n";
@@ -1011,9 +1004,6 @@ sub install_hiredis {
     print "Build hiredis\n";
     chdir "hiredis-0.13.1";
     exec_command("PREFIX=$hiredis_install_path make $make_options install");
-
-    print "Add hiredis to ld.so.conf\n";
-    put_library_path_to_ld_so("/etc/ld.so.conf.d/hiredis.conf", "$hiredis_install_path/lib"); 
 }
 
 # We use global variable $ndpi_repository here
@@ -1062,9 +1052,6 @@ sub install_ndpi {
 
     print "Build and install nDPI\n";
     exec_command("make $make_options install");
-
-    print "Add ndpi to ld.so.conf\n";
-    put_library_path_to_ld_so("/etc/ld.so.conf.d/ndpi.conf", "/opt/ndpi/lib"); 
 }
 
 sub init_package_manager { 
@@ -1077,20 +1064,6 @@ sub init_package_manager {
     if ($os_type eq 'freebsd') {
         exec_command("pkg update");
     }
-}
-
-sub put_library_path_to_ld_so {
-    my ($ld_so_file_path, $library_path) = @_; 
-
-    if ($os_type eq 'macosx' or $os_type eq 'freebsd') {
-        return;
-    }
-
-    open my $ld_so_conf_handle, ">", $ld_so_file_path or fast_die("Can't open file $ld_so_file_path $! for writing");
-    print {$ld_so_conf_handle} $library_path;
-    close $ld_so_conf_handle;
-
-    exec_command("ldconfig");
 }
 
 sub read_file {
@@ -1367,11 +1340,6 @@ sub install_pf_ring {
     exec_command("./configure --prefix=$pf_ring_install_path");
     exec_command("make $make_options");
     exec_command("make $make_options install"); 
-
-    print "Create library symlink\n";
-
-    print "Add pf_ring to ld.so.conf\n";
-    put_library_path_to_ld_so("/etc/ld.so.conf.d/pf_ring.conf", "$pf_ring_install_path/lib");
 }
 
 sub apt_get {
