@@ -84,6 +84,34 @@ jobs:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
       - run: /opt/fastnetmon/fastnetmon --configuration_check 
+  debian8:
+    docker:
+      - image: debian:jessie-20200514
+    steps:
+      - checkout
+      - run: apt-get update; true
+      - run: apt-get install -y perl wget
+      - run:
+          name: install_required_packages
+          no_output_timeout: 35m
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+      - restore_cache:
+          keys:
+            - {{ CIRCLE_JOB }}_dependencies_26_05_2020
+      - run:
+          name: install_dependencies
+          no_output_timeout: 20m
+          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
+      - run:
+          name: collect_debug
+          command: cat /tmp/fastnetmon_install.log
+          when: on_fail
+      - save_cache:
+          key: {{ CIRCLE_JOB }}_dependencies_26_05_2020
+          paths:
+            - /opt
+      - run: cd src; mkdir -p build; cd build; cmake ..; make
+      - run: /opt/fastnetmon/fastnetmon --configuration_check
   debian9:
     docker:
       - image: debian:stretch-20200514
@@ -226,6 +254,7 @@ workflows:
   version: 2
   all_distros:
     jobs:
+      - debian8
       - debian9
       - debian10
       - ubuntu1604
