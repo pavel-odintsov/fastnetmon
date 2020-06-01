@@ -5,13 +5,6 @@ cmake_minimum_required (VERSION 2.8)
 # Debian 7 - 2.8.9
 # CentOS 6 - 2.8.12
 
-# We should set compiler before project() call 
-if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
-    # We use custom compiler too
-    set(CMAKE_C_COMPILER "/opt/gcc520/bin/gcc")
-    set(CMAKE_CXX_COMPILER "/opt/gcc520/bin/g++")
-endif()
-
 project(FastNetMon)
 
 # Unfortunately, Debian Squeeze haven't support for this feature
@@ -40,19 +33,19 @@ if (ENABLE_GOBGP_SUPPORT)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11")
 endif()
 
-# cmake -DENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT=ON .. 
-if (ENABLE_BUILD_IN_CPP_11_CUSTOM_ENVIRONMENT)
-    set(BOOST_INCLUDEDIR "/opt/boost_1_58_0")
-    set(BOOST_LIBRARYDIR "/opt/boost_1_58_0/stage/lib/")
+# cmake -DENABLE_CUSTOM_BOOST_BUILD=ON .. 
+if (ENABLE_CUSTOM_BOOST_BUILD)
+    message(STATUS "Build with custom Boost")
 
-    # It's really nice part of this custom build process :)
+    set(BOOST_INCLUDEDIR "/opt/boost_1_72_0")
+    set(BOOST_LIBRARYDIR "/opt/boost_1_72_0/stage/lib/")
+
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11")
 
-    # Disable warning from Boost when compiling with gcc 5.2
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
 
-    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};/opt/gcc520/lib64;/opt/boost_1_58_0/stage/lib")
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};/opt/boost_1_72_0/stage/lib")
 endif()
  
 # Specify full RPATH for build tree
