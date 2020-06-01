@@ -438,6 +438,7 @@ sub main {
         install_json_c();
 
         if ($build_boost) {
+           install_icu();
 	   install_boost_builder();
 	   install_boost();
 	}
@@ -1389,6 +1390,39 @@ sub yum {
     }
 }
 
+
+sub install_icu {
+    my $distro_file_name = 'icu4c-65_1-src.tgz';
+
+    chdir $temp_folder_for_building_project;
+
+    my $icu_install_path = "/opt/libicu_65_1";
+
+    if (-e $icu_install_path) {
+        warn "Found installed icu at $icu_install_path\n";
+        return 1;
+    }
+
+    print "Download icu\n";
+    my $icu_download_result = download_file("https://github.com/unicode-org/icu/releases/download/release-65-1/$distro_file_name",
+        $distro_file_name, 'd1e6b58aea606894cfb2495b6eb1ad533ccd2a25');
+
+    unless ($icu_download_result) {
+        die "Could not download ibicu";
+    }
+
+    print "Unpack icu\n";
+    exec_command("tar -xf $distro_file_name");
+    chdir "icu/source";
+
+    print "Build icu\n";
+    exec_command("./configure --prefix=$icu_install_path");
+    exec_command("make $make_options");
+    exec_command("make $make_options install");
+    1;
+}
+
+
 sub install_boost_builder {
     chdir $temp_folder_for_building_project;
 
@@ -1403,7 +1437,7 @@ sub install_boost_builder {
     }
 
     print "Download boost builder\n";
-    my $boost_build_result = download_file("https://github.com/boostorg/build/archive/build-boost-1.72.0.tar.gz", $archive_file_name,
+    my $boost_build_result = download_file("https://github.com/boostorg/build/archive/boost-1.72.0.tar.gz", $archive_file_name,
         '8d4aede249cc414f5f375423e26feca99f1c1088');
 
     unless ($boost_build_result) {
@@ -1474,7 +1508,7 @@ sub install_boost {
     print "Build Boost\n";
     # We have troubles when run this code with vzctl exec so we should add custom compiler in path 
     # So without HOME=/root nothing worked correctly due to another "openvz" feature
-    my $b2_build_result = exec_command("/opt/boost_build1.72.0/bin/b2 -j$cpus_number --build-dir=$temp_folder_for_building_project/boost_build_temp_directory_1_7_2 link=shared --without-test --without-python --without-wave --without-log --without-mpi");
+    my $b2_build_result = exec_command("/opt/boost_build1.72.0/bin/b2 -j$cpus_number -sICU_PATH=/opt/libicu_65_1 --build-dir=$temp_folder_for_building_project/boost_build_temp_directory_1_7_2 link=shared --without-test --without-python --without-wave --without-log --without-mpi");
 
     # We should not do this check because b2 build return bad return code even in success case... when it can't build few non important targets
     unless ($b2_build_result) {
