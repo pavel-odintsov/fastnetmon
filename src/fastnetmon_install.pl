@@ -112,6 +112,8 @@ my $enable_api = '';
 
 my $install_dependency_packages_only = '';
 
+my $build_boost = '';
+
 # Get options from command line
 GetOptions(
     'use-git-master' => \$we_use_code_from_master,
@@ -119,12 +121,13 @@ GetOptions(
     'use-modern-pf-ring' => \$use_modern_pf_ring,
     'gobgp' => \$enable_gobgp_backend,
     'api' => \$enable_api,
+    'boost' => \$build_boost,
     'help' => \$show_help,
     'install_dependency_packages_only' => \$install_dependency_packages_only, 
 );
 
 if ($show_help) {
-    print "We have following options:\n--use-git-master\n--do-not-track-me\n--use-modern-pf-ring\n--gobgp\n--api\n--install_dependency_packages_only\n--help\n";
+    print "We have following options:\n--use-git-master\n--do-not-track-me\n--use-modern-pf-ring\n--gobgp\n--api\n--install_dependency_packages_only\n--boost\n--help\n";
     exit (0);
 }
 
@@ -291,7 +294,7 @@ sub install_sentry {
 ### Functions start here
 sub main {
     # Open log file
-    open my $global_log, ">", $install_log_path;
+    open my $global_log, ">", $install_log_path or warn "Cannot open log file: $! $install_log_path";
     print {$global_log} "Install started";
 
     detect_distribution();
@@ -427,6 +430,10 @@ sub main {
         }
 
         install_json_c();
+
+        if ($build_boost) {
+	   install_boost_builder();
+	}
 
         if ($we_have_ndpi_support) {
 	   install_ndpi_dependencies();
@@ -1374,6 +1381,53 @@ sub yum {
         }
     }
 }
+
+sub install_boost_builder {
+    chdir $temp_folder_for_building_project;
+
+    # We use another name because it uses same name as boost distribution
+    my $archive_file_name = 'build-boost-1.72.0.tar.gz';
+
+    my $boost_builder_install_folder = "/opt/boost_build1.72.0";
+
+    if (-e $boost_builder_install_folder && defined($ENV{'CI'}) ) {
+        warn "Found installed Boost builder at $boost_builder_install_folder\n";
+        return 1;
+    }
+
+    print "Download boost builder\n";
+    my $boost_build_result = download_file("https://github.com/boostorg/build/archive/build-boost-1.72.0.tar.gz", $archive_file_name,
+        '8d4aede249cc414f5f375423e26feca99f1c1088');
+
+    unless ($boost_build_result) {
+        die "Can't download boost builder\n";
+    }
+
+    print "Unpack boost builder\n";
+    exec_command("tar -xf $archive_file_name");
+
+    unless (chdir "build-boost-1.72.0") {
+        die "Cannot do chdir to build boost folder\n";
+    }
+
+    print "Build Boost builder\n";
+    my $bootstrap_result = exec_command("./bootstrap.sh --with-toolset=gcc");
+
+    unless ($bootstrap_result) {
+        die "bootstrap of Boost Builder failed, please check logs\n";
+    }
+
+    # We should specify toolset here if we want to do build with custom compiler
+    # We have troubles when run this code with vzctl exec so we should add custom compiler in path 
+    my $b2_install_result = exec_command("./b2 install --prefix=$boost_builder_install_folder");
+
+    unless ($b2_install_result) {
+        die "Can't execute b2 install\n";
+    }
+
+    1;
+}
+
 
 sub install_fastnetmon_dependencies {
     print "Install FastNetMon dependency list\n";
