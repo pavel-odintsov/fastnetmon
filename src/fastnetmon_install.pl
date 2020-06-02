@@ -416,23 +416,23 @@ sub main {
             install_pf_ring_dependencies();
     	}
 
-	if ($we_have_ndpi_support) {
+        if ($we_have_ndpi_support) {
             install_ndpi_dependencies();
         }
 
-	if ($we_have_luajit_support) {
+        if ($we_have_luajit_support) {
             install_luajit_dependencies();
-	}
+        }
 
-	if ($we_have_protobuf_support) {
+        if ($we_have_protobuf_support) {
             install_protobuf_dependencies();
-	}
+        }
 
-	if ($we_have_grpc_support) {
+        if ($we_have_grpc_support) {
             install_grpc_dependencies();
-	}
+        }
 
-	install_fastnetmon_dependencies();
+        install_fastnetmon_dependencies();
     } else {
 
         if ($we_have_pfring_support) {
@@ -443,23 +443,23 @@ sub main {
         install_json_c();
 
         if ($build_boost) {
-           # We need fresh cmake for this build, Boost requires it
-           $cmake_path = "/opt/cmake-3.16.4/bin/cmake";
+            # We need fresh cmake for this build, Boost requires it
+            $cmake_path = "/opt/cmake-3.16.4/bin/cmake";
 
-	   install_cmake_dependencies();
-	   install_cmake();
-           install_icu();
-	   install_boost_builder();
-	   install_boost();
-	}
+	        install_cmake_dependencies();
+	        install_cmake();
+            install_icu();
+	        install_boost_builder();
+	        install_boost();
+	    }
 
         if ($we_have_ndpi_support) {
-	   install_ndpi_dependencies();
-           install_ndpi();
+	        install_ndpi_dependencies();
+            install_ndpi();
         }
 
         if ($we_have_luajit_support) {
-	   install_luajit_dependencies();
+	        install_luajit_dependencies();
 
            install_luajit();
            install_luajit_libs();
@@ -474,12 +474,12 @@ sub main {
         }
 
         if ($we_have_protobuf_support) {
-	   install_protobuf_dependencies();
-           install_protobuf();
+	        install_protobuf_dependencies();
+            install_protobuf();
         }
 
         if ($we_have_grpc_support) {
-	    install_grpc_dependencies();
+	        install_grpc_dependencies();
             install_grpc();
         }
 
@@ -1587,12 +1587,15 @@ sub install_fastnetmon_dependencies {
             "liblog4cpp5-dev", "libnuma-dev", "libgeoip-dev","libpcap-dev", "cmake", "pkg-config", "libhiredis-dev",
         );
 
-        # We add this dependencies because package libboost-all-dev is broken on VyOS
-        if ($appliance_name eq 'vyos') {
-            push @fastnetmon_deps, ('libboost-regex-dev', 'libboost-system-dev', 'libboost-thread-dev');
-        } else {
-            push @fastnetmon_deps, "libboost-all-dev";
-        }
+        unless ($build_boost) {
+
+ 	        # We add this dependencies because package libboost-all-dev is broken on VyOS
+            if ($appliance_name eq 'vyos') {
+                push @fastnetmon_deps, ('libboost-regex-dev', 'libboost-system-dev', 'libboost-thread-dev');
+            } else {
+                push @fastnetmon_deps, "libboost-all-dev";
+            }
+	    }
 
         apt_get(@fastnetmon_deps);
     } elsif ($distro_type eq 'centos') {
@@ -1605,7 +1608,9 @@ sub install_fastnetmon_dependencies {
             push @fastnetmon_deps, 'net-tools';
         }
 
-        @fastnetmon_deps = (@fastnetmon_deps, 'boost-devel', 'boost-thread');
+        unless ($build_boost) {
+            @fastnetmon_deps = (@fastnetmon_deps, 'boost-devel', 'boost-thread');
+        }
 
         yum(@fastnetmon_deps);
     } elsif ($distro_type eq 'gentoo') {
@@ -1665,10 +1670,9 @@ sub install_fastnetmon {
     }
    
     if ($build_boost) {
-	$cmake_params .= " -DENABLE_CUSTOM_BOOST_BUILD=ON";
+	    $cmake_params .= " -DENABLE_CUSTOM_BOOST_BUILD=ON";
     }
 
-     
     if ($distro_type eq 'centos' && $distro_version == 6) {
         # Disable cmake script from Boost package because it's broken:
         # http://public.kitware.com/Bug/view.php?id=15270
