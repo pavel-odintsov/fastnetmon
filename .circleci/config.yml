@@ -155,7 +155,8 @@ jobs:
       - store_artifacts:
           path: /opt/fastnetmon_all_libs.tar.gz
       - store_artifacts:
-          path: /tmp/fastnetmon_install.log 
+          path: /tmp/fastnetmon_install.log
+      - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
       - run: /opt/fastnetmon/fastnetmon --configuration_check
   debian8:
     docker:
