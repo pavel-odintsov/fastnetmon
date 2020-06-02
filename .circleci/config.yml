@@ -129,7 +129,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 35m
-          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp --boost --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp --boost --do-not-use-mirror --do-not-build-fastnetmon
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
