@@ -32,6 +32,9 @@ if (defined($ENV{'CI'}) && $ENV{'CI'}) {
     $install_log_path = "/tmp/fastnetmon_install.log";
 }
 
+# For all lib build we use custom cmake
+my $cmake_path = "cmake";
+
 # So, you could disable this option but without this feature we could not improve FastNetMon for your distribution
 my $do_not_track_me = '';
 
@@ -438,6 +441,10 @@ sub main {
         install_json_c();
 
         if ($build_boost) {
+           # We need fresh cmake for this build, Boost requires it
+           $cmake_path = "/opt/cmake-3.16.4/bin/cmake";
+
+	   install_cmake_dependencies();
 	   install_cmake();
            install_icu();
 	   install_boost_builder();
@@ -883,8 +890,8 @@ sub install_grpc {
     my $make_result = exec_command("make $make_options");
 
     unless ($make_result) {
-        die "Could not build gRPC: make failed\n";
-    }
+        fast_die( "Could not build gRPC: make failed\n");
+}
 
     print "Install gRPC\n";
     exec_command("make install prefix=$grpc_install_path");
@@ -1409,7 +1416,7 @@ sub install_icu {
         $distro_file_name, 'd1e6b58aea606894cfb2495b6eb1ad533ccd2a25');
 
     unless ($icu_download_result) {
-        die "Could not download ibicu";
+        fast_die("Could not download ibicu");
     }
 
     print "Unpack icu\n";
@@ -1424,8 +1431,12 @@ sub install_icu {
 }
 
 
+sub install_cmake_dependencies {
+    apt_get("libssl-dev");
+}
+
 sub install_cmake {
-    warn "We do not have binary build for cmake on ARM: https://gitlab.kitware.com/cmake/cmake/issues/17923 and for unification reasons will use source build for all platforms\n";
+    print "Install cmake\n";
 
     my $cmake_install_path = "/opt/cmake-3.16.4";
 
@@ -1442,7 +1453,7 @@ sub install_cmake {
     my $cmake_download_result = download_file("https://github.com/Kitware/CMake/releases/download/v3.16.4/$distro_file_name", $distro_file_name, '3ae23da521d5c0e871dd820a0d3af5504f0bd6db');
 
     unless ($cmake_download_result) {
-        die "Can't download cmake\n";
+        fast_die("Can't download cmake\n");
     }
 
     exec_command("tar -xf $distro_file_name");
@@ -1450,7 +1461,11 @@ sub install_cmake {
     chdir "cmake-3.16.4";
 
     print "Execute bootstrap, it will need time\n";
-    exec_command("./bootstrap --prefix=$cmake_install_path --parallel=$cpus_number");
+    my $boostrap_result = exec_command("./bootstrap --prefix=$cmake_install_path --parallel=$cpus_number");
+
+    unless ($boostrap_result) {
+        fast_die("Cannot run bootstrap\n");
+    }
 
     print "Make it\n";
     my $make_command = "make $make_options";
@@ -1678,11 +1693,11 @@ sub install_fastnetmon {
     }
 
     if ((defined($ENV{'TRAVIS'}) && $ENV{'TRAVIS'}) or (defined($ENV{'CI'}) && $ENV{'CI'})) {
-        system("cmake .. $cmake_params");
+        system("$cmake_path .. $cmake_params");
         system("make $make_options");
     } else {
         print "Run cmake to generate make file\n";
-        system("cmake .. $cmake_params 2>&1 | tee -a $install_log_path");
+        system("$cmake_path .. $cmake_params 2>&1 | tee -a $install_log_path");
 
         print "Run make to build FastNetMon\n";
         system("make $make_options 2>&1 | tee -a $install_log_path");

@@ -138,7 +138,7 @@ jobs:
           key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
           paths:
             - /opt
-      - run: cd src; mkdir -p build; cd build; cmake ..; make
+      - run: cd src; mkdir -p build; cd build; /opt/cmake-3.16.4/bin/cmake ..; make
       - run: /opt/fastnetmon/fastnetmon --configuration_check
       - store_artifacts:
           path: /opt 
