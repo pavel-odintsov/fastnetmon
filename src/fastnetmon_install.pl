@@ -438,6 +438,7 @@ sub main {
         install_json_c();
 
         if ($build_boost) {
+	   install_cmake();
            install_icu();
 	   install_boost_builder();
 	   install_boost();
@@ -1420,6 +1421,48 @@ sub install_icu {
     exec_command("make $make_options");
     exec_command("make $make_options install");
     1;
+}
+
+
+sub install_cmake {
+    warn "We do not have binary build for cmake on ARM: https://gitlab.kitware.com/cmake/cmake/issues/17923 and for unification reasons will use source build for all platforms\n";
+
+    my $cmake_install_path = "/opt/cmake-3.16.4";
+
+    if (-e $cmake_install_path && defined($ENV{'CI'})) {
+        warn "Found installed cmake at $cmake_install_path\n";
+        return 1;
+    }
+
+    my $distro_file_name = "cmake-3.16.4.tar.gz";
+
+    chdir $temp_folder_for_building_project;
+
+    print "Download archive\n";
+    my $cmake_download_result = download_file("https://github.com/Kitware/CMake/releases/download/v3.16.4/$distro_file_name", $distro_file_name, '3ae23da521d5c0e871dd820a0d3af5504f0bd6db');
+
+    unless ($cmake_download_result) {
+        die "Can't download cmake\n";
+    }
+
+    exec_command("tar -xf $distro_file_name");
+
+    chdir "cmake-3.16.4";
+
+    print "Execute bootstrap, it will need time\n";
+    exec_command("./bootstrap --prefix=$cmake_install_path --parallel=$cpus_number");
+
+    print "Make it\n";
+    my $make_command = "make $make_options";
+    my $make_result = exec_command($make_command);
+
+    unless ($make_result) {
+        die "Make command '$make_command' failed\n";
+    }
+
+    exec_command("make install");
+
+    return 1;
 }
 
 
