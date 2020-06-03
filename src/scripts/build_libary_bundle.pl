@@ -53,8 +53,10 @@ protobuf_3.11.4
 for my $library (@our_libraries) {
     my $library_path = "$global_path/$library";
 
+    # Some libraries are optional
     unless (-e $library_path) {
-        die "Can't find library $library please check\n";
+        warn "Can't find library $library please check\n";
+        next;
     }
 
     print "Library: $library\n";
