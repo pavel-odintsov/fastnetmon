@@ -146,13 +146,9 @@ jobs:
           key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
           paths:
             - /opt
-      - run:
-          command: |
-            set +e
-            tar -cpzf /opt/fastnetmon_all_libs.tar.gz --exclude=/opt/fastnetmon_all_libs.tar.gz -C /opt /opt
-            true
+      - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
-          path: /opt/fastnetmon_all_libs.tar.gz
+          path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
