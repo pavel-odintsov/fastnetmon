@@ -185,7 +185,43 @@ jobs:
       - run: cd src; mkdir -p build; cd build; cmake ..; make
       - run: /opt/fastnetmon/fastnetmon --configuration_check
       - store_artifacts:
-          path: /tmp/fastnetmon_install.log 
+          path: /tmp/fastnetmon_install.log
+  debian8_all_libs:
+    docker:
+      - image: debian:jessie-20200514
+    steps:
+      - checkout
+      - run: apt-get update; true
+      - run: apt-get install -y perl wget
+      - run:
+          name: install_required_packages
+          no_output_timeout: 20m 
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+      - restore_cache:
+          keys:
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
+      - run:
+          name: install_dependencies
+          no_output_timeout: 35m 
+          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp --boost --do-not-use-mirror
+      - run:
+          name: collect_debug
+          command: cat /tmp/fastnetmon_install.log
+          when: on_fail
+      - save_cache:
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
+          paths:
+            - /opt
+      - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
+      - store_artifacts:
+          path: /opt/fastnetmon_libraries_bundle.tar.gz
+      - store_artifacts:
+          path: /tmp/fastnetmon_install.log
+      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.6
+      - store_artifacts:
+          path: /tmp/fastnetmon_1.1.6_amd64.deb
+      - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
+      - run: /opt/fastnetmon/fastnetmon --configuration_check
   debian9:
     docker:
       - image: debian:stretch-20200514
