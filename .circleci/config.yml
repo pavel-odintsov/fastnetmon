@@ -338,7 +338,7 @@ jobs:
           paths:
             - /opt
             - /usr/include/linux/pf_ring.h
-       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
+      - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
