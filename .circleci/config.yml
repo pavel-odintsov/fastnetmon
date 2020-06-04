@@ -375,6 +375,7 @@ workflows:
   all_distros:
     jobs:
       - debian8
+      - debian8_all_libs
       - debian9
       - debian10
       - ubuntu1404
