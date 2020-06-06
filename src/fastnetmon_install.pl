@@ -1463,6 +1463,30 @@ sub install_cmake {
         return 1;
     }
 
+    # CentOS cannot build fresh CMAKE due to lack of C++ 11 support in compiler, we need to use binaries for it
+    if ($distro_type eq 'centos' && $distro_version == 6) {
+        print "Download binary cmake archive\n";
+
+        my $distro_file_name = "cmake-3.16.4-Linux-x86_64.tar.gz";
+
+        my $cmake_download_result = download_file("https://github.com/Kitware/CMake/releases/download/v3.16.4/cmake-3.16.4-Linux-x86_64.tar.gz", $distro_file_name, 'ce7eb7370372188d9dc3dd6eeb8bd1c7ee9d485a');
+
+        unless ($cmake_download_result) {
+            fast_die("Can't download cmake\n");
+        }
+
+        exec_command("tar -xf $distro_file_name");
+        chdir "cmake-3.16.4-Linux-x86_64";
+
+        system("mkdir -p $cmake_install_path");
+        system("mkdir -p $cmake_install_path/bin");
+
+        print "Install cmake binary\n";
+        system("cp bin/cmake $cmake_install_path/bin/cmake");
+
+        return 1;
+    }
+
     my $distro_file_name = "cmake-3.16.4.tar.gz";
 
     chdir $temp_folder_for_building_project;
