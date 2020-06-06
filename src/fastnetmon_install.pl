@@ -1601,7 +1601,7 @@ sub install_fastnetmon_dependencies {
 
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
         my @fastnetmon_deps = ("git", "g++", "gcc", "libgpm-dev", "libncurses5-dev",
-            "liblog4cpp5-dev", "libnuma-dev", "libgeoip-dev","libpcap-dev", "cmake", "pkg-config", "libhiredis-dev",
+            "liblog4cpp5-dev", "libnuma-dev", "libgeoip-dev","libpcap-dev", "cmake", "pkg-config",
         );
 
         unless ($build_boost) {
@@ -1618,7 +1618,7 @@ sub install_fastnetmon_dependencies {
     } elsif ($distro_type eq 'centos') {
         my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++', 'GeoIP-devel',
             'ncurses-devel', 'glibc-static', 'ncurses-static', 'libpcap-devel', 'gpm-static',
-            'gpm-devel', 'cmake', 'pkgconfig', 'hiredis-devel',
+            'gpm-devel', 'cmake', 'pkgconfig',
         );
 
         if ($distro_type eq 'centos' && int($distro_version) == 7) {
@@ -1632,7 +1632,7 @@ sub install_fastnetmon_dependencies {
         yum(@fastnetmon_deps);
     } elsif ($distro_type eq 'gentoo') {
         my @fastnetmon_deps = ("dev-vcs/git", "gcc", "sys-libs/gpm", "sys-libs/ncurses", "dev-libs/log4cpp", "dev-libs/geoip", 
-            "net-libs/libpcap", "dev-util/cmake", "pkg-config", "dev-libs/hiredis", "dev-libs/boost"
+            "net-libs/libpcap", "dev-util/cmake", "pkg-config", "dev-libs/boost"
         );
 
         my $fastnetmon_deps_as_string = join " ", @fastnetmon_deps;
