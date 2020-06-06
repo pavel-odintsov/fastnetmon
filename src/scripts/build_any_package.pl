@@ -172,7 +172,13 @@ DOC
 %global  fastnetmon_config_path %{_sysconfdir}/fastnetmon.conf
 
 Name:              fastnetmon
-Version:           1.1.3
+DOC
+
+    $systemd_spec_file .= <<'DOC';
+Version:           $package_version
+DOC
+
+    $systemd_spec_file .= <<'DOC';
 Release:           1%{?dist}
 
 Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
@@ -286,8 +292,18 @@ DOC
 %global  fastnetmon_group       %{fastnetmon_user}
 %global  fastnetmon_config_path %{_sysconfdir}/fastnetmon.conf
 
+DOC
+
+    # But we need interpolation here
+    $spec_file .= <<DOC;
+
 Name:              fastnetmon
-Version:           1.1.3
+Version:           $package_version
+
+DOC
+
+   $spec_file .= <<'DOC';
+
 Release:           1%{?dist}
 
 Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
