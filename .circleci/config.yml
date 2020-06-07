@@ -16,7 +16,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 35m
+          no_output_timeout: 40m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - run:
           name: collect_debug
@@ -46,7 +46,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 35m
+          no_output_timeout: 40m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - run:
           name: collect_debug
@@ -76,7 +76,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 35m
+          no_output_timeout: 40m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - run:
           name: collect_debug
@@ -106,7 +106,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 35m
+          no_output_timeout: 40m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - run:
           name: collect_debug
@@ -136,7 +136,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 35m
+          no_output_timeout: 40m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp --boost --do-not-use-mirror
       - run:
           name: collect_debug
@@ -151,7 +151,7 @@ jobs:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.6
+      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.6 ubuntu 14.04
       - store_artifacts:
           path: /tmp/fastnetmon_1.1.6_amd64.deb
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
@@ -172,7 +172,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 20m
+          no_output_timeout: 40m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - run:
           name: collect_debug
@@ -202,7 +202,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 35m 
+          no_output_timeout: 40m 
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp --boost --do-not-use-mirror
       - run:
           name: collect_debug
@@ -217,7 +217,7 @@ jobs:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.6
+      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.6 debian 8
       - store_artifacts:
           path: /tmp/fastnetmon_1.1.6_amd64.deb
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
@@ -238,7 +238,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 20m
+          no_output_timeout: 40m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - run:
           name: collect_debug
@@ -268,7 +268,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 35m 
+          no_output_timeout: 40m 
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp --boost --do-not-use-mirror
       - run:
           name: collect_debug
@@ -283,7 +283,7 @@ jobs:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.6
+      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.6 debian 9
       - store_artifacts:
           path: /tmp/fastnetmon_1.1.6_amd64.deb
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
@@ -304,7 +304,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 35m
+          no_output_timeout: 40m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - run:
           name: collect_debug
@@ -334,7 +334,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 35m 
+          no_output_timeout: 40m 
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp --boost --do-not-use-mirror
       - run:
           name: collect_debug
@@ -349,7 +349,7 @@ jobs:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.6
+      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.6 debian 10
       - store_artifacts:
           path: /tmp/fastnetmon_1.1.6_amd64.deb
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
@@ -369,7 +369,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_27_05_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 20m
+          no_output_timeout: 40m
           command: perl src/fastnetmon_install.pl --use-git-master
       - run:
           name: collect_debug
@@ -399,7 +399,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_27_05_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 20m
+          no_output_timeout: 40m
           command: perl src/fastnetmon_install.pl --use-git-master
       - run:
           name: collect_debug
@@ -415,7 +415,7 @@ jobs:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz 1.1.6
+      - run: src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz 1.1.6 centos 6
       - store_artifacts:
           path: /tmp/result_data/fastnetmon-1.1.6-1.el6.x86_64.rpm
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
@@ -435,7 +435,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 35m
+          no_output_timeout: 40m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - run:
           name: collect_debug
@@ -464,7 +464,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_27_05_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 20m 
+          no_output_timeout: 40m 
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp --boost --do-not-use-mirror
       - run:
           name: collect_debug
@@ -480,7 +480,7 @@ jobs:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz 1.1.6
+      - run: src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz 1.1.6 centos 7
       - store_artifacts:
           path: /tmp/result_data/fastnetmon-1.1.6-1.el7.x86_64.rpm
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
@@ -504,7 +504,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 35m
+          no_output_timeout: 40m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - save_cache:
           key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
@@ -529,7 +529,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_27_05_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 20m 
+          no_output_timeout: 40m 
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp --boost --do-not-use-mirror
       - run:
           name: collect_debug
@@ -545,7 +545,7 @@ jobs:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz 1.1.6
+      - run: src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz 1.1.6 centos 8
       - store_artifacts:
           path: /tmp/result_data/fastnetmon-1.1.6-1.el8.x86_64.rpm
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf

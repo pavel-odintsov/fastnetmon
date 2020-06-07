@@ -3,17 +3,21 @@
 use strict;
 use warnings;
 
-unless (scalar @ARGV == 3) {
-    die "Please specify type, original binary file name and version: rpm fastnetmon-binary-git-0cfdfd5e2062ad94de24f2f383576ea48e6f3a07-debian-6.0.10-x86_64 2.0.1";
+my $error_message = "Please specify package type, original binary file name, version, distro name and version: rpm fastnetmon-binary-git-0cfdfd5e2062ad94de24f2f383576ea48e6f3a07-debian-6.0.10-x86_64 2.0.1 centos 8";
+
+unless (scalar @ARGV == 5) {
+    die "$error_message\n";
 }
 
 
 my $package_type = $ARGV[0];
 my $archive_name = $ARGV[1];
 my $package_version = $ARGV[2];
+my $distro_name = $ARGV[3];
+my $distro_version = $ARGV[4];
 
-unless ($package_type && $archive_name && $package_version) {
-    die "Please specify package type, archive name and package version\n";
+unless ($package_type && $archive_name && $package_version && $distro_name && $distro_version) {
+    die "$error_message\n";
 }
 
 # Gzip does not compress well, let's use xz instead
@@ -412,8 +416,9 @@ DOC
 
     my $selected_spec_file = $spec_file;
 
+    # TODO: we need to improve it to avoid using different spec files
     # For CentOS we use systemd
-    if ($archive_name =~ m/centos-7/) {
+    if ($distro_name eq 'centos' && $distro_version eq '7') {
         $selected_spec_file = $systemd_spec_file;
     }
 
