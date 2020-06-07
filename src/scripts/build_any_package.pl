@@ -33,10 +33,14 @@ if ($package_type eq 'rpm') {
 
 sub build_rpm_package {
     print "Install packages for crafting rpm packages\n";
-    `yum install -y rpmdevtools yum-utils`;
+    my $packages_install = system("yum install -y rpmdevtools yum-utils");
 
-    mkdir '/root/rpmbuild';
-    mkdir '/root/rpmbuild/SOURCES';
+    if ($packages_install != 0) {
+        die "Cannot install build packages\n";
+    }
+
+    mkdir '/root/rpmbuild' or die "Cannot create rpmbuild folder";;
+    mkdir '/root/rpmbuild/SOURCES' or die "Cannot create source folder";
 
     my $system_v_init_script = <<'DOC';
 #!/bin/bash
@@ -142,28 +146,36 @@ DOC
     my $rpm_sources_path = '/root/rpmbuild/SOURCES';
 
     # Copy bundle to build tree
-    `cp $archive_name $rpm_sources_path/archive.tar.gz`;
+    my $copy_res = system("cp $archive_name $rpm_sources_path/archive.tar.gz");
 
-    `wget --no-check-certificate https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon.conf -O$rpm_sources_path/fastnetmon.conf`;
+    if ($copy_res != 0) {
+        die "Cannot copy file $archive_name to $rpm_sources_path/archive.tar.gz\n";
+    }
+
+    # TODO: We must use data from repo
+    my $wget_res =("wget --no-check-certificate https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon.conf -O$rpm_sources_path/fastnetmon.conf");
    
-    open my $system_v_init_fl, ">", "$rpm_sources_path/system_v_init";
-    print {$system_v_init_fl} $system_v_init_script;
-    close $system_v_init_fl;
+    if ($wget_res != 0) {
+        die "Cannot download fastnetmon.conf\n";
+    }
 
-    open my $systemd_init_fl, ">", "$rpm_sources_path/systemd_init";
-    print {$systemd_init_fl} $systemd_init_script;
-    close $systemd_init_fl;
+    put_text_to_file("$rpm_sources_path/system_v_init", $system_v_init_script);
+    put_text_to_file("$rpm_sources_path/systemd_init", $systemd_init_script);
 
     # Create files list from archive
     # ./luajit_2.0.4/
     my @files_list = `tar -tf /root/rpmbuild/SOURCES/archive.tar.gz`;
-    chomp  @files_list;
+    chomp @files_list;
 
     # Replace path
     @files_list = map { s#^\.#/opt#; $_ } @files_list;
 
     # Filter out folders
     @files_list = grep { ! m#/$# } @files_list;
+
+    if (scalar @files_list == 0) {
+        die "Files must not be empty\n";
+    }
 
     my $systemd_spec_file = <<'DOC';
 #
@@ -178,7 +190,8 @@ DOC
 Name:              fastnetmon
 DOC
 
-    $systemd_spec_file .= <<'DOC';
+    # We do need variable interpolation here
+    $systemd_spec_file .= <<DOC;
 Version:           $package_version
 DOC
 
@@ -422,16 +435,26 @@ DOC
         $selected_spec_file = $systemd_spec_file;
     }
 
+    # Add full list of files into RPM spec
     my $joined_file_list = join "\n", @files_list;
     $selected_spec_file =~ s/\{files_list\}/$joined_file_list/;
-
-    open my $fl, ">", "generated_spec_file.spec" or die "Can't create spec file\n";
-    print {$fl} $selected_spec_file;
-    system("rpmbuild -bb generated_spec_file.spec");
-
-    mkdir "/tmp/result_data";
-    `cp /root/rpmbuild/RPMS/x86_64/* /tmp/result_data`;
     
+    put_text_to_file("generated_spec_file.spec", $selected_spec_file);
+
+    my $rpmbuild_res = system("rpmbuild -bb generated_spec_file.spec");
+
+    if ($rpmbuild_res != 0) {
+        die "Rpmbuild failed with code $rpmbuild_res\n";
+    }
+
+    mkdir "/tmp/result_data" or die "Cannot create result_data folder";
+    my $copy_rpm_res = system("cp /root/rpmbuild/RPMS/x86_64/* /tmp/result_data");
+    
+    if ($copy_rpm_res != 0) {
+        die "Cannot copy result rpm\n";
+    }
+
+    print "Result RPM:\n";
     print `ls -la /tmp/result_data`;
 }
 
@@ -597,39 +620,59 @@ DOC
     # I see no reasons why we should keep it secure
     system("chmod 755 $folder_for_build");
 
-    chdir $folder_for_build;
+    chdir $folder_for_build or die "Cannot chdir to $folder_for_build\n";
 
-    mkdir "$folder_for_build/DEBIAN";
+    mkdir "$folder_for_build/DEBIAN" or die "Cannot create DEBIAN folder\n";;
     put_text_to_file("$folder_for_build/DEBIAN/control", $fastnetmon_control_file);
     
     put_text_to_file("$folder_for_build/DEBIAN/prerm", $fastnetmon_prerm_hook);
     put_text_to_file("$folder_for_build/DEBIAN/postinst", $fastnetmon_postinst_hook);
     put_text_to_file("$folder_for_build/DEBIAN/postrm", $fastnetmon_server_postrm_hook);
 
-    `chmod +x $folder_for_build/DEBIAN/postrm`;
-    `chmod +x $folder_for_build/DEBIAN/prerm`;
-    `chmod +x $folder_for_build/DEBIAN/postinst`;
+    # Set exec bits for all of them
+    my @deb_hooks_list = ("$folder_for_build/DEBIAN/postrm", "$folder_for_build/DEBIAN/prerm", "$folder_for_build/DEBIAN/postinst");
 
+    for my $hook_path (@deb_hooks_list) {
+        my $chmod_res = system("chmod +x $hook_path");
+
+        if ($chmod_res != 0) {
+            die "Cannot set chmod for $hook_path\n";
+        }
+    }
     # Create init files for different versions of Debian like OS 
-    mkdir "$folder_for_build/etc";
-    mkdir "$folder_for_build/etc/init";
-    mkdir "$folder_for_build/etc/init.d";
+    mkdir "$folder_for_build/etc" or die "Cannot create etc folder\n";
+    mkdir "$folder_for_build/etc/init" or die "Cannot create init folder\n";
+    mkdir "$folder_for_build/etc/init.d" or die "Cannot create init.d folder\n";
 
     put_text_to_file("$folder_for_build/etc/init.d/fastnetmon", $fastnetmon_systemv_init);
-    chmod 0755, "$folder_for_build/etc/init.d/fastnetmon";
+    chmod 0755, "$folder_for_build/etc/init.d/fastnetmon" or die "Cannot set exec bit for init.d/fastntemon";;
 
     # Create folders for system service file
-    mkdir "$folder_for_build/lib";
-    mkdir "$folder_for_build/lib/systemd";
-    mkdir "$folder_for_build/lib/systemd/system";
+    mkdir "$folder_for_build/lib" or die "Cannot create lib folder";
+    mkdir "$folder_for_build/lib/systemd" or die "Cannot create systemd folder";;
+    mkdir "$folder_for_build/lib/systemd/system" or die "Cannot create systemd/system folder";
 
     # Create symlinks to call commands without full path
-    mkdir "$folder_for_build/usr";
-    mkdir "$folder_for_build/usr/bin";
+    mkdir "$folder_for_build/usr" or die "Cannot create usr folder";
+    mkdir "$folder_for_build/usr/bin" or die "Cannot reate usr/bin folder";
 
-    system("ln -s /opt/fastnetmon/fastnetmon_client $folder_for_build/usr/bin/fastnetmon_client");
-    system("ln -s /opt/fastnetmon/fastnetmon_api_client $folder_for_build/usr/bin/fastnetmon_api_client");
-    system("ln -s /opt/fastnetmon/fastnetmon $folder_for_build/usr/bin/fastnetmon");
+    my $fastnetmon_client_ln_res = system("ln -s /opt/fastnetmon/fastnetmon_client $folder_for_build/usr/bin/fastnetmon_client");
+
+    if ($fastnetmon_client_ln_res != 0) {
+        die "Cannot create symlink for fastnetmon_client";
+    }
+
+    my $fastnetmon_api_client_ln_res = system("ln -s /opt/fastnetmon/fastnetmon_api_client $folder_for_build/usr/bin/fastnetmon_api_client");
+
+    if ($fastnetmon_api_client_ln_res != 0) {
+        die "Cannot create symlink for fastnetmon_api_client";
+    }
+
+    my $fastnetmon_ln_res = system("ln -s /opt/fastnetmon/fastnetmon $folder_for_build/usr/bin/fastnetmon");
+
+    if ($fastnetmon_ln_res != 0) {
+        die "Cannot create symlink for fastnetmon";
+    }
 
     put_text_to_file("$folder_for_build/lib/systemd/system/fastnetmon.service", $fastnetmon_systemd_unit);
     put_text_to_file("$folder_for_build/etc/init/fastnetmon.conf", $fastnetmon_upstart_init);
@@ -638,28 +681,55 @@ DOC
     put_text_to_file("$folder_for_build/DEBIAN/conffiles", "etc/fastnetmon.conf\n");
 
     # Create folder for config
-    mkdir("$folder_for_build/etc");
-    print `wget --no-check-certificate https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon.conf -O$folder_for_build/etc/fastnetmon.conf`;
+    mkdir("$folder_for_build/etc") or die "Cannot create etc folder";;
 
-    `cp $archive_name $folder_for_build/archive.tar.gz`;
+    # TODO: we should use data from repo
+    my $wget_res = system("wget --no-check-certificate https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon.conf -O$folder_for_build/etc/fastnetmon.conf");
 
-    mkdir "$folder_for_build/opt";
-    `chmod 755 $folder_for_build/opt`;
+    if ($wget_res != 0) {
+        die "Cannot download fastnetmon.conf\n"; 
+    }
 
-    print `tar -xf $folder_for_build/archive.tar.gz  -C $folder_for_build/opt`;
+    my $copy_archive_res = system("cp $archive_name $folder_for_build/archive.tar.gz");
+
+    if ($copy_archive_res != 0) {
+        die "Cannot cop archive\n";
+    }
+
+    mkdir "$folder_for_build/opt" or die "Cannot create opt folder";;
+    system("chmod 755 $folder_for_build/opt") or die "Cannot set chmod for /opt";
+
+    my $tar_res = system("tar -xf $folder_for_build/archive.tar.gz  -C $folder_for_build/opt");
+
+    if ($tar_res != 0) {
+        die "Cannot decompress folder with error: $tar_res\n";
+    }
+
     # unlink("$folder_for_build/archive.tar.gz");
 
     # Set new permissions again. Probably, they was overwritten by tar -xf command
-    `chmod 755 $folder_for_build/opt`;
+    my $opt_chmod_res = system("chmod 755 $folder_for_build/opt");
+
+    if ($opt_chmod_res != 0) {
+        die "Cannot set chmod for /opt";
+    }
 
     # Change owner to root for all files inside build folder
-    system("sudo chown root:root -R $folder_for_build");
+    my $opt_chown_res = system("sudo chown root:root -R $folder_for_build");
+
+    if ($opt_chown_res != 0) {
+        die "Cannot chown /opt";
+    }
 
     my $deb_build_command = "dpkg-deb  --debug  --verbose $dpkg_deb_options --build $folder_for_build /tmp/fastnetmon_${package_version}_${debian_architecture_name}.deb";
 
     print "Build command: $deb_build_command\n";
 
-    system($deb_build_command);
+    my $deb_build_res = system($deb_build_command);
+
+    if ($deb_build_res != 0) {
+        die "dpkg-deb failed with error code: $deb_build_res\n";
+    }
 }
 
 sub put_text_to_file {
