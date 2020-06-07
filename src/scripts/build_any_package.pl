@@ -720,7 +720,11 @@ DOC
     }
 
     mkdir "$folder_for_build/opt" or die "Cannot create opt folder";;
-    system("chmod 755 $folder_for_build/opt") or die "Cannot set chmod for /opt";
+    my $chmod_opt_res = system("chmod 755 $folder_for_build/opt");
+
+    if ($chmod_opt_res != 0) {
+        die "Cannot set chmod for /opt";
+    }
 
     my $tar_res = system("tar -xf $folder_for_build/archive.tar.gz  -C $folder_for_build/opt");
 
