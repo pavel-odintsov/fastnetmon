@@ -19,7 +19,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -50,7 +50,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp --boost --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -87,7 +87,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -118,7 +118,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp --boost --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -155,7 +155,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -186,7 +186,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp --boost --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -223,7 +223,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -254,7 +254,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp --boost --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -291,7 +291,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -322,7 +322,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 40m 
-          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp --boost --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -359,7 +359,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -390,7 +390,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 40m 
-          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp --boost --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -427,7 +427,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -458,7 +458,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 40m 
-          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp --boost --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -563,7 +563,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -593,7 +593,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 40m 
-          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp --boost --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -634,7 +634,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp
       - save_cache:
           key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
           paths:
@@ -660,7 +660,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 40m 
-          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp --boost --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
