@@ -1634,7 +1634,8 @@ sub install_boost {
     print "Build Boost\n";
     # We have troubles when run this code with vzctl exec so we should add custom compiler in path 
     # So without HOME=/root nothing worked correctly due to another "openvz" feature
-    my $b2_build_result = exec_command("/opt/boost_build1.72.0/bin/b2 -j$cpus_number -sICU_PATH=/opt/libicu_65_1 --build-dir=$temp_folder_for_building_project/boost_build_temp_directory_1_7_2 link=shared --without-test --without-python --without-wave --without-log --without-mpi $boost_flags");
+    # linkflags is required to specify custom path to libicu from regexp library
+    my $b2_build_result = exec_command("/opt/boost_build1.72.0/bin/b2 -j$cpus_number -sICU_PATH=/opt/libicu_65_1 linkflags=\"-Wl,-rpath,/opt/libicu_65_1/lib\" --build-dir=$temp_folder_for_building_project/boost_build_temp_directory_1_7_2 link=shared --without-test --without-python --without-wave --without-log --without-mpi $boost_flags");
 
     # We should not do this check because b2 build return bad return code even in success case... when it can't build few non important targets
     unless ($b2_build_result) {
