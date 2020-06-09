@@ -515,7 +515,7 @@ jobs:
       - checkout
       - run: yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
       - run: yum install -y perl wget python-pip
-      - run: pip install s3cmd
+      - run: pip install s3cmd==1.6.1
       - run:
           name: install_required_packages
           no_output_timeout: 20m
