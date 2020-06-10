@@ -1029,8 +1029,14 @@ sub install_mongo_client {
         fast_die("Cannot configure mongoc");
     }
 
-    unless (exec_command("make $make_options install")) {
-        fast_die("Cannot make mongoc");
+    my $mongoc_install_res = exec_command("make $make_options install");
+
+    unless ($mongoc_install_res) {
+        if ($distro_type eq 'ubuntu' && $distro_version eq '20.04') {
+            warn "Cannot compile Mongoc due to very new OpenSSL, skip compilation";
+        } else {
+            fast_die("Cannot make mongoc");
+        }
     }
 }
 
