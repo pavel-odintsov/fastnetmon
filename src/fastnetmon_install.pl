@@ -127,6 +127,8 @@ my $build_fastnetmon = 1;
 
 my $do_not_build_fastnetmon = '';
 
+my $build_gcc_only = '';
+
 # Get options from command line
 GetOptions(
     'use-git-master' => \$we_use_code_from_master,
@@ -139,10 +141,11 @@ GetOptions(
     'do-not-build-fastnetmon' => \$do_not_build_fastnetmon,
     'help' => \$show_help,
     'install_dependency_packages_only' => \$install_dependency_packages_only, 
+    'build_gcc_only' => \$build_gcc_only,
 );
 
 if ($show_help) {
-    print "We have following options:\n--use-git-master\n--do-not-use-mirror\n--do-not-track-me\n--use-modern-pf-ring\n--gobgp\n--api\n--install_dependency_packages_only\n--boost\ndo-not-build-fastnetmon\n--help\n";
+    print "We have following options:\n--use-git-master\n--do-not-use-mirror\n--do-not-track-me\n--use-modern-pf-ring\n--gobgp\n--api\n--install_dependency_packages_only\n--boost\ndo-not-build-fastnetmon\n--build_gcc_only\n--help\n";
     exit (0);
 }
 
@@ -420,7 +423,12 @@ sub main {
 
         yum(@centos_dependency_packages);
     }
- 
+
+    if ($build_gcc_only) {
+        install_gcc();
+        exit(1);
+    }
+
     # Install only depencdency packages, we need it to cache installed packages in CI
     if ($install_dependency_packages_only) {
         if ($we_have_pfring_support) {
@@ -445,10 +453,6 @@ sub main {
 
         install_fastnetmon_dependencies();
     } else {
-        if ($build_boost) {
-            install_gcc();
-        }
-
         if ($we_have_pfring_support) {
        	   install_pf_ring_dependencies();
            install_pf_ring();
