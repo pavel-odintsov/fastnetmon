@@ -24,6 +24,8 @@ my $distro_type = '';
 my $distro_version = '';  
 my $distro_architecture = '';
 
+my $gcc_version = '9.2.0';
+
 my $user_email = '';
 
 my $install_log_path = "/tmp/fastnetmon_install_$$.log";
@@ -443,6 +445,9 @@ sub main {
 
         install_fastnetmon_dependencies();
     } else {
+        if ($build_boost) {
+            install_gcc();
+        }
 
         if ($we_have_pfring_support) {
        	   install_pf_ring_dependencies();
@@ -1597,6 +1602,75 @@ sub install_boost_builder {
     }
 
     1;
+}
+
+sub install_gcc {
+    # 530 instead of 5.3.0
+    my $gcc_version_for_path = $gcc_version;
+    $gcc_version_for_path =~ s/\.//g;
+
+    my $gcc_package_install_path = "/opt/gcc$gcc_version_for_path";
+
+    if (-e $gcc_package_install_path && defined($ENV{'CI'})) {
+        warn "Found already installed gcc in $gcc_package_install_path. Skip compilation\n";
+        return '1'; 
+    }    
+
+    unless ($distro_type eq 'centos' && $distro_version == 6) {
+        warn "We do not build custom compiler on this platform";
+        return;
+    }
+
+    if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
+        my @dependency_list = ('libmpfr-dev', 'libmpc-dev', 'libgmp-dev');
+        apt_get(@dependency_list);
+    } elsif ($distro_type eq 'centos') {
+        yum('gmp-devel', 'mpfr-devel', 'libmpc-devel');
+    }
+
+    print "Download gcc archive\n";
+    chdir $temp_folder_for_building_project;
+ 
+    my $archive_file_name = "gcc-$gcc_version.tar.gz";
+    my $gcc_download_result = download_file("ftp://ftp.mpi-sb.mpg.de/pub/gnu/mirror/gcc.gnu.org/pub/gcc/releases/gcc-$gcc_version/$archive_file_name", $archive_file_name, '256be3760f6aca3eaa45083e25828ce0802e2010');
+
+    unless ($gcc_download_result) {
+        die "Can't download gcc sources\n";
+    }    
+
+    print "Unpack archive\n";
+    unless (exec_command("tar -xf $archive_file_name")) {
+        die "Cannot unpack gcc";
+    }
+
+    # Remove source archive
+    unlink "$archive_file_name";
+    
+    unless (exec_command("mkdir $temp_folder_for_building_project/gcc-$gcc_version-objdir")) {
+        die "Cannot crete objdir";
+    }
+
+    chdir "$temp_folder_for_building_project/gcc-$gcc_version-objdir";
+
+    print "Configure build system\n";
+    # We are using  --enable-host-shared because we should build gcc as dynamic library for jit compiler purposes
+    unless (exec_command("$temp_folder_for_building_project/gcc-$gcc_version/configure --prefix=$gcc_package_install_path --enable-languages=c,c++,jit  --enable-host-shared --disable-multilib")) {
+        die "Cannot configure gcc";
+    }
+
+    print "Build gcc\n";
+
+    unless( exec_command("make $make_options")) {
+        die "Cannot make gcc";
+    }
+
+    print "Install gcc\n";
+
+    unless (exec_command("make $make_options install")) {
+        die "Cannot make install";
+    }
+
+    return 1;
 }
 
 # We need it to recompress Boost source code
