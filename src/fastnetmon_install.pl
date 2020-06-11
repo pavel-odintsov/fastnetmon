@@ -307,13 +307,14 @@ sub install_sentry {
     my $machine_arch = `uname -m`;
     chomp $machine_arch;
 
-    my $download_res = system("wget --quiet 'https://downloads.sentry-cdn.com/sentry-cli/1.46.0/sentry-cli-Linux-$machine_arch' -O/opt/sentry-cli");
+    # my $download_res = system("wget --quiet 'https://downloads.sentry-cdn.com/sentry-cli/1.46.0/sentry-cli-Linux-$machine_arch' -O/opt/sentry-cli");
 
-    if ($download_res != 0) {
+    my $download_res = download_file("https://downloads.sentry-cdn.com/sentry-cli/1.46.0/sentry-cli-Linux-$machine_arch", "/opt/sentry-cli");
+    if (!$download_res) {
         warn "Cannot download Sentry";
     }
 
-    system("chmod +x /opt/sentry-cli");
+    exec_command("chmod +x /opt/sentry-cli");
 }
 
 ### Functions start here
