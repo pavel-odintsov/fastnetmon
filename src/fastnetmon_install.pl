@@ -20,6 +20,15 @@ BEGIN {
 my $library_install_folder = '/opt/';
 my $we_use_code_from_master = '';
 
+my $ld_library_path_for_make = "";
+
+# We should specify custom compiler path
+my $default_c_compiler_path = '/usr/bin/gcc';
+my $default_cpp_compiler_path = '/usr/bin/g++';
+
+# This option enables use of our own custom compiler
+my $use_custom_compiler = '';
+
 my $os_type = '';
 my $distro_type = '';  
 my $distro_version = '';  
@@ -317,6 +326,44 @@ sub install_sentry {
     system("chmod +x /opt/sentry-cli");
 }
 
+# This code will init global compiler settings used in options for other packages build
+sub init_compiler {
+    # 530 instead of 5.3.0
+    my $gcc_version_for_path = $gcc_version;
+    $gcc_version_for_path =~ s/\.//g;
+
+    # We are using this for Boost build system
+    # 5.3 instead of 5.3.0
+    my $gcc_version_only_major = $gcc_version;
+    $gcc_version_only_major =~ s/\.\d$//;
+
+    $default_c_compiler_path = "$library_install_folder/gcc$gcc_version_for_path/bin/gcc";
+    $default_cpp_compiler_path = "$library_install_folder/gcc$gcc_version_for_path/bin/g++";
+
+
+    # Add new compiler to configure options
+    # It's mandatory for log4cpp
+    $configure_options = "CC=$default_c_compiler_path CXX=$default_cpp_compiler_path";
+
+
+    my @make_library_path_list_options = ("$library_install_folder/gcc$gcc_version_for_path/lib64");
+
+
+    $ld_library_path_for_make = "LD_LIBRARY_PATH=" . join ':', @make_library_path_list_options;
+
+    # More detailes about jam lookup: http://www.boost.org/build/doc/html/bbv2/overview/configuration.html
+
+    # We use non standard gcc compiler for Boost builder and Boost and specify it this way
+    open my $fl, ">", "/root/user-config.jam" or die "Can't open $! file for writing manifest\n";
+    print {$fl} "using gcc : $gcc_version_only_major : $default_cpp_compiler_path ;\n";
+    close $fl;
+
+    # When we run it with vzctl exec we ahve broken env and should put config in /etc too
+    open my $etcfl, ">", "/etc/user-config.jam" or die "Can't open $! file for writing manifest\n";
+    print {$etcfl} "using gcc : $gcc_version_only_major : $default_cpp_compiler_path ;\n";
+    close $etcfl;
+}
+
 ### Functions start here
 sub main {
     # Open log file
@@ -428,6 +475,12 @@ sub main {
     if ($build_gcc_only) {
         install_gcc();
         exit(0);
+    }
+
+    # Fr this distro we need to use custom compiler
+    if ($distro_type eq 'centos' && int($distro_version) == 6) {
+        $use_custom_compiler = 1;
+        init_compiler();
     }
 
     # Install only depencdency packages, we need it to cache installed packages in CI
@@ -728,7 +781,7 @@ sub install_json_c {
     }
 
     print "Build it\n";
-    exec_command("./configure --prefix=$install_path");
+    exec_command("$configure_options ./configure --prefix=$install_path");
 
     print "Install it\n";
     exec_command("make $make_options install");
@@ -909,12 +962,18 @@ sub install_grpc {
     print "Update project submodules\n";
     exec_command("git submodule update --init");
 
+    if($use_custom_compiler) {
+        ### Patch makefile for custom gcc: https://github.com/grpc/grpc/issues/3893
+        exec_command("sed -i '81i DEFAULT_CC=$default_c_compiler_path' Makefile");
+        exec_command("sed -i '82i DEFAULT_CXX=$default_cpp_compiler_path' Makefile");
+    }
+
     print "Build gRPC\n";
-    my $make_result = exec_command("make $make_options");
+    my $make_result = exec_command("$ld_library_path_for_make make $make_options");
 
     unless ($make_result) {
         fast_die( "Could not build gRPC: make failed\n");
-}
+    }
 
     print "Install gRPC\n";
     exec_command("make install prefix=$grpc_install_path");
@@ -1000,10 +1059,10 @@ sub install_protobuf {
     print "Execute autogen\n";
     exec_command("./autogen.sh");
 
-    exec_command("./configure --prefix=$protobuf_install_path");
+    exec_command("$configure_options ./configure --prefix=$protobuf_install_path");
 
     print "Build protobuf\n";
-    exec_command("make $make_options install");
+    exec_command("$ld_library_path_for_make make $make_options install");
     1;
 }
 
@@ -1030,11 +1089,11 @@ sub install_mongo_client {
     print "Build mongo client\n";
     chdir "mongo-c-driver-1.1.9";
 
-    unless (exec_command("./configure --prefix=$mongo_install_path")) {
+    unless (exec_command("$configure_options ./configure --prefix=$mongo_install_path")) {
         fast_die("Cannot configure mongoc");
     }
 
-    my $mongoc_install_res = exec_command("make $make_options install");
+    my $mongoc_install_res = exec_command("$ld_library_path_for_make  make $make_options install");
 
     unless ($mongoc_install_res) {
         if ($distro_type eq 'ubuntu' && $distro_version eq '20.04') {
@@ -1108,7 +1167,7 @@ sub install_ndpi {
     exec_command("./autogen.sh");
 
     # We have specified direct path to json-c here because it required for example app compilation
-    exec_command("PKG_CONFIG_PATH=$library_install_folder/json-c-0.13/lib/pkgconfig ./configure --prefix=$ndpi_install_path");
+    exec_command("PKG_CONFIG_PATH=$library_install_folder/json-c-0.13/lib/pkgconfig $configure_options . $configure_options configure --prefix=$ndpi_install_path");
 
    if ($? != 0) {
         print "Configure failed\n";
@@ -1402,7 +1461,7 @@ sub install_pf_ring {
     print "Build PF_RING lib\n";
     # Because we can't run configure from another folder because it can't find ZC dependency :(
     chdir "$pf_ring_sources_path/userland/lib";
-    exec_command("./configure --prefix=$pf_ring_install_path");
+    exec_command("$configure_options ./configure --prefix=$pf_ring_install_path");
     exec_command("make $make_options");
     exec_command("make $make_options install"); 
 }
@@ -1438,11 +1497,6 @@ sub install_icu {
 
     chdir $temp_folder_for_building_project;
 
-    if ($distro_type eq 'centos' && $distro_version == 6) {
-        warn "We do not use libicu on CentOS 6\n";
-        return;
-    }
-
     my $icu_install_path = "$library_install_folder/libicu_65_1";
 
     if (-e $icu_install_path) {
@@ -1463,7 +1517,7 @@ sub install_icu {
     chdir "icu/source";
 
     print "Build icu\n";
-    exec_command("LDFLAGS=\"-Wl,-rpath,$library_install_folder/libicu_65_1/lib\" ./configure --prefix=$icu_install_path");
+    exec_command("LDFLAGS=\"-Wl,-rpath,$library_install_folder/libicu_65_1/lib\" $configure_options ./configure --prefix=$icu_install_path");
     exec_command("make $make_options");
     exec_command("make $make_options install");
     1;
@@ -1488,30 +1542,6 @@ sub install_cmake {
         return 1;
     }
 
-    # CentOS cannot build fresh CMAKE due to lack of C++ 11 support in compiler, we need to use binaries for it
-    if ($distro_type eq 'centos' && $distro_version == 6) {
-        print "Download binary cmake archive\n";
-
-        my $distro_file_name = "cmake-3.16.4-Linux-x86_64.tar.gz";
-
-        my $cmake_download_result = download_file("https://github.com/Kitware/CMake/releases/download/v3.16.4/cmake-3.16.4-Linux-x86_64.tar.gz", $distro_file_name, 'ce7eb7370372188d9dc3dd6eeb8bd1c7ee9d485a');
-
-        unless ($cmake_download_result) {
-            fast_die("Can't download cmake\n");
-        }
-
-        exec_command("tar -xf $distro_file_name");
-        chdir "cmake-3.16.4-Linux-x86_64";
-
-        system("mkdir -p $cmake_install_path");
-        system("mkdir -p $cmake_install_path/bin");
-
-        print "Install cmake binary\n";
-        system("cp bin/cmake $cmake_install_path/bin/cmake");
-
-        return 1;
-    }
-
     my $distro_file_name = "cmake-3.16.4.tar.gz";
 
     chdir $temp_folder_for_building_project;
@@ -1528,14 +1558,14 @@ sub install_cmake {
     chdir "cmake-3.16.4";
 
     print "Execute bootstrap, it will need time\n";
-    my $boostrap_result = exec_command("./bootstrap --prefix=$cmake_install_path");
+    my $boostrap_result = exec_command("$ld_library_path_for_make $configure_options ./bootstrap --prefix=$cmake_install_path");
 
     unless ($boostrap_result) {
         fast_die("Cannot run bootstrap\n");
     }
 
     print "Make it\n";
-    my $make_command = "make $make_options";
+    my $make_command = "$ld_library_path_for_make $configure_options make $make_options";
     my $make_result = exec_command($make_command);
 
     unless ($make_result) {
@@ -1730,18 +1760,11 @@ sub install_boost {
 
     chdir $folder_name_inside_archive;
 
-    my $boost_flags = '';
-
-    # We have issues with building libicu on CentOS 6, let's try to avoid this dependency
-    if ($distro_type eq 'centos' && $distro_version == 6) {
-        $boost_flags = "--disable-icu";
-    }
-
     print "Build Boost\n";
     # We have troubles when run this code with vzctl exec so we should add custom compiler in path 
     # So without HOME=/root nothing worked correctly due to another "openvz" feature
     # linkflags is required to specify custom path to libicu from regexp library
-    my $b2_build_result = exec_command("$library_install_folder/boost_build1.72.0/bin/b2 -j$cpus_number -sICU_PATH=$library_install_folder/libicu_65_1 linkflags=\"-Wl,-rpath,$library_install_folder/libicu_65_1/lib\" --build-dir=$temp_folder_for_building_project/boost_build_temp_directory_1_7_2 link=shared --without-test --without-python --without-wave --without-log --without-mpi $boost_flags");
+    my $b2_build_result = exec_command("$library_install_folder/boost_build1.72.0/bin/b2 -j$cpus_number -sICU_PATH=$library_install_folder/libicu_65_1 linkflags=\"-Wl,-rpath,$library_install_folder/libicu_65_1/lib\" --build-dir=$temp_folder_for_building_project/boost_build_temp_directory_1_7_2 link=shared --without-test --without-python --without-wave --without-log --without-mpi");
 
     # We should not do this check because b2 build return bad return code even in success case... when it can't build few non important targets
     unless ($b2_build_result) {
@@ -1757,7 +1780,7 @@ sub install_fastnetmon_dependencies {
 
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
         my @fastnetmon_deps = ("git", "g++", "gcc", "libgpm-dev", "libncurses5-dev",
-            "liblog4cpp5-dev", "libnuma-dev", "libgeoip-dev","libpcap-dev", "cmake", "pkg-config",
+            "liblog4cpp5-dev", "libnuma-dev", "libpcap-dev", "cmake", "pkg-config",
         );
 
         unless ($build_boost) {
@@ -1772,7 +1795,7 @@ sub install_fastnetmon_dependencies {
 
         apt_get(@fastnetmon_deps);
     } elsif ($distro_type eq 'centos') {
-        my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++', 'GeoIP-devel',
+        my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++',
             'ncurses-devel', 'glibc-static', 'ncurses-static', 'libpcap-devel', 'gpm-static',
             'gpm-devel', 'cmake', 'pkgconfig',
         );
@@ -1871,12 +1894,13 @@ sub install_fastnetmon {
         $cmake_params .= " -DENABLE_LUA_SUPPORT=OFF ";
     }
 
+    # We use $configure_options to pass CC and CXX variables about custom compiler when we use it 
     if ((defined($ENV{'TRAVIS'}) && $ENV{'TRAVIS'}) or (defined($ENV{'CI'}) && $ENV{'CI'})) {
-        system("$cmake_path .. $cmake_params");
+        system("$configure_options $cmake_path .. $cmake_params");
         system("make $make_options");
     } else {
         print "Run cmake to generate make file\n";
-        system("$cmake_path .. $cmake_params 2>&1 | tee -a $install_log_path");
+        system("$configure_options  $cmake_path .. $cmake_params 2>&1 | tee -a $install_log_path");
 
         print "Run make to build FastNetMon\n";
         system("make $make_options 2>&1 | tee -a $install_log_path");
