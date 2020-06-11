@@ -1411,7 +1411,7 @@ sub apt_get {
 
     # We install one package per apt-get call because installing multiple packages in one time could fail of one package is broken
     for my $package (@packages_list) {
-        exec_command("DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes $package");
+        exec_command("DEBIAN_FRONTEND=noninteractive apt-get install -y $package");
 
         if ($? != 0) {
             print "Package '$package' install failed with code $?\n"
