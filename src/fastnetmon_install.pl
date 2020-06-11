@@ -17,7 +17,7 @@ BEGIN {
     }
 }
 
-my $library_install_folder = '/opt/';
+my $library_install_folder = '/opt';
 my $we_use_code_from_master = '';
 
 my $ld_library_path_for_make = "";
