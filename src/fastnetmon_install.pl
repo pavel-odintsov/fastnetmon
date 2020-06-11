@@ -17,6 +17,7 @@ BEGIN {
     }
 }
 
+my $library_install_folder = '/opt/';
 my $we_use_code_from_master = '';
 
 my $os_type = '';
@@ -426,7 +427,7 @@ sub main {
 
     if ($build_gcc_only) {
         install_gcc();
-        exit(1);
+        exit(0);
     }
 
     # Install only depencdency packages, we need it to cache installed packages in CI
@@ -462,7 +463,7 @@ sub main {
 
         if ($build_boost) {
             # We need fresh cmake for this build, Boost requires it
-            $cmake_path = "/opt/cmake-3.16.4/bin/cmake";
+            $cmake_path = "$library_install_folder/cmake-3.16.4/bin/cmake";
 
 	        install_cmake_dependencies();
 	        install_cmake();
@@ -619,7 +620,7 @@ sub install_luajit {
 
     my $archive_file_name = "LuaJIT-2.0.4.tar.gz";
 
-    my $luajit_install_path = "/opt/luajit_2.0.4";
+    my $luajit_install_path = "$library_install_folder/luajit_2.0.4";
 
     if (-e $luajit_install_path && defined($ENV{'CI'})) {
 	print "Luajit was installed already\n";
@@ -684,18 +685,18 @@ sub install_lua_lpeg {
     # Set path
     print "Install lpeg library\n";
     if ($os_type eq 'macosx' or $os_type eq 'freebsd') {
-        exec_command("sed -i -e 's#LUADIR = ../lua/#LUADIR = /opt/luajit_2.0.4/include/luajit-2.0#' makefile");
+        exec_command("sed -i -e 's#LUADIR = ../lua/#LUADIR = $library_install_folder/luajit_2.0.4/include/luajit-2.0#' makefile");
     } else {
-        exec_command("sed -i 's#LUADIR = ../lua/#LUADIR = /opt/luajit_2.0.4/include/luajit-2.0#' makefile");
+        exec_command("sed -i 's#LUADIR = ../lua/#LUADIR = $library_install_folder/luajit_2.0.4/include/luajit-2.0#' makefile");
     }
 
     exec_command("make $make_options");
-    exec_command("cp lpeg.so /opt/luajit_2.0.4/lib/lua/5.1");
+    exec_command("cp lpeg.so $library_install_folder/luajit_2.0.4/lib/lua/5.1");
 }
 
 sub install_json_c {
     my $archive_name  = 'json-c-0.13-20171207.tar.gz';
-    my $install_path = '/opt/json-c-0.13';
+    my $install_path = "$library_install_folder/json-c-0.13";
 
     if (-e $install_path && defined($ENV{'CI'})) {
 	    print "json-c was already installed\n";
@@ -754,7 +755,7 @@ sub install_lua_json {
     chdir "luajson-1.3.3";
 
     print "Install it\n";
-    exec_command("PREFIX=/opt/luajit_2.0.4 make $make_options install");
+    exec_command("PREFIX=$library_install_folder/luajit_2.0.4 make $make_options install");
 }
 
 sub install_init_scripts {
@@ -780,7 +781,7 @@ sub install_init_scripts {
         my $systemd_service_path = "/etc/systemd/system/fastnetmon.service";
         exec_command("cp $fastnetmon_code_dir/fastnetmon.service.in $systemd_service_path");
 
-        exec_command("sed -i 's#\@CMAKE_INSTALL_SBINDIR\@#/opt/fastnetmon#' $systemd_service_path");
+        exec_command("sed -i 's#\@CMAKE_INSTALL_SBINDIR\@#$library_install_folder/fastnetmon#' $systemd_service_path");
 
         print "We found systemd enabled distro and created service: fastnetmon.service\n";
         print "You could run it with command: systemctl start fastnetmon.service\n";
@@ -793,7 +794,7 @@ sub install_init_scripts {
         my $system_init_path = '/etc/init.d/fastnetmon';
         exec_command("cp $fastnetmon_code_dir/fastnetmon_init_script_centos6 $system_init_path");
 
-        exec_command("sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $system_init_path");
+        exec_command("sed -i 's#/usr/sbin/fastnetmon#$library_install_folder/fastnetmon/fastnetmon#' $system_init_path");
 
         print "We created service fastnetmon for you\n";
         print "You could run it with command: /etc/init.d/fastnetmon start\n";
@@ -827,7 +828,7 @@ sub install_init_scripts {
         if (-e $init_path_in_src) {
            exec_command("cp $init_path_in_src $system_init_path");
 
-            exec_command("sed -i 's#/usr/sbin/fastnetmon#/opt/fastnetmon/fastnetmon#' $system_init_path");
+            exec_command("sed -i 's#/usr/sbin/fastnetmon#$library_install_folder/fastnetmon/fastnetmon#' $system_init_path");
 
             print "We created service fastnetmon for you\n";
             print "You could run it with command: /etc/init.d/fastnetmon start\n";
@@ -840,7 +841,7 @@ sub install_init_scripts {
 sub install_log4cpp {
     my $distro_file_name = 'log4cpp-1.1.1.tar.gz';
     my $log4cpp_url = 'https://sourceforge.net/projects/log4cpp/files/log4cpp-1.1.x%20%28new%29/log4cpp-1.1/log4cpp-1.1.1.tar.gz/download';
-    my $log4cpp_install_path = '/opt/log4cpp1.1.1';
+    my $log4cpp_install_path = "$library_install_folder/log4cpp1.1.1";
 
     if (-e $log4cpp_install_path) {
         print "log4cpp was installed\n";
@@ -889,7 +890,7 @@ sub install_grpc {
     # https://github.com/grpc/grpc/releases/tag/v1.27.3
     my $grpc_git_commit = "e73882dc0fcedab1ffe789e44ed6254819639ce3";
 
-    my $grpc_install_path = "/opt/grpc_1_27_3_$grpc_git_commit";
+    my $grpc_install_path = "$library_install_folder/grpc_1_27_3_$grpc_git_commit";
 
     if (-e $grpc_install_path && defined($ENV{'CI'})) {
 	print "gRPC was already installed\n";
@@ -924,7 +925,7 @@ sub install_grpc {
 sub install_gobgp {
     chdir $temp_folder_for_building_project;
 
-    my $gobgp_install_path = '/opt/gobgp_2_16_0';
+    my $gobgp_install_path = "$library_install_folder/gobgp_2_16_0";
 
     if (-e $gobgp_install_path && defined($ENV{'CI'})) {
         print "GoBGP was already installed\n";
@@ -971,7 +972,7 @@ sub install_protobuf_dependencies {
 sub install_protobuf {
     chdir $temp_folder_for_building_project;
 
-    my $protobuf_install_path = "/opt/protobuf_3.11.4";
+    my $protobuf_install_path = "$library_install_folder/protobuf_3.11.4";
 
     if (-e $protobuf_install_path && defined($ENV{'CI'})) {
 	print "protobuf was already installed\n";
@@ -1008,7 +1009,7 @@ sub install_protobuf {
 
 sub install_mongo_client {
     my $distro_file_name = 'mongo-c-driver-1.1.9.tar.gz';
-    my $mongo_install_path = '/opt/mongo_c_driver_1_1_9';
+    my $mongo_install_path = "$library_install_folder/mongo_c_driver_1_1_9";
 
     if (-e $mongo_install_path && defined($ENV{'CI'})) {
         print "mongo client was already installed\n";
@@ -1046,7 +1047,7 @@ sub install_mongo_client {
 
 sub install_hiredis {
     my $disto_file_name = 'v0.13.1.tar.gz'; 
-    my $hiredis_install_path = '/opt/libhiredis_0_13';
+    my $hiredis_install_path = "$library_install_folder/libhiredis_0_13";
 
     if (-e $hiredis_install_path && defined($ENV{'CI'})) {
 	print "hiredis was already installed\n";
@@ -1084,7 +1085,7 @@ sub install_ndpi_dependencies {
 
 # We use global variable $ndpi_repository here
 sub install_ndpi {
-    my $ndpi_install_path = "/opt/ndpi";
+    my $ndpi_install_path = "$library_install_folder/ndpi";
 
     if (-e $ndpi_install_path && defined($ENV{'CI'})) {
 	print "nDPI was already installed\n";
@@ -1107,7 +1108,7 @@ sub install_ndpi {
     exec_command("./autogen.sh");
 
     # We have specified direct path to json-c here because it required for example app compilation
-    exec_command("PKG_CONFIG_PATH=/opt/json-c-0.13/lib/pkgconfig ./configure --prefix=$ndpi_install_path");
+    exec_command("PKG_CONFIG_PATH=$library_install_folder/json-c-0.13/lib/pkgconfig ./configure --prefix=$ndpi_install_path");
 
    if ($? != 0) {
         print "Configure failed\n";
@@ -1345,7 +1346,7 @@ sub install_pf_ring {
     my $pf_ring_archive_path = "$temp_folder_for_building_project/PF_RING-$pf_ring_version.tar.gz";
     my $pf_ring_sources_path = "$temp_folder_for_building_project/PF_RING-$pf_ring_version";
 
-    my $pf_ring_install_path = "/opt/pf_ring_$pf_ring_version";
+    my $pf_ring_install_path = "$library_install_folder/pf_ring_$pf_ring_version";
 
     if (-e $pf_ring_install_path && defined($ENV{'CI'})) {
 	print "PF_RING was already installed\n";
@@ -1442,7 +1443,7 @@ sub install_icu {
         return;
     }
 
-    my $icu_install_path = "/opt/libicu_65_1";
+    my $icu_install_path = "$library_install_folder/libicu_65_1";
 
     if (-e $icu_install_path) {
         warn "Found installed icu at $icu_install_path\n";
@@ -1462,7 +1463,7 @@ sub install_icu {
     chdir "icu/source";
 
     print "Build icu\n";
-    exec_command("LDFLAGS=\"-Wl,-rpath,/opt/libicu_65_1/lib\" ./configure --prefix=$icu_install_path");
+    exec_command("LDFLAGS=\"-Wl,-rpath,$library_install_folder/libicu_65_1/lib\" ./configure --prefix=$icu_install_path");
     exec_command("make $make_options");
     exec_command("make $make_options install");
     1;
@@ -1480,7 +1481,7 @@ sub install_cmake_dependencies {
 sub install_cmake {
     print "Install cmake\n";
 
-    my $cmake_install_path = "/opt/cmake-3.16.4";
+    my $cmake_install_path = "$library_install_folder/cmake-3.16.4";
 
     if (-e $cmake_install_path && defined($ENV{'CI'})) {
         warn "Found installed cmake at $cmake_install_path\n";
@@ -1553,7 +1554,7 @@ sub install_boost_builder {
     # We use another name because it uses same name as boost distribution
     my $archive_file_name = 'build-boost-1.72.0.tar.gz';
 
-    my $boost_builder_install_folder = "/opt/boost_build1.72.0";
+    my $boost_builder_install_folder = "$library_install_folder/boost_build1.72.0";
 
     if (-e $boost_builder_install_folder && defined($ENV{'CI'}) ) {
         warn "Found installed Boost builder at $boost_builder_install_folder\n";
@@ -1619,7 +1620,7 @@ sub install_gcc {
     my $gcc_version_for_path = $gcc_version;
     $gcc_version_for_path =~ s/\.//g;
 
-    my $gcc_package_install_path = "/opt/gcc$gcc_version_for_path";
+    my $gcc_package_install_path = "$library_install_folder/gcc$gcc_version_for_path";
 
     if (-e $gcc_package_install_path && defined($ENV{'CI'})) {
         warn "Found already installed gcc in $gcc_package_install_path. Skip compilation\n";
@@ -1693,14 +1694,14 @@ sub install_boost_dependencies {
 }
 
 sub install_boost {
-    my $boost_install_path = "/opt/boost_1_72_0";
+    my $boost_install_path = "$library_install_folder/boost_1_72_0";
 
     if (-e $boost_install_path && defined($ENV{'CI'})) {
         warn "Boost libraries already exist in $boost_install_path. Skip build process\n";
         return 1;
     }
 
-    chdir "/opt";
+    chdir $library_install_folder;
     my $archive_file_name = 'boost_1_72_0.tar.gz';
 
     print "Install Boost dependencies\n";
@@ -1740,7 +1741,7 @@ sub install_boost {
     # We have troubles when run this code with vzctl exec so we should add custom compiler in path 
     # So without HOME=/root nothing worked correctly due to another "openvz" feature
     # linkflags is required to specify custom path to libicu from regexp library
-    my $b2_build_result = exec_command("/opt/boost_build1.72.0/bin/b2 -j$cpus_number -sICU_PATH=/opt/libicu_65_1 linkflags=\"-Wl,-rpath,/opt/libicu_65_1/lib\" --build-dir=$temp_folder_for_building_project/boost_build_temp_directory_1_7_2 link=shared --without-test --without-python --without-wave --without-log --without-mpi $boost_flags");
+    my $b2_build_result = exec_command("$library_install_folder/boost_build1.72.0/bin/b2 -j$cpus_number -sICU_PATH=$library_install_folder/libicu_65_1 linkflags=\"-Wl,-rpath,$library_install_folder/libicu_65_1/lib\" --build-dir=$temp_folder_for_building_project/boost_build_temp_directory_1_7_2 link=shared --without-test --without-python --without-wave --without-log --without-mpi $boost_flags");
 
     # We should not do this check because b2 build return bad return code even in success case... when it can't build few non important targets
     unless ($b2_build_result) {
@@ -1881,7 +1882,7 @@ sub install_fastnetmon {
         system("make $make_options 2>&1 | tee -a $install_log_path");
     }
 
-    my $fastnetmon_dir = "/opt/fastnetmon";
+    my $fastnetmon_dir = "$library_install_folder/fastnetmon";
     my $fastnetmon_build_binary_path = "$fastnetmon_code_dir/build/fastnetmon";
 
     unless (-e $fastnetmon_build_binary_path) {

@@ -48,6 +48,7 @@ grpc_1_27_3_e73882dc0fcedab1ffe789e44ed6254819639ce3
 libhiredis_0_13 
 mongo_c_driver_1_1_9
 protobuf_3.11.4
+gcc920
 );
 
 for my $library (@our_libraries) {
