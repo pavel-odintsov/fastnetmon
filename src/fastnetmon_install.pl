@@ -478,7 +478,7 @@ sub main {
     }
 
     # Fr this distro we need to use custom compiler
-    if ($distro_type eq 'centos' && int($distro_version) == 6) {
+    if ($build_boost && $distro_type eq 'centos' && int($distro_version) == 6) {
         $use_custom_compiler = 1;
         init_compiler();
     }
