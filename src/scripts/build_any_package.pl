@@ -226,7 +226,7 @@ DOC
 
     my $spec_file_requires_systemd_section = <<'DOC';
 
-Requires:          libpcap, numactl, libicu
+Requires:          libpcap
 Requires(pre):     shadow-utils
 Requires(post):    systemd
 Requires(preun):   systemd
@@ -334,7 +334,7 @@ DOC
 
    my $spec_file_init_d_section = <<'DOC';
 
-Requires:          libpcap, numactl, libicu
+Requires:          libpcap, numactl
 Requires(pre):     shadow-utils
 Requires(post):    chkconfig
 Requires(preun):   chkconfig, initscripts
@@ -427,7 +427,6 @@ fi
 - First RPM package release
 DOC
 
-   # TODO: we need to improve it to avoid using different spec files
     my $selected_spec_file = $systemd_spec_file;
 
     # Only for CentOS 6 we use old apprach based on init scripts, for newer centos versions we use systemd
