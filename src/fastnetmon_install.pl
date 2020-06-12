@@ -154,6 +154,14 @@ GetOptions(
     'build_gcc_only' => \$build_gcc_only,
 );
 
+# Export all meaningful customer facing flags to Sentry for better failure tracking
+$ENV{'use-git-master'} = $we_use_code_from_master;
+$ENV{'do-not-track-me'} = $do_not_track_me;
+$ENV{'use-modern-pf-ring'} = $use_modern_pf_ring;
+$ENV{'gobgp'} = $enable_gobgp_backend;
+$ENV{'api'} = $enable_api;
+$ENV{'boost'} = $build_boost;
+
 if ($show_help) {
     print "We have following options:\n--use-git-master\n--do-not-use-mirror\n--do-not-track-me\n--use-modern-pf-ring\n--gobgp\n--api\n--install_dependency_packages_only\n--boost\ndo-not-build-fastnetmon\n--build_gcc_only\n--help\n";
     exit (0);
@@ -473,6 +481,7 @@ sub main {
     }
 
     if ($build_gcc_only) {
+        install_gcc_dependencies();
         install_gcc();
         exit(0);
     }
@@ -517,6 +526,8 @@ sub main {
         if ($build_boost) {
             # We need fresh cmake for this build, Boost requires it
             $cmake_path = "$library_install_folder/cmake-3.16.4/bin/cmake";
+
+            install_gcc_dependencies();
 
 	        install_cmake_dependencies();
 	        install_cmake();
@@ -1164,18 +1175,22 @@ sub install_ndpi {
     }   
 
     print "Configure nDPI\n";
-    exec_command("./autogen.sh");
+    unless (exec_command("./autogen.sh")) {
+        fast_die("Cannot generate configuration for nDPI");
+    }
 
     # We have specified direct path to json-c here because it required for example app compilation
-    exec_command("PKG_CONFIG_PATH=$library_install_folder/json-c-0.13/lib/pkgconfig $configure_options . $configure_options configure --prefix=$ndpi_install_path");
+    exec_command("PKG_CONFIG_PATH=$library_install_folder/json-c-0.13/lib/pkgconfig $configure_options ./configure --prefix=$ndpi_install_path");
 
    if ($? != 0) {
         print "Configure failed\n";
-        return;
+        fast_die("Cannot configure nDPI");
     }
 
     print "Build and install nDPI\n";
-    exec_command("make $make_options install");
+    unless (exec_command("make $make_options install")) {
+        fast_die("Cannot build nDPI");
+    }
 }
 
 sub init_package_manager { 
@@ -1572,7 +1587,9 @@ sub install_cmake {
         fast_die("Make command '$make_command' failed\n");
     }
 
-    exec_command("make install");
+    unless (exec_command("$ld_library_path_for_make make install")) {
+        fast_die("Cannot install cmake");
+    }
 
     return 1;
 }
@@ -1645,6 +1662,15 @@ sub install_boost_builder {
     1;
 }
 
+sub install_gcc_dependencies {
+    if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
+        my @dependency_list = ('libmpfr-dev', 'libmpc-dev', 'libgmp-dev');
+        apt_get(@dependency_list);
+    } elsif ($distro_type eq 'centos') {
+        yum('gmp-devel', 'mpfr-devel', 'libmpc-devel');
+    }
+}
+
 sub install_gcc {
     # 530 instead of 5.3.0
     my $gcc_version_for_path = $gcc_version;
@@ -1660,13 +1686,6 @@ sub install_gcc {
     unless ($distro_type eq 'centos' && $distro_version == 6) {
         warn "We do not build custom compiler on this platform";
         return;
-    }
-
-    if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
-        my @dependency_list = ('libmpfr-dev', 'libmpc-dev', 'libgmp-dev');
-        apt_get(@dependency_list);
-    } elsif ($distro_type eq 'centos') {
-        yum('gmp-devel', 'mpfr-devel', 'libmpc-devel');
     }
 
     print "Download gcc archive\n";
@@ -1896,11 +1915,11 @@ sub install_fastnetmon {
 
     # We use $configure_options to pass CC and CXX variables about custom compiler when we use it 
     if ((defined($ENV{'TRAVIS'}) && $ENV{'TRAVIS'}) or (defined($ENV{'CI'}) && $ENV{'CI'})) {
-        system("$configure_options $cmake_path .. $cmake_params");
+        system("$configure_options $ld_library_path_for_make $cmake_path .. $cmake_params");
         system("make $make_options");
     } else {
         print "Run cmake to generate make file\n";
-        system("$configure_options  $cmake_path .. $cmake_params 2>&1 | tee -a $install_log_path");
+        system("$configure_options $ld_library_path_for_make $cmake_path .. $cmake_params 2>&1 | tee -a $install_log_path");
 
         print "Run make to build FastNetMon\n";
         system("make $make_options 2>&1 | tee -a $install_log_path");
