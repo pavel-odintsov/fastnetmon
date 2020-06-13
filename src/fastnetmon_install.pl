@@ -139,6 +139,8 @@ my $do_not_build_fastnetmon = '';
 
 my $build_gcc_only = '';
 
+my $source_build = '';
+
 # Get options from command line
 GetOptions(
     'use-git-master' => \$we_use_code_from_master,
@@ -152,6 +154,7 @@ GetOptions(
     'help' => \$show_help,
     'install_dependency_packages_only' => \$install_dependency_packages_only, 
     'build_gcc_only' => \$build_gcc_only,
+    'source_build' => \$source_build,
 );
 
 # Export all meaningful customer facing flags to Sentry for better failure tracking
@@ -163,7 +166,7 @@ $ENV{'api'} = $enable_api;
 $ENV{'boost'} = $build_boost;
 
 if ($show_help) {
-    print "We have following options:\n--use-git-master\n--do-not-use-mirror\n--do-not-track-me\n--use-modern-pf-ring\n--gobgp\n--api\n--install_dependency_packages_only\n--boost\ndo-not-build-fastnetmon\n--build_gcc_only\n--help\n";
+    print "We have following options:\n--use-git-master\n--do-not-use-mirror\n--do-not-track-me\n--use-modern-pf-ring\n--gobgp\n--api\n--install_dependency_packages_only\n--boost\ndo-not-build-fastnetmon\n--build_gcc_only\n--help\n--source_build\n";
     exit (0);
 }
 
@@ -389,6 +392,106 @@ sub main {
     $ENV{'FASTNETMON_USER'} = $user_email;
 
     install_sentry();
+
+    my $download_path = "https://community-downloads.fastnetmon.com/releases/1.1.6";
+
+    # Unless we're in compile mode we will use binary packages if we can
+    # We've enabled this logic only for Ubuntu
+    if (!$source_build && $distro_type eq 'ubuntu') {
+        print "We will install FastNetMon using official binary packages\n";
+        send_tracking_information('started');   
+
+    
+        if ($os_type eq 'freebsd') {
+            fast_die("I'm sorry but we do not support FreeBSD in official builds but we offer official FreeBSD port, please check it instead");
+        } elsif ($os_type eq 'macosx') {
+            fast_die("I'm sorry but we do not support macos in current version, please raise GitHub issue if you want support for it: https://github.com/pavel-odintsov/fastnetmon");
+        } elsif ($os_type eq 'linux') {
+            if ($distro_type eq 'ubuntu') {
+                my $ubuntu_package_name = "fastnetmon_1.1.6_amd64.deb";
+
+                if ($distro_version =~ m/^14\.04/) {
+                    print "Install dependencies\n";
+                    exec_command("apt-get update");
+                    exec_command("apt-get install -y curl libpcap0.8 libatomic1");
+
+                    my $curl_res = system("curl $download_path/ubuntu/14.04/$ubuntu_package_name -o$ubuntu_package_name");
+
+                    if ($curl_res != 0) {
+                        fast_die("Cannot download FastNetMon package");
+                    }
+
+                    my $res = system("dpkg -i $ubuntu_package_name");
+
+                    if ($res != 0) {
+                        fast_die("Cannot install FastNetMon package with error code $res");
+                    }
+                } elsif ($distro_version =~ m/^16\.04/) {
+                    print "Install dependencies\n";
+                    exec_command("apt-get update");
+                    exec_command("apt-get install -y curl");
+
+                    my $curl_res = system("curl $download_path/ubuntu/16.04/$ubuntu_package_name -o$ubuntu_package_name");
+
+                    if ($curl_res != 0) { 
+                        fast_die("Cannot download FastNetMon package");
+                    }    
+ 
+                    my $install_res = system("apt install -y ./$ubuntu_package_name");
+
+                    if ($install_res != 0) {
+                        fast_die("Cannot install FastNetMon");
+                    }
+                } elsif ($distro_version =~ m/^18\.04/) {
+                    print "Install dependencies\n";
+                    exec_command("apt-get update");
+                    exec_command("apt-get install -y curl");
+
+                    my $curl_res = system("curl $download_path/ubuntu/18.04/$ubuntu_package_name -o$ubuntu_package_name");
+
+                    if ($curl_res != 0) {
+                        fast_die("Cannot download FastNetMon package");
+                    }
+
+                    my $install_res = system("apt install -y ./$ubuntu_package_name");
+
+                    if ($install_res != 0) {
+                        fast_die("Cannot install FastNetMon");
+                    }
+
+                } elsif ($distro_version =~ m/^20\.04/) {
+                    print "Install dependencies\n";
+                    exec_command("apt-get update");
+                    exec_command("apt-get install -y curl");
+
+                    my $curl_res = system("curl $download_path/ubuntu/20.04/$ubuntu_package_name -o$ubuntu_package_name");
+
+                    if ($curl_res != 0) { 
+                        fast_die("Cannot download FastNetMon package");
+                    }    
+
+                    my $install_res = system("apt install -y ./$ubuntu_package_name");
+
+                    if ($install_res != 0) {
+                        fast_die("Cannot install FastNetMon");
+                    }
+
+                } else {
+                    fast_die("I'm sorry but we do not support Ubuntu $distro_version in current version, please check that you use LTS and stable distribution");
+                }
+            } elsif ($distro_type eq 'debian') {
+                my $debian_package_name = "fastnetmon_1.1.6_amd64.deb";
+            } elsif ($distro_type eq 'centos') {
+
+            } else {
+                fast_die("I'm sorry but we do not support your Linux distribution $distro_type. Please raise GitHub issue if you want support for it: https://github.com/pavel-odintsov/fastnetmon");
+            }
+        } else {
+            fast_die("I'm sorry but we do not support your operating system $os_type. Please raise GitHub issue if you want support for it: https://github.com/pavel-odintsov/fastnetmon");
+        }
+
+        exit(0);
+    }
 
     $cpus_number = get_logical_cpus_number();
 
