@@ -397,7 +397,7 @@ sub main {
 
     # Unless we're in compile mode we will use binary packages if we can
     # We've enabled this logic only for Ubuntu
-    if (!$source_build && $distro_type eq 'ubuntu') {
+    unless ($source_build) {
         print "We will install FastNetMon using official binary packages\n";
         send_tracking_information('started');   
 
@@ -413,9 +413,9 @@ sub main {
                 if ($distro_version =~ m/^14\.04/) {
                     print "Install dependencies\n";
                     exec_command("apt-get update");
-                    exec_command("apt-get install -y curl libpcap0.8 libatomic1");
+                    exec_command("apt-get install -y libpcap0.8 libatomic1");
 
-                    my $curl_res = system("curl $download_path/ubuntu/14.04/$ubuntu_package_name -o$ubuntu_package_name");
+                    my $curl_res = system("wget $download_path/ubuntu/14.04/$ubuntu_package_name -O$ubuntu_package_name");
 
                     if ($curl_res != 0) {
                         fast_die("Cannot download FastNetMon package");
@@ -429,9 +429,8 @@ sub main {
                 } elsif ($distro_version =~ m/^16\.04/) {
                     print "Install dependencies\n";
                     exec_command("apt-get update");
-                    exec_command("apt-get install -y curl");
 
-                    my $curl_res = system("curl $download_path/ubuntu/16.04/$ubuntu_package_name -o$ubuntu_package_name");
+                    my $curl_res = system("wget $download_path/ubuntu/16.04/$ubuntu_package_name -O$ubuntu_package_name");
 
                     if ($curl_res != 0) { 
                         fast_die("Cannot download FastNetMon package");
@@ -445,9 +444,8 @@ sub main {
                 } elsif ($distro_version =~ m/^18\.04/) {
                     print "Install dependencies\n";
                     exec_command("apt-get update");
-                    exec_command("apt-get install -y curl");
 
-                    my $curl_res = system("curl $download_path/ubuntu/18.04/$ubuntu_package_name -o$ubuntu_package_name");
+                    my $curl_res = system("wget $download_path/ubuntu/18.04/$ubuntu_package_name -O$ubuntu_package_name");
 
                     if ($curl_res != 0) {
                         fast_die("Cannot download FastNetMon package");
@@ -462,9 +460,8 @@ sub main {
                 } elsif ($distro_version =~ m/^20\.04/) {
                     print "Install dependencies\n";
                     exec_command("apt-get update");
-                    exec_command("apt-get install -y curl");
 
-                    my $curl_res = system("curl $download_path/ubuntu/20.04/$ubuntu_package_name -o$ubuntu_package_name");
+                    my $curl_res = system("wget $download_path/ubuntu/20.04/$ubuntu_package_name -O$ubuntu_package_name");
 
                     if ($curl_res != 0) { 
                         fast_die("Cannot download FastNetMon package");
@@ -481,8 +478,79 @@ sub main {
                 }
             } elsif ($distro_type eq 'debian') {
                 my $debian_package_name = "fastnetmon_1.1.6_amd64.deb";
-            } elsif ($distro_type eq 'centos') {
 
+             if ($distro_version =~ m/^8\.?/) {
+                    print "Install dependencies\n";
+                    exec_command("apt-get update");
+                    exec_command("apt-get install -y libpcap0.8 libatomic1");
+
+                    my $curl_res = system("wget $download_path/debian/8/$debian_package_name -O$debian_package_name");
+
+                    if ($curl_res != 0) { 
+                        fast_die("Cannot download FastNetMon package");
+                    }
+
+                    my $res = system("dpkg -i $debian_package_name");
+
+                    if ($res != 0) { 
+                        fast_die("Cannot install FastNetMon package with error code $res");
+                    }
+                } elsif ($distro_version =~ m/^9\.?/) {
+                    print "Install dependencies\n";
+                    exec_command("apt-get update");
+
+                    my $curl_res = system("wget $download_path/debian/9/$debian_package_name -O$debian_package_name");
+
+                    if ($curl_res != 0) { 
+                        fast_die("Cannot download FastNetMon package");
+                    }
+ 
+                    my $install_res = system("apt install -y ./$debian_package_name");
+
+                    if ($install_res != 0) { 
+                        fast_die("Cannot install FastNetMon");
+                    }
+                } elsif ($distro_version =~ m/^10\.?/) {
+                    print "Install dependencies\n";
+                    exec_command("apt-get update");
+
+                    my $curl_res = system("wget $download_path/debian/10/$debian_package_name -O$debian_package_name");
+
+                    if ($curl_res != 0) { 
+                        fast_die("Cannot download FastNetMon package");
+                    }
+
+                    my $install_res = system("apt install -y ./$debian_package_name");
+
+                    if ($install_res != 0) { 
+                        fast_die("Cannot install FastNetMon");
+                    }
+                } else {
+					fast_die("I'm sorry but we do not support Debian $distro_version in current version, please check that you use stable version");                
+                }
+
+            } elsif ($distro_type eq 'centos') {
+                if (int($distro_version) == 6) {
+                    my $yum_install_res = system("yum install -y $download_path/centos/6/fastnetmon-1.1.6-1.el6.x86_64.rpm");
+
+                    if ($yum_install_res != 0) {
+                        fast_die("Cannot install FastNetmon via yum with error: $yum_install_res");
+                    }
+                } elsif (int($distro_version) == 7) {
+                    my $yum_install_res = system("yum install -y $download_path/centos/7/fastnetmon-1.1.6-1.el7.x86_64.rpm");
+
+                    if ($yum_install_res != 0) {
+                        fast_die("Cannot install FastNetmon via yum with error: $yum_install_res");
+                    }    
+                } elsif (int($distro_version) == 8) {
+                    my $yum_install_res = system("yum install -y $download_path/centos/8/fastnetmon-1.1.6-1.el8.x86_64.rpm");
+
+                    if ($yum_install_res != 0) {
+                        fast_die("Cannot install FastNetmon via yum with error: $yum_install_res");
+                    }    
+                } else {
+                    fast_die("I'm sorry but we do not support CentOS $distro_version in current version, please check that you use stable version");
+                }
             } else {
                 fast_die("I'm sorry but we do not support your Linux distribution $distro_type. Please raise GitHub issue if you want support for it: https://github.com/pavel-odintsov/fastnetmon");
             }
