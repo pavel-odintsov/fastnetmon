@@ -415,7 +415,7 @@ sub main {
                     exec_command("apt-get update");
                     exec_command("apt-get install -y libpcap0.8 libatomic1");
 
-                    my $curl_res = system("wget $download_path/ubuntu/14.04/$ubuntu_package_name -O$ubuntu_package_name");
+                    my $curl_res = system("wget -q $download_path/ubuntu/14.04/$ubuntu_package_name -O$ubuntu_package_name");
 
                     if ($curl_res != 0) {
                         fast_die("Cannot download FastNetMon package");
@@ -430,7 +430,7 @@ sub main {
                     print "Install dependencies\n";
                     exec_command("apt-get update");
 
-                    my $curl_res = system("wget $download_path/ubuntu/16.04/$ubuntu_package_name -O$ubuntu_package_name");
+                    my $curl_res = system("wget -q $download_path/ubuntu/16.04/$ubuntu_package_name -O$ubuntu_package_name");
 
                     if ($curl_res != 0) { 
                         fast_die("Cannot download FastNetMon package");
@@ -445,7 +445,7 @@ sub main {
                     print "Install dependencies\n";
                     exec_command("apt-get update");
 
-                    my $curl_res = system("wget $download_path/ubuntu/18.04/$ubuntu_package_name -O$ubuntu_package_name");
+                    my $curl_res = system("wget -q $download_path/ubuntu/18.04/$ubuntu_package_name -O$ubuntu_package_name");
 
                     if ($curl_res != 0) {
                         fast_die("Cannot download FastNetMon package");
@@ -461,7 +461,7 @@ sub main {
                     print "Install dependencies\n";
                     exec_command("apt-get update");
 
-                    my $curl_res = system("wget $download_path/ubuntu/20.04/$ubuntu_package_name -O$ubuntu_package_name");
+                    my $curl_res = system("wget -q $download_path/ubuntu/20.04/$ubuntu_package_name -O$ubuntu_package_name");
 
                     if ($curl_res != 0) { 
                         fast_die("Cannot download FastNetMon package");
@@ -484,7 +484,7 @@ sub main {
                     exec_command("apt-get update");
                     exec_command("apt-get install -y libpcap0.8 libatomic1");
 
-                    my $curl_res = system("wget $download_path/debian/8/$debian_package_name -O$debian_package_name");
+                    my $curl_res = system("wget -q $download_path/debian/8/$debian_package_name -O$debian_package_name");
 
                     if ($curl_res != 0) { 
                         fast_die("Cannot download FastNetMon package");
@@ -499,7 +499,7 @@ sub main {
                     print "Install dependencies\n";
                     exec_command("apt-get update");
 
-                    my $curl_res = system("wget $download_path/debian/9/$debian_package_name -O$debian_package_name");
+                    my $curl_res = system("wget -q $download_path/debian/9/$debian_package_name -O$debian_package_name");
 
                     if ($curl_res != 0) { 
                         fast_die("Cannot download FastNetMon package");
@@ -514,7 +514,7 @@ sub main {
                     print "Install dependencies\n";
                     exec_command("apt-get update");
 
-                    my $curl_res = system("wget $download_path/debian/10/$debian_package_name -O$debian_package_name");
+                    my $curl_res = system("wget -q $download_path/debian/10/$debian_package_name -O$debian_package_name");
 
                     if ($curl_res != 0) { 
                         fast_die("Cannot download FastNetMon package");
@@ -557,6 +557,17 @@ sub main {
         } else {
             fast_die("I'm sorry but we do not support your operating system $os_type. Please raise GitHub issue if you want support for it: https://github.com/pavel-odintsov/fastnetmon");
         }
+
+        print "\n\n";
+        print "FastNetMon was installed and started successfully\n";
+        print "Below you can find some useful commands and paths\n\n";
+        print "Main configuration file: /etc/fastnetmon.conf\n";
+        print "Daemon restart command: systemctl restart fastnetmon or service restart fastnetmon\n";
+        print "Client tool: fastnetmon_client\n";
+        print "API client: fastnetmon_api_client\n";
+        print "Log file: /var/log/fastnetmon.log\n";
+
+        send_tracking_information('finished');
 
         exit(0);
     }
