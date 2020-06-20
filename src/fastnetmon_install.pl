@@ -65,7 +65,10 @@ sub send_tracking_information {
 
 sub send_ga_event {
     my $step = shift;
-    `wget "https://www.google-analytics.com/collect?tid=UA-83642378-1&t=event&ec=fastnetmon_community&ea=$step&v=1&cid=0" -q -O /dev/null`;
+
+    unless ($do_not_track_me) {
+        `wget "https://www.google-analytics.com/collect?tid=UA-83642378-1&t=event&ec=fastnetmon_community&ea=$step&v=1&cid=0" -q -O /dev/null`;
+    }
 }
 
 # die wrapper to send message to tracking server
@@ -183,6 +186,10 @@ if ($do_not_build_fastnetmon) {
 
 if ($do_not_use_mirror) {
      $use_mirror = '';
+}
+
+if (defined($ENV{'CI'}) && $ENV{'CI'}) {
+    $do_not_track_me = 1; 
 }
 
 welcome_message();
