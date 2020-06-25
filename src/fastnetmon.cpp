@@ -11,6 +11,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <sys/socket.h>
 #include <arpa/inet.h>
 #include <net/if_arp.h> // struct arphdr
 #include <netinet/if_ether.h>
@@ -20,7 +21,6 @@
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
 #include <sys/resource.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
 
 #include "bgp_flow_spec.h"
