@@ -21,7 +21,7 @@ unless ($package_type && $archive_name && $package_version && $distro_name && $d
 }
 
 # Gzip does not compress well, let's use xz instead
-my $dpkg_deb_options = '-Zxz -z1';
+my $dpkg_deb_options = '-Zxz -z9';
 
 my $debian_architecture_name = 'amd64';
 
