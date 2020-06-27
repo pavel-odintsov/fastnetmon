@@ -240,7 +240,7 @@ sub main {
                 }
 
                 print "Install FastNetMon\n";
-                my $res = system("dpkg -i $ubuntu_package_name 2>&1 >> $install_log_path");
+                my $res = system("dpkg -i $ubuntu_package_name >> $install_log_path 2>&1");
 
                 if ($res != 0) {
                     fast_die("Cannot install FastNetMon package with error code $res");
@@ -257,7 +257,7 @@ sub main {
                 }    
 
                 print "Install FastNetMon\n";
-                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y ./$ubuntu_package_name 2>&1 >> $install_log_path");
+                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y ./$ubuntu_package_name >> $install_log_path 2>&1");
 
                 if ($install_res != 0) {
                     fast_die("Cannot install FastNetMon package with error code $install_res");
@@ -274,7 +274,7 @@ sub main {
                 }
 
                 print "Install FastNetMon\n";
-                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y ./$ubuntu_package_name 2>&1 >> $install_log_path");
+                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y ./$ubuntu_package_name >> $install_log_path 2>&1");
 
                 if ($install_res != 0) {
                     fast_die("Cannot install FastNetMon package with error code $install_res");
@@ -292,7 +292,7 @@ sub main {
                 }    
 
                 print "Install FastNetMon\n";
-                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y ./$ubuntu_package_name 2>&1 >> $install_log_path");
+                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y ./$ubuntu_package_name >> $install_log_path 2>&1");
 
                 if ($install_res != 0) {
                     fast_die("Cannot install FastNetMon package with error code $install_res");
@@ -317,7 +317,7 @@ sub main {
                 }
 
                 print "Install FastNetMon\n";
-                my $res = system("dpkg -i $debian_package_name 2>&1 >> $install_log_path");
+                my $res = system("dpkg -i $debian_package_name >> $install_log_path 2>&1");
 
                 if ($res != 0) { 
                     fast_die("Cannot install FastNetMon package with error code $res");
@@ -334,7 +334,7 @@ sub main {
                 }
 
                 print "Install FastNetMon\n";
-                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y ./$debian_package_name 2>&1 >> $install_log_path");
+                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y ./$debian_package_name >> $install_log_path 2>&1");
 
                 if ($install_res != 0) { 
                     fast_die("Cannot install FastNetMon package with error code $install_res");
@@ -351,7 +351,7 @@ sub main {
                 }
 
                 print "Install FastNetMon\n";
-                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y ./$debian_package_name 2>&1 >> $install_log_path");
+                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y ./$debian_package_name >> $install_log_path 2>&1");
 
                 if ($install_res != 0) { 
                     fast_die("Cannot install FastNetMon package with error code $install_res");
@@ -363,21 +363,21 @@ sub main {
         } elsif ($distro_type eq 'centos') {
             if (int($distro_version) == 6) {
                 print "Download and install FastNetMon\n";
-                my $yum_install_res = system("yum install -y $download_path/centos/6/fastnetmon-1.1.6-1.el6.x86_64.rpm 2>&1 >> $install_log_path");
+                my $yum_install_res = system("yum install -y $download_path/centos/6/fastnetmon-1.1.6-1.el6.x86_64.rpm >> $install_log_path 2>&1");
 
                 if ($yum_install_res != 0) {
                     fast_die("Cannot install FastNetmon via yum with error code: $yum_install_res");
                 }
             } elsif (int($distro_version) == 7) {
                 print "Download and install FastNetMon\n";
-                my $yum_install_res = system("yum install -y $download_path/centos/7/fastnetmon-1.1.6-1.el7.x86_64.rpm 2>&1 >> $install_log_path");
+                my $yum_install_res = system("yum install -y $download_path/centos/7/fastnetmon-1.1.6-1.el7.x86_64.rpm >> $install_log_path 2>&1");
 
                 if ($yum_install_res != 0) {
                     fast_die("Cannot install FastNetmon via yum with error code: $yum_install_res");
                 }    
             } elsif (int($distro_version) == 8) {
                 print "Download and install FastNetMon\n";
-                my $yum_install_res = system("yum install -y $download_path/centos/8/fastnetmon-1.1.6-1.el8.x86_64.rpm 2>&1 >> $install_log_path");
+                my $yum_install_res = system("yum install -y $download_path/centos/8/fastnetmon-1.1.6-1.el8.x86_64.rpm >> $install_log_path 2>&1");
 
                 if ($yum_install_res != 0) {
                     fast_die("Cannot install FastNetmon via yum with error code: $yum_install_res");
@@ -413,7 +413,7 @@ sub exec_command {
     open my $fl, ">>", $install_log_path;
     print {$fl} "We are calling command: $command\n\n";
  
-    my $output = `$command 2>&1 >> $install_log_path`;
+    my $output = `$command >> $install_log_path 2>&1`;
   
     print {$fl} "Command finished with code $?\n\n";
 
