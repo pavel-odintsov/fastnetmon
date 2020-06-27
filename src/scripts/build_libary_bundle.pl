@@ -100,7 +100,7 @@ for my $library (@our_libraries) {
 
 		# Strip debug information from library, we need it to reduce distribution size
 		# It's pretty serious disk space saving (from 260Mb to 95Mb in my tests)
-		system("strip --strip-debug $target_full_folder_path");
+		system("strip --strip-debug $target_full_path");
             }
         }
     }
