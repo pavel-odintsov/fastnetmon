@@ -11,39 +11,12 @@ perform a configurable action to handle that event. These configurable actions i
 
 Flow is one or more ICMP, UDP, or TCP packets which can be identified via their unique src IP, dst IP, src port, dst port, and protocol fields.
 
-Integration with flow systems
------------------------------
-At a very high level integration with FastNetMon is fairly simple. In both cases the work flow is the same and the main difference being the port numbers provided. The port numbers are configurable.
-
-#### sFlow
-Configure the IP of the server running FastNetMon using port 6343. This port number is configurable.
-
-#### Netflow
-Configure the IP of the server running FastNetMon using port 2055. This port number is configurable.
-
-License: GPLv2
-
-Official [mirror at GitLab](https://gitlab.com/fastnetmon/fastnetmon)
-
 Project 
 -------
 - [Official site](https://fastnetmon.com)
 - [FastNetMon Advanced, Commercial Edition](https://fastnetmon.com/fastnetmon-advanced/)
 - [FastNetMon Advanced and Community difference table](https://fastnetmon.com/compare-community-and-advanced/)
-- Detailed reference in Russian: [link](https://fastnetmon.com/wp-content/uploads/2017/07/FastNetMon_Reference_Russian.pdf)
-
-Official support groups:
--------
-- [Mailing list](https://groups.google.com/forum/#!forum/fastnetmon)
-- [Slack](https://join.slack.com/t/fastnetmon/shared_invite/MjM3NDUwNzY4NjA5LTE1MDQ4MzE5NTAtYmU4MjYyYWNiZQ)
-- IRC: #fastnetmon at irc.freenode.net [web client](https://webchat.freenode.net/)
-- Telegram: [fastnetmon](https://t.me/fastnetmon)
-
-Follow us at social media:
--------
-- [Twitter](https://twitter.com/fastnetmon)
-- [LinkedIn](https://www.linkedin.com/company/fastnetmon/)
-- [Facebook](https://www.facebook.com/fastnetmon/)
+- Detailed reference: [link](https://translate.google.com/translate?sl=auto&tl=en&u=https%3A%2F%2Ffastnetmon.com%2Fwp-content%2Fuploads%2F2017%2F07%2FFastNetMon_Reference_Russian.pdf)
 
 Supported packet capture engines
 --------------------------------
@@ -57,6 +30,19 @@ Supported packet capture engines
 - PF_RING / PF_RING ZC (obsoleted, not recommented, please use AF_PACKET instead) 
 
 You can check out the [comparison table](https://fastnetmon.com/docs/capture_backends/) for all available packet capture engines.
+
+Official support groups:
+-------
+- [Mailing list](https://groups.google.com/forum/#!forum/fastnetmon)
+- [Slack](https://join.slack.com/t/fastnetmon/shared_invite/MjM3NDUwNzY4NjA5LTE1MDQ4MzE5NTAtYmU4MjYyYWNiZQ)
+- IRC: #fastnetmon at irc.freenode.net [web client](https://webchat.freenode.net/)
+- Telegram: [fastnetmon](https://t.me/fastnetmon)
+
+Follow us at social media:
+-------
+- [Twitter](https://twitter.com/fastnetmon)
+- [LinkedIn](https://www.linkedin.com/company/fastnetmon/)
+- [Facebook](https://www.facebook.com/fastnetmon/)
 
 Complete integration with the following vendors 
 --------------------------------
@@ -73,7 +59,7 @@ Features
 - Thresholds can be configured per-subnet basis with the hostgroups feature
 - [Announce blocked IPs](https://fastnetmon.com/docs/exabgp_integration/) via BGP to routers with [ExaBGP](https://github.com/Exa-Networks/exabgp) or  [GoBGP](https://fastnetmon.com/docs/gobgp-integration/)
 - Full integration with [Graphite](https://fastnetmon.com/docs/graphite_integration/) and [InfluxDB](https://fastnetmon.com/docs/influxdb_integration/)
-- [API](https://fastnetmon.com/docs/fastnetmon-community-api/) (available in master branch only)
+- [API](https://fastnetmon.com/docs/fastnetmon-community-api/)
 - [Redis](https://fastnetmon.com/docs/redis/) integration
 - [MongoDB](https://fastnetmon.com/docs/mongodb/) integration
 - Netmap support (wire speed processing; only Intel hardware NICs or any hypervisor VM type)
@@ -86,7 +72,7 @@ Features
 Running Fastnetmon
 ------------------
 ### Supported platforms
-- Linux (Debian, CentOS, Ubuntu), x86_64 only
+- Linux (Debian, CentOS, Ubuntu), (install instructions)(https://fastnetmon.com/install/)
 - FreeBSD: [official port](https://www.freshports.org/net-mgmt/fastnetmon/).
 
 ### Hardware requirements
@@ -94,11 +80,6 @@ Running Fastnetmon
 
 ### Router integration instructions
 - [Juniper MX Routers](https://fastnetmon.com/docs/junos_integration/)
-
-### Distributions supported
-- [Automatic install script for Debian/Ubuntu/CentOS](https://fastnetmon.com/install/)
-- We are part of the [official FreeBSD ports collection](https://freshports.org/net-mgmt/fastnetmon/)
-- [Docker image](https://fastnetmon.com/fastnetmon-community-docker-install/)
 
 
 Screenshots
