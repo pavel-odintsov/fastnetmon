@@ -48,7 +48,7 @@ Complete integration with the following vendors
 --------------------------------
 - [Juniper integration](src/juniper_plugin)
 - [A10 Networks Thunder TPS Appliance integration](src/a10_plugin)
-- [MikroTik RouterOS](src/mikrotik_plugin) Please use only recent versions of RouterOS!
+- [MikroTik RouterOS](src/mikrotik_plugin)
 
 Features
 --------
