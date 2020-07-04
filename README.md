@@ -69,14 +69,16 @@ Features
 - Capture attack fingerprints in PCAP format
 - Experimental [BGP Flow Spec support](https://fastnetmon.com/docs/bgp_flow_spec/), RFC 5575
 
-Running Fastnetmon
+Running FastNetMon
 ------------------
-### Supported platforms
-- Linux (Debian, CentOS, Ubuntu), [install instructions](https://fastnetmon.com/install/)
-- FreeBSD: [official port](https://www.freshports.org/net-mgmt/fastnetmon/).
 
 ### Hardware requirements
 - At least 1 GB of RAM
+
+### Installation
+- Linux (Debian, CentOS, Ubuntu), [install instructions](https://fastnetmon.com/install/)
+- FreeBSD: [official port](https://www.freshports.org/net-mgmt/fastnetmon/).
+
 
 ### Router integration instructions
 - [Juniper MX Routers](https://fastnetmon.com/docs/junos_integration/)
@@ -87,7 +89,7 @@ Screenshots
 
 ![Main screen image](docs/images/fastnetmon_screen.png)
 
-Example deployment scheme:
+Example deployment scheme
 --------------
 
 ![Network diagramm](docs/images/deploy.png)
