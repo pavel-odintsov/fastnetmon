@@ -57,6 +57,7 @@ Features
 - Trigger block/notify script if an IP exceeds defined thresholds for packets/bytes/flows per second
 - [Complete support](https://fastnetmon.com/docs/detected_attack_types/) for most popular attack types
 - Thresholds can be configured per-subnet basis with the hostgroups feature
+- [Emaol notifications](https://fastnetmon.com/docs/attack_report_example/) about detected attack
 - Announce blocked IPs via BGP to routers with [ExaBGP](https://fastnetmon.com/docs/exabgp_integration/) or  [GoBGP](https://fastnetmon.com/docs/gobgp-integration/)
 - Full integration with [Graphite](https://fastnetmon.com/docs/graphite_integration/) and [InfluxDB](https://fastnetmon.com/docs/influxdb_integration/)
 - [API](https://fastnetmon.com/docs/fastnetmon-community-api/)
@@ -84,13 +85,9 @@ Running Fastnetmon
 Screenshots
 ------------
 
-Main program:
-
 ![Main screen image](docs/images/fastnetmon_screen.png)
 
 Example deployment scheme:
+--------------
+
 ![Network diagramm](docs/images/deploy.png)
-
-Example of [notification email](https://fastnetmon.com/docs/attack_report_example/) about detected attack:
-
-Author: [Pavel Odintsov](http://uk.linkedin.com/in/podintsov/)
