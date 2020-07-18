@@ -77,8 +77,8 @@ Running FastNetMon
 
 ### Installation
 - Linux (Debian, CentOS, Ubuntu), [install instructions](https://fastnetmon.com/install/)
+- [VyOS](https://fastnetmon.com/fastnetmon-community-on-vyos-rolling-1-3/)
 - FreeBSD: [official port](https://www.freshports.org/net-mgmt/fastnetmon/).
-
 
 ### Router integration instructions
 - [Juniper MX Routers](https://fastnetmon.com/docs/junos_integration/)
