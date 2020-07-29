@@ -210,6 +210,9 @@ bool redis_enabled = false;
 
 bool monitor_local_ip_addresses = true;
 
+// Enable monitoring for OpenVZ VPS IP addresses by reading their list from kernel 
+bool monitor_openvz_vps_ip_addresses = false;
+
 // This flag could enable print of ban actions and thresholds on the client's screen
 bool print_configuration_params_on_the_screen = false;
 
@@ -1133,6 +1136,10 @@ bool load_configuration_file() {
         monitor_local_ip_addresses = configuration_map["monitor_local_ip_addresses"] == "on" ? true : false;
     }
 
+    if (configuration_map.count("monitor_openvz_vps_ip_addresses") != 0) {
+	monitor_openvz_vps_ip_addresses = configuration_map["monitor_openvz_vps_ip_addresses"] == "on" ? true : false;
+    }
+
 #ifdef FASTNETMON_API
     if (configuration_map.count("enable_api") != 0) {
         enable_api = configuration_map["enable_api"] == "on";
@@ -1553,8 +1560,8 @@ bool load_our_networks_list() {
     std::vector<std::string> networks_list_ipv4_as_string;
     std::vector<std::string> networks_list_ipv6_as_string;
 
-    // We can bould "our subnets" automatically here
-    if (file_exists("/proc/vz/version")) {
+    // We can build list of our subnets automatically here
+    if (monitor_openvz_vps_ip_addresses && file_exists("/proc/vz/version")) {
         logger << log4cpp::Priority::INFO << "We found OpenVZ";
         // Add /32 CIDR mask for every IP here
         std::vector<std::string> openvz_ips = read_file_to_vector("/proc/vz/veip");
