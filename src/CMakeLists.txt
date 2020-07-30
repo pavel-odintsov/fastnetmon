@@ -110,7 +110,7 @@ add_executable(fastnetmon fastnetmon.cpp)
 # Get last commit hash
 execute_process(COMMAND git rev-list HEAD COMMAND head -n 1 OUTPUT_VARIABLE GIT_LAST_COMMIT_HASH OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-set(FASTNETMON_APPLICATION_VERSION "1.1.5 master git-${GIT_LAST_COMMIT_HASH}")
+set(FASTNETMON_APPLICATION_VERSION "1.1.7 master git-${GIT_LAST_COMMIT_HASH}")
 configure_file(fast_platform.h.template "${PROJECT_SOURCE_DIR}/fast_platform.h")
 
 # Use new Memory Model Aware Atomic Operations
@@ -704,7 +704,7 @@ endif()
 # Configure cpack package builder
 # Run it with: cd build; cpack -G DEB ..
 set(CPACK_PACKAGE_NAME "fastnetmon")
-set(CPACK_PACKAGE_VENDOR "vps2fast.com")
+set(CPACK_PACKAGE_VENDOR "fastnetmon.com")
 set(CPACK_PACKAGE_CONTACT "pavel.odintsov@gmail.com")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "FastNetMon - very fast DDoS analyzer with sflow/netflow/mirror support")
 set(CPACK_PACKAGE_VERSION "1.1.2")
