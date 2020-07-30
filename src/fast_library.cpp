@@ -1307,10 +1307,18 @@ bool get_interface_number_by_device_name(int socket_fd, std::string interface_na
 
     strncpy(ifr.ifr_name, interface_name.c_str(), sizeof(ifr.ifr_name));
 
+/* Attempt to use SIOCGIFINDEX if present. */
+#ifdef SIOCGIFINDEX
     if (ioctl(socket_fd, SIOCGIFINDEX, &ifr) == -1) {
         return false;
     }
 
     interface_number = ifr.ifr_ifindex;
+#else
+    /* Fallback to if_nametoindex(3) otherwise. */
+    interface_number = if_nametoindex(interface_name.c_str());
+    if (interface_number == 0)
+	    return false;
+#endif /* SIOCGIFINDEX */
     return true;
 }
