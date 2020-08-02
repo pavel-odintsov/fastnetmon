@@ -236,8 +236,13 @@ if (ENABLE_AFPACKET_SUPPORT)
    target_link_libraries(afpacket_plugin unified_parser)
 endif()
 
+add_library(network_data_structures STATIC network_data_structures.cpp)
+
 # sFLOW plugin
-add_library(sflow_plugin STATIC sflow_plugin/sflow_collector.cpp) 
+add_library(sflow_plugin STATIC sflow_plugin/sflow_collector.cpp)
+
+# Link sFlow plugin with new network data structures parser
+target_link_libraries(sflow_plugin network_data_structures)
 
 # netflow plugin
 add_library(netflow_plugin STATIC netflow_plugin/netflow_collector.cpp)
