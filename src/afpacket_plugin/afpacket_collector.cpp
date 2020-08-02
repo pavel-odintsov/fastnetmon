@@ -132,7 +132,7 @@ void walk_block(struct block_desc* pbd, const int block_num) {
 
         u_char* data_pointer = (u_char*)((uint8_t*)ppd + ppd->tp_mac);
 
-        simple_packet packet;
+        simple_packet_t packet;
         int parser_result = parse_raw_packet_to_simple_packet((u_char*)data_pointer, ppd->tp_snaplen, packet,
                                                               afpacket_read_packet_length_from_ip_header);
 

@@ -94,7 +94,7 @@ int receive_packets(struct netmap_ring* ring, int thread_number) {
 
 void consume_pkt(u_char* buffer, int len, int thread_number) {
     // We should fill this structure for passing to FastNetMon
-    simple_packet packet;
+    simple_packet_t packet;
 
     packet.sample_ratio = netmap_sampling_ratio;
 

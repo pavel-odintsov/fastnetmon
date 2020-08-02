@@ -393,7 +393,7 @@ map_for_counters GeoIpCounter;
 
 // In ddos info we store attack power and direction
 std::map<uint32_t, banlist_item> ban_list;
-std::map<uint32_t, std::vector<simple_packet> > ban_list_details;
+std::map<uint32_t, std::vector<simple_packet_t> > ban_list_details;
 
 host_group_map_t host_groups;
 
@@ -472,7 +472,7 @@ void free_up_all_resources();
 std::string print_ddos_attack_details();
 void recalculate_speed();
 std::string print_channel_speed(std::string traffic_type, direction packet_direction);
-void process_packet(simple_packet& current_packet);
+void process_packet(simple_packet_t& current_packet);
 void traffic_draw_program();
 void interruption_signal_handler(int signal_number);
 
@@ -517,7 +517,7 @@ class FastnetmonApiServiceImpl final : public Fastnetmon::Service {
         ban_list_mutex.unlock();
 
         ban_list_details_mutex.lock();
-        ban_list_details[client_ip] = std::vector<simple_packet>();
+        ban_list_details[client_ip] = std::vector<simple_packet_t>();
         ban_list_details_mutex.unlock();
 
         logger << log4cpp::Priority::INFO << "API call ban handlers manually";
@@ -1711,10 +1711,10 @@ bool load_our_networks_list() {
 
 #ifdef IPV6_HASH_COUNTERS
 
-moodycamel::ConcurrentQueue<simple_packet> multi_process_queue_for_ipv6_counters;
+moodycamel::ConcurrentQueue<simple_packet_t> multi_process_queue_for_ipv6_counters;
 
 void ipv6_traffic_processor() {
-    simple_packet packets_from_queue[32];
+    simple_packet_t packets_from_queue[32];
 
     while (true) {
         std::size_t count = 0;
@@ -1758,7 +1758,7 @@ void ipv6_traffic_processor() {
 #endif
 
 /* Process simple unified packet */
-void process_packet(simple_packet& current_packet) {
+void process_packet(simple_packet_t& current_packet) {
     // Packets dump is very useful for bug hunting
     if (DEBUG_DUMP_ALL_PACKETS) {
         logger << log4cpp::Priority::INFO << "Dump: " << print_simple_packet(current_packet);
@@ -3334,7 +3334,7 @@ void execute_ip_ban(uint32_t client_ip, map_element average_speed_element, std::
     ban_list_mutex.unlock();
 
     ban_list_details_mutex.lock();
-    ban_list_details[client_ip] = std::vector<simple_packet>();
+    ban_list_details[client_ip] = std::vector<simple_packet_t>();
     ban_list_details_mutex.unlock();
 
     logger << log4cpp::Priority::INFO << "Attack with direction: " << data_direction_as_string
@@ -3667,11 +3667,11 @@ std::string get_attack_description_in_json(uint32_t client_ip, attack_details& c
     return json_as_text;
 }
 
-std::string generate_simple_packets_dump(std::vector<simple_packet>& ban_list_details) {
+std::string generate_simple_packets_dump(std::vector<simple_packet_t>& ban_list_details) {
     std::stringstream attack_details;
 
     std::map<unsigned int, unsigned int> protocol_counter;
-    for (std::vector<simple_packet>::iterator iii = ban_list_details.begin();
+    for (std::vector<simple_packet_t>::iterator iii = ban_list_details.begin();
          iii != ban_list_details.end(); ++iii) {
         attack_details << print_simple_packet(*iii);
 

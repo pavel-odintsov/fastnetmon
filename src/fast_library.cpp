@@ -446,7 +446,7 @@ int clear_bit_value(uint16_t& num, int bit) {
     }
 }
 
-std::string print_simple_packet(simple_packet packet) {
+std::string print_simple_packet(simple_packet_t packet) {
     std::stringstream buffer;
 
     if (packet.ts.tv_sec == 0) {
