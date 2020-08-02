@@ -2501,7 +2501,7 @@ void traffic_draw_program() {
         sorter = PACKETS;
     }
 
-    output_buffer << "FastNetMon " << fastnetmon_version << " Pavel Odintsov: fastnetmon.com"
+    output_buffer << "FastNetMon " << fastnetmon_version << " Try Advanced edition: https://fastnetmon.com"
                   << "\n"
                   << "IPs ordered by: " << sort_parameter << "\n";
 
