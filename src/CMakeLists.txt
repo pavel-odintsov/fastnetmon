@@ -246,11 +246,18 @@ add_library(network_data_structures STATIC network_data_structures.cpp)
 add_library(simple_packet_parser_ng STATIC simple_packet_parser_ng.cpp)
 target_link_libraries(simple_packet_parser_ng network_data_structures)
 
+# Our own sFlow parser library
+set_source_files_properties(libsflow/libsflow.cpp PROPERTIES COMPILE_FLAGS -pedantic)
+add_library(libsflow STATIC libsflow/libsflow.cpp)
+
 # sFlow plugin
 add_library(sflow_plugin STATIC sflow_plugin/sflow_collector.cpp)
 
 # Link sFlow plugin with new traffic parser
 target_link_libraries(sflow_plugin simple_packet_parser_ng)
+
+# Link sFlow plugin with libsflow
+target_link_libraries(sflow_plugin libsflow)  
 
 # netflow plugin
 add_library(netflow_plugin STATIC netflow_plugin/netflow_collector.cpp)
