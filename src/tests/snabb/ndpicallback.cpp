@@ -503,7 +503,7 @@ void firehose_packet(const char* pciaddr, char* data, int length) {
     u_int8_t add_hash = 0;
     fastnetmon_parse_pkt((u_char*)data, &packet_header, 4, timestamp, add_hash);
 
-    simple_packet current_packet;
+    simple_packet_t current_packet;
     parse_raw_packet_to_simple_packet((u_char*)data, length, current_packet);
 
     conntrack_hash_struct_for_simple_packet_t conntrack_structure;

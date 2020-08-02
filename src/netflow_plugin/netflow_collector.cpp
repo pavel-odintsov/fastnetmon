@@ -72,7 +72,7 @@ void add_peer_template(global_template_storage_t& table_for_add,
 int nf9_rec_to_flow(u_int record_type,
                     u_int record_length,
                     u_int8_t* data,
-                    simple_packet& packet,
+                    simple_packet_t& packet,
                     netflow9_template_records_map& template_records);
 
 struct peer_nf9_template* peer_find_template(global_template_storage_t& table_for_lookup,
@@ -366,7 +366,7 @@ void add_peer_template(global_template_storage_t& table_for_add,
         memcpy(&packet.flow_field, data, record_length); \
         break
 
-int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t* data, simple_packet& packet) {
+int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t* data, simple_packet_t& packet) {
     /* XXX: use a table-based interpreter */
     switch (record_type) {
         V9_FIELD(NF9_IN_BYTES, OCTETS, length);
@@ -447,7 +447,7 @@ int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t* data, simp
     return 0;
 }
 
-int nf10_rec_to_flow(u_int record_type, u_int record_length, u_int8_t* data, simple_packet& packet) {
+int nf10_rec_to_flow(u_int record_type, u_int record_length, u_int8_t* data, simple_packet_t& packet) {
     /* XXX: use a table-based interpreter */
     switch (record_type) {
         V9_FIELD(NF10_IN_BYTES, OCTETS, length);
@@ -486,7 +486,7 @@ void nf10_flowset_to_store(u_int8_t* pkt, size_t len, struct NF10_HEADER* nf10_h
         return;
     }
 
-    simple_packet packet;
+    simple_packet_t packet;
     // We use shifted values and should process only zeroed values
     // because we are working with little and big endian data in same time
     packet.number_of_packets = 0;
@@ -579,7 +579,7 @@ void nf9_flowset_to_store(u_int8_t* pkt, size_t len, struct NF9_HEADER* nf9_hdr,
 
     u_int offset = 0;
 
-    simple_packet packet;
+    simple_packet_t packet;
     // We use shifted values and should process only zeroed values
     // because we are working with little and big endian data in same time
     packet.number_of_packets = 0;
@@ -943,7 +943,7 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len, std::string client_a
         nf5_flow->if_index_out = fast_ntoh(nf5_flow->if_index_out);
 
         // convert netflow to simple packet form
-        simple_packet current_packet;
+        simple_packet_t current_packet;
 
         current_packet.src_ip = nf5_flow->src_ip;
         current_packet.dst_ip = nf5_flow->dest_ip;

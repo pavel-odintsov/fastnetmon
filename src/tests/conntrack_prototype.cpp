@@ -77,7 +77,7 @@ class conntrack_hash_struct_for_simple_packet_t {
 };
 
 // Extract only important for us fields from main simple_packet structure
-bool convert_simple_packet_toconntrack_hash_struct(simple_packet& packet,
+bool convert_simple_packet_toconntrack_hash_struct(simple_packet_t& packet,
                                                    conntrack_hash_struct_for_simple_packet_t& conntrack_struct) {
     conntrack_struct.src_ip = packet.src_ip;
     conntrack_struct.dst_ip = packet.dst_ip;

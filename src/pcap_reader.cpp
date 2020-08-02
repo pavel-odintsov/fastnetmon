@@ -73,7 +73,7 @@ void init_logging() {
 
 void pcap_parse_packet(const char* flow_type, char* buffer, uint32_t len);
 
-void my_fastnetmon_packet_handler(simple_packet& current_packet) {
+void my_fastnetmon_packet_handler(simple_packet_t& current_packet) {
     std::cout << print_simple_packet(current_packet);
 }
 
@@ -150,7 +150,7 @@ void pcap_parse_packet(char* buffer, uint32_t len, uint32_t snap_len) {
         fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &raw_packet_header);
         printf("Raw parser: %s", print_buffer);
 
-        simple_packet packet;
+        simple_packet_t packet;
         // TODO: add support for caplen here!
         if (parse_raw_packet_to_simple_packet((u_char*)buffer, len, packet, false)) {
             std::cout << "High level parser: " << print_simple_packet(packet) << std::endl;

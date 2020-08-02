@@ -34,7 +34,7 @@ void start_example_collection(process_packet_pointer func_ptr) {
     }
 
     // We should fill this structure for passing to FastNetMon
-    simple_packet current_packet;
+    simple_packet_t current_packet;
 
     current_packet.src_ip = 0;
     current_packet.dst_ip = 0;
