@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 
 enum direction { INCOMING = 0, OUTGOING, INTERNAL, OTHER };
+enum source_t { UNKNOWN = 0, MIRROR = 1, SFLOW = 2, NETFLOW = 3, TERAFLOW = 4 };
 
 // simplified packet struct for lightweight save into memory
 class simple_packet_t {
@@ -17,6 +18,9 @@ class simple_packet_t {
         ts.tv_usec = 0;
         ts.tv_sec = 0;
     }
+    // Source plugin for this traffic type
+    source_t source = UNKNOWN;
+
     uint32_t sample_ratio;
     /* IPv4 */
     uint32_t src_ip;
@@ -24,6 +28,11 @@ class simple_packet_t {
     /* IPv6 */
     struct in6_addr src_ipv6;
     struct in6_addr dst_ipv6;
+
+    /* ASN's */
+    uint32_t src_asn = 0;
+    uint32_t dst_asn = 0;
+
     uint8_t ip_protocol_version; /* IPv4 or IPv6 */
     uint8_t ttl;
     uint16_t source_port;
@@ -49,5 +58,8 @@ class simple_packet_t {
 
     // We store packet direction here because direction calculation is very difficult task for cpu
     direction packet_direction;
+
+    // IP address of device which send this flow
+    uint32_t agent_ip_address = 0;
 };
 
