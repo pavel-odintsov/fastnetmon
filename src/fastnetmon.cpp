@@ -1132,6 +1132,10 @@ bool load_configuration_file() {
         convert_string_to_integer(configuration_map["average_calculation_time_for_subnets"]);
     }
 
+    if (configuration_map.count("speed_calculation_delay") != 0) {
+        recalculate_speed_timeout = convert_string_to_integer(configuration_map["speed_calculation_delay"]);
+    }
+
     if (configuration_map.count("monitor_local_ip_addresses") != 0) {
         monitor_local_ip_addresses = configuration_map["monitor_local_ip_addresses"] == "on" ? true : false;
     }
@@ -2256,15 +2260,27 @@ void recalculate_speed() {
     // If we got 1+ seconds lag we should use new "delta" or skip this step
     double time_difference = difftime(start_time, last_call_of_traffic_recalculation);
 
-    if (time_difference < 1) {
-        // It could occur on program start
-        logger << log4cpp::Priority::INFO << "We skip one iteration of speed_calc because it runs so early!";
+    if (time_difference < 0) {
+        // It may happen when you adjust time
+        logger << log4cpp::Priority::ERROR << "Negative delay for traffic calculation " << time_difference << " Skipped iteration";
+        return;
+    } else if (time_difference < recalculate_speed_timeout) {
+        // It could occur on toolkit start or in some weird cases of Linux scheduler
+        // I really saw cases when sleep executed in zero zeconds:
+        // [WARN] Sleep time expected: 1. Sleep time experienced: 0
+        // But we have handlers for such case and should not bother client about with it
+        // And we are using DEBUG level here
+        logger << log4cpp::Priority::DEBUG
+               << "We skip one iteration of speed_calc because it runs so early! That's "
+                  "really impossible! Please ask support.";
+        logger << log4cpp::Priority::DEBUG << "Sleep time expected: " << recalculate_speed_timeout
+               << ". Sleep time experienced: " << time_difference;
         return;
     } else if (int(time_difference) == int(speed_calc_period)) {
         // All fine, we run on time
     } else {
-        logger << log4cpp::Priority::INFO
-               << "Time from last run of speed_recalc is soooo big, we got ugly lags: " << time_difference;
+        // logger << log4cpp::Priority::INFO << "Time from last run of speed_recalc is soooo big, we got ugly lags: " <<
+        // time_difference << " seconds";
         speed_calc_period = time_difference;
     }
 
