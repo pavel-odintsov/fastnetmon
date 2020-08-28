@@ -33,6 +33,9 @@ class simple_packet_t {
     uint32_t src_asn = 0;
     uint32_t dst_asn = 0;
 
+    uint32_t input_interface  = 0;
+    uint32_t output_interface = 0;
+
     uint8_t ip_protocol_version; /* IPv4 or IPv6 */
     uint8_t ttl;
     uint16_t source_port;
@@ -56,8 +59,13 @@ class simple_packet_t {
     // vlan tag if we can extract it
     uint32_t vlan = 0;
 
+    // Device uptime when flow started
+    int64_t flow_start = 0;
+    // Device uptime when flow fnishes
+    int64_t flow_end = 0;
+
     // We store packet direction here because direction calculation is very difficult task for cpu
-    direction packet_direction;
+    direction packet_direction = OTHER;
 
     // IP address of device which send this flow
     uint32_t agent_ip_address = 0;
