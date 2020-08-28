@@ -126,4 +126,6 @@ std::string dns_lookup(std::string domain_name);
 bool store_data_to_stats_server(unsigned short int graphite_port, std::string graphite_host, std::string buffer_as_string);
 bool get_interface_number_by_device_name(int socket_fd, std::string interface_name, int& interface_number);
 
+bool set_boost_process_name(boost::thread* thread, std::string process_name);
+
 #endif
