@@ -214,14 +214,20 @@ sub main {
 
     install_sentry();
 
-    my $download_path = "https://community-downloads.fastnetmon.com/releases/1.1.6";
+    my $stable_release_version = '1.1.6';
+    my $development_release_version = '1.1.7';
+
+    my $download_path = "https://community-downloads.fastnetmon.com/releases/$stable_release_version";
 
     if ($install_ci_packages) {
+        # Dev version has release version incremented by one 
+        $stable_release_version = $development_release_version;
+        
         $download_path = "https://storage.googleapis.com/fastnetmon_community_packages";
 
-        print "We will install FastNetMon using binary packages built from master branch via CI\n";
+        print "We will install FastNetMon $stable_release_version using binary packages built from master branch via CI\n";
     } else {
-        print "We will install FastNetMon using official binary packages for stable release\n";
+        print "We will install FastNetMon $stable_release_version using official binary packages for stable release\n";
     }
 
     send_tracking_information('started');   
@@ -234,7 +240,7 @@ sub main {
         fast_die("I'm sorry but we do not support macos in current version, please raise GitHub issue if you want support for it: https://github.com/pavel-odintsov/fastnetmon");
     } elsif ($os_type eq 'linux') {
         if ($distro_type eq 'ubuntu') {
-            my $ubuntu_package_name = "fastnetmon_1.1.6_amd64.deb";
+            my $ubuntu_package_name = "fastnetmon_${stable_release_version}_amd64.deb";
 
             if ($distro_version =~ m/^14\.04/) {
                 print "Install dependencies\n";
@@ -311,7 +317,7 @@ sub main {
                 fast_die("I'm sorry but we do not support Ubuntu $distro_version in current version, please check that you use LTS and stable distribution");
             }
         } elsif ($distro_type eq 'debian') {
-            my $debian_package_name = "fastnetmon_1.1.6_amd64.deb";
+            my $debian_package_name = "fastnetmon_${stable_release_version}_amd64.deb";
 
             if ($distro_version =~ m/^8\.?/) {
                 print "Install dependencies\n";
@@ -372,21 +378,21 @@ sub main {
         } elsif ($distro_type eq 'centos') {
             if (int($distro_version) == 6) {
                 print "Download and install FastNetMon\n";
-                my $yum_install_res = system("LANG=C yum install -y $download_path/centos/6/fastnetmon-1.1.6-1.el6.x86_64.rpm >> $install_log_path 2>&1");
+                my $yum_install_res = system("LANG=C yum install -y $download_path/centos/6/fastnetmon-${stable_release_version}-1.el6.x86_64.rpm >> $install_log_path 2>&1");
 
                 if ($yum_install_res != 0) {
                     fast_die("Cannot install FastNetmon via yum with error code: $yum_install_res");
                 }
             } elsif (int($distro_version) == 7) {
                 print "Download and install FastNetMon\n";
-                my $yum_install_res = system("LANG=C yum install -y $download_path/centos/7/fastnetmon-1.1.6-1.el7.x86_64.rpm >> $install_log_path 2>&1");
+                my $yum_install_res = system("LANG=C yum install -y $download_path/centos/7/fastnetmon-${stable_release_version}-1.el7.x86_64.rpm >> $install_log_path 2>&1");
 
                 if ($yum_install_res != 0) {
                     fast_die("Cannot install FastNetmon via yum with error code: $yum_install_res");
                 }    
             } elsif (int($distro_version) == 8) {
                 print "Download and install FastNetMon\n";
-                my $yum_install_res = system("LANG=C yum install -y $download_path/centos/8/fastnetmon-1.1.6-1.el8.x86_64.rpm >> $install_log_path 2>&1");
+                my $yum_install_res = system("LANG=C yum install -y $download_path/centos/8/fastnetmon-${stable_release_version}-1.el8.x86_64.rpm >> $install_log_path 2>&1");
 
                 if ($yum_install_res != 0) {
                     fast_die("Cannot install FastNetmon via yum with error code: $yum_install_res");
