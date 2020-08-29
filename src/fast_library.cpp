@@ -918,67 +918,6 @@ bool manage_interface_promisc_mode(std::string interface_name, bool switch_on) {
 
 #endif
 
-#ifdef ENABLE_LUA_HOOKS
-lua_State* init_lua_jit(std::string lua_hooks_path) {
-    extern log4cpp::Category& logger;
-
-    lua_State* lua_state = luaL_newstate();
-
-    if (lua_state == NULL) {
-        logger << log4cpp::Priority::ERROR << "Can't create LUA session";
-
-        return NULL;
-    }
-
-    // load libraries
-    luaL_openlibs(lua_state);
-
-    int lua_load_file_result = luaL_dofile(lua_state, lua_hooks_path.c_str());
-
-    if (lua_load_file_result != 0) {
-        logger << log4cpp::Priority::ERROR << "LuaJIT can't load file correctly from path: " << lua_hooks_path
-               << " disable LUA support";
-
-        return NULL;
-    }
-
-    return lua_state;
-}
-
-bool call_lua_function(std::string function_name,
-                       lua_State* lua_state_param,
-                       std::string client_addres_in_string_format,
-                       void* ptr) {
-    extern log4cpp::Category& logger;
-
-    /* Function name */
-    lua_getfield(lua_state_param, LUA_GLOBALSINDEX, function_name.c_str());
-
-    /* Function params */
-    lua_pushstring(lua_state_param, client_addres_in_string_format.c_str());
-    lua_pushlightuserdata(lua_state_param, ptr);
-
-    // Call with 1 argumnents and 1 result
-    lua_call(lua_state_param, 2, 1);
-
-    if (lua_gettop(lua_state_param) == 1) {
-        bool result = lua_toboolean(lua_state_param, -1) == 1 ? true : false;
-
-        // pop returned value
-        lua_pop(lua_state_param, 1);
-
-        return result;
-    } else {
-        logger << log4cpp::Priority::ERROR << "We got " << lua_gettop(lua_state_param)
-               << " return values from the LUA, it's error, please check your LUA code";
-        return false;
-    }
-
-    return false;
-}
-
-#endif
-
 json_object* serialize_attack_description_to_json(attack_details& current_attack) {
     json_object* jobj = json_object_new_object();
 
