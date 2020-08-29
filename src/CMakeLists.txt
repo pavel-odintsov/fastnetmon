@@ -77,7 +77,7 @@ SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
 # Create builds in current folder with install RPATH
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
-SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libhiredis_0_13/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/log4cpp1.1.1/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/luajit_2.0.4/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/ndpi/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/pf_ring_6.0.3/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/json-c-0.13/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/mongo_c_driver_1_1_9/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/grpc_1_27_3_e73882dc0fcedab1ffe789e44ed6254819639ce3/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/protobuf_3.11.4/lib")
+SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libhiredis_0_13/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/log4cpp1.1.1/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/ndpi/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/pf_ring_6.0.3/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/json-c-0.13/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/mongo_c_driver_1_1_9/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/grpc_1_27_3_e73882dc0fcedab1ffe789e44ed6254819639ce3/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/protobuf_3.11.4/lib")
 
 message(STATUS "C++ compilation flags: ${CMAKE_CXX_FLAGS_RELEASE}")
 
@@ -208,7 +208,6 @@ add_library(ipfix_rfc STATIC ipfix_rfc.cpp)
 add_library(fastnetmon_packet_parser STATIC fastnetmon_packet_parser.c)
 
 # -DENABLE_SNABBSWITCH_SUPPORT=ON ..
-# Please also comment out line: set(ENABLE_LUA_SUPPORT yes) if you want SnabbSwitch support
 if (ENABLE_SNABBSWITCH_SUPPORT) 
     add_definitions(-DSNABB_SWITCH)
     add_library(snabbswitch_plugin STATIC snabbswitch_plugin/snabbswitch_collector.cpp)
@@ -286,31 +285,6 @@ if (ENABLE_DPI_SUPPORT)
     add_definitions(-DENABLE_DPI)
 
     target_link_libraries(fast_dpi ${NDPI_LIBRARIES})
-endif()
-
-# We do not enable it by default, it's testing feature
-# If you want it please build with:
-# cmake -DENABLE_LUA_SUPPORT=ON .. 
-option(ENABLE_LUA_SUPPORT "Enable Lua support" OFF)
-if (ENABLE_LUA_SUPPORT)
-    message(STATUS "We will enable LuaJIT support")
-
-    add_definitions(-DENABLE_LUA_HOOKS)
-
-    set(LUAJIT_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/luajit_2.0.4")
-
-    link_directories("${LUAJIT_CUSTOM_INSTALL_PATH}/lib")
-    include_directories("${LUAJIT_CUSTOM_INSTALL_PATH}/include")
-
-    find_library(LUAJIT_LIBRARY_PATH NAMES luajit-5.1 PATHS "${LUAJIT_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
-
-    if (NOT LUAJIT_LIBRARY_PATH) 
-        message(FATAL_ERROR "Could not find luajit library")
-    endif()
-
-    target_link_libraries(netflow_plugin ${LUAJIT_LIBRARY_PATH})
-    target_link_libraries(sflow_plugin ${LUAJIT_LIBRARY_PATH})
-    target_link_libraries(fast_library ${LUAJIT_LIBRARY_PATH})
 endif()
 
 # pcap plugin
@@ -581,11 +555,6 @@ endif()
 target_link_libraries(fastnetmon ${LOG4CPP_LIBRARY_PATH})
 
 target_link_libraries(fastnetmon ${CMAKE_THREAD_LIBS_INIT})
-
-if (ENABLE_LUA_SUPPORT)
-    target_link_libraries(fast_library ${LUAJIT_LIBRARY_PATH}) 
-    target_link_libraries(fastnetmon ${LUAJIT_LIBRARY_PATH})
-endif()
 
 # Our libs
 target_link_libraries(fastnetmon patricia)

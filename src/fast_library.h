@@ -24,10 +24,6 @@
 
 #include "libpatricia/patricia.h"
 
-#ifdef ENABLE_LUA_HOOKS
-#include <luajit-2.0/lua.hpp>
-#endif
-
 #include "fast_endianless.hpp"
 
 #define TCP_FIN_FLAG_SHIFT 1
@@ -104,14 +100,6 @@ subnet_t convert_subnet_from_string_to_binary_with_cidr_format(std::string subne
 
 #ifdef __linux__
 bool manage_interface_promisc_mode(std::string interface_name, bool switch_on);
-#endif
-
-#ifdef ENABLE_LUA_HOOKS
-lua_State* init_lua_jit(std::string lua_hooks_path);
-bool call_lua_function(std::string function_name,
-                       lua_State* lua_state_param,
-                       std::string client_addres_in_string_format,
-                       void* ptr);
 #endif
 
 std::string serialize_attack_description(attack_details& current_attack);

@@ -172,7 +172,7 @@ DOC
     put_text_to_file("$rpm_sources_path/systemd_init", $systemd_init_script);
 
     # Create files list from archive
-    # ./luajit_2.0.4/
+    # ./libname_1.2.3/
     my @files_list = `tar -tf /root/rpmbuild/SOURCES/archive.tar.gz`;
     chomp @files_list;
 

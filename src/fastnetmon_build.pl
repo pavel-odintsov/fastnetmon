@@ -202,7 +202,6 @@ if ($use_modern_pf_ring) {
 }
 
 my $we_have_ndpi_support = '1';
-my $we_have_luajit_support = '';
 my $we_have_hiredis_support = '1';
 my $we_have_log4cpp_support = '1';
 my $we_have_pfring_support = '';
@@ -519,10 +518,6 @@ sub main {
             install_ndpi_dependencies();
         }
 
-        if ($we_have_luajit_support) {
-            install_luajit_dependencies();
-        }
-
         if ($we_have_protobuf_support) {
             install_protobuf_dependencies();
         }
@@ -557,13 +552,6 @@ sub main {
         if ($we_have_ndpi_support) {
 	        install_ndpi_dependencies();
             install_ndpi();
-        }
-
-        if ($we_have_luajit_support) {
-	        install_luajit_dependencies();
-
-           install_luajit();
-           install_luajit_libs();
         }
 
         if ($we_have_hiredis_support) {
@@ -690,91 +678,6 @@ sub download_file {
     }     
 }
 
-sub install_luajit_dependencies {
-    if ($os_type eq 'freebsd') {
-        exec_command("pkg install -y gcc gmake");
-    }
-}
-
-sub install_luajit {
-    chdir $temp_folder_for_building_project;
-
-    my $archive_file_name = "LuaJIT-2.0.4.tar.gz";
-
-    my $luajit_install_path = "$library_install_folder/luajit_2.0.4";
-
-    if (-e $luajit_install_path && defined($ENV{'CI'})) {
-	print "Luajit was installed already\n";
-        return 1;
-    }
-
-    print "Download Luajit\n";
-   
-    my $luajit_download_result = download_file(
-        "http://luajit.org/download/$archive_file_name",
-        $archive_file_name,
-        '6e533675180300e85d12c4bbeea2d0e41ad21172'
-    ); 
-
-    unless ($luajit_download_result) {
-        fast_die("Can't download luajit");
-    }
-
-    print "Unpack Luajit\n";
-    exec_command("tar -xf LuaJIT-2.0.4.tar.gz");
-    chdir "LuaJIT-2.0.4";
-    
-    if ($os_type eq 'macosx' or $os_type eq 'freebsd') {
-        # FreeBSD's sed has slightly different syntax
-        exec_command("sed -i -e 's#export PREFIX= /usr/local#export PREFIX= $luajit_install_path#' Makefile");
-    } else {
-        # Standard Linux sed
-        exec_command("sed -i 's#export PREFIX= /usr/local#export PREFIX= $luajit_install_path#' Makefile"); 
-    }
-
-    print "Build and install Luajit\n";
-    if ($os_type eq 'freebsd') {
-        exec_command('gmake CC=gcc48 CXX=g++48 CPP="gcc48 -E" install')
-    } else {
-        exec_command("make $make_options install");
-    }
-}
-
-sub install_luajit_libs {
-    install_lua_lpeg();
-    install_lua_json();
-} 
-
-sub install_lua_lpeg {
-    print "Install LUA lpeg module\n";
-
-    print "Download archive\n";
-    chdir $temp_folder_for_building_project;
-
-    my $archive_file_name = 'lpeg-0.12.2.tar.gz';
-
-    my $lpeg_download_result = download_file("http://www.inf.puc-rio.br/~roberto/lpeg/$archive_file_name",
-        $archive_file_name, '69eda40623cb479b4a30fb3720302d3a75f45577'); 
-
-    unless ($lpeg_download_result) {
-        fast_die("Can't download lpeg");
-    }
-
-    exec_command("tar -xf lpeg-0.12.2.tar.gz");
-    chdir "lpeg-0.12.2";
-
-    # Set path
-    print "Install lpeg library\n";
-    if ($os_type eq 'macosx' or $os_type eq 'freebsd') {
-        exec_command("sed -i -e 's#LUADIR = ../lua/#LUADIR = $library_install_folder/luajit_2.0.4/include/luajit-2.0#' makefile");
-    } else {
-        exec_command("sed -i 's#LUADIR = ../lua/#LUADIR = $library_install_folder/luajit_2.0.4/include/luajit-2.0#' makefile");
-    }
-
-    exec_command("make $make_options");
-    exec_command("cp lpeg.so $library_install_folder/luajit_2.0.4/lib/lua/5.1");
-}
-
 sub install_json_c {
     my $archive_name  = 'json-c-0.13-20171207.tar.gz';
     my $install_path = "$library_install_folder/json-c-0.13";
@@ -813,30 +716,6 @@ sub install_json_c {
 
     print "Install it\n";
     exec_command("make $make_options install");
-}
-
-sub install_lua_json {
-    print "Install LUA json module\n";
-    
-    chdir $temp_folder_for_building_project;
-
-    print "Download archive\n";
-
-    my $archive_file_name = '1.3.3.tar.gz';
-
-    my $lua_json_download_result = download_file("https://github.com/harningt/luajson/archive/$archive_file_name", $archive_file_name,
-        '53455f697c3f1d7cc955202062e97bbafbea0779');
-
-    unless ($lua_json_download_result) {
-        fast_die("Can't download lua json");
-    }
-
-    exec_command("tar -xf $archive_file_name");
-
-    chdir "luajson-1.3.3";
-
-    print "Install it\n";
-    exec_command("PREFIX=$library_install_folder/luajit_2.0.4 make $make_options install");
 }
 
 sub install_init_scripts {
@@ -1927,11 +1806,6 @@ sub install_fastnetmon {
     # Fix dependencies for Netmap in 1.1.4
     if ($distro_type eq 'centos' && int($distro_version) == 6) {
         system("sed -i 's/netmap_plugin fastnetmon_packet_parser/netmap_plugin fastnetmon_packet_parser unified_parser/' ../CMakeLists.txt")
-    }
-
-    # We do not need LUA by default
-    unless ($we_have_luajit_support) {
-        $cmake_params .= " -DENABLE_LUA_SUPPORT=OFF ";
     }
 
     # We use $configure_options to pass CC and CXX variables about custom compiler when we use it 

@@ -22,7 +22,7 @@ Supported packet capture engines
 --------------------------------
 - NetFlow v5, v9
 - IPFIX
-- ![sFlow](http://sflow.org/images/sflowlogo.gif) v4 (will be deprecated in 1.1.7), v5
+- ![sFlow](http://sflow.org/images/sflowlogo.gif) v5
 - PCAP
 - AF_PACKET
 - Netmap
