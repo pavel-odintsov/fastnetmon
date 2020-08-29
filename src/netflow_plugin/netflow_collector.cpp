@@ -11,6 +11,7 @@
 #include <fstream>
 #include <map>
 #include <vector>
+#include <mutex>
 
 #include "../fast_library.h"
 #include "../ipfix_rfc.h"
