@@ -145,6 +145,8 @@ std::string cli_stats_file_path = "/tmp/fastnetmon.dat";
 unsigned int stats_thread_sleep_time = 3600;
 unsigned int stats_thread_initial_call_delay = 30;
 
+bool process_internal_traffic_as_external = false;
+
 unsigned int recalculate_speed_timeout = 1;
 
 // Send or not any details about attack for ban script call over stdin
@@ -1093,6 +1095,14 @@ bool load_configuration_file() {
         }
     }
 
+    if (configuration_map.count("process_internal_traffic_as_external")) {
+        if (configuration_map["process_internal_traffic_as_external"] == "on") {
+            process_internal_traffic_as_external = true;
+        } else {
+            process_internal_traffic_as_external = false;
+        }
+    }
+
     if (configuration_map.count("ban_time") != 0) {
         global_ban_time = convert_string_to_integer(configuration_map["ban_time"]);
 
@@ -1881,8 +1891,8 @@ void process_packet(simple_packet_t& current_packet) {
     __sync_fetch_and_add(&total_counters[packet_direction].bytes, sampled_number_of_bytes);
 #endif
 
-    // Incerementi main and per protocol packet counters
-    if (packet_direction == OUTGOING) {
+    // Incerement main and per protocol packet counters
+    if (packet_direction == OUTGOING or (process_internal_traffic_as_external && packet_direction == INTERNAL)) {
         int64_t shift_in_vector = (int64_t)ntohl(current_packet.src_ip) - (int64_t)subnet_in_host_byte_order;
 
         if (shift_in_vector < 0 or shift_in_vector >= itr->second.size()) {
@@ -2023,7 +2033,7 @@ void process_packet(simple_packet_t& current_packet) {
         } else {
         }
 
-    } else if (packet_direction == INCOMING) {
+    } else if (packet_direction == INCOMING or (process_internal_traffic_as_external && packet_direction == INTERNAL)) {
         int64_t shift_in_vector = (int64_t)ntohl(current_packet.dst_ip) - (int64_t)subnet_in_host_byte_order;
 
         if (shift_in_vector < 0 or shift_in_vector >= itr->second.size()) {
