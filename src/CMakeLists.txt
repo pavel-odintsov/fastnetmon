@@ -92,6 +92,8 @@ set(FASTNETMON_PROFILER OFF)
 
 set(FASTNETMON_PROFILE_FLAGS "-g -pg")
 
+# set(CMAKE_BUILD_TYPE DEBUG)
+
 if (NOT CMAKE_BUILD_TYPE) 
     message(STATUS "Setting build type to Release as none was specified.")
     set(CMAKE_BUILD_TYPE Release)
