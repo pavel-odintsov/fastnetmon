@@ -27,7 +27,7 @@ Supported packet capture engines
 - AF_PACKET
 - Netmap
 - SnabbSwitch (experimental) 
-- PF_RING / PF_RING ZC (obsoleted, not recommented, please use AF_PACKET instead) 
+- PF_RING / PF_RING ZC (available only for CentOS 6 for compatibiliy, otherwise use AF_PACKET)
 
 You can check out the [comparison table](https://fastnetmon.com/docs/capture_backends/) for all available packet capture engines.
 
