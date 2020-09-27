@@ -26,7 +26,6 @@ Supported packet capture engines
 - PCAP
 - AF_PACKET
 - Netmap
-- SnabbSwitch (experimental) 
 - PF_RING / PF_RING ZC (obsoleted, not recommented, please use AF_PACKET instead) 
 
 You can check out the [comparison table](https://fastnetmon.com/docs/capture_backends/) for all available packet capture engines.

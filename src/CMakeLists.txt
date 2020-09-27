@@ -210,15 +210,6 @@ add_library(ipfix_rfc STATIC ipfix_rfc.cpp)
 # Our packet parser
 add_library(fastnetmon_packet_parser STATIC fastnetmon_packet_parser.c)
 
-# -DENABLE_SNABBSWITCH_SUPPORT=ON ..
-if (ENABLE_SNABBSWITCH_SUPPORT) 
-    add_definitions(-DSNABB_SWITCH)
-    add_library(snabbswitch_plugin STATIC snabbswitch_plugin/snabbswitch_collector.cpp)
-
-    link_directories(/usr/src/snabbswitch/src)
-    target_link_libraries(snabbswitch_plugin snabb)
-endif()
-
 CHECK_CXX_SOURCE_COMPILES("
 #include <linux/if_packet.h>
 int main() {
@@ -580,10 +571,6 @@ if (ENABLE_GOBGP_SUPPORT)
     target_link_libraries(fastnetmon gobgp_action)
 endif()
 
-if (ENABLE_SNABBSWITCH_SUPPORT)
-    target_link_libraries(fastnetmon snabbswitch_plugin)
-endif()
-
 if (ENABLE_AFPACKET_SUPPORT)
     target_link_libraries(fastnetmon afpacket_plugin)
 endif()
@@ -597,10 +584,6 @@ endif()
 # cmake .. -DBUILD_PLUGIN_RUNNER=ON
 if (BUILD_PLUGIN_RUNNER)
     add_executable(fastnetmon_plugin_runner plugin_runner.cpp)
-
-    if (ENABLE_SNABBSWITCH_SUPPORT) 
-        target_link_libraries(fastnetmon_plugin_runner snabbswitch_plugin)
-    endif()
 
     if (ENABLE_AFPACKET_SUPPORT) 
         target_link_libraries(fastnetmon_plugin_runner afpacket_plugin)
