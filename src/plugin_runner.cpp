@@ -25,10 +25,6 @@
 #include "afpacket_plugin/afpacket_collector.h"
 #endif
 
-#ifdef SNABB_SWITCH
-#include "snabbswitch_plugin/snabbswitch_collector.h"
-#endif
-
 #ifdef NETMAP_PLUGIN
 #include "netmap_plugin/netmap_collector.h"
 #endif
@@ -108,7 +104,7 @@ int main(int argc, char* argv[]) {
     init_logging();
 
     if (argc < 2) {
-        std::cout << "Please specify sflow, netflow, raw, dpi, snabbswitch, afpacket as param" << std::endl;
+        std::cout << "Please specify sflow, netflow, raw, dpi, afpacket as param" << std::endl;
         return 1;
     }
 
@@ -138,14 +134,6 @@ int main(int argc, char* argv[]) {
     } else if (strstr(argv[1], "pcap") != NULL) {
         std::cout << "Starting pcap" << std::endl;
         start_pcap_collection(process_packet);
-    } else if (strstr(argv[1], "snabbswitch") != NULL) {
-        std::cout << "Starting snabbswitch" << std::endl;
-
-#ifdef SNABB_SWITCH
-        start_snabbswitch_collection(process_packet);
-#else
-        printf("SnabbSwitch support is not compiled here\n");
-#endif
     } else if (strstr(argv[1], "pfring") != NULL) {
 #ifdef PF_RING
         std::cout << "Starting pf_ring" << std::endl;
