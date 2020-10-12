@@ -51,6 +51,7 @@ sudo fcli commit
 
 Changelog
 ---------
+v1.1 - 12 Oct 2020 - fix RouterOS API-ssl to support post MikroTik 6.45.1
 v1.0 - 4 Jul 16 - Initial version
 
 Author: Maximiliano Dobladez info@mkesolutions.net
