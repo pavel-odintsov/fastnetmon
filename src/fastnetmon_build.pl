@@ -6,6 +6,9 @@ use warnings;
 use Getopt::Long;
 use File::Basename;
 
+# It's from base system
+use Archive::Tar;
+
 my $have_ansi_color = '';
 
 # We should handle cases when customer does not have perl modules package installed
@@ -525,6 +528,12 @@ sub main {
         }
 
         install_json_c();
+
+        install_openssl();
+
+        install_capnproto();
+
+        install_poco();
 
         if ($build_boost) {
             # We need fresh cmake for this build, Boost requires it
@@ -1398,6 +1407,203 @@ sub yum {
 }
 
 
+# Get folder name from archive
+sub get_folder_name_inside_archive {
+    my $file_path = shift;
+
+    unless ($file_path && -e $file_path) {
+        return '';
+    }
+
+    my $tar = Archive::Tar->new;
+    $tar->read($file_path);
+
+    for my $file($tar->list_files()) {
+        # if name has / in the end we could assume it's folder
+        if ($file =~ m#/$#) {
+            return $file;
+        }
+    }
+
+    # For some reasons we can have case when we do not have top level folder alone but we can extract it from path:
+    # libcmime-0.2.1/VERSION
+    for my $file($tar->list_files()) {
+        # if name has / in the end we could assume it's folder
+        if ($file =~ m#(.*?)/.*+$#) {
+            return $1;
+        }
+    }
+
+    return '';
+}
+
+# Extract file name from URL
+# https://github.com/mongodb/mongo-cxx-driver/archive/r3.0.0-rc0.tar.gz => r3.0.0-rc0.tar.gz
+sub get_file_name_from_url {
+    my $url = shift;
+
+    # Remove prefix
+    $url =~ s#https?://##;
+    my @components = split '/', $url;
+
+    return $components[-1];
+}
+
+sub install_configure_based_software {
+    my ($url_to_archive, $sha1_summ_for_archive, $library_install_path, $configure_options) = @_;
+
+    unless ($url_to_archive && $sha1_summ_for_archive && $library_install_path) {
+        warn "You haven't specified all mandatory arguments for install_configure_based_software\n";
+        return '';
+    }
+
+    unless (defined($configure_options)) {
+        $configure_options = '';
+    }
+
+    chdir $temp_folder_for_building_project;
+
+    my $file_name = get_file_name_from_url($url_to_archive);
+
+    unless ($file_name) {
+        die "Could not extract file name from URL $url_to_archive";
+    }
+
+    print "Download archive\n";
+    my $archive_download_result = download_file($url_to_archive, $file_name, $sha1_summ_for_archive);
+
+    unless ($archive_download_result) {
+        die "Could not download URL $url_to_archive";
+    }
+
+    unless (-e $file_name) {
+        die "Could not find downloaded file in current folder";
+    }
+
+    print "Read file list inside archive\n";
+    my $folder_name_inside_archive = get_folder_name_inside_archive("$temp_folder_for_building_project/$file_name");
+
+    unless ($folder_name_inside_archive) {
+        die "We could not extract folder name from tar archive '$temp_folder_for_building_project/$file_name'\n";
+    }
+
+    print "Unpack archive\n";
+    my $unpack_result = exec_command("tar -xf $file_name");
+
+    unless ($unpack_result) {
+        die "Unpack failed";
+    }
+
+    chdir $folder_name_inside_archive;
+
+    unless (-e "configure") {
+        die "We haven't configure script here";
+    }
+
+    print "Execute configure\n";
+  my $configure_command = "CC=$default_c_compiler_path CXX=$default_cpp_compiler_path ./configure --prefix=$library_install_path $configure_options";
+
+    my $configure_result = exec_command($configure_command);
+
+    unless ($configure_result) {
+        die "Configure failed";
+    }
+
+    ### TODO: this is ugly thing! But here you could find hack for poco libraries
+    if ($url_to_archive =~ m/Poco/i) {
+        exec_command("sed -i 's#^CC .*#CC = $default_c_compiler_path#' build/config/Linux");
+        exec_command("sed -i 's#^CXX .*#CXX = $default_cpp_compiler_path#' build/config/Linux");
+
+        #print `cat build/config/Linux`;
+    }
+
+    # librdkafka does not like make+make install approach, we should use them one by one
+    print "Execute make\n";
+
+    my $make_result = exec_command("$ld_library_path_for_make make $make_options");
+
+    unless ($make_result) {
+        die "Make failed";
+    }
+
+    print "Execute make install\n";
+    # We explicitly added path to library folders from our custom compiler here
+    my $make_install_result = exec_command("$ld_library_path_for_make make install");
+
+    unless ($make_install_result) {
+        die "Make install failed";
+    }
+
+    return 1;
+}
+
+sub install_capnproto {
+    my $capnp_install_path = "$library_install_folder/capnproto_0_7_0";
+
+    if (-e $capnp_install_path) {
+        warn "Cap'n'proto already existis, skip compilation\n";
+        return 1;
+    }    
+
+    my $res = install_configure_based_software("https://capnproto.org/capnproto-c++-0.7.0.tar.gz", 
+        "348f5af790c65927480106e1143c9c9554cf2443", $capnp_install_path, 
+        '');
+
+    unless ($res) { 
+        die "Could not install capnproto";
+    }    
+
+    return 1;
+}
+
+sub install_openssl {
+    my $distro_file_name = 'openssl-1.0.2d.tar.gz';
+    my $openssl_install_path = "$library_install_folder/openssl_1_0_2d";
+ 
+    if (-e $openssl_install_path) {
+        warn "We found already installed openssl in folder $openssl_install_path Skip compilation\n";
+        return 1;
+    }    
+
+    chdir $temp_folder_for_building_project;
+   
+    my $openssl_download_result = download_file("https://www.openssl.org/source/old/1.0.2/$distro_file_name", 
+        $distro_file_name, 'd01d17b44663e8ffa6a33a5a30053779d9593c3d');
+
+    unless ($openssl_download_result) {    
+        die "Could not download openssl";
+    }    
+
+    exec_command("tar -xf $distro_file_name");
+    chdir "openssl-1.0.2d";
+
+    exec_command("./config shared --prefix=$openssl_install_path");
+    exec_command("make -j $make_options");
+    exec_command("make install");
+    1;   
+}
+
+
+sub install_poco {
+    if (-e "$library_install_folder/poco_1_10_0") {
+         warn "poco already installed, skip compilation\n";
+         return 1;
+    }    
+
+    # Actually it's not standard "configure". That is custom bash based script! And it's not handling options suitable for
+    # configure (i.e. CC and other)
+    my $res = install_configure_based_software("https://github.com/pocoproject/poco/archive/poco-1.10.0-release.tar.gz",
+        'cc75c9ca9d21422683ee7d71c5a98aaf72b45bcc', "$library_install_folder/poco_1_10_0",
+        "--minimal --shared --no-samples --no-tests --include-path=$library_install_folder/openssl_1_0_2d/include --library-path=$library_install_folder/openssl_1_0_2d/lib");
+
+    unless ($res) {
+        die "Could not install poco";
+    }    
+
+    return 1;
+}
+
+
 sub install_icu {
     my $distro_file_name = 'icu4c-65_1-src.tgz';
 
@@ -1844,4 +2050,6 @@ sub install_fastnetmon {
         print "You can run fastnetmon with command: $fastnetmon_dir/fastnetmon\n";
     }
 }
+
+
 
