@@ -17,6 +17,10 @@
 
 #include <boost/asio.hpp>
 
+#include "simple_packet_capnp/simple_packet.capnp.h"
+#include <capnp/message.h>
+#include <capnp/serialize-packed.h>
+
 #if defined(__APPLE__)
 #include <libkern/OSByteOrder.h>
 // Source: https://gist.github.com/pavel-odintsov/d13684600423d1c5e64e
@@ -733,8 +737,8 @@ std::string print_ipv6_address(struct in6_addr& ipv6_address) {
     return result;
 }
 
-direction get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_addr src_ipv6, struct in6_addr dst_ipv6) {
-    direction packet_direction;
+direction_t get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_addr src_ipv6, struct in6_addr dst_ipv6) {
+    direction_t packet_direction;
 
     bool our_ip_is_destination = false;
     bool our_ip_is_source = false;
@@ -777,7 +781,7 @@ direction get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_add
 /* Get traffic type: check it belongs to our IPs */
 /* It populates subnet and subnet_cidr_mask for incoming and outgoing traffic */
 /* But for internal traffic it populates destination_subnet* and source_subnet* */
-direction get_packet_direction(patricia_tree_t* lookup_tree,
+direction_t get_packet_direction(patricia_tree_t* lookup_tree,
                                uint32_t src_ip,
                                uint32_t dst_ip,
                                unsigned long& subnet,
@@ -787,7 +791,7 @@ direction get_packet_direction(patricia_tree_t* lookup_tree,
                                unsigned long& source_subnet,
                                unsigned int&  source_subnet_cidr_mask
                                ) {
-    direction packet_direction;
+    direction_t packet_direction;
 
     bool our_ip_is_destination = false;
     bool our_ip_is_source = false;
@@ -838,7 +842,7 @@ direction get_packet_direction(patricia_tree_t* lookup_tree,
     return packet_direction;
 }
 
-std::string get_direction_name(direction direction_value) {
+std::string get_direction_name(direction_t direction_value) {
     std::string direction_name;
 
     switch (direction_value) {
@@ -1260,6 +1264,149 @@ bool set_boost_process_name(boost::thread* thread, std::string process_name) {
     if (result != 0) {
         logger << log4cpp::Priority::ERROR << "pthread_setname_np failed with code: " << result;
         logger << log4cpp::Priority::ERROR << "Failed to set process name for " << process_name;
+    }
+
+    return true;
+}
+
+bool read_simple_packet(uint8_t* buffer, size_t buffer_length, simple_packet_t& packet) {
+    extern log4cpp::Category& logger;
+
+    try {
+
+        auto words = kj::heapArray<capnp::word>(buffer_length / sizeof(capnp::word));
+        memcpy(words.begin(), buffer, words.asBytes().size());
+
+        capnp::FlatArrayMessageReader reader(words);
+        auto root = reader.getRoot<SimplePacketType>();
+
+        packet.protocol            = root.getProtocol();
+        packet.sample_ratio        = root.getSampleRatio();
+        packet.src_ip              = root.getSrcIp();
+        packet.dst_ip              = root.getDstIp();
+        packet.ip_protocol_version = root.getIpProtocolVersion();
+        packet.src_asn             = root.getSrcAsn();
+        packet.dst_asn             = root.getDstAsn();
+        packet.input_interface     = root.getInputInterface();
+        packet.output_interface    = root.getOutputInterface();
+        packet.agent_ip_address    = root.getAgentIpAddress();
+
+        // Extract IPv6 addresses from packet
+        if (packet.ip_protocol_version == 6) {
+            if (root.hasSrcIpv6()) {
+                ::capnp::Data::Reader reader_ipv6_data = root.getSrcIpv6();
+
+                if (reader_ipv6_data.size() == 16) {
+                    // Copy internal structure to C++ struct
+                    // TODO: move this code to something more high level, please
+                    memcpy((void*)&packet.src_ipv6, reader_ipv6_data.begin(), reader_ipv6_data.size());
+                } else {
+                    logger << log4cpp::Priority::ERROR << "broken size for IPv6 source address";
+                }
+            }
+
+            if (root.hasDstIpv6()) {
+                ::capnp::Data::Reader reader_ipv6_data = root.getDstIpv6();
+
+                if (reader_ipv6_data.size() == 16) {
+                    // Copy internal structure to C++ struct
+                    // TODO: move this code to something more high level, please
+                    memcpy((void*)&packet.dst_ipv6, reader_ipv6_data.begin(), reader_ipv6_data.size());
+                } else {
+                    logger << log4cpp::Priority::ERROR << "broken size for IPv6 destination address";
+                }
+            }
+
+            // TODO: if we could not read src of dst IP addresses here we should drop this packet
+        }
+
+        packet.ttl                        = root.getTtl();
+        packet.source_port                = root.getSourcePort();
+        packet.destination_port           = root.getDestinationPort();
+        packet.length                     = root.getLength();
+        packet.number_of_packets          = root.getNumberOfPackets();
+        packet.flags                      = root.getFlags();
+        packet.ip_fragmented              = root.getIpFragmented();
+        packet.ts.tv_sec                  = root.getTsSec();
+        packet.ts.tv_usec                 = root.getTsMsec();
+        packet.packet_payload_length      = root.getPacketPayloadLength();
+        packet.packet_payload_full_length = root.getPacketPayloadFullLength();
+        packet.packet_direction           = (direction_t)root.getPacketDirection();
+        packet.source                     = (source_t)root.getSource();
+    } catch (kj::Exception e) {
+        logger << log4cpp::Priority::WARN
+               << "Exception happened during attempt to parse tera flow packet: " << e.getDescription().cStr();
+        return false;
+    } catch (...) {
+        logger << log4cpp::Priority::WARN << "Exception happened during attempt to parse tera flow packet";
+        return false;
+    }
+
+    return true;
+}
+
+// Encode simple packet into special capnp structure for serialization
+bool write_simple_packet(int fd, simple_packet_t& packet, bool populate_ipv6) {
+    extern log4cpp::Category& logger;
+    ::capnp::MallocMessageBuilder message;
+
+    auto capnp_packet = message.initRoot<SimplePacketType>();
+
+    capnp_packet.setProtocol(packet.protocol);
+    capnp_packet.setSampleRatio(packet.sample_ratio);
+    capnp_packet.setSrcIp(packet.src_ip);
+    capnp_packet.setDstIp(packet.dst_ip);
+    capnp_packet.setIpProtocolVersion(packet.ip_protocol_version);
+    capnp_packet.setTtl(packet.ttl);
+    capnp_packet.setSourcePort(packet.source_port);
+    capnp_packet.setDestinationPort(packet.destination_port);
+    capnp_packet.setLength(packet.length);
+    capnp_packet.setNumberOfPackets(packet.number_of_packets);
+    capnp_packet.setFlags(packet.flags);
+    capnp_packet.setIpFragmented(packet.ip_fragmented);
+    capnp_packet.setTsSec(packet.ts.tv_sec);
+    capnp_packet.setTsMsec(packet.ts.tv_usec);
+    capnp_packet.setPacketPayloadLength(packet.packet_payload_length);
+    capnp_packet.setPacketPayloadFullLength(packet.packet_payload_full_length);
+    capnp_packet.setPacketDirection(packet.packet_direction);
+    capnp_packet.setSource(packet.source);
+    capnp_packet.setSrcAsn(packet.src_asn);
+    capnp_packet.setDstAsn(packet.dst_asn);
+    capnp_packet.setInputInterface(packet.input_interface);
+    capnp_packet.setOutputInterface(packet.output_interface);
+    capnp_packet.setAgentIpAddress(packet.agent_ip_address);
+
+    if (populate_ipv6 && packet.ip_protocol_version == 6) {
+        kj::ArrayPtr<kj::byte> src_ipv6_as_kj_array((kj::byte*)&packet.src_ipv6, sizeof(packet.src_ipv6));
+        capnp_packet.setSrcIpv6(capnp::Data::Reader(src_ipv6_as_kj_array));
+
+        kj::ArrayPtr<kj::byte> dst_ipv6_as_kj_array((kj::byte*)&packet.dst_ipv6, sizeof(packet.dst_ipv6));
+        capnp_packet.setDstIpv6(capnp::Data::Reader(dst_ipv6_as_kj_array));
+    }
+
+    // Capnp uses exceptions, let's wrap them out
+    try {
+        // For some unknown for me reasons this function sends incorrect (very short) data
+        // writePackedMessageToFd(fd, message);
+
+        // Instead I'm using less optimal (non zero copy) approach but it's working well
+        kj::Array<capnp::word> words = messageToFlatArray(message);
+        kj::ArrayPtr<kj::byte> bytes = words.asBytes();
+
+        size_t write_result = write(fd, bytes.begin(), bytes.size());
+
+        // If write returned error or we could not write whole packet notify caller about it
+        if (write_result < 0 || write_result != bytes.size()) {
+            // If we received error from it, let's provide details about it in DEBUG mode
+            if (write_result == -1) {
+                logger << log4cpp::Priority::DEBUG << "write in write_simple_packet returned error: " << errno;
+            }
+
+            return false;
+        }
+    } catch (...) {
+        // logger << log4cpp::Priority::ERROR << "writeSimplePacket failed with error";
+        return false;
     }
 
     return true;
