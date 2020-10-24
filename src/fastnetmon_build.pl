@@ -165,7 +165,7 @@ $ENV{'do-not-track-me'} = $do_not_track_me;
 $ENV{'use-modern-pf-ring'} = $use_modern_pf_ring;
 
 if ($show_help) {
-    print "We have following options:\n--use-git-master\n--do-not-use-mirror\n--do-not-track-me\n--use-modern-pf-ring\n--install_dependency_packages_only\ndo-not-build-fastnetmon\n--build_gcc_only\n--help\n--source_build\n";
+    print "We have following options:\n--use-git-master\n--do-not-use-mirror\n--do-not-track-me\n--use-modern-pf-ring\n--install_dependency_packages_only\n--do-not-build-fastnetmon\n--build_gcc_only\n--help\n";
     exit (0);
 }
 
@@ -957,46 +957,106 @@ sub install_protobuf {
     1;
 }
 
-sub install_mongo_client {
-    my $distro_file_name = 'mongo-c-driver-1.1.9.tar.gz';
-    my $mongo_install_path = "$library_install_folder/mongo_c_driver_1_1_9";
+sub install_cmake_based_software {
+    my ($url_to_archive, $sha1_summ_for_archive, $library_install_path, $cmake_with_options) = @_;
 
-    if (-e $mongo_install_path && defined($ENV{'CI'})) {
-        print "mongo client was already installed\n";
-	return 1;
+    unless ($url_to_archive && $sha1_summ_for_archive && $library_install_path && $cmake_with_options) {
+        return '';
     }
 
     chdir $temp_folder_for_building_project;
-    print "Download mongo\n";
 
-    my $mongo_download_result = download_file("https://github.com/mongodb/mongo-c-driver/releases/download/1.1.9/$distro_file_name",
-        $distro_file_name, '32452481be64a297e981846e433b2b492c302b34');
+    my $file_name = get_file_name_from_url($url_to_archive);
+
+    unless ($file_name) {
+        die "Could not extract file name from URL $url_to_archive";
+    }
+
+    print "Download archive\n";
+    my $archive_download_result = download_file($url_to_archive, $file_name, $sha1_summ_for_archive);
+
+    unless ($archive_download_result) {
+        die "Could not download URL $url_to_archive";
+    }    
+
+    unless (-e $file_name) {
+        die "Could not find downloaded file in current folder";
+    }
+
+    print "Read file list inside archive\n";
+    my $folder_name_inside_archive = get_folder_name_inside_archive("$temp_folder_for_building_project/$file_name"); 
+
+    unless ($folder_name_inside_archive) {
+        die "We could not extract folder name from tar archive: $temp_folder_for_building_project/$file_name\n";
+    }
+
+    print "Unpack archive\n";
+    my $unpack_result = exec_command("tar -xf $file_name");
+
+    unless ($unpack_result) {
+        die "Unpack failed";
+    }
+
+    chdir $folder_name_inside_archive;
+
+    unless (-e "CMakeLists.txt") {
+        die "We haven't CMakeLists.txt in top project folder! Could not build project";
+    }
+
+    unless (-e "build") {
+        mkdir "build";
+    }
+
+    chdir "build";
+
+    print "Generate make file with cmake\n";
+    # print "cmake command: $cmake_with_options\n";
+    my $cmake_result = exec_command($cmake_with_options);
+
+    unless ($cmake_result) {
+        die "cmake command failed";
+    }
+
+    print "Build project with make\n";
+
+    my $make_command = "make $make_options";
+    my $make_result = exec_command($make_command);
+
+    unless ($make_result) {
+        die "Make command '$make_command' failed\n";
+    } 
+
+    print "Install project to target directory\n";
+    my $install_result = exec_command("make install");
+
+    unless ($install_result) {
+        die "Install failed";
+    } 
+
+    return 1;
+}
+
+
+sub install_mongo_client {
+    my $install_path = "$library_install_folder/mongo_c_driver_1_16_1";
     
-    unless ($mongo_download_result) {
-        fast_die("Can't download mongo");
-    }
+    if (-e $install_path) {
+        warn "mongo_c_driver is already installed, skip build";
+        return 1;
+    }    
 
-    exec_command("tar -xf $distro_file_name");
-    print "Build mongo client\n";
-    chdir "mongo-c-driver-1.1.9";
+    # OpenSSL is mandatory for SCRAM-SHA-1 auth mode
+    # I also use flag ENABLE_ICU=OFF to disable linking against icu system library. I do no think that we really need it
+    my $res = install_cmake_based_software("https://github.com/mongodb/mongo-c-driver/releases/download/1.16.1/mongo-c-driver-1.16.1.tar.gz",
+        "f9bd005195895538af821708112bf861090da354",
+    $install_path,
+    "$cmake_path -DENABLE_AUTOMATIC_INIT_AND_CLEANUP=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:STRING=$library_install_folder/mongo_c_driver_1_16_1 -DCMAKE_C_COMPILER=$default_c_compiler_path -DOPENSSL_ROOT_DIR=$library_install_folder/openssl_1_0_2d -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DENABLE_ICU=OFF ..");
 
-    unless (exec_command("$configure_options ./configure --prefix=$mongo_install_path")) {
-        fast_die("Cannot configure mongoc");
-    }
+    if (!$res) {
+        die "Could not install mongo c client\n";
+    }    
 
-    my $mongoc_install_res = exec_command("$ld_library_path_for_make  make $make_options install");
-
-    unless ($mongoc_install_res) {
-        if ( 
-		($distro_type eq 'ubuntu' && $distro_version eq '20.04') or
-		($distro_type eq 'debian' && $distro_version =~ m/^9\.?/) or 
-		($distro_type eq 'centos' && $distro_version == 8)
-	) {
-            warn "Cannot compile Mongoc due to very new OpenSSL, skip compilation";
-        } else {
-            fast_die("Cannot make mongoc");
-        }
-    }
+    return 1;
 }
 
 sub install_hiredis {
