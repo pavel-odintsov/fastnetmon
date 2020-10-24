@@ -195,7 +195,6 @@ if (ENABLE_PF_RING_SUPPORT)
 endif()
 
 add_library(simple_packet_capnp STATIC simple_packet_capnp/simple_packet.capnp.c++)
-target_link_libraries(simple_packet_capnp ${CAPNP_LIBRARY_PATH} ${CAPNP_KJ_LIBRARY_PATH})
 
 # Our LPM library
 add_library(patricia STATIC libpatricia/patricia.c)
@@ -204,9 +203,6 @@ add_library(fastnetmon_pcap_format STATIC fastnetmon_pcap_format.cpp)
 
 # Our tools library
 add_library(fast_library STATIC fast_library.cpp)
-
-# Link it with cap'n'p stuff
-target_link_libraries(fast_library simple_packet_capnp)
 
 # Our parser
 add_library(unified_parser STATIC unified_parser.cpp)
@@ -513,6 +509,11 @@ if (CAPNP_SUPPORT)
 
     include_directories("${CAPNP_CUSTOM_INSTALL_PATH}/include")
 endif()
+
+target_link_libraries(simple_packet_capnp ${CAPNP_LIBRARY_PATH} ${CAPNP_KJ_LIBRARY_PATH})
+
+# Link it with cap'n'p stuff
+target_link_libraries(fast_library simple_packet_capnp)
 
 ### Find mongo-c
 find_path(MONGOC_INCLUDES_FOLDER NAMES libmongoc-1.0/mongoc.h PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
