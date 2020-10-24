@@ -17,7 +17,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 40m
+          no_output_timeout: 180m
           command: perl src/fastnetmon_build.pl --use-git-master
       - run:
           name: collect_debug
@@ -58,7 +58,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 40m
+          no_output_timeout: 180m
           command: perl src/fastnetmon_build.pl --use-git-master
       - run:
           name: collect_debug
@@ -99,7 +99,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 40m
+          no_output_timeout: 180m
           command: perl src/fastnetmon_build.pl --use-git-master
       - run:
           name: collect_debug
@@ -151,7 +151,7 @@ jobs:
             - /opt/gcc920
       - run:
           name: install_dependencies
-          no_output_timeout: 40m
+          no_output_timeout: 180m
           command: perl src/fastnetmon_build.pl --use-git-master --use_custom_compiler
       - run:
           name: collect_debug
@@ -203,7 +203,7 @@ jobs:
             - /opt/gcc920
       - run:
           name: install_dependencies
-          no_output_timeout: 40m 
+          no_output_timeout: 180m 
           command: perl src/fastnetmon_build.pl --use-git-master --use_custom_compiler
       - run:
           name: collect_debug
@@ -244,7 +244,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 40m 
+          no_output_timeout: 180m 
           command: perl src/fastnetmon_build.pl --use-git-master
       - run:
           name: collect_debug
@@ -285,7 +285,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 40m 
+          no_output_timeout: 180m 
           command: perl src/fastnetmon_build.pl --use-git-master
       - run:
           name: collect_debug
@@ -338,7 +338,7 @@ jobs:
             - /opt/gcc920
       - run:
           name: install_dependencies
-          no_output_timeout: 40m
+          no_output_timeout: 180m
           command: perl src/fastnetmon_build.pl --use-git-master --use_custom_compiler
       - run:
           name: collect_debug
@@ -389,7 +389,7 @@ jobs:
             - /opt/gcc920
       - run:
           name: install_dependencies
-          no_output_timeout: 40m 
+          no_output_timeout: 180m 
           command: perl src/fastnetmon_build.pl --use-git-master --use_custom_compiler
       - run:
           name: collect_debug
@@ -430,7 +430,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
       - run:
           name: install_dependencies
-          no_output_timeout: 40m 
+          no_output_timeout: 180m 
           command: perl src/fastnetmon_build.pl --use-git-master
       - run:
           name: collect_debug
