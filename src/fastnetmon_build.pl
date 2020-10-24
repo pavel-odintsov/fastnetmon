@@ -422,45 +422,6 @@ sub main {
 
     send_tracking_information('started');
 
-    my $install_from_official_distro = '';
-
-    # For these Ubuntu version we have FastNetMon in standard repos, will use it instead
-    if ($distro_type eq 'ubuntu' && (
-        $distro_version =~ m/^18\.04/ or
-        $distro_version =~ m/^19\.04/)) {
-
-        $install_from_official_distro = 1;
-    }
-
-    # For Debian Buster we also have FastNetMon in standard repos
-    if ($distro_type eq 'debian' && $distro_version =~ m/^10\./) {
-        $install_from_official_distro = 1;
-    }
-
-    if ($install_from_official_distro && !$we_use_code_from_master) {
-        apt_get("fastnetmon");
-
-        # Switch off sflow and netflow plugins enabled by default
-        system("sed -i 's/sflow = on/sflow = off/' /etc/fastnetmon.conf");
-        system("sed -i 's/netflow = on/netflow = off/' /etc/fastnetmon.conf");
-        # Remove trailing space in Debian/Ubuntu configuration, it was fixed in upstream
-        system("sed -i 's/ban_for_tcp_pps = off /ban_for_tcp_pps = off/' /etc/fastnetmon.conf");
-
-        # Apply changes
-        system("systemctl restart fastnetmon");
-
-        print "FastNetMon was installed and started correctly\n";
-        print "Below you can find some useful commands and paths\n\n";
-        print "Main configuration file: /etc/fastnetmon.conf\n";
-        print "Daemon restart command: systemctl restart fastnetmon\n";
-        print "Client tool: fastnetmon_client\n";
-        print "Log file: /var/log/fastnetmon.log\n";
-
-        send_tracking_information('finished');
-        exit(0);
-    }
-
-
     # Install standard tools for building packages
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
         my @debian_packages_for_build = ('build-essential', 'make', 'tar', 'wget');
