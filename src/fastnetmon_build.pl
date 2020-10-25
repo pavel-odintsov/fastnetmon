@@ -44,49 +44,14 @@ if (defined($ENV{'CI'}) && $ENV{'CI'}) {
     $install_log_path = "/tmp/fastnetmon_install.log";
 }
 
-# For all lib build we use custom cmake
-my $cmake_path = "cmake";
-
-# So, you could disable this option but without this feature we could not improve FastNetMon for your distribution
-my $do_not_track_me = '';
-
-sub send_tracking_information {
-    my $step = shift;
-
-    unless ($do_not_track_me) {
-        my $stats_url = "http://178.62.227.110/new_fastnetmon_installation";
-        my $post_data = "distro_type=$distro_type&os_type=$os_type&distro_version=$distro_version&distro_architecture=$distro_architecture&step=$step&we_use_code_from_master=$we_use_code_from_master&user_email=$user_email";
-        my $user_agent = 'FastNetMon install tracker v1';
-
-        `wget --post-data="$post_data" --user-agent="$user_agent" -q '$stats_url' -O /dev/null`;
-    } 
-}
-
-
-sub send_ga_event {
-    my $step = shift;
-
-    unless ($do_not_track_me) {
-        `wget "https://www.google-analytics.com/collect?tid=UA-83642378-1&t=event&ec=fastnetmon_community&ea=$step&v=1&cid=0" -q -O /dev/null`;
-    }
-}
+# For all libs build we use custom cmake
+my $cmake_path = "$library_install_folder/cmake-3.16.4/bin/cmake";
 
 # die wrapper to send message to tracking server
 sub fast_die {
     my $message = shift;
 
     print "$message Please share $install_log_path with FastNetMon team at GitHub to get help: https://github.com/pavel-odintsov/fastnetmon/issues/new\n";
-
-    # Report failed installs
-    send_tracking_information("error");
-
-    send_ga_event("installation_failed");
-
-    # Send detailed report about issue to Sentry
-    unless ($do_not_track_me) {
-        system("SENTRY_DSN=https://121eca215532431cb7521eafdbca23d3:292cfd7ac2af46a7bc32356141e62592\@sentry.io/1504559 /opt/sentry-cli " .
-            " send-event -m \"$message\" --logfile $install_log_path");
-    }
 
     exit(1);
 }
@@ -146,7 +111,6 @@ my $build_gcc_only = '';
 # Get options from command line
 GetOptions(
     'use-git-master' => \$we_use_code_from_master,
-    'do-not-track-me' => \$do_not_track_me,
     'use-modern-pf-ring' => \$use_modern_pf_ring,
     'use-mirror' => \$use_mirror,
     'do-not-build-fastnetmon' => \$do_not_build_fastnetmon,
@@ -155,22 +119,13 @@ GetOptions(
     'build_gcc_only' => \$build_gcc_only
 );
 
-# Export all meaningful customer facing flags to Sentry for better failure tracking
-$ENV{'use-git-master'} = $we_use_code_from_master;
-$ENV{'do-not-track-me'} = $do_not_track_me;
-$ENV{'use-modern-pf-ring'} = $use_modern_pf_ring;
-
 if ($show_help) {
-    print "We have following options:\n--use-git-master\n--do-not-use-mirror\n--do-not-track-me\n--use-modern-pf-ring\n--install_dependency_packages_only\n--do-not-build-fastnetmon\n--build_gcc_only\n--help\n";
+    print "We have following options:\n--use-git-master\n--do-not-use-mirror\n--use-modern-pf-ring\n--install_dependency_packages_only\n--do-not-build-fastnetmon\n--build_gcc_only\n--help\n";
     exit (0);
 }
 
 if ($do_not_build_fastnetmon) {
     $build_fastnetmon = '';
-}
-
-if (defined($ENV{'CI'}) && $ENV{'CI'}) {
-    $do_not_track_me = 1; 
 }
 
 welcome_message();
@@ -275,57 +230,6 @@ sub install_additional_repositories {
     }
 }
 
-sub get_user_email {
-    # http://docs.travis-ci.com/user/environment-variables/#Default-Environment-Variables
-    if (defined($ENV{'TRAVIS'}) && $ENV{'TRAVIS'}) {
-        return;
-    }
-
-    # https://circleci.com/docs/2.0/env-vars/
-    if (defined($ENV{'CI'}) && $ENV{'CI'}) {
-        return;
-    }
-
-    my $user_entered_valid_email = 0;
-
-    do {
-        print "\n";
-        print "Please provide your business email address to receive important information about security updates\n";
-        print "In addition, we can send promotional messages to this email (very rare)\n";
-        print "You can find our privacy policy here https://fastnetmon.com/privacy-policy/\n";
-        print "We will provide an option to disable any email from us\n";
-        print "We will not share your email with any third party companies.\n\n";
-        print "If you continue install process you accept our subscription rules automatically\n\n";
-        
-        print "Email: ";
-        my $raw_email = <STDIN>;
-        chomp $raw_email;
-        
-        if ($raw_email =~ /\@/ && length $raw_email > 3) {
-            $user_entered_valid_email = 1;
-            $user_email = $raw_email;
-        } else {
-            print "Sorry you have entered invalid email, please try again!\n";
-        }
-    } while !$user_entered_valid_email;
-
-    print "\nThank you so much!\n\n"; 
-}
-
-# Installs Sentry for error tracking
-sub install_sentry {
-    my $machine_arch = `uname -m`;
-    chomp $machine_arch;
-
-    my $download_res = system("wget --quiet 'https://downloads.sentry-cdn.com/sentry-cli/1.46.0/sentry-cli-Linux-$machine_arch' -O/opt/sentry-cli");
-
-    if ($download_res != 0) {
-        warn "Cannot download Sentry";
-    }
-
-    system("chmod +x /opt/sentry-cli");
-}
-
 # This code will init global compiler settings used in options for other packages build
 sub init_compiler {
     # 530 instead of 5.3.0
@@ -372,15 +276,7 @@ sub main {
 
     detect_distribution();
 
-    get_user_email();
-
     # Set environment variables to collect more information about installation failures
-
-    $ENV{'FASTNETMON_DISTRO_TYPE'} = $distro_type;
-    $ENV{'FASTNETMON_DISTRO_VERSION'} = $distro_version;
-    $ENV{'FASTNETMON_USER'} = $user_email;
-
-    install_sentry();
 
     $cpus_number = get_logical_cpus_number();
 
@@ -474,9 +370,6 @@ sub main {
         install_capnproto();
 
         install_poco();
-
-        # We need fresh cmake for this build, Boost requires it
-        $cmake_path = "$ld_library_path_for_make $library_install_folder/cmake-3.16.4/bin/cmake";
 
         install_gcc_dependencies();
 
@@ -1002,7 +895,7 @@ sub install_mongo_client {
     my $res = install_cmake_based_software("https://github.com/mongodb/mongo-c-driver/releases/download/1.16.1/mongo-c-driver-1.16.1.tar.gz",
         "f9bd005195895538af821708112bf861090da354",
     $install_path,
-    "$cmake_path -DENABLE_AUTOMATIC_INIT_AND_CLEANUP=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:STRING=$library_install_folder/mongo_c_driver_1_16_1 -DCMAKE_C_COMPILER=$default_c_compiler_path -DOPENSSL_ROOT_DIR=$library_install_folder/openssl_1_0_2d -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DENABLE_ICU=OFF ..");
+    "$ld_library_path_for_make $cmake_path -DENABLE_AUTOMATIC_INIT_AND_CLEANUP=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:STRING=$library_install_folder/mongo_c_driver_1_16_1 -DCMAKE_C_COMPILER=$default_c_compiler_path -DOPENSSL_ROOT_DIR=$library_install_folder/openssl_1_0_2d -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DENABLE_ICU=OFF ..");
 
     if (!$res) {
         die "Could not install mongo c client\n";
