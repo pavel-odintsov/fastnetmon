@@ -799,7 +799,7 @@ sub install_protobuf {
 }
 
 sub install_cmake_based_software {
-    my ($url_to_archive, $sha1_summ_for_archive, $library_install_path, $cmake_with_options) = @_;
+    my ($url_to_archive, $sha1_summ_for_archive, $library_install_path, $cmake_with_options, $make_env_variables) = @_;
 
     unless ($url_to_archive && $sha1_summ_for_archive && $library_install_path && $cmake_with_options) {
         return '';
@@ -860,7 +860,7 @@ sub install_cmake_based_software {
 
     print "Build project with make\n";
 
-    my $make_command = "make $make_options";
+    my $make_command = "$make_env_variables make $make_options";
     my $make_result = exec_command($make_command);
 
     unless ($make_result) {
@@ -868,7 +868,7 @@ sub install_cmake_based_software {
     } 
 
     print "Install project to target directory\n";
-    my $install_result = exec_command("make install");
+    my $install_result = exec_command("$make_env_variables make install");
 
     unless ($install_result) {
         die "Install failed";
@@ -891,7 +891,7 @@ sub install_mongo_client {
     my $res = install_cmake_based_software("https://github.com/mongodb/mongo-c-driver/releases/download/1.16.1/mongo-c-driver-1.16.1.tar.gz",
         "f9bd005195895538af821708112bf861090da354",
     $install_path,
-    "$ld_library_path_for_make $cmake_path -DENABLE_AUTOMATIC_INIT_AND_CLEANUP=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:STRING=$library_install_folder/mongo_c_driver_1_16_1 -DCMAKE_C_COMPILER=$default_c_compiler_path -DOPENSSL_ROOT_DIR=$library_install_folder/openssl_1_0_2d -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DENABLE_ICU=OFF ..");
+    "$ld_library_path_for_make $cmake_path -DENABLE_AUTOMATIC_INIT_AND_CLEANUP=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:STRING=$library_install_folder/mongo_c_driver_1_16_1 -DCMAKE_C_COMPILER=$default_c_compiler_path -DOPENSSL_ROOT_DIR=$library_install_folder/openssl_1_0_2d -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DENABLE_ICU=OFF ..", $ld_library_path_for_make);
 
     if (!$res) {
         die "Could not install mongo c client\n";
