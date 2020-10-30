@@ -273,8 +273,8 @@ sub init_compiler {
 
 ### Functions start here
 sub main {
-    # Open log file
-    open my $global_log, ">", $install_log_path or warn "Cannot open log file: $! $install_log_path";
+    # Open log file, we need to append it to keep logs for CI in single file
+    open my $global_log, ">>", $install_log_path or warn "Cannot open log file: $! $install_log_path";
     print {$global_log} "Install started";
 
     detect_distribution();
@@ -1533,53 +1533,32 @@ sub install_boost_builder {
     chdir $temp_folder_for_building_project;
 
     # We use another name because it uses same name as boost distribution
-    my $archive_file_name = 'build-boost-1.72.0.tar.gz';
+    my $archive_file_name = 'build-boost-1.74.0.tar.gz';
 
-    my $boost_builder_install_folder = "$library_install_folder/boost_build1.72.0";
+    my $boost_builder_install_folder = "$library_install_folder/boost_build1.74.0";
 
     if (-e $boost_builder_install_folder && defined($ENV{'CI'}) ) {
         warn "Found installed Boost builder at $boost_builder_install_folder\n";
         return 1;
     }
 
-    # We use older version of Boost Build because newer versions require C++ which is not available on CentOS 6
-    if ($distro_type eq 'centos' && $distro_version == 6) {
-        print "Download boost builder\n";
-        my $boost_build_result = download_file("https://github.com/boostorg/build/archive/boost-1.70.0.tar.gz", $archive_file_name,
-            'ffb6c24afc69348ecb59c2a7cef5f167066630fa');
+    print "Download boost builder\n";
+    my $boost_build_result = download_file("https://dl.bintray.com/boostorg/release/1.74.0/source/boost_1_74_0.tar.bz2", $archive_file_name,
+        'f82c0d8685b4d0e3971e8e2a8f9ef1551412c125');
 
-        unless ($boost_build_result) {
-            fast_die("Can't download boost builder\n");
-        }
+    unless ($boost_build_result) {
+        fast_die("Can't download boost builder\n");
+    }
 
-        print "Unpack boost builder\n";
-        exec_command("tar -xf $archive_file_name");
+    print "Unpack boost builder\n";
+    exec_command("tar -xf $archive_file_name");
 
-        unless (chdir "build-boost-1.70.0") {
-            fast_die("Cannot do chdir to build boost folder\n");
-        }
-
-    } else {
-
-        print "Download boost builder\n";
-        my $boost_build_result = download_file("https://github.com/boostorg/build/archive/boost-1.72.0.tar.gz", $archive_file_name,
-            '8d4aede249cc414f5f375423e26feca99f1c1088');
-
-        unless ($boost_build_result) {
-            fast_die("Can't download boost builder\n");
-        }
-
-        print "Unpack boost builder\n";
-        exec_command("tar -xf $archive_file_name");
-
-        unless (chdir "build-boost-1.72.0") {
-            fast_die("Cannot do chdir to build boost folder\n");
-        }
-
+    unless (chdir "build-boost-1.74.0") {
+        fast_die("Cannot do chdir to build boost folder\n");
     }
 
     print "Build Boost builder\n";
-    my $bootstrap_result = exec_command("./bootstrap.sh --with-toolset=gcc");
+    my $bootstrap_result = exec_command("CC=$default_c_compiler_path CXX=$default_cpp_compiler_path  ./bootstrap.sh --with-toolset=gcc");
 
     unless ($bootstrap_result) {
         fast_die("bootstrap of Boost Builder failed, please check logs\n");
@@ -1672,7 +1651,7 @@ sub install_boost_dependencies {
 }
 
 sub install_boost {
-    my $boost_install_path = "$library_install_folder/boost_1_72_0";
+    my $boost_install_path = "$library_install_folder/boost_1_74_0";
 
     if (-e $boost_install_path && defined($ENV{'CI'})) {
         warn "Boost libraries already exist in $boost_install_path. Skip build process\n";
@@ -1680,13 +1659,12 @@ sub install_boost {
     }
 
     chdir $library_install_folder;
-    my $archive_file_name = 'boost_1_72_0.tar.gz';
+    my $archive_file_name = 'boost_1_74_0.tar.gz';
 
     print "Install Boost dependencies\n";
 
     print "Download Boost source code\n";
-    # Official site: https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.bz2 but it's dead now
-    my $boost_download_result = download_file("http://mirror.nienbo.com/boost/1.72.0/boost_1_72_0.tar.bz2", $archive_file_name, '88866e4075e12255e7a7189d0b8a686e0b1ee9c1');
+    my $boost_download_result = download_file("https://dl.bintray.com/boostorg/release/1.74.0/source/boost_1_74_0.tar.bz2", $archive_file_name, 'f82c0d8685b4d0e3971e8e2a8f9ef1551412c125');
 
     unless ($boost_download_result) {
         fast_die("Can't download Boost source code\n");
@@ -1695,7 +1673,7 @@ sub install_boost {
     print "Unpack Boost source code\n";
     exec_command("tar -xf $archive_file_name");
 
-    my $folder_name_inside_archive = 'boost_1_72_0';
+    my $folder_name_inside_archive = 'boost_1_74_0';
 
     print "Fix permissions\n";
     # Fix permissions because they are broken inside official archive
@@ -1710,9 +1688,8 @@ sub install_boost {
 
     print "Build Boost\n";
     # We have troubles when run this code with vzctl exec so we should add custom compiler in path 
-    # So without HOME=/root nothing worked correctly due to another "openvz" feature
     # linkflags is required to specify custom path to libicu from regexp library
-    my $b2_build_result = exec_command("$library_install_folder/boost_build1.72.0/bin/b2 -j$cpus_number -sICU_PATH=$library_install_folder/libicu_65_1 linkflags=\"-Wl,-rpath,$library_install_folder/libicu_65_1/lib\" --build-dir=$temp_folder_for_building_project/boost_build_temp_directory_1_7_2 link=shared --without-test --without-python --without-wave --without-log --without-mpi");
+    my $b2_build_result = exec_command("$library_install_folder/boost_build1.74.0/bin/b2 -j$cpus_number -sICU_PATH=$library_install_folder/libicu_65_1 linkflags=\"-Wl,-rpath,$library_install_folder/libicu_65_1/lib\" --build-dir=$temp_folder_for_building_project/boost_build_temp_directory_1_7_4 link=shared --without-test --without-python --without-wave --without-log --without-mpi");
 
     # We should not do this check because b2 build return bad return code even in success case... when it can't build few non important targets
     unless ($b2_build_result) {
