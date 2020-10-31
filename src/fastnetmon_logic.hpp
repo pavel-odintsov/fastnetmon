@@ -85,3 +85,18 @@ bool exabgp_flow_spec_ban_manage(std::string action, std::string flow_spec_rule_
 void store_data_in_redis(std::string key_name, std::string attack_details);
 redisContext* redis_init_connection();
 #endif
+
+void execute_ip_ban(uint32_t client_ip, map_element average_speed_element, std::string flow_attack_details, subnet_t customer_subnet);
+void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::string flow_attack_details);
+
+#ifdef MONGO
+void store_data_in_mongo(std::string key_name, std::string attack_details_json);
+#endif
+
+std::string print_channel_speed(std::string traffic_type, direction_t packet_direction);
+void traffic_draw_program();
+void recalculate_speed();
+std::string draw_table(direction_t data_direction, bool do_redis_update, sort_type sort_item);
+void print_screen_contents_into_file(std::string screen_data_stats_param);
+void zeroify_all_flow_counters();
+void process_packet(simple_packet_t& current_packet) ;
