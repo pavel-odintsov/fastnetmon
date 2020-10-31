@@ -28,10 +28,6 @@
 #include "afpacket_plugin/afpacket_collector.h"
 #endif
 
-#ifdef PF_RING
-#include "actions/pfring_hardware_filter_action.h"
-#endif
-
 #ifdef ENABLE_GOBGP
 #include "actions/gobgp_action.h"
 #endif
@@ -116,7 +112,6 @@ extern bool mongodb_enabled;
 extern std::string mongodb_database_name;
 #endif
 
-extern bool pfring_hardware_filters_enabled;
 extern bool notify_script_pass_details;
 extern unsigned int number_of_packets_for_pcap_attack_dump;
 extern patricia_tree_t *lookup_tree_ipv4, *whitelist_tree_ipv4;
@@ -1866,15 +1861,6 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
 
     if (store_attack_details_to_file) {
         print_attack_details_to_file(full_attack_description, client_ip_as_string, current_attack);
-    }
-
-    if (pfring_hardware_filters_enabled) {
-#ifdef PF_RING
-        logger << log4cpp::Priority::INFO << "We will block traffic to/from this IP with hardware filters";
-        pfring_hardware_filter_action_block(client_ip_as_string);
-#else
-        logger << log4cpp::Priority::ERROR << "You haven't compiled PF_RING hardware filters support";
-#endif
     }
 
     if (notify_script_enabled) {
