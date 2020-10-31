@@ -47,6 +47,8 @@ libhiredis_0_13
 mongo_c_driver_1_16_1
 protobuf_3.11.4
 gcc930
+capnproto_0_8_0
+openssl_1_0_2d
 );
 
 for my $library (@our_libraries) {
