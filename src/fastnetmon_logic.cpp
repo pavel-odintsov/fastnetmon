@@ -2643,21 +2643,13 @@ void process_packet(simple_packet_t& current_packet) {
     }
 
     if (current_packet.ip_protocol_version == 6) {
-#ifdef IPV6_HASH_COUNTERS
         current_packet.packet_direction =
-        get_packet_direction_ipv6(lookup_tree_ipv6, current_packet.src_ipv6, current_packet.dst_ipv6);
-
-        // TODO: move to bulk operations here!
-        multi_process_queue_for_ipv6_counters.enqueue(current_packet);
-#else
-
+            get_packet_direction_ipv6(lookup_tree_ipv6, current_packet.src_ipv6, current_packet.dst_ipv6);
 
 #ifdef USE_NEW_ATOMIC_BUILTINS
         __atomic_add_fetch(&total_ipv6_packets, 1, __ATOMIC_RELAXED);
 #else
         __sync_fetch_and_add(&total_ipv6_packets, 1);
-#endif
-
 #endif
 
         return;
