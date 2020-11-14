@@ -1109,7 +1109,7 @@ std::string get_printable_attack_name(attack_type_t attack) {
     }
 }
 
-std::string serialize_network_load_to_text(map_element& network_speed_meter, bool average) {
+std::string serialize_network_load_to_text(map_element_t& network_speed_meter, bool average) {
     std::stringstream buffer;
 
     std::string prefix = "Network";
@@ -1127,7 +1127,7 @@ std::string serialize_network_load_to_text(map_element& network_speed_meter, boo
     return buffer.str();
 }
 
-json_object* serialize_network_load_to_json(map_element& network_speed_meter) {
+json_object* serialize_network_load_to_json(map_element_t& network_speed_meter) {
     json_object* jobj = json_object_new_object();
 
     json_object_object_add(jobj, "incoming traffic", json_object_new_int(network_speed_meter.in_bytes));
