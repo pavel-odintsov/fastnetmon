@@ -737,39 +737,50 @@ std::string print_ipv6_address(struct in6_addr& ipv6_address) {
     return result;
 }
 
-direction_t get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_addr src_ipv6, struct in6_addr dst_ipv6) {
+direction_t get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_addr src_ipv6, struct in6_addr dst_ipv6, subnet_ipv6_cidr_mask_t& subnet) {
     direction_t packet_direction;
 
     bool our_ip_is_destination = false;
-    bool our_ip_is_source = false;
+    bool our_ip_is_source      = false;
 
     prefix_t prefix_for_check_address;
     prefix_for_check_address.family = AF_INET6;
-    prefix_for_check_address.bitlen = 128;
+    prefix_for_check_address.bitlen = 128; 
 
     patricia_node_t* found_patrica_node = NULL;
-    prefix_for_check_address.add.sin6 = dst_ipv6;
+    prefix_for_check_address.add.sin6   = dst_ipv6;
 
     found_patrica_node = patricia_search_best2(lookup_tree, &prefix_for_check_address, 1);
 
+    subnet_ipv6_cidr_mask_t destination_subnet;
     if (found_patrica_node) {
         our_ip_is_destination = true;
-    }
 
-    found_patrica_node = NULL;
+        destination_subnet.subnet_address     = found_patrica_node->prefix->add.sin6;
+        destination_subnet.cidr_prefix_length = found_patrica_node->prefix->bitlen;
+    }    
+
+    found_patrica_node                = NULL;
     prefix_for_check_address.add.sin6 = src_ipv6;
+
+    subnet_ipv6_cidr_mask_t source_subnet;
 
     found_patrica_node = patricia_search_best2(lookup_tree, &prefix_for_check_address, 1);
 
     if (found_patrica_node) {
         our_ip_is_source = true;
-    }
+
+        source_subnet.subnet_address     = found_patrica_node->prefix->add.sin6;
+        source_subnet.cidr_prefix_length = found_patrica_node->prefix->bitlen;
+    }    
 
     if (our_ip_is_source && our_ip_is_destination) {
         packet_direction = INTERNAL;
     } else if (our_ip_is_source) {
+        subnet           = source_subnet;
         packet_direction = OUTGOING;
     } else if (our_ip_is_destination) {
+        subnet           = destination_subnet;
         packet_direction = INCOMING;
     } else {
         packet_direction = OTHER;

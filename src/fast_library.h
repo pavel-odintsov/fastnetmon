@@ -26,6 +26,8 @@
 
 #include "fast_endianless.hpp"
 
+#include "fastnetmon_networks.hpp"
+
 #define TCP_FIN_FLAG_SHIFT 1
 #define TCP_SYN_FLAG_SHIFT 2
 #define TCP_RST_FLAG_SHIFT 3
@@ -92,7 +94,7 @@ direction_t get_packet_direction(patricia_tree_t* lookup_tree,
                                unsigned long& source_subnet,
                                unsigned int&  source_subnet_cidr_mas);
 
-direction_t get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_addr src_ipv6, struct in6_addr dst_ipv6);
+direction_t get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_addr src_ipv6, struct in6_addr dst_ipv6, subnet_ipv6_cidr_mask_t& subnet);
 
 std::string convert_prefix_to_string_representation(prefix_t* prefix);
 std::string find_subnet_by_ip_in_string_format(patricia_tree_t* patricia_tree, std::string ip);
