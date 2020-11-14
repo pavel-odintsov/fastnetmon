@@ -46,6 +46,8 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif // __GNUC__
 
+#include "abstract_subnet_counters.hpp"
+
 #include "fastnetmon.grpc.pb.h"
 #include <grpc++/grpc++.h>
 
@@ -337,8 +339,17 @@ total_counter_element_t total_speed_average_counters_ipv6[4];
 uint64_t total_unparsed_packets = 0;
 uint64_t total_unparsed_packets_speed = 0;
 
+// Total amount of IPv4 packets
+uint64_t total_ipv4_packets = 0;
+
 // Total amount of IPv6 packets
 uint64_t total_ipv6_packets = 0;
+
+// Number of non IPv4/IPv6 packets received by us
+uint64_t non_ip_packets = 0;
+
+// Total number of times when we executed process_packet()
+uint64_t total_simple_packets_processed = 0;
 
 // IPv6 traffic which belongs to our own networks
 uint64_t our_ipv6_packets = 0;
@@ -347,6 +358,12 @@ uint64_t incoming_total_flows_speed = 0;
 uint64_t outgoing_total_flows_speed = 0;
 
 map_of_vector_counters SubnetVectorMap;
+
+// Network counters for IPv6
+abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t> ipv6_subnet_counters;
+
+// Host counters for IPv6
+abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t> ipv6_host_counters;
 
 // Here we store taffic per subnet
 map_for_subnet_counters PerSubnetCountersMap;
