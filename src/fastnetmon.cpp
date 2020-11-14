@@ -130,6 +130,9 @@ std::string cli_stats_file_path = "/tmp/fastnetmon.dat";
 unsigned int stats_thread_sleep_time = 3600;
 unsigned int stats_thread_initial_call_delay = 30;
 
+// Current time with pretty low precision, we use separate thread to update it
+time_t current_inaccurate_time = 0; 
+
 bool process_internal_traffic_as_external = false;
 
 unsigned int recalculate_speed_timeout = 1;
@@ -1698,6 +1701,12 @@ int main(int argc, char** argv) {
         service_thread_group.add_thread(new boost::thread(RunApiServer));
     }
 #endif
+
+    // Set inaccurate time value which will be used in process_packet() from capture backends
+    time(&current_inaccurate_time);
+
+    // Start system speed recalculation thread
+    service_thread_group.add_thread(new boost::thread(system_counters_speed_thread_handler));
 
     // Run screen draw thread
     service_thread_group.add_thread(new boost::thread(screen_draw_thread));
