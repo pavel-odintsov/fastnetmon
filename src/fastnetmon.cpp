@@ -324,9 +324,14 @@ active_flow_spec_announces_t active_flow_spec_announces;
 
 // We count total number of incoming/outgoing/internal and other traffic type packets/bytes
 // And initilize by 0 all fields
-total_counter_element total_counters[4];
-total_counter_element total_speed_counters[4];
-total_counter_element total_speed_average_counters[4];
+total_counter_element_t total_counters[4];
+total_counter_element_t total_speed_counters[4];
+total_counter_element_t total_speed_average_counters[4];
+
+// IPv6 versions of total counters
+total_counter_element_t total_counters_ipv6[4];
+total_counter_element_t total_speed_counters_ipv6[4];
+total_counter_element_t total_speed_average_counters_ipv6[4];
 
 // Total amount of non parsed packets
 uint64_t total_unparsed_packets = 0;
@@ -415,7 +420,7 @@ bool process_outgoing_traffic = true;
 void init_current_instance_of_ndpi();
 #endif
 
-void execute_ip_ban(uint32_t client_ip, map_element average_speed_element, std::string flow_attack_details, subnet_t customer_subnet);
+void execute_ip_ban(uint32_t client_ip, map_element_t average_speed_element, std::string flow_attack_details, subnet_t customer_subnet);
 std::string get_attack_description_in_json(uint32_t client_ip, attack_details& current_attack);
 logging_configuration_t read_logging_settings(configuration_map_t configuration_map);
 std::string get_amplification_attack_type(amplification_attack_type_t attack_type);
@@ -430,7 +435,7 @@ void exabgp_prefix_ban_manage(std::string action,
                               std::string exabgp_next_hop,
                               std::string exabgp_community);
 std::string print_subnet_load();
-bool we_should_ban_this_ip(map_element* current_average_speed_element, ban_settings_t current_ban_settings);
+bool we_should_ban_this_ip(map_element_t* current_average_speed_element, ban_settings_t current_ban_settings);
 unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp);
 void print_attack_details_to_file(std::string details, std::string client_ip_as_string, attack_details current_attack);
 std::string print_ban_thresholds(ban_settings_t current_ban_settings);
@@ -1085,7 +1090,7 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
 
     subnet_t current_subnet = std::make_pair(subnet_as_integer, bitlen);
 
-    map_element zero_map_element;
+    map_element_t zero_map_element;
     memset(&zero_map_element, 0, sizeof(zero_map_element));
 
     // Initilize our counters with fill constructor
@@ -1111,7 +1116,7 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
 }
 
 void zeroify_all_counters() {
-    map_element zero_map_element;
+    map_element_t zero_map_element;
     memset(&zero_map_element, 0, sizeof(zero_map_element));
 
     for (map_of_vector_counters::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); ++itr) {
@@ -1279,7 +1284,7 @@ bool load_our_networks_list() {
            << total_number_of_hosts_in_our_networks;
 
     // 3 - speed counter, average speed counter and data counter
-    uint64_t memory_requirements = 3 * sizeof(map_element) * total_number_of_hosts_in_our_networks / 1024 / 1024;
+    uint64_t memory_requirements = 3 * sizeof(map_element_t) * total_number_of_hosts_in_our_networks / 1024 / 1024;
 
     logger << log4cpp::Priority::INFO << "We need " << memory_requirements
            << " MB of memory for storing counters for your networks";

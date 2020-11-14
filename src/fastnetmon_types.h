@@ -14,6 +14,8 @@
 
 #include "fastnetmon_simple_packet.h"
 
+#include "map_element.hpp"
+
 typedef std::map<std::string, std::string> configuration_map_t;
 typedef std::map<std::string, uint64_t> graphite_data_t;
 
@@ -108,63 +110,21 @@ enum amplification_attack_type_t {
     AMPLIFICATION_ATTACK_CHARGEN = 6,
 };
 
-typedef struct {
+class total_counter_element_t {
+    public:
     uint64_t bytes;
     uint64_t packets;
     uint64_t flows;
-} total_counter_element;
 
-
-// main data structure for storing traffic and speed data for all our IPs
-class map_element {
-    public:
-    map_element()
-    : in_bytes(0), out_bytes(0), in_packets(0), out_packets(0), tcp_in_packets(0), tcp_out_packets(0),
-      tcp_in_bytes(0), tcp_out_bytes(0), tcp_syn_in_packets(0), tcp_syn_out_packets(0),
-      tcp_syn_in_bytes(0), tcp_syn_out_bytes(0), udp_in_packets(0), udp_out_packets(0),
-      udp_in_bytes(0), udp_out_bytes(0), in_flows(0), out_flows(0), fragmented_in_packets(0),
-      fragmented_out_packets(0), fragmented_in_bytes(0), fragmented_out_bytes(0),
-      icmp_in_packets(0), icmp_out_packets(0), icmp_in_bytes(0), icmp_out_bytes(0) {
-    }
-    uint64_t in_bytes;
-    uint64_t out_bytes;
-    uint64_t in_packets;
-    uint64_t out_packets;
-
-    // Fragmented traffic is so recently used for attacks
-    uint64_t fragmented_in_packets;
-    uint64_t fragmented_out_packets;
-    uint64_t fragmented_in_bytes;
-    uint64_t fragmented_out_bytes;
-
-    // Additional data for correct attack protocol detection
-    uint64_t tcp_in_packets;
-    uint64_t tcp_out_packets;
-    uint64_t tcp_in_bytes;
-    uint64_t tcp_out_bytes;
-
-    // Additional details about one of most popular atatck type
-    uint64_t tcp_syn_in_packets;
-    uint64_t tcp_syn_out_packets;
-    uint64_t tcp_syn_in_bytes;
-    uint64_t tcp_syn_out_bytes;
-
-    uint64_t udp_in_packets;
-    uint64_t udp_out_packets;
-    uint64_t udp_in_bytes;
-    uint64_t udp_out_bytes;
-
-    uint64_t icmp_in_packets;
-    uint64_t icmp_out_packets;
-    uint64_t icmp_in_bytes;
-    uint64_t icmp_out_bytes;
-
-    uint64_t in_flows;
-    uint64_t out_flows;
+    void zeroify() {
+        bytes   = 0;
+        packets = 0;
+        flows   = 0;
+    } 
 };
 
 // structure with attack details
-class attack_details : public map_element {
+class attack_details : public map_element_t {
     public:
     attack_details()
     : attack_protocol(0), attack_power(0), max_attack_power(0), average_in_bytes(0),
@@ -228,8 +188,8 @@ class conntrack_main_struct {
     contrack_map_type out_other;
 };
 
-typedef std::map<uint32_t, map_element> map_for_counters;
-typedef std::vector<map_element> vector_of_counters;
+typedef std::map<uint32_t, map_element_t> map_for_counters;
+typedef std::vector<map_element_t> vector_of_counters;
 
 typedef std::map<subnet_t, vector_of_counters> map_of_vector_counters;
 
@@ -237,7 +197,7 @@ typedef std::map<subnet_t, vector_of_counters> map_of_vector_counters;
 typedef std::vector<conntrack_main_struct> vector_of_flow_counters;
 typedef std::map<subnet_t, vector_of_flow_counters> map_of_vector_counters_for_flow;
 
-typedef map_element subnet_counter_t;
+typedef map_element_t subnet_counter_t;
 typedef std::pair<subnet_t, subnet_counter_t> pair_of_map_for_subnet_counters_elements_t;
 typedef std::map<subnet_t, subnet_counter_t> map_for_subnet_counters;
 
@@ -296,6 +256,6 @@ class ban_settings_t {
 typedef std::map<std::string, ban_settings_t> host_group_ban_settings_map_t;
 
 // data structure for storing data in Vector
-typedef std::pair<uint32_t, map_element> pair_of_map_elements;
+typedef std::pair<uint32_t, map_element_t> pair_of_map_elements;
 
 #endif
