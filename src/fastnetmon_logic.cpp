@@ -48,6 +48,7 @@ extern unsigned int recalculate_speed_timeout;
 extern map_of_vector_counters_for_flow SubnetVectorMapFlow;
 extern bool DEBUG_DUMP_ALL_PACKETS;
 extern bool DEBUG_DUMP_OTHER_PACKETS;
+extern uint64_t total_ipv4_packets;
 extern uint64_t total_ipv6_packets;
 extern bool process_internal_traffic_as_external;
 extern std::string screen_data_stats;
@@ -57,6 +58,8 @@ extern double average_calculation_amount_for_subnets;
 extern bool print_configuration_params_on_the_screen;
 extern uint64_t our_ipv6_packets;
 extern map_of_vector_counters SubnetVectorMap;
+extern uint64_t non_ip_packets; 
+extern uint64_t total_simple_packets_processed;
 extern unsigned int max_ips_in_list;
 extern struct timeval speed_calculation_time;
 extern struct timeval drawing_thread_execution_time;
@@ -408,7 +411,7 @@ std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element,
 std::string print_subnet_load() {
     std::stringstream buffer;
 
-    sort_type sorter;
+    sort_type_t sorter;
     if (sort_parameter == "packets") {
         sorter = PACKETS;
     } else if (sort_parameter == "bytes") {
@@ -2076,7 +2079,7 @@ void traffic_draw_program() {
     struct timeval start_calc_time;
     gettimeofday(&start_calc_time, NULL);
 
-    sort_type sorter;
+    sort_type_t sorter;
     if (sort_parameter == "packets") {
         sorter = PACKETS;
     } else if (sort_parameter == "bytes") {
@@ -2126,9 +2129,7 @@ void traffic_draw_program() {
         << "ALERT! Toolkit working incorrectly! We should calculate speed in ~1 second\n";
     }
 
-#ifdef IPV6_HASH_COUNTERS
     output_buffer << "Total amount of IPv6 packets: " << total_ipv6_packets << "\n";
-#endif
 
     output_buffer << "Total amount of IPv6 packets related to our own network: " << our_ipv6_packets << "\n";
     output_buffer << "Not processed packets: " << total_unparsed_packets_speed << " pps\n";
@@ -2428,7 +2429,7 @@ void recalculate_speed() {
     timeval_subtract(&speed_calculation_time, &finish_calc_time, &start_calc_time);
 }
 
-std::string draw_table(direction_t data_direction, bool do_redis_update, sort_type sort_item) {
+std::string draw_table(direction_t data_direction, bool do_redis_update, sort_type_t sort_item) {
     std::vector<pair_of_map_elements> vector_for_sort;
 
     std::stringstream output_buffer;
@@ -2665,6 +2666,19 @@ void process_packet(simple_packet_t& current_packet) {
     if (DEBUG_DUMP_ALL_PACKETS) {
         logger << log4cpp::Priority::INFO << "Dump: " << print_simple_packet(current_packet);
     }
+
+    // Increment counter about total number of packets processes here
+    __sync_fetch_and_add(&total_simple_packets_processed, 1);
+
+    if (current_packet.ip_protocol_version == 4) { 
+        __sync_fetch_and_add(&total_ipv4_packets, 1);
+    } else if (current_packet.ip_protocol_version == 6) { 
+        __sync_fetch_and_add(&total_ipv6_packets, 1);
+    } else {
+        // Non IP packets
+        __sync_fetch_and_add(&non_ip_packets, 1);
+        return;
+    }    
 
     uint64_t sampled_number_of_packets = current_packet.number_of_packets * current_packet.sample_ratio;
     uint64_t sampled_number_of_bytes   = current_packet.length * current_packet.sample_ratio;
