@@ -67,6 +67,7 @@ extern time_t last_call_of_traffic_recalculation;
 extern bool process_incoming_traffic;
 extern bool process_outgoing_traffic;
 extern uint64_t total_unparsed_packets;
+extern time_t current_inaccurate_time;
 extern uint64_t total_unparsed_packets_speed;
 extern bool enable_conection_tracking;
 extern bool enable_afpacket_collection;
@@ -2740,9 +2741,6 @@ void process_packet(simple_packet_t& current_packet) {
     subnet_t source_subnet       = std::make_pair(source_subnet_host, source_subnet_cidr_mask);
     subnet_t destination_subnet = std::make_pair(destination_subnet_host, destination_subnet_cidr_mask);
 
-    // Iterator for subnet counter
-    subnet_counter_t* subnet_counter = NULL;
-
     if (packet_direction == OUTGOING or packet_direction == INCOMING) {
         if (enable_subnet_counters) {
             map_for_subnet_counters::iterator subnet_iterator;
@@ -2755,7 +2753,14 @@ void process_packet(simple_packet_t& current_packet) {
                 return;
             }
 
-            subnet_counter = &subnet_iterator->second;
+            subnet_counter_t* subnet_counter = &subnet_iterator->second;
+
+			// Increment countres for each subnet
+			if (current_packet.packet_direction == OUTGOING) {
+				increment_outgoing_counters(subnet_counter, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
+			} else if (current_packet.packet_direction == INCOMING) {
+				increment_incoming_counters(subnet_counter, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
+			}
         }
     }
 
@@ -2851,17 +2856,6 @@ void process_packet(simple_packet_t& current_packet) {
 #else
             __sync_fetch_and_add(&current_element->fragmented_out_packets, sampled_number_of_packets);
             __sync_fetch_and_add(&current_element->fragmented_out_bytes, sampled_number_of_bytes);
-#endif
-        }
-
-        // TODO: add another counters
-        if (enable_subnet_counters) {
-#ifdef USE_NEW_ATOMIC_BUILTINS
-            __atomic_add_fetch(&subnet_counter->out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-            __atomic_add_fetch(&subnet_counter->out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-#else
-            __sync_fetch_and_add(&subnet_counter->out_packets, sampled_number_of_packets);
-            __sync_fetch_and_add(&subnet_counter->out_bytes, sampled_number_of_bytes);
 #endif
         }
 
@@ -3014,16 +3008,6 @@ void process_packet(simple_packet_t& current_packet) {
         __sync_fetch_and_add(&current_element->in_bytes, sampled_number_of_bytes);
 #endif
 
-        if (enable_subnet_counters) {
-#ifdef USE_NEW_ATOMIC_BUILTINS
-            __atomic_add_fetch(&subnet_counter->in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-            __atomic_add_fetch(&subnet_counter->in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-#else
-            __sync_fetch_and_add(&subnet_counter->in_packets, sampled_number_of_packets);
-            __sync_fetch_and_add(&subnet_counter->in_bytes, sampled_number_of_bytes);
-#endif
-        }
-
         // Count fragmented IP packets
         if (current_packet.ip_fragmented) {
 #ifdef USE_NEW_ATOMIC_BUILTINS
@@ -3133,6 +3117,97 @@ void process_packet(simple_packet_t& current_packet) {
     }
 
     if (packet_direction == INTERNAL) {
+    }
+}
+
+// Increment fields using data from specified packet
+void increment_outgoing_counters(map_element_t* current_element,
+                                 simple_packet_t& current_packet,
+                                 uint64_t sampled_number_of_packets,
+                                 uint64_t sampled_number_of_bytes) {
+
+    // Update last update time
+    current_element->last_update_time = current_inaccurate_time;
+
+    // Main packet/bytes counter
+    __sync_fetch_and_add(&current_element->out_packets, sampled_number_of_packets);
+    __sync_fetch_and_add(&current_element->out_bytes, sampled_number_of_bytes);
+
+    // Fragmented IP packets
+    if (current_packet.ip_fragmented) {
+        __sync_fetch_and_add(&current_element->fragmented_out_packets, sampled_number_of_packets);
+        __sync_fetch_and_add(&current_element->fragmented_out_bytes, sampled_number_of_bytes);
+    }
+
+    if (current_packet.protocol == IPPROTO_TCP) {
+        __sync_fetch_and_add(&current_element->tcp_out_packets, sampled_number_of_packets);
+        __sync_fetch_and_add(&current_element->tcp_out_bytes, sampled_number_of_bytes);
+
+        if (extract_bit_value(current_packet.flags, TCP_SYN_FLAG_SHIFT)) {
+            __sync_fetch_and_add(&current_element->tcp_syn_out_packets, sampled_number_of_packets);
+            __sync_fetch_and_add(&current_element->tcp_syn_out_bytes, sampled_number_of_bytes);
+        }
+    } else if (current_packet.protocol == IPPROTO_UDP) {
+        __sync_fetch_and_add(&current_element->udp_out_packets, sampled_number_of_packets);
+        __sync_fetch_and_add(&current_element->udp_out_bytes, sampled_number_of_bytes);
+    } else if (current_packet.protocol == IPPROTO_ICMP) {
+        __sync_fetch_and_add(&current_element->icmp_out_packets, sampled_number_of_packets);
+        __sync_fetch_and_add(&current_element->icmp_out_bytes, sampled_number_of_bytes);
+        // no flow tracking for icmp
+    } else {
+    }
+}
+
+// This function increments all our accumulators according to data from packet
+void increment_incoming_counters(map_element_t* current_element,
+                                 simple_packet_t& current_packet,
+                                 uint64_t sampled_number_of_packets,
+                                 uint64_t sampled_number_of_bytes) {
+
+    // Uodate last update time
+    current_element->last_update_time = current_inaccurate_time;
+
+    // Main packet/bytes counter
+    __sync_fetch_and_add(&current_element->in_packets, sampled_number_of_packets);
+    __sync_fetch_and_add(&current_element->in_bytes, sampled_number_of_bytes);
+
+    // Count fragmented IP packets
+    if (current_packet.ip_fragmented) {
+        __sync_fetch_and_add(&current_element->fragmented_in_packets, sampled_number_of_packets);
+        __sync_fetch_and_add(&current_element->fragmented_in_bytes, sampled_number_of_bytes);
+    }
+
+    // Count per protocol packets
+    if (current_packet.protocol == IPPROTO_TCP) {
+        __sync_fetch_and_add(&current_element->tcp_in_packets, sampled_number_of_packets);
+        __sync_fetch_and_add(&current_element->tcp_in_bytes, sampled_number_of_bytes);
+
+        if (extract_bit_value(current_packet.flags, TCP_SYN_FLAG_SHIFT)) {
+            __sync_fetch_and_add(&current_element->tcp_syn_in_packets, sampled_number_of_packets);
+            __sync_fetch_and_add(&current_element->tcp_syn_in_bytes, sampled_number_of_bytes);
+        }
+    } else if (current_packet.protocol == IPPROTO_UDP) {
+        __sync_fetch_and_add(&current_element->udp_in_packets, sampled_number_of_packets);
+        __sync_fetch_and_add(&current_element->udp_in_bytes, sampled_number_of_bytes);
+    } else if (current_packet.protocol == IPPROTO_ICMP) {
+        __sync_fetch_and_add(&current_element->icmp_in_packets, sampled_number_of_packets);
+        __sync_fetch_and_add(&current_element->icmp_in_bytes, sampled_number_of_bytes);
+    } else {
+        // TBD
+    }
+}
+
+void system_counters_speed_thread_handler() {
+    while (true) {
+        // We recalculate it each second to avoid confusion
+        boost::this_thread::sleep(boost::posix_time::seconds(1));
+
+        // We use this thread to update time each second
+        time_t current_time = 0;
+        time(&current_time);
+
+        // Update global time, yes, it may became inaccurate due to thread syncronization but that's OK for our purposes
+        current_inaccurate_time = current_time;
     }
 }
 

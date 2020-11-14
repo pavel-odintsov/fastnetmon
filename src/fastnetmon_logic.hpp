@@ -100,3 +100,15 @@ std::string draw_table(direction_t data_direction, bool do_redis_update, sort_ty
 void print_screen_contents_into_file(std::string screen_data_stats_param);
 void zeroify_all_flow_counters();
 void process_packet(simple_packet_t& current_packet) ;
+
+void increment_outgoing_counters(map_element_t* current_element,
+                                 simple_packet_t& current_packet,
+                                 uint64_t sampled_number_of_packets,
+                                 uint64_t sampled_number_of_bytes);
+
+void increment_incoming_counters(map_element_t* current_element,
+                                 simple_packet_t& current_packet,
+                                 uint64_t sampled_number_of_packets,
+                                 uint64_t sampled_number_of_bytes);
+
+void system_counters_speed_thread_handler();
