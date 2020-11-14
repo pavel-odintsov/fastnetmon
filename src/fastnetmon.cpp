@@ -133,8 +133,6 @@ unsigned int stats_thread_initial_call_delay = 30;
 // Current time with pretty low precision, we use separate thread to update it
 time_t current_inaccurate_time = 0; 
 
-bool process_internal_traffic_as_external = false;
-
 unsigned int recalculate_speed_timeout = 1;
 
 FastnetmonPlatformConfigurtion fastnetmon_platform_configuration;
@@ -723,14 +721,6 @@ bool load_configuration_file() {
             enable_conection_tracking = true;
         } else {
             enable_conection_tracking = false;
-        }
-    }
-
-    if (configuration_map.count("process_internal_traffic_as_external")) {
-        if (configuration_map["process_internal_traffic_as_external"] == "on") {
-            process_internal_traffic_as_external = true;
-        } else {
-            process_internal_traffic_as_external = false;
         }
     }
 
