@@ -7,9 +7,42 @@
 #include <string>
 #include <unistd.h>
 
-std::string cli_stats_file_path = "/tmp/fastnetmon.dat";
+#include <boost/program_options.hpp>
 
-int main() {
+std::string cli_stats_ipv4_file_path = "/tmp/fastnetmon.dat";
+
+std::string cli_stats_ipv6_file_path = "/tmp/fastnetmon_ipv6.dat";
+
+int main(int argc, char** argv) {
+    bool ipv6_mode = false;
+
+    namespace po = boost::program_options;
+
+    try {
+        // clang-format off
+        po::options_description desc("Allowed options");
+        desc.add_options()
+        ("help", "produce help message")
+        ("ipv6", "switch to IPv6 mode");
+        // clang-format on
+
+        po::variables_map vm;
+        po::store(po::parse_command_line(argc, argv, desc), vm); 
+        po::notify(vm);
+
+        if (vm.count("help")) {
+            std::cout << desc << std::endl;
+            exit(EXIT_SUCCESS);
+        }
+
+        if (vm.count("ipv6")) {
+            ipv6_mode = true;
+        }
+    } catch (po::error& e) {
+        std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
     // Init ncurses screen
     initscr();
 
@@ -33,6 +66,13 @@ int main() {
         if (c == 'q') {
             endwin();
             exit(0);
+        }
+
+
+        std::string cli_stats_file_path = cli_stats_ipv4_file_path;
+
+        if (ipv6_mode) {
+            cli_stats_file_path = cli_stats_ipv6_file_path;
         }
 
         char* cli_stats_file_path_env = getenv("cli_stats_file_path");
