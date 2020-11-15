@@ -44,7 +44,9 @@
 
 #include "abstract_subnet_counters.hpp"
 
+#include "packet_bucket.h"
 
+extern packet_buckets_storage_t<subnet_ipv6_cidr_mask_t> packet_buckets_ipv6_storage;
 extern bool print_average_traffic_counts;
 extern std::string cli_stats_file_path;
 extern unsigned int total_number_of_hosts_in_our_networks;
@@ -2939,7 +2941,8 @@ void process_packet(simple_packet_t& current_packet) {
                 subnet_counter_t* counter_ptr = &ipv6_host_counters.counter_map[ipv6_address];
                 increment_outgoing_counters(counter_ptr, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
 
-                // TODO: Collect packets for DDoS analytics engine
+                // Collect packets for DDoS analytics engine
+                packet_buckets_ipv6_storage.add_packet_to_storage(ipv6_address, current_packet);
             } else if (current_packet.packet_direction == INCOMING) {
                 subnet_ipv6_cidr_mask_t ipv6_address;
                 ipv6_address.set_cidr_prefix_length(128);
@@ -2948,8 +2951,10 @@ void process_packet(simple_packet_t& current_packet) {
                 subnet_counter_t* counter_ptr = &ipv6_host_counters.counter_map[ipv6_address];
                 increment_incoming_counters(counter_ptr, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
 
-                // TODO: Collect packets for DDoS analytics engine
+                // Collect packets for DDoS analytics engine
+                packet_buckets_ipv6_storage.add_packet_to_storage(ipv6_address, current_packet);
             }
+
         }
 
         return;
