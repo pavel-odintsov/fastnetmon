@@ -42,6 +42,9 @@
 
 #include "fastnetmon_networks.hpp"
 
+#include "abstract_subnet_counters.hpp"
+
+
 extern bool print_average_traffic_counts;
 extern std::string cli_stats_file_path;
 extern unsigned int total_number_of_hosts_in_our_networks;
@@ -65,6 +68,8 @@ extern struct timeval speed_calculation_time;
 extern struct timeval drawing_thread_execution_time;
 extern time_t last_call_of_traffic_recalculation;
 extern std::string cli_stats_ipv6_file_path;
+extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t> ipv6_host_counters;
+extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t> ipv6_subnet_counters;
 extern bool process_incoming_traffic;
 extern bool process_outgoing_traffic;
 extern uint64_t total_unparsed_packets;
@@ -2214,6 +2219,19 @@ void traffic_draw_ipv4_program() {
     timeval_subtract(&drawing_thread_execution_time, &end_calc_time, &start_calc_time);
 }
 
+// Speed recalculation function for IPv6 hosts calls it for each host during speed recalculation
+void speed_callback_ipv6(subnet_ipv6_cidr_mask_t* current_subnet, map_element_t* current_average_speed_element) {
+    // TODO: attack action logic should be implemented here
+    return;
+}
+
+
+// Speed recalculation function for IPv6 networks
+// It's just stub, we do not execute any actions for it
+void speed_callback_subnet_ipv6(subnet_ipv6_cidr_mask_t* subnet, map_element_t* speed_element) {
+    return;
+}
+
 
 /* Calculate speed for all connnections */
 void recalculate_speed() {
@@ -2403,6 +2421,17 @@ void recalculate_speed() {
             *vector_itr = zero_map_element;
         }
     }
+
+    // Calculate IPv6 trafffic
+    if (enable_subnet_counters) {
+        ipv6_subnet_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount_for_subnets,
+            speed_callback_subnet_ipv6);
+    }
+
+    // Recalculate traffic for hosts
+    ipv6_host_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount,
+        speed_callback_ipv6);
+
 
     // Calculate global flow speed
     incoming_total_flows_speed = uint64_t((double)incoming_total_flows / (double)speed_calc_period);
@@ -2741,6 +2770,47 @@ void process_packet(simple_packet_t& current_packet) {
 #else
         __sync_fetch_and_add(&total_ipv6_packets, 1);
 #endif
+
+        if (enable_subnet_counters) {
+            std::lock_guard<std::mutex> lock_guard(ipv6_subnet_counters.counter_map_mutex);
+
+            // We will create keys for new subnet here on demand
+            subnet_counter_t* counter_ptr = &ipv6_subnet_counters.counter_map[ipv6_cidr_subnet];
+
+            if (current_packet.packet_direction == OUTGOING) {
+                counter_ptr->out_packets += sampled_number_of_packets;
+                counter_ptr->out_bytes += sampled_number_of_bytes;
+            } else if (current_packet.packet_direction == INCOMING) {
+                counter_ptr->in_packets += sampled_number_of_packets;
+                counter_ptr->in_bytes += sampled_number_of_bytes;
+            }
+        }
+
+        // Here I use counters allocated per /128. In some future we could offer option to count them in diffenrent way
+        // (/64, /96)
+        {
+            std::lock_guard<std::mutex> lock_guard(ipv6_host_counters.counter_map_mutex);
+
+            if (current_packet.packet_direction == OUTGOING) {
+                subnet_ipv6_cidr_mask_t ipv6_address;
+                ipv6_address.set_cidr_prefix_length(128);
+                ipv6_address.set_subnet_address(&current_packet.src_ipv6);
+
+                subnet_counter_t* counter_ptr = &ipv6_host_counters.counter_map[ipv6_address];
+                increment_outgoing_counters(counter_ptr, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
+
+                // TODO: Collect packets for DDoS analytics engine
+            } else if (current_packet.packet_direction == INCOMING) {
+                subnet_ipv6_cidr_mask_t ipv6_address;
+                ipv6_address.set_cidr_prefix_length(128);
+                ipv6_address.set_subnet_address(&current_packet.dst_ipv6);
+
+                subnet_counter_t* counter_ptr = &ipv6_host_counters.counter_map[ipv6_address];
+                increment_incoming_counters(counter_ptr, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
+
+                // TODO: Collect packets for DDoS analytics engine
+            }
+        }
 
         return;
     }
