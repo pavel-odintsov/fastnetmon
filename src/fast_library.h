@@ -78,7 +78,7 @@ std::string get_net_address_from_network_as_string(std::string network_cidr_form
 std::string print_time_t_in_fastnetmon_format(time_t current_time);
 unsigned int get_cidr_mask_from_network_as_string(std::string network_cidr_format);
 void copy_networks_from_string_form_to_binary(std::vector<std::string> networks_list_as_string,
-                                              std::vector<subnet_t>& our_networks);
+                                              std::vector<subnet_cidr_mask_t>& our_networks);
 int convert_string_to_integer(std::string line);
 
 bool print_pid_to_file(pid_t pid, std::string pid_path);
@@ -87,18 +87,17 @@ bool read_pid_from_file(pid_t& pid, std::string pid_path);
 direction_t get_packet_direction(patricia_tree_t* lookup_tree,
                                uint32_t src_ip,
                                uint32_t dst_ip,
-                               unsigned long& subnet,
-                               unsigned int& subnet_cidr_mask);
+                               subnet_cidr_mask_t& subnet);
 
 direction_t get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_addr src_ipv6, struct in6_addr dst_ipv6, subnet_ipv6_cidr_mask_t& subnet);
 
 std::string convert_prefix_to_string_representation(prefix_t* prefix);
 std::string find_subnet_by_ip_in_string_format(patricia_tree_t* patricia_tree, std::string ip);
-std::string convert_subnet_to_string(subnet_t my_subnet);
+std::string convert_subnet_to_string(subnet_cidr_mask_t my_subnet);
 std::string get_direction_name(direction_t direction_value);
-subnet_t convert_subnet_from_string_to_binary(std::string subnet_cidr);
+subnet_cidr_mask_t convert_subnet_from_string_to_binary(std::string subnet_cidr);
 std::vector<std::string> split_strings_to_vector_by_comma(std::string raw_string);
-subnet_t convert_subnet_from_string_to_binary_with_cidr_format(std::string subnet_cidr);
+subnet_cidr_mask_t convert_subnet_from_string_to_binary_with_cidr_format(std::string subnet_cidr);
 
 #ifdef __linux__
 bool manage_interface_promisc_mode(std::string interface_name, bool switch_on);
@@ -117,5 +116,6 @@ bool store_data_to_stats_server(unsigned short int graphite_port, std::string gr
 bool get_interface_number_by_device_name(int socket_fd, std::string interface_name, int& interface_number);
 
 bool set_boost_process_name(boost::thread* thread, std::string process_name);
+ std::string convert_subnet_to_string(subnet_cidr_mask_t my_subnet);
 
 #endif

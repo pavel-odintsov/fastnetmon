@@ -40,23 +40,25 @@
 #include <mongoc.h>
 #endif
 
+#include "fastnetmon_networks.hpp"
+
 extern bool print_average_traffic_counts;
 extern std::string cli_stats_file_path;
 extern unsigned int total_number_of_hosts_in_our_networks;
-extern  map_for_subnet_counters PerSubnetCountersMap;
+extern  map_for_subnet_counters_t PerSubnetCountersMap;
 extern unsigned int recalculate_speed_timeout;
-extern map_of_vector_counters_for_flow SubnetVectorMapFlow;
+extern map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
 extern bool DEBUG_DUMP_ALL_PACKETS;
 extern bool DEBUG_DUMP_OTHER_PACKETS;
 extern uint64_t total_ipv4_packets;
 extern uint64_t total_ipv6_packets;
 extern std::string screen_data_stats;
-extern map_of_vector_counters SubnetVectorMapSpeed;
+extern map_of_vector_counters_t SubnetVectorMapSpeed;
 extern double average_calculation_amount;
 extern double average_calculation_amount_for_subnets;
 extern bool print_configuration_params_on_the_screen;
 extern uint64_t our_ipv6_packets;
-extern map_of_vector_counters SubnetVectorMap;
+extern map_of_vector_counters_t SubnetVectorMap;
 extern uint64_t non_ip_packets; 
 extern uint64_t total_simple_packets_processed;
 extern unsigned int max_ips_in_list;
@@ -68,7 +70,7 @@ extern bool process_outgoing_traffic;
 extern uint64_t total_unparsed_packets;
 extern time_t current_inaccurate_time;
 extern uint64_t total_unparsed_packets_speed;
-extern bool enable_conection_tracking;
+extern bool enable_connection_tracking;
 extern bool enable_afpacket_collection;
 extern bool enable_data_collection_from_mirror;
 extern bool enable_netmap_collection;
@@ -101,7 +103,7 @@ extern u_int32_t ndpi_size_id_struct;
 
 extern boost::mutex ban_list_details_mutex;
 extern boost::mutex ban_list_mutex;
-extern boost::mutex flow_counter;
+extern std::mutex flow_counter;
 
 #ifdef REDIS
 extern unsigned int redis_port;
@@ -124,7 +126,7 @@ extern patricia_tree_t *lookup_tree_ipv4, *whitelist_tree_ipv4;
 extern patricia_tree_t *lookup_tree_ipv6, *whitelist_tree_ipv6;
 extern bool process_pcap_attack_dumps_with_dpi;
 extern std::map<uint32_t, std::vector<simple_packet_t> > ban_list_details;
-extern map_for_subnet_counters PerSubnetAverageSpeedMap;
+extern map_for_subnet_counters_t PerSubnetAverageSpeedMap;
 extern bool enable_subnet_counters;
 extern ban_settings_t global_ban_settings;
 extern bool exabgp_enabled;
@@ -136,7 +138,7 @@ extern std::string exabgp_next_hop;
 extern bool exabgp_announce_host;
 extern bool exabgp_flow_spec_announces;
 extern bool gobgp_enabled;
-extern map_of_vector_counters SubnetVectorMapSpeedAverage;
+extern map_of_vector_counters_t SubnetVectorMapSpeedAverage;
 extern int global_ban_time;
 extern bool notify_script_enabled;
 extern std::map<uint32_t, banlist_item> ban_list;
@@ -151,7 +153,7 @@ extern std::string graphite_host;
 extern unsigned short int graphite_port;
 extern std::string sort_parameter;
 extern std::string graphite_prefix;
-extern map_for_subnet_counters PerSubnetSpeedMap;
+extern map_for_subnet_counters_t PerSubnetSpeedMap;
 extern unsigned int ban_details_records_count;
 extern FastnetmonPlatformConfigurtion fastnetmon_platform_configuration;
 
@@ -350,7 +352,7 @@ void build_average_speed_counters_from_speed_counters(map_element_t* current_ave
 }
 
 
-std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, std::string client_ip) {
+std::string print_flow_tracking_for_ip(conntrack_main_struct_t& conntrack_element, std::string client_ip) {
     std::stringstream buffer;
 
     std::string in_tcp =
@@ -426,7 +428,7 @@ std::string print_subnet_load() {
     std::vector<pair_of_map_for_subnet_counters_elements_t> vector_for_sort;
     vector_for_sort.reserve(PerSubnetSpeedMap.size());
 
-    for (map_for_subnet_counters::iterator itr = PerSubnetSpeedMap.begin();
+    for (map_for_subnet_counters_t::iterator itr = PerSubnetSpeedMap.begin();
          itr != PerSubnetSpeedMap.end(); ++itr) {
         vector_for_sort.push_back(std::make_pair(itr->first, itr->second));
     }
@@ -850,7 +852,7 @@ std::string print_flow_tracking_for_specified_protocol(contrack_map_type& protoc
         }
 
         uint64_t packed_connection_data = itr->first;
-        packed_conntrack_hash unpacked_key_struct;
+        packed_conntrack_hash_t unpacked_key_struct;
         convert_integer_to_conntrack_hash_struct(&packed_connection_data, &unpacked_key_struct);
 
         std::string opposite_ip_as_string = convert_ip_as_uint_to_string(unpacked_key_struct.opposite_ip);
@@ -872,7 +874,7 @@ std::string print_flow_tracking_for_specified_protocol(contrack_map_type& protoc
 }
 
 void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_data,
-                                              packed_conntrack_hash* unpacked_data) {
+                                              packed_conntrack_hash_t* unpacked_data) {
     memcpy(unpacked_data, packed_connection_data, sizeof(uint64_t));
 }
 
@@ -920,11 +922,12 @@ void cleanup_ban_list() {
             // Check about ongoing attack
             if (unban_only_if_attack_finished) {
                 std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
-                uint32_t subnet_in_host_byte_order = ntohl(itr->second.customer_network.first);
+                
+                uint32_t subnet_in_host_byte_order = ntohl(itr->second.customer_network.subnet_address);
                 int64_t shift_in_vector = (int64_t)ntohl(client_ip) - (int64_t)subnet_in_host_byte_order;
 
                 // Try to find average speed element
-                map_of_vector_counters::iterator itr_average_speed =
+                map_of_vector_counters_t::iterator itr_average_speed =
                 SubnetVectorMapSpeedAverage.find(itr->second.customer_network);
 
                 if (itr_average_speed == SubnetVectorMapSpeedAverage.end()) {
@@ -1467,7 +1470,7 @@ void call_attack_details_handlers(uint32_t client_ip, attack_details& current_at
 #endif
 }
 
-uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash* struct_value) {
+uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash_t* struct_value) {
     uint64_t unpacked_data = 0;
     memcpy(&unpacked_data, struct_value, sizeof(uint64_t));
     return unpacked_data;
@@ -1480,7 +1483,7 @@ uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash* struct_
 */
 
 /* Iterate over all flow tracking table */
-bool process_flow_tracking_table(conntrack_main_struct& conntrack_element, std::string client_ip) {
+bool process_flow_tracking_table(conntrack_main_struct_t& conntrack_element, std::string client_ip) {
     std::map<uint32_t, unsigned int> uniq_remote_hosts_which_generate_requests_to_us;
     std::map<unsigned int, unsigned int> uniq_local_ports_which_target_of_connectiuons_from_inside;
 
@@ -1488,7 +1491,7 @@ bool process_flow_tracking_table(conntrack_main_struct& conntrack_element, std::
     for (contrack_map_type::iterator itr = conntrack_element.in_tcp.begin();
          itr != conntrack_element.in_tcp.end(); ++itr) {
         uint64_t packed_connection_data = itr->first;
-        packed_conntrack_hash unpacked_key_struct;
+        packed_conntrack_hash_t unpacked_key_struct;
         convert_integer_to_conntrack_hash_struct(&packed_connection_data, &unpacked_key_struct);
 
         uniq_remote_hosts_which_generate_requests_to_us[unpacked_key_struct.opposite_ip]++;
@@ -1528,7 +1531,7 @@ bool exec_with_stdin_params(std::string cmd, std::string params) {
 }
 
 // Get ban settings for this subnet or return global ban settings
-ban_settings_t get_ban_settings_for_this_subnet(subnet_t subnet, std::string& host_group_name) {
+ban_settings_t get_ban_settings_for_this_subnet(subnet_cidr_mask_t subnet, std::string& host_group_name) {
     // Try to find host group for this subnet
     subnet_to_host_group_map_t::iterator host_group_itr = subnet_to_host_groups.find(subnet);
 
@@ -1693,7 +1696,7 @@ redisContext* redis_init_connection() {
 #endif
 
 
-void execute_ip_ban(uint32_t client_ip, map_element_t average_speed_element, std::string flow_attack_details, subnet_t customer_subnet) {
+void execute_ip_ban(uint32_t client_ip, map_element_t average_speed_element, std::string flow_attack_details, subnet_cidr_mask_t customer_subnet) {
     struct attack_details current_attack;
     uint64_t pps = 0;
 
@@ -2217,11 +2220,11 @@ void recalculate_speed() {
     uint64_t outgoing_total_flows = 0;
 
     if (enable_subnet_counters) {
-        for (map_for_subnet_counters::iterator itr = PerSubnetSpeedMap.begin();
+        for (map_for_subnet_counters_t::iterator itr = PerSubnetSpeedMap.begin();
              itr != PerSubnetSpeedMap.end(); ++itr) {
-            subnet_t current_subnet = itr->first;
+            subnet_cidr_mask_t current_subnet = itr->first;
 
-            map_for_subnet_counters::iterator iter_subnet = PerSubnetCountersMap.find(current_subnet);
+            map_for_subnet_counters_t::iterator iter_subnet = PerSubnetCountersMap.find(current_subnet);
 
             if (iter_subnet == PerSubnetCountersMap.end()) {
                 logger << log4cpp::Priority::INFO << "Can't find traffic counters for subnet";
@@ -2271,7 +2274,7 @@ void recalculate_speed() {
         }
     }
 
-    for (map_of_vector_counters::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); ++itr) {
+    for (map_of_vector_counters_t::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); ++itr) {
         for (vector_of_counters::iterator vector_itr = itr->second.begin();
              vector_itr != itr->second.end(); ++vector_itr) {
             int current_index = vector_itr - itr->second.begin();
@@ -2280,7 +2283,7 @@ void recalculate_speed() {
             map_element_t new_speed_element;
 
             // convert to host order for math operations
-            uint32_t subnet_ip = ntohl(itr->first.first);
+            uint32_t subnet_ip = ntohl(itr->first.subnet_address);
             uint32_t client_ip_in_host_bytes_order = subnet_ip + current_index;
 
             // covnert to our standard network byte order
@@ -2289,9 +2292,9 @@ void recalculate_speed() {
             // Calculate speed for IP or whole subnet
             build_speed_counters_from_packet_counters(new_speed_element, &*vector_itr, speed_calc_period);
 
-            conntrack_main_struct* flow_counter_ptr = &SubnetVectorMapFlow[itr->first][current_index];
+            conntrack_main_struct_t* flow_counter_ptr = &SubnetVectorMapFlow[itr->first][current_index];
 
-            if (enable_conection_tracking) {
+            if (enable_connection_tracking) {
                 // todo: optimize this operations!
                 // it's really bad and SLOW CODE
                 uint64_t total_out_flows = (uint64_t)flow_counter_ptr->out_tcp.size() +
@@ -2326,7 +2329,7 @@ void recalculate_speed() {
             build_average_speed_counters_from_speed_counters(current_average_speed_element,
                                                              new_speed_element, exp_value, exp_power);
 
-            if (enable_conection_tracking) {
+            if (enable_connection_tracking) {
                 current_average_speed_element->out_flows = uint64_t(
                 new_speed_element.out_flows + exp_value * ((double)current_average_speed_element->out_flows -
                                                            (double)new_speed_element.out_flows));
@@ -2346,7 +2349,7 @@ void recalculate_speed() {
 
                 std::string flow_attack_details = "";
 
-                if (enable_conection_tracking) {
+                if (enable_connection_tracking) {
                     flow_attack_details =
                     print_flow_tracking_for_ip(*flow_counter_ptr, convert_ip_as_uint_to_string(client_ip));
                 }
@@ -2365,7 +2368,7 @@ void recalculate_speed() {
     incoming_total_flows_speed = uint64_t((double)incoming_total_flows / (double)speed_calc_period);
     outgoing_total_flows_speed = uint64_t((double)outgoing_total_flows / (double)speed_calc_period);
 
-    if (enable_conection_tracking) {
+    if (enable_connection_tracking) {
         // Clean Flow Counter
         flow_counter.lock();
         zeroify_all_flow_counters();
@@ -2439,7 +2442,7 @@ std::string draw_table(direction_t data_direction, bool do_redis_update, sort_ty
     vector_for_sort.reserve(total_number_of_hosts_in_our_networks);
 
     // Switch to Average speed there!!!
-    map_of_vector_counters* current_speed_map = NULL;
+    map_of_vector_counters_t* current_speed_map = NULL;
 
     if (print_average_traffic_counts) {
         current_speed_map = &SubnetVectorMapSpeedAverage;
@@ -2451,14 +2454,14 @@ std::string draw_table(direction_t data_direction, bool do_redis_update, sort_ty
     memset(&zero_map_element, 0, sizeof(zero_map_element));
 
     unsigned int count_of_zero_speed_packets = 0;
-    for (map_of_vector_counters::iterator itr = current_speed_map->begin();
+    for (map_of_vector_counters_t::iterator itr = current_speed_map->begin();
          itr != current_speed_map->end(); ++itr) {
         for (vector_of_counters::iterator vector_itr = itr->second.begin();
              vector_itr != itr->second.end(); ++vector_itr) {
             int current_index = vector_itr - itr->second.begin();
 
             // convert to host order for math operations
-            uint32_t subnet_ip = ntohl(itr->first.first);
+            uint32_t subnet_ip = ntohl(itr->first.subnet_address);
             uint32_t client_ip_in_host_bytes_order = subnet_ip + current_index;
 
             // covnert to our standard network byte order
@@ -2638,13 +2641,13 @@ void print_screen_contents_into_file(std::string screen_data_stats_param) {
 
 void zeroify_all_flow_counters() {
     // On creating it initilizes by zeros
-    conntrack_main_struct zero_conntrack_main_struct;
+    conntrack_main_struct_t zero_conntrack_main_struct;
 
     // Iterate over map
-    for (map_of_vector_counters_for_flow::iterator itr = SubnetVectorMapFlow.begin();
+    for (map_of_vector_counters_for_flow_t::iterator itr = SubnetVectorMapFlow.begin();
          itr != SubnetVectorMapFlow.end(); ++itr) {
         // Iterate over vector
-        for (vector_of_flow_counters::iterator vector_iterator = itr->second.begin();
+        for (vector_of_flow_counters_t::iterator vector_iterator = itr->second.begin();
              vector_iterator != itr->second.end(); ++vector_iterator) {
             // TODO: rewrite this monkey code
             vector_iterator->in_tcp.clear();
@@ -2708,53 +2711,53 @@ void process_packet(simple_packet_t& current_packet) {
     }
 
     // Subnet for found IPs
-    unsigned long subnet = 0;
-    unsigned int subnet_cidr_mask = 0;
+    subnet_cidr_mask_t current_subnet;
 
-
-    direction_t packet_direction = get_packet_direction(lookup_tree_ipv4, current_packet.src_ip,
-                                                      current_packet.dst_ip, subnet, subnet_cidr_mask);
+    current_packet.packet_direction = get_packet_direction(lookup_tree_ipv4, current_packet.src_ip,
+                                                      current_packet.dst_ip, current_subnet);
 
     // It's useful in case when we can't find what packets do not processed correctly
-    if (DEBUG_DUMP_OTHER_PACKETS && packet_direction == OTHER) {
+    if (DEBUG_DUMP_OTHER_PACKETS && current_packet.packet_direction == OTHER) {
         logger << log4cpp::Priority::INFO << "Dump other: " << print_simple_packet(current_packet);
     }
 
     // Skip processing of specific traffic direction
-    if ((packet_direction == INCOMING && !process_incoming_traffic) or
-        (packet_direction == OUTGOING && !process_outgoing_traffic)) {
+    if ((current_packet.packet_direction == INCOMING && !process_incoming_traffic) or
+        (current_packet.packet_direction == OUTGOING && !process_outgoing_traffic)) {
         return;
     }
 
-    subnet_t current_subnet = std::make_pair(subnet, subnet_cidr_mask);
+    uint32_t subnet_in_host_byte_order = 0; 
+    // We operate in host bytes order and need to convert subnet
+    if (!current_subnet.is_zero_subnet()) {
+        subnet_in_host_byte_order = ntohl(current_subnet.subnet_address);
+    }    
 
-    if (packet_direction == OUTGOING or packet_direction == INCOMING) {
-        if (enable_subnet_counters) {
-            map_for_subnet_counters::iterator subnet_iterator;
+    if (enable_subnet_counters && (current_packet.packet_direction == OUTGOING or current_packet.packet_direction == INCOMING)) {
+        map_for_subnet_counters_t::iterator subnet_iterator;
 
-            // Find element in map of subnet counters
-            subnet_iterator = PerSubnetCountersMap.find(current_subnet);
+        // Find element in map of subnet counters
+        subnet_iterator = PerSubnetCountersMap.find(current_subnet);
 
-            if (subnet_iterator == PerSubnetCountersMap.end()) {
-                logger << log4cpp::Priority::ERROR << "Can't find counter structure for subnet";
-                return;
-            }
+        if (subnet_iterator == PerSubnetCountersMap.end()) {
+            logger << log4cpp::Priority::ERROR << "Can't find counter structure for subnet";
+            return;
+        }
 
-            subnet_counter_t* subnet_counter = &subnet_iterator->second;
+        subnet_counter_t* subnet_counter = &subnet_iterator->second;
 
-			// Increment countres for each subnet
-			if (current_packet.packet_direction == OUTGOING) {
-				increment_outgoing_counters(subnet_counter, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
-			} else if (current_packet.packet_direction == INCOMING) {
-				increment_incoming_counters(subnet_counter, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
-			}
+        // Increment countres for each subnet
+        if (current_packet.packet_direction == OUTGOING) {
+            increment_outgoing_counters(subnet_counter, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
+        } else if (current_packet.packet_direction == INCOMING) {
+            increment_incoming_counters(subnet_counter, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
         }
     }
 
-    map_of_vector_counters_for_flow::iterator itr_flow;
+    map_of_vector_counters_for_flow_t::iterator itr_flow;
 
-    if (enable_conection_tracking) {
-        if (packet_direction == OUTGOING or packet_direction == INCOMING) {
+    if (enable_connection_tracking) {
+        if (current_packet.packet_direction == OUTGOING or current_packet.packet_direction == INCOMING) {
             itr_flow = SubnetVectorMapFlow.find(current_subnet);
 
             if (itr_flow == SubnetVectorMapFlow.end()) {
@@ -2772,286 +2775,75 @@ void process_packet(simple_packet_t& current_packet) {
     */
 
 #ifdef USE_NEW_ATOMIC_BUILTINS
-    __atomic_add_fetch(&total_counters[packet_direction].packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-    __atomic_add_fetch(&total_counters[packet_direction].bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+    __atomic_add_fetch(&total_counters[current_packet.packet_direction].packets, sampled_number_of_packets, __ATOMIC_RELAXED);
+    __atomic_add_fetch(&total_counters[current_packet.packet_direction].bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
 #else
-    __sync_fetch_and_add(&total_counters[packet_direction].packets, sampled_number_of_packets);
-    __sync_fetch_and_add(&total_counters[packet_direction].bytes, sampled_number_of_bytes);
+    __sync_fetch_and_add(&total_counters[current_packet.packet_direction].packets, sampled_number_of_packets);
+    __sync_fetch_and_add(&total_counters[current_packet.packet_direction].bytes, sampled_number_of_bytes);
 #endif
-
-    // Increment main and per protocol packet counters
-    // Below we will implement different logic according to packet direction
-    // We cannot use if / else if / else in this case because same conditions may trigger twice
-    // For internal traffic type we trigger incoming and outgoing processing paths in same time
-    if (packet_direction == OUTGOING) {
-        uint32_t subnet_in_host_byte_order = 0;
 
         // Try to find map key for this subnet
-        map_of_vector_counters::iterator itr;
+        map_of_vector_counters_t::iterator itr;
 
-        // We operate in host bytes order and need to convert subnet
-        if (subnet != 0) {
-            subnet_in_host_byte_order = ntohl(current_subnet.first);
+        if (current_packet.packet_direction == OUTGOING or current_packet.packet_direction == INCOMING) {
+            // Find element in map of vectors
+            itr = SubnetVectorMap.find(current_subnet);
+
+            if (itr == SubnetVectorMap.end()) {
+                logger << log4cpp::Priority::ERROR << "Can't find vector address in subnet map";
+                return;
+            }
         }
 
-        // Find element in map of vectors
-        itr = SubnetVectorMap.find(current_subnet);
 
-        if (itr == SubnetVectorMap.end()) {
-            logger << log4cpp::Priority::ERROR << "Can't find vector address in subnet map";
-            return;
-        }
+        // Incerement main and per protocol packet counters
+        if (current_packet.packet_direction == OUTGOING) {
+            int64_t shift_in_vector = (int64_t)ntohl(current_packet.src_ip) - (int64_t)subnet_in_host_byte_order;
 
-        int64_t shift_in_vector = (int64_t)ntohl(current_packet.src_ip) - (int64_t)subnet_in_host_byte_order;
+            if (shift_in_vector < 0 or shift_in_vector >= itr->second.size()) {
+                logger << log4cpp::Priority::ERROR << "We tried to access to element with index " << shift_in_vector
+                       << " which located outside allocated vector with size " << itr->second.size();
 
-        if (shift_in_vector < 0 or shift_in_vector >= itr->second.size()) {
-            logger << log4cpp::Priority::ERROR << "We tried to access to element with index " << shift_in_vector
-                   << " which located outside allocated vector with size " << itr->second.size();
+                logger << log4cpp::Priority::ERROR
+                       << "We expect issues with this packet in OUTGOING direction: " << print_simple_packet(current_packet);
 
-            logger << log4cpp::Priority::ERROR << "We expect issues with this packet in OUTGOING direction: "
-                   << print_simple_packet(current_packet);
-
-            return;
-        }
-
-        map_element_t* current_element = &itr->second[shift_in_vector];
-
-        // Main packet/bytes counter
-#ifdef USE_NEW_ATOMIC_BUILTINS
-        __atomic_add_fetch(&current_element->out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element->out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-#else
-        __sync_fetch_and_add(&current_element->out_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element->out_bytes, sampled_number_of_bytes);
-#endif
-
-        // Fragmented IP packets
-        if (current_packet.ip_fragmented) {
-#ifdef USE_NEW_ATOMIC_BUILTINS
-            __atomic_add_fetch(&current_element->fragmented_out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-            __atomic_add_fetch(&current_element->fragmented_out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-#else
-            __sync_fetch_and_add(&current_element->fragmented_out_packets, sampled_number_of_packets);
-            __sync_fetch_and_add(&current_element->fragmented_out_bytes, sampled_number_of_bytes);
-#endif
-        }
-
-        conntrack_main_struct* current_element_flow = NULL;
-        if (enable_conection_tracking) {
-            current_element_flow = &itr_flow->second[shift_in_vector];
-        }
-
-        uint64_t connection_tracking_hash = 0;
-
-        if (enable_conection_tracking) {
-            packed_conntrack_hash flow_tracking_structure;
-            flow_tracking_structure.opposite_ip = current_packet.dst_ip;
-            flow_tracking_structure.src_port = current_packet.source_port;
-            flow_tracking_structure.dst_port = current_packet.destination_port;
-
-            // convert this struct to 64 bit integer
-            connection_tracking_hash = convert_conntrack_hash_struct_to_integer(&flow_tracking_structure);
-        }
-
-        if (current_packet.protocol == IPPROTO_TCP) {
-#ifdef USE_NEW_ATOMIC_BUILTINS
-            __atomic_add_fetch(&current_element->tcp_out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-            __atomic_add_fetch(&current_element->tcp_out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-#else
-            __sync_fetch_and_add(&current_element->tcp_out_packets, sampled_number_of_packets);
-            __sync_fetch_and_add(&current_element->tcp_out_bytes, sampled_number_of_bytes);
-#endif
-
-            if (extract_bit_value(current_packet.flags, TCP_SYN_FLAG_SHIFT)) {
-#ifdef USE_NEW_ATOMIC_BUILTINS
-                __atomic_add_fetch(&current_element->tcp_syn_out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-                __atomic_add_fetch(&current_element->tcp_syn_out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-#else
-                __sync_fetch_and_add(&current_element->tcp_syn_out_packets, sampled_number_of_packets);
-                __sync_fetch_and_add(&current_element->tcp_syn_out_bytes, sampled_number_of_bytes);
-#endif
+                return;
             }
 
-            if (enable_conection_tracking) {
-                flow_counter.lock();
-                conntrack_key_struct* conntrack_key_struct_ptr =
-                &current_element_flow->out_tcp[connection_tracking_hash];
+            map_element_t* current_element = &itr->second[shift_in_vector];
 
-                conntrack_key_struct_ptr->packets += sampled_number_of_packets;
-                conntrack_key_struct_ptr->bytes += sampled_number_of_bytes;
+            increment_outgoing_counters(current_element, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
 
-                flow_counter.unlock();
+            if (enable_connection_tracking) {
+                increment_outgoing_flow_counters(SubnetVectorMapFlow, shift_in_vector, current_packet,
+                                                 sampled_number_of_packets, sampled_number_of_bytes, current_subnet);
             }
-        } else if (current_packet.protocol == IPPROTO_UDP) {
-#ifdef USE_NEW_ATOMIC_BUILTINS
-            __atomic_add_fetch(&current_element->udp_out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-            __atomic_add_fetch(&current_element->udp_out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-#else
-            __sync_fetch_and_add(&current_element->udp_out_packets, sampled_number_of_packets);
-            __sync_fetch_and_add(&current_element->udp_out_bytes, sampled_number_of_bytes);
-#endif
+        } else if (current_packet.packet_direction == INCOMING) {
+            int64_t shift_in_vector = (int64_t)ntohl(current_packet.dst_ip) - (int64_t)subnet_in_host_byte_order;
 
-            if (enable_conection_tracking) {
-                flow_counter.lock();
-                conntrack_key_struct* conntrack_key_struct_ptr =
-                &current_element_flow->out_udp[connection_tracking_hash];
+            if (shift_in_vector < 0 or shift_in_vector >= itr->second.size()) {
+                logger << log4cpp::Priority::ERROR << "We tried to access to element with index " << shift_in_vector
+                       << " which located outside allocated vector with size " << itr->second.size();
 
-                conntrack_key_struct_ptr->packets += sampled_number_of_packets;
-                conntrack_key_struct_ptr->bytes += sampled_number_of_bytes;
+                logger << log4cpp::Priority::ERROR
+                       << "We expect issues with this packet in INCOMING direction: " << print_simple_packet(current_packet);
 
-                flow_counter.unlock();
-            }
-        } else if (current_packet.protocol == IPPROTO_ICMP) {
-#ifdef USE_NEW_ATOMIC_BUILTINS
-            __atomic_add_fetch(&current_element->icmp_out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-            __atomic_add_fetch(&current_element->icmp_out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-#else
-            __sync_fetch_and_add(&current_element->icmp_out_packets, sampled_number_of_packets);
-            __sync_fetch_and_add(&current_element->icmp_out_bytes, sampled_number_of_bytes);
-#endif
-            // no flow tracking for icmp
-        } else {
-        }
-    }
-
-    if (packet_direction == INCOMING) {
-        uint32_t subnet_in_host_byte_order = 0;
-
-        // Try to find map key for this subnet
-        map_of_vector_counters::iterator itr;
-
-        // We operate in host bytes order and need to convert subnet
-        if (subnet != 0) {
-            subnet_in_host_byte_order = ntohl(current_subnet.first);
-        }
-
-        // Find element in map of vectors
-        itr = SubnetVectorMap.find(current_subnet);
-
-        if (itr == SubnetVectorMap.end()) {
-            logger << log4cpp::Priority::ERROR << "Can't find vector address in subnet map";
-            return;
-        }
-
-
-        int64_t shift_in_vector = (int64_t)ntohl(current_packet.dst_ip) - (int64_t)subnet_in_host_byte_order;
-
-        if (shift_in_vector < 0 or shift_in_vector >= itr->second.size()) {
-            logger << log4cpp::Priority::ERROR << "We tried to access to element with index " << shift_in_vector
-                   << " which located outside allocated vector with size " << itr->second.size();
-
-            logger << log4cpp::Priority::ERROR << "We expect issues with this packet in INCOMING direction: "
-                   << print_simple_packet(current_packet);
-
-            return;
-        }
-
-        map_element_t* current_element = &itr->second[shift_in_vector];
-
-        // Main packet/bytes counter
-#ifdef USE_NEW_ATOMIC_BUILTINS
-        __atomic_add_fetch(&current_element->in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element->in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-#else
-        __sync_fetch_and_add(&current_element->in_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element->in_bytes, sampled_number_of_bytes);
-#endif
-
-        // Count fragmented IP packets
-        if (current_packet.ip_fragmented) {
-#ifdef USE_NEW_ATOMIC_BUILTINS
-            __atomic_add_fetch(&current_element->fragmented_in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-            __atomic_add_fetch(&current_element->fragmented_in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-#else
-            __sync_fetch_and_add(&current_element->fragmented_in_packets, sampled_number_of_packets);
-            __sync_fetch_and_add(&current_element->fragmented_in_bytes, sampled_number_of_bytes);
-#endif
-        }
-
-        conntrack_main_struct* current_element_flow = NULL;
-
-        if (enable_conection_tracking) {
-            current_element_flow = &itr_flow->second[shift_in_vector];
-        }
-
-        uint64_t connection_tracking_hash = 0;
-        if (enable_conection_tracking) {
-            packed_conntrack_hash flow_tracking_structure;
-            flow_tracking_structure.opposite_ip = current_packet.src_ip;
-            flow_tracking_structure.src_port = current_packet.source_port;
-            flow_tracking_structure.dst_port = current_packet.destination_port;
-
-            // convert this struct to 64 bit integer
-            connection_tracking_hash = convert_conntrack_hash_struct_to_integer(&flow_tracking_structure);
-        }
-
-        if (current_packet.protocol == IPPROTO_TCP) {
-#ifdef USE_NEW_ATOMIC_BUILTINS
-            __atomic_add_fetch(&current_element->tcp_in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-            __atomic_add_fetch(&current_element->tcp_in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-#else
-            __sync_fetch_and_add(&current_element->tcp_in_packets, sampled_number_of_packets);
-            __sync_fetch_and_add(&current_element->tcp_in_bytes, sampled_number_of_bytes);
-#endif
-
-            if (extract_bit_value(current_packet.flags, TCP_SYN_FLAG_SHIFT)) {
-#ifdef USE_NEW_ATOMIC_BUILTINS
-                __atomic_add_fetch(&current_element->tcp_syn_in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-                __atomic_add_fetch(&current_element->tcp_syn_in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-#else
-                __sync_fetch_and_add(&current_element->tcp_syn_in_packets, sampled_number_of_packets);
-                __sync_fetch_and_add(&current_element->tcp_syn_in_bytes, sampled_number_of_bytes);
-#endif
+                return;
             }
 
-            if (enable_conection_tracking) {
-                flow_counter.lock();
-                conntrack_key_struct* conntrack_key_struct_ptr =
-                &current_element_flow->in_tcp[connection_tracking_hash];
+            map_element_t* current_element = &itr->second[shift_in_vector];
 
-                conntrack_key_struct_ptr->packets += sampled_number_of_packets;
-                conntrack_key_struct_ptr->bytes += sampled_number_of_bytes;
+            increment_incoming_counters(current_element, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
 
-                flow_counter.unlock();
+            if (enable_connection_tracking) {
+                increment_incoming_flow_counters(SubnetVectorMapFlow, shift_in_vector, current_packet,
+                                                 sampled_number_of_packets, sampled_number_of_bytes, current_subnet);
             }
-        } else if (current_packet.protocol == IPPROTO_UDP) {
-#ifdef USE_NEW_ATOMIC_BUILTINS
-            __atomic_add_fetch(&current_element->udp_in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-            __atomic_add_fetch(&current_element->udp_in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-#else
-            __sync_fetch_and_add(&current_element->udp_in_packets, sampled_number_of_packets);
-            __sync_fetch_and_add(&current_element->udp_in_bytes, sampled_number_of_bytes);
-#endif
-
-            if (enable_conection_tracking) {
-                flow_counter.lock();
-                conntrack_key_struct* conntrack_key_struct_ptr =
-                &current_element_flow->in_udp[connection_tracking_hash];
-
-                conntrack_key_struct_ptr->packets += sampled_number_of_packets;
-                conntrack_key_struct_ptr->bytes += sampled_number_of_bytes;
-                flow_counter.unlock();
-            }
-        } else if (current_packet.protocol == IPPROTO_ICMP) {
-#ifdef USE_NEW_ATOMIC_BUILTINS
-            __atomic_add_fetch(&current_element->icmp_in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-            __atomic_add_fetch(&current_element->icmp_in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-#else
-            __sync_fetch_and_add(&current_element->icmp_in_packets, sampled_number_of_packets);
-            __sync_fetch_and_add(&current_element->icmp_in_bytes, sampled_number_of_bytes);
-#endif
-            // no flow tracking for icmp
-        } else {
-            // TBD
+        } else if (current_packet.packet_direction == INTERNAL) {
         }
-
-    }
-
-    if (packet_direction == INTERNAL) {
-    }
 
 	// Exceute ban related processing
-	if (packet_direction == OUTGOING) {
+	if (current_packet.packet_direction == OUTGOING) {
         // Collect data when ban client
         if (!ban_list_details.empty() && ban_list_details.count(current_packet.src_ip) > 0 && 
             ban_list_details[current_packet.src_ip].size() < ban_details_records_count) {
@@ -3072,7 +2864,7 @@ void process_packet(simple_packet_t& current_packet) {
 	}
 
 
-	if (packet_direction == INCOMING) {
+	if (current_packet.packet_direction == INCOMING) {
         // Collect attack details
         if (!ban_list_details.empty() && ban_list_details.count(current_packet.dst_ip) > 0 &&
             ban_list_details[current_packet.dst_ip].size() < ban_details_records_count) {
@@ -3182,6 +2974,85 @@ void system_counters_speed_thread_handler() {
 
         // Update global time, yes, it may became inaccurate due to thread syncronization but that's OK for our purposes
         current_inaccurate_time = current_time;
+    }
+}
+
+
+void increment_incoming_flow_counters(map_of_vector_counters_for_flow_t& SubnetVectorMapFlow,
+                                      int64_t shift_in_vector,
+                                      simple_packet_t& current_packet,
+                                      uint64_t sampled_number_of_packets,
+                                      uint64_t sampled_number_of_bytes,
+                                      const subnet_cidr_mask_t& current_subnet) {
+
+    map_of_vector_counters_for_flow_t::iterator itr_flow = SubnetVectorMapFlow.find(current_subnet);
+
+    if (itr_flow == SubnetVectorMapFlow.end()) {
+        logger << log4cpp::Priority::ERROR << "Can't find vector address in subnet flow map";
+        return;
+    }    
+
+    conntrack_main_struct_t* current_element_flow = &itr_flow->second[shift_in_vector];
+
+    packed_conntrack_hash_t flow_tracking_structure;
+    flow_tracking_structure.opposite_ip = current_packet.src_ip;
+    flow_tracking_structure.src_port    = current_packet.source_port;
+    flow_tracking_structure.dst_port    = current_packet.destination_port;
+
+    // convert this struct to 64 bit integer
+    uint64_t connection_tracking_hash = convert_conntrack_hash_struct_to_integer(&flow_tracking_structure);
+
+    if (current_packet.protocol == IPPROTO_TCP) {
+        std::lock_guard<std::mutex> lock_guard(flow_counter);
+        conntrack_key_struct_t* conntrack_key_struct_ptr = &current_element_flow->in_tcp[connection_tracking_hash];
+
+        conntrack_key_struct_ptr->packets += sampled_number_of_packets;
+        conntrack_key_struct_ptr->bytes += sampled_number_of_bytes;
+    } else if (current_packet.protocol == IPPROTO_UDP) {
+        std::lock_guard<std::mutex> lock_guard(flow_counter);
+        conntrack_key_struct_t* conntrack_key_struct_ptr = &current_element_flow->in_udp[connection_tracking_hash];
+
+        conntrack_key_struct_ptr->packets += sampled_number_of_packets;
+        conntrack_key_struct_ptr->bytes += sampled_number_of_bytes;
+    }    
+}
+
+// Increment all flow counters using specified packet
+void increment_outgoing_flow_counters(map_of_vector_counters_for_flow_t& SubnetVectorMapFlow,
+                                      int64_t shift_in_vector,
+                                      simple_packet_t& current_packet,
+                                      uint64_t sampled_number_of_packets,
+                                      uint64_t sampled_number_of_bytes,
+                                      const subnet_cidr_mask_t& current_subnet) {
+    map_of_vector_counters_for_flow_t::iterator itr_flow = SubnetVectorMapFlow.find(current_subnet);
+
+    if (itr_flow == SubnetVectorMapFlow.end()) {
+        logger << log4cpp::Priority::ERROR << "Can't find vector address in subnet flow map";
+        return;
+    }
+
+    conntrack_main_struct_t* current_element_flow = &itr_flow->second[shift_in_vector];
+
+    packed_conntrack_hash_t flow_tracking_structure;
+    flow_tracking_structure.opposite_ip = current_packet.dst_ip;
+    flow_tracking_structure.src_port    = current_packet.source_port;
+    flow_tracking_structure.dst_port    = current_packet.destination_port;
+
+    // convert this struct to 64 bit integer
+    uint64_t connection_tracking_hash = convert_conntrack_hash_struct_to_integer(&flow_tracking_structure);
+
+    if (current_packet.protocol == IPPROTO_TCP) {
+        std::lock_guard<std::mutex> lock_guard(flow_counter);
+        conntrack_key_struct_t* conntrack_key_struct_ptr = &current_element_flow->out_tcp[connection_tracking_hash];
+
+        conntrack_key_struct_ptr->packets += sampled_number_of_packets;
+        conntrack_key_struct_ptr->bytes += sampled_number_of_bytes;
+    } else if (current_packet.protocol == IPPROTO_UDP) {
+        std::lock_guard<std::mutex> lock_guard(flow_counter);
+        conntrack_key_struct_t* conntrack_key_struct_ptr = &current_element_flow->out_udp[connection_tracking_hash];
+
+        conntrack_key_struct_ptr->packets += sampled_number_of_packets;
+        conntrack_key_struct_ptr->bytes += sampled_number_of_bytes;
     }
 }
 
