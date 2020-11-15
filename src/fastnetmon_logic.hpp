@@ -93,11 +93,12 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
 void store_data_in_mongo(std::string key_name, std::string attack_details_json);
 #endif
 
+std::string print_channel_speed_ipv6(std::string traffic_type, direction_t packet_direction);
 std::string print_channel_speed(std::string traffic_type, direction_t packet_direction);
-void traffic_draw_program();
+void traffic_draw_ipv4_program();
 void recalculate_speed();
 std::string draw_table(direction_t data_direction, bool do_redis_update, sort_type_t sort_item);
-void print_screen_contents_into_file(std::string screen_data_stats_param);
+void print_screen_contents_into_file(std::string screen_data_stats_param, std::string file_path);
 void zeroify_all_flow_counters();
 void process_packet(simple_packet_t& current_packet) ;
 
@@ -137,3 +138,4 @@ void increment_incoming_flow_counters(map_of_vector_counters_for_flow_t& SubnetV
                                       uint64_t sampled_number_of_bytes,
                                       const subnet_cidr_mask_t& current_subnet);
 
+void traffic_draw_ipv6_program();
