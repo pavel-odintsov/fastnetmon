@@ -33,7 +33,7 @@ ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::str
 logging_configuration_t read_logging_settings(configuration_map_t configuration_map);
 void print_attack_details_to_file(std::string details, std::string client_ip_as_string, attack_details current_attack);
 std::string print_ban_thresholds(ban_settings_t current_ban_settings);
-std::string print_subnet_load();
+std::string print_subnet_ipv4_load();
 std::string print_flow_tracking_for_ip(conntrack_main_struct_t& conntrack_element, std::string client_ip);
 std::string print_flow_tracking_for_specified_protocol(contrack_map_type& protocol_map,
                                                        std::string client_ip,
