@@ -16,6 +16,9 @@
 
 #include "map_element.hpp"
 
+#include "fastnetmon_networks.hpp"
+
+
 typedef std::map<std::string, std::string> configuration_map_t;
 typedef std::map<std::string, uint64_t> graphite_data_t;
 
@@ -83,10 +86,9 @@ class logging_configuration_t {
     unsigned int remote_syslog_port;
 };
 
-typedef std::pair<uint32_t, uint32_t> subnet_t;
-typedef std::vector<subnet_t> subnet_vector_t;
+typedef std::vector<subnet_cidr_mask_t> subnet_vector_t;
 
-typedef std::map<subnet_t, std::string> subnet_to_host_group_map_t;
+typedef std::map<subnet_cidr_mask_t, std::string> subnet_to_host_group_map_t;
 typedef std::map<std::string, subnet_vector_t> host_group_map_t;
 
 typedef void (*process_packet_pointer)(simple_packet_t&);
@@ -131,8 +133,8 @@ class attack_details : public map_element_t {
       average_out_bytes(0), average_in_packets(0), average_out_packets(0), average_in_flows(0),
       average_out_flows(0), ban_time(0), attack_direction(OTHER), unban_enabled(true) {
 
-        customer_network.first = 0;
-        customer_network.second = 0;
+        customer_network.subnet_address     = 0;
+        customer_network.cidr_prefix_length = 0;
     }
     direction_t attack_direction;
     // first attackpower detected
@@ -154,7 +156,7 @@ class attack_details : public map_element_t {
     bool unban_enabled;
     int ban_time; // seconds of the ban
 
-    subnet_t customer_network;
+    subnet_cidr_mask_t customer_network;
 
     packet_storage_t pcap_attack_dump;
 };
@@ -163,19 +165,21 @@ class attack_details : public map_element_t {
 typedef attack_details banlist_item;
 
 // struct for save per direction and per protocol details for flow
-typedef struct {
-    uint64_t bytes;
-    uint64_t packets;
+class conntrack_key_struct_t {
+    public:
+    uint64_t bytes   = 0;
+    uint64_t packets = 0;
     // will be used for Garbage Collection
-    time_t last_update_time;
-} conntrack_key_struct;
+    time_t last_update_time = 0;
+};
+
 
 typedef uint64_t packed_session;
 // Main mega structure for storing conntracks
 // We should use class instead struct for correct std::map allocation
-typedef std::map<packed_session, conntrack_key_struct> contrack_map_type;
+typedef std::map<packed_session, conntrack_key_struct_t> contrack_map_type;
 
-class conntrack_main_struct {
+class conntrack_main_struct_t {
     public:
     contrack_map_type in_tcp;
     contrack_map_type in_udp;
@@ -191,19 +195,20 @@ class conntrack_main_struct {
 typedef std::map<uint32_t, map_element_t> map_for_counters;
 typedef std::vector<map_element_t> vector_of_counters;
 
-typedef std::map<subnet_t, vector_of_counters> map_of_vector_counters;
+typedef std::map<subnet_cidr_mask_t, vector_of_counters> map_of_vector_counters_t;
 
 // Flow tracking structures
-typedef std::vector<conntrack_main_struct> vector_of_flow_counters;
-typedef std::map<subnet_t, vector_of_flow_counters> map_of_vector_counters_for_flow;
+typedef std::vector<conntrack_main_struct_t> vector_of_flow_counters_t;
+typedef std::map<subnet_cidr_mask_t, vector_of_flow_counters_t> map_of_vector_counters_for_flow_t;
+
 
 typedef map_element_t subnet_counter_t;
-typedef std::pair<subnet_t, subnet_counter_t> pair_of_map_for_subnet_counters_elements_t;
-typedef std::map<subnet_t, subnet_counter_t> map_for_subnet_counters;
+typedef std::pair<subnet_cidr_mask_t, subnet_counter_t> pair_of_map_for_subnet_counters_elements_t;
+typedef std::map<subnet_cidr_mask_t, subnet_counter_t> map_for_subnet_counters_t;
 
-class packed_conntrack_hash {
+class packed_conntrack_hash_t {
     public:
-    packed_conntrack_hash() : opposite_ip(0), src_port(0), dst_port(0) {
+    packed_conntrack_hash_t() : opposite_ip(0), src_port(0), dst_port(0) {
     }
     // src or dst IP
     uint32_t opposite_ip;
@@ -257,5 +262,6 @@ typedef std::map<std::string, ban_settings_t> host_group_ban_settings_map_t;
 
 // data structure for storing data in Vector
 typedef std::pair<uint32_t, map_element_t> pair_of_map_elements;
+
 
 #endif

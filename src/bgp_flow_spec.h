@@ -130,12 +130,12 @@ class flow_spec_rule_t {
         }
     }
 
-    void set_source_subnet(subnet_t source_subnet) {
+    void set_source_subnet(subnet_cidr_mask_t source_subnet) {
         this->source_subnet = source_subnet;
         this->source_subnet_used = true;
     }
 
-    void set_destination_subnet(subnet_t destination_subnet) {
+    void set_destination_subnet(subnet_cidr_mask_t destination_subnet) {
         this->destination_subnet = destination_subnet;
         this->destination_subnet_used = true;
     }
@@ -181,10 +181,10 @@ class flow_spec_rule_t {
 
     protected:
     // Only IPv4 supported
-    subnet_t source_subnet;
+    subnet_cidr_mask_t source_subnet;
     bool source_subnet_used;
 
-    subnet_t destination_subnet;
+    subnet_cidr_mask_t destination_subnet;
     bool destination_subnet_used;
 
     std::vector<uint16_t> source_ports;

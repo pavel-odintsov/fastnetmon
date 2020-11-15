@@ -34,13 +34,13 @@ logging_configuration_t read_logging_settings(configuration_map_t configuration_
 void print_attack_details_to_file(std::string details, std::string client_ip_as_string, attack_details current_attack);
 std::string print_ban_thresholds(ban_settings_t current_ban_settings);
 std::string print_subnet_load();
-std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, std::string client_ip);
+std::string print_flow_tracking_for_ip(conntrack_main_struct_t& conntrack_element, std::string client_ip);
 std::string print_flow_tracking_for_specified_protocol(contrack_map_type& protocol_map,
                                                        std::string client_ip,
                                                        direction_t flow_direction);
 
 void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_data,
-                                              packed_conntrack_hash* unpacked_data);
+                                              packed_conntrack_hash_t* unpacked_data);
 
 void cleanup_ban_list();
 void call_unban_handlers(uint32_t client_ip, attack_details& current_attack);
@@ -70,10 +70,10 @@ void zeroify_ndpi_flow(struct ndpi_flow_struct* flow);
 void launch_bgp_flow_spec_rule(amplification_attack_type_t attack_type, std::string client_ip_as_string);
 void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstream& ss, std::string client_ip_as_string);
 void call_attack_details_handlers(uint32_t client_ip, attack_details& current_attack, std::string attack_fingerprint);
-uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash* struct_value);
-bool process_flow_tracking_table(conntrack_main_struct& conntrack_element, std::string client_ip);
+uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash_t* struct_value);
+bool process_flow_tracking_table(conntrack_main_struct_t& conntrack_element, std::string client_ip);
 bool exec_with_stdin_params(std::string cmd, std::string params);
-ban_settings_t get_ban_settings_for_this_subnet(subnet_t subnet, std::string& host_group_name);
+ban_settings_t get_ban_settings_for_this_subnet(subnet_cidr_mask_t subnet, std::string& host_group_name);
 void exabgp_ban_manage(std::string action, std::string ip_as_string, attack_details current_attack);
 void exabgp_prefix_ban_manage(std::string action,
                               std::string prefix_as_string_with_mask,
@@ -86,7 +86,7 @@ void store_data_in_redis(std::string key_name, std::string attack_details);
 redisContext* redis_init_connection();
 #endif
 
-void execute_ip_ban(uint32_t client_ip, map_element_t average_speed_element, std::string flow_attack_details, subnet_t customer_subnet);
+void execute_ip_ban(uint32_t client_ip, map_element_t average_speed_element, std::string flow_attack_details, subnet_cidr_mask_t customer_subnet);
 void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::string flow_attack_details);
 
 #ifdef MONGO
@@ -112,3 +112,28 @@ void increment_incoming_counters(map_element_t* current_element,
                                  uint64_t sampled_number_of_bytes);
 
 void system_counters_speed_thread_handler();
+
+void increment_outgoing_counters(map_element_t* current_element,
+                                 simple_packet_t& current_packet,
+                                 uint64_t sampled_number_of_packets,
+                                 uint64_t sampled_number_of_bytes);
+
+void increment_incoming_counters(map_element_t* current_element,
+                                 simple_packet_t& current_packet,
+                                 uint64_t sampled_number_of_packets,
+                                 uint64_t sampled_number_of_bytes);
+
+void increment_outgoing_flow_counters(map_of_vector_counters_for_flow_t& SubnetVectorMapFlow,
+                                      int64_t shift_in_vector,
+                                      simple_packet_t& packet,
+                                      uint64_t sampled_number_of_packets,
+                                      uint64_t sampled_number_of_bytes,
+                                      const subnet_cidr_mask_t& current_subnet);
+
+void increment_incoming_flow_counters(map_of_vector_counters_for_flow_t& SubnetVectorMapFlow,
+                                      int64_t shift_in_vector,
+                                      simple_packet_t& packet,
+                                      uint64_t sampled_number_of_packets,
+                                      uint64_t sampled_number_of_bytes,
+                                      const subnet_cidr_mask_t& current_subnet);
+

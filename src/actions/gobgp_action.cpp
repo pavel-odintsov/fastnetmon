@@ -158,9 +158,9 @@ void gobgp_ban_manage(std::string action, std::string ip_as_string, attack_detai
                << convert_subnet_to_string(current_attack.customer_network) << " to GoBGP";
 
         gobgp_client->AnnounceUnicastPrefix(convert_ip_as_uint_to_string(
-                                            current_attack.customer_network.first),
+                                            current_attack.customer_network.subnet_address),
                                             gobgp_nexthop, is_withdrawal,
-                                            current_attack.customer_network.second);
+                                            current_attack.customer_network.cidr_prefix_length);
     }
 
     if (gobgp_announce_host) {

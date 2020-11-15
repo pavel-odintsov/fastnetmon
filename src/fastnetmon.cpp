@@ -246,7 +246,7 @@ void init_global_ban_settings() {
     global_ban_settings.enable_ban = true;
 }
 
-bool enable_conection_tracking = true;
+bool enable_connection_tracking = true;
 
 bool enable_afpacket_collection = false;
 bool enable_data_collection_from_mirror = true;
@@ -358,7 +358,7 @@ uint64_t our_ipv6_packets = 0;
 uint64_t incoming_total_flows_speed = 0;
 uint64_t outgoing_total_flows_speed = 0;
 
-map_of_vector_counters SubnetVectorMap;
+map_of_vector_counters_t SubnetVectorMap;
 
 // Network counters for IPv6
 abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t> ipv6_subnet_counters;
@@ -367,30 +367,30 @@ abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t> ipv6_subnet_counters;
 abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t> ipv6_host_counters;
 
 // Here we store taffic per subnet
-map_for_subnet_counters PerSubnetCountersMap;
+map_for_subnet_counters_t PerSubnetCountersMap;
 
 // Here we store traffic speed per subnet
-map_for_subnet_counters PerSubnetSpeedMap;
+map_for_subnet_counters_t PerSubnetSpeedMap;
 
 // Here we store average speed per subnet
-map_for_subnet_counters PerSubnetAverageSpeedMap;
+map_for_subnet_counters_t PerSubnetAverageSpeedMap;
 
 // Flow tracking structures
-map_of_vector_counters_for_flow SubnetVectorMapFlow;
+map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
 
 /* End of our data structs */
 boost::mutex ban_list_details_mutex;
 boost::mutex ban_list_mutex;
-boost::mutex flow_counter;
+std::mutex flow_counter;
 
 // map for flows
 std::map<uint64_t, int> FlowCounter;
 
 // Struct for string speed per IP
-map_of_vector_counters SubnetVectorMapSpeed;
+map_of_vector_counters_t SubnetVectorMapSpeed;
 
 // Struct for storing average speed per IP for specified interval
-map_of_vector_counters SubnetVectorMapSpeedAverage;
+map_of_vector_counters_t SubnetVectorMapSpeedAverage;
 
 #ifdef GEOIP
 map_for_counters GeoIpCounter;
@@ -407,8 +407,8 @@ subnet_to_host_group_map_t subnet_to_host_groups;
 
 host_group_ban_settings_map_t host_group_ban_settings_map;
 
-std::vector<subnet_t> our_networks;
-std::vector<subnet_t> whitelist_networks;
+std::vector<subnet_cidr_mask_t> our_networks;
+std::vector<subnet_cidr_mask_t> whitelist_networks;
 
 // ExaBGP support flag
 bool exabgp_enabled = false;
@@ -438,7 +438,6 @@ bool process_outgoing_traffic = true;
 void init_current_instance_of_ndpi();
 #endif
 
-void execute_ip_ban(uint32_t client_ip, map_element_t average_speed_element, std::string flow_attack_details, subnet_t customer_subnet);
 std::string get_attack_description_in_json(uint32_t client_ip, attack_details& current_attack);
 logging_configuration_t read_logging_settings(configuration_map_t configuration_map);
 std::string get_amplification_attack_type(amplification_attack_type_t attack_type);
@@ -458,10 +457,6 @@ unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp);
 void print_attack_details_to_file(std::string details, std::string client_ip_as_string, attack_details current_attack);
 std::string print_ban_thresholds(ban_settings_t current_ban_settings);
 bool load_configuration_file();
-std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, std::string client_ip);
-void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_data,
-                                              packed_conntrack_hash* unpacked_data);
-uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash* struct_value);
 void cleanup_ban_list();
 std::string get_attack_description(uint32_t client_ip, attack_details& current_attack);
 void send_attack_details(uint32_t client_ip, attack_details current_attack_details);
@@ -661,7 +656,7 @@ void parse_hostgroups(std::string name, std::string value) {
     split_strings_to_vector_by_comma(splitted_new_host_group[1]);
     for (std::vector<std::string>::iterator itr = hostgroup_subnets.begin();
          itr != hostgroup_subnets.end(); ++itr) {
-        subnet_t subnet = convert_subnet_from_string_to_binary_with_cidr_format(*itr);
+        subnet_cidr_mask_t subnet = convert_subnet_from_string_to_binary_with_cidr_format(*itr);
 
         host_groups[host_group_name].push_back(subnet);
 
@@ -718,9 +713,9 @@ bool load_configuration_file() {
 
     if (configuration_map.count("enable_connection_tracking")) {
         if (configuration_map["enable_connection_tracking"] == "on") {
-            enable_conection_tracking = true;
+            enable_connection_tracking = true;
         } else {
-            enable_conection_tracking = false;
+            enable_connection_tracking = false;
         }
     }
 
@@ -1098,7 +1093,7 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
     logger << log4cpp::Priority::INFO << "I will allocate " << network_size_in_ips
            << " records for subnet " << subnet_as_integer << " cidr mask: " << bitlen;
 
-    subnet_t current_subnet = std::make_pair(subnet_as_integer, bitlen);
+    subnet_cidr_mask_t current_subnet(subnet_as_integer, bitlen);
 
     map_element_t zero_map_element;
     memset(&zero_map_element, 0, sizeof(zero_map_element));
@@ -1114,10 +1109,10 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
     }
 
     // Initilize map element
-    SubnetVectorMapFlow[current_subnet] = vector_of_flow_counters(network_size_in_ips);
+    SubnetVectorMapFlow[current_subnet] = vector_of_flow_counters_t(network_size_in_ips);
 
     // On creating it initilizes by zeros
-    conntrack_main_struct zero_conntrack_main_struct;
+    conntrack_main_struct_t zero_conntrack_main_struct;
     std::fill(SubnetVectorMapFlow[current_subnet].begin(),
               SubnetVectorMapFlow[current_subnet].end(), zero_conntrack_main_struct);
 
@@ -1129,7 +1124,7 @@ void zeroify_all_counters() {
     map_element_t zero_map_element;
     memset(&zero_map_element, 0, sizeof(zero_map_element));
 
-    for (map_of_vector_counters::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); ++itr) {
+    for (map_of_vector_counters_t::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); ++itr) {
         // logger<< log4cpp::Priority::INFO<<"Zeroify "<<itr->first;
         std::fill(itr->second.begin(), itr->second.end(), zero_map_element);
     }
@@ -1644,9 +1639,9 @@ int main(int argc, char** argv) {
         DEBUG_DUMP_OTHER_PACKETS = true;
     }
 
-    if (sizeof(packed_conntrack_hash) != sizeof(uint64_t) or sizeof(packed_conntrack_hash) != 8) {
+    if (sizeof(packed_conntrack_hash_t) != sizeof(uint64_t) or sizeof(packed_conntrack_hash_t) != 8) {
         logger << log4cpp::Priority::INFO << "Assertion about size of packed_conntrack_hash, it's "
-               << sizeof(packed_conntrack_hash) << " instead 8";
+               << sizeof(packed_conntrack_hash_t) << " instead 8";
         exit(1);
     }
 
