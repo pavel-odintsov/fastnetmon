@@ -3104,7 +3104,7 @@ void process_packet(simple_packet_t& current_packet) {
                 // this code SHOULD NOT be called without mutex!
                 if (current_packet.packet_payload_length > 0 && current_packet.packet_payload_pointer != NULL) {
                     ban_list[current_packet.src_ip].pcap_attack_dump.write_packet(current_packet.packet_payload_pointer,
-                                                                                  current_packet.packet_payload_length);
+                                                                                  current_packet.packet_payload_length, current_packet.packet_payload_length);
                 }
             }
 
@@ -3125,7 +3125,7 @@ void process_packet(simple_packet_t& current_packet) {
                 // this code SHOULD NOT be called without mutex!
                 if (current_packet.packet_payload_length > 0 && current_packet.packet_payload_pointer != NULL) {
                     ban_list[current_packet.dst_ip].pcap_attack_dump.write_packet(current_packet.packet_payload_pointer,
-                                                                                  current_packet.packet_payload_length);
+                                                                                  current_packet.packet_payload_length, current_packet.packet_payload_length);
                 }
             }
 
