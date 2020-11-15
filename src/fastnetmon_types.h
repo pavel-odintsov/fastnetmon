@@ -127,9 +127,9 @@ class total_counter_element_t {
 };
 
 // structure with attack details
-class attack_details : public map_element_t {
+class attack_details_t : public map_element_t {
     public:
-    attack_details()
+    attack_details_t()
     : attack_protocol(0), attack_power(0), max_attack_power(0), average_in_bytes(0),
       average_out_bytes(0), average_in_packets(0), average_out_packets(0), average_in_flows(0),
       average_out_flows(0), ban_time(0), attack_direction(OTHER), unban_enabled(true) {
@@ -163,7 +163,7 @@ class attack_details : public map_element_t {
 };
 
 
-typedef attack_details banlist_item;
+typedef attack_details_t banlist_item_t;
 
 // struct for save per direction and per protocol details for flow
 class conntrack_key_struct_t {

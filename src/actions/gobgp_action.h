@@ -6,6 +6,6 @@
 
 void gobgp_action_init();
 void gobgp_action_shutdown();
-void gobgp_ban_manage(std::string action, std::string ip_as_string, attack_details current_attack);
+void gobgp_ban_manage(std::string action, std::string ip_as_string, attack_details_t current_attack);
 
 #endif
