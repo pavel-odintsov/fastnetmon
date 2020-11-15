@@ -112,8 +112,11 @@
 
 #include "packet_bucket.h"
 
+<<<<<<< HEAD
 #include "ban_list.hpp"
 
+=======
+>>>>>>> Added proper storage for captured IPv6 packets
 #ifdef FASTNETMON_API
 using fastmitigation::BanListReply;
 using fastmitigation::BanListRequest;

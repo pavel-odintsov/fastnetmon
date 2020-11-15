@@ -46,8 +46,11 @@
 
 #include "packet_bucket.h"
 
+<<<<<<< HEAD
 #include "ban_list.hpp"
 
+=======
+>>>>>>> Added proper storage for captured IPv6 packets
 extern packet_buckets_storage_t<subnet_ipv6_cidr_mask_t> packet_buckets_ipv6_storage;
 extern bool print_average_traffic_counts;
 extern std::string cli_stats_file_path;
