@@ -2841,24 +2841,6 @@ void process_packet(simple_packet_t& current_packet) {
             current_element_flow = &itr_flow->second[shift_in_vector];
         }
 
-        // Collect data when ban client
-        if (!ban_list_details.empty() && ban_list_details.count(current_packet.src_ip) > 0 &&
-            ban_list_details[current_packet.src_ip].size() < ban_details_records_count) {
-
-            ban_list_details_mutex.lock();
-
-            if (collect_attack_pcap_dumps) {
-                // this code SHOULD NOT be called without mutex!
-                if (current_packet.packet_payload_length > 0 && current_packet.packet_payload_pointer != NULL) {
-                    ban_list[current_packet.src_ip].pcap_attack_dump.write_packet(current_packet.packet_payload_pointer,
-                                                                                  current_packet.packet_payload_length);
-                }
-            }
-
-            ban_list_details[current_packet.src_ip].push_back(current_packet);
-            ban_list_details_mutex.unlock();
-        }
-
         uint64_t connection_tracking_hash = 0;
 
         if (enable_conection_tracking) {
@@ -3003,24 +2985,6 @@ void process_packet(simple_packet_t& current_packet) {
             connection_tracking_hash = convert_conntrack_hash_struct_to_integer(&flow_tracking_structure);
         }
 
-        // Collect attack details
-        if (!ban_list_details.empty() && ban_list_details.count(current_packet.dst_ip) > 0 &&
-            ban_list_details[current_packet.dst_ip].size() < ban_details_records_count) {
-
-            ban_list_details_mutex.lock();
-
-            if (collect_attack_pcap_dumps) {
-                // this code SHOULD NOT be called without mutex!
-                if (current_packet.packet_payload_length > 0 && current_packet.packet_payload_pointer != NULL) {
-                    ban_list[current_packet.dst_ip].pcap_attack_dump.write_packet(current_packet.packet_payload_pointer,
-                                                                                  current_packet.packet_payload_length);
-                }
-            }
-
-            ban_list_details[current_packet.dst_ip].push_back(current_packet);
-            ban_list_details_mutex.unlock();
-        }
-
         if (current_packet.protocol == IPPROTO_TCP) {
 #ifdef USE_NEW_ATOMIC_BUILTINS
             __atomic_add_fetch(&current_element->tcp_in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
@@ -3085,6 +3049,49 @@ void process_packet(simple_packet_t& current_packet) {
 
     if (packet_direction == INTERNAL) {
     }
+
+	// Exceute ban related processing
+	if (packet_direction == OUTGOING) {
+        // Collect data when ban client
+        if (!ban_list_details.empty() && ban_list_details.count(current_packet.src_ip) > 0 && 
+            ban_list_details[current_packet.src_ip].size() < ban_details_records_count) {
+
+            ban_list_details_mutex.lock();
+
+            if (collect_attack_pcap_dumps) {
+                // this code SHOULD NOT be called without mutex!
+                if (current_packet.packet_payload_length > 0 && current_packet.packet_payload_pointer != NULL) {
+                    ban_list[current_packet.src_ip].pcap_attack_dump.write_packet(current_packet.packet_payload_pointer,
+                                                                                  current_packet.packet_payload_length);
+                }
+            }
+
+            ban_list_details[current_packet.src_ip].push_back(current_packet);
+            ban_list_details_mutex.unlock();
+        }
+	}
+
+
+	if (packet_direction == INCOMING) {
+        // Collect attack details
+        if (!ban_list_details.empty() && ban_list_details.count(current_packet.dst_ip) > 0 &&
+            ban_list_details[current_packet.dst_ip].size() < ban_details_records_count) {
+
+            ban_list_details_mutex.lock();
+
+            if (collect_attack_pcap_dumps) {
+                // this code SHOULD NOT be called without mutex!
+                if (current_packet.packet_payload_length > 0 && current_packet.packet_payload_pointer != NULL) {
+                    ban_list[current_packet.dst_ip].pcap_attack_dump.write_packet(current_packet.packet_payload_pointer,
+                                                                                  current_packet.packet_payload_length);
+                }
+            }
+
+            ban_list_details[current_packet.dst_ip].push_back(current_packet);
+            ban_list_details_mutex.unlock();
+        }
+
+	}
 }
 
 // Increment fields using data from specified packet
