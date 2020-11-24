@@ -112,6 +112,8 @@
 
 #include "packet_bucket.h"
 
+#include "ban_list.hpp"
+
 #ifdef FASTNETMON_API
 using fastmitigation::BanListReply;
 using fastmitigation::BanListRequest;
@@ -134,6 +136,9 @@ std::string cli_stats_ipv6_file_path = "/tmp/fastnetmon_ipv6.dat";
 unsigned int stats_thread_sleep_time = 3600;
 unsigned int stats_thread_initial_call_delay = 30;
 
+// Each this seconds we will check about available data in bucket
+unsigned int check_for_availible_for_processing_packets_buckets = 1; 
+
 // Current time with pretty low precision, we use separate thread to update it
 time_t current_inaccurate_time = 0; 
 
@@ -141,6 +146,10 @@ time_t current_inaccurate_time = 0;
 packet_buckets_storage_t<subnet_ipv6_cidr_mask_t> packet_buckets_ipv6_storage;
 
 unsigned int recalculate_speed_timeout = 1;
+
+// We will remove all packet buckets which runs longer than this time. This value used only for one shot buckets.
+// Infinite bucket's will not removed
+unsigned int maximum_time_since_bucket_start_to_remove = 120; 
 
 FastnetmonPlatformConfigurtion fastnetmon_platform_configuration;
 
@@ -397,6 +406,9 @@ map_of_vector_counters_t SubnetVectorMapSpeedAverage;
 map_for_counters GeoIpCounter;
 #endif
 
+// IPv6 hosts
+blackhole_ban_list_t<subnet_ipv6_cidr_mask_t> ban_list_ipv6_ng;
+
 // In ddos info we store attack power and direction
 std::map<uint32_t, banlist_item_t> ban_list;
 std::map<uint32_t, std::vector<simple_packet_t> > ban_list_details;
@@ -492,10 +504,14 @@ class FastnetmonApiServiceImpl final : public Fastnetmon::Service {
         ban_list_details[client_ip] = std::vector<simple_packet_t>();
         ban_list_details_mutex.unlock();
 
+
+        subnet_ipv6_cidr_mask_t zero_ipv6_address;
+        boost::circular_buffer<simple_packet_t> empty_simple_packets_buffer;
+
         logger << log4cpp::Priority::INFO << "API call ban handlers manually";
 
         std::string flow_attack_details = "manually triggered attack";
-        call_ban_handlers(client_ip, current_attack, flow_attack_details);
+        call_ban_handlers(client_ip, zero_ipv6_address, false, current_attack, flow_attack_details, attack_detection_source_t::Automatic, "", empty_simple_packets_buffer);
 
         return Status::OK;
     }
@@ -1714,6 +1730,12 @@ int main(int argc, char** argv) {
     if (unban_enabled) {
         service_thread_group.add_thread(new boost::thread(cleanup_ban_list));
     }
+
+    // This thread will check about filled buckets with packets and process they
+    auto check_traffic_buckets_thread = new boost::thread(check_traffic_buckets);
+    set_boost_process_name(check_traffic_buckets_thread, "check_buckets");
+    service_thread_group.add_thread(check_traffic_buckets_thread);
+
 
 #ifdef PF_RING
     if (enable_data_collection_from_mirror) {
