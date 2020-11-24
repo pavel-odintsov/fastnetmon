@@ -169,6 +169,13 @@ class attack_details_t : public map_element_t {
         customer_network.subnet_address     = 0;
         customer_network.cidr_prefix_length = 0;
     }
+    
+    // Host group for this attack
+    std::string host_group;
+
+    // Parent hostgroup for host's host group
+    std::string parent_host_group;
+
     direction_t attack_direction;
     // first attackpower detected
     uint64_t attack_power;
@@ -189,6 +196,9 @@ class attack_details_t : public map_element_t {
     bool unban_enabled;
     int ban_time; // seconds of the ban
 
+    // If this attack was detected for IPv6 protocol
+    bool ipv6 = false;
+    
     subnet_cidr_mask_t customer_network;
 
     packet_storage_t pcap_attack_dump;
@@ -258,7 +268,7 @@ class packed_conntrack_hash_t {
 class ban_settings_t {
     public:
     ban_settings_t()
-    : enable_ban(false), enable_ban_for_pps(false), enable_ban_for_bandwidth(false),
+    : enable_ban(false), enable_ban_ipv6(false), enable_ban_for_pps(false), enable_ban_for_bandwidth(false),
       enable_ban_for_flows_per_second(false), enable_ban_for_tcp_pps(false),
       enable_ban_for_tcp_bandwidth(false), enable_ban_for_udp_pps(false),
       enable_ban_for_udp_bandwidth(false), enable_ban_for_icmp_pps(false),
@@ -267,6 +277,7 @@ class ban_settings_t {
       ban_threshold_icmp_pps(0), ban_threshold_mbps(0), ban_threshold_flows(0), ban_threshold_pps(0) {
     }
     bool enable_ban;
+    bool enable_ban_ipv6;
 
     bool enable_ban_for_pps;
     bool enable_ban_for_bandwidth;

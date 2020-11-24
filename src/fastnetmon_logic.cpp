@@ -506,6 +506,12 @@ std::string print_ban_thresholds(ban_settings_t current_ban_settings) {
         output_buffer << "We call ban script: no\n";
     }
 
+    if (current_ban_settings.enable_ban_ipv6) {
+        output_buffer << "We call ban script for IPv6: yes\n";
+    } else {
+        output_buffer << "We call ban script for IPv6: no\n";
+    }    
+
     output_buffer << "Packets per second: ";
     if (current_ban_settings.enable_ban_for_pps) {
         output_buffer << current_ban_settings.ban_threshold_pps;
@@ -602,6 +608,10 @@ ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::str
 
     if (configuration_map.count(prefix + "enable_ban") != 0) {
         ban_settings.enable_ban = configuration_map[prefix + "enable_ban"] == "on";
+    }
+
+    if (configuration_map.count(prefix + "enable_ban_ipv6") != 0) {
+        ban_settings.enable_ban_ipv6 = configuration_map[prefix + "enable_ban_ipv6"] == "on";
     }
 
     if (configuration_map.count(prefix + "ban_for_pps") != 0) {
@@ -2304,10 +2314,212 @@ void traffic_draw_ipv4_program() {
     timeval_subtract(&drawing_thread_execution_time, &end_calc_time, &start_calc_time);
 }
 
+std::string get_human_readable_threshold_type(attack_detection_threshold_type_t detecttion_type) {
+    if (detecttion_type == attack_detection_threshold_type_t::unknown) {
+        return "unknown";
+    } else if (detecttion_type == attack_detection_threshold_type_t::packets_per_second) {
+        return "packets per second";
+    } else if (detecttion_type == attack_detection_threshold_type_t::bytes_per_second) {
+        return "bytes per second";
+    } else if (detecttion_type == attack_detection_threshold_type_t::flows_per_second) {
+        return "flows per second";
+    } else if (detecttion_type == attack_detection_threshold_type_t::tcp_packets_per_second) {
+        return "tcp packets per second";
+    } else if (detecttion_type == attack_detection_threshold_type_t::tcp_syn_packets_per_second) {
+        return "tcp syn packets per second";
+    } else if (detecttion_type == attack_detection_threshold_type_t::tcp_syn_bytes_per_second) {
+        return "tcp syn bytes per second";
+    } else if (detecttion_type == attack_detection_threshold_type_t::udp_packets_per_second) {
+        return "udp packets per second";
+    } else if (detecttion_type == attack_detection_threshold_type_t::icmp_packets_per_second) {
+        return "icmp packets per second";
+    } else if (detecttion_type == attack_detection_threshold_type_t::tcp_bytes_per_second) {
+        return "tcp bytes per second";
+    } else if (detecttion_type == attack_detection_threshold_type_t::udp_bytes_per_second) {
+        return "udp bytes per second";
+    } else if (detecttion_type == attack_detection_threshold_type_t::icmp_bytes_per_second) {
+        return "icmp bytes per second";
+    }    
+
+    return "unknown";
+}
+
+
+// This function fills attack information from different information sources
+bool fill_attack_information(map_element_t average_speed_element,
+                             attack_details_t& current_attack,
+                             std::string& host_group_name,
+                             std::string& parent_host_group_name,
+                             bool unban_enabled,
+                             int ban_time) {
+    uint64_t pps = 0;
+
+    uint64_t in_pps    = average_speed_element.in_packets;
+    uint64_t out_pps   = average_speed_element.out_packets;
+    uint64_t in_bps    = average_speed_element.in_bytes;
+    uint64_t out_bps   = average_speed_element.out_bytes;
+    uint64_t in_flows  = average_speed_element.in_flows;
+    uint64_t out_flows = average_speed_element.out_flows;
+
+    direction_t data_direction;
+
+    // TODO: move this logic to different function!!!
+
+    // Detect attack direction with simple heuristic
+    if (abs(int((int)in_pps - (int)out_pps)) < 1000) {
+        // If difference between pps speed is so small we should do additional
+        // investigation using
+        // bandwidth speed
+        if (in_bps > out_bps) {
+            data_direction = INCOMING;
+            pps            = in_pps;
+        } else {
+            data_direction = OUTGOING;
+            pps            = out_pps;
+        }
+    } else {
+        if (in_pps > out_pps) {
+            data_direction = INCOMING;
+            pps            = in_pps;
+        } else {
+            data_direction = OUTGOING;
+            pps            = out_pps;
+        }
+    }
+
+    current_attack.attack_protocol = detect_attack_protocol(average_speed_element, data_direction);
+
+    current_attack.host_group        = host_group_name;
+    current_attack.parent_host_group = parent_host_group_name;
+
+    std::string data_direction_as_string = get_direction_name(data_direction);
+
+    logger << log4cpp::Priority::INFO << "We run attack block code with following params"
+           << " in: " << in_pps << " pps " << convert_speed_to_mbps(in_bps) << " mbps"
+           << " out: " << out_pps << " pps " << convert_speed_to_mbps(out_bps) << " mbps"
+        << " and we decided it's " << data_direction_as_string << " attack";
+
+    // Store ban time
+    time(&current_attack.ban_timestamp);
+    // set ban time in seconds
+    current_attack.ban_time      = ban_time;
+    current_attack.unban_enabled = unban_enabled;
+
+    // Pass main information about attack
+    current_attack.attack_direction = data_direction;
+    current_attack.attack_power     = pps;
+    current_attack.max_attack_power = pps;
+
+    current_attack.in_packets  = in_pps;
+    current_attack.out_packets = out_pps;
+
+    current_attack.in_bytes  = in_bps;
+    current_attack.out_bytes = out_bps;
+
+    // pass flow information
+    current_attack.in_flows  = in_flows;
+    current_attack.out_flows = out_flows;
+
+    current_attack.fragmented_in_packets = average_speed_element.fragmented_in_packets;
+    current_attack.tcp_in_packets        = average_speed_element.tcp_in_packets;
+    current_attack.tcp_syn_in_packets    = average_speed_element.tcp_syn_in_packets;
+    current_attack.udp_in_packets        = average_speed_element.udp_in_packets;
+    current_attack.icmp_in_packets       = average_speed_element.icmp_in_packets;
+
+    current_attack.fragmented_out_packets = average_speed_element.fragmented_out_packets;
+    current_attack.tcp_out_packets        = average_speed_element.tcp_out_packets;
+    current_attack.tcp_syn_out_packets    = average_speed_element.tcp_syn_out_packets;
+    current_attack.udp_out_packets        = average_speed_element.udp_out_packets;
+    current_attack.icmp_out_packets       = average_speed_element.icmp_out_packets;
+
+    current_attack.fragmented_out_bytes = average_speed_element.fragmented_out_bytes;
+    current_attack.tcp_out_bytes        = average_speed_element.tcp_out_bytes;
+    current_attack.tcp_syn_out_bytes    = average_speed_element.tcp_syn_out_bytes;
+    current_attack.udp_out_bytes        = average_speed_element.udp_out_bytes;
+    current_attack.icmp_out_bytes       = average_speed_element.icmp_out_bytes;
+
+    current_attack.fragmented_in_bytes = average_speed_element.fragmented_in_bytes;
+    current_attack.tcp_in_bytes        = average_speed_element.tcp_in_bytes;
+    current_attack.tcp_syn_in_bytes    = average_speed_element.tcp_syn_in_bytes;
+    current_attack.udp_in_bytes        = average_speed_element.udp_in_bytes;
+    current_attack.icmp_in_bytes       = average_speed_element.icmp_in_bytes;
+
+    current_attack.average_in_packets = average_speed_element.in_packets;
+    current_attack.average_in_bytes   = average_speed_element.in_bytes;
+    current_attack.average_in_flows   = average_speed_element.in_flows;
+
+    current_attack.average_out_packets = average_speed_element.out_packets;
+    current_attack.average_out_bytes   = average_speed_element.out_bytes;
+    current_attack.average_out_flows   = average_speed_element.out_flows;
+
+    return true;
+}
+
+
 // Speed recalculation function for IPv6 hosts calls it for each host during speed recalculation
 void speed_callback_ipv6(subnet_ipv6_cidr_mask_t* current_subnet, map_element_t* current_average_speed_element) {
-    // TODO: attack action logic should be implemented here
-    return;
+    // We should check thresholds only for per host counters for IPv6 and only when any ban actions for IPv6 traffic were enabled
+    if (!global_ban_settings.enable_ban_ipv6) {
+        return;
+    }    
+
+    // We support only global group
+    std::string host_group_name = "global";
+
+    attack_detection_threshold_type_t attack_detection_source;
+    attack_detection_direction_type_t attack_detection_direction;
+
+    bool should_ban = we_should_ban_this_entity(current_average_speed_element, global_ban_settings,
+                                                attack_detection_source, attack_detection_direction);
+
+    if (!should_ban) {
+        return;
+    }    
+
+    // This code works only for /128 subnets
+    bool in_white_list = ip_belongs_to_patricia_tree_ipv6(whitelist_tree_ipv6, current_subnet->subnet_address);
+
+    if (in_white_list) {
+        // logger << log4cpp::Priority::INFO << "This IP was whitelisted";
+        return;
+    }    
+
+    bool we_already_have_buckets_for_this_ip = packet_buckets_ipv6_storage.we_have_bucket_for_this_ip(*current_subnet);
+
+    if (we_already_have_buckets_for_this_ip) {
+        return;
+    }    
+
+    bool this_ip_is_already_banned = ban_list_ipv6_ng.is_blackholed(*current_subnet);
+
+    if (this_ip_is_already_banned) {
+        return;
+    }    
+
+    std::string ddos_detection_threshold_as_string = get_human_readable_threshold_type(attack_detection_source);
+
+    logger << log4cpp::Priority::INFO << "We have detected IPv6 attack for " << print_ipv6_cidr_subnet(*current_subnet)
+           << " with " << ddos_detection_threshold_as_string << " threshold host group: " << host_group_name;
+
+    std::string parent_group;
+
+    attack_details_t attack_details;
+    fill_attack_information(*current_average_speed_element, attack_details, host_group_name, parent_group,
+            unban_enabled, global_ban_time);
+
+	attack_details.ipv6 = true;
+    // TODO: Also, we should find IPv6 network for attack here
+
+    bool enable_backet_capture =
+        packet_buckets_ipv6_storage.enable_packet_capture(*current_subnet, attack_details, collection_pattern_t::ONCE);
+
+    if (!enable_backet_capture) {
+        logger << log4cpp::Priority::ERROR << "Could not enable packet capture for deep analytics for IPv6 "
+               << print_ipv6_cidr_subnet(*current_subnet);
+        return;
+    }
+
+    logger << log4cpp::Priority::INFO << "Enabled packet capture for IPv6 " << print_ipv6_address(current_subnet->subnet_address);
 }
 
 

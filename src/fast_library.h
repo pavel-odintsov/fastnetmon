@@ -103,6 +103,7 @@ subnet_cidr_mask_t convert_subnet_from_string_to_binary_with_cidr_format(std::st
 bool manage_interface_promisc_mode(std::string interface_name, bool switch_on);
 #endif
 
+bool ip_belongs_to_patricia_tree_ipv6(patricia_tree_t* patricia_tree, struct in6_addr client_ipv6_address);
 std::string serialize_attack_description(attack_details_t& current_attack);
 attack_type_t detect_attack_type(attack_details_t& current_attack);
 std::string get_printable_attack_name(attack_type_t attack);
