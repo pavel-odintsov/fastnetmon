@@ -9,6 +9,9 @@
 #include <hiredis/hiredis.h>
 #endif
 
+#include "all_logcpp_libraries.h"
+#include "packet_bucket.h"
+
 typedef std::map<std::string, uint32_t> active_flow_spec_announces_t;
 
 void build_speed_counters_from_packet_counters(map_element_t& new_speed_element,
@@ -24,7 +27,10 @@ std::string get_amplification_attack_type(amplification_attack_type_t attack_typ
 std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type,
                                                         std::string destination_ip);
 
-bool we_should_ban_this_ip(map_element_t* average_speed_element, ban_settings_t current_ban_settings);
+bool we_should_ban_this_entity(map_element_t* average_speed_element,
+                               ban_settings_t& current_ban_settings,
+                               attack_detection_threshold_type_t& attack_detection_source,
+                               attack_detection_direction_type_t& attack_detection_direction);
 
 bool exceed_mbps_speed(uint64_t in_counter, uint64_t out_counter, unsigned int threshold_mbps);
 bool exceed_flow_speed(uint64_t in_counter, uint64_t out_counter, unsigned int threshold);
@@ -88,7 +94,15 @@ redisContext* redis_init_connection();
 #endif
 
 void execute_ip_ban(uint32_t client_ip, map_element_t average_speed_element, std::string flow_attack_details, subnet_cidr_mask_t customer_subnet);
-void call_ban_handlers(uint32_t client_ip, attack_details_t& current_attack, std::string flow_attack_details);
+
+void call_ban_handlers(uint32_t client_ip,
+                       subnet_ipv6_cidr_mask_t client_ipv6,
+                       bool ipv6,
+                       attack_details_t& current_attack,
+                       std::string flow_attack_details,
+                       attack_detection_source_t attack_detection_source,
+                       std::string simple_packets_dump,
+                       boost::circular_buffer<simple_packet_t>& simple_packets_buffer); 
 
 #ifdef MONGO
 void store_data_in_mongo(std::string key_name, std::string attack_details_json);
@@ -141,3 +155,7 @@ void increment_incoming_flow_counters(map_of_vector_counters_for_flow_t& SubnetV
                                       const subnet_cidr_mask_t& current_subnet);
 
 void traffic_draw_ipv6_program();
+void check_traffic_buckets();
+void process_filled_buckets_ipv6();
+template <typename TemplatedKeyType>
+bool should_remove_orphaned_bucket(const std::pair<TemplatedKeyType, packet_bucket_t>& pair);

@@ -46,6 +46,8 @@
 
 #include "packet_bucket.h"
 
+#include "ban_list.hpp"
+
 extern packet_buckets_storage_t<subnet_ipv6_cidr_mask_t> packet_buckets_ipv6_storage;
 extern bool print_average_traffic_counts;
 extern std::string cli_stats_file_path;
@@ -56,6 +58,7 @@ extern map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
 extern bool DEBUG_DUMP_ALL_PACKETS;
 extern bool DEBUG_DUMP_OTHER_PACKETS;
 extern uint64_t total_ipv4_packets;
+extern blackhole_ban_list_t<subnet_ipv6_cidr_mask_t> ban_list_ipv6_ng;
 extern uint64_t total_ipv6_packets;
 extern map_of_vector_counters_t SubnetVectorMapSpeed;
 extern double average_calculation_amount;
@@ -65,11 +68,13 @@ extern uint64_t our_ipv6_packets;
 extern map_of_vector_counters_t SubnetVectorMap;
 extern uint64_t non_ip_packets; 
 extern uint64_t total_simple_packets_processed;
+extern unsigned int maximum_time_since_bucket_start_to_remove;
 extern unsigned int max_ips_in_list;
 extern struct timeval speed_calculation_time;
 extern struct timeval drawing_thread_execution_time;
 extern time_t last_call_of_traffic_recalculation;
 extern std::string cli_stats_ipv6_file_path;
+extern unsigned int check_for_availible_for_processing_packets_buckets;
 extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t> ipv6_host_counters;
 extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t> ipv6_subnet_counters;
 extern bool process_incoming_traffic;
@@ -717,28 +722,38 @@ bool exceed_mbps_speed(uint64_t in_counter, uint64_t out_counter, unsigned int t
     }
 }
 
-// Return true when we should ban this IP
-bool we_should_ban_this_ip(map_element_t* average_speed_element, ban_settings_t current_ban_settings) {
-    // we detect overspeed by packets
+// Return true when we should ban this entity
+bool we_should_ban_this_entity(map_element_t* average_speed_element,
+                               ban_settings_t& current_ban_settings,
+                               attack_detection_threshold_type_t& attack_detection_source,
+                               attack_detection_direction_type_t& attack_detection_direction) {
 
+    attack_detection_source    = attack_detection_threshold_type_t::unknown;
+    attack_detection_direction = attack_detection_direction_type_t::unknown;
+
+
+    // we detect overspeed by packets
     if (current_ban_settings.enable_ban_for_pps &&
         exceed_pps_speed(average_speed_element->in_packets, average_speed_element->out_packets,
                          current_ban_settings.ban_threshold_pps)) {
-        logger << log4cpp::Priority::DEBUG << "We detected this attack by pps limit";
+
+        attack_detection_source = attack_detection_threshold_type_t::packets_per_second;
         return true;
     }
 
     if (current_ban_settings.enable_ban_for_bandwidth &&
         exceed_mbps_speed(average_speed_element->in_bytes, average_speed_element->out_bytes,
                           current_ban_settings.ban_threshold_mbps)) {
-        logger << log4cpp::Priority::DEBUG << "We detected this attack by mbps limit";
+
+        attack_detection_source = attack_detection_threshold_type_t::bytes_per_second;
         return true;
     }
 
     if (current_ban_settings.enable_ban_for_flows_per_second &&
         exceed_flow_speed(average_speed_element->in_flows, average_speed_element->out_flows,
                           current_ban_settings.ban_threshold_flows)) {
-        logger << log4cpp::Priority::DEBUG << "We detected this attack by flow limit";
+
+        attack_detection_source = attack_detection_threshold_type_t::flows_per_second;
         return true;
     }
 
@@ -748,21 +763,23 @@ bool we_should_ban_this_ip(map_element_t* average_speed_element, ban_settings_t 
     if (current_ban_settings.enable_ban_for_tcp_pps &&
         exceed_pps_speed(average_speed_element->tcp_in_packets, average_speed_element->tcp_out_packets,
                          current_ban_settings.ban_threshold_tcp_pps)) {
-        logger << log4cpp::Priority::DEBUG << "We detected this attack by tcp pps limit";
+        attack_detection_source = attack_detection_threshold_type_t::tcp_packets_per_second;
+
         return true;
     }
 
     if (current_ban_settings.enable_ban_for_udp_pps &&
         exceed_pps_speed(average_speed_element->udp_in_packets, average_speed_element->udp_out_packets,
                          current_ban_settings.ban_threshold_udp_pps)) {
-        logger << log4cpp::Priority::DEBUG << "We detected this attack by udp pps limit";
+        
+        attack_detection_source = attack_detection_threshold_type_t::udp_packets_per_second;
         return true;
     }
 
     if (current_ban_settings.enable_ban_for_icmp_pps &&
         exceed_pps_speed(average_speed_element->icmp_in_packets, average_speed_element->icmp_out_packets,
                          current_ban_settings.ban_threshold_icmp_pps)) {
-        logger << log4cpp::Priority::DEBUG << "We detected this attack by icmp pps limit";
+        attack_detection_source = attack_detection_threshold_type_t::icmp_packets_per_second;
         return true;
     }
 
@@ -770,21 +787,21 @@ bool we_should_ban_this_ip(map_element_t* average_speed_element, ban_settings_t 
     if (current_ban_settings.enable_ban_for_tcp_bandwidth &&
         exceed_mbps_speed(average_speed_element->tcp_in_bytes, average_speed_element->tcp_out_bytes,
                           current_ban_settings.ban_threshold_tcp_mbps)) {
-        logger << log4cpp::Priority::DEBUG << "We detected this attack by tcp mbps limit";
+        attack_detection_source = attack_detection_threshold_type_t::tcp_bytes_per_second;;
         return true;
     }
 
     if (current_ban_settings.enable_ban_for_udp_bandwidth &&
         exceed_mbps_speed(average_speed_element->udp_in_bytes, average_speed_element->udp_out_bytes,
                           current_ban_settings.ban_threshold_udp_mbps)) {
-        logger << log4cpp::Priority::DEBUG << "We detected this attack by udp mbps limit";
+        attack_detection_source = attack_detection_threshold_type_t::udp_bytes_per_second;
         return true;
     }
 
     if (current_ban_settings.enable_ban_for_icmp_bandwidth &&
         exceed_mbps_speed(average_speed_element->icmp_in_bytes, average_speed_element->icmp_out_bytes,
                           current_ban_settings.ban_threshold_icmp_mbps)) {
-        logger << log4cpp::Priority::DEBUG << "We detected this attack by icmp mbps limit";
+        attack_detection_source = attack_detection_threshold_type_t::icmp_bytes_per_second;
         return true;
     }
 
@@ -957,7 +974,10 @@ void cleanup_ban_list() {
                 ban_settings_t current_ban_settings =
                 get_ban_settings_for_this_subnet(itr->second.customer_network, host_group_name);
 
-                if (we_should_ban_this_ip(average_speed_element, current_ban_settings)) {
+                attack_detection_threshold_type_t attack_detection_source;
+                attack_detection_direction_type_t attack_detection_direction;
+
+                if (we_should_ban_this_entity(average_speed_element, current_ban_settings, attack_detection_source, attack_detection_direction)) {
                     logger << log4cpp::Priority::ERROR << "Attack to IP " << client_ip_as_string
                            << " still going! We should not unblock this host";
 
@@ -1859,11 +1879,32 @@ void execute_ip_ban(uint32_t client_ip, map_element_t average_speed_element, std
     logger << log4cpp::Priority::INFO << "Attack with direction: " << data_direction_as_string
            << " IP: " << client_ip_as_string << " Power: " << pps_as_string;
 
-    call_ban_handlers(client_ip, ban_list[client_ip], flow_attack_details);
+    subnet_ipv6_cidr_mask_t zero_ipv6_address;
+
+    boost::circular_buffer<simple_packet_t> empty_simple_packets_buffer;
+
+    call_ban_handlers(client_ip, zero_ipv6_address, false, ban_list[client_ip], flow_attack_details, attack_detection_source_t::Automatic, "", empty_simple_packets_buffer);
 }
 
-void call_ban_handlers(uint32_t client_ip, attack_details_t& current_attack, std::string flow_attack_details) {
-    std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+void call_ban_handlers(uint32_t client_ip,
+                       subnet_ipv6_cidr_mask_t client_ipv6,
+                       bool ipv6,
+                       attack_details_t& current_attack,
+                       std::string flow_attack_details,
+                       attack_detection_source_t attack_detection_source,
+                       std::string simple_packets_dump,
+                       boost::circular_buffer<simple_packet_t>& simple_packets_buffer) {
+    
+    bool ipv4 = !ipv6;
+    std::string client_ip_as_string = "";
+
+    if (ipv4) {
+        client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+    } else {
+        client_ip_as_string = print_ipv6_address(client_ipv6.subnet_address);
+    }
+
+
     std::string pps_as_string = convert_int_to_string(current_attack.attack_power);
     std::string data_direction_as_string = get_direction_name(current_attack.attack_direction);
 
@@ -1875,7 +1916,7 @@ void call_ban_handlers(uint32_t client_ip, attack_details_t& current_attack, std
 
     std::string full_attack_description = basic_attack_information + flow_attack_details;
 
-    if (store_attack_details_to_file) {
+    if (store_attack_details_to_file && ipv4) {
         print_attack_details_to_file(full_attack_description, client_ip_as_string, current_attack);
     }
 
@@ -1900,7 +1941,7 @@ void call_ban_handlers(uint32_t client_ip, attack_details_t& current_attack, std
         logger << log4cpp::Priority::INFO << "Script for ban client is finished: " << client_ip_as_string;
     }
 
-    if (exabgp_enabled) {
+    if (exabgp_enabled && ipv4) {
         logger << log4cpp::Priority::INFO << "Call ExaBGP for ban client started: " << client_ip_as_string;
 
         boost::thread exabgp_thread(exabgp_ban_manage, "ban", client_ip_as_string, current_attack);
@@ -1910,7 +1951,7 @@ void call_ban_handlers(uint32_t client_ip, attack_details_t& current_attack, std
     }
 
 #ifdef ENABLE_GOBGP
-    if (gobgp_enabled) {
+    if (gobgp_enabled && ipv4) {
         logger << log4cpp::Priority::INFO << "Call GoBGP for ban client started: " << client_ip_as_string;
 
         boost::thread gobgp_thread(gobgp_ban_manage, "ban", client_ip_as_string, current_attack);
@@ -1921,7 +1962,7 @@ void call_ban_handlers(uint32_t client_ip, attack_details_t& current_attack, std
 #endif
 
 #ifdef REDIS
-    if (redis_enabled) {
+    if (redis_enabled && ipv4) {
         std::string redis_key_name = client_ip_as_string + "_information";
 
         if (!redis_prefix.empty()) {
@@ -1950,7 +1991,7 @@ void call_ban_handlers(uint32_t client_ip, attack_details_t& current_attack, std
 #endif
 
 #ifdef MONGO
-    if (mongodb_enabled) {
+    if (mongodb_enabled && ipv4) {
         std::string mongo_key_name = client_ip_as_string + "_information_" +
                                      print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
 
@@ -2445,7 +2486,11 @@ void recalculate_speed() {
             std::string host_group_name;
             ban_settings_t current_ban_settings = get_ban_settings_for_this_subnet(itr->first, host_group_name);
 
-            if (we_should_ban_this_ip(current_average_speed_element, current_ban_settings)) {
+            attack_detection_threshold_type_t attack_detection_source;
+            attack_detection_direction_type_t attack_detection_direction;
+
+
+            if (we_should_ban_this_entity(current_average_speed_element, current_ban_settings, attack_detection_source, attack_detection_direction)) {
                 logger << log4cpp::Priority::DEBUG
                        << "We have found host group for this host as: " << host_group_name;
 
@@ -3337,5 +3382,175 @@ std::string print_channel_speed_ipv6(std::string traffic_type, direction_t packe
     // Flows are not supported yet
 
     return stream.str();
+}
+
+template <typename TemplateKeyType>
+void remove_orphaned_buckets(packet_buckets_storage_t<TemplateKeyType>* packet_storage, std::string protocol) {
+    std::lock_guard<std::mutex> lock_guard(packet_storage->packet_buckets_map_mutex);
+
+    // List of buckets to remove
+    std::vector<TemplateKeyType> buckets_to_remove;
+
+    // logger << log4cpp::Priority::DEBUG << "We've got " << packet_storage->packet_buckets_map.size() << " packets buckets for processing";
+
+    // Find buckets for removal
+    // We should not remove them here because it's tricky to do properly in C++
+    for (auto it = packet_storage->packet_buckets_map.begin(); it != packet_storage->packet_buckets_map.end(); ++it) {
+        if (should_remove_orphaned_bucket<TemplateKeyType>(*it)) {
+            logger << log4cpp::Priority::DEBUG << "We decided to remove " << protocol << " bucket "
+                   << convert_any_ip_to_string(it->first);
+            buckets_to_remove.push_back(it->first);
+        }
+    }
+
+    // logger << log4cpp::Priority::DEBUG << "We have " << buckets_to_remove.size() << " " << protocol << " orphaned buckets for cleanup";
+
+
+    for (auto client_ip : buckets_to_remove) {
+        // Let's dump some data from it
+        packet_bucket_t* bucket = &packet_storage->packet_buckets_map[client_ip];
+
+        logger << log4cpp::Priority::WARN << "We've found orphaned bucket for IP: " << convert_any_ip_to_string(client_ip)
+               << " it has " << bucket->parsed_packets_circular_buffer.size() << " parsed packets"
+               << " and " << bucket->raw_packets_circular_buffer.size() << " raw packets"
+               << " we will remove it";
+
+        // Stop packet collection ASAP
+        bucket->we_could_receive_new_data = false;
+
+        // Remove it completely from map
+        packet_storage->packet_buckets_map.erase(client_ip);
+    }
+
+    return;
+}
+
+std::string get_attack_description_ipv6(subnet_ipv6_cidr_mask_t ipv6_address, attack_details_t& current_attack) {
+    std::stringstream attack_description;
+
+    attack_description << "IP: " << print_ipv6_address(ipv6_address.subnet_address) << "\n";
+    attack_description << serialize_attack_description(current_attack) << "\n";
+
+    attack_description << serialize_statistic_counters_about_attack(current_attack);
+
+    return attack_description.str();
+}
+
+void execute_ipv6_ban(subnet_ipv6_cidr_mask_t ipv6_client,
+                      attack_details_t current_attack,
+                      std::string simple_packets_dump,
+                      boost::circular_buffer<simple_packet_t>& simple_packets_buffer) {
+    // Execute ban actions
+    ban_list_ipv6_ng.add_to_blackhole(ipv6_client, current_attack);
+
+    logger << log4cpp::Priority::INFO << "IPv6 address " << print_ipv6_cidr_subnet(ipv6_client) << " was banned";
+
+    uint32_t zero_ipv4_address = 0;
+    call_ban_handlers(zero_ipv4_address, ipv6_client, true, current_attack, "", attack_detection_source_t::Automatic,
+                      simple_packets_dump, simple_packets_buffer);
+}
+
+void process_filled_buckets_ipv6() {
+    std::lock_guard<std::mutex> lock_guard(packet_buckets_ipv6_storage.packet_buckets_map_mutex);
+
+    std::vector<subnet_ipv6_cidr_mask_t> filled_buckets;
+
+    for (auto itr = packet_buckets_ipv6_storage.packet_buckets_map.begin();
+         itr != packet_buckets_ipv6_storage.packet_buckets_map.end(); ++itr) {
+
+        // Find one time capture requests which filled completely
+        if (itr->second.collection_pattern == collection_pattern_t::ONCE &&
+            itr->second.we_collected_full_buffer_least_once && !itr->second.is_already_processed) {
+
+            logger << log4cpp::Priority::DEBUG << "We have filled buckets for " << convert_any_ip_to_string(itr->first);
+            filled_buckets.push_back(itr->first);
+        }
+    }    
+
+    // logger << log4cpp::Priority::DEBUG << "We have " << filled_buckets.size() << " filled buckets";
+
+    for (auto ipv6_address : filled_buckets) {
+        logger << log4cpp::Priority::INFO << "We've got new completely filled bucket with packets for IPv6 "
+               << print_ipv6_cidr_subnet(ipv6_address);
+
+        packet_bucket_t* bucket = &packet_buckets_ipv6_storage.packet_buckets_map[ipv6_address];
+
+        // Here I extract attack details saved at time when we crossed threshold
+        attack_details_t current_attack = bucket->attack_details;
+
+        std::string basic_attack_information = get_attack_description_ipv6(ipv6_address, current_attack);
+
+        // For all attack types at this moment we could prepare simple packet dump
+        std::string simple_packet_dump;
+
+        if (bucket->parsed_packets_circular_buffer.size() != 0) { 
+            std::stringstream ss;
+
+            for (simple_packet_t& packet : bucket->parsed_packets_circular_buffer) {
+                ss << print_simple_packet(packet);
+            }
+
+            simple_packet_dump = ss.str();
+        }
+
+        // For IPv6 we support only blackhole at this moment. BGP Flow spec for IPv6 isn't so populare and we will skip implementation for some future
+        execute_ipv6_ban(ipv6_address, current_attack, simple_packet_dump, bucket->parsed_packets_circular_buffer);
+
+        // Mark it as processed. This will hide it from second call of same function
+        bucket->is_already_processed = true;
+
+        // Stop packet collection ASAP
+        bucket->we_could_receive_new_data = false;
+
+        // Remove it completely from map
+        packet_buckets_ipv6_storage.packet_buckets_map.erase(ipv6_address);
+    }
+}
+
+
+// This functions will check for packet buckets availible for processing
+void check_traffic_buckets() {
+    while (true) {
+        // Process buckets which haven't filled by packets
+        remove_orphaned_buckets(&packet_buckets_ipv6_storage, "ipv6");
+
+        process_filled_buckets_ipv6();
+
+        boost::this_thread::sleep(boost::posix_time::seconds(check_for_availible_for_processing_packets_buckets));
+    }
+}
+
+// We use this function as callback for find_if to clean up orphaned buckets
+template <typename TemplatedKeyType>
+bool should_remove_orphaned_bucket(const std::pair<TemplatedKeyType, packet_bucket_t>& pair) {
+    logger << log4cpp::Priority::DEBUG << "Process bucket for " << convert_any_ip_to_string(pair.first);
+
+    // We process only "once" buckets
+    if (pair.second.collection_pattern != collection_pattern_t::ONCE) {
+        logger << log4cpp::Priority::DEBUG << "We do not cleanup buckets with non-once collection pattern "
+               << convert_any_ip_to_string(pair.first);
+        return false;
+    }    
+
+    std::chrono::duration<double> elapsed_from_start_seconds = std::chrono::system_clock::now() - pair.second.collection_start_time;
+
+    // We do cleanup for them in another function
+    if (pair.second.we_collected_full_buffer_least_once) {
+        logger << log4cpp::Priority::DEBUG << "We do not cleanup finished bucket for "
+               << convert_any_ip_to_string(pair.first) << " it's " << elapsed_from_start_seconds.count() << " seconds old";
+        return false;
+    }    
+
+    logger << log4cpp::Priority::DEBUG << "Bucket is " << elapsed_from_start_seconds.count() << " seconds old for "
+           << convert_any_ip_to_string(pair.first) << " and has " << pair.second.parsed_packets_circular_buffer.size()
+           << " parsed packets and " << pair.second.raw_packets_circular_buffer.size() << " raw packets";
+
+    if (elapsed_from_start_seconds.count() > maximum_time_since_bucket_start_to_remove) {
+        logger << log4cpp::Priority::DEBUG << "We're going to remove bucket for "
+               << convert_any_ip_to_string(pair.first) << " because it's too old";
+        return true;
+    }    
+
+    return false;
 }
 
