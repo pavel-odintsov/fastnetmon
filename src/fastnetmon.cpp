@@ -536,7 +536,9 @@ class FastnetmonApiServiceImpl final : public Fastnetmon::Service {
         banlist_item_t ban_details = ban_list[banned_ip];
 
         logger << log4cpp::Priority::INFO << "API: call unban handlers";
-        call_unban_handlers(banned_ip, ban_details);
+        
+        subnet_ipv6_cidr_mask_t zero_ipv6_address;
+        call_unban_handlers(banned_ip, zero_ipv6_address, false, ban_details, attack_detection_source_t::Automatic);
 
         logger << log4cpp::Priority::INFO << "API: remove IP from ban list";
 
@@ -1735,7 +1737,6 @@ int main(int argc, char** argv) {
     auto check_traffic_buckets_thread = new boost::thread(check_traffic_buckets);
     set_boost_process_name(check_traffic_buckets_thread, "check_buckets");
     service_thread_group.add_thread(check_traffic_buckets_thread);
-
 
 #ifdef PF_RING
     if (enable_data_collection_from_mirror) {

@@ -912,6 +912,61 @@ void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_
     memcpy(unpacked_data, packed_connection_data, sizeof(uint64_t));
 }
 
+// Unbans host which are ready to it
+void execute_unban_operation_ipv6() {
+    time_t current_time;
+    time(&current_time);
+
+    std::vector<subnet_ipv6_cidr_mask_t> ban_list_items_for_erase;
+
+    std::map<subnet_ipv6_cidr_mask_t, banlist_item_t> ban_list_copy;
+
+    // Get whole ban list content atomically
+    ban_list_ipv6_ng.get_whole_banlist(ban_list_copy);
+
+    for (auto itr : ban_list_copy) {
+        auto client_ip = itr.first;
+
+        // This IP should be banned permanentely and we skip any processing
+        if (!itr.second.unban_enabled) {
+            continue;
+        }
+
+        // This IP banned manually and we should not unban it automatically
+        if (itr.second.attack_detection_source == attack_detection_source_t::Manual) {
+            continue;
+        }
+
+        double time_difference = difftime(current_time, itr.second.ban_timestamp);
+        int current_ban_time   = itr.second.ban_time;
+
+        // Yes, we reached end of ban time for this customer
+        bool we_could_unban_this_ip = time_difference > current_ban_time;
+
+        // We haven't reached time for unban yet
+        if (!we_could_unban_this_ip) {
+            continue;
+        }
+
+        if (unban_only_if_attack_finished) {
+            logger << log4cpp::Priority::WARN << "Sorry, we do not support unban_only_if_attack_finished for IPv6";
+        }
+
+        // Add this IP to remove list
+        // We will remove keyas really after this loop
+        ban_list_items_for_erase.push_back(itr.first);
+
+        // Call all hooks for unban
+        uint32_t zero_ipv4_ip_address = 0; 
+        call_unban_handlers(zero_ipv4_ip_address, itr.first, true, itr.second, attack_detection_source_t::Automatic);
+    }    
+
+    // Remove all unbanned hosts from the ban list
+    for (auto ban_element_for_erase : ban_list_items_for_erase) {
+        ban_list_ipv6_ng.remove_from_blackhole(ban_element_for_erase);
+    }    
+}
+
 /* Thread for cleaning up ban list */
 void cleanup_ban_list() {
     // If we use very small ban time we should call ban_cleanup thread more often
@@ -1001,7 +1056,8 @@ void cleanup_ban_list() {
             ban_list_items_for_erase.push_back(itr->first);
 
             // Call all hooks for unban
-            call_unban_handlers(itr->first, itr->second);
+            subnet_ipv6_cidr_mask_t zero_ipv6_address;
+            call_unban_handlers(itr->first, zero_ipv6_address, false,  itr->second, attack_detection_source_t::Automatic);
         }
 
         // Remove all unbanned hosts from the ban list
@@ -1011,11 +1067,26 @@ void cleanup_ban_list() {
             ban_list.erase(*itr);
             ban_list_mutex.unlock();
         }
+
+        // Unban IPv6 bans
+        execute_unban_operation_ipv6();
     }
 }
 
-void call_unban_handlers(uint32_t client_ip, attack_details_t& current_attack) {
-    std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+void call_unban_handlers(uint32_t client_ip,
+                         subnet_ipv6_cidr_mask_t client_ipv6,
+                         bool ipv6,
+                         attack_details_t& current_attack,
+                         attack_detection_source_t attack_detection_source) {
+    bool ipv4 = !ipv6;
+
+    std::string client_ip_as_string;
+
+    if (ipv4) {
+        client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+    } else {
+        client_ip_as_string = print_ipv6_address(client_ipv6.subnet_address);
+    }    
 
     logger << log4cpp::Priority::INFO << "We will unban banned IP: " << client_ip_as_string
            << " because it ban time " << current_attack.ban_time << " seconds is ended";
@@ -1037,7 +1108,7 @@ void call_unban_handlers(uint32_t client_ip, attack_details_t& current_attack) {
         logger << log4cpp::Priority::INFO << "Script for unban client is finished: " << client_ip_as_string;
     }
 
-    if (exabgp_enabled) {
+    if (exabgp_enabled && ipv4) {
         logger << log4cpp::Priority::INFO << "Call ExaBGP for unban client started: " << client_ip_as_string;
 
         boost::thread exabgp_thread(exabgp_ban_manage, "unban", client_ip_as_string, current_attack);
@@ -1047,7 +1118,7 @@ void call_unban_handlers(uint32_t client_ip, attack_details_t& current_attack) {
     }
 
 #ifdef ENABLE_GOBGP
-    if (gobgp_enabled) {
+    if (gobgp_enabled && ipv4) {
         logger << log4cpp::Priority::INFO << "Call GoBGP for unban client started: " << client_ip_as_string;
 
         boost::thread gobgp_thread(gobgp_ban_manage, "unban", client_ip_as_string, current_attack);
