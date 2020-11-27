@@ -1617,24 +1617,35 @@ bool process_flow_tracking_table(conntrack_main_struct_t& conntrack_element, std
 }
 
 // exec command and pass data to it stdin
+// exec command and pass data to it stdin
 bool exec_with_stdin_params(std::string cmd, std::string params) {
     FILE* pipe = popen(cmd.c_str(), "w");
     if (!pipe) {
-        logger << log4cpp::Priority::ERROR << "Can't execute program " << cmd
-               << " error code: " << errno << " error text: " << strerror(errno);
+        logger << log4cpp::Priority::ERROR << "Can't execute programm " << cmd << " error code: " << errno
+               << " error text: " << strerror(errno);
         return false;
-    }
+    }    
 
     int fputs_ret = fputs(params.c_str(), pipe);
 
     if (fputs_ret) {
-        pclose(pipe);
+        int pclose_return = pclose(pipe);
+
+        if (pclose_return < 0) { 
+            logger << log4cpp::Priority::ERROR << "Cannot collect return status of subprocess with error: " << errno
+                   << strerror(errno);
+        } else {
+            logger << log4cpp::Priority::INFO << "Subprocess exit code: " << pclose_return;
+        }
+
         return true;
     } else {
-        logger << log4cpp::Priority::ERROR << "Can't pass data to stdin of program " << cmd;
+        logger << log4cpp::Priority::ERROR << "Can't pass data to stdin of programm " << cmd; 
         pclose(pipe);
         return false;
-    }
+    }    
+
+    return true;
 }
 
 // Get ban settings for this subnet or return global ban settings
