@@ -214,8 +214,8 @@ sub main {
 
     install_sentry();
 
-    my $stable_release_version = '1.1.7';
-    my $development_release_version = '1.1.8';
+    my $stable_release_version = '1.1.8';
+    my $development_release_version = '1.1.9';
 
     my $download_path = "https://community-downloads.fastnetmon.com/releases/$stable_release_version";
 
