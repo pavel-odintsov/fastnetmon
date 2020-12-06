@@ -538,7 +538,5 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
     std::string sentence_separator;
 };
 
-void exabgp_flow_spec_rule_ban_manage(std::string action, flow_spec_rule_t flow_spec_rule);
-
 bool read_bgp_community_from_string(std::string community_as_string, bgp_community_attribute_element_t& bgp_community_attribute_element);
 bool is_bgp_community_valid(std::string community_as_string);
