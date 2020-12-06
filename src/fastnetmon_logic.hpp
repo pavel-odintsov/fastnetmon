@@ -1,5 +1,5 @@
 #include "fastnetmon_types.h"
-#include "bgp_flow_spec.h"
+#include "bgp_protocol.hpp"
 
 #ifdef ENABLE_DPI
 #include "fast_dpi.h"
