@@ -1439,3 +1439,26 @@ bool ip_belongs_to_patricia_tree_ipv6(patricia_tree_t* patricia_tree, struct in6
     return patricia_search_best2(patricia_tree, &prefix_for_check_address, 1) != NULL;
 }
 
+// Safe way to convert string to positive integer.
+// We accept only positive numbers here
+bool convert_string_to_positive_integer_safe(std::string line, int& value) {
+    int temp_value = 0;
+
+    try {
+        temp_value = std::stoi(line);
+    } catch (...) {
+        // Could not parse number correctly
+        return false;
+    }
+
+    if (temp_value >= 0) {
+        value = temp_value;
+        return true;
+    } else {
+        // We do not expect negative values here
+        return false;
+    }
+
+    return true;
+}
+

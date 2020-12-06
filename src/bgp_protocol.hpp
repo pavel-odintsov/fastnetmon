@@ -1,5 +1,4 @@
-#ifndef BGP_FLOW_SPEC_H
-#define BGP_FLOW_SPEC_H
+#pragma once
 
 #include <stdint.h>
 #include <string>
@@ -63,6 +62,23 @@ enum bgp_flow_spec_protocol_t {
     FLOW_SPEC_PROTOCOL_TCP,
     FLOW_SPEC_PROTOCOL_ICMP,
 };
+
+// Class for storing old style BGP communities which support only 16 bit ASN numbers
+class __attribute__((__packed__)) bgp_community_attribute_element_t {
+    public:
+    uint16_t asn_number       = 0;
+    uint16_t community_number = 0;
+
+    void host_byte_order_to_network_byte_order() {
+        asn_number       = htons(asn_number);
+        community_number = htons(community_number);
+    }
+};
+
+bool read_bgp_community_from_string(std::string community_as_string, bgp_community_attribute_element_t& bgp_community_attribute_element);
+
+static_assert(sizeof(bgp_community_attribute_element_t) == 4, "Broken size of bgp_community_attribute_element_t");
+
 
 // Enable custom casts from our own types
 std::ostream& operator<<(std::ostream& os, bgp_flow_spec_protocol_t const& protocol);
@@ -524,4 +540,5 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
 
 void exabgp_flow_spec_rule_ban_manage(std::string action, flow_spec_rule_t flow_spec_rule);
 
-#endif
+bool read_bgp_community_from_string(std::string community_as_string, bgp_community_attribute_element_t& bgp_community_attribute_element);
+bool is_bgp_community_valid(std::string community_as_string);

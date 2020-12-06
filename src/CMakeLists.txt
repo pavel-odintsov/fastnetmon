@@ -212,7 +212,7 @@ target_link_libraries(unified_parser fastnetmon_packet_parser)
 # Our ipfix database library
 add_library(ipfix_rfc STATIC ipfix_rfc.cpp)
 
-add_library(bgp_protocol bgp_flow_spec.cpp)
+add_library(bgp_protocol bgp_protocol.cpp)
 
 # Our packet parser
 add_library(fastnetmon_packet_parser STATIC fastnetmon_packet_parser.c)
