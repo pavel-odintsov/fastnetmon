@@ -304,6 +304,8 @@ if (ENABLE_PF_RING_SUPPORT)
     target_link_libraries(pfring_plugin ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
+add_library(exabgp_action STATIC actions/exabgp_action.cpp)
+
 if (ENABLE_GOBGP_SUPPORT)
     set(PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/protobuf_3.11.4")
 
@@ -601,7 +603,7 @@ target_link_libraries(fastnetmon fastnetmon_pcap_format)
 
 target_link_libraries(fastnetmon ipfix_rfc)
 
-target_link_libraries(fastnetmon_logic bgp_protocol fast_dpi)
+target_link_libraries(fastnetmon_logic bgp_protocol fast_dpi exabgp_action)
 
 # Link to our functions
 target_link_libraries(fastnetmon fast_library)
@@ -619,6 +621,8 @@ target_link_libraries(fastnetmon ${OPENSSL_CRYPTO_LIBRARY_PATH})
 if (ENABLE_GOBGP_SUPPORT)
     target_link_libraries(fastnetmon gobgp_action)
 endif()
+
+target_link_libraries(fastnetmon exabgp_action)
 
 if (ENABLE_AFPACKET_SUPPORT)
     target_link_libraries(fastnetmon afpacket_plugin)
