@@ -376,7 +376,7 @@ jobs:
       - image: centos:centos6.9
     steps:
       - checkout
-      - run: yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
+      - run: yum install -y https://d2lzkl7pfhq30w.cloudfront.net/pub/archive/epel/6/x86_64/epel-release-6-8.noarch.rpm
       - run: yum install -y perl wget python-pip perl-Archive-Tar
         # We use 2.6.1 because in 2.7 they've dropped support for Python 2.6: https://github.com/dateutil/dateutil/releases
       - run: pip install python-dateutil==2.6.1 s3cmd
