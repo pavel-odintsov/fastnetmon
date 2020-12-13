@@ -121,6 +121,10 @@ bool gobgp_announce_host = false;
 bgp_community_attribute_element_t bgp_community_host;
 bgp_community_attribute_element_t bgp_community_subnet;
 
+// IPv6
+bool gobgp_announce_whole_subnet_ipv6 = false;
+bool gobgp_announce_host_ipv6 = false;
+
 bgp_community_attribute_element_t bgp_community_host_ipv6;
 bgp_community_attribute_element_t bgp_community_subnet_ipv6;;
 
@@ -140,6 +144,15 @@ void gobgp_action_init() {
     if (configuration_map.count("gobgp_announce_whole_subnet")) {
         gobgp_announce_whole_subnet = configuration_map["gobgp_announce_whole_subnet"] == "on";
     }
+
+    if (configuration_map.count("gobgp_announce_host_ipv6")) {
+        gobgp_announce_host_ipv6 = configuration_map["gobgp_announce_host_ipv6"] == "on";
+    }   
+
+    if (configuration_map.count("gobgp_announce_whole_subnet_ipv6")) {
+        gobgp_announce_whole_subnet_ipv6 = configuration_map["gobgp_announce_whole_subnet_ipv6"] == "on";
+    }   
+
 
     // Set them to safe defaults
     bgp_community_host.asn_number = 65001;
