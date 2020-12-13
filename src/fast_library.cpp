@@ -1471,3 +1471,20 @@ bool read_ipv6_host_from_string(std::string ipv6_host_as_string, in6_addr& resul
     }
 }
 
+// Validates IPv4 or IPv6 address in host form:
+// 127.0.0.1 or ::1
+bool validate_ipv6_or_ipv4_host(const std::string host) {
+    // Validate host address
+    boost::system::error_code ec;
+
+    // Try to build it from string representation
+    auto parsed_ip_address = boost::asio::ip::address::from_string(host, ec);
+
+    // If we failed to parse it
+    if (ec) {
+        return false;
+    }
+
+    return true;
+}
+
