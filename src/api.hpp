@@ -28,10 +28,10 @@ Status FastnetmonApiServiceImpl::GetBanlist(::grpc::ServerContext* context,
     return Status::OK;
 }
 
-    Status FastnetmonApiServiceImpl::ExecuteBan(ServerContext* context,
-                      const fastmitigation::ExecuteBanRequest* request,
-                      fastmitigation::ExecuteBanReply* reply) {
-        logger << log4cpp::Priority::INFO << "API we asked for ban for IP: " << request->ip_address();
+Status FastnetmonApiServiceImpl::ExecuteBan(ServerContext* context,
+                  const fastmitigation::ExecuteBanRequest* request,
+                  fastmitigation::ExecuteBanReply* reply) {
+    logger << log4cpp::Priority::INFO << "API we asked for ban for IP: " << request->ip_address();
 
     if (!validate_ipv6_or_ipv4_host(request->ip_address())) {
         logger << log4cpp::Priority::ERROR << "You specified malformed IP address";
@@ -58,8 +58,6 @@ Status FastnetmonApiServiceImpl::GetBanlist(::grpc::ServerContext* context,
     boost::circular_buffer<simple_packet_t> empty_simple_packets_buffer;
 
     std::string flow_attack_details = "manually triggered attack";
-
-
 
     if (ipv4) {
         client_ip = convert_ip_as_string_to_uint(request->ip_address());
@@ -100,30 +98,70 @@ Status FastnetmonApiServiceImpl::ExecuteUnBan(ServerContext* context,
                     fastmitigation::ExecuteBanReply* reply) {
     logger << log4cpp::Priority::INFO << "API: We asked for unban for IP: " << request->ip_address();
 
-    if (!is_v4_host(request->ip_address())) {
-        logger << log4cpp::Priority::ERROR << "IP bad format";
-        return Status::CANCELLED;
+    if (!validate_ipv6_or_ipv4_host(request->ip_address())) {
+        logger << log4cpp::Priority::ERROR << "You specified malformed IP address";
+        return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, "Malformed IP address");
     }
 
-    uint32_t banned_ip = convert_ip_as_string_to_uint(request->ip_address());
+    // At this step IP should be valid IPv4 or IPv6 address
+    bool ipv6 = false;
 
-    if (ban_list.count(banned_ip) == 0) {
-        logger << log4cpp::Priority::ERROR << "API: Could not find IP in ban list";
-        return Status::CANCELLED;
+    if (request->ip_address().find(":") != std::string::npos) {
+        ipv6 = true;
     }
 
-    banlist_item_t ban_details = ban_list[banned_ip];
+    bool ipv4 = !ipv6;
 
-    logger << log4cpp::Priority::INFO << "API: call unban handlers";
-    
-    subnet_ipv6_cidr_mask_t zero_ipv6_address;
-    call_unban_handlers(banned_ip, zero_ipv6_address, false, ban_details, attack_detection_source_t::Automatic);
+    uint32_t client_ip = 0;
 
-    logger << log4cpp::Priority::INFO << "API: remove IP from ban list";
+    subnet_ipv6_cidr_mask_t ipv6_address;
+    ipv6_address.cidr_prefix_length = 128;
 
-    ban_list_mutex.lock();
-    ban_list.erase(banned_ip);
-    ban_list_mutex.unlock();
+    attack_details_t current_attack;
+
+
+    if (ipv4) {
+        client_ip = convert_ip_as_string_to_uint(request->ip_address());
+
+        if (ban_list.count(client_ip) == 0) {
+            logger << log4cpp::Priority::ERROR << "API: Could not find IP in ban list";
+            return Status::CANCELLED;
+        }
+
+        current_attack = ban_list[client_ip];
+
+        logger << log4cpp::Priority::INFO << "API: call unban handlers";
+        
+        logger << log4cpp::Priority::INFO << "API: remove IP from ban list";
+
+        ban_list_mutex.lock();
+        ban_list.erase(client_ip);
+        ban_list_mutex.unlock();
+    } else {
+        bool parsed_ipv6 = read_ipv6_host_from_string(request->ip_address(), ipv6_address.subnet_address);
+
+        if (!parsed_ipv6) {
+            logger << log4cpp::Priority::ERROR << "Can't parse IPv6 address: " << request->ip_address();
+            return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, "Can't parse IPv6 address");
+        }
+
+        bool is_blackholed_ipv6 = ban_list_ipv6_ng.is_blackholed(ipv6_address);
+
+        if (!is_blackholed_ipv6) {
+            logger << log4cpp::Priority::ERROR << "API: Could not find IPv6 address in ban list";
+            return Status::CANCELLED;
+        }
+
+        bool get_details = ban_list_ipv6_ng.get_blackhole_details(ipv6_address, current_attack);
+
+        if (!get_details) {
+            return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, "Could not get IPv6 blackhole details");
+        }
+            
+        ban_list_ipv6_ng.remove_from_blackhole(ipv6_address);
+    }   
+
+    call_unban_handlers(client_ip, ipv6_address, ipv6, current_attack, attack_detection_source_t::Automatic);
 
     return Status::OK;
 }
