@@ -165,6 +165,8 @@ extern map_for_subnet_counters_t PerSubnetSpeedMap;
 extern unsigned int ban_details_records_count;
 extern FastnetmonPlatformConfigurtion fastnetmon_platform_configuration;
 
+#include "api.hpp"
+
 #define my_max_on_defines(a, b) (a > b ? a : b)
 unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp) {
     unsigned int max = my_max_on_defines(my_max_on_defines(udp, tcp), icmp);
