@@ -13,7 +13,7 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(uint8_t* pointer,
                                                         int length_before_sampling,
                                                         int captured_length,
                                                         simple_packet_t& packet,
-                                                        bool use_packet_length_from_wire) {
+                                                        bool read_packet_length_from_ip_header) {
     // We are using pointer copy because we are changing it
     uint8_t* local_pointer = pointer;
 
@@ -84,7 +84,7 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(uint8_t* pointer,
         protocol        = ipv4_header->protocol;
         packet.protocol = protocol;
 
-        if (use_packet_length_from_wire) {
+        if (read_packet_length_from_ip_header) {
             packet.length = ipv4_header->total_length;
         } else {
             packet.length = length_before_sampling;
