@@ -1114,10 +1114,10 @@ void call_unban_handlers(uint32_t client_ip,
     }
 
 #ifdef ENABLE_GOBGP
-    if (gobgp_enabled && ipv4) {
+    if (gobgp_enabled) {
         logger << log4cpp::Priority::INFO << "Call GoBGP for unban client started: " << client_ip_as_string;
 
-        boost::thread gobgp_thread(gobgp_ban_manage, "unban", client_ip_as_string, current_attack);
+        boost::thread gobgp_thread(gobgp_ban_manage, "unban", ipv6, client_ip_as_string, client_ipv6,  current_attack);
         gobgp_thread.detach();
 
         logger << log4cpp::Priority::INFO << "Call to GoBGP for unban client is finished: " << client_ip_as_string;
@@ -1953,10 +1953,10 @@ void call_ban_handlers(uint32_t client_ip,
     }
 
 #ifdef ENABLE_GOBGP
-    if (gobgp_enabled && ipv4) {
+    if (gobgp_enabled) {
         logger << log4cpp::Priority::INFO << "Call GoBGP for ban client started: " << client_ip_as_string;
 
-        boost::thread gobgp_thread(gobgp_ban_manage, "ban", client_ip_as_string, current_attack);
+        boost::thread gobgp_thread(gobgp_ban_manage, "ban", ipv6, client_ip_as_string, client_ipv6,  current_attack);
         gobgp_thread.detach();
 
         logger << log4cpp::Priority::INFO << "Call to GoBGP for ban client is finished: " << client_ip_as_string;
