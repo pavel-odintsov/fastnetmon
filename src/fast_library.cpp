@@ -727,11 +727,11 @@ std::string find_subnet_by_ip_in_string_format(patricia_tree_t* patricia_tree, s
 // It could not be on start or end of the line
 boost::regex ipv6_address_compression_algorithm("(0000:){2,}");
 
-std::string print_ipv6_address(struct in6_addr& ipv6_address) {
+std::string print_ipv6_address(const in6_addr& ipv6_address) {
     char buffer[128];
 
     // For short print
-    uint8_t* b = ipv6_address.s6_addr;
+    const uint8_t* b = ipv6_address.s6_addr;
 
     sprintf(buffer, "%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x", b[0], b[1],
             b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10], b[11], b[12], b[13], b[14], b[15]);

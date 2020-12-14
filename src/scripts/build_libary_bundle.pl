@@ -41,7 +41,7 @@ libicu_65_1
 ndpi
 log4cpp1.1.1
 pf_ring_6.0.3
-gobgp_2_16_0
+gobgp_2_17_0
 grpc_1_30_2
 libhiredis_0_13 
 mongo_c_driver_1_16_1
