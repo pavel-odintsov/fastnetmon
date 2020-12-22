@@ -200,6 +200,11 @@ add_library(simple_packet_capnp STATIC simple_packet_capnp/simple_packet.capnp.c
 # Our LPM library
 add_library(patricia STATIC libpatricia/patricia.c)
 
+# Graphite metrics
+add_library(graphite_metrics STATIC metrics/graphite.cpp)
+target_link_libraries(fastnetmon graphite_metrics)
+
+
 add_library(fastnetmon_pcap_format STATIC fastnetmon_pcap_format.cpp)
 
 # Our tools library

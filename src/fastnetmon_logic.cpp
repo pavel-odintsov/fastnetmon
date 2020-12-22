@@ -446,8 +446,6 @@ std::string print_subnet_ipv4_load() {
     std::sort(vector_for_sort.begin(), vector_for_sort.end(),
               TrafficComparatorClass<pair_of_map_for_subnet_counters_elements_t>(INCOMING, sorter));
 
-    graphite_data_t graphite_data;
-
     for (std::vector<pair_of_map_for_subnet_counters_elements_t>::iterator itr = vector_for_sort.begin();
          itr != vector_for_sort.end(); ++itr) {
         map_element_t* speed = &itr->second;
@@ -455,40 +453,10 @@ std::string print_subnet_ipv4_load() {
 
         buffer << std::setw(18) << std::left << subnet_as_string;
 
-        if (graphite_enabled) {
-            std::string subnet_as_string_as_dash_delimiters = subnet_as_string;
-
-            // Replace dots by dashes
-            std::replace(subnet_as_string_as_dash_delimiters.begin(),
-                         subnet_as_string_as_dash_delimiters.end(), '.', '_');
-
-            // Replace / by dashes too
-            std::replace(subnet_as_string_as_dash_delimiters.begin(),
-                         subnet_as_string_as_dash_delimiters.end(), '/', '_');
-
-            graphite_data[graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".incoming.pps"] =
-            speed->in_packets;
-            graphite_data[graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".outgoing.pps"] =
-            speed->out_packets;
-
-            graphite_data[graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".incoming.bps"] =
-            speed->in_bytes * 8;
-            graphite_data[graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".outgoing.bps"] =
-            speed->out_bytes * 8;
-        }
-
         buffer << " "
                << "pps in: " << std::setw(8) << speed->in_packets << " out: " << std::setw(8)
                << speed->out_packets << " mbps in: " << std::setw(5) << convert_speed_to_mbps(speed->in_bytes)
                << " out: " << std::setw(5) << convert_speed_to_mbps(speed->out_bytes) << "\n";
-    }
-
-    if (graphite_enabled) {
-        bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
-
-        if (!graphite_put_result) {
-            logger << log4cpp::Priority::ERROR << "Can't store network load data to Graphite";
-        }
     }
 
     return buffer.str();
@@ -2093,33 +2061,6 @@ std::string print_channel_speed(std::string traffic_type, direction_t packet_dir
         } else if (packet_direction == OUTGOING) {
             stream << " " << std::setw(6) << outgoing_total_flows_speed << " flows";
         }
-
-        if (graphite_enabled) {
-            graphite_data_t graphite_data;
-
-            std::string direction_as_string;
-
-            if (packet_direction == INCOMING) {
-                direction_as_string = "incoming";
-
-                graphite_data[graphite_prefix + ".total." + direction_as_string + ".flows"] =
-                incoming_total_flows_speed;
-            } else if (packet_direction == OUTGOING) {
-                direction_as_string = "outgoing";
-
-                graphite_data[graphite_prefix + ".total." + direction_as_string + ".flows"] =
-                outgoing_total_flows_speed;
-            }
-
-            graphite_data[graphite_prefix + ".total." + direction_as_string + ".pps"] = speed_in_pps;
-            graphite_data[graphite_prefix + ".total." + direction_as_string + ".bps"] = speed_in_bps * 8;
-
-            bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
-
-            if (!graphite_put_result) {
-                logger << log4cpp::Priority::ERROR << "Can't store data to Graphite";
-            }
-        }
     }
 
     return stream.str();
@@ -3009,80 +2950,6 @@ std::string draw_table_ipv4(direction_t data_direction, bool do_redis_update, so
         output_buffer << is_banned << std::endl;
 
         element_number++;
-    }
-
-    graphite_data_t graphite_data;
-
-    // TODO: add graphite operations time to the config file
-    if (graphite_enabled) {
-        for (std::vector<pair_of_map_elements>::iterator ii = vector_for_sort.begin();
-             ii != vector_for_sort.end(); ++ii) {
-            uint32_t client_ip = (*ii).first;
-            std::string client_ip_as_string = convert_ip_as_uint_to_string((*ii).first);
-
-            uint64_t pps = 0;
-            uint64_t bps = 0;
-            uint64_t flows = 0;
-
-            // Here we could have average or instantaneous speed
-            map_element_t* current_speed_element = &ii->second;
-
-            // Create polymorphic pps, byte and flow counters
-            if (data_direction == INCOMING) {
-                pps = current_speed_element->in_packets;
-                bps = current_speed_element->in_bytes;
-                flows = current_speed_element->in_flows;
-            } else if (data_direction == OUTGOING) {
-                pps = current_speed_element->out_packets;
-                bps = current_speed_element->out_bytes;
-                flows = current_speed_element->out_flows;
-            }
-
-            std::string direction_as_string;
-
-            if (data_direction == INCOMING) {
-                direction_as_string = "incoming";
-            } else if (data_direction == OUTGOING) {
-                direction_as_string = "outgoing";
-            }
-
-            std::string ip_as_string_with_dash_delimiters = client_ip_as_string;
-            // Replace dots by dashes
-            std::replace(ip_as_string_with_dash_delimiters.begin(),
-                         ip_as_string_with_dash_delimiters.end(), '.', '_');
-
-            std::string graphite_current_prefix =
-            graphite_prefix + ".hosts." + ip_as_string_with_dash_delimiters + "." + direction_as_string;
-
-            if (print_average_traffic_counts) {
-                graphite_current_prefix = graphite_current_prefix + ".average";
-            }
-
-            // We do not store zero data to Graphite
-            if (pps != 0) {
-                graphite_data[graphite_current_prefix + ".pps"] = pps;
-            }
-
-            if (bps != 0) {
-                graphite_data[graphite_current_prefix + ".bps"] = bps * 8;
-            }
-
-            if (flows != 0) {
-                graphite_data[graphite_current_prefix + ".flows"] = flows;
-            }
-        }
-    }
-
-    // TODO: we should switch to piclke format instead text
-    // TODO: we should check packet size for Graphite
-    // logger << log4cpp::Priority::INFO << "We will write " << graphite_data.size() << " records to Graphite";
-
-    if (graphite_enabled) {
-        bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
-
-        if (!graphite_put_result) {
-            logger << log4cpp::Priority::ERROR << "Can't store data to Graphite";
-        }
     }
 
     return output_buffer.str();
