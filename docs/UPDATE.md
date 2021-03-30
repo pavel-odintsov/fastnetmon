@@ -1,3 +1,10 @@
+DEPRECATION WARNING:
+==============
+- to install or upgrade to latest community version use https://fastnetmon.com/install/ scripts
+- install instructions below are valid to old Fastnetmon versions
+
+-------
+
 # How to update to next version?
 
 Well, if you need update from stable branch to developer branch, please follow [this reference](https://github.com/FastVPSEestiOu/fastnetmon/blob/master/docs/DEV_VERSION.md). 
