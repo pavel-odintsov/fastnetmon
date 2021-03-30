@@ -1,3 +1,10 @@
+DEPRECATION WARNING:
+==============
+- to install latest community version use https://fastnetmon.com/install/ scripts
+- install instructions below are valid to old Fastnetmon versions
+
+-------
+
 
 You can run docker from pre-built image:
 ```
