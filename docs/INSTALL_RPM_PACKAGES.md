@@ -1,5 +1,9 @@
-Please do not use this packages because they are outdated. Please use installer script instead
-==========
+DEPRECATION WARNING:
+==============
+- to install latest community version use https://fastnetmon.com/install/ scripts
+- install instructions below are valid to old Fastnetmon versions
+
+-------
 
 We have precompiled packages for CentOS 6, CentOS 7 and Fedora 21 (unfortunately without PF_RING support).
 
