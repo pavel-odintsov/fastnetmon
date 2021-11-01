@@ -1,3 +1,9 @@
+DEPRECATION WARNING:
+==============
+- to install latest community version use https://fastnetmon.com/install/ scripts
+- install instructions below are valid to old Fastnetmon versions
+-------
+
 For Debian 6, 7, 8 and CentOS 6, 7 and Fedora and Gentoo you should use the automatic installer:
 ```bash
 wget https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl 

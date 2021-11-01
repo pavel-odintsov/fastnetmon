@@ -1,3 +1,10 @@
+DEPRECATION WARNING:
+==============
+- to install latest community version use https://fastnetmon.com/install/ scripts
+- install instructions below are valid to old Fastnetmon versions
+
+-------
+
 At first you should install PF_RING (you can install any latest version
 
 ```bash
