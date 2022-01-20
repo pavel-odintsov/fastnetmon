@@ -134,7 +134,7 @@ void walk_block(struct block_desc *pbd, const int block_num) {
     }
 }
 
-int setup_socket(std::string interface_name, bool enable_fanout, int fanout_group_id) {
+bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_group_id) {
     // More details here: http://man7.org/linux/man-pages/man7/packet.7.html
     // We could use SOCK_RAW or SOCK_DGRAM for second argument
     // SOCK_RAW - raw packets pass from the kernel
@@ -144,7 +144,7 @@ int setup_socket(std::string interface_name, bool enable_fanout, int fanout_grou
    
     if (packet_socket == -1) {
         logger << log4cpp::Priority::ERROR << "Can't create AF_PACKET socket";
-        return -1;
+        return false;
     }
 
     // We whould use V3 bcause it could read/pool in per block basis instead per packet
@@ -153,14 +153,14 @@ int setup_socket(std::string interface_name, bool enable_fanout, int fanout_grou
 
     if (setsockopt_packet_version < 0) {
         logger << log4cpp::Priority::ERROR << "Can't set packet v3 version";
-        return -1;
+        return false;
     }
 
     int interface_number = get_interface_number_by_device_name(packet_socket, interface_name);
 
     if (interface_number == -1) {
         logger << log4cpp::Priority::ERROR << "Can't get interface number by interface name for " << interface_name;
-        return -1;
+        return false;
     }
  
     // Switch to PROMISC mode
@@ -173,7 +173,7 @@ int setup_socket(std::string interface_name, bool enable_fanout, int fanout_grou
 
     if (set_promisc == -1) {
         logger << log4cpp::Priority::ERROR << "Can't enable promisc mode";
-        return -1;
+        return false;
     }
 
     struct sockaddr_ll bind_address;
@@ -201,7 +201,7 @@ int setup_socket(std::string interface_name, bool enable_fanout, int fanout_grou
     
     if (setsockopt_rx_ring == -1) {
         logger << log4cpp::Priority::ERROR << "Can't enable RX_RING for AF_PACKET socket";
-        return -1;
+        return false;
     }
 
     // We use per thread structures
@@ -212,7 +212,7 @@ int setup_socket(std::string interface_name, bool enable_fanout, int fanout_grou
 
     if (mapped_buffer == MAP_FAILED) {
         logger << log4cpp::Priority::ERROR << "MMAP failed";
-        return -1;
+        return false;
     }
 
     // Allocate iov structure for each block
@@ -228,7 +228,7 @@ int setup_socket(std::string interface_name, bool enable_fanout, int fanout_grou
 
     if (bind_result == -1) {
         logger << log4cpp::Priority::ERROR << "Can't bind to AF_PACKET socket";
-        return -1;
+        return false;
     }
  
    if (enable_fanout) {
@@ -242,7 +242,7 @@ int setup_socket(std::string interface_name, bool enable_fanout, int fanout_grou
 
         if (setsockopt_fanout < 0) {
             logger << log4cpp::Priority::ERROR << "Can't configure fanout error number: "<< errno << " error: " << strerror(errno);
-            return -1;
+            return false;
         }
     }
 
@@ -269,7 +269,7 @@ int setup_socket(std::string interface_name, bool enable_fanout, int fanout_grou
         current_block_num = (current_block_num + 1) % blocknum;
     }   
 
-    return packet_socket;
+    return true;
 }
 
 void start_af_packet_capture(std::string interface_name, bool enable_fanout, int fanout_group_id) {
