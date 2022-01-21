@@ -993,7 +993,7 @@ sub install_ndpi {
         apt_get('git', 'autoconf', 'libtool', 'automake', 'libpcap-dev');
     } elsif ($distro_type eq 'centos') {
         # We have json-c-devel for CentOS 6 and 7 and will use it for nDPI build system
-        yum('git', 'autoconf', 'automake', 'libtool', 'libpcap-devel', 'json-c-devel');
+        yum('git', 'autoconf', 'automake', 'libtool', 'libpcap-devel', 'json-c-devel', 'which');
     } elsif ($os_type eq 'freebsd') {
         exec_command("pkg install -y git autoconf automake libtool");
     } 
