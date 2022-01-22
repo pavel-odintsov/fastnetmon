@@ -99,16 +99,24 @@ my $make_options = '';
 # We could pass options to configure with this variable
 my $configure_options = '';
 
-welcome_message();
-
 my $use_modern_pf_ring = '';
+
+my $show_help = '';
 
 # Get options from command line
 GetOptions(
     'use-git-master' => \$we_use_code_from_master,
     'do-not-track-me' => \$do_not_track_me,
     'use-modern-pf-ring' => \$use_modern_pf_ring,
+    'help' => \$show_help,
 );
+
+if ($show_help) {
+    print "We have following options: --use-git-master, --do-not-track-me, --use-modern-pf-ring and --help\n";
+    exit (0);
+}
+
+welcome_message();
 
 # Bump PF_RING version
 if ($use_modern_pf_ring) {
@@ -369,7 +377,12 @@ sub main {
         install_pf_ring();
     }
 
-    install_json_c();
+    # We need to use another path for library in this case
+    if ($we_use_code_from_master) {
+	install_new_json_c();
+    } else {
+    	install_json_c();
+    }
 
     if ($we_have_ndpi_support) {
         install_ndpi();
@@ -618,6 +631,46 @@ sub install_lua_lpeg {
 
     exec_command("make $make_options");
     exec_command("cp lpeg.so /opt/luajit_2.0.4/lib/lua/5.1");
+}
+
+sub install_new_json_c {
+    my $archive_name  = 'json-c-0.13-20171207.tar.gz';
+    my $install_path = '/opt/json-c-0.13';
+
+
+    print "Install json library\n";
+
+    chdir $temp_folder_for_building_project;
+
+    print "Download archive\n";
+
+    my $json_c_download_result = download_file("https://github.com/json-c/json-c/archive/$archive_name",
+        $archive_name,
+        '6fc7fdd11eadd5a05e882df11bb4998219615de2');
+
+    unless ($json_c_download_result) {
+        fast_die("Can't download json-c sources");
+    }
+
+    print "Uncompress it\n";
+    exec_command("tar -xf $archive_name");
+    chdir "json-c-json-c-0.13-20171207";
+
+    # Fix bugs (assigned but not used variable) which prevent code compilation
+    if ($os_type eq 'macosx' or $os_type eq 'freebsd') {
+        exec_command("sed -i -e '355 s#^#//#' json_tokener.c");
+        exec_command("sed -i -e '360 s#^#//#' json_tokener.c");
+    } else {
+        
+    }
+
+    print "Build it\n";
+    exec_command("./configure --prefix=$install_path");
+
+    print "Install it\n";
+    exec_command("make $make_options install");
+
+    put_library_path_to_ld_so("/etc/ld.so.conf.d/json-c.conf", "$install_path/lib");
 }
 
 sub install_json_c {
