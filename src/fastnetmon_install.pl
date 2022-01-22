@@ -81,7 +81,7 @@ my $fastnetmon_code_dir = "$temp_folder_for_building_project/fastnetmon/src";
 # But we have some patches for NTP and DNS protocols here
 my $ndpi_repository = 'https://github.com/pavel-odintsov/nDPI.git';
 
-my $stable_branch_name = 'v1.1.4';
+my $stable_branch_name = 'v1.1.5';
 
 # By default use mirror
 my $use_mirror = 1;
@@ -377,12 +377,7 @@ sub main {
         install_pf_ring();
     }
 
-    # We need to use another path for library in this case
-    if ($we_use_code_from_master) {
-	install_new_json_c();
-    } else {
-    	install_json_c();
-    }
+    install_json_c();
 
     if ($we_have_ndpi_support) {
         install_ndpi();
@@ -633,7 +628,7 @@ sub install_lua_lpeg {
     exec_command("cp lpeg.so /opt/luajit_2.0.4/lib/lua/5.1");
 }
 
-sub install_new_json_c {
+sub install_json_c {
     my $archive_name  = 'json-c-0.13-20171207.tar.gz';
     my $install_path = '/opt/json-c-0.13';
 
@@ -662,55 +657,6 @@ sub install_new_json_c {
         exec_command("sed -i -e '360 s#^#//#' json_tokener.c");
     } else {
         
-    }
-
-    print "Build it\n";
-    exec_command("./configure --prefix=$install_path");
-
-    print "Install it\n";
-    exec_command("make $make_options install");
-
-    put_library_path_to_ld_so("/etc/ld.so.conf.d/json-c.conf", "$install_path/lib");
-}
-
-sub install_json_c {
-    my $archive_name  = 'json-c-0.12-20140410.tar.gz';
-    my $install_path = '/opt/json-c-0.12';
-
-    print "Install json library\n";
-
-    chdir $temp_folder_for_building_project;
-
-    print "Download archive\n";
-    
-    my $json_c_download_result = download_file("https://github.com/json-c/json-c/archive/$archive_name",
-        $archive_name,
-        'b33872f8b2837c7909e9bd8734855669c57a67ce');
-
-    unless ($json_c_download_result) {
-        fast_die("Can't download json-c sources");
-    }
-    
-    print "Uncompress it\n";       
-    exec_command("tar -xf $archive_name");
-    chdir "json-c-json-c-0.12-20140410";
-
-    # Fix bugs (assigned but not used variable) which prevent code compilation
-    if ($os_type eq 'macosx' or $os_type eq 'freebsd') {
-        exec_command("sed -i -e '355 s#^#//#' json_tokener.c");
-        exec_command("sed -i -e '360 s#^#//#' json_tokener.c");
-    } else { 
-        exec_command("sed -i '355 s#^#//#' json_tokener.c");
-        exec_command("sed -i '360 s#^#//#' json_tokener.c");
-        
-        # Workaround complaints from fresh compilers
-        if (
-            ($distro_type eq 'ubuntu' && $distro_version eq '18.04') or
-            ($distro_type eq 'centos' && $distro_version eq '8') or 
-            ($distro_type eq 'debian' && $distro_version =~ m/^10\./)
-        ) {
-            exec_command("sed -i -e '381 s/AM_CFLAGS =/AM_CFLAGS = -Wimplicit-fallthrough=0/ ' Makefile.in");
-        }
     }
 
     print "Build it\n";
