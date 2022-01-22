@@ -1431,8 +1431,8 @@ sub install_fastnetmon {
 
     my $cmake_params = "";
 
-    unless ($we_have_pfring_support) {
-        $cmake_params .= " -DDISABLE_PF_RING_SUPPORT=ON";
+    if ($we_have_pfring_support) {
+        $cmake_params .= " -DENABLE_PF_RING_SUPPORT=ON";
     }
 
     if ($distro_type eq 'centos' && $distro_version == 6) {
