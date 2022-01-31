@@ -6,17 +6,17 @@ Enable API in configuration file:
 enable_api = on
 ```
 
-You could ban IP:
+You could ban an IP address:
 ```bash
 /opt/fastnetmon/fastnetmon_api_client ban 192.168.1.1
 ```
 
-You could unban IP:
+You could unban IP address:
 ```bash
 /opt/fastnetmon/fastnetmon_api_client unban 192.168.1.1
 ```
 
-You could check banlist:
+You could check the banlist:
 ```bash
 /opt/fastnetmon/fastnetmon_api_client get_banlist
 ```

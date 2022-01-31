@@ -1,6 +1,6 @@
-### All this docs about ExaBGP 4.0 (Git master branch)
+### All the text below is about ExaBGP 4.0 (Git master branch)
 
-Clone code:
+Clone the code:
 ```bash
 cd /usr/src/
 git clone https://github.com/Exa-Networks/exabgp.git
@@ -53,7 +53,7 @@ cd /usr/src/exabgp
 env  exabgp.api.file=/tmp/exabgp.cmd exabgp.daemon.user=root exabgp.daemon.daemonize=false exabgp.daemon.pid=/var/run/exabgp.pid exabgp.log.destination=/var/log/exabgp.log sbin/exabgp --debug /etc/exabgp_flowspec.conf 
 ```
 
-Then, please install Git version of FastNetMon (stable version do not support this features yet):
+Then, please install Git version of FastNetMon (stable version does not support this feature yet):
 ```bash
 wget https://raw.githubusercontent.com/FastVPSEestiOu/fastnetmon/master/src/fastnetmon_install.pl -Ofastnetmon_install.pl 
 sudo perl fastnetmon_install.pl --use-git-master
@@ -61,7 +61,7 @@ sudo perl fastnetmon_install.pl --use-git-master
 
 FastNetMon configuration /etc/fastnetmon.conf:
 ```bash
-# This options are mandatory for Flow Spec attack detector
+# These options are mandatory for Flow Spec attack detector
 collect_attack_pcap_dumps = on
 process_pcap_attack_dumps_with_dpi = on
 
@@ -79,7 +79,7 @@ exabgp_announce_host = no
 
 Be aware! We will announce rules with discard option!
 
-Currently we support only most popular amplification attack types:
+Currently we support only the most popular amplification attack types:
 - DNS amplification (we drop all udp traffic originating from 53 port)
 - NTP amplification (we drop all udp traffic originating from 123 port)
 - SSDP amplification (we drop all udp traffic originating from 1900 port)
