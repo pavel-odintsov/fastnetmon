@@ -13,4 +13,4 @@ We have copied this image to the following locations:
 - US East
 - US West
 
-Please use _ubuntu_ as the username when connecting to the instance.
+Please use _ubuntu_ as a username when connecting to the instance.

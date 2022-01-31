@@ -11,7 +11,7 @@ You could ban an IP address:
 /opt/fastnetmon/fastnetmon_api_client ban 192.168.1.1
 ```
 
-You could unban IP address:
+You could unban an IP address:
 ```bash
 /opt/fastnetmon/fastnetmon_api_client unban 192.168.1.1
 ```
