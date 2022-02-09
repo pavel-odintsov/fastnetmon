@@ -27,6 +27,8 @@ jobs:
           paths:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
+      - store_artifacts:
+          path: /tmp/fastnetmon_install.log 
       - run: /opt/fastnetmon/fastnetmon --configuration_check  
   ubuntu1804:
     docker:
@@ -56,6 +58,8 @@ jobs:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
       - run: /opt/fastnetmon/fastnetmon --configuration_check
+      - store_artifacts:
+          path: /tmp/fastnetmon_install.log 
   ubuntu1604:
     docker:
       - image: ubuntu:xenial-20200326
@@ -84,6 +88,8 @@ jobs:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
       - run: /opt/fastnetmon/fastnetmon --configuration_check
+      - store_artifacts:
+          path: /tmp/fastnetmon_install.log 
   ubuntu1404:
     docker:
       - image: ubuntu:trusty-20191217
@@ -112,6 +118,8 @@ jobs:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
       - run: /opt/fastnetmon/fastnetmon --configuration_check
+      - store_artifacts:
+          path: /tmp/fastnetmon_install.log 
   ubuntu1404_all_libs:
     docker:
       - image: ubuntu:trusty-20191217
@@ -142,6 +150,8 @@ jobs:
       - run: tar -cpzf /opt/fastnetmon_all_libs.tar.gz --exclude=/opt/fastnetmon_all_libs.tar.gz -C /opt /opt; true
       - store_artifacts:
           path: /opt/fastnetmon_all_libs.tar.gz
+      - store_artifacts:
+          path: /tmp/fastnetmon_install.log 
       - run: /opt/fastnetmon/fastnetmon --configuration_check
   debian8:
     docker:
@@ -171,6 +181,8 @@ jobs:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
       - run: /opt/fastnetmon/fastnetmon --configuration_check
+      - store_artifacts:
+          path: /tmp/fastnetmon_install.log 
   debian9:
     docker:
       - image: debian:stretch-20200514
@@ -199,6 +211,8 @@ jobs:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
       - run: /opt/fastnetmon/fastnetmon --configuration_check
+      - store_artifacts:
+          path: /tmp/fastnetmon_install.log 
   debian10:
     docker:
       - image: debian:buster-20200514
@@ -227,6 +241,8 @@ jobs:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
       - run: /opt/fastnetmon/fastnetmon --configuration_check
+      - store_artifacts:
+          path: /tmp/fastnetmon_install.log 
   centos6:
     docker:
       - image: centos:centos6.9
@@ -255,6 +271,8 @@ jobs:
             - /usr/include/linux/pf_ring.h
       - run: cd src; mkdir -p build; cd build; cmake ..; make
       - run: /opt/fastnetmon/fastnetmon --configuration_check
+      - store_artifacts:
+          path: /tmp/fastnetmon_install.log 
   centos7:
     docker:
       - image: centos:centos7.8.2003
@@ -282,6 +300,8 @@ jobs:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
       - run: /opt/fastnetmon/fastnetmon --configuration_check
+      - store_artifacts:
+          path: /tmp/fastnetmon_install.log 
   centos8:
     docker:
       - image: centos:centos8.1.1911
@@ -309,6 +329,8 @@ jobs:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
       - run: /opt/fastnetmon/fastnetmon --configuration_check
+      - store_artifacts:
+          path: /tmp/fastnetmon_install.log 
 workflows:
   version: 2
   all_distros:
