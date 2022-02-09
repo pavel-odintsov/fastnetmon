@@ -1446,7 +1446,11 @@ sub install_icu {
 
 
 sub install_cmake_dependencies {
-    apt_get("libssl-dev");
+    if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
+        apt_get("libssl-dev");
+    } elsif ($distro_type eq 'centos') {
+        yum("openssl-devel");
+    }
 }
 
 sub install_cmake {
