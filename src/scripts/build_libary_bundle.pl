@@ -119,6 +119,11 @@ my $gobgp_folder_name = "gobgp_2_16_0";
 mkdir "$target_path/$gobgp_folder_name";
 
 for my $gobgp_binary ('gobgp', 'gobgpd') {
+    unless (-e "$global_path/$gobgp_folder_name/$gobgp_binary") {
+        warn "GoBGP binary $gobgp_binary does not exist\n";
+        next;
+    }
+
     my $gobgp_copy_result = copy("$global_path/$gobgp_folder_name/$gobgp_binary",
         "$target_path/$gobgp_folder_name/$gobgp_binary");
 

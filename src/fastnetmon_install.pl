@@ -1555,7 +1555,8 @@ sub install_boost {
     print "Install Boost dependencies\n";
 
     print "Download Boost source code\n";
-    my $boost_download_result = download_file("https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.bz2", $archive_file_name, '88866e4075e12255e7a7189d0b8a686e0b1ee9c1');
+    # Official site: https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.bz2 but it's dead now
+    my $boost_download_result = download_file("http://mirror.nienbo.com/boost/1.72.0/boost_1_72_0.tar.bz2", $archive_file_name, '88866e4075e12255e7a7189d0b8a686e0b1ee9c1');
 
     unless ($boost_download_result) {
         fast_die("Can't download Boost source code\n");
