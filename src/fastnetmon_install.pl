@@ -114,6 +114,8 @@ my $install_dependency_packages_only = '';
 
 my $build_boost = '';
 
+my $do_not_use_mirror = '';
+
 # Get options from command line
 GetOptions(
     'use-git-master' => \$we_use_code_from_master,
@@ -122,15 +124,19 @@ GetOptions(
     'gobgp' => \$enable_gobgp_backend,
     'api' => \$enable_api,
     'boost' => \$build_boost,
+    'do-not-use-mirror' => \$do_not_use_mirror,
     'help' => \$show_help,
     'install_dependency_packages_only' => \$install_dependency_packages_only, 
 );
 
 if ($show_help) {
-    print "We have following options:\n--use-git-master\n--do-not-track-me\n--use-modern-pf-ring\n--gobgp\n--api\n--install_dependency_packages_only\n--boost\n--help\n";
+    print "We have following options:\n--use-git-master\n--do-not-use-mirror\n--do-not-track-me\n--use-modern-pf-ring\n--gobgp\n--api\n--install_dependency_packages_only\n--boost\n--help\n";
     exit (0);
 }
 
+if ($do_not_use_mirror) {
+     $use_mirror = '';
+}
 
 welcome_message();
 
@@ -433,6 +439,7 @@ sub main {
 
         if ($build_boost) {
 	   install_boost_builder();
+	   install_boost();
 	}
 
         if ($we_have_ndpi_support) {
@@ -1423,6 +1430,55 @@ sub install_boost_builder {
 
     unless ($b2_install_result) {
         die "Can't execute b2 install\n";
+    }
+
+    1;
+}
+
+sub install_boost {
+    my $boost_install_path = "/opt/boost_1_72_0";
+
+    if (-e $boost_install_path && defined($ENV{'CI'})) {
+        warn "Boost libraries already exist in $boost_install_path. Skip build process\n";
+        return 1;
+    }
+
+    chdir "/opt";
+    my $archive_file_name = 'boost_1_72_0.tar.gz';
+
+    print "Install Boost dependencies\n";
+
+    print "Download Boost source code\n";
+    my $boost_download_result = download_file("https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.bz2", $archive_file_name, '88866e4075e12255e7a7189d0b8a686e0b1ee9c1');
+
+    unless ($boost_download_result) {
+        die "Can't download Boost source code\n";
+    }
+
+    print "Unpack Boost source code\n";
+    exec_command("tar -xf $archive_file_name");
+
+    my $folder_name_inside_archive = 'boost_1_72_0';
+
+    print "Fix permissions\n";
+    # Fix permissions because they are broken inside official archive
+    exec_command("find $folder_name_inside_archive -type f -exec chmod 644 {} \\;");
+    exec_command("find $folder_name_inside_archive -type d -exec chmod 755 {} \\;");
+    exec_command("chown -R root:root $folder_name_inside_archive");
+
+    print "Remove archive\n";
+    unlink "$archive_file_name";
+
+    chdir $folder_name_inside_archive;
+
+    print "Build Boost\n";
+    # We have troubles when run this code with vzctl exec so we should add custom compiler in path 
+    # So without HOME=/root nothing worked correctly due to another "openvz" feature
+    my $b2_build_result = exec_command("/opt/boost_build1.72.0/bin/b2 -j$cpus_number --build-dir=$temp_folder_for_building_project/boost_build_temp_directory_1_7_2 link=shared --without-test --without-python --without-wave --without-log --without-mpi");
+
+    # We should not do this check because b2 build return bad return code even in success case... when it can't build few non important targets
+    unless ($b2_build_result) {
+        ### die "Can't execute b2 build correctly\n";
     }
 
     1;
