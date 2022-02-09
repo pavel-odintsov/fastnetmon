@@ -3,12 +3,23 @@
 use strict;
 use warnings;
 
-unless (scalar @ARGV == 2) {
-    die "Please specify type and original binary file name: rpm fastnetmon-binary-git-0cfdfd5e2062ad94de24f2f383576ea48e6f3a07-debian-6.0.10-x86_64";
+unless (scalar @ARGV == 3) {
+    die "Please specify type, original binary file name and version: rpm fastnetmon-binary-git-0cfdfd5e2062ad94de24f2f383576ea48e6f3a07-debian-6.0.10-x86_64 2.0.1";
 }
+
 
 my $package_type = $ARGV[0];
 my $archive_name = $ARGV[1];
+my $package_version = $ARGV[2];
+
+unless ($package_type && $archive_name && $package_version) {
+    die "Please specify package type, archive name and package version\n";
+}
+
+# Gzip does not compress well, let's use xz instead
+my $dpkg_deb_options = '-Zxz -z1';
+
+my $debian_architecture_name = 'amd64';
 
 if ($package_type eq 'rpm') {
     build_rpm_package();
@@ -30,7 +41,7 @@ sub build_rpm_package {
 #
 # chkconfig: - 85 15
 # description: FastNetMon - high performance DoS/DDoS analyzer with sflow/netflow/mirror support
-# processname: fastnemon
+# processname: fastnetmon
 # config: /etc/fastnetmon.conf
 # pidfile: /var/run/fastnetmon.pid
 #
@@ -406,21 +417,44 @@ sub build_deb_package {
 
     my $fastnetmon_systemd_unit = <<'DOC';
 [Unit]
-Description=FastNetMon - DoS/DDoS analyzer with sflow/netflow/mirror support
+Description=FastNetMon - DoS/DDoS analyzer with sFlow/netflow/mirror support
 After=network.target remote-fs.target
  
 [Service]
 Type=forking
 ExecStart=/opt/fastnetmon/fastnetmon --daemonize
 PIDFile=/run/fastnetmon.pid
-
-#ExecReload=/bin/kill -s HUP $MAINPID
-#ExecStop=/bin/kill -s QUIT $MAINPID
  
 [Install]
 WantedBy=multi-user.target
 DOC
 
+my $fastnetmon_upstart_init = <<'DOC';
+description "FastNetMon DDoS detection daemon"
+author "Pavel Odintsov <pavel.odintsov@gmail.com>"
+
+start on (filesystem and net-device-up IFACE=lo and started mongod)
+stop on runlevel [!2345]
+
+env DAEMON=/opt/fastnetmon/fastnetmon
+env DAEMON_OPTIONS="--daemonize"
+env PID=/run/fastnetmon.pid
+
+# Expect 2 forks from service
+expect daemon
+#respawn
+#respawn limit 10 5
+#oom never
+
+# We are using SIGINT for correct shutdown instead of SIGTERM
+kill signal SIGINT
+
+# We should give some time to polite tool shutdown
+# and we will wait this time until we send SIGKILL to toolkit
+kill timeout 5
+
+exec $DAEMON $DAEMON_OPTIONS
+DOC
 my $fastnetmon_systemv_init = <<'DOC';
 #!/bin/sh
 ### BEGIN INIT INFO
@@ -481,17 +515,53 @@ esac
 exit 0
 DOC
 
-    # dpkg-deb: warning: '/tmp/tmp.gbd1VXGPQB/DEBIAN/control' contains user-defined field '#Standards-Version'
-my $fastnetmon_control_file = <<'DOC';
+my $fastnetmon_control_file = <<DOC;
 Package: fastnetmon
-Maintainer: Pavel Odintsov <pavel.odintsov@gmail.com>
+Maintainer: Pavel Odintsov <pavel.odintsov\@gmail.com>
 Section: misc
 Priority: optional
-Architecture: amd64
-Version: 1.1.3
-Depends: libpcap0.8, libnuma1
-Description: Very fast DDoS analyzer with sflow/netflow/mirror support
+Architecture: $debian_architecture_name
+Version: $package_version
+Description: Very fast DDoS analyzer with sFlow/Netflow/IPFIX and mirror support
  FastNetMon - A high performance DoS/DDoS attack sensor.
+DOC
+
+my $fastnetmon_prerm_hook = <<DOC;
+#!/bin/sh
+
+# Stop fastnetmon correctly
+/usr/sbin/service fastnetmon stop
+
+exit 0
+DOC
+
+# Prevent /opt remove by apt-get remove of our package
+# http://stackoverflow.com/questions/13021002/my-deb-file-removes-opt
+my $fastnetmon_server_postrm_hook = <<DOC;
+#!/bin/sh
+
+# If apt-get decided to remove /opt, let's create it again
+/bin/mkdir -p -m 755 /opt
+/bin/chmod 755 /opt
+
+exit 0
+DOC
+
+my $fastnetmon_postinst_hook = <<DOC;
+#!/bin/sh
+
+if [ -e "/sbin/initctl" ]; then
+    # Update Upstart configuration
+    /sbin/initctl reload-configuration
+else
+    # Update systemd configuration
+    /bin/systemctl daemon-reload
+fi
+
+# Start daemon correctly
+/usr/sbin/service fastnetmon start
+
+exit 0
 DOC
 
     my $folder_for_build = `mktemp -d`;
@@ -501,24 +571,45 @@ DOC
         die "Can't create temp folder\n";
     }
 
+    # I see no reasons why we should keep it secure
+    system("chmod 755 $folder_for_build");
+
     chdir $folder_for_build;
 
     mkdir "$folder_for_build/DEBIAN";
     put_text_to_file("$folder_for_build/DEBIAN/control", $fastnetmon_control_file);
+    
+    put_text_to_file("$folder_for_build/DEBIAN/prerm", $fastnetmon_prerm_hook);
+    put_text_to_file("$folder_for_build/DEBIAN/postinst", $fastnetmon_postinst_hook);
+    put_text_to_file("$folder_for_build/DEBIAN/postrm", $fastnetmon_server_postrm_hook);
+
+    `chmod +x $folder_for_build/DEBIAN/postrm`;
+    `chmod +x $folder_for_build/DEBIAN/prerm`;
+    `chmod +x $folder_for_build/DEBIAN/postinst`;
 
     # Create init files for different versions of Debian like OS 
     mkdir "$folder_for_build/etc";
+    mkdir "$folder_for_build/etc/init";
     mkdir "$folder_for_build/etc/init.d";
 
     put_text_to_file("$folder_for_build/etc/init.d/fastnetmon", $fastnetmon_systemv_init);
     chmod 0755, "$folder_for_build/etc/init.d/fastnetmon";
 
-    # systemd
+    # Create folders for system service file
     mkdir "$folder_for_build/lib";
     mkdir "$folder_for_build/lib/systemd";
     mkdir "$folder_for_build/lib/systemd/system";
- 
+
+    # Create symlinks to call commands without full path
+    mkdir "$folder_for_build/usr";
+    mkdir "$folder_for_build/usr/bin";
+
+    system("ln -s /opt/fastnetmon/fastnetmon_client $folder_for_build/usr/bin/fastnetmon_client");
+    system("ln -s /opt/fastnetmon/fastnetmon_api_client $folder_for_build/usr/bin/fastnetmon_api_client");
+    system("ln -s /opt/fastnetmon/fastnetmon $folder_for_build/usr/bin/fastnetmon");
+
     put_text_to_file("$folder_for_build/lib/systemd/system/fastnetmon.service", $fastnetmon_systemd_unit);
+    put_text_to_file("$folder_for_build/etc/init/fastnetmon.conf", $fastnetmon_upstart_init);
 
     # Configuration file
     put_text_to_file("$folder_for_build/DEBIAN/conffiles", "etc/fastnetmon.conf\n");
@@ -530,11 +621,22 @@ DOC
     `cp $archive_name $folder_for_build/archive.tar.gz`;
 
     mkdir "$folder_for_build/opt";
-    print `tar -xf $folder_for_build/archive.tar.gz  -C $folder_for_build/opt`;
-    unlink("$folder_for_build/archive.tar.gz");
+    `chmod 755 $folder_for_build/opt`;
 
-    mkdir "/tmp/result_data";
-    system("dpkg-deb --build $folder_for_build /tmp/result_data/fastnetmon_package.deb");
+    print `tar -xf $folder_for_build/archive.tar.gz  -C $folder_for_build/opt`;
+    # unlink("$folder_for_build/archive.tar.gz");
+
+    # Set new permissions again. Probably, they was overwritten by tar -xf command
+    `chmod 755 $folder_for_build/opt`;
+
+    # Change owner to root for all files inside build folder
+    system("sudo chown root:root -R $folder_for_build");
+
+    my $deb_build_command = "dpkg-deb  --debug  --verbose $dpkg_deb_options --build $folder_for_build /tmp/fastnetmon_${package_version}_${debian_architecture_name}.deb";
+
+    print "Build command: $deb_build_command\n";
+
+    system($deb_build_command);
 }
 
 sub put_text_to_file {
