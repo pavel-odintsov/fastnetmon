@@ -39,10 +39,8 @@ boost_1_72_0
 json-c-0.13
 libicu_65_1
 ndpi
-boost_build1.72.0
 log4cpp1.1.1
 pf_ring_6.0.3
-cmake-3.16.4
 gobgp_2_16_0
 grpc_1_27_3_e73882dc0fcedab1ffe789e44ed6254819639ce3
 libhiredis_0_13 
