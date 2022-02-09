@@ -1,15 +1,15 @@
 // log4cpp logging facility
-#include "log4cpp/Category.hh"
 #include "log4cpp/Appender.hh"
-#include "log4cpp/FileAppender.hh"
-#include "log4cpp/OstreamAppender.hh"
-#include "log4cpp/Layout.hh"
 #include "log4cpp/BasicLayout.hh"
+#include "log4cpp/Category.hh"
+#include "log4cpp/FileAppender.hh"
+#include "log4cpp/Layout.hh"
+#include "log4cpp/OstreamAppender.hh"
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
-#include <boost/version.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/version.hpp>
 
 #include "../fast_library.h"
 
@@ -17,18 +17,18 @@
 #include <sys/types.h>
 
 // For config map operations
-#include <string>
 #include <map>
+#include <string>
 
-#include <stdio.h>
 #include <iostream>
+#include <stdio.h>
 #include <string>
 #define NETMAP_WITH_LIBS
 
 // Disable debug messages from Netmap
 #define NETMAP_NO_DEBUG
-#include <net/netmap_user.h>
 #include <boost/thread.hpp>
+#include <net/netmap_user.h>
 
 #if defined(__FreeBSD__)
 // On FreeBSD function pthread_attr_setaffinity_np declared here
@@ -46,9 +46,9 @@ typedef cpuset_t cpu_set_t;
 #include <poll.h>
 
 // For support: IPPROTO_TCP, IPPROTO_ICMP, IPPROTO_UDP
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 #include "netmap_collector.h"
 
@@ -110,7 +110,7 @@ void consume_pkt(u_char* buffer, int len, int thread_number) {
         total_unparsed_packets++;
 
         return;
-    }   
+    }
 
     netmap_process_func_ptr(packet);
 }
@@ -140,8 +140,10 @@ void receiver(std::string interface_for_listening) {
     }
 
 #ifdef __linux__
-    manage_interface_promisc_mode(system_interface_name, true); 
-    logger.warn("Please disable all types of offload for this NIC manually: ethtool -K %s gro off gso off tso off lro off", system_interface_name.c_str());
+    manage_interface_promisc_mode(system_interface_name, true);
+    logger.warn("Please disable all types of offload for this NIC manually: ethtool -K %s gro off "
+                "gso off tso off lro off",
+                system_interface_name.c_str());
 #endif
 
     netmap_descriptor = nm_open(interface.c_str(), &base_nmd, 0, NULL);
@@ -151,7 +153,8 @@ void receiver(std::string interface_for_listening) {
         return;
     }
 
-    logger.info("Mapped %dKB memory at %p", netmap_descriptor->req.nr_memsize >> 10, netmap_descriptor->mem);
+    logger.info("Mapped %dKB memory at %p", netmap_descriptor->req.nr_memsize >> 10,
+                netmap_descriptor->mem);
     logger.info("We have %d tx and %d rx rings", netmap_descriptor->req.nr_tx_rings,
                 netmap_descriptor->req.nr_rx_rings);
 
@@ -212,9 +215,10 @@ void receiver(std::string interface_for_listening) {
 
         logger.info("Start new netmap thread %d", i);
 
-// Well, we have thread attributes from Boost 1.50
+        // Well, we have thread attributes from Boost 1.50
 
-#if defined(BOOST_THREAD_PLATFORM_PTHREAD) && BOOST_VERSION / 100 % 1000 >= 50 && !defined(__APPLE__) && defined(__GLIBC__)
+#if defined(BOOST_THREAD_PLATFORM_PTHREAD) && BOOST_VERSION / 100 % 1000 >= 50 && \
+!defined(__APPLE__) && defined(__GLIBC__)
         /* Bind to certain core */
         boost::thread::attributes thread_attrs;
 
@@ -287,7 +291,7 @@ void netmap_thread(struct nm_desc* netmap_descriptor, int thread_number) {
         }
 
         // TODO: this code could add performance degradation
-        // Add interruption point for correct toolkit shutdown 
+        // Add interruption point for correct toolkit shutdown
         // boost::this_thread::interruption_point();
     }
 
@@ -308,11 +312,13 @@ void start_netmap_collection(process_packet_pointer func_ptr) {
     }
 
     if (configuration_map.count("netmap_sampling_ratio") != 0) {
-        netmap_sampling_ratio = convert_string_to_integer(configuration_map["netmap_sampling_ratio"]);
+        netmap_sampling_ratio =
+        convert_string_to_integer(configuration_map["netmap_sampling_ratio"]);
     }
 
     if (configuration_map.count("netmap_read_packet_length_from_ip_header") != 0) {
-        netmap_read_packet_length_from_ip_header = configuration_map["netmap_read_packet_length_from_ip_header"] == "on";
+        netmap_read_packet_length_from_ip_header =
+        configuration_map["netmap_read_packet_length_from_ip_header"] == "on";
     }
 
     std::vector<std::string> interfaces_for_listen;
@@ -324,11 +330,11 @@ void start_netmap_collection(process_packet_pointer func_ptr) {
     boost::thread_group netmap_main_threads;
 
     for (std::vector<std::string>::iterator interface = interfaces_for_listen.begin();
-        interface != interfaces_for_listen.end(); ++interface) {
+         interface != interfaces_for_listen.end(); ++interface) {
 
         logger << log4cpp::Priority::INFO << "netmap will sniff interface: " << *interface;
-        
-        netmap_main_threads.add_thread( new boost::thread(receiver, *interface) );
+
+        netmap_main_threads.add_thread(new boost::thread(receiver, *interface));
     }
 
     netmap_main_threads.join_all();

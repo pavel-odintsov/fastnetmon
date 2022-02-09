@@ -1,29 +1,28 @@
 /* netflow plugin body */
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/types.h>
 #include <inttypes.h>
 #include <netdb.h>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
-#include <vector>
 #include <map>
+#include <vector>
 
 #include "../fast_library.h"
 #include "../ipfix_rfc.h"
 
 // log4cpp logging facility
-#include "log4cpp/Category.hh"
 #include "log4cpp/Appender.hh"
-#include "log4cpp/FileAppender.hh"
-#include "log4cpp/OstreamAppender.hh"
-#include "log4cpp/Layout.hh"
 #include "log4cpp/BasicLayout.hh"
+#include "log4cpp/Category.hh"
+#include "log4cpp/FileAppender.hh"
+#include "log4cpp/Layout.hh"
+#include "log4cpp/OstreamAppender.hh"
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
@@ -55,8 +54,8 @@ bool netflow_divide_counters_on_interval_length = false;
 
 ipfix_information_database ipfix_db_instance;
 
-#include "netflow_collector.h"
 #include "netflow.h"
+#include "netflow_collector.h"
 
 // If we wan't listen on IPv4 and IPv6 i nsame time we need listen multiple sockets. Not good,
 // right.
@@ -166,9 +165,11 @@ int process_netflow_v10_options_template(u_int8_t* pkt, size_t len, u_int32_t so
     }
 
     if (ntohs(options_template_header->flowset_id) != NF10_OPTIONS_FLOWSET_ID) {
-        logger << log4cpp::Priority::ERROR << "Function process_netflow_v10_options_template "
-                                              "expects only NF10_OPTIONS_FLOWSET_ID but got "
-                                              "another id: " << ntohs(options_template_header->flowset_id);
+        logger << log4cpp::Priority::ERROR
+               << "Function process_netflow_v10_options_template "
+                  "expects only NF10_OPTIONS_FLOWSET_ID but got "
+                  "another id: "
+               << ntohs(options_template_header->flowset_id);
         return 1;
     }
 
@@ -180,8 +181,7 @@ int process_netflow_v10_options_template(u_int8_t* pkt, size_t len, u_int32_t so
     u_int16_t template_id = options_nested_header->template_id;
 
     if (template_id <= 255) {
-        logger << log4cpp::Priority::ERROR
-               << "Template ID for options template should be bigger than 255";
+        logger << log4cpp::Priority::ERROR << "Template ID for options template should be bigger than 255";
         return 1;
     }
 
@@ -207,7 +207,8 @@ int process_netflow_v10_template(u_int8_t* pkt, size_t len, u_int32_t source_id,
     if (ntohs(template_header->flowset_id) != NF10_TEMPLATE_FLOWSET_ID) {
         logger << log4cpp::Priority::ERROR
                << "Function process_netflow_v10_template expects only NF10_TEMPLATE_FLOWSET_ID but "
-                  "got another id: " << ntohs(template_header->flowset_id);
+                  "got another id: "
+               << ntohs(template_header->flowset_id);
         return 1;
     }
 
@@ -268,7 +269,8 @@ int process_netflow_v9_template(u_int8_t* pkt, size_t len, u_int32_t source_id, 
     if (ntohs(template_header->flowset_id) != NF9_TEMPLATE_FLOWSET_ID) {
         logger << log4cpp::Priority::ERROR
                << "Function process_netflow_v9_template expects only NF9_TEMPLATE_FLOWSET_ID but "
-                  "got another id: " << ntohs(template_header->flowset_id);
+                  "got another id: "
+               << ntohs(template_header->flowset_id);
         return 1;
     }
 
@@ -382,45 +384,45 @@ int nf9_rec_to_flow(u_int record_type, u_int record_length, u_int8_t* data, simp
         V9_FIELD(NF9_L4_SRC_PORT, SRCDST_PORT, source_port);
         V9_FIELD(NF9_L4_DST_PORT, SRCDST_PORT, destination_port);
 
-        case NF9_IPV4_SRC_ADDR:
-            memcpy(&packet.src_ip, data, record_length);
-            break;
-        case NF9_IPV4_DST_ADDR:
-            memcpy(&packet.dst_ip, data, record_length);
-            break;
-        case NF9_INPUT_SNMP: {
-                // TODO: port number could be 4 byte (Juniper MX) and we should rewrite BE_COPY for correct handling
-                uint16_t input_port = 0;
+    case NF9_IPV4_SRC_ADDR:
+        memcpy(&packet.src_ip, data, record_length);
+        break;
+    case NF9_IPV4_DST_ADDR:
+        memcpy(&packet.dst_ip, data, record_length);
+        break;
+    case NF9_INPUT_SNMP: {
+        // TODO: port number could be 4 byte (Juniper MX) and we should rewrite BE_COPY for correct handling
+        uint16_t input_port = 0;
 
-                if (record_length > sizeof(input_port)) {
-                    //logger << log4cpp::Priority::ERROR << "Received very big packet for NF9_INPUT_SNMP!";
-                    //return 0;
-                } else {
-                    BE_COPY(input_port);
-                    input_port = fast_ntoh(input_port);
-                    // logger << log4cpp::Priority::INFO << "NF9_INPUT_SNMP is: " << input_port;
-                }
-            }
+        if (record_length > sizeof(input_port)) {
+            // logger << log4cpp::Priority::ERROR << "Received very big packet for NF9_INPUT_SNMP!";
+            // return 0;
+        } else {
+            BE_COPY(input_port);
+            input_port = fast_ntoh(input_port);
+            // logger << log4cpp::Priority::INFO << "NF9_INPUT_SNMP is: " << input_port;
+        }
+    }
 
-            break;
-        case NF9_OUTPUT_SNMP: {
-                uint16_t output_port = 0; 
+    break;
+    case NF9_OUTPUT_SNMP: {
+        uint16_t output_port = 0;
 
-                if (record_length > sizeof(output_port)) {
-                    //logger << log4cpp::Priority::ERROR << "Received very big packet for NF9_OUTPUT_SNMP!";
-                    //return 0;
-                } else {
-                    BE_COPY(output_port);
-                    output_port = fast_ntoh(output_port);
-                    // logger << log4cpp::Priority::INFO << "NF9_OUTPUT_SNMP is: " << output_port;
-                }
-            }    
+        if (record_length > sizeof(output_port)) {
+            // logger << log4cpp::Priority::ERROR << "Received very big packet for
+            // NF9_OUTPUT_SNMP!"; return 0;
+        } else {
+            BE_COPY(output_port);
+            output_port = fast_ntoh(output_port);
+            // logger << log4cpp::Priority::INFO << "NF9_OUTPUT_SNMP is: " << output_port;
+        }
+    }
 
-            break;        
+    break;
 
 
-        //V9_FIELD_ADDR(NF9_IPV4_SRC_ADDR, SRC_ADDR4, src_ip);
-        //V9_FIELD_ADDR(NF9_IPV4_DST_ADDR, DST_ADDR4, dst_ip);
+        // V9_FIELD_ADDR(NF9_IPV4_SRC_ADDR, SRC_ADDR4, src_ip);
+        // V9_FIELD_ADDR(NF9_IPV4_DST_ADDR, DST_ADDR4, dst_ip);
 
         // Sampling rate
         // We use NULL as second argument because it's suelles for us
@@ -547,7 +549,7 @@ void nf10_flowset_to_store(u_int8_t* pkt, size_t len, struct NF10_HEADER* nf10_h
     // decode data in network byte order to host byte order
     packet.length = fast_ntoh(packet.length);
     packet.number_of_packets = fast_ntoh(packet.number_of_packets);
-    
+
     packet.protocol = fast_ntoh(packet.protocol);
 
     // We should convert ports to host byte order too
@@ -604,7 +606,7 @@ void nf9_flowset_to_store(u_int8_t* pkt, size_t len, struct NF9_HEADER* nf9_hdr,
         // length:"<<record_length;
         if (nf9_rec_to_flow_result != 0) {
             return;
-        }   
+        }
 
         offset += record_length;
     }
@@ -760,8 +762,7 @@ void process_netflow_packet_v10(u_int8_t* packet, u_int len, std::string client_
 
     for (i = 0;; i++) {
         if (offset >= len) {
-            logger << log4cpp::Priority::ERROR
-                   << "We tried to read from address outside netflow packet";
+            logger << log4cpp::Priority::ERROR << "We tried to read from address outside netflow packet";
             return;
         }
 
@@ -777,8 +778,7 @@ void process_netflow_packet_v10(u_int8_t* packet, u_int len, std::string client_
          */
 
         if (offset + flowset_len > len) {
-            logger << log4cpp::Priority::ERROR
-                   << "We tried to read from address outside netflow's packet flowset";
+            logger << log4cpp::Priority::ERROR << "We tried to read from address outside netflow's packet flowset";
             return;
         }
 
@@ -786,14 +786,13 @@ void process_netflow_packet_v10(u_int8_t* packet, u_int len, std::string client_
         case NF10_TEMPLATE_FLOWSET_ID:
             if (process_netflow_v10_template(packet + offset, flowset_len, source_id,
                                              client_addres_in_string_format) != 0) {
-                logger << log4cpp::Priority::ERROR
-                       << "Function process_netflow_v10_template executed with errors";
+                logger << log4cpp::Priority::ERROR << "Function process_netflow_v10_template executed with errors";
                 break;
             }
             break;
         case NF10_OPTIONS_FLOWSET_ID:
             // process_netflow_v10_options_template(packet + offset, flowset_len, source_id);
-            //logger << log4cpp::Priority::INFO
+            // logger << log4cpp::Priority::INFO
             //       << "Received ipfix options flowset id, which is not supported";
             /* Not implemented yet */
             break;
@@ -845,8 +844,7 @@ void process_netflow_packet_v9(u_int8_t* packet, u_int len, std::string client_a
     for (u_int32_t i = 0;; i++) {
         /* Make sure we don't run off the end of the flow */
         if (offset >= len) {
-            logger << log4cpp::Priority::ERROR
-                   << "We tried to read from address outside netflow packet";
+            logger << log4cpp::Priority::ERROR << "We tried to read from address outside netflow packet";
             return;
         }
 
@@ -863,8 +861,7 @@ void process_netflow_packet_v9(u_int8_t* packet, u_int len, std::string client_a
          */
 
         if (offset + flowset_len > len) {
-            logger << log4cpp::Priority::ERROR
-                   << "We tried to read from address outside netflow's packet flowset";
+            logger << log4cpp::Priority::ERROR << "We tried to read from address outside netflow's packet flowset";
             return;
         }
 
@@ -873,8 +870,7 @@ void process_netflow_packet_v9(u_int8_t* packet, u_int len, std::string client_a
             // logger<< log4cpp::Priority::INFO<<"We read template";
             if (process_netflow_v9_template(packet + offset, flowset_len, source_id,
                                             client_addres_in_string_format) != 0) {
-                logger << log4cpp::Priority::ERROR
-                       << "Function process_netflow_v9_template executed with errors";
+                logger << log4cpp::Priority::ERROR << "Function process_netflow_v9_template executed with errors";
                 break;
             }
             break;
@@ -927,7 +923,7 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len, std::string client_a
 
     uint16_t netflow5_sampling_ratio = fast_ntoh(nf5_hdr->sampling_rate);
 
-    // In first two bits we store sampling type. 
+    // In first two bits we store sampling type.
     // We are not interested in it and should zeroify it for getting correct value of sampling rate
     clear_bit_value(netflow5_sampling_ratio, 15);
     clear_bit_value(netflow5_sampling_ratio, 16);
@@ -951,9 +947,9 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len, std::string client_a
         nf5_flow->flow_octets = fast_ntoh(nf5_flow->flow_octets);
         nf5_flow->flow_packets = fast_ntoh(nf5_flow->flow_packets);
 
-        nf5_flow->if_index_in  = fast_ntoh(nf5_flow->if_index_in);
+        nf5_flow->if_index_in = fast_ntoh(nf5_flow->if_index_in);
         nf5_flow->if_index_out = fast_ntoh(nf5_flow->if_index_out);
-    
+
         // convert netflow to simple packet form
         simple_packet current_packet;
 
@@ -972,14 +968,15 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len, std::string client_a
 
         if (netflow_divide_counters_on_interval_length) {
             // This interval in milliseconds, convert it to seconds
-            int64_t interval_length = (fast_ntoh(nf5_flow->flow_finish) - fast_ntoh(nf5_flow->flow_start)) / 1000;
+            int64_t interval_length =
+            (fast_ntoh(nf5_flow->flow_finish) - fast_ntoh(nf5_flow->flow_start)) / 1000;
 
             /*
             if (interval_length > 0) {
                 logger << log4cpp::Priority::INFO << "NetFlow v5 from: " << client_addres_in_string_format
                     << " start: " << fast_ntoh(nf5_flow->flow_start)
-                    << " finish: " << fast_ntoh(nf5_flow->flow_finish) 
-                    << " interval length:" << interval_length 
+                    << " finish: " << fast_ntoh(nf5_flow->flow_finish)
+                    << " interval length:" << interval_length
                     << "\n";
             }
             */
@@ -995,9 +992,8 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len, std::string client_a
                 current_packet.length = current_packet.length / interval_length;
                 current_packet.number_of_packets = current_packet.number_of_packets / interval_length;
             }
-
         }
-    
+
         // TODO: use sampling data from packet, disable customization here
         // Wireshark dump approves this idea
         current_packet.sample_ratio = netflow5_sampling_ratio;
@@ -1031,11 +1027,12 @@ void process_netflow_packet_v5(u_int8_t* packet, u_int len, std::string client_a
 #ifdef ENABLE_LUA_HOOKS
         if (lua_hooks_enabled) {
             // This code could be used only for tests with pcap_reader
-            //if (lua_state == NULL) {
+            // if (lua_state == NULL) {
             //    init_lua_jit();
             //}
 
-            if (call_lua_function("process_netflow", netflow_lua_state, client_addres_in_string_format, (void*)nf5_flow)) {
+            if (call_lua_function("process_netflow", netflow_lua_state,
+                                  client_addres_in_string_format, (void*)nf5_flow)) {
                 // We will process this packet
             } else {
                 logger << log4cpp::Priority::INFO << "We will drop this packets because LUA script decided to do it";
@@ -1108,7 +1105,7 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
 
     if (configuration_map.count("netflow_divide_counters_on_interval_length") != 0) {
         netflow_divide_counters_on_interval_length =
-            configuration_map["netflow_divide_counters_on_interval_length"] == "on" ? true : false;
+        configuration_map["netflow_divide_counters_on_interval_length"] == "on" ? true : false;
     }
 
 #ifdef ENABLE_LUA_HOOKS
@@ -1119,28 +1116,28 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
 #endif
 
     boost::thread_group netflow_collector_threads;
-    
+
     std::vector<std::string> ports_for_listen;
     boost::split(ports_for_listen, netflow_ports, boost::is_any_of(","), boost::token_compress_on);
 
-    logger << log4cpp::Priority::INFO << netflow_plugin_log_prefix << "We will listen on " << ports_for_listen.size() << " ports";
+    logger << log4cpp::Priority::INFO << netflow_plugin_log_prefix << "We will listen on "
+           << ports_for_listen.size() << " ports";
 
-    for (std::vector<std::string>::iterator port = ports_for_listen.begin(); port != ports_for_listen.end(); ++port) {
+    for (std::vector<std::string>::iterator port = ports_for_listen.begin();
+         port != ports_for_listen.end(); ++port) {
         unsigned int netflow_port = convert_string_to_integer(*port);
-        
+
         if (netflow_port == 0) {
             netflow_port = 2055;
         }
 
-        netflow_collector_threads.add_thread( new boost::thread(start_netflow_collector,
-            netflow_host,
-            convert_string_to_integer(*port)
-        ));
+        netflow_collector_threads.add_thread(
+        new boost::thread(start_netflow_collector, netflow_host, convert_string_to_integer(*port)));
     }
 
-    netflow_collector_threads.join_all(); 
+    netflow_collector_threads.join_all();
 }
-    
+
 void start_netflow_collector(std::string netflow_host, unsigned int netflow_port) {
     logger << log4cpp::Priority::INFO << "netflow plugin will listen on " << netflow_host << ":"
            << netflow_port << " udp port";
@@ -1182,8 +1179,8 @@ void start_netflow_collector(std::string netflow_host, unsigned int netflow_port
     int bind_result = bind(sockfd, servinfo->ai_addr, servinfo->ai_addrlen);
 
     if (bind_result) {
-        logger << log4cpp::Priority::ERROR << "Can't listen on port: " << netflow_port << " on host "
-               << netflow_host << " errno:" << errno << " error: " << strerror(errno);
+        logger << log4cpp::Priority::ERROR << "Can't listen on port: " << netflow_port
+               << " on host " << netflow_host << " errno:" << errno << " error: " << strerror(errno);
         return;
     }
 
@@ -1193,10 +1190,10 @@ void start_netflow_collector(std::string netflow_host, unsigned int netflow_port
     /* We should specify timeout there for correct toolkit shutdown */
     /* Because otherwise recvfrom will stay in blocked mode forever */
     struct timeval tv;
-    tv.tv_sec  = 5;  /* X Secs Timeout */
-    tv.tv_usec = 0;  // Not init'ing this can cause strange errors
+    tv.tv_sec = 5; /* X Secs Timeout */
+    tv.tv_usec = 0; // Not init'ing this can cause strange errors
 
-    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval));
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&tv, sizeof(struct timeval));
 
     while (true) {
         // This approach provide ability to store both IPv4 and IPv6 client's addresses

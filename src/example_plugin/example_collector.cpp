@@ -1,10 +1,10 @@
 // log4cpp logging facility
-#include "log4cpp/Category.hh"
 #include "log4cpp/Appender.hh"
-#include "log4cpp/FileAppender.hh"
-#include "log4cpp/OstreamAppender.hh"
-#include "log4cpp/Layout.hh"
 #include "log4cpp/BasicLayout.hh"
+#include "log4cpp/Category.hh"
+#include "log4cpp/FileAppender.hh"
+#include "log4cpp/Layout.hh"
+#include "log4cpp/OstreamAppender.hh"
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
@@ -12,13 +12,13 @@
 #include <sys/types.h>
 
 // For config map operations
-#include <string>
 #include <map>
+#include <string>
 
 // For support: IPPROTO_TCP, IPPROTO_ICMP, IPPROTO_UDP
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 #include "example_collector.h"
 

@@ -1,15 +1,15 @@
 // log4cpp logging facility
-#include "log4cpp/Category.hh"
 #include "log4cpp/Appender.hh"
-#include "log4cpp/FileAppender.hh"
-#include "log4cpp/OstreamAppender.hh"
-#include "log4cpp/Layout.hh"
 #include "log4cpp/BasicLayout.hh"
+#include "log4cpp/Category.hh"
+#include "log4cpp/FileAppender.hh"
+#include "log4cpp/Layout.hh"
+#include "log4cpp/OstreamAppender.hh"
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
-#include <boost/version.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/version.hpp>
 
 #include "../fast_library.h"
 
@@ -17,31 +17,31 @@
 #include <sys/types.h>
 
 // For config map operations
-#include <string>
 #include <map>
+#include <string>
 
-#include <stdio.h>
 #include <iostream>
+#include <stdio.h>
 #include <string>
 
 #include "../fastnetmon_packet_parser.h"
 
 // For support: IPPROTO_TCP, IPPROTO_ICMP, IPPROTO_UDP
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 #include "afpacket_collector.h"
 
-#include <boost/thread.hpp>
-#include <sys/mman.h>
-#include <poll.h>
 #include <arpa/inet.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <net/if.h>
+#include <boost/thread.hpp>
 #include <linux/if_packet.h>
 #include <net/ethernet.h> /* the L2 protocols */
+#include <net/if.h>
+#include <poll.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <sys/socket.h>
 
 #include "../unified_parser.hpp"
 
@@ -60,13 +60,13 @@ extern std::map<std::string, std::string> configuration_map;
 process_packet_pointer afpacket_process_func_ptr = NULL;
 
 // Default sampling rate
-uint32_t mirror_af_packet_custom_sampling_rate = 1; 
+uint32_t mirror_af_packet_custom_sampling_rate = 1;
 
 // 4194304 bytes
-unsigned int blocksiz = 1 << 22; 
+unsigned int blocksiz = 1 << 22;
 // 2048 bytes
-unsigned int framesiz = 1 << 11; 
-unsigned int blocknum = 64; 
+unsigned int framesiz = 1 << 11;
+unsigned int blocknum = 64;
 
 struct block_desc {
     uint32_t version;
@@ -84,7 +84,7 @@ int get_interface_number_by_device_name(int socket_fd, std::string interface_nam
     }
 
     strncpy(ifr.ifr_name, interface_name.c_str(), sizeof(ifr.ifr_name));
-    
+
     if (ioctl(socket_fd, SIOCGIFINDEX, &ifr) == -1) {
         return -1;
     }
@@ -92,17 +92,16 @@ int get_interface_number_by_device_name(int socket_fd, std::string interface_nam
     return ifr.ifr_ifindex;
 }
 
-void flush_block(struct block_desc *pbd) {
+void flush_block(struct block_desc* pbd) {
     pbd->h1.block_status = TP_STATUS_KERNEL;
 }
 
-void walk_block(struct block_desc *pbd, const int block_num) {
+void walk_block(struct block_desc* pbd, const int block_num) {
     int num_pkts = pbd->h1.num_pkts, i;
     unsigned long bytes = 0;
-    struct tpacket3_hdr *ppd;
+    struct tpacket3_hdr* ppd;
 
-    ppd = (struct tpacket3_hdr *) ((uint8_t *) pbd +
-                       pbd->h1.offset_to_first_pkt);
+    ppd = (struct tpacket3_hdr*)((uint8_t*)pbd + pbd->h1.offset_to_first_pkt);
     for (i = 0; i < num_pkts; ++i) {
         bytes += ppd->tp_snaplen;
 
@@ -117,22 +116,22 @@ void walk_block(struct block_desc *pbd, const int block_num) {
         u_int8_t timestamp = 0;
         u_int8_t add_hash = 0;
 
-        u_char* data_pointer = (u_char*)((uint8_t *) ppd + ppd->tp_mac);
+        u_char* data_pointer = (u_char*)((uint8_t*)ppd + ppd->tp_mac);
 
         simple_packet packet;
-        int parser_result = parse_raw_packet_to_simple_packet((u_char*)data_pointer, ppd->tp_snaplen, packet, afpacket_read_packet_length_from_ip_header); 
+        int parser_result = parse_raw_packet_to_simple_packet((u_char*)data_pointer, ppd->tp_snaplen, packet,
+                                                              afpacket_read_packet_length_from_ip_header);
 
-	// Override default sample rate by rate specified in configuration	
-	if (mirror_af_packet_custom_sampling_rate > 1) {
-	    packet.sample_ratio = mirror_af_packet_custom_sampling_rate;
-	}
+        // Override default sample rate by rate specified in configuration
+        if (mirror_af_packet_custom_sampling_rate > 1) {
+            packet.sample_ratio = mirror_af_packet_custom_sampling_rate;
+        }
 
-        //char print_buffer[512];
-        //fastnetmon_print_parsed_pkt(print_buffer, 512, data_pointer, &packet_header);
-        //printf("%s\n", print_buffer);
- 
-        ppd = (struct tpacket3_hdr *) ((uint8_t *) ppd +
-                           ppd->tp_next_offset);
+        // char print_buffer[512];
+        // fastnetmon_print_parsed_pkt(print_buffer, 512, data_pointer, &packet_header);
+        // printf("%s\n", print_buffer);
+
+        ppd = (struct tpacket3_hdr*)((uint8_t*)ppd + ppd->tp_next_offset);
 
         if (parser_result) {
             afpacket_process_func_ptr(packet);
@@ -146,10 +145,10 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
     // More details here: http://man7.org/linux/man-pages/man7/packet.7.html
     // We could use SOCK_RAW or SOCK_DGRAM for second argument
     // SOCK_RAW - raw packets pass from the kernel
-    // SOCK_DGRAM - some amount of processing 
+    // SOCK_DGRAM - some amount of processing
     // Third argument manage ether type of captured packets
     int packet_socket = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
-   
+
     if (packet_socket == -1) {
         logger << log4cpp::Priority::ERROR << "Can't create AF_PACKET socket";
         return false;
@@ -157,7 +156,8 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
 
     // We whould use V3 bcause it could read/pool in per block basis instead per packet
     int version = TPACKET_V3;
-    int setsockopt_packet_version = setsockopt(packet_socket, SOL_PACKET, PACKET_VERSION, &version, sizeof(version));
+    int setsockopt_packet_version =
+    setsockopt(packet_socket, SOL_PACKET, PACKET_VERSION, &version, sizeof(version));
 
     if (setsockopt_packet_version < 0) {
         logger << log4cpp::Priority::ERROR << "Can't set packet v3 version";
@@ -170,14 +170,15 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
         logger << log4cpp::Priority::ERROR << "Can't get interface number by interface name for " << interface_name;
         return false;
     }
- 
+
     // Switch to PROMISC mode
     struct packet_mreq sock_params;
     memset(&sock_params, 0, sizeof(sock_params));
     sock_params.mr_type = PACKET_MR_PROMISC;
     sock_params.mr_ifindex = interface_number;
-    
-    int set_promisc = setsockopt(packet_socket, SOL_PACKET, PACKET_ADD_MEMBERSHIP, (void *)&sock_params, sizeof(sock_params));
+
+    int set_promisc = setsockopt(packet_socket, SOL_PACKET, PACKET_ADD_MEMBERSHIP,
+                                 (void*)&sock_params, sizeof(sock_params));
 
     if (set_promisc == -1) {
         logger << log4cpp::Priority::ERROR << "Can't enable promisc mode";
@@ -205,8 +206,8 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
     req.tp_retire_blk_tov = 60; // Timeout in msec
     req.tp_feature_req_word = TP_FT_REQ_FILL_RXHASH;
 
-    int setsockopt_rx_ring = setsockopt(packet_socket, SOL_PACKET , PACKET_RX_RING , (void*)&req , sizeof(req));
-    
+    int setsockopt_rx_ring = setsockopt(packet_socket, SOL_PACKET, PACKET_RX_RING, (void*)&req, sizeof(req));
+
     if (setsockopt_rx_ring == -1) {
         logger << log4cpp::Priority::ERROR << "Can't enable RX_RING for AF_PACKET socket";
         return false;
@@ -216,7 +217,8 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
     uint8_t* mapped_buffer = NULL;
     struct iovec* rd = NULL;
 
-    mapped_buffer = (uint8_t*)mmap(NULL, req.tp_block_size * req.tp_block_nr, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_LOCKED, packet_socket, 0);
+    mapped_buffer = (uint8_t*)mmap(NULL, req.tp_block_size * req.tp_block_nr, PROT_READ | PROT_WRITE,
+                                   MAP_SHARED | MAP_LOCKED, packet_socket, 0);
 
     if (mapped_buffer == MAP_FAILED) {
         logger << log4cpp::Priority::ERROR << "MMAP failed";
@@ -232,24 +234,26 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
         rd[i].iov_len = req.tp_block_size;
     }
 
-    int bind_result = bind(packet_socket, (struct sockaddr *)&bind_address, sizeof(bind_address));
+    int bind_result = bind(packet_socket, (struct sockaddr*)&bind_address, sizeof(bind_address));
 
     if (bind_result == -1) {
         logger << log4cpp::Priority::ERROR << "Can't bind to AF_PACKET socket";
         return false;
     }
- 
-   if (enable_fanout) {
+
+    if (enable_fanout) {
         // PACKET_FANOUT_LB - round robin
         // PACKET_FANOUT_CPU - send packets to CPU where packet arrived
-        int fanout_type = PACKET_FANOUT_CPU; 
+        int fanout_type = PACKET_FANOUT_CPU;
 
         int fanout_arg = (fanout_group_id | (fanout_type << 16));
 
-        int setsockopt_fanout = setsockopt(packet_socket, SOL_PACKET, PACKET_FANOUT, &fanout_arg, sizeof(fanout_arg));
+        int setsockopt_fanout =
+        setsockopt(packet_socket, SOL_PACKET, PACKET_FANOUT, &fanout_arg, sizeof(fanout_arg));
 
         if (setsockopt_fanout < 0) {
-            logger << log4cpp::Priority::ERROR << "Can't configure fanout error number: "<< errno << " error: " << strerror(errno);
+            logger << log4cpp::Priority::ERROR << "Can't configure fanout error number: " << errno
+                   << " error: " << strerror(errno);
             return false;
         }
     }
@@ -262,20 +266,20 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
     pfd.fd = packet_socket;
     pfd.events = POLLIN | POLLERR;
     pfd.revents = 0;
-   
+
     while (true) {
-        struct block_desc *pbd = (struct block_desc *) rd[current_block_num].iov_base;
- 
+        struct block_desc* pbd = (struct block_desc*)rd[current_block_num].iov_base;
+
         if ((pbd->h1.block_status & TP_STATUS_USER) == 0) {
             poll(&pfd, 1, -1);
 
             continue;
-        }   
+        }
 
         walk_block(pbd, current_block_num);
         flush_block(pbd);
         current_block_num = (current_block_num + 1) % blocknum;
-    }   
+    }
 
     return true;
 }
@@ -285,7 +289,7 @@ void start_af_packet_capture(std::string interface_name, bool enable_fanout, int
 }
 
 void get_af_packet_stats() {
-// getsockopt PACKET_STATISTICS
+    // getsockopt PACKET_STATISTICS
 }
 
 // Could get some speed up on NUMA servers
@@ -299,7 +303,8 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
     logger.info("We have %d cpus for AF_PACKET", num_cpus);
 
     if (configuration_map.count("netmap_read_packet_length_from_ip_header") != 0) {
-        afpacket_read_packet_length_from_ip_header = configuration_map["netmap_read_packet_length_from_ip_header"] == "on";
+        afpacket_read_packet_length_from_ip_header =
+        configuration_map["netmap_read_packet_length_from_ip_header"] == "on";
     }
 
     std::string interfaces_list = "";
@@ -309,13 +314,15 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
     }
 
     if (configuration_map.count("mirror_af_packet_custom_sampling_rate") != 0) {
-    	mirror_af_packet_custom_sampling_rate = convert_string_to_integer(configuration_map["mirror_af_packet_custom_sampling_rate"]);	    
+        mirror_af_packet_custom_sampling_rate =
+        convert_string_to_integer(configuration_map["mirror_af_packet_custom_sampling_rate"]);
     }
 
     std::vector<std::string> interfaces_for_listen;
     boost::split(interfaces_for_listen, interfaces_list, boost::is_any_of(","), boost::token_compress_on);
 
-    logger << log4cpp::Priority::INFO << "AF_PACKET will listen on " << interfaces_for_listen.size() << " interfaces";
+    logger << log4cpp::Priority::INFO << "AF_PACKET will listen on " << interfaces_for_listen.size()
+           << " interfaces";
 
     if (interfaces_for_listen.size() == 0) {
         logger << log4cpp::Priority::ERROR << "Please specify intreface for AF_PACKET";
@@ -332,13 +339,14 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
         // And add number for current interface to distinguish them
         group_identifier += i;
 
-        int fanout_group_id = group_identifier & 0xffff; 
+        int fanout_group_id = group_identifier & 0xffff;
 
         std::string capture_interface = interfaces_for_listen[i];
 
         logger << log4cpp::Priority::INFO << "AF_PACKET will listen on " << capture_interface << " interface";
 
-        boost::thread* af_packet_interface_thread = new boost::thread(start_af_packet_capture_for_interface, capture_interface, fanout_group_id, num_cpus);
+        boost::thread* af_packet_interface_thread =
+        new boost::thread(start_af_packet_capture_for_interface, capture_interface, fanout_group_id, num_cpus);
 
         af_packet_main_threads.add_thread(af_packet_interface_thread);
     }
@@ -350,7 +358,7 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
 void start_af_packet_capture_for_interface(std::string capture_interface, int fanout_group_id, unsigned int num_cpus) {
     if (num_cpus == 1) {
         logger << log4cpp::Priority::INFO << "Disable AF_PACKET fanout because you have only single CPU";
- 
+
         bool fanout = false;
         start_af_packet_capture(capture_interface, fanout, 0);
     } else {
@@ -359,7 +367,7 @@ void start_af_packet_capture_for_interface(std::string capture_interface, int fa
 
         for (int cpu = 0; cpu < num_cpus; cpu++) {
             logger << log4cpp::Priority::INFO << "Start AF_PACKET worker process for " << capture_interface
-                << " with fanout group id " << fanout_group_id << " on CPU " << cpu;
+                   << " with fanout group id " << fanout_group_id << " on CPU " << cpu;
 
 // Well, we have thread attributes from Boost 1.50
 #if defined(BOOST_THREAD_PLATFORM_PTHREAD) && BOOST_VERSION / 100 % 1000 >= 50 && defined(__GLIBC__)
@@ -373,26 +381,26 @@ void start_af_packet_capture_for_interface(std::string capture_interface, int fa
                 // We count cpus from zero
                 CPU_SET(cpu_to_bind, &current_cpu_set);
 
-                int set_affinity_result = pthread_attr_setaffinity_np(thread_attrs.native_handle(), sizeof(cpu_set_t), &current_cpu_set);
-    
+                int set_affinity_result =
+                pthread_attr_setaffinity_np(thread_attrs.native_handle(), sizeof(cpu_set_t), &current_cpu_set);
+
                 if (set_affinity_result != 0) {
                     logger << log4cpp::Priority::ERROR << "Can't set CPU affinity for thread";
-                } 
+                }
             }
 
             bool fanout = true;
 
             packet_receiver_thread_group.add_thread(
-                new boost::thread(thread_attrs, boost::bind(start_af_packet_capture, capture_interface, fanout, fanout_group_id))
-            );
+            new boost::thread(thread_attrs, boost::bind(start_af_packet_capture, capture_interface,
+                                                        fanout, fanout_group_id)));
 #else
             bool fanout = true;
 
             logger.error("Sorry but CPU affinity did not supported for your platform");
 
             packet_receiver_thread_group.add_thread(
-                new boost::thread(start_af_packet_capture, capture_interface, fanout, fanout_group_id)
-            );
+            new boost::thread(start_af_packet_capture, capture_interface, fanout, fanout_group_id));
 #endif
         }
 

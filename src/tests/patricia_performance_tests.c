@@ -1,12 +1,12 @@
-#include <stdio.h>
-#include <unistd.h>
+#include <arpa/inet.h>
+#include <math.h>
+#include <netinet/in.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <sys/socket.h>
 #include <sys/time.h>
 #include <time.h>
-#include <math.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+#include <unistd.h>
 
 #include "../libpatricia/patricia.h"
 
@@ -59,7 +59,7 @@ int main() {
     for (j = 0; j < j_iter; j++) {
         for (i = 0; i < i_iter; i++) {
             // Random Pseudo IP
-            prefix_for_check_adreess.add.sin.s_addr = i*j;
+            prefix_for_check_adreess.add.sin.s_addr = i * j;
             patricia_node_t* found_patrica_node =
             patricia_search_best2(lookup_tree, &prefix_for_check_adreess, 1);
 

@@ -6,17 +6,14 @@
 
 // Packet headers for sFLOW v4
 enum INMPacket_information_type {
-  INMPACKETTYPE_HEADER  = 1,      /* Packet headers are sampled */
-  INMPACKETTYPE_IPV4    = 2,      /* IP version 4 data */
-  INMPACKETTYPE_IPV6    = 3       /* IP version 4 data */
+    INMPACKETTYPE_HEADER = 1, /* Packet headers are sampled */
+    INMPACKETTYPE_IPV4 = 2, /* IP version 4 data */
+    INMPACKETTYPE_IPV6 = 3 /* IP version 4 data */
 };
 
 /* when I turn on optimisation with the Microsoft compiler it seems to change
    the values of these enumerated types and break the program - not sure why */
-enum INMSample_types {
-   FLOWSAMPLE  = 1,
-   COUNTERSSAMPLE = 2 
-};
+enum INMSample_types { FLOWSAMPLE = 1, COUNTERSSAMPLE = 2 };
 
 
 /* same for tcp */
@@ -176,8 +173,8 @@ typedef struct _SFSample {
     uint32_t dst_as_path_len;
     uint32_t* dst_as_path;
     /* note: version 4 dst as path segments just get printed, not stored here, however
-    * the dst_peer and dst_as are filled in, since those are used for netflow encoding
-    */
+     * the dst_peer and dst_as are filled in, since those are used for netflow encoding
+     */
     uint32_t dst_peer_as;
     uint32_t dst_as;
 
@@ -185,7 +182,7 @@ typedef struct _SFSample {
     uint32_t* communities;
     uint32_t localpref;
 
-/* user id */
+    /* user id */
     uint32_t src_user_charset;
     uint32_t src_user_len;
     char src_user[SA_MAX_EXTENDED_USER_LEN + 1];
@@ -193,7 +190,7 @@ typedef struct _SFSample {
     uint32_t dst_user_len;
     char dst_user[SA_MAX_EXTENDED_USER_LEN + 1];
 
-/* url */
+    /* url */
     uint32_t url_direction;
     uint32_t url_len;
     char url[SA_MAX_EXTENDED_URL_LEN + 1];
@@ -212,7 +209,7 @@ typedef struct _SFSample {
     uint32_t counterBlockVersion;
 
     /* exception handler context */
-    //jmp_buf env;
+    // jmp_buf env;
 } SFSample;
 
 #endif // SFLOW_DATA_H

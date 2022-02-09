@@ -2,13 +2,13 @@
 #define FASTNETMON_PCAP_FORMAT_H
 
 #include <stdint.h>
-#include <unistd.h>
 #include <stdio.h>
-#include <sys/stat.h> 
-
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
+
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 /*
    pcap dump format:
@@ -27,17 +27,17 @@ typedef u_int bpf_u_int32;
 
 // We use copy and paste from pcap.h here because we do not want to link with pcap here
 struct fastnetmon_pcap_file_header {
-        bpf_u_int32 magic;
-        u_short version_major;
-        u_short version_minor;
-        bpf_int32 thiszone;     /* gmt to local correction */
-        bpf_u_int32 sigfigs;    /* accuracy of timestamps */
-        bpf_u_int32 snaplen;    /* max length saved portion of each pkt */
-        bpf_u_int32 linktype;   /* data link type (LINKTYPE_*) */
+    bpf_u_int32 magic;
+    u_short version_major;
+    u_short version_minor;
+    bpf_int32 thiszone; /* gmt to local correction */
+    bpf_u_int32 sigfigs; /* accuracy of timestamps */
+    bpf_u_int32 snaplen; /* max length saved portion of each pkt */
+    bpf_u_int32 linktype; /* data link type (LINKTYPE_*) */
 };
 
 /*
-TODO: move to this code, get rid any bpf* custom types 
+TODO: move to this code, get rid any bpf* custom types
 struct fastnetmon_pcap_file_header {
     uint32_t magic;
     uint16_t version_major;
@@ -61,8 +61,8 @@ struct fastnetmon_pcap_pkthdr {
 
 typedef void (*pcap_packet_parser_callback)(char* buffer, uint32_t len, uint32_t snaplen);
 
-int pcap_reader(const char* pcap_file_path, pcap_packet_parser_callback  pcap_parse_packet_function_ptr);
+int pcap_reader(const char* pcap_file_path, pcap_packet_parser_callback pcap_parse_packet_function_ptr);
 
 bool fill_pcap_header(struct fastnetmon_pcap_file_header* pcap_header, bpf_u_int32 snap_length);
 
-#endif 
+#endif

@@ -1,10 +1,10 @@
-#include <stdio.h>
 #include <iostream>
+#include <stdio.h>
 #include <string>
 #define NETMAP_WITH_LIBS
 
-#include <net/netmap_user.h>
 #include <boost/thread.hpp>
+#include <net/netmap_user.h>
 
 // For pooling operations
 #include <poll.h>

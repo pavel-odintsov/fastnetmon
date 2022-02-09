@@ -1,8 +1,8 @@
 #ifndef PFRING_PACKET_PARSER_H
 #define PFRING_PACKET_PARSER_H
 
-#include <sys/types.h>
 #include <netinet/in.h> // in6_addr
+#include <sys/types.h>
 
 #if defined(__APPLE__) || defined(__OpenBSD__)
 // For Mac OS X here we can find definition of "struct timeval"
@@ -49,7 +49,7 @@ struct pkt_parsing_info {
     u_int8_t ip_version;
     u_int8_t l3_proto, ip_tos; /* Layer 3 protocol/TOS */
     u_int8_t ip_fragmented; /* Layer 3 fragmentation flag */
-    u_int16_t ip_total_size; /* Total size of IP packet */ 
+    u_int16_t ip_total_size; /* Total size of IP packet */
     u_int8_t ip_ttl; /* TTL flag */
     ip_addr ip_src, ip_dst; /* IPv4 src/dst IP addresses */
     u_int16_t l4_src_port, l4_dst_port; /* Layer 4 src/dst ports */
@@ -75,7 +75,7 @@ struct pfring_extended_pkthdr {
     u_int32_t flags;
     /* --- short header ends here --- */
     u_int8_t rx_direction; /* 1=RX: packet received by the NIC, 0=TX: packet transmitted by the NIC
-                              */
+                            */
     int32_t if_index; /* index of the interface on which the packet has been received.
                          It can be also used to report other information */
     u_int32_t pkt_hash; /* Hash based on the packet header */

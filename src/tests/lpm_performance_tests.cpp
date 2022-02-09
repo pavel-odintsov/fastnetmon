@@ -1,16 +1,16 @@
-#include <stdio.h>
-#include <iostream>
-#include <unistd.h>
-#include <stdint.h>
-#include <sys/time.h>
+#include <arpa/inet.h>
+#include <boost/unordered_map.hpp>
 #include <ctime>
-#include <vector>
+#include <iostream>
 #include <map>
 #include <math.h>
-#include <boost/unordered_map.hpp>
-#include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <vector>
 
 #include "../libpatricia/patricia.h"
 

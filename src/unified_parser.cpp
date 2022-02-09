@@ -3,7 +3,7 @@
 #include "fastnetmon_packet_parser.h"
 
 bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet& packet, bool netmap_read_packet_length_from_ip_header) {
-	
+
     struct pfring_pkthdr packet_header;
 
     memset(&packet_header, 0, sizeof(packet_header));
@@ -20,7 +20,8 @@ bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet& p
     // fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
     // logger.info("%s", print_buffer);
 
-    if (packet_header.extended_hdr.parsed_pkt.ip_version != 4 && packet_header.extended_hdr.parsed_pkt.ip_version != 6) {
+    if (packet_header.extended_hdr.parsed_pkt.ip_version != 4 &&
+        packet_header.extended_hdr.parsed_pkt.ip_version != 6) {
         return false;
     }
 
@@ -38,7 +39,7 @@ bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet& p
         packet.dst_ip = htonl(packet_header.extended_hdr.parsed_pkt.ip_dst.v4);
     } else {
         // IPv6
-       memcpy(packet.src_ipv6.s6_addr, packet_header.extended_hdr.parsed_pkt.ip_src.v6.s6_addr, 16);
+        memcpy(packet.src_ipv6.s6_addr, packet_header.extended_hdr.parsed_pkt.ip_src.v6.s6_addr, 16);
         memcpy(packet.dst_ipv6.s6_addr, packet_header.extended_hdr.parsed_pkt.ip_dst.v6.s6_addr, 16);
     }
 
@@ -66,4 +67,3 @@ bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet& p
 
     return true;
 }
-

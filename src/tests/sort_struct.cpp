@@ -1,8 +1,8 @@
-#include <iostream>
-#include <queue>
-#include <cstdlib>
-#include <list>
 #include <algorithm>
+#include <cstdlib>
+#include <iostream>
+#include <list>
+#include <queue>
 #include <vector>
 
 bool compare_min(unsigned int a, unsigned int b) {

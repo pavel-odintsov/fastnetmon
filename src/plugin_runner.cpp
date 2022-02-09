@@ -1,21 +1,21 @@
+#include <arpa/inet.h>
 #include <inttypes.h>
-#include <sys/types.h>
-#include <stdio.h>
-#include <string.h>
 #include <iterator>
-#include <sstream>
-#include <stdlib.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
-#include <arpa/inet.h>
+#include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
-#include "libpatricia/patricia.h"
-#include "fastnetmon_types.h"
 #include "fast_library.h"
+#include "fastnetmon_types.h"
+#include "libpatricia/patricia.h"
 #include "netflow_plugin/netflow_collector.h"
-#include "sflow_plugin/sflow_collector.h"
 #include "pcap_plugin/pcap_collector.h"
+#include "sflow_plugin/sflow_collector.h"
 
 #ifdef PF_RING
 #include "pfring_plugin/pfring_collector.h"
@@ -34,12 +34,12 @@
 #endif
 
 // log4cpp logging facility
-#include "log4cpp/Category.hh"
 #include "log4cpp/Appender.hh"
-#include "log4cpp/FileAppender.hh"
-#include "log4cpp/OstreamAppender.hh"
-#include "log4cpp/Layout.hh"
 #include "log4cpp/BasicLayout.hh"
+#include "log4cpp/Category.hh"
+#include "log4cpp/FileAppender.hh"
+#include "log4cpp/Layout.hh"
+#include "log4cpp/OstreamAppender.hh"
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
@@ -79,8 +79,9 @@ void process_packet(simple_packet& current_packet) {
     unsigned long subnet = 0;
     unsigned int subnet_cidr_mask = 0;
 
-    direction packet_direction = get_packet_direction(lookup_tree, current_packet.src_ip, current_packet.dst_ip, subnet, subnet_cidr_mask); 
-    std::cout << "direction: " << get_direction_name(packet_direction) << std::endl; 
+    direction packet_direction = get_packet_direction(lookup_tree, current_packet.src_ip,
+                                                      current_packet.dst_ip, subnet, subnet_cidr_mask);
+    std::cout << "direction: " << get_direction_name(packet_direction) << std::endl;
 #endif
 }
 
@@ -95,10 +96,10 @@ std::vector<std::string> read_file_to_vector(std::string file_name) {
     if (reading_file.is_open()) {
         while (getline(reading_file, line)) {
             data.push_back(line);
-        }    
+        }
     } else {
         logger << log4cpp::Priority::ERROR << "Can't open file: " << file_name;
-    }    
+    }
 
     return data;
 }
@@ -115,12 +116,13 @@ int main(int argc, char* argv[]) {
     lookup_tree = New_Patricia(32);
 
     std::vector<std::string> network_list_from_config = read_file_to_vector("/etc/networks_list");
-    
-    for (std::vector<std::string>::iterator ii = network_list_from_config.begin(); ii != network_list_from_config.end(); ++ii) {
+
+    for (std::vector<std::string>::iterator ii = network_list_from_config.begin();
+         ii != network_list_from_config.end(); ++ii) {
         std::string network_address_in_cidr_form = *ii;
 
         make_and_lookup(lookup_tree, const_cast<char*>(network_address_in_cidr_form.c_str()));
-    }   
+    }
 #endif
 
     // Required by Netmap and PF_RING plugins
@@ -150,7 +152,7 @@ int main(int argc, char* argv[]) {
         std::cout << "Starting pf_ring" << std::endl;
         start_pfring_collection(process_packet);
 #else
-        std::cout << "PF_RING support disabled here" << std::endl; 
+        std::cout << "PF_RING support disabled here" << std::endl;
 #endif
     } else if (strstr(argv[1], "afpacket") != NULL) {
 #ifdef FASTNETMON_ENABLE_AFPACKET

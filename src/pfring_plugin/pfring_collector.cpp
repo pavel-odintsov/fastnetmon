@@ -1,10 +1,10 @@
 // log4cpp logging facility
-#include "log4cpp/Category.hh"
 #include "log4cpp/Appender.hh"
-#include "log4cpp/FileAppender.hh"
-#include "log4cpp/OstreamAppender.hh"
-#include "log4cpp/Layout.hh"
 #include "log4cpp/BasicLayout.hh"
+#include "log4cpp/Category.hh"
+#include "log4cpp/FileAppender.hh"
+#include "log4cpp/Layout.hh"
+#include "log4cpp/OstreamAppender.hh"
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
@@ -13,17 +13,17 @@
 // For support uint32_t, uint16_t
 #include <sys/types.h>
 
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
 // For config map operations
-#include <string>
 #include <map>
+#include <string>
 
 // For support: IPPROTO_TCP, IPPROTO_ICMP, IPPROTO_UDP
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 #include "pfring_collector.h"
 
@@ -35,7 +35,7 @@
 
 #include <numa.h>
 
-uint32_t pfring_sampling_ratio = 1; 
+uint32_t pfring_sampling_ratio = 1;
 
 // Get log4cpp logger from main program
 extern log4cpp::Category& logger;
@@ -136,7 +136,8 @@ void start_pfring_collection(process_packet_pointer func_ptr) {
     }
 
     if (configuration_map.count("pfring_sampling_ratio") != 0) {
-        pfring_sampling_ratio = convert_string_to_integer(configuration_map["pfring_sampling_ratio"]);
+        pfring_sampling_ratio =
+        convert_string_to_integer(configuration_map["pfring_sampling_ratio"]);
     }
 
     if (work_on_interfaces == "") {
@@ -239,7 +240,7 @@ void parse_packet_pf_ring(const struct pfring_pkthdr* h, const u_char* p, const 
         memcpy(packet.src_ipv6.s6_addr, h->extended_hdr.parsed_pkt.ip_src.v6.s6_addr, 16);
         memcpy(packet.dst_ipv6.s6_addr, h->extended_hdr.parsed_pkt.ip_dst.v6.s6_addr, 16);
     }
- 
+
 
     packet.source_port = h->extended_hdr.parsed_pkt.l4_src_port;
     packet.destination_port = h->extended_hdr.parsed_pkt.l4_dst_port;
@@ -273,8 +274,7 @@ void pfring_main_packet_process_task() {
 #ifdef PF_RING_ZC
         pf_ring_init_result = zc_main_loop((char*)device_name);
 #else
-        logger << log4cpp::Priority::ERROR
-               << "PF_RING library hasn't ZC support, please try SVN version";
+        logger << log4cpp::Priority::ERROR << "PF_RING library hasn't ZC support, please try SVN version";
 #endif
     } else {
         if (enable_pfring_multi_channel_mode) {
@@ -362,9 +362,10 @@ std::string get_pf_ring_stats() {
                 packets_dropped_percent = (double)pfring_status_data.drop / pfring_status_data.recv * 100;
             }
 
-            sprintf(stats_buffer, "Packets received:\t%lu\n"
-                                  "Packets dropped:\t%lu\n"
-                                  "Packets dropped:\t%.1f %%\n",
+            sprintf(stats_buffer,
+                    "Packets received:\t%lu\n"
+                    "Packets dropped:\t%lu\n"
+                    "Packets dropped:\t%.1f %%\n",
                     (long unsigned int)pfring_status_data.recv,
                     (long unsigned int)pfring_status_data.drop, packets_dropped_percent);
             output_buffer << stats_buffer;
@@ -405,8 +406,7 @@ bool pf_ring_main_loop_multi_channel(const char* dev) {
 
     u_int num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
     logger << log4cpp::Priority::INFO << "We have: " << num_cpus << " logical cpus in this server";
-    logger << log4cpp::Priority::INFO << "We have: " << num_pfring_channels
-           << " channels from pf_ring NIC";
+    logger << log4cpp::Priority::INFO << "We have: " << num_pfring_channels << " channels from pf_ring NIC";
 
     // We should not start more processes then we have kernel cores
     // if (num_pfring_channels > num_cpus) {
@@ -593,7 +593,7 @@ bool zc_main_loop(const char* device) {
 
     zc = pfring_zc_create_cluster(cluster_id, buffer_len, 0, tot_num_buffers,
                                   numa_node_of_cpu(bind_core), NULL /* auto hugetlb mountpoint */
-                                  );
+    );
 
     if (zc == NULL) {
         logger << log4cpp::Priority::INFO << "pfring_zc_create_cluster error: " << strerror(errno)
@@ -653,8 +653,7 @@ bool zc_main_loop(const char* device) {
         return false;
     }
 
-    logger << log4cpp::Priority::INFO << "We are starting balancer with: " << zc_num_threads
-           << " threads";
+    logger << log4cpp::Priority::INFO << "We are starting balancer with: " << zc_num_threads << " threads";
 
     pfring_zc_distribution_func func = rr_distribution_func;
 
@@ -738,8 +737,7 @@ bool pf_ring_main_loop(const char* dev) {
     pfring_set_application_name(pf_ring_descr, (char*)"fastnetmon");
 
     if (pfring_set_application_name_result != 0) {
-        logger << log4cpp::Priority::ERROR
-               << "Can't set program name for PF_RING: pfring_set_application_name";
+        logger << log4cpp::Priority::ERROR << "Can't set program name for PF_RING: pfring_set_application_name";
     }
 
     pfring_version(pf_ring_descr, &version);

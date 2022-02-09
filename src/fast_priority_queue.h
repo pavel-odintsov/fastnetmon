@@ -1,11 +1,11 @@
 #ifndef fast_priority_queue_h
 #define fast_priority_queue_h
 
-#include <iostream>
-#include <queue>
-#include <cstdlib>
-#include <list>
 #include <algorithm>
+#include <cstdlib>
+#include <iostream>
+#include <list>
+#include <queue>
 #include <vector>
 
 template <class order_by_template_type> class fast_priority_queue {
