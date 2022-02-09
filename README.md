@@ -73,9 +73,9 @@ Features
 - Trigger block/notify script if an IP exceeds defined thresholds for packets/bytes/flows per second
 - Thresholds can be configured per-subnet with the hostgroups feature
 - [Announce blocked IPs](https://fastnetmon.com/docs/exabgp_integration/) via BGP to routers with [ExaBGP](https://github.com/Exa-Networks/exabgp)
-- GoBGP [integration](https://fastnetmon.com/docs/gobgp-integration/) for unicast IPv4 announcements (you will need to build support for this manually).
+- GoBGP [integration](https://fastnetmon.com/docs/gobgp-integration/) for unicast IPv4 announcements (available in master branch only).
 - Full integration with [Graphite](https://fastnetmon.com/docs/graphite_integration/) and [InfluxDB](https://fastnetmon.com/docs/influxdb_integration/)
-- API (you will need to build support for this manually)
+- [API](https://fastnetmon.com/docs/fastnetmon-community-api/) (available in master branch only)
 - [Redis](https://fastnetmon.com/docs/redis/) integration
 - [MongoDB](https://fastnetmon.com/docs/mongodb/) integration
 - Deep Packet Inspection (DPI) for attack traffic
