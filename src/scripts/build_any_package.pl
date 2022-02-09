@@ -742,7 +742,7 @@ DOC
     }
 
     # Change owner to root for all files inside build folder
-    my $opt_chown_res = system("sudo chown root:root -R $folder_for_build");
+    my $opt_chown_res = system("chown root:root -R $folder_for_build");
 
     if ($opt_chown_res != 0) {
         die "Cannot chown /opt";
