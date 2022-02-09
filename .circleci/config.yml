@@ -8,6 +8,10 @@ jobs:
       - run: apt-get update; true
       - run: apt-get install -y perl wget
       - run:
+          name: install_required_packages
+          no_output_timeout: 20m
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+      - run:
           name: install_dependencies
           no_output_timeout: 20m
           command: perl src/fastnetmon_install.pl --use-git-master
