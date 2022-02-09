@@ -49,7 +49,21 @@ if (ENABLE_CUSTOM_BOOST_BUILD)
 
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
 
-    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};/opt/boost_1_72_0/stage/lib")
+    set(ICU_CUSTOM_INSTALL_PATH "/opt/libicu_65_1")
+
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};/opt/boost_1_72_0/stage/lib;${ICU_CUSTOM_INSTALL_PATH}/lib")
+
+    # For custom Boost we need to build libicu library
+    find_library(ICU_LIBRARY_UC_PATH NAMES icuuc PATHS "${ICU_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+    find_library(ICU_LIBRARY_DATA_PATH NAMES icudata PATHS "${ICU_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+    find_library(ICU_LIBRARY_I18N_PATH NAMES icui18n PATHS "${ICU_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+
+    if (ICU_LIBRARY_UC_PATH AND ICU_LIBRARY_DATA_PATH AND ICU_LIBRARY_I18N_PATH)
+        message(STATUS "Found libicu")
+    else()
+        message(FATAL_ERROR "Could not find icu libraries ${ICU_LIBRARY_UC_PATH} ${ICU_LIBRARY_DATA_PATH} ${ICU_LIBRARY_I18N_PATH}")
+    endif()
+
 endif()
  
 # Specify full RPATH for build tree
@@ -403,6 +417,12 @@ if (ENABLE_GOBGP_SUPPORT)
     target_link_libraries(fastnetmon fastnetmon_grpc_pb_cc)
     target_link_libraries(fastnetmon fastnetmon_pb_cc)
     target_link_libraries(fastnetmon ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
+endif()
+
+if (ENABLE_CUSTOM_BOOST_BUILD)
+    target_link_libraries(fastnetmon ${ICU_LIBRARY_UC_PATH})
+    target_link_libraries(fastnetmon ${ICU_LIBRARY_DATA_PATH})
+    target_link_libraries(fastnetmon ${ICU_LIBRARY_I18N_PATH})
 endif()
 
 # example plugin
