@@ -13,7 +13,7 @@ jobs:
           command: perl src/fastnetmon_install.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - ubuntu2004_dependencies_26_05_2020
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 35m
@@ -23,7 +23,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: ubuntu2004_dependencies_26_05_2020
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
           paths:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
@@ -41,7 +41,7 @@ jobs:
           command: perl src/fastnetmon_install.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - ubuntu1804_dependencies_26_05_2020
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 35m
@@ -51,7 +51,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: ubuntu1804_dependencies_26_05_2020
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
           paths:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
@@ -69,7 +69,7 @@ jobs:
           command: perl src/fastnetmon_install.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - ubuntu1604_dependencies_26_05_2020
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 35m
@@ -79,7 +79,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: ubuntu1604_dependencies_26_05_2020
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
           paths:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
@@ -125,7 +125,7 @@ jobs:
           command: perl src/fastnetmon_install.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - debian9_dependencies_26_05_2020
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 20m
@@ -135,7 +135,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: debian9_dependencies_26_05_2020
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
           paths:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
@@ -153,7 +153,7 @@ jobs:
           command: perl src/fastnetmon_install.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - debian10_dependencies_26_05_2020
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 35m
@@ -163,7 +163,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: debian10_dependencies_26_05_2020
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
           paths:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
@@ -180,7 +180,7 @@ jobs:
           command: perl src/fastnetmon_install.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - centos6_dependencies_27_05_2020
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_27_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 20m
@@ -190,7 +190,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: centos6_dependencies_27_05_2020
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_27_05_2020"
           paths:
             - /opt
             - /usr/include/linux/pf_ring.h
@@ -208,7 +208,7 @@ jobs:
           command: perl src/fastnetmon_install.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - centos7_dependencies_26_05_2020
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 35m
@@ -218,7 +218,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: centos7_dependencies_26_05_2020
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
           paths:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
@@ -239,13 +239,13 @@ jobs:
           when: on_fail
       - restore_cache:
           keys:
-            - centos8_dependencies_26_05_2020
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 35m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - save_cache:
-          key: centos8_dependencies_26_05_2020
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
           paths:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
