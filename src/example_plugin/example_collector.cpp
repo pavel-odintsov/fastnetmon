@@ -1,12 +1,4 @@
-// log4cpp logging facility
-#include "log4cpp/Appender.hh"
-#include "log4cpp/BasicLayout.hh"
-#include "log4cpp/Category.hh"
-#include "log4cpp/FileAppender.hh"
-#include "log4cpp/Layout.hh"
-#include "log4cpp/OstreamAppender.hh"
-#include "log4cpp/PatternLayout.hh"
-#include "log4cpp/Priority.hh"
+#include "../all_logcpp_libraries.h"
 
 // For support uint32_t, uint16_t
 #include <sys/types.h>
