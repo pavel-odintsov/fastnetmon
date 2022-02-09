@@ -5,6 +5,8 @@ cmake_minimum_required (VERSION 2.8)
 # Debian 7 - 2.8.9
 # CentOS 6 - 2.8.12
 
+set(FASTNETMON_LIBRARIES_GLOBAL_PATH "/opt")
+
 project(FastNetMon)
 
 # Unfortunately, Debian Squeeze haven't support for this feature
@@ -39,19 +41,19 @@ if (ENABLE_CUSTOM_BOOST_BUILD)
 
     set(Boost_NO_SYSTEM_PATHS ON)
 
-    set(BOOST_INCLUDEDIR "/opt/boost_1_72_0")
-    set(BOOST_LIBRARYDIR "/opt/boost_1_72_0/stage/lib/")
+    set(BOOST_INCLUDEDIR "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/boost_1_72_0")
+    set(BOOST_LIBRARYDIR "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/boost_1_72_0/stage/lib/")
 
-    SET(Boost_DIR "/opt/boost_1_72_0/stage/lib/cmake/Boost-1.72.0/")
+    SET(Boost_DIR "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/boost_1_72_0/stage/lib/cmake/Boost-1.72.0/")
 
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11")
 
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
 
-    set(ICU_CUSTOM_INSTALL_PATH "/opt/libicu_65_1")
+    set(ICU_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libicu_65_1")
 
-    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};/opt/boost_1_72_0/stage/lib;${ICU_CUSTOM_INSTALL_PATH}/lib")
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${FASTNETMON_LIBRARIES_GLOBAL_PATH}/boost_1_72_0/stage/lib;${ICU_CUSTOM_INSTALL_PATH}/lib")
 
     # For custom Boost we need to build libicu library
     find_library(ICU_LIBRARY_UC_PATH NAMES icuuc PATHS "${ICU_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
@@ -72,16 +74,16 @@ SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
 # Create builds in current folder with install RPATH
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
-SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};/opt/libhiredis_0_13/lib;/opt/log4cpp1.1.1/lib;/opt/luajit_2.0.4/lib;/opt/ndpi/lib;/opt/pf_ring_6.0.3/lib;/opt/json-c-0.13/lib;/opt/mongo_c_driver_1_1_9/lib;/opt/grpc_1_27_3_e73882dc0fcedab1ffe789e44ed6254819639ce3/lib;/opt/protobuf_3.11.4/lib")
+SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libhiredis_0_13/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/log4cpp1.1.1/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/luajit_2.0.4/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/ndpi/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/pf_ring_6.0.3/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/json-c-0.13/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/mongo_c_driver_1_1_9/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/grpc_1_27_3_e73882dc0fcedab1ffe789e44ed6254819639ce3/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/protobuf_3.11.4/lib")
 
 message(STATUS "C++ compilation flags: ${CMAKE_CXX_FLAGS_RELEASE}")
 
-set(HIREDIS_CUSTOM_INSTALL_PATH "/opt/libhiredis_0_13")
-set(LOG4CPP_CUSTOM_INSTALL_PATH "/opt/log4cpp1.1.1")
-set(JSONC_CUSTOM_INSTALL_PATH "/opt/json-c-0.13")
-set(PFRING_CUSTOM_INSTALL_PATH "/opt/pf_ring_6.0.3")
-set(LIBPCAP_CUSTOM_INSTALL_PATH "/opt/libpcap_1.7.4")
-set(MONGO_C_CUSTOM_INSTALL_PATH "/opt/mongo_c_driver_1_1_9")
+set(HIREDIS_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libhiredis_0_13")
+set(LOG4CPP_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/log4cpp1.1.1")
+set(JSONC_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/json-c-0.13")
+set(PFRING_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/pf_ring_6.0.3")
+set(LIBPCAP_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libpcap_1.7.4")
+set(MONGO_C_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/mongo_c_driver_1_1_9")
 
 set(FASTNETMON_PROFILER OFF)
 
@@ -247,15 +249,15 @@ if (ENABLE_DPI_SUPPORT)
 
     add_library(fast_dpi STATIC fast_dpi.cpp)
 
-    set(NDPI_INCLUDE_DIRS "/opt/ndpi/include/libndpi-1.7.1")
+    set(NDPI_INCLUDE_DIRS "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/ndpi/include/libndpi-1.7.1")
 
-    find_library(NDPI_LIBRARIES NAMES ndpi PATHS "/opt/ndpi/lib" NO_DEFAULT_PATH)
+    find_library(NDPI_LIBRARIES NAMES ndpi PATHS "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/ndpi/lib" NO_DEFAULT_PATH)
 
     if (NOT NDPI_LIBRARIES)
         message(FATAL_ERROR "Could not find nDPI library")
     endif()
 
-    link_directories("/opt/ndpi/lib")
+    link_directories("${FASTNETMON_LIBRARIES_GLOBAL_PATH}/ndpi/lib")
     include_directories(${NDPI_INCLUDE_DIRS})
 
     add_definitions(-DENABLE_DPI)
@@ -272,7 +274,7 @@ if (ENABLE_LUA_SUPPORT)
 
     add_definitions(-DENABLE_LUA_HOOKS)
 
-    set(LUAJIT_CUSTOM_INSTALL_PATH "/opt/luajit_2.0.4")
+    set(LUAJIT_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/luajit_2.0.4")
 
     link_directories("${LUAJIT_CUSTOM_INSTALL_PATH}/lib")
     include_directories("${LUAJIT_CUSTOM_INSTALL_PATH}/include")
@@ -305,8 +307,8 @@ if (ENABLE_PF_RING_SUPPORT)
 endif()
 
 if (ENABLE_GOBGP_SUPPORT)
-    set(GRPC_CUSTOM_INSTALL_PATH "/opt/grpc_1_27_3_e73882dc0fcedab1ffe789e44ed6254819639ce3")
-    set(PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH "/opt/protobuf_3.11.4")
+    set(GRPC_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/grpc_1_27_3_e73882dc0fcedab1ffe789e44ed6254819639ce3")
+    set(PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/protobuf_3.11.4")
 
     add_definitions(-DENABLE_GOBGP)
     add_library(gobgp_action STATIC actions/gobgp_action.cpp)
@@ -658,8 +660,8 @@ if (BUILD_TESTS)
     target_link_libraries(fastnetmon_tests ${Boost_LIBRARIES})
     target_link_libraries(fastnetmon_tests ${LOG4CPP_LIBRARY_PATH})
 
-    set(GOOGLE_TEST_INCLUDE_DIRS /opt/gtest/include)
-    set(GOOGLE_TEST_LIBRARIES /opt/gtest/lib/libgtest.a /opt/gtest/lib/libgtest_main.a)
+    set(GOOGLE_TEST_INCLUDE_DIRS ${FASTNETMON_LIBRARIES_GLOBAL_PATH}/gtest/include)
+    set(GOOGLE_TEST_LIBRARIES ${FASTNETMON_LIBRARIES_GLOBAL_PATH}/gtest/lib/libgtest.a ${FASTNETMON_LIBRARIES_GLOBAL_PATH}/gtest/lib/libgtest_main.a)
 
     # Compiled Google Library
     include_directories(${GOOGLE_TEST_INCLUDE_DIRS})
