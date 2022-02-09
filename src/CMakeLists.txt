@@ -329,20 +329,24 @@ if (ENABLE_GOBGP_SUPPORT)
 
     set(GRPC_CPP_PLUGIN "${GRPC_CUSTOM_INSTALL_PATH}/bin/grpc_cpp_plugin")
 
-    execute_process(COMMAND ${PROTOC_BINARY} -I ${PROJECT_BINARY_DIR}/../actions --grpc_out=${PROJECT_BINARY_DIR}/../actions --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} ${PROJECT_BINARY_DIR}/../actions/gobgp_api_client.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${PROTOC_BINARY} -I ${PROJECT_BINARY_DIR}/../actions --grpc_out=${PROJECT_BINARY_DIR}/../actions --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} ${PROJECT_BINARY_DIR}/../actions/gobgp.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     message(STATUS "Protoc return code: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
 
-    execute_process(COMMAND ${PROTOC_BINARY} -I  ${PROJECT_BINARY_DIR}/../actions --cpp_out=${PROJECT_BINARY_DIR}/../actions ${PROJECT_BINARY_DIR}/../actions/gobgp_api_client.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${PROTOC_BINARY} -I  ${PROJECT_BINARY_DIR}/../actions --cpp_out=${PROJECT_BINARY_DIR}/../actions ${PROJECT_BINARY_DIR}/../actions/gobgp.proto ${PROJECT_BINARY_DIR}/../actions/attribute.proto  ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     message(STATUS "Protoc return code: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
 
     # Build gRPC and protocol bufffers libraries and link they to gobgp_action
-    add_library(gobgp_api_client_pb_cc STATIC actions/gobgp_api_client.pb.cc)
-    add_library(gobgp_api_client_grpc_pb_cc STATIC actions/gobgp_api_client.grpc.pb.cc)
+    add_library(gobgp_api_client_pb_cc STATIC actions/gobgp.pb.cc)
+    add_library(gobgp_api_client_grpc_pb_cc STATIC actions/gobgp.grpc.pb.cc)
 
     target_link_libraries(gobgp_action gobgp_api_client_pb_cc)
     target_link_libraries(gobgp_action gobgp_api_client_grpc_pb_cc)
+
+    # Add attributes
+    add_library(attribute_pb_cc STATIC actions/attribute.pb.cc)
+    target_link_libraries(gobgp_action attribute_pb_cc)
 
     # FastNetMon API
     add_definitions(-DFASTNETMON_API)    
