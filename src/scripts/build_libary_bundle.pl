@@ -114,5 +114,22 @@ chmod 0755, "$target_path/fastnetmon/fastnetmon";
 chmod 0755, "$target_path/fastnetmon/fastnetmon_client";
 chmod 0755, "$target_path/fastnetmon/fastnetmon_api_client";
 
+# Install GoBGP's binary files
+my $gobgp_folder_name = "gobgp_2_16_0";
+mkdir "$target_path/$gobgp_folder_name";
+
+for my $gobgp_binary ('gobgp', 'gobgpd') {
+    my $gobgp_copy_result = copy("$global_path/$gobgp_folder_name/$gobgp_binary",
+        "$target_path/$gobgp_folder_name/$gobgp_binary");
+
+    unless ($gobgp_copy_result) {
+        die "Could not copy GoBGP's binary $gobgp_binary $!\n";
+    }
+
+    # Enable exec flag
+    chmod 0755, "$target_path/$gobgp_folder_name/$gobgp_binary";
+}
+
+
 `tar -cpzf $archive_bundle_name -C $target_path ./`;
 print "We have created bundle $archive_bundle_name\n";
