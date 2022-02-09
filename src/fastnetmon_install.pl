@@ -1916,13 +1916,13 @@ sub install_fastnetmon {
     # We use $configure_options to pass CC and CXX variables about custom compiler when we use it 
     if ((defined($ENV{'TRAVIS'}) && $ENV{'TRAVIS'}) or (defined($ENV{'CI'}) && $ENV{'CI'})) {
         system("$configure_options $ld_library_path_for_make $cmake_path .. $cmake_params");
-        system("make $make_options");
+        system("$ld_library_path_for_make make $make_options");
     } else {
         print "Run cmake to generate make file\n";
         system("$configure_options $ld_library_path_for_make $cmake_path .. $cmake_params 2>&1 | tee -a $install_log_path");
 
         print "Run make to build FastNetMon\n";
-        system("make $make_options 2>&1 | tee -a $install_log_path");
+        system("$ld_library_path_for_make make $make_options 2>&1 | tee -a $install_log_path");
     }
 
     my $fastnetmon_dir = "$library_install_folder/fastnetmon";
