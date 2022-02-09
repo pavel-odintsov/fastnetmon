@@ -567,7 +567,7 @@ jobs:
           command: perl src/fastnetmon_install.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_27_05_2020"
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_12_06_2020"
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_gcc_27_05_2020"
@@ -588,7 +588,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_27_05_2020"
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_12_06_2020"
           paths:
             - /opt
             - /usr/include/linux/pf_ring.h
