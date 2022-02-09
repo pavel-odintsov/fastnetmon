@@ -1545,19 +1545,40 @@ sub install_boost_builder {
         return 1;
     }
 
-    print "Download boost builder\n";
-    my $boost_build_result = download_file("https://github.com/boostorg/build/archive/boost-1.72.0.tar.gz", $archive_file_name,
-        '8d4aede249cc414f5f375423e26feca99f1c1088');
+    # We use older version of Boost Build because newer versions require C++ which is not available on CentOS 6
+    if ($distro_type eq 'centos' && $distro_version == 6) {
+        print "Download boost builder\n";
+        my $boost_build_result = download_file("https://github.com/boostorg/build/archive/boost-1.70.0.tar.gz", $archive_file_name,
+            'ffb6c24afc69348ecb59c2a7cef5f167066630fa');
 
-    unless ($boost_build_result) {
-        fast_die("Can't download boost builder\n");
-    }
+        unless ($boost_build_result) {
+            fast_die("Can't download boost builder\n");
+        }
 
-    print "Unpack boost builder\n";
-    exec_command("tar -xf $archive_file_name");
+        print "Unpack boost builder\n";
+        exec_command("tar -xf $archive_file_name");
 
-    unless (chdir "build-boost-1.72.0") {
-        fast_die("Cannot do chdir to build boost folder\n");
+        unless (chdir "build-boost-1.70.0") {
+            fast_die("Cannot do chdir to build boost folder\n");
+        }
+
+    } else {
+
+        print "Download boost builder\n";
+        my $boost_build_result = download_file("https://github.com/boostorg/build/archive/boost-1.72.0.tar.gz", $archive_file_name,
+            '8d4aede249cc414f5f375423e26feca99f1c1088');
+
+        unless ($boost_build_result) {
+            fast_die("Can't download boost builder\n");
+        }
+
+        print "Unpack boost builder\n";
+        exec_command("tar -xf $archive_file_name");
+
+        unless (chdir "build-boost-1.72.0") {
+            fast_die("Cannot do chdir to build boost folder\n");
+        }
+
     }
 
     print "Build Boost builder\n";
