@@ -152,11 +152,20 @@ DOC
         die "Cannot copy file $archive_name to $rpm_sources_path/archive.tar.gz\n";
     }
 
-    # TODO: We must use data from repo
-    my $wget_res =("wget --no-check-certificate https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon.conf -O$rpm_sources_path/fastnetmon.conf");
+    if (defined($ENV{'CIRCLECI'})) {
+        my $conf_path = $ENV{'CIRCLE_WORKING_DIRECTORY'} . '/src/fastnetmon.conf';
+
+        my $conf_copy_res = system("cp $conf_path $rpm_sources_path/fastnetmon.conf");
+
+        if ($conf_copy_res != 0) {
+            die "Cannot copy fastnetmon.conf from $conf_path to $rpm_sources_path/fastnetmon.conf\n";
+        }
+    } else {
+        my $wget_res = system("wget --no-check-certificate https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon.conf -O$rpm_sources_path/fastnetmon.conf");
    
-    if ($wget_res != 0) {
-        die "Cannot download fastnetmon.conf\n";
+        if ($wget_res != 0) {
+            die "Cannot download fastnetmon.conf\n";
+        }
     }
 
     put_text_to_file("$rpm_sources_path/system_v_init", $system_v_init_script);
@@ -681,13 +690,27 @@ DOC
     put_text_to_file("$folder_for_build/DEBIAN/conffiles", "etc/fastnetmon.conf\n");
 
     # Create folder for config
-    mkdir("$folder_for_build/etc") or die "Cannot create etc folder";;
+    my $mkdir_etc_res = system("mkdir -p $folder_for_build/etc");
 
-    # TODO: we should use data from repo
-    my $wget_res = system("wget --no-check-certificate https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon.conf -O$folder_for_build/etc/fastnetmon.conf");
+    if ($mkdir_etc_res != 0) {
+        die "Cannot create folder $folder_for_build/etc\n";
+    }
 
-    if ($wget_res != 0) {
-        die "Cannot download fastnetmon.conf\n"; 
+
+    if (defined($ENV{'CIRCLECI'})) {
+        my $conf_path = $ENV{'CIRCLE_WORKING_DIRECTORY'} . '/src/fastnetmon.conf';
+
+        my $conf_copy_res = system("cp $conf_path $folder_for_build/etc/fastnetmon.conf");
+
+        if ($conf_copy_res != 0) {
+            die "Cannot copy fastnetmon.conf from $conf_path to $folder_for_build/etc/fastnetmon.conf\n";
+        }
+    } else {
+        my $wget_res = system("wget --no-check-certificate https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon.conf -O$folder_for_build/etc/fastnetmon.conf");
+   
+        if ($wget_res != 0) {
+            die "Cannot download fastnetmon.conf\n";
+        }
     }
 
     my $copy_archive_res = system("cp $archive_name $folder_for_build/archive.tar.gz");
