@@ -128,6 +128,20 @@ option(ENABLE_PF_RING_SUPPORT "Enable PF_RING build" OFF)
 
 option(ENABLE_NETMAP_SUPPORT "Enable Netmap support" ON)
 
+CHECK_CXX_SOURCE_COMPILES("
+int main() {
+    __atomic_thread_fence(__ATOMIC_RELEASE);
+    __atomic_thread_fence(__ATOMIC_ACQUIRE);
+    return 0;
+}
+" HAVE_ATOMIC_THREAD_FENCE)
+
+# If we do not have it then we need to disable it
+if (NOT HAVE_ATOMIC_THREAD_FENCE) 
+    set(ENABLE_NETMAP_SUPPORT OFF)
+    message(STATUS "Your system does not support __atomic_thread_fence, disabled Netmap plugin support")
+endif()
+
 if (ENABLE_NETMAP_SUPPORT)
     message(STATUS "We will build Netmap support for you")
     add_definitions(-DNETMAP_PLUGIN)
