@@ -4,7 +4,7 @@ language: cpp
 before_install:
   - sudo apt-get update; true
 before_script:
-  - travis_wait 30 sudo -i -E perl $TRAVIS_BUILD_DIR/src/fastnetmon_install.pl --use-git-master --api --gobgp
+  - travis_wait 30 sudo -i -E perl $TRAVIS_BUILD_DIR/src/fastnetmon_build.pl --source_build --use-git-master --api --gobgp
   - cd $TRAVIS_BUILD_DIR/src
 script: mkdir -p build; cd build; cmake .. -DENABLE_GOBGP_SUPPORT=ON; make
 notifications:
