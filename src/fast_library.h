@@ -131,5 +131,6 @@ std::string serialize_statistic_counters_about_attack(attack_details& current_at
 
 std::string dns_lookup(std::string domain_name);
 bool store_data_to_stats_server(unsigned short int graphite_port, std::string graphite_host, std::string buffer_as_string);
+bool get_interface_number_by_device_name(int socket_fd, std::string interface_name, int& interface_number);
 
 #endif
