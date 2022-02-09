@@ -284,7 +284,7 @@ target_link_libraries(pcap_plugin pcap)
 
 find_package(Threads)
 
-if (ENABLE_PFRING_SUPPORT) 
+if (ENABLE_PF_RING_SUPPORT) 
     add_library(pfring_plugin STATIC pfring_plugin/pfring_collector.cpp)
     target_link_libraries(pfring_plugin ${PFRING_LIBRARIES})
     target_link_libraries(pfring_plugin numa)
@@ -555,9 +555,8 @@ target_link_libraries(fastnetmon fast_library)
 # link to our unified parser
 target_link_libraries(fastnetmon unified_parser)
 
-if (ENABLE_PFRING_SUPPORT)
+if (ENABLE_PF_RING_SUPPORT)
     target_link_libraries(fastnetmon pfring_plugin)
-    # Link hardware filter too
     target_link_libraries(fastnetmon pfring_hardware_filter_action)
 endif()
 
@@ -604,7 +603,7 @@ if (BUILD_PLUGIN_RUNNER)
         target_link_libraries(fastnetmon_plugin_runner netmap_plugin)
     endif()
 
-    if (ENABLE_PFRING_SUPPORT)
+    if (ENABLE_PF_RING_SUPPORT)
         target_link_libraries(fastnetmon_plugin_runner ${PFRING_LIBRARIES})
         target_link_libraries(fastnetmon_plugin_runner pfring_plugin)
     endif()
