@@ -22,9 +22,57 @@ jobs:
           key: ubuntu2004_dependencies_25_05_2020
           paths:
             - /opt
+      - run: cd src; mkdir -p build; cd build; cmake ..; make 
+  ubuntu1804:
+    docker:
+      - image: ubuntu:bionic-20200403
+    steps:
+      - checkout
+      - run: apt-get update; true
+      - run: apt-get install -y perl wget
+      - run:
+          name: install_required_packages
+          no_output_timeout: 20m
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+      - restore_cache:
+          keys:
+            - ubuntu1804_dependencies_25_05_2020
+      - run:
+          name: install_dependencies
+          no_output_timeout: 20m
+          command: perl src/fastnetmon_install.pl --use-git-master
+      - save_cache:
+          key: ubuntu1804_dependencies_25_05_2020
+          paths:
+            - /opt
+      - run: cd src; mkdir -p build; cd build; cmake ..; make
+  ubuntu1604:
+    docker:
+      - image: ubuntu:xenial-20200326
+    steps:
+      - checkout
+      - run: apt-get update; true
+      - run: apt-get install -y perl wget
+      - run:
+          name: install_required_packages
+          no_output_timeout: 20m
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+      - restore_cache:
+          keys:
+            - ubuntu1604_dependencies_25_05_2020
+      - run:
+          name: install_dependencies
+          no_output_timeout: 20m
+          command: perl src/fastnetmon_install.pl --use-git-master
+      - save_cache:
+          key: ubuntu1604_dependencies_25_05_2020
+          paths:
+            - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
 workflows:
   version: 2
   all_distros:
     jobs:
+      - ubuntu1604
+      - ubuntu1804
       - ubuntu2004
