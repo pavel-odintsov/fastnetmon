@@ -2739,6 +2739,7 @@ void redirect_fds() {
 
 int main(int argc, char** argv) {
     bool daemonize = false;
+    bool only_configuration_check = false;
 
     namespace po = boost::program_options;
 
@@ -2749,6 +2750,7 @@ int main(int argc, char** argv) {
 		("help", "produce help message")
 		("version", "show version")
 		("daemonize", "detach from the terminal")
+		("configuration_check", "check configuration and exit")
 		("configuration_file", po::value<std::string>(),"set path to custom configuration file")
 		("log_file", po::value<std::string>(), "set path to custom log file");
         // clang-format on
@@ -2769,6 +2771,10 @@ int main(int argc, char** argv) {
 
         if (vm.count("daemonize")) {
             daemonize = true;
+        }
+
+        if (vm.count("configuration_check")) {
+            only_configuration_check = true;
         }
 
         if (vm.count("configuration_file")) {
@@ -2830,6 +2836,11 @@ int main(int argc, char** argv) {
     if (!load_config_result) {
         std::cerr << "Can't open config file " << global_config_path << " please create it!" << std::endl;
         exit(1);
+    }
+
+    if (only_configuration_check) {
+        logger << log4cpp::Priority::INFO << "Configuration file is correct. Shutdown toolkit";
+        exit(0);
     }
 
     if (file_exists(pid_path)) {

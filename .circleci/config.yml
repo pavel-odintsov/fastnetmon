@@ -22,7 +22,8 @@ jobs:
           key: ubuntu2004_dependencies_25_05_2020
           paths:
             - /opt
-      - run: cd src; mkdir -p build; cd build; cmake ..; make 
+      - run: cd src; mkdir -p build; cd build; cmake ..; make
+      - run: /opt/fastnetmon/fastnetmon --configuration_check  
   ubuntu1804:
     docker:
       - image: ubuntu:bionic-20200403
@@ -46,6 +47,7 @@ jobs:
           paths:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
+      - run: /opt/fastnetmon/fastnetmon --configuration_check
   ubuntu1604:
     docker:
       - image: ubuntu:xenial-20200326
@@ -69,6 +71,7 @@ jobs:
           paths:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
+      - run: /opt/fastnetmon/fastnetmon --configuration_check 
   debian9:
     docker:
       - image: debian:stretch-20200514
@@ -92,6 +95,7 @@ jobs:
           paths:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
+      - run: /opt/fastnetmon/fastnetmon --configuration_check
   debian10:
     docker:
       - image: debian:buster-20200514
@@ -115,6 +119,7 @@ jobs:
           paths:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
+      - run: /opt/fastnetmon/fastnetmon --configuration_check
   centos6:
     docker:
       - image: centos:centos6.9
@@ -137,6 +142,7 @@ jobs:
           paths:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
+      - run: /opt/fastnetmon/fastnetmon --configuration_check
   centos7:
     docker:
       - image: centos:centos7.8.2003
@@ -159,6 +165,7 @@ jobs:
           paths:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
+      - run: /opt/fastnetmon/fastnetmon --configuration_check
   centos8:
     docker:
       - image: centos:centos8.1.1911
@@ -181,6 +188,7 @@ jobs:
           paths:
             - /opt
       - run: cd src; mkdir -p build; cd build; cmake ..; make
+      - run: /opt/fastnetmon/fastnetmon --configuration_check
 workflows:
   version: 2
   all_distros:
