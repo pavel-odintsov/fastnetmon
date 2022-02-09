@@ -231,6 +231,11 @@ sub get_user_email {
         return;
     }
 
+    # https://circleci.com/docs/2.0/env-vars/
+    if (defined($ENV{'CI'}) && $ENV{'CI'}) {
+        return;
+    }
+
     my $user_entered_valid_email = 0;
 
     do {
