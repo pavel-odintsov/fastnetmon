@@ -2,6 +2,11 @@
 #include "../fastnetmon_actions.h"
 #include "../fastnetmon_types.h"
 
+#ifdef __GNUC__
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif  // __GNUC__
+
 #include <grpc++/channel.h>
 #include <grpc++/client_context.h>
 #include <grpc++/create_channel.h>
@@ -10,6 +15,11 @@
 
 #include "gobgp.grpc.pb.h"
 #include "attribute.pb.h"
+
+#ifdef __GNUC__
+  #pragma GCC diagnostic pop
+#endif  // __GNUC__
+
 
 unsigned int gobgp_client_connection_timeout = 5;
 

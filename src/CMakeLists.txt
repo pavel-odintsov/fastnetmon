@@ -347,6 +347,13 @@ if (ENABLE_GOBGP_SUPPORT)
     add_library(gobgp_api_client_pb_cc STATIC actions/gobgp.pb.cc)
     add_library(gobgp_api_client_grpc_pb_cc STATIC actions/gobgp.grpc.pb.cc)
 
+    # Disable annoying warnings
+    set_source_files_properties(actions/gobgp.pb.cc PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
+    set_source_files_properties(actions/gobgp.grpc.pb.cc PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
+
+    set_source_files_properties(actions/gobgp.pb.h PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
+    set_source_files_properties(actions/gobgp.grpc.pb.h PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
+
     target_link_libraries(gobgp_action gobgp_api_client_pb_cc)
     target_link_libraries(gobgp_action gobgp_api_client_grpc_pb_cc)
 
@@ -364,6 +371,12 @@ if (ENABLE_GOBGP_SUPPORT)
     execute_process(COMMAND ${PROTOC_BINARY} -I  ${PROJECT_BINARY_DIR}/.. --cpp_out=${PROJECT_BINARY_DIR}/.. ${PROJECT_BINARY_DIR}/../fastnetmon.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE) 
 
     message(STATUS "Protoc return code for protobuf fastnetmon.proto: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
+
+    # Disable annoying warnings
+    set_source_files_properties(fastnetmon.grpc.pb.cc PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
+    set_source_files_properties(fastnetmon.pb.cc PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
+    set_source_files_properties(fastnetmon.grpc.pb.h PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
+    set_source_files_properties(fastnetmon.pb.h PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
 
     add_library(fastnetmon_grpc_pb_cc STATIC fastnetmon.grpc.pb.cc)
     add_library(fastnetmon_pb_cc STATIC fastnetmon.pb.cc)
