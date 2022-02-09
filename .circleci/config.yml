@@ -574,7 +574,7 @@ jobs:
       - run:
           name: install_gcc
           no_output_timeout: 80m 
-          command: perl src/fastnetmon_install.pl --build_gcc_only
+          command: perl src/fastnetmon_install.pl --build_gcc_only --do-not-use-mirror
       - save_cache:
           key: "{{ .Environment.CIRCLE_JOB }}_gcc_27_05_2020"
           paths:
