@@ -37,8 +37,12 @@ endif()
 if (ENABLE_CUSTOM_BOOST_BUILD)
     message(STATUS "Build with custom Boost")
 
+    set(Boost_NO_SYSTEM_PATHS ON)
+
     set(BOOST_INCLUDEDIR "/opt/boost_1_72_0")
     set(BOOST_LIBRARYDIR "/opt/boost_1_72_0/stage/lib/")
+
+    SET(Boost_DIR "/opt/boost_1_72_0/stage/lib/cmake/Boost-1.72.0/")
 
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11")
@@ -420,6 +424,7 @@ add_executable(fastnetmon_client fastnetmon_client.cpp)
 
 # Enable detailed errors
 set(Boost_DETAILED_FAILURE_MSG ON)
+# set(Boost_DEBUG ON)
 
 find_package(Boost COMPONENTS thread regex program_options system REQUIRED)
 
