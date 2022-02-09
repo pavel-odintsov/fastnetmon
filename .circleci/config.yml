@@ -17,7 +17,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 20m
-          command: perl src/fastnetmon_install.pl --use-git-master
+          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - save_cache:
           key: ubuntu2004_dependencies_25_05_2020
           paths:
@@ -40,7 +40,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 20m
-          command: perl src/fastnetmon_install.pl --use-git-master
+          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - save_cache:
           key: ubuntu1804_dependencies_25_05_2020
           paths:
@@ -63,7 +63,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 20m
-          command: perl src/fastnetmon_install.pl --use-git-master
+          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - save_cache:
           key: ubuntu1604_dependencies_25_05_2020
           paths:
@@ -86,7 +86,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 20m
-          command: perl src/fastnetmon_install.pl --use-git-master
+          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - save_cache:
           key: debian9_dependencies_25_05_2020
           paths:
@@ -109,7 +109,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 20m
-          command: perl src/fastnetmon_install.pl --use-git-master
+          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - save_cache:
           key: debian10_dependencies_25_05_2020
           paths:
@@ -153,7 +153,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 20m
-          command: perl src/fastnetmon_install.pl --use-git-master
+          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - save_cache:
           key: centos7_dependencies_25_05_2020
           paths:
@@ -175,7 +175,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 20m
-          command: perl src/fastnetmon_install.pl --use-git-master
+          command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
       - save_cache:
           key: centos8_dependencies_25_05_2020
           paths:
