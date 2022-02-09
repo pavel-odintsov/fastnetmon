@@ -449,6 +449,8 @@ set(Boost_DETAILED_FAILURE_MSG ON)
 find_package(Boost COMPONENTS thread regex program_options system REQUIRED)
 
 if(Boost_FOUND)
+    message(STATUS "Found Boost: ${Boost_LIBRARIES} ${Boost_INCLUDE_DIRS}")
+
     include_directories(${Boost_INCLUDE_DIRS})
     target_link_libraries(fastnetmon ${Boost_LIBRARIES})
     target_link_libraries(fast_library ${Boost_LIBRARIES})
