@@ -436,12 +436,12 @@ fi
 - First RPM package release
 DOC
 
-    my $selected_spec_file = $spec_file;
+   # TODO: we need to improve it to avoid using different spec files
+    my $selected_spec_file = $systemd_spec_file;
 
-    # TODO: we need to improve it to avoid using different spec files
-    # For CentOS we use systemd
-    if ($distro_name eq 'centos' && $distro_version eq '7') {
-        $selected_spec_file = $systemd_spec_file;
+    # Only for CentOS 6 we use old apprach based on init scripts, for newer centos versions we use systemd
+    if ($distro_name eq 'centos' && $distro_version eq '6') {
+        $selected_spec_file = $spec_file;
     }
 
     # Add full list of files into RPM spec
