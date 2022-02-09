@@ -345,7 +345,7 @@ jobs:
           path: /tmp/fastnetmon_install.log
       - run: src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz 1.1.6
       - store_artifacts:
-          path: /tmp/fastnetmon_1.1.6_amd64.rpm
+          path: /tmp/result_data/fastnetmon-1.1.6-1.el6.x86_64.rpm
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
       - run: /opt/fastnetmon/fastnetmon --configuration_check
   centos7:
