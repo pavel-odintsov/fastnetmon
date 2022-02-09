@@ -120,8 +120,7 @@ jobs:
       - image: centos:centos6.9
     steps:
       - checkout
-      - run: apt-get update; true
-      - run: apt-get install -y perl wget
+      - run: yum install -y perl wget
       - run:
           name: install_required_packages
           no_output_timeout: 20m
@@ -143,8 +142,7 @@ jobs:
       - image: centos:centos7.8.2003
     steps:
       - checkout
-      - run: apt-get update; true
-      - run: apt-get install -y perl wget
+      - run: yum install -y perl wget
       - run:
           name: install_required_packages
           no_output_timeout: 20m
@@ -166,8 +164,7 @@ jobs:
       - image: centos:centos8.1.1911
     steps:
       - checkout
-      - run: apt-get update; true
-      - run: apt-get install -y perl wget
+      - run: yum install -y perl wget
       - run:
           name: install_required_packages
           no_output_timeout: 20m
