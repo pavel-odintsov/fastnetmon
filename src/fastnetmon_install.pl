@@ -1447,7 +1447,7 @@ sub install_icu {
     chdir "icu/source";
 
     print "Build icu\n";
-    exec_command("./configure --prefix=$icu_install_path");
+    exec_command("LDFLAGS=\"-Wl,-rpath,/opt/libicu_65_1/lib\" ./configure --prefix=$icu_install_path");
     exec_command("make $make_options");
     exec_command("make $make_options install");
     1;
