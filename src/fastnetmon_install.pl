@@ -55,8 +55,10 @@ sub send_tracking_information {
 sub fast_die {
     my $message = shift;
 
-	# Report failed installs
-	send_tracking_information("error");
+    print "$message Please share $install_log_path with FastNetMon team at GitHub to get help: https://github.com/pavel-odintsov/fastnetmon/issues/new\n";
+
+    # Report failed installs
+    send_tracking_information("error");
 
     # Send detailed report about issue to Sentry
     unless ($do_not_track_me) {
@@ -64,7 +66,7 @@ sub fast_die {
             " send-event -m \"$message\" --logfile $install_log_path");
     }
 
-    die "$message Please share $install_log_path with FastNetMon team at GitHub to get help: https://github.com/pavel-odintsov/fastnetmon/issues/new\n";
+    exit(1);
 }
 
 my $pf_ring_version = '6.0.3';
@@ -1461,7 +1463,7 @@ sub install_cmake {
     chdir "cmake-3.16.4";
 
     print "Execute bootstrap, it will need time\n";
-    my $boostrap_result = exec_command("./bootstrap --prefix=$cmake_install_path --parallel=$cpus_number");
+    my $boostrap_result = exec_command("./bootstrap --prefix=$cmake_install_path");
 
     unless ($boostrap_result) {
         fast_die("Cannot run bootstrap\n");
@@ -1472,7 +1474,7 @@ sub install_cmake {
     my $make_result = exec_command($make_command);
 
     unless ($make_result) {
-        die "Make command '$make_command' failed\n";
+        fast_die("Make command '$make_command' failed\n");
     }
 
     exec_command("make install");
@@ -1499,21 +1501,21 @@ sub install_boost_builder {
         '8d4aede249cc414f5f375423e26feca99f1c1088');
 
     unless ($boost_build_result) {
-        die "Can't download boost builder\n";
+        fast_die("Can't download boost builder\n");
     }
 
     print "Unpack boost builder\n";
     exec_command("tar -xf $archive_file_name");
 
     unless (chdir "build-boost-1.72.0") {
-        die "Cannot do chdir to build boost folder\n";
+        fast_die("Cannot do chdir to build boost folder\n");
     }
 
     print "Build Boost builder\n";
     my $bootstrap_result = exec_command("./bootstrap.sh --with-toolset=gcc");
 
     unless ($bootstrap_result) {
-        die "bootstrap of Boost Builder failed, please check logs\n";
+        fast_die("bootstrap of Boost Builder failed, please check logs\n");
     }
 
     # We should specify toolset here if we want to do build with custom compiler
@@ -1521,7 +1523,7 @@ sub install_boost_builder {
     my $b2_install_result = exec_command("./b2 install --prefix=$boost_builder_install_folder");
 
     unless ($b2_install_result) {
-        die "Can't execute b2 install\n";
+        fast_die("Can't execute b2 install\n");
     }
 
     1;
@@ -1544,7 +1546,7 @@ sub install_boost {
     my $boost_download_result = download_file("https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.bz2", $archive_file_name, '88866e4075e12255e7a7189d0b8a686e0b1ee9c1');
 
     unless ($boost_download_result) {
-        die "Can't download Boost source code\n";
+        fast_die("Can't download Boost source code\n");
     }
 
     print "Unpack Boost source code\n";
