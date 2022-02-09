@@ -568,6 +568,17 @@ jobs:
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_27_05_2020"
+      - restore_cache:
+          keys:
+            - "{{ .Environment.CIRCLE_JOB }}_gcc_27_05_2020"
+      - run:
+          name: install_gcc
+          no_output_timeout: 80m 
+          command: perl src/fastnetmon_install.pl --build_gcc_only
+      - save_cache:
+          key: "{{ .Environment.CIRCLE_JOB }}_gcc_27_05_2020"
+          paths:
+            - /opt/gcc920
       - run:
           name: install_dependencies
           no_output_timeout: 40m
