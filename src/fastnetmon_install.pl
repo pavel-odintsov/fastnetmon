@@ -104,6 +104,7 @@ my $use_modern_pf_ring = '';
 my $show_help = '';
 
 my $enable_gobgp_backend = '';
+my $enable_api = '';
 
 # Get options from command line
 GetOptions(
@@ -111,11 +112,12 @@ GetOptions(
     'do-not-track-me' => \$do_not_track_me,
     'use-modern-pf-ring' => \$use_modern_pf_ring,
     'gobgp' => \$enable_gobgp_backend,
+    'api' => \$enable_api,
     'help' => \$show_help,
 );
 
 if ($show_help) {
-    print "We have following options: --use-git-master --do-not-track-me --use-modern-pf-ring --gobgp --help\n";
+    print "We have following options:\n--use-git-master\n--do-not-track-me\n--use-modern-pf-ring\n--gobgp\n--api\n--help\n";
     exit (0);
 }
 
@@ -139,7 +141,8 @@ my $we_have_protobuf_support = '';
 my $we_have_grpc_support = '';
 my $we_have_gobgp_support = '';
 
-if ($enable_gobgp_backend) {
+# These modes use same modules
+if ($enable_gobgp_backend || $enable_api) {
     $we_have_protobuf_support = 1;
     $we_have_grpc_support = 1;
     $we_have_gobgp_support = 1;
