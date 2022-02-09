@@ -308,10 +308,14 @@ sub main {
 
     $cpus_number = get_logical_cpus_number();
 
-    # We could get huge speed benefits with this option
-    if ($cpus_number > 8) {
-        print "You have really nice server with $cpus_number CPUs and we will use them all for build process :)\n";
-        $make_options = "-j $cpus_number";
+    if (defined($ENV{'CIRCLECI'}) && $ENV{'CIRCLECI'}) { 
+        # We use machine with 2 CPUs, let's set explicitly 2 threads, get_logical_cpus_number returns 36 which is not real number of CPU cores
+	$make_options = "-j 2"; 
+    } else {
+        if ($cpus_number > 8) {
+            print "You have really nice server with $cpus_number CPUs and we will use them all for build process :)\n";
+            $make_options = "-j $cpus_number";
+        }
     }
 
     # We use PF_RING only for very old Linux distros, all new one should use AF_PACKET
