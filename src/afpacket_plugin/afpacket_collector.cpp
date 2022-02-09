@@ -43,14 +43,16 @@
 #include <sys/mman.h>
 #include <sys/socket.h>
 
+#include <linux/filter.h> // for struct sock_filter
+
 #include "../unified_parser.hpp"
 
 bool afpacket_read_packet_length_from_ip_header = false;
 
-// Get log4cpp logger from main program
+// Get log4cpp logger from main programm
 extern log4cpp::Category& logger;
 
-// Pass unparsed packets number to main program
+// Pass unparsed packets number to main programm
 extern uint64_t total_unparsed_packets;
 
 // Global configuration map
@@ -73,6 +75,44 @@ struct block_desc {
     uint32_t offset_to_priv;
     struct tpacket_hdr_v1 h1;
 };
+
+/*
+ * - PACKET_FANOUT_HASH: schedule to socket by skb's packet hash
+ * - PACKET_FANOUT_LB: schedule to socket by round-robin
+ * - PACKET_FANOUT_CPU: schedule to socket by CPU packet arrives on
+ * - PACKET_FANOUT_RND: schedule to socket by random selection
+ * - PACKET_FANOUT_ROLLOVER: if one socket is full, rollover to another
+ * - PACKET_FANOUT_QM: schedule to socket by skbs recorded queue_mapping
+ */
+
+int fanout_type = PACKET_FANOUT_CPU;
+
+// Our kernel headers aren't so fresh and we need it
+#ifndef PACKET_FANOUT_QM
+#define PACKET_FANOUT_QM 5
+#endif
+
+
+int get_fanout_by_name(std::string fanout_name) {
+    if (fanout_name == "" || fanout_name == "cpu") {
+        // Default mode for backward compatibility
+        return PACKET_FANOUT_CPU;
+    } else if (fanout_name == "lb") {
+        return PACKET_FANOUT_LB;
+    } else if (fanout_name == "hash") {
+        return PACKET_FANOUT_HASH;
+    } else if (fanout_name == "random") {
+        return PACKET_FANOUT_RND;
+    } else if (fanout_name == "rollover") {
+        return PACKET_FANOUT_ROLLOVER;
+    } else if (fanout_name == "queue_mapping") {
+        return PACKET_FANOUT_QM;
+    } else {
+        // Return default one
+        logger << log4cpp::Priority::ERROR << "Unknown FANOUT mode: " << fanout_name << " switched to default (CPU)";
+        return PACKET_FANOUT_CPU;
+     }
+}
 
 // Get interface number by name
 int get_interface_number_by_device_name(int socket_fd, std::string interface_name) {
@@ -221,7 +261,7 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
                                    MAP_SHARED | MAP_LOCKED, packet_socket, 0);
 
     if (mapped_buffer == MAP_FAILED) {
-        logger << log4cpp::Priority::ERROR << "MMAP failed";
+        logger << log4cpp::Priority::ERROR << "MMAP failed errno: " << errno << " error: " << strerror(errno);
         return false;
     }
 
@@ -242,10 +282,6 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
     }
 
     if (enable_fanout) {
-        // PACKET_FANOUT_LB - round robin
-        // PACKET_FANOUT_CPU - send packets to CPU where packet arrived
-        int fanout_type = PACKET_FANOUT_CPU;
-
         int fanout_arg = (fanout_group_id | (fanout_type << 16));
 
         int setsockopt_fanout =
@@ -316,6 +352,11 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
     if (configuration_map.count("mirror_af_packet_custom_sampling_rate") != 0) {
         mirror_af_packet_custom_sampling_rate =
         convert_string_to_integer(configuration_map["mirror_af_packet_custom_sampling_rate"]);
+    }
+
+    if (configuration_map.count("mirror_af_packet_fanout_mode") != 0) {
+	// Set FANOUT mode
+        fanout_type = get_fanout_by_name(configuration_map["mirror_af_packet_fanout_mode"]);
     }
 
     std::vector<std::string> interfaces_for_listen;
