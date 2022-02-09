@@ -252,10 +252,10 @@ sub install_additional_repositories {
             print "Install EPEL repository for your system\n";
             yum('https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm');
 
-	    # Part of devel libraries was moved here https://github.com/pavel-odintsov/fastnetmon/issues/801
-	    print "Enable PowerTools repo\n";
-	    yum('dnf-plugins-core');
-	    system("yum config-manager --set-enabled PowerTools");
+	        # Part of devel libraries was moved here https://github.com/pavel-odintsov/fastnetmon/issues/801
+	        print "Enable PowerTools repo\n";
+	        yum('dnf-plugins-core');
+	        system("yum config-manager --set-enabled PowerTools");
         }
     }
 }
@@ -333,7 +333,7 @@ sub main {
 
     if (defined($ENV{'CIRCLECI'}) && $ENV{'CIRCLECI'}) { 
         # We use machine with 2 CPUs, let's set explicitly 2 threads, get_logical_cpus_number returns 36 which is not real number of CPU cores
-	$make_options = "-j 2"; 
+	    $make_options = "-j 2"; 
     } else {
         if ($cpus_number > 8) {
             print "You have really nice server with $cpus_number CPUs and we will use them all for build process :)\n";
@@ -376,7 +376,7 @@ sub main {
         $distro_version =~ m/^18\.04/ or
         $distro_version =~ m/^19\.04/)) {
 
-         $install_from_official_distro = 1;
+        $install_from_official_distro = 1;
     }
 
     # For Debian Buster we also have FastNetMon in standard repos
@@ -689,8 +689,8 @@ sub install_json_c {
     my $install_path = '/opt/json-c-0.13';
 
     if (-e $install_path && defined($ENV{'CI'})) {
-	print "json-c was already installed\n";
-	return 1;
+	    print "json-c was already installed\n";
+	    return 1;
     }
 
     print "Install json library\n";
@@ -715,8 +715,6 @@ sub install_json_c {
     if ($os_type eq 'macosx' or $os_type eq 'freebsd') {
         exec_command("sed -i -e '355 s#^#//#' json_tokener.c");
         exec_command("sed -i -e '360 s#^#//#' json_tokener.c");
-    } else {
-        
     }
 
     print "Build it\n";
@@ -1021,9 +1019,14 @@ sub install_mongo_client {
     exec_command("tar -xf $distro_file_name");
     print "Build mongo client\n";
     chdir "mongo-c-driver-1.1.9";
-    exec_command("./configure --prefix=$mongo_install_path");
 
-    exec_command("make $make_options install");
+    unless (exec_command("./configure --prefix=$mongo_install_path")) {
+        fast_die("Cannot configure mongoc");
+    }
+
+    unless (exec_command("make $make_options install")) {
+        fast_die("Cannot make mongoc");
+    }
 }
 
 sub install_hiredis {
