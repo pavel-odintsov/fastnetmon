@@ -140,8 +140,9 @@ jobs:
             - /opt
       - run: cd src; mkdir -p build; cd build; /opt/cmake-3.16.4/bin/cmake ..; make
       - run: /opt/fastnetmon/fastnetmon --configuration_check
+      - run: tar -cpzvf /opt/fastnetmon_all_libs.tar.gz --exclude=/opt/fastnetmon_all_libs.tar.gz -C /opt /opt
       - store_artifacts:
-          path: /opt 
+          path: /opt/fastnetmon_all_libs.tar.gz
   debian8:
     docker:
       - image: debian:jessie-20200514
