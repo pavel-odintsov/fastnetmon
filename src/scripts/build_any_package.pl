@@ -186,7 +186,7 @@ DOC
         die "Files must not be empty\n";
     }
 
-    my $systemd_spec_file = <<'DOC';
+    my $spec_file_header = <<'DOC';
 #
 # Pre/post params: https://fedoraproject.org/wiki/Packaging:ScriptletSnippets
 #
@@ -197,14 +197,17 @@ DOC
 %global  fastnetmon_config_path %{_sysconfdir}/fastnetmon.conf
 
 Name:              fastnetmon
+
 DOC
 
     # We do need variable interpolation here
-    $systemd_spec_file .= <<DOC;
+    my $spec_file_version = <<DOC;
+
 Version:           $package_version
+
 DOC
 
-    $systemd_spec_file .= <<'DOC';
+    my $spec_file_summary_section = <<'DOC';
 Release:           1%{?dist}
 
 Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
@@ -219,6 +222,10 @@ Source0:           http://178.62.227.110/fastnetmon_binary_repository/test_binar
 AutoReq:           no
 AutoProv:          no
 
+DOC
+
+    my $spec_file_requires_systemd_section = <<'DOC';
+
 Requires:          libpcap, numactl, libicu
 Requires(pre):     shadow-utils
 Requires(post):    systemd
@@ -226,10 +233,18 @@ Requires(preun):   systemd
 Requires(postun):  systemd
 Provides:          fastnetmon
 
+DOC
+
+    my $spec_file_description_section = <<'DOC';
+
 %description
 A high performance DoS/DDoS load analyzer built on top of multiple packet capture
 engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
 
+
+DOC
+
+    my $spec_file_prep_section = <<'DOC';
 %prep
 
 rm -rf fastnetmon-tree
@@ -237,11 +252,20 @@ mkdir fastnetmon-tree
 mkdir fastnetmon-tree/opt
 tar -xvvf /root/rpmbuild/SOURCES/archive.tar.gz -C fastnetmon-tree/opt
 
+DOC
+
+my $spec_file_prep_footer_systemd_section = <<'DOC';
+
 # Copy service scripts
 mkdir fastnetmon-tree/etc
 cp /root/rpmbuild/SOURCES/systemd_init fastnetmon-tree/etc
 cp /root/rpmbuild/SOURCES/fastnetmon.conf fastnetmon-tree/etc
 
+DOC
+
+    my $systemd_spec_file = $spec_file_header . $spec_file_version . $spec_file_summary_section . $spec_file_requires_systemd_section . $spec_file_description_section . $spec_file_prep_section . $spec_file_prep_footer_systemd_section;
+
+    $systemd_spec_file .= <<'DOC';
 %build
 
 # We do not build anything
@@ -308,41 +332,7 @@ fi
 - First RPM package release
 DOC
 
-    my $spec_file = <<'DOC';
-#
-# Pre/post params: https://fedoraproject.org/wiki/Packaging:ScriptletSnippets
-#
-
-%global  fastnetmon_attackdir   %{_localstatedir}/log/fastnetmon_attacks
-%global  fastnetmon_user        root
-%global  fastnetmon_group       %{fastnetmon_user}
-%global  fastnetmon_config_path %{_sysconfdir}/fastnetmon.conf
-
-DOC
-
-    # But we need interpolation here
-    $spec_file .= <<DOC;
-
-Name:              fastnetmon
-Version:           $package_version
-
-DOC
-
-   $spec_file .= <<'DOC';
-
-Release:           1%{?dist}
-
-Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
-Group:             System Environment/Daemons
-License:           GPLv2
-URL:               https://fastnetmon.com
-
-# Top level fodler inside archive should be named as "fastnetmon-1.1.1" 
-Source0:           http://178.62.227.110/fastnetmon_binary_repository/test_binary_builds/this_fake_path_do_not_check_it/archive.tar.gz
-
-# Disable any sort of dynamic dependency detection for our own custom bunch of binaries
-AutoReq:           no
-AutoProv:          no
+   my $spec_file_init_d_section = <<'DOC';
 
 Requires:          libpcap, numactl, libicu
 Requires(pre):     shadow-utils
@@ -351,21 +341,22 @@ Requires(preun):   chkconfig, initscripts
 Requires(postun):  initscripts
 Provides:          fastnetmon
 
-%description
-A high performance DoS/DDoS load analyzer built on top of multiple packet capture
-engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
+DOC
 
-%prep
-
-rm -rf fastnetmon-tree
-mkdir fastnetmon-tree
-mkdir fastnetmon-tree/opt
-tar -xvvf /root/rpmbuild/SOURCES/archive.tar.gz -C fastnetmon-tree/opt
+my $spec_file_prep_footer_init_d_section = <<'DOC';
 
 # Copy service scripts
 mkdir fastnetmon-tree/etc
 cp /root/rpmbuild/SOURCES/system_v_init fastnetmon-tree/etc
 cp /root/rpmbuild/SOURCES/fastnetmon.conf fastnetmon-tree/etc
+
+DOC
+
+
+   my $spec_file = $spec_file_header . $spec_file_version . $spec_file_summary_section . $spec_file_init_d_section . $spec_file_description_section . $spec_file_prep_section 
+       . $spec_file_prep_footer_init_d_section;
+
+   $spec_file .= <<'DOC';
 
 %build
 
