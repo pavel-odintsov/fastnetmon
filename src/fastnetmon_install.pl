@@ -808,7 +808,6 @@ sub install_log4cpp {
 }
 
 sub install_grpc {
-    # We use this commit because 0.11.1 is broken and do not build on CentOS 6 correctly
     my $grpc_git_commit = "7a94236d698477636dd06282f12f706cad527029";
     my $grpc_install_path = "/opt/grpc_0_11_1_$grpc_git_commit"; 
 
@@ -870,36 +869,41 @@ sub install_gobgp {
 }
 
 sub install_protobuf {
+    chdir $temp_folder_for_building_project;
+
+    # TODO: add deps for CentOS
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
-        apt_get('gcc', 'make', 'autoconf', 'automake', 'git', 'libtool', 'g++', 'curl');
+        apt_get('make', 'autoconf', 'automake', 'git', 'libtool', 'curl', "g++");
     }
 
-    # TODO: add deps for CentOS 
+    my $protobuf_install_path = "/opt/protobuf_3.11.4";
 
-    my $protobuf_install_path = '/opt/protobuf_3.0.0_alpha4';
-    my $distro_file_name = 'v3.0.0-alpha-4.tar.gz';
+    my $distro_file_name = 'protobuf-all-3.11.4.tar.gz';
 
     chdir $temp_folder_for_building_project;
     print "Download protocol buffers\n";
 
-    my $protobuf_download_result = download_file("https://github.com/google/protobuf/archive/$distro_file_name",
-        $distro_file_name, 'd23048ba3218af21ba65fa39bfb6326f5bf9f7a4'); 
+    my $protobuf_download_result = download_file("https://github.com/protocolbuffers/protobuf/releases/download/v3.11.4/$distro_file_name",
+        $distro_file_name, '318f4d044078285db7ae69b68e77f148667f98f4');
 
     unless ($protobuf_download_result) {
-        fast_die("Can't download protobuf");
+        fast_die("Can't download protobuf\n");
     }
 
     print "Unpack protocol buffers\n";
     exec_command("tar -xf $distro_file_name");
 
-    chdir "protobuf-3.0.0-alpha-4";
+    chdir "protobuf-3.11.4";
     print "Configure protobuf\n";
 
+    print "Execute autogen\n";
     exec_command("./autogen.sh");
+
     exec_command("./configure --prefix=$protobuf_install_path");
 
     print "Build protobuf\n";
     exec_command("make $make_options install");
+    1;
 }
 
 sub install_mongo_client {
