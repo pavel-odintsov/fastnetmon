@@ -300,6 +300,8 @@ if (ENABLE_GOBGP_SUPPORT)
         target_link_libraries(gobgp_action ${GRPC_LIBRARY_GRPC_PATH})
         target_link_libraries(gobgp_action ${GRPC_LIBRARY_GPR_PATH})
         target_link_libraries(gobgp_action ${GRPC_LIBRARY_GRPC_CPP__PATH})
+
+	message(STATUS "Found gRPC library")
     else()
         message(FATAL_ERROR "Could not find gRPC library")
     endif()
@@ -311,6 +313,8 @@ if (ENABLE_GOBGP_SUPPORT)
     if (PROTOCOL_BUFFERS_INCLUDE_FOLDER AND PROTOCOL_BUFFERS_LIBRARY_PATH)
         include_directories(${PROTOCOL_BUFFERS_INCLUDE_FOLDER}) 
         target_link_libraries(gobgp_action ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
+
+	message(STATUS "Found protobuf library")
     else()
         message(FATAL_ERROR "Could not find protocol buffers")
     endif()
@@ -327,15 +331,17 @@ if (ENABLE_GOBGP_SUPPORT)
         message(FATAL_ERROR "Can't find protoc compiler")
     endif()
 
+    message(STATUS "Building protobuf and gRPC mappings for C++")
+
     set(GRPC_CPP_PLUGIN "${GRPC_CUSTOM_INSTALL_PATH}/bin/grpc_cpp_plugin")
 
     execute_process(COMMAND ${PROTOC_BINARY} -I ${PROJECT_BINARY_DIR}/../actions --grpc_out=${PROJECT_BINARY_DIR}/../actions --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} ${PROJECT_BINARY_DIR}/../actions/gobgp.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-    message(STATUS "Protoc return code: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
+    message(STATUS "Protoc return code for gobgp.proto gRPC: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
 
     execute_process(COMMAND ${PROTOC_BINARY} -I  ${PROJECT_BINARY_DIR}/../actions --cpp_out=${PROJECT_BINARY_DIR}/../actions ${PROJECT_BINARY_DIR}/../actions/gobgp.proto ${PROJECT_BINARY_DIR}/../actions/attribute.proto  ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-    message(STATUS "Protoc return code: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
+    message(STATUS "Protoc return code for gobgp.proto and attribute.proto Protobuf: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
 
     # Build gRPC and protocol bufffers libraries and link they to gobgp_action
     add_library(gobgp_api_client_pb_cc STATIC actions/gobgp.pb.cc)
@@ -353,11 +359,11 @@ if (ENABLE_GOBGP_SUPPORT)
 
     execute_process(COMMAND ${PROTOC_BINARY} -I ${PROJECT_BINARY_DIR}/.. --grpc_out=${PROJECT_BINARY_DIR}/.. --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} ${PROJECT_BINARY_DIR}/../fastnetmon.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-    message(STATUS "Protoc return code: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
+    message(STATUS "Protoc return code for gRPC fastnetmon.proto: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
 
     execute_process(COMMAND ${PROTOC_BINARY} -I  ${PROJECT_BINARY_DIR}/.. --cpp_out=${PROJECT_BINARY_DIR}/.. ${PROJECT_BINARY_DIR}/../fastnetmon.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE) 
 
-    message(STATUS "Protoc return code: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
+    message(STATUS "Protoc return code for protobuf fastnetmon.proto: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
 
     add_library(fastnetmon_grpc_pb_cc STATIC fastnetmon.grpc.pb.cc)
     add_library(fastnetmon_pb_cc STATIC fastnetmon.pb.cc)
