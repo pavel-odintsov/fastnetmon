@@ -395,6 +395,7 @@ jobs:
       - image: centos:centos6.9
     steps:
       - checkout
+      - run: yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
       - run: yum install -y perl wget python-pip
       - run: pip install s3cmd
       - run:
