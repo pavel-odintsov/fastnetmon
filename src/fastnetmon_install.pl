@@ -121,6 +121,10 @@ my $build_boost = '';
 
 my $do_not_use_mirror = '';
 
+my $build_fastnetmon = 1;
+
+my $do_not_build_fastnetmon = '';
+
 # Get options from command line
 GetOptions(
     'use-git-master' => \$we_use_code_from_master,
@@ -130,13 +134,18 @@ GetOptions(
     'api' => \$enable_api,
     'boost' => \$build_boost,
     'do-not-use-mirror' => \$do_not_use_mirror,
+    'do-not-build-fastnetmon' => \$do_not_build_fastnetmon,
     'help' => \$show_help,
     'install_dependency_packages_only' => \$install_dependency_packages_only, 
 );
 
 if ($show_help) {
-    print "We have following options:\n--use-git-master\n--do-not-use-mirror\n--do-not-track-me\n--use-modern-pf-ring\n--gobgp\n--api\n--install_dependency_packages_only\n--boost\n--help\n";
+    print "We have following options:\n--use-git-master\n--do-not-use-mirror\n--do-not-track-me\n--use-modern-pf-ring\n--gobgp\n--api\n--install_dependency_packages_only\n--boost\ndo-not-build-fastnetmon\n--help\n";
     exit (0);
+}
+
+if ($do_not_build_fastnetmon) {
+    $build_fastnetmon = '';
 }
 
 if ($do_not_use_mirror) {
@@ -492,7 +501,10 @@ sub main {
         }
 
         install_fastnetmon_dependencies();
-        install_fastnetmon();
+
+        if ($build_fastnetmon) {
+            install_fastnetmon();
+        }
     }
 
     send_tracking_information('finished');
