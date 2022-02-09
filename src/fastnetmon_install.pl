@@ -1569,7 +1569,12 @@ sub install_fastnetmon {
     if ($we_have_pfring_support) {
         $cmake_params .= " -DENABLE_PF_RING_SUPPORT=ON";
     }
+   
+    if ($build_boost) {
+	$cmake_params .= " -DENABLE_CUSTOM_BOOST_BUILD=ON";
+    }
 
+     
     if ($distro_type eq 'centos' && $distro_version == 6) {
         # Disable cmake script from Boost package because it's broken:
         # http://public.kitware.com/Bug/view.php?id=15270
