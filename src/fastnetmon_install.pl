@@ -103,18 +103,22 @@ my $use_modern_pf_ring = '';
 
 my $show_help = '';
 
+my $enable_gobgp_backend = '';
+
 # Get options from command line
 GetOptions(
     'use-git-master' => \$we_use_code_from_master,
     'do-not-track-me' => \$do_not_track_me,
     'use-modern-pf-ring' => \$use_modern_pf_ring,
+    'gobgp' => \$enable_gobgp_backend,
     'help' => \$show_help,
 );
 
 if ($show_help) {
-    print "We have following options: --use-git-master, --do-not-track-me, --use-modern-pf-ring and --help\n";
+    print "We have following options: --use-git-master --do-not-track-me --use-modern-pf-ring --gobgp --help\n";
     exit (0);
 }
+
 
 welcome_message();
 
@@ -133,15 +137,11 @@ my $we_have_pfring_support = '';
 my $we_have_mongo_support = '1';
 my $we_have_protobuf_support = '';
 my $we_have_grpc_support = '';
-my $we_have_golang_support = '';
 my $we_have_gobgp_support = '';
-
-my $enable_gobgp_backend = '';
 
 if ($enable_gobgp_backend) {
     $we_have_protobuf_support = 1;
     $we_have_grpc_support = 1;
-    $we_have_golang_support = 1;
     $we_have_gobgp_support = 1;
 }
 
@@ -402,10 +402,6 @@ sub main {
 
     if ($we_have_grpc_support) {
         install_grpc();
-    }
-
-    if ($we_have_golang_support) {
-        install_golang();
     }
 
     if ($we_have_gobgp_support) {
@@ -841,70 +837,36 @@ sub install_grpc {
 sub install_gobgp {
     chdir $temp_folder_for_building_project;
 
-    my $distro_file_name = 'v1.0.tar.gz';
+    my $distro_file_name = '';
+    my $distro_file_hash = '';
 
-    my $gobgp_download_result = download_file("https://github.com/osrg/gobgp/archive/$distro_file_name",
-        $distro_file_name, 'daafc31b06d95611ca76f45630e5db140ba5d4c9');
+    if ($distro_architecture eq 'x86_64') {
+	$distro_file_name = 'gobgp_2.16.0_linux_amd64.tar.gz';
+	$distro_file_hash = '58dcf1f4b4b64383c5fbb731322c9fc2a2fcd5f0';
+    } elsif ($distro_architecture eq 'i686') {
+        $distro_file_name = 'gobgp_2.16.0_linux_386.tar.gz';
+        $distro_file_hash = '9d6f031058589618f414b4493b5cfa34230c0505';
+    } else {
+        fast_die("We do not have GoBGP for your platform, please check: https://github.com/osrg/gobgp/releases for available builds");
+    }
+
+    print "Download GoBGP\n";
+
+    my $gobgp_download_result = download_file("https://github.com/osrg/gobgp/releases/download/v2.16.0/$distro_file_name",
+        $distro_file_name, $distro_file_hash);
 
     unless ($gobgp_download_result) {
         fast_die("Can't download gobgp sources");
     }
 
     exec_command("tar -xf $distro_file_name");
-    chdir "gobgp-1.0";
-    chdir "gobgp/lib";
-
-    my $go_binary = '/usr/local/go/bin/go';
-
-    print "Build gobgp\n";
-    exec_command("GOPATH=\"$temp_folder_for_building_project/gofolder\" $go_binary get github.com/osrg/gobgp/gobgpd");
-    exec_command("GOPATH=\"$temp_folder_for_building_project/gofolder\" $go_binary get github.com/osrg/gobgp/gobgp");
-
-    print "Build gobgp library\n";
-    exec_command("GOPATH=\"$temp_folder_for_building_project/gofolder\" $go_binary build -buildmode=c-shared -o libgobgp.so *.go");
-
-    my $libgobgp_install_path = '/opt/libgobgp_1_0_0';
-   
-    print "Install gobgp library\n"; 
-    mkdir "$libgobgp_install_path";
-    mkdir "$libgobgp_install_path/include";
-    mkdir "$libgobgp_install_path/lib";
-
-    exec_command("cp libgobgp.h $libgobgp_install_path/include");
-    exec_command("cp libgobgp.so $libgobgp_install_path/lib");
 
     print "Install gobgp daemon files\n";
-    my $gobgp_install_path = '/opt/gobgp_1_0_0';
+    my $gobgp_install_path = '/opt/gobgp_2_16_0';
 
     mkdir $gobgp_install_path;
-    exec_command("cp $temp_folder_for_building_project/gofolder/bin/gobgp $gobgp_install_path");
-    exec_command("cp $temp_folder_for_building_project/gofolder/bin/gobgpd $gobgp_install_path");
-}
-
-sub install_golang {
-    chdir $temp_folder_for_building_project;
-
-    my $distro_file_name = '';
-    my $distro_file_hash = '';
-
-    if ($distro_architecture eq 'x86_64') {
-        $distro_file_name = "go1.5.1.linux-amd64.tar.gz";
-        $distro_file_hash = '46eecd290d8803887dec718c691cc243f2175fe0';
-    } elsif ($distro_architecture eq 'i686') {
-        $distro_file_name = 'go1.5.1.linux-386.tar.gz';
-        $distro_file_hash = '6ce7328f84a863f341876658538dfdf10aff86ee';
-    } else {
-        fast_die("We haven't golang for your platform sorry :(");
-    }
-
-    my $golang_download_result = download_file("https://storage.googleapis.com/golang/$distro_file_name",
-        $distro_file_name, $distro_file_hash); 
-
-    unless ($golang_download_result) {
-        fast_die("Can't download golanguage");
-    }
-
-    exec_command("tar -C /usr/local -xzf $distro_file_name");
+    exec_command("cp gobgp $gobgp_install_path");
+    exec_command("cp gobgpd $gobgp_install_path");
 }
 
 sub install_protobuf {
