@@ -1,8 +1,6 @@
 sudo: required
 dist: xenial
 language: cpp
-compiler:
-  - gcc
 before_install:
   - sudo apt-get update; true
 before_script:
@@ -15,3 +13,13 @@ notifications:
       - pavel.odintsov@gmail.com
     on_success: change
     on_failure: always
+matrix:
+  include:
+  - dist: trusty
+    os: linux
+    compiler: gcc
+  - dist: xenial
+    os: linux
+  - dist: bionic
+    os: linux
+    compiler: gcc
