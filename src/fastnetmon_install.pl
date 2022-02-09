@@ -28,6 +28,10 @@ my $user_email = '';
 
 my $install_log_path = "/tmp/fastnetmon_install_$$.log";
 
+if (defined($ENV{'CI'}) && $ENV{'CI'}) {
+    $install_log_path = "/tmp/fastnetmon_install.log";
+}
+
 # So, you could disable this option but without this feature we could not improve FastNetMon for your distribution
 my $do_not_track_me = '';
 

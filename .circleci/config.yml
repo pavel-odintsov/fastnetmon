@@ -1,4 +1,4 @@
-version: 2
+version: 2.1
 jobs:
   ubuntu2004:
     docker:
@@ -18,6 +18,10 @@ jobs:
           name: install_dependencies
           no_output_timeout: 20m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
+      - run:
+          name: collect_debug
+          command: cat /tmp/fastnetmon_install.log
+          when: on_fail
       - save_cache:
           key: ubuntu2004_dependencies_25_05_2020
           paths:
@@ -42,6 +46,10 @@ jobs:
           name: install_dependencies
           no_output_timeout: 20m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
+      - run:
+          name: collect_debug
+          command: cat /tmp/fastnetmon_install.log
+          when: on_fail
       - save_cache:
           key: ubuntu1804_dependencies_25_05_2020
           paths:
@@ -66,6 +74,10 @@ jobs:
           name: install_dependencies
           no_output_timeout: 20m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
+      - run:
+          name: collect_debug
+          command: cat /tmp/fastnetmon_install.log
+          when: on_fail
       - save_cache:
           key: ubuntu1604_dependencies_25_05_2020
           paths:
@@ -90,6 +102,10 @@ jobs:
           name: install_dependencies
           no_output_timeout: 20m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
+      - run:
+          name: collect_debug
+          command: cat /tmp/fastnetmon_install.log
+          when: on_fail
       - save_cache:
           key: debian9_dependencies_25_05_2020
           paths:
@@ -114,6 +130,10 @@ jobs:
           name: install_dependencies
           no_output_timeout: 20m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
+      - run:
+          name: collect_debug
+          command: cat /tmp/fastnetmon_install.log
+          when: on_fail
       - save_cache:
           key: debian10_dependencies_25_05_2020
           paths:
@@ -137,6 +157,10 @@ jobs:
           name: install_dependencies
           no_output_timeout: 20m
           command: perl src/fastnetmon_install.pl --use-git-master
+      - run:
+          name: collect_debug
+          command: cat /tmp/fastnetmon_install.log
+          when: on_fail
       - save_cache:
           key: centos6_dependencies_25_05_2020
           paths:
@@ -160,6 +184,10 @@ jobs:
           name: install_dependencies
           no_output_timeout: 20m
           command: perl src/fastnetmon_install.pl --use-git-master -api --gobgp
+      - run:
+          name: collect_debug
+          command: cat /tmp/fastnetmon_install.log
+          when: on_fail
       - save_cache:
           key: centos7_dependencies_25_05_2020
           paths:
@@ -176,6 +204,10 @@ jobs:
           name: install_required_packages
           no_output_timeout: 20m
           command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+      - run:
+          name: collect_debug
+          command: cat /tmp/fastnetmon_install.log
+          when: on_fail
       - restore_cache:
           keys:
             - centos8_dependencies_25_05_2020
