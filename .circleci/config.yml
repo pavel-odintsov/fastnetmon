@@ -12,14 +12,14 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m
-          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only --source_build
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --source_build
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -46,14 +46,14 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m
-          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only --source_build
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_10_06_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror --source_build
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -86,14 +86,14 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m
-          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only --source_build
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --source_build
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -120,14 +120,14 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m
-          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only --source_build
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_10_06_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror --source_build
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -160,14 +160,14 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m
-          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only --source_build
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --source_build
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -194,14 +194,14 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m
-          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only --source_build
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_10_06_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror --source_build
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -234,14 +234,14 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m
-          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only --source_build
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --source_build
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -268,14 +268,14 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m
-          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only --source_build
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_10_06_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror --source_build
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -308,14 +308,14 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 35m
-          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only --source_build
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --source_build
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -342,14 +342,14 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m 
-          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only --source_build
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m 
-          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror --source_build
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -382,14 +382,14 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 35m
-          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only --source_build
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --source_build
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -416,14 +416,14 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m 
-          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only --source_build
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m 
-          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror --source_build
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -456,14 +456,14 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m
-          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only --source_build
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --source_build
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -490,14 +490,14 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m 
-          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only --source_build
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m 
-          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror --source_build
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -529,14 +529,14 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m
-          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only --source_build
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_27_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master
+          command: perl src/fastnetmon_install.pl --use-git-master --source_build
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -564,7 +564,7 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m
-          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only --source_build
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_12_06_2020"
@@ -574,7 +574,7 @@ jobs:
       - run:
           name: install_gcc
           no_output_timeout: 80m 
-          command: perl src/fastnetmon_install.pl --build_gcc_only --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --build_gcc_only --do-not-use-mirror --source_build
       - save_cache:
           key: "{{ .Environment.CIRCLE_JOB }}_gcc_27_05_2020"
           paths:
@@ -582,7 +582,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror --source_build
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -614,14 +614,14 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m
-          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only --source_build
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --source_build
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -647,14 +647,14 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m 
-          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only --source_build
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_27_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m 
-          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror --source_build
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -687,7 +687,7 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m
-          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only --source_build
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -698,7 +698,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 40m
-          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --source_build
       - save_cache:
           key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
           paths:
@@ -720,14 +720,14 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m 
-          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only --source_build
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_27_05_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m 
-          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror
+          command: perl src/fastnetmon_install.pl --use-git-master --api --gobgp --boost --do-not-use-mirror --source_build
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
