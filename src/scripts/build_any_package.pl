@@ -410,6 +410,8 @@ DOC
 
     mkdir "/tmp/result_data";
     `cp /root/rpmbuild/RPMS/x86_64/* /tmp/result_data`;
+    
+    print `ls -la /tmp/result_data`;
 }
 
 sub build_deb_package {

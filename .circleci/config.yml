@@ -311,7 +311,43 @@ jobs:
       - run: cd src; mkdir -p build; cd build; cmake ..; make
       - run: /opt/fastnetmon/fastnetmon --configuration_check
       - store_artifacts:
-          path: /tmp/fastnetmon_install.log 
+          path: /tmp/fastnetmon_install.log
+  centos6_all_libs
+    docker:
+      - image: centos:centos6.9
+    steps:
+      - checkout
+      - run: yum install -y perl wget
+      - run:
+          name: install_required_packages
+          no_output_timeout: 20m
+          command: perl src/fastnetmon_install.pl --install_dependency_packages_only
+      - restore_cache:
+          keys:
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_27_05_2020"
+      - run:
+          name: install_dependencies
+          no_output_timeout: 20m
+          command: perl src/fastnetmon_install.pl --use-git-master
+      - run:
+          name: collect_debug
+          command: cat /tmp/fastnetmon_install.log
+          when: on_fail
+      - save_cache:
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_27_05_2020"
+          paths:
+            - /opt
+            - /usr/include/linux/pf_ring.h
+       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
+      - store_artifacts:
+          path: /opt/fastnetmon_libraries_bundle.tar.gz
+      - store_artifacts:
+          path: /tmp/fastnetmon_install.log
+      - run: src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz 1.1.6
+      - store_artifacts:
+          path: /tmp/fastnetmon_1.1.6_amd64.rpm
+      - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
+      - run: /opt/fastnetmon/fastnetmon --configuration_check
   centos7:
     docker:
       - image: centos:centos7.8.2003
@@ -384,5 +420,6 @@ workflows:
       - ubuntu1804
       - ubuntu2004
       - centos6
+      - centos6_all_libs
       - centos7
       - centos8
