@@ -312,7 +312,7 @@ jobs:
       - run: /opt/fastnetmon/fastnetmon --configuration_check
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-  centos6_all_libs
+  centos6_all_libs:
     docker:
       - image: centos:centos6.9
     steps:
