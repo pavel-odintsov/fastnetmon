@@ -58,10 +58,15 @@ sub send_tracking_information {
         my $post_data = "distro_type=$distro_type&os_type=$os_type&distro_version=$distro_version&distro_architecture=$distro_architecture&step=$step&we_use_code_from_master=$we_use_code_from_master&user_email=$user_email";
         my $user_agent = 'FastNetMon install tracker v1';
 
-        `wget --post-data="$post_data" --user-agent="$user_agent" -q '$stats_url' -o /dev/null`;
+        `wget --post-data="$post_data" --user-agent="$user_agent" -q '$stats_url' -O /dev/null`;
     } 
 }
 
+
+sub send_ga_event {
+    my $step = shift;
+    `wget "https://www.google-analytics.com/collect?tid=UA-83642378-1&t=event&ec=fastnetmon_community&ea=$step&v=1&cid=0" -q -O /dev/null`;
+}
 
 # die wrapper to send message to tracking server
 sub fast_die {
@@ -71,6 +76,8 @@ sub fast_die {
 
     # Report failed installs
     send_tracking_information("error");
+
+    send_ga_event("installation_failed");
 
     # Send detailed report about issue to Sentry
     unless ($do_not_track_me) {
@@ -401,6 +408,7 @@ sub main {
         print "We will install FastNetMon using official binary packages\n";
         send_tracking_information('started');   
 
+        send_ga_event("installation_started");
     
         if ($os_type eq 'freebsd') {
             fast_die("I'm sorry but we do not support FreeBSD in official builds but we offer official FreeBSD port, please check it instead");
@@ -568,6 +576,7 @@ sub main {
         print "Log file: /var/log/fastnetmon.log\n";
 
         send_tracking_information('finished');
+        send_ga_event("installation_finished");
 
         exit(0);
     }
