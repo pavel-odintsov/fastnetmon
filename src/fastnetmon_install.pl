@@ -559,6 +559,13 @@ sub install_luajit {
 
     my $archive_file_name = "LuaJIT-2.0.4.tar.gz";
 
+    my $luajit_install_path = "/opt/luajit_2.0.4";
+
+    if (-e $luajit_install_path && defined($ENV{'CI'})) {
+	print "Luajit was installed already\n";
+        return 1;
+    }
+
     print "Download Luajit\n";
    
     my $luajit_download_result = download_file(
@@ -577,10 +584,10 @@ sub install_luajit {
     
     if ($os_type eq 'macosx' or $os_type eq 'freebsd') {
         # FreeBSD's sed has slightly different syntax
-        exec_command("sed -i -e 's#export PREFIX= /usr/local#export PREFIX= /opt/luajit_2.0.4#' Makefile");
+        exec_command("sed -i -e 's#export PREFIX= /usr/local#export PREFIX= $luajit_install_path#' Makefile");
     } else {
         # Standard Linux sed
-        exec_command("sed -i 's#export PREFIX= /usr/local#export PREFIX= /opt/luajit_2.0.4#' Makefile"); 
+        exec_command("sed -i 's#export PREFIX= /usr/local#export PREFIX= $luajit_install_path#' Makefile"); 
     }
 
     print "Build and install Luajit\n";
@@ -631,6 +638,11 @@ sub install_lua_lpeg {
 sub install_json_c {
     my $archive_name  = 'json-c-0.13-20171207.tar.gz';
     my $install_path = '/opt/json-c-0.13';
+
+    if (-e $install_path && defined($ENV{'CI'})) {
+	print "json-c was already installed\n";
+	return 1;
+    }
 
     print "Install json library\n";
 
@@ -776,6 +788,11 @@ sub install_log4cpp {
     my $log4cpp_url = 'https://sourceforge.net/projects/log4cpp/files/log4cpp-1.1.x%20%28new%29/log4cpp-1.1/log4cpp-1.1.1.tar.gz/download';
     my $log4cpp_install_path = '/opt/log4cpp1.1.1';
 
+    if (-e $log4cpp_install_path) {
+        print "log4cpp was installed\n";
+        return 1;
+    }
+
     chdir $temp_folder_for_building_project;
 
     print "Download log4cpp sources\n";
@@ -823,6 +840,11 @@ sub install_grpc {
 
     my $grpc_install_path = "/opt/grpc_1_27_3_$grpc_git_commit";
 
+    if (-e $grpc_install_path && defined($ENV{'CI'})) {
+	print "gRPC was already installed\n";
+        return 1;
+    }
+
     chdir $temp_folder_for_building_project;
 
     print "Clone gRPC repository\n";
@@ -851,6 +873,13 @@ sub install_grpc {
 sub install_gobgp {
     chdir $temp_folder_for_building_project;
 
+    my $gobgp_install_path = '/opt/gobgp_2_16_0';
+
+    if (-e $gobgp_install_path && defined($ENV{'CI'})) {
+        print "GoBGP was already installed\n";
+	return 1;
+    }
+
     my $distro_file_name = '';
     my $distro_file_hash = '';
 
@@ -876,7 +905,6 @@ sub install_gobgp {
     exec_command("tar -xf $distro_file_name");
 
     print "Install gobgp daemon files\n";
-    my $gobgp_install_path = '/opt/gobgp_2_16_0';
 
     mkdir $gobgp_install_path;
     exec_command("cp gobgp $gobgp_install_path");
@@ -893,6 +921,11 @@ sub install_protobuf {
     chdir $temp_folder_for_building_project;
 
     my $protobuf_install_path = "/opt/protobuf_3.11.4";
+
+    if (-e $protobuf_install_path && defined($ENV{'CI'})) {
+	print "protobuf was already installed\n";
+        return 1;
+    }
 
     my $distro_file_name = 'protobuf-all-3.11.4.tar.gz';
 
@@ -926,6 +959,11 @@ sub install_mongo_client {
     my $distro_file_name = 'mongo-c-driver-1.1.9.tar.gz';
     my $mongo_install_path = '/opt/mongo_c_driver_1_1_9';
 
+    if (-e $mongo_install_path && defined($ENV{'CI'})) {
+        print "mongo client was already installed\n";
+	return 1;
+    }
+
     chdir $temp_folder_for_building_project;
     print "Download mongo\n";
 
@@ -947,6 +985,11 @@ sub install_mongo_client {
 sub install_hiredis {
     my $disto_file_name = 'v0.13.1.tar.gz'; 
     my $hiredis_install_path = '/opt/libhiredis_0_13';
+
+    if (-e $hiredis_install_path && defined($ENV{'CI'})) {
+	print "hiredis was already installed\n";
+        return 1;
+    }
 
     chdir $temp_folder_for_building_project;
 
@@ -982,7 +1025,15 @@ sub install_ndpi_dependencies {
 
 # We use global variable $ndpi_repository here
 sub install_ndpi {
+    my $ndpi_install_path = "/opt/ndpi";
+
+    if (-e $ndpi_install_path && defined($ENV{'CI'})) {
+	print "nDPI was already installed\n";
+        return 1;
+    }
+
     print "Download nDPI\n";
+
     if (-e "$temp_folder_for_building_project/nDPI") {
         # Get new code from the repository
         chdir "$temp_folder_for_building_project/nDPI";
@@ -997,7 +1048,7 @@ sub install_ndpi {
     exec_command("./autogen.sh");
 
     # We have specified direct path to json-c here because it required for example app compilation
-    exec_command("PKG_CONFIG_PATH=/opt/json-c-0.12/lib/pkgconfig ./configure --prefix=/opt/ndpi");
+    exec_command("PKG_CONFIG_PATH=/opt/json-c-0.13/lib/pkgconfig ./configure --prefix=$ndpi_install_path");
 
    if ($? != 0) {
         print "Configure failed\n";
@@ -1252,6 +1303,13 @@ sub install_pf_ring {
     my $pf_ring_archive_path = "$temp_folder_for_building_project/PF_RING-$pf_ring_version.tar.gz";
     my $pf_ring_sources_path = "$temp_folder_for_building_project/PF_RING-$pf_ring_version";
 
+    my $pf_ring_install_path = "/opt/pf_ring_$pf_ring_version";
+
+    if (-e $pf_ring_install_path && defined($ENV{'CI'})) {
+	print "PF_RING was already installed\n";
+        return 1;
+    }
+
     # Sometimes we do not want to build kernel module (Docker, KVM and other cases)
     my $we_could_install_kernel_modules = 1;
     
@@ -1301,17 +1359,14 @@ sub install_pf_ring {
     print "Build PF_RING lib\n";
     # Because we can't run configure from another folder because it can't find ZC dependency :(
     chdir "$pf_ring_sources_path/userland/lib";
-    exec_command("./configure --prefix=/opt/pf_ring_$pf_ring_version");
+    exec_command("./configure --prefix=$pf_ring_install_path");
     exec_command("make $make_options");
     exec_command("make $make_options install"); 
-
-    # We need do this for backward compatibility with old code (v1.1.2)
-    exec_command("ln -s /opt/pf_ring_$pf_ring_version /opt/pf_ring");
 
     print "Create library symlink\n";
 
     print "Add pf_ring to ld.so.conf\n";
-    put_library_path_to_ld_so("/etc/ld.so.conf.d/pf_ring.conf", "/opt/pf_ring_$pf_ring_version/lib");
+    put_library_path_to_ld_so("/etc/ld.so.conf.d/pf_ring.conf", "$pf_ring_install_path/lib");
 }
 
 sub apt_get {
