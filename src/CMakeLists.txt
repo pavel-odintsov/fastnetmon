@@ -201,8 +201,7 @@ if (ENABLE_SNABBSWITCH_SUPPORT)
     target_link_libraries(snabbswitch_plugin snabb)
 endif()
 
-CHECK_CXX_SOURCE_COMPILES("
-#include <cstdint>
+CHECK_C_SOURCE_COMPILES("
 #include <linux/if_packet.h>
 int main() {
     return TPACKET_V3;
