@@ -227,6 +227,7 @@ sub install_additional_repositories {
 
 	    # Part of devel libraries was moved here https://github.com/pavel-odintsov/fastnetmon/issues/801
 	    print "Enable PowerTools repo\n";
+	    yum('dnf-plugins-core');
 	    system("yum config-manager --set-enabled PowerTools");
         }
     }
