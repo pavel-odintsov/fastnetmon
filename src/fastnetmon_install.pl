@@ -459,6 +459,7 @@ sub main {
 	        install_cmake();
             install_icu();
 	        install_boost_builder();
+            install_boost_dependencies();
 	        install_boost();
 	    }
 
@@ -1567,6 +1568,15 @@ sub install_boost_builder {
     }
 
     1;
+}
+
+# We need it to recompress Boost source code
+sub install_boost_dependencies {
+    if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
+        apt_get("bzip2");
+    } elsif ($distro_type eq 'centos') {
+        yum("bzip2");
+    }
 }
 
 sub install_boost {
