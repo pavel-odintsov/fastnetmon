@@ -230,7 +230,7 @@ sub main {
             if ($distro_version =~ m/^14\.04/) {
                 print "Install dependencies\n";
                 exec_command("apt-get update");
-                exec_command("DEBIAN_FRONTEND=noninteractive apt-get install -y libpcap0.8 libatomic1");
+                exec_command("DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" libpcap0.8 libatomic1");
 
                 print "Download FastNetMon\n";
                 my $curl_res = system("wget -q $download_path/ubuntu/14.04/$ubuntu_package_name -O$ubuntu_package_name");
@@ -257,7 +257,7 @@ sub main {
                 }    
 
                 print "Install FastNetMon\n";
-                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y ./$ubuntu_package_name >> $install_log_path 2>&1");
+                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" ./$ubuntu_package_name >> $install_log_path 2>&1");
 
                 if ($install_res != 0) {
                     fast_die("Cannot install FastNetMon package with error code $install_res");
@@ -274,7 +274,7 @@ sub main {
                 }
 
                 print "Install FastNetMon\n";
-                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y ./$ubuntu_package_name >> $install_log_path 2>&1");
+                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" ./$ubuntu_package_name >> $install_log_path 2>&1");
 
                 if ($install_res != 0) {
                     fast_die("Cannot install FastNetMon package with error code $install_res");
@@ -292,7 +292,7 @@ sub main {
                 }    
 
                 print "Install FastNetMon\n";
-                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y ./$ubuntu_package_name >> $install_log_path 2>&1");
+                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" ./$ubuntu_package_name >> $install_log_path 2>&1");
 
                 if ($install_res != 0) {
                     fast_die("Cannot install FastNetMon package with error code $install_res");
@@ -307,7 +307,7 @@ sub main {
          if ($distro_version =~ m/^8\.?/) {
                 print "Install dependencies\n";
                 exec_command("apt-get update");
-                exec_command("DEBIAN_FRONTEND=noninteractive apt-get install -y libpcap0.8 libatomic1");
+                exec_command("DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" libpcap0.8 libatomic1");
 
                 print "Download FastNetMon\n";
                 my $curl_res = system("wget -q $download_path/debian/8/$debian_package_name -O$debian_package_name");
@@ -334,7 +334,7 @@ sub main {
                 }
 
                 print "Install FastNetMon\n";
-                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y ./$debian_package_name >> $install_log_path 2>&1");
+                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" ./$debian_package_name >> $install_log_path 2>&1");
 
                 if ($install_res != 0) { 
                     fast_die("Cannot install FastNetMon package with error code $install_res");
@@ -351,7 +351,7 @@ sub main {
                 }
 
                 print "Install FastNetMon\n";
-                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y ./$debian_package_name >> $install_log_path 2>&1");
+                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" ./$debian_package_name >> $install_log_path 2>&1");
 
                 if ($install_res != 0) { 
                     fast_die("Cannot install FastNetMon package with error code $install_res");
