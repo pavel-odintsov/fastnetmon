@@ -613,7 +613,7 @@ sub exec_command {
     open my $fl, ">>", $install_log_path;
     print {$fl} "We are calling command: $command\n\n";
  
-    my $output = `$command 2>&1 >> $install_log_path`;
+    my $output = `$command >> $install_log_path 2>&1`;
   
     print {$fl} "Command finished with code $?\n\n";
 
@@ -1936,10 +1936,10 @@ sub install_fastnetmon {
         system("$ld_library_path_for_make make $make_options");
     } else {
         print "Run cmake to generate make file\n";
-        system("$configure_options $ld_library_path_for_make $cmake_path .. $cmake_params 2>&1 | tee -a $install_log_path");
+        system("$configure_options $ld_library_path_for_make $cmake_path .. $cmake_params >> $install_log_path 2>&1");
 
         print "Run make to build FastNetMon\n";
-        system("$ld_library_path_for_make make $make_options 2>&1 | tee -a $install_log_path");
+        system("$ld_library_path_for_make make $make_options >> $install_log_path 2>&1");
     }
 
     my $fastnetmon_dir = "$library_install_folder/fastnetmon";
