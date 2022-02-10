@@ -1126,7 +1126,8 @@ sub install_mongo_client {
     unless ($mongoc_install_res) {
         if ( 
 		($distro_type eq 'ubuntu' && $distro_version eq '20.04') or
-		($distro_type eq 'debian' && $distro_version =~ m/^9\.?/)
+		($distro_type eq 'debian' && $distro_version =~ m/^9\.?/) or 
+		($distro_type eq 'centos' && $distro_version == 8)
 	) {
             warn "Cannot compile Mongoc due to very new OpenSSL, skip compilation";
         } else {
