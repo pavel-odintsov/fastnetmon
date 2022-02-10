@@ -57,13 +57,12 @@ Features
 - Trigger block/notify script if an IP exceeds defined thresholds for packets/bytes/flows per second
 - [Complete support](https://fastnetmon.com/docs/detected_attack_types/) for most popular attack types
 - Thresholds can be configured per-subnet basis with the hostgroups feature
-- [Announce blocked IPs](https://fastnetmon.com/docs/exabgp_integration/) via BGP to routers with [ExaBGP](https://github.com/Exa-Networks/exabgp) or  [GoBGP](https://fastnetmon.com/docs/gobgp-integration/)
+- Announce blocked IPs via BGP to routers with [ExaBGP](https://fastnetmon.com/docs/exabgp_integration/) or  [GoBGP](https://fastnetmon.com/docs/gobgp-integration/)
 - Full integration with [Graphite](https://fastnetmon.com/docs/graphite_integration/) and [InfluxDB](https://fastnetmon.com/docs/influxdb_integration/)
 - [API](https://fastnetmon.com/docs/fastnetmon-community-api/)
 - [Redis](https://fastnetmon.com/docs/redis/) integration
 - [MongoDB](https://fastnetmon.com/docs/mongodb/) integration
 - Netmap support (wire speed processing; only Intel hardware NICs or any hypervisor VM type)
-- Filter NetFlow v5 flows or sFlow packets with LUA scripts (useful for excluding particular ports)
 - Supports L2TP decapsulation, VLAN untagging in mirror mode 
 - Complete plug-in support
 - Capture attack fingerprints in PCAP format
@@ -88,9 +87,6 @@ Screenshots
 Main program:
 
 ![Main screen image](docs/images/fastnetmon_screen.png)
-
-Example CPU load on Intel i7-2600 with Intel X540/82599 NIC at 400Kpps load:
-![Cpu consumption](docs/images/fastnetmon_stats.png)
 
 Example deployment scheme:
 ![Network diagramm](docs/images/deploy.png)
