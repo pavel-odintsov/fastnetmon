@@ -229,52 +229,52 @@ sub main {
 
             if ($distro_version =~ m/^14\.04/) {
                 print "Install dependencies\n";
-                exec_command("apt-get update");
-                exec_command("DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" libpcap0.8 libatomic1");
+                exec_command("LANG=C apt-get update");
+                exec_command("LANG=C DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" libpcap0.8 libatomic1");
 
                 print "Download FastNetMon\n";
-                my $curl_res = system("wget -q $download_path/ubuntu/14.04/$ubuntu_package_name -O$ubuntu_package_name");
+                my $curl_res = system("LANG=C wget -q $download_path/ubuntu/14.04/$ubuntu_package_name -O$ubuntu_package_name");
 
                 if ($curl_res != 0) {
                     fast_die("Cannot download FastNetMon package");
                 }
 
                 print "Install FastNetMon\n";
-                my $res = system("dpkg -i $ubuntu_package_name >> $install_log_path 2>&1");
+                my $res = system("LANG=C dpkg -i $ubuntu_package_name >> $install_log_path 2>&1");
 
                 if ($res != 0) {
                     fast_die("Cannot install FastNetMon package with error code $res");
                 }
             } elsif ($distro_version =~ m/^16\.04/) {
                 print "Refresh repositories\n";
-                exec_command("apt-get update");
+                exec_command("LANG=C apt-get update");
 
                 print "Download FastNetMon\n";
-                my $curl_res = system("wget -q $download_path/ubuntu/16.04/$ubuntu_package_name -O$ubuntu_package_name");
+                my $curl_res = system("LANG=C wget -q $download_path/ubuntu/16.04/$ubuntu_package_name -O$ubuntu_package_name");
 
                 if ($curl_res != 0) { 
                     fast_die("Cannot download FastNetMon package");
                 }    
 
                 print "Install FastNetMon\n";
-                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" ./$ubuntu_package_name >> $install_log_path 2>&1");
+                my $install_res = system("LANG=C DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" ./$ubuntu_package_name >> $install_log_path 2>&1");
 
                 if ($install_res != 0) {
                     fast_die("Cannot install FastNetMon package with error code $install_res");
                 }
             } elsif ($distro_version =~ m/^18\.04/) {
                 print "Refresh repositories\n";
-                exec_command("apt-get update");
+                exec_command("LANG=C apt-get update");
 
                 print "Download FastNetMon\n";
-                my $curl_res = system("wget -q $download_path/ubuntu/18.04/$ubuntu_package_name -O$ubuntu_package_name");
+                my $curl_res = system("LANG=C wget -q $download_path/ubuntu/18.04/$ubuntu_package_name -O$ubuntu_package_name");
 
                 if ($curl_res != 0) {
                     fast_die("Cannot download FastNetMon package");
                 }
 
                 print "Install FastNetMon\n";
-                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" ./$ubuntu_package_name >> $install_log_path 2>&1");
+                my $install_res = system("LANG=C DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" ./$ubuntu_package_name >> $install_log_path 2>&1");
 
                 if ($install_res != 0) {
                     fast_die("Cannot install FastNetMon package with error code $install_res");
@@ -282,17 +282,17 @@ sub main {
 
             } elsif ($distro_version =~ m/^20\.04/) {
                 print "Refresh repositories\n";
-                exec_command("apt-get update");
+                exec_command("LANG=C apt-get update");
 
                 print "Download FastNetMon\n";
-                my $curl_res = system("wget -q $download_path/ubuntu/20.04/$ubuntu_package_name -O$ubuntu_package_name");
+                my $curl_res = system("LANG=C wget -q $download_path/ubuntu/20.04/$ubuntu_package_name -O$ubuntu_package_name");
 
                 if ($curl_res != 0) { 
                     fast_die("Cannot download FastNetMon package");
                 }    
 
                 print "Install FastNetMon\n";
-                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" ./$ubuntu_package_name >> $install_log_path 2>&1");
+                my $install_res = system("LANG=C DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" ./$ubuntu_package_name >> $install_log_path 2>&1");
 
                 if ($install_res != 0) {
                     fast_die("Cannot install FastNetMon package with error code $install_res");
@@ -306,52 +306,52 @@ sub main {
 
          if ($distro_version =~ m/^8\.?/) {
                 print "Install dependencies\n";
-                exec_command("apt-get update");
-                exec_command("DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" libpcap0.8 libatomic1");
+                exec_command("LANG=C apt-get update");
+                exec_command("LANG=C DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" libpcap0.8 libatomic1");
 
                 print "Download FastNetMon\n";
-                my $curl_res = system("wget -q $download_path/debian/8/$debian_package_name -O$debian_package_name");
+                my $curl_res = system("LANG=C wget -q $download_path/debian/8/$debian_package_name -O$debian_package_name");
 
                 if ($curl_res != 0) { 
                     fast_die("Cannot download FastNetMon package");
                 }
 
                 print "Install FastNetMon\n";
-                my $res = system("dpkg -i $debian_package_name >> $install_log_path 2>&1");
+                my $res = system("LANG=C dpkg -i $debian_package_name >> $install_log_path 2>&1");
 
                 if ($res != 0) { 
                     fast_die("Cannot install FastNetMon package with error code $res");
                 }
             } elsif ($distro_version =~ m/^9\.?/) {
                 print "Refresh repositories\n";
-                exec_command("apt-get update");
+                exec_command("LANG=C apt-get update");
 
                 print "Download FastNetMon\n";
-                my $curl_res = system("wget -q $download_path/debian/9/$debian_package_name -O$debian_package_name");
+                my $curl_res = system("LANG=C wget -q $download_path/debian/9/$debian_package_name -O$debian_package_name");
 
                 if ($curl_res != 0) { 
                     fast_die("Cannot download FastNetMon package");
                 }
 
                 print "Install FastNetMon\n";
-                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" ./$debian_package_name >> $install_log_path 2>&1");
+                my $install_res = system("LANG=C DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" ./$debian_package_name >> $install_log_path 2>&1");
 
                 if ($install_res != 0) { 
                     fast_die("Cannot install FastNetMon package with error code $install_res");
                 }
             } elsif ($distro_version =~ m/^10\.?/) {
                 print "Refresh repositories\n";
-                exec_command("apt-get update");
+                exec_command("LANG=C apt-get update");
 
                 print "Download FastNetMon\n";
-                my $curl_res = system("wget -q $download_path/debian/10/$debian_package_name -O$debian_package_name");
+                my $curl_res = system("LANG=C wget -q $download_path/debian/10/$debian_package_name -O$debian_package_name");
 
                 if ($curl_res != 0) { 
                     fast_die("Cannot download FastNetMon package");
                 }
 
                 print "Install FastNetMon\n";
-                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" ./$debian_package_name >> $install_log_path 2>&1");
+                my $install_res = system("LANG=C DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" ./$debian_package_name >> $install_log_path 2>&1");
 
                 if ($install_res != 0) { 
                     fast_die("Cannot install FastNetMon package with error code $install_res");
@@ -363,21 +363,21 @@ sub main {
         } elsif ($distro_type eq 'centos') {
             if (int($distro_version) == 6) {
                 print "Download and install FastNetMon\n";
-                my $yum_install_res = system("yum install -y $download_path/centos/6/fastnetmon-1.1.6-1.el6.x86_64.rpm >> $install_log_path 2>&1");
+                my $yum_install_res = system("LANG=C yum install -y $download_path/centos/6/fastnetmon-1.1.6-1.el6.x86_64.rpm >> $install_log_path 2>&1");
 
                 if ($yum_install_res != 0) {
                     fast_die("Cannot install FastNetmon via yum with error code: $yum_install_res");
                 }
             } elsif (int($distro_version) == 7) {
                 print "Download and install FastNetMon\n";
-                my $yum_install_res = system("yum install -y $download_path/centos/7/fastnetmon-1.1.6-1.el7.x86_64.rpm >> $install_log_path 2>&1");
+                my $yum_install_res = system("LANG=C yum install -y $download_path/centos/7/fastnetmon-1.1.6-1.el7.x86_64.rpm >> $install_log_path 2>&1");
 
                 if ($yum_install_res != 0) {
                     fast_die("Cannot install FastNetmon via yum with error code: $yum_install_res");
                 }    
             } elsif (int($distro_version) == 8) {
                 print "Download and install FastNetMon\n";
-                my $yum_install_res = system("yum install -y $download_path/centos/8/fastnetmon-1.1.6-1.el8.x86_64.rpm >> $install_log_path 2>&1");
+                my $yum_install_res = system("LANG=C yum install -y $download_path/centos/8/fastnetmon-1.1.6-1.el8.x86_64.rpm >> $install_log_path 2>&1");
 
                 if ($yum_install_res != 0) {
                     fast_die("Cannot install FastNetmon via yum with error code: $yum_install_res");
