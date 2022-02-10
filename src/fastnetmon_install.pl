@@ -257,7 +257,7 @@ sub main {
                 }    
 
                 print "Install FastNetMon\n";
-                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt install -y ./$ubuntu_package_name 2>&1 >> $install_log_path");
+                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y ./$ubuntu_package_name 2>&1 >> $install_log_path");
 
                 if ($install_res != 0) {
                     fast_die("Cannot install FastNetMon package with error code $install_res");
@@ -274,7 +274,7 @@ sub main {
                 }
 
                 print "Install FastNetMon\n";
-                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt install -y ./$ubuntu_package_name 2>&1 >> $install_log_path");
+                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y ./$ubuntu_package_name 2>&1 >> $install_log_path");
 
                 if ($install_res != 0) {
                     fast_die("Cannot install FastNetMon package with error code $install_res");
@@ -292,7 +292,7 @@ sub main {
                 }    
 
                 print "Install FastNetMon\n";
-                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt install -y ./$ubuntu_package_name 2>&1 >> $install_log_path");
+                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y ./$ubuntu_package_name 2>&1 >> $install_log_path");
 
                 if ($install_res != 0) {
                     fast_die("Cannot install FastNetMon package with error code $install_res");
@@ -334,7 +334,7 @@ sub main {
                 }
 
                 print "Install FastNetMon\n";
-                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt install -y ./$debian_package_name 2>&1 >> $install_log_path");
+                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y ./$debian_package_name 2>&1 >> $install_log_path");
 
                 if ($install_res != 0) { 
                     fast_die("Cannot install FastNetMon package with error code $install_res");
@@ -351,7 +351,7 @@ sub main {
                 }
 
                 print "Install FastNetMon\n";
-                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt install -y ./$debian_package_name 2>&1 >> $install_log_path");
+                my $install_res = system("DEBIAN_FRONTEND=noninteractive apt-get install -y ./$debian_package_name 2>&1 >> $install_log_path");
 
                 if ($install_res != 0) { 
                     fast_die("Cannot install FastNetMon package with error code $install_res");
