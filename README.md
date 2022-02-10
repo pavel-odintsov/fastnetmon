@@ -72,7 +72,7 @@ Features
 Running Fastnetmon
 ------------------
 ### Supported platforms
-- Linux (Debian, CentOS, Ubuntu), (install instructions)(https://fastnetmon.com/install/)
+- Linux (Debian, CentOS, Ubuntu), [install instructions](https://fastnetmon.com/install/)
 - FreeBSD: [official port](https://www.freshports.org/net-mgmt/fastnetmon/).
 
 ### Hardware requirements
