@@ -23,6 +23,9 @@ include(CheckLibraryExists)
 set (FASTNETMON_VERSION_MAJOR 1)
 set (FASTNETMON_VERSION_MINOR 1)
 
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} --std=c++11")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} --std=c++11")
+
 set(CMAKE_INSTALL_SYSTEMD_SERVICEDIR "/lib/systemd/system"
   CACHE PATH "Location for systemd service files")
 
