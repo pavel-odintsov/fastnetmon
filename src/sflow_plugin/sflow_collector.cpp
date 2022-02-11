@@ -58,7 +58,7 @@ bool readFlowSample(SFSample* sample, int expanded);
 void readFlowSample_header(SFSample* sample);
 void decode_ipv4_protocol(SFSample* sample);
 void decode_ipv6_protocol(SFSample* sample);
-void print_simple_packet(struct simple_packet& packet);
+void print_simple_packet(simple_packet_t& packet);
 
 process_packet_pointer sflow_process_func_ptr = NULL;
 
@@ -688,7 +688,7 @@ void decodeIPLayer4(SFSample* sample, uint8_t* ptr) {
         return;
     }
 
-    simple_packet current_packet;
+    simple_packet_t current_packet;
 
     if (sample->gotIPV6) {
         current_packet.ip_protocol_version = 6;

@@ -74,7 +74,7 @@ struct firehose_rdesc {
 } __attribute__((packed));
 
 void firehose_packet(const char* pciaddr, char* data, int length) {
-    simple_packet packet;
+    simple_packet_t packet;
 
     if (!parse_raw_packet_to_simple_packet((u_char*)data, length, packet, false)) {
         total_unparsed_packets++;

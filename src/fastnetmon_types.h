@@ -36,7 +36,7 @@ typedef std::vector<subnet_t> subnet_vector_t;
 typedef std::map<subnet_t, std::string> subnet_to_host_group_map_t;
 typedef std::map<std::string, subnet_vector_t> host_group_map_t;
 
-typedef void (*process_packet_pointer)(simple_packet&);
+typedef void (*process_packet_pointer)(simple_packet_t&);
 
 // Enum with available sort by field
 enum sort_type { PACKETS, BYTES, FLOWS };
