@@ -304,7 +304,7 @@ sub main {
         } elsif ($distro_type eq 'debian') {
             my $debian_package_name = "fastnetmon_1.1.6_amd64.deb";
 
-         if ($distro_version =~ m/^8\.?/) {
+            if ($distro_version =~ m/^8\.?/) {
                 print "Install dependencies\n";
                 exec_command("LANG=C apt-get update");
                 exec_command("LANG=C DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confold\" libpcap0.8 libatomic1");
