@@ -28,6 +28,8 @@
 #include <luajit-2.0/lua.hpp>
 #endif
 
+#include "fast_endianless.hpp"
+
 #define TCP_FIN_FLAG_SHIFT 1
 #define TCP_SYN_FLAG_SHIFT 2
 #define TCP_RST_FLAG_SHIFT 3
@@ -80,15 +82,6 @@ unsigned int get_cidr_mask_from_network_as_string(std::string network_cidr_forma
 void copy_networks_from_string_form_to_binary(std::vector<std::string> networks_list_as_string,
                                               std::vector<subnet_t>& our_networks);
 int convert_string_to_integer(std::string line);
-
-// Byte order type safe converters
-uint16_t fast_ntoh(uint16_t value);
-uint32_t fast_ntoh(uint32_t value);
-uint64_t fast_ntoh(uint64_t value);
-
-uint16_t fast_hton(uint16_t value);
-uint32_t fast_hton(uint32_t value);
-uint64_t fast_hton(uint64_t value);
 
 bool print_pid_to_file(pid_t pid, std::string pid_path);
 bool read_pid_from_file(pid_t& pid, std::string pid_path);
