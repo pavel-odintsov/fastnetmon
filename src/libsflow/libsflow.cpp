@@ -126,6 +126,17 @@ bool get_records(vector_tuple_t& vector_tuple,
         int32_t element_type   = get_int_value_by_32bit_shift(flow_record_start, 0);
         int32_t element_length = get_int_value_by_32bit_shift(flow_record_start, 1);
 
+        // sFlow v5 standard does not constrain size of each sample but 
+        // we need to apply some reasonable limits on this value to avoid possible integer overflows in boundary checks code below
+        // and I've decided to limit sample size by maximum UDP packet size
+        if (element_length > max_udp_packet_size) {
+            logger << log4cpp::Priority::ERROR << sflow_parser_log_prefix << "Element length " << element_length
+                << " exceeds maximum allowed size: " << max_udp_packet_size;
+
+            return false;
+        }
+
+
         uint8_t* flow_record_data_ptr = flow_record_start + sizeof(element_type) + sizeof(element_length);
         uint8_t* flow_record_end      = flow_record_data_ptr + element_length;
 
@@ -177,6 +188,16 @@ bool get_all_samples(vector_sample_tuple_t& vector_sample,
 
         int32_t enterprise_with_format = get_int_value_by_32bit_shift(sample_start, 0);
         int32_t sample_length          = get_int_value_by_32bit_shift(sample_start, 1);
+
+        // sFlow v5 standard does not constrain size of each sample but 
+        // we need to apply some reasonable limits on this value to avoid possible integer overflows in boundary checks code below
+        // and I've decided to limit sample size by maximum UDP packet size
+        if (sample_length > max_udp_packet_size) {
+            logger << log4cpp::Priority::ERROR << sflow_parser_log_prefix << "Sample length " << sample_length
+                << " exceeds maximum allowed size: " << max_udp_packet_size;
+
+            return false;
+        }
 
         // Get first 20 bits as enterprise
         int32_t enterprise = enterprise_with_format >> 12;
@@ -237,6 +258,16 @@ bool get_all_counter_records(counter_record_sample_vector_t& counter_record_samp
 
         int32_t enterprise_and_format = get_int_value_by_32bit_shift(record_start, 0);
         uint32_t record_length        = get_int_value_by_32bit_shift(record_start, 1);
+
+        // sFlow v5 standard does not constrain size of each sample but 
+        // we need to apply some reasonable limits on this value to avoid possible integer overflows in boundary checks code below
+        // and I've decided to limit sample size by maximum UDP packet size
+        if (record_length > max_udp_packet_size) {
+            logger << log4cpp::Priority::ERROR << sflow_parser_log_prefix << "Record length " << record_length
+                << " exceeds maximum allowed size: " << max_udp_packet_size;
+
+            return false;
+        }
 
         uint8_t* current_record_end = payload_ptr + record_length;
 
