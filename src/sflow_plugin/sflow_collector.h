@@ -1,12 +1,11 @@
-#ifndef SFLOW_PLUGIN_H
-#define SFLOW_PLUGIN_H
+#pragma once
 
 #include "../fastnetmon_types.h"
-#include "sflow_data.h"
+#include <stdint.h>
 
 void start_sflow_collection(process_packet_pointer func_ptr);
+void init_sflow_module();
+void deinit_sflow_module();
 
-// For tests
-void read_sflow_datagram(SFSample* sample);
-
-#endif
+// New code for v5 only
+void parse_sflow_v5_packet(uint8_t* payload_ptr, unsigned int payload_length, uint32_t client_ipv4_address);
