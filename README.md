@@ -76,7 +76,7 @@ Running FastNetMon
 - At least 1 GB of RAM
 
 ### Installation
-- Linux (Debian, CentOS, Ubuntu), [install instructions](https://fastnetmon.com/install/)
+- Linux (Debian, CentOS, RHEL, Ubuntu), [install instructions](https://fastnetmon.com/install/)
 - [VyOS](https://fastnetmon.com/fastnetmon-community-on-vyos-rolling-1-3/)
 - FreeBSD: [official port](https://www.freshports.org/net-mgmt/fastnetmon/).
 
