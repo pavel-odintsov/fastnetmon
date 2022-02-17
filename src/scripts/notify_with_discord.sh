@@ -24,10 +24,6 @@
 # FastNetMon will crash in this case (it expect read of data from script side).
 #
 
-if [ "$4" = "ban" ] || [ "$4" = "attack_details" ]; then
-    fastnetmon_output=$(</dev/stdin)
-fi
-
 fastnetmon_ip="$1"
 fastnetmon_direction="$2"
 fastnetmon_pps="$3"
@@ -37,7 +33,6 @@ target_hostname=`dig -x $fastnetmon_ip +short`
 webhook_url=""
 message_username="FastNetMon"
 message_title="FastNetMon Alert - $fastnetmon_direction Attack"
-message_content=""
 
 if [ -z "$fastnetmon_ip" ] || [ -z "$webhook_url" ]; then
     echo "Webhook / IP not set" 
@@ -54,9 +49,5 @@ else
     color="1957075"
 fi
 
-if [ ! -z "$fastnetmon_output" ]; then
-    message_content="\```$fastnetmon_output\```"
-fi
-
-discord_payload="{\"username\": \"$message_username\", \"content\": \"$message_content\", \"embeds\": [ { \"title\": \"$message_title\", \"color\": \"$color\", \"fields\": [ {\"name\": \"IP\", \"value\": \"$fastnetmon_ip\n$target_hostname\", \"inline\": true}, {\"name\": \"PPS\", \"value\": \"$fastnetmon_pps\", \"inline\": true}, {\"name\": \"Action Taken\", \"value\": \"$fastnetmon_action\"} ] } ] }"
+discord_payload="{\"username\": \"$message_username\", \"embeds\": [ { \"title\": \"$message_title\", \"color\": \"$color\", \"fields\": [ {\"name\": \"IP\", \"value\": \"$fastnetmon_ip\n$target_hostname\", \"inline\": true}, {\"name\": \"PPS\", \"value\": \"$fastnetmon_pps\", \"inline\": true}, {\"name\": \"Action Taken\", \"value\": \"$fastnetmon_action\"} ] } ] }"
 curl --connect-timeout 30 --max-time 60 -s -S -X POST -H 'Content-type: application/json' --data "$discord_payload" "$webhook_url"
