@@ -39,6 +39,11 @@ message_username="FastNetMon"
 message_title="FastNetMon Alert - $fastnetmon_direction Attack"
 message_content=""
 
+if [ -z "$fastnetmon_ip" ] || [ -z "$webhook_url" ]; then
+    echo "Webhook / IP not set" 
+    exit 1
+fi
+
 if [ "$fastnetmon_action" = "ban" ]; then
     color="14425373"
 elif [ "$fastnetmon_action" = "attack_details" ]; then
