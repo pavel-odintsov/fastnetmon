@@ -2,31 +2,16 @@
 
 # Instructions:
 #
-# Copy this script to /usr/local/bin/
-# Edit /etc/fastnetmon.conf and set:
-# notify_script_path = /usr/local/bin/notify_with_discord.sh
-#
-# Add your Discord incoming webhook to discord_url.
-# discord_url="https://discord.com/api/webhooks/XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+# - Copy this script to /usr/local/bin/
+# - Edit /etc/fastnetmon.conf and set:
+#   notify_script_path = /usr/local/bin/notify_with_discord.sh
+#   notify_script_pass_details = no
+# - Add your Discord channel webhook to discord_url.
 #
 # Notes:
-# hostname lookup requires the dig command.
-# Debian: apt install dnsutils
-# Redhat: dnf install bind-utils
-
-#
-# For ban and attack_details actions we will receive attack details to stdin
-# if option notify_script_pass_details enabled in FastNetMon's configuration file
-#
-# If you do not need this details, please set option notify_script_pass_details to "no".
-#
-# Please do not remove the following command if you have notify_script_pass_details enabled, because
-# FastNetMon will crash in this case (it expect read of data from script side).
-#
-
-if [ "$4" = "ban" ] || [ "$4" = "attack_details" ]; then
-    fastnetmon_output=$(</dev/stdin)
-fi
+# Hostname lookup requires the dig command.
+#   Debian: apt install dnsutils
+#   Redhat: dnf install bind-utils
 
 fastnetmon_ip="$1"
 fastnetmon_direction="$2"
@@ -39,7 +24,7 @@ message_username="FastNetMon"
 message_title="FastNetMon Alert - $fastnetmon_direction Attack"
 
 if [ -z "$fastnetmon_ip" ] || [ -z "$webhook_url" ]; then
-    echo "Webhook / IP not set" 
+    echo "Webhook URL / IP not set" 
     exit 1
 fi
 
