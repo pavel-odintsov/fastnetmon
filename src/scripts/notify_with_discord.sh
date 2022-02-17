@@ -24,6 +24,10 @@
 # FastNetMon will crash in this case (it expect read of data from script side).
 #
 
+if [ "$4" = "ban" ] || [ "$4" = "attack_details" ]; then
+    fastnetmon_output=$(</dev/stdin)
+fi
+
 fastnetmon_ip="$1"
 fastnetmon_direction="$2"
 fastnetmon_pps="$3"
