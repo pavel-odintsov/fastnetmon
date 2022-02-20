@@ -1293,3 +1293,27 @@ bool get_interface_number_by_device_name(int socket_fd, std::string interface_na
 #endif /* SIOCGIFINDEX */
     return true;
 }
+
+
+bool set_boost_process_name(boost::thread* thread, std::string process_name) {
+    extern log4cpp::Category& logger;
+
+    if (process_name.size() > 15) {
+        logger << log4cpp::Priority::ERROR << "Process name should not exceed 15 symbols " << process_name;
+        return false;
+    }
+
+    // The buffer specified by name should be at least 16 characters in length.
+    char new_process_name[16];
+    strcpy(new_process_name, process_name.c_str());
+
+    int result = pthread_setname_np(thread->native_handle(), new_process_name);
+
+    if (result != 0) {
+        logger << log4cpp::Priority::ERROR << "pthread_setname_np failed with code: " << result;
+        logger << log4cpp::Priority::ERROR << "Failed to set process name for " << process_name;
+    }
+
+    return true;
+}
+

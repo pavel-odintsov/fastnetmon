@@ -259,9 +259,12 @@ target_link_libraries(sflow_plugin simple_packet_parser_ng)
 # Link sFlow plugin with libsflow
 target_link_libraries(sflow_plugin libsflow)  
 
+# netflow library
+add_library(netflow STATIC netflow_plugin/netflow.cpp)
+
 # netflow plugin
 add_library(netflow_plugin STATIC netflow_plugin/netflow_collector.cpp)
-target_link_libraries(netflow_plugin ipfix_rfc)
+target_link_libraries(netflow_plugin ipfix_rfc netflow)
 
 option(ENABLE_DPI_SUPPORT "Enable Deep Packet Inspection support" ON)
 if (ENABLE_DPI_SUPPORT) 

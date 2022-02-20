@@ -1,12 +1,8 @@
-#ifndef NETFLOW_PLUGIN_H
-#define NETFLOW_PLUGIN_H
-
+#pragma once
 /* netflow plugin header */
 
 #include "../fastnetmon_types.h"
 
 // For testing
-void process_netflow_packet(u_int8_t* packet, u_int len, std::string client_addres_in_string_format);
+bool process_netflow_packet(uint8_t* packet, uint32_t len, std::string& client_addres_in_string_format, uint32_t client_ipv4_address);
 void start_netflow_collection(process_packet_pointer func_ptr);
-
-#endif
