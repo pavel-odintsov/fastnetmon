@@ -78,10 +78,12 @@ sub fast_die {
 }
 
 my $show_help = '';
+my $install_ci_packages = '';
 
 # Get options from command line
 GetOptions(
     'do-not-track-me' => \$do_not_track_me,
+    'install-ci-packages' => \$install_ci_packages,
     'help' => \$show_help,
 );
 
@@ -89,7 +91,7 @@ GetOptions(
 $ENV{'do-not-track-me'} = $do_not_track_me;
 
 if ($show_help) {
-    print "We have following options:\n--do-not-track-me\n--help\n If you're looking for more options, please use fastnetmon_build.pl instead\n";
+    print "Available options:\n\n--do-not-track-me\tDisables anonymous installation tracking\n--install-ci-packages\tInstalls packages directly from CI\n--help\n\n If you're looking for more options, please use fastnetmon_build.pl instead\n";
     exit (0);
 }
 
@@ -214,7 +216,14 @@ sub main {
 
     my $download_path = "https://community-downloads.fastnetmon.com/releases/1.1.6";
 
-    print "We will install FastNetMon using official binary packages\n";
+    if ($install_ci_packages) {
+        $download_path = "https://storage.googleapis.com/fastnetmon_community_packages";
+
+        print "We will install FastNetMon using binary packages built from master branch via CI\n";
+    } else {
+        print "We will install FastNetMon using official binary packages for stable release\n";
+    }
+
     send_tracking_information('started');   
 
     send_ga_event("installation_started");
