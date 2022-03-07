@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y \
   linux-headers-$(uname -r) \
   make \
   mongodb-dev \
-  python-pip \
+  python3-pip \
   socat \
   vim
 
