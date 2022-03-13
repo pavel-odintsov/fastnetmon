@@ -1,41 +1,6 @@
 version: 2.1
-orbs:
-  aws-s3: circleci/aws-s3@1.0.15
 jobs:
   ubuntu2004:
-    docker:
-      - image: ubuntu:focal-20200423
-    steps:
-      - checkout
-      - run: apt-get update; true
-      - run: apt-get install -y perl wget
-      - run:
-          name: install_required_packages
-          no_output_timeout: 20m
-          command: perl src/fastnetmon_build.pl --install_dependency_packages_only
-      - restore_cache:
-          keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
-      - run:
-          name: install_dependencies
-          no_output_timeout: 40m
-          command: perl src/fastnetmon_build.pl --use-git-master
-      - run:
-          name: collect_debug
-          command: cat /tmp/fastnetmon_install.log
-          when: on_fail
-      - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
-          paths:
-            - /opt
-      - run: cd src; mkdir -p build; cd build; cmake ..; make
-      - store_artifacts:
-          path: /tmp/fastnetmon_install.log 
-      - run: ldd /opt/fastnetmon/fastnetmon
-      - run: ldd /opt/fastnetmon/fastnetmon_client
-      - run: ldd /opt/fastnetmon/fastnetmon_api_client
-      - run: /opt/fastnetmon/fastnetmon --configuration_check
-  ubuntu2004_all_libs:
     docker:
       - image: ubuntu:focal-20200423
     steps:
@@ -49,7 +14,7 @@ jobs:
           command: perl src/fastnetmon_build.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_10_06_2020"
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m
@@ -59,7 +24,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_10_06_2020"
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
           paths:
             - /opt
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
@@ -82,39 +47,6 @@ jobs:
     steps:
       - checkout
       - run: apt-get update; true
-      - run: apt-get install -y perl wget
-      - run:
-          name: install_required_packages
-          no_output_timeout: 20m
-          command: perl src/fastnetmon_build.pl --install_dependency_packages_only
-      - restore_cache:
-          keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
-      - run:
-          name: install_dependencies
-          no_output_timeout: 40m
-          command: perl src/fastnetmon_build.pl --use-git-master
-      - run:
-          name: collect_debug
-          command: cat /tmp/fastnetmon_install.log
-          when: on_fail
-      - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
-          paths:
-            - /opt
-      - run: cd src; mkdir -p build; cd build; cmake ..; make
-      - run: ldd /opt/fastnetmon/fastnetmon
-      - run: ldd /opt/fastnetmon/fastnetmon_client
-      - run: ldd /opt/fastnetmon/fastnetmon_api_client
-      - run: /opt/fastnetmon/fastnetmon --configuration_check
-      - store_artifacts:
-          path: /tmp/fastnetmon_install.log
-  ubuntu1804_all_libs:
-    docker:
-      - image: ubuntu:bionic-20200403
-    steps:
-      - checkout
-      - run: apt-get update; true
       - run: apt-get install -y perl wget python3-pip
       - run: pip3 install s3cmd
       - run:
@@ -123,7 +55,7 @@ jobs:
           command: perl src/fastnetmon_build.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_10_06_2020"
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m
@@ -133,7 +65,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_10_06_2020"
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
           paths:
             - /opt
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
@@ -156,39 +88,6 @@ jobs:
     steps:
       - checkout
       - run: apt-get update; true
-      - run: apt-get install -y perl wget
-      - run:
-          name: install_required_packages
-          no_output_timeout: 20m
-          command: perl src/fastnetmon_build.pl --install_dependency_packages_only
-      - restore_cache:
-          keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
-      - run:
-          name: install_dependencies
-          no_output_timeout: 40m
-          command: perl src/fastnetmon_build.pl --use-git-master
-      - run:
-          name: collect_debug
-          command: cat /tmp/fastnetmon_install.log
-          when: on_fail
-      - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
-          paths:
-            - /opt
-      - run: cd src; mkdir -p build; cd build; cmake ..; make
-      - run: ldd /opt/fastnetmon/fastnetmon
-      - run: ldd /opt/fastnetmon/fastnetmon_client
-      - run: ldd /opt/fastnetmon/fastnetmon_api_client
-      - run: /opt/fastnetmon/fastnetmon --configuration_check
-      - store_artifacts:
-          path: /tmp/fastnetmon_install.log
-  ubuntu1604_all_libs:
-    docker:
-      - image: ubuntu:xenial-20200326
-    steps:
-      - checkout
-      - run: apt-get update; true
       - run: apt-get install -y perl wget python3-pip
       - run: pip3 install s3cmd
       - run:
@@ -197,7 +96,7 @@ jobs:
           command: perl src/fastnetmon_build.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_10_06_2020"
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m
@@ -207,7 +106,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_10_06_2020"
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
           paths:
             - /opt
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
@@ -224,7 +123,7 @@ jobs:
       - run: ldd /opt/fastnetmon/fastnetmon_client
       - run: ldd /opt/fastnetmon/fastnetmon_api_client
       - run: /opt/fastnetmon/fastnetmon --configuration_check
-  ubuntu1404_all_libs:
+  ubuntu1404:
     docker:
       - image: ubuntu:trusty-20191217
     steps:
@@ -238,16 +137,16 @@ jobs:
           command: perl src/fastnetmon_build.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_20_10_2020"
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_gcc_20_10_2020"
+            - "{{ .Environment.CIRCLE_JOB }}_gcc_24_10_2020"
       - run:
           name: install_gcc
           no_output_timeout: 80m 
           command: perl src/fastnetmon_build.pl --build_gcc_only
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_gcc_20_10_2020"
+          key: "{{ .Environment.CIRCLE_JOB }}_gcc_24_10_2020"
           paths:
             - /opt/gcc920
       - run:
@@ -259,7 +158,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_20_10_2020"
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
           paths:
             - /opt
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
@@ -276,7 +175,7 @@ jobs:
       - run: ldd /opt/fastnetmon/fastnetmon_client
       - run: ldd /opt/fastnetmon/fastnetmon_api_client
       - run: /opt/fastnetmon/fastnetmon --configuration_check
-  debian8_all_libs:
+  debian8:
     docker:
       - image: debian:jessie-20200514
     steps:
@@ -290,16 +189,16 @@ jobs:
           command: perl src/fastnetmon_build.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_20_10_2020"
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_gcc_20_10_2020"
+            - "{{ .Environment.CIRCLE_JOB }}_gcc_24_10_2020"
       - run:
           name: install_gcc
           no_output_timeout: 80m 
           command: perl src/fastnetmon_build.pl --build_gcc_only
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_gcc_20_10_2020"
+          key: "{{ .Environment.CIRCLE_JOB }}_gcc_24_10_2020"
           paths:
             - /opt/gcc920
       - run:
@@ -311,7 +210,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_20_10_2020"
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
           paths:
             - /opt
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
@@ -334,39 +233,6 @@ jobs:
     steps:
       - checkout
       - run: apt-get update; true
-      - run: apt-get install -y perl wget
-      - run:
-          name: install_required_packages
-          no_output_timeout: 35m
-          command: perl src/fastnetmon_build.pl --install_dependency_packages_only
-      - restore_cache:
-          keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
-      - run:
-          name: install_dependencies
-          no_output_timeout: 40m
-          command: perl src/fastnetmon_build.pl --use-git-master
-      - run:
-          name: collect_debug
-          command: cat /tmp/fastnetmon_install.log
-          when: on_fail
-      - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
-          paths:
-            - /opt
-      - run: cd src; mkdir -p build; cd build; cmake ..; make
-      - run: ldd /opt/fastnetmon/fastnetmon
-      - run: ldd /opt/fastnetmon/fastnetmon_client
-      - run: ldd /opt/fastnetmon/fastnetmon_api_client
-      - run: /opt/fastnetmon/fastnetmon --configuration_check
-      - store_artifacts:
-          path: /tmp/fastnetmon_install.log
-  debian9_all_libs:
-    docker:
-      - image: debian:stretch-20200514
-    steps:
-      - checkout
-      - run: apt-get update; true
       - run: apt-get install -y perl wget python3-pip
       - run: pip3 install s3cmd
       - run:
@@ -375,7 +241,7 @@ jobs:
           command: perl src/fastnetmon_build.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m 
@@ -385,7 +251,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
           paths:
             - /opt
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
@@ -408,39 +274,6 @@ jobs:
     steps:
       - checkout
       - run: apt-get update; true
-      - run: apt-get install -y perl wget
-      - run:
-          name: install_required_packages
-          no_output_timeout: 20m
-          command: perl src/fastnetmon_build.pl --install_dependency_packages_only
-      - restore_cache:
-          keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
-      - run:
-          name: install_dependencies
-          no_output_timeout: 40m
-          command: perl src/fastnetmon_build.pl --use-git-master
-      - run:
-          name: collect_debug
-          command: cat /tmp/fastnetmon_install.log
-          when: on_fail
-      - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
-          paths:
-            - /opt
-      - run: cd src; mkdir -p build; cd build; cmake ..; make
-      - run: ldd /opt/fastnetmon/fastnetmon
-      - run: ldd /opt/fastnetmon/fastnetmon_client
-      - run: ldd /opt/fastnetmon/fastnetmon_api_client
-      - run: /opt/fastnetmon/fastnetmon --configuration_check
-      - store_artifacts:
-          path: /tmp/fastnetmon_install.log
-  debian10_all_libs:
-    docker:
-      - image: debian:buster-20200514
-    steps:
-      - checkout
-      - run: apt-get update; true
       - run: apt-get install -y perl wget python3-pip
       - run: pip3 install s3cmd
       - run:
@@ -449,7 +282,7 @@ jobs:
           command: perl src/fastnetmon_build.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m 
@@ -459,7 +292,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
           paths:
             - /opt
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
@@ -476,7 +309,7 @@ jobs:
       - run: ldd /opt/fastnetmon/fastnetmon_client
       - run: ldd /opt/fastnetmon/fastnetmon_api_client
       - run: /opt/fastnetmon/fastnetmon --configuration_check
-  centos6_all_libs:
+  centos6:
     docker:
       - image: centos:centos6.9
     steps:
@@ -491,16 +324,16 @@ jobs:
           command: perl src/fastnetmon_build.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_12_06_2020"
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_gcc_27_05_2020"
+            - "{{ .Environment.CIRCLE_JOB }}_gcc_24_10_2020"
       - run:
           name: install_gcc
           no_output_timeout: 80m 
           command: perl src/fastnetmon_build.pl --build_gcc_only
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_gcc_27_05_2020"
+          key: "{{ .Environment.CIRCLE_JOB }}_gcc_24_10_2020"
           paths:
             - /opt/gcc920
       - run:
@@ -512,7 +345,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_12_06_2020"
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
           paths:
             - /opt
             - /usr/include/linux/pf_ring.h
@@ -529,7 +362,7 @@ jobs:
       - run: ldd /opt/fastnetmon/fastnetmon_client
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
       - run: /opt/fastnetmon/fastnetmon --configuration_check
-  centos7_all_libs:
+  centos7:
     docker:
       - image: centos:centos7.8.2003
     steps:
@@ -542,16 +375,16 @@ jobs:
           command: perl src/fastnetmon_build.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_20_10_2020"
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_gcc_20_10_2020"
+            - "{{ .Environment.CIRCLE_JOB }}_gcc_24_10_2020"
       - run:
           name: install_gcc
           no_output_timeout: 80m 
           command: perl src/fastnetmon_build.pl --build_gcc_only
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_gcc_20_10_2020"
+          key: "{{ .Environment.CIRCLE_JOB }}_gcc_24_10_2020"
           paths:
             - /opt/gcc920
       - run:
@@ -563,7 +396,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_20_10_2020"
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
           paths:
             - /opt
             - /usr/include/linux/pf_ring.h
@@ -586,38 +419,6 @@ jobs:
       - image: centos:centos8.1.1911
     steps:
       - checkout
-      - run: yum install -y perl wget
-      - run:
-          name: install_required_packages
-          no_output_timeout: 20m
-          command: perl src/fastnetmon_build.pl --install_dependency_packages_only
-      - run:
-          name: collect_debug
-          command: cat /tmp/fastnetmon_install.log
-          when: on_fail
-      - restore_cache:
-          keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
-      - run:
-          name: install_dependencies
-          no_output_timeout: 40m
-          command: perl src/fastnetmon_build.pl --use-git-master
-      - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_26_05_2020"
-          paths:
-            - /opt
-      - run: cd src; mkdir -p build; cd build; cmake ..; make
-      - run: ldd /opt/fastnetmon/fastnetmon
-      - run: ldd /opt/fastnetmon/fastnetmon_client
-      - run: ldd /opt/fastnetmon/fastnetmon_api_client
-      - run: /opt/fastnetmon/fastnetmon --configuration_check
-      - store_artifacts:
-          path: /tmp/fastnetmon_install.log
-  centos8_all_libs:
-    docker:
-      - image: centos:centos8.1.1911
-    steps:
-      - checkout
       - run: yum install -y perl wget python3-pip
       - run: pip3 install s3cmd
       - run:
@@ -626,7 +427,7 @@ jobs:
           command: perl src/fastnetmon_build.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_27_05_2020"
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
       - run:
           name: install_dependencies
           no_output_timeout: 40m 
@@ -636,7 +437,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_27_05_2020"
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
           paths:
             - /opt
             - /usr/include/linux/pf_ring.h
@@ -658,19 +459,13 @@ workflows:
   version: 2
   all_distros:
     jobs:
-      - debian8_all_libs
+      - debian8
       - debian9
-      - debian9_all_libs
       - debian10
-      - debian10_all_libs
-      - ubuntu1404_all_libs
+      - ubuntu1404
       - ubuntu1604
-      - ubuntu1604_all_libs
       - ubuntu1804
-      - ubuntu1804_all_libs
       - ubuntu2004
-      - ubuntu2004_all_libs
-      - centos6_all_libs
-      - centos7_all_libs
+      - centos6
+      - centos7
       - centos8
-      - centos8_all_libs
