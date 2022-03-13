@@ -45,7 +45,7 @@ if (defined($ENV{'CI'}) && $ENV{'CI'}) {
 }
 
 # For all libs build we use custom cmake
-my $cmake_path = "$library_install_folder/cmake-3.16.4/bin/cmake";
+my $cmake_path = "$library_install_folder/cmake-3.18.4/bin/cmake";
 
 # die wrapper to send message to tracking server
 sub fast_die {
@@ -1477,19 +1477,19 @@ sub install_cmake_dependencies {
 sub install_cmake {
     print "Install cmake\n";
 
-    my $cmake_install_path = "$library_install_folder/cmake-3.16.4";
+    my $cmake_install_path = "$library_install_folder/cmake-3.18.4";
 
     if (-e $cmake_install_path && defined($ENV{'CI'})) {
         warn "Found installed cmake at $cmake_install_path\n";
         return 1;
     }
 
-    my $distro_file_name = "cmake-3.16.4.tar.gz";
+    my $distro_file_name = "cmake-3.18.4.tar.gz";
 
     chdir $temp_folder_for_building_project;
 
     print "Download archive\n";
-    my $cmake_download_result = download_file("https://github.com/Kitware/CMake/releases/download/v3.16.4/$distro_file_name", $distro_file_name, '3ae23da521d5c0e871dd820a0d3af5504f0bd6db');
+    my $cmake_download_result = download_file("https://github.com/Kitware/CMake/releases/download/v3.18.4/$distro_file_name", $distro_file_name, '73ab5348c881f1a53c250b66848b6ee101c9fe1f');
 
     unless ($cmake_download_result) {
         fast_die("Can't download cmake\n");
@@ -1497,7 +1497,7 @@ sub install_cmake {
 
     exec_command("tar -xf $distro_file_name");
 
-    chdir "cmake-3.16.4";
+    chdir "cmake-3.18.4";
 
     print "Execute bootstrap, it will need time\n";
     my $boostrap_result = exec_command("$ld_library_path_for_make $configure_options ./bootstrap --prefix=$cmake_install_path");
