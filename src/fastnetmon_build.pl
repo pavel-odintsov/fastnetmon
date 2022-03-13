@@ -34,7 +34,7 @@ my $distro_type = '';
 my $distro_version = '';  
 my $distro_architecture = '';
 
-my $gcc_version = '9.2.0';
+my $gcc_version = '9.3.0';
 
 my $user_email = '';
 
@@ -1599,7 +1599,7 @@ sub install_gcc {
     chdir $temp_folder_for_building_project;
  
     my $archive_file_name = "gcc-$gcc_version.tar.gz";
-    my $gcc_download_result = download_file("ftp://ftp.mpi-sb.mpg.de/pub/gnu/mirror/gcc.gnu.org/pub/gcc/releases/gcc-$gcc_version/$archive_file_name", $archive_file_name, '256be3760f6aca3eaa45083e25828ce0802e2010');
+    my $gcc_download_result = download_file("ftp://ftp.mpi-sb.mpg.de/pub/gnu/mirror/gcc.gnu.org/pub/gcc/releases/gcc-$gcc_version/$archive_file_name", $archive_file_name, 'd93d8950229b23d7e7c5cd0037fb4a51e3ce3a19');
 
     unless ($gcc_download_result) {
         die "Can't download gcc sources\n";
