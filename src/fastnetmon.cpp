@@ -108,12 +108,6 @@
 #include <hiredis/hiredis.h>
 #endif
 
-// #define IPV6_HASH_COUNTERS
-
-#ifdef IPV6_HASH_COUNTERS
-#include "concurrentqueue.h"
-#endif
-
 #ifdef FASTNETMON_API
 using fastmitigation::BanListReply;
 using fastmitigation::BanListRequest;
@@ -1303,55 +1297,6 @@ bool load_our_networks_list() {
     return true;
 }
 
-#ifdef IPV6_HASH_COUNTERS
-
-moodycamel::ConcurrentQueue<simple_packet_t> multi_process_queue_for_ipv6_counters;
-
-void ipv6_traffic_processor() {
-    simple_packet_t packets_from_queue[32];
-
-    while (true) {
-        std::size_t count = 0;
-
-        while ((count = multi_process_queue_for_ipv6_counters.try_dequeue_bulk(packets_from_queue, 32)) != 0) {
-            for (std::size_t i = 0; i != count; ++i) {
-#ifdef USE_NEW_ATOMIC_BUILTINS
-                __atomic_add_fetch(&total_ipv6_packets, 1, __ATOMIC_RELAXED);
-#else
-                __sync_fetch_and_add(&total_ipv6_packets, 1);
-#endif
-
-                direction packet_direction = packets_from_queue[i].packet_direction;
-
-                uint64_t sampled_number_of_packets =
-                packets_from_queue[i].number_of_packets * packets_from_queue[i].sample_ratio;
-                uint64_t sampled_number_of_bytes =
-                packets_from_queue[i].length * packets_from_queue[i].sample_ratio;
-
-#ifdef USE_NEW_ATOMIC_BUILTINS
-                __atomic_add_fetch(&total_counters[packet_direction].packets,
-                                   sampled_number_of_packets, __ATOMIC_RELAXED);
-                __atomic_add_fetch(&total_counters[packet_direction].bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-#else
-                __sync_fetch_and_add(&total_counters[packet_direction].packets, sampled_number_of_packets);
-                __sync_fetch_and_add(&total_counters[packet_direction].bytes, sampled_number_of_bytes);
-#endif
-
-                if (packet_direction != OTHER) {
-#ifdef USE_NEW_ATOMIC_BUILTINS
-                    __atomic_add_fetch(&our_ipv6_packets, 1, __ATOMIC_RELAXED);
-#else
-                    __sync_fetch_and_add(&our_ipv6_packets, 1);
-#endif
-                }
-            }
-        }
-    }
-}
-
-#endif
-
-
 #ifdef GEOIP
 unsigned int get_asn_for_ip(uint32_t ip) {
     char* asn_raw = GeoIP_org_by_name(geo_ip, convert_ip_as_uint_to_string(remote_ip).c_str());
@@ -1724,10 +1669,6 @@ int main(int argc, char** argv) {
     if (gobgp_enabled) {
         gobgp_action_init();
     }
-#endif
-
-#ifdef IPV6_HASH_COUNTERS
-    service_thread_group.add_thread(new boost::thread(ipv6_traffic_processor));
 #endif
 
 #ifdef FASTNETMON_API
