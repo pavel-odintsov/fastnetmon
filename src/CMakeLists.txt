@@ -533,7 +533,7 @@ if (MONGOC_INCLUDES_FOLDER AND MONGOC_LIBRARY_PATH AND BSON_INCLUDES_FOLDER AND 
 
     target_link_libraries(fastnetmon ${MONGOC_LIBRARY_PATH} ${BSON_LIBRARY_PATH})
 else()
-    message(WARNING "We can't find Mongo C library")
+    message(FATAL_ERROR "We can't find Mongo C library")
 endif()
 
 ### Look for libpcap

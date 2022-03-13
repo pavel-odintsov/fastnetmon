@@ -44,18 +44,22 @@ pf_ring_6.0.3
 gobgp_2_16_0
 grpc_1_27_3_e73882dc0fcedab1ffe789e44ed6254819639ce3
 libhiredis_0_13 
-mongo_c_driver_1_1_9
+mongo_c_driver_1_16_1
 protobuf_3.11.4
-gcc920
+gcc930
 );
 
 for my $library (@our_libraries) {
     my $library_path = "$global_path/$library";
 
-    # Some libraries are optional
     unless (-e $library_path) {
         warn "Can't find library $library please check\n";
-        next;
+        
+        if ($library eq 'pf_ring_6.0.3') {
+            next;
+        } else {
+            die "Some required libraries are missing\n";
+        }
     }
 
     print "Library: $library\n";
