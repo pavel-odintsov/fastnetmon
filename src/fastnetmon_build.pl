@@ -1565,8 +1565,7 @@ sub install_boost_builder {
     }
 
     # We should specify toolset here if we want to do build with custom compiler
-    # We have troubles when run this code with vzctl exec so we should add custom compiler in path 
-    my $b2_install_result = exec_command("./b2 install --prefix=$boost_builder_install_folder");
+    my $b2_install_result = exec_command("$ld_library_path_for_make ./b2 install --prefix=$boost_builder_install_folder");
 
     unless ($b2_install_result) {
         fast_die("Can't execute b2 install\n");
