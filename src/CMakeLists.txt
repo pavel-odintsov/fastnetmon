@@ -482,6 +482,7 @@ if (HIREDIS_INCLUDES_FOLDER AND HIREDIS_LIBRARY_PATH)
     add_definitions(-DREDIS)
     include_directories(${HIREDIS_INCLUDES_FOLDER})
     target_link_libraries (fastnetmon ${HIREDIS_LIBRARY_PATH})
+    target_link_libraries(fastnetmon_logic ${HIREDIS_LIBRARY_PATH})
 else()
     message(STATUS "We can't find hiredis library and will disable Redis support")
 endif()
@@ -601,7 +602,7 @@ target_link_libraries(fastnetmon fastnetmon_pcap_format)
 
 target_link_libraries(fastnetmon ipfix_rfc)
 
-target_link_libraries(fastnetmon_logic bgp_protocol)
+target_link_libraries(fastnetmon_logic bgp_protocol fast_dpi)
 
 # Link to our functions
 target_link_libraries(fastnetmon fast_library)
