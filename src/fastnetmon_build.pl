@@ -1656,7 +1656,7 @@ sub install_gcc_dependencies {
         my @dependency_list = ('libmpfr-dev', 'libmpc-dev', 'libgmp-dev');
         apt_get(@dependency_list);
     } elsif ($distro_type eq 'centos') {
-        yum('gmp-devel', 'mpfr-devel', 'libmpc-devel');
+        yum('gmp-devel', 'mpfr-devel', 'libmpc-devel', 'diffutils');
     }
 }
 
