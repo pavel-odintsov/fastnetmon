@@ -35,7 +35,7 @@ unless (-e $target_path && -d $target_path) {
 }
 
 my @our_libraries = qw(
-boost_1_72_0
+boost_1_74_0
 json-c-0.13
 libicu_65_1
 ndpi
