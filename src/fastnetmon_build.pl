@@ -1546,9 +1546,16 @@ sub install_capnproto {
         return 1;
     }    
 
+    my $configure_arguments = '';
+
+    # We need it to address this bug: https://github.com/capnproto/capnproto/issues/1092
+    if ($distro_type eq 'centos' && $distro_version == 6) {
+        $configure_arguments = 'LIBS="-lrt"';
+    }
+
     my $res = install_configure_based_software("https://capnproto.org/capnproto-c++-0.8.0.tar.gz", 
         "fbc1c65b32748029f1a09783d3ebe9d496d5fcc4", $capnp_install_path, 
-        '');
+        $configure_arguments);
 
     unless ($res) { 
         die "Could not install capnproto";
