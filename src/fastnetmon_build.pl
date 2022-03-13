@@ -1501,7 +1501,7 @@ sub install_configure_based_software {
     }
 
     print "Execute configure\n";
-  my $configure_command = "CC=$default_c_compiler_path CXX=$default_cpp_compiler_path ./configure --prefix=$library_install_path $configure_options";
+    my $configure_command = "CC=$default_c_compiler_path CXX=$default_cpp_compiler_path ./configure --prefix=$library_install_path $configure_options";
 
     my $configure_result = exec_command($configure_command);
 
@@ -1594,7 +1594,7 @@ sub install_poco {
     # configure (i.e. CC and other)
     my $res = install_configure_based_software("https://github.com/pocoproject/poco/archive/poco-1.10.0-release.tar.gz",
         'cc75c9ca9d21422683ee7d71c5a98aaf72b45bcc', "$library_install_folder/poco_1_10_0",
-        "--minimal --shared --no-samples --no-tests --include-path=$library_install_folder/openssl_1_0_2d/include --library-path=$library_install_folder/openssl_1_0_2d/lib");
+        "--minimal --shared --no-samples --no-tests --include-path=$library_install_folder/openssl_1_0_2d/include --library-path=$library_install_folder/openssl_1_0_2d/lib --cflags=\"-std=c++11\"");
 
     unless ($res) {
         die "Could not install poco";
