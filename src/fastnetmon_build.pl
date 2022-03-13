@@ -1781,11 +1781,6 @@ sub install_gcc {
         return '1'; 
     }    
 
-    unless ($distro_type eq 'centos' && $distro_version == 6) {
-        warn "We do not build custom compiler on this platform";
-        return;
-    }
-
     print "Download gcc archive\n";
     chdir $temp_folder_for_building_project;
  
