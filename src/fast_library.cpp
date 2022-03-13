@@ -769,11 +769,18 @@ direction get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_add
 }
 
 /* Get traffic type: check it belongs to our IPs */
+/* It populates subnet and subnet_cidr_mask for incoming and outgoing traffic */
+/* But for internal traffic it populates destination_subnet* and source_subnet* */
 direction get_packet_direction(patricia_tree_t* lookup_tree,
                                uint32_t src_ip,
                                uint32_t dst_ip,
                                unsigned long& subnet,
-                               unsigned int& subnet_cidr_mask) {
+                               unsigned int&  subnet_cidr_mask,
+                               unsigned long& destination_subnet,
+                               unsigned int&  destination_subnet_cidr_mask,
+                               unsigned long& source_subnet,
+                               unsigned int&  source_subnet_cidr_mask
+                               ) {
     direction packet_direction;
 
     bool our_ip_is_destination = false;
@@ -786,8 +793,6 @@ direction get_packet_direction(patricia_tree_t* lookup_tree,
     patricia_node_t* found_patrica_node = NULL;
     prefix_for_check_adreess.add.sin.s_addr = dst_ip;
 
-    unsigned long destination_subnet = 0;
-    unsigned int destination_subnet_cidr_mask = 0;
     found_patrica_node = patricia_search_best2(lookup_tree, &prefix_for_check_adreess, 1);
 
     if (found_patrica_node) {
@@ -799,8 +804,6 @@ direction get_packet_direction(patricia_tree_t* lookup_tree,
     found_patrica_node = NULL;
     prefix_for_check_adreess.add.sin.s_addr = src_ip;
 
-    unsigned long source_subnet = 0;
-    unsigned int source_subnet_cidr_mask = 0;
     found_patrica_node = patricia_search_best2(lookup_tree, &prefix_for_check_adreess, 1);
 
     if (found_patrica_node) {
