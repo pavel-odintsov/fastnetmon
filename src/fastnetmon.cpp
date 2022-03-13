@@ -33,6 +33,8 @@
 // Here we store variables which differs for different paltforms
 #include "fast_platform.h"
 
+#include "fastnetmon_logic.hpp"
+
 #ifdef ENABLE_DPI
 #include "fast_dpi.h"
 #endif
@@ -145,6 +147,8 @@ bool process_internal_traffic_as_external = false;
 
 unsigned int recalculate_speed_timeout = 1;
 
+FastnetmonPlatformConfigurtion fastnetmon_platform_configuration;
+
 // Send or not any details about attack for ban script call over stdin
 bool notify_script_pass_details = true;
 
@@ -166,7 +170,6 @@ logging_configuration_t logging_configuration;
 std::string screen_data_stats = "";
 
 // Global map with parsed config file
-typedef std::map<std::string, std::string> configuration_map_t;
 configuration_map_t configuration_map;
 
 // Every X seconds we will run ban list cleaner thread
@@ -430,13 +433,6 @@ bool process_outgoing_traffic = true;
 void init_current_instance_of_ndpi();
 #endif
 
-inline void build_average_speed_counters_from_speed_counters(map_element* current_average_speed_element,
-                                                             map_element& new_speed_element,
-                                                             double exp_value,
-                                                             double exp_power);
-inline void build_speed_counters_from_packet_counters(map_element& new_speed_element,
-                                                      map_element* vector_itr,
-                                                      double speed_calc_period);
 void execute_ip_ban(uint32_t client_ip, map_element average_speed_element, std::string flow_attack_details, subnet_t customer_subnet);
 std::string get_attack_description_in_json(uint32_t client_ip, attack_details& current_attack);
 logging_configuration_t read_logging_settings(configuration_map_t configuration_map);
@@ -586,50 +582,6 @@ void RunApiServer() {
     logger << log4cpp::Priority::INFO << "API server got shutdown signal";
 }
 #endif
-
-
-/* Class for custom comparison fields by different fields */
-template <typename T> class TrafficComparatorClass {
-    private:
-    sort_type sort_field;
-    direction_t sort_direction;
-
-    public:
-    TrafficComparatorClass(direction_t sort_direction, sort_type sort_field) {
-        this->sort_field = sort_field;
-        this->sort_direction = sort_direction;
-    }
-
-    bool operator()(T a, T b) {
-        if (sort_field == FLOWS) {
-            if (sort_direction == INCOMING) {
-                return a.second.in_flows > b.second.in_flows;
-            } else if (sort_direction == OUTGOING) {
-                return a.second.out_flows > b.second.out_flows;
-            } else {
-                return false;
-            }
-        } else if (sort_field == PACKETS) {
-            if (sort_direction == INCOMING) {
-                return a.second.in_packets > b.second.in_packets;
-            } else if (sort_direction == OUTGOING) {
-                return a.second.out_packets > b.second.out_packets;
-            } else {
-                return false;
-            }
-        } else if (sort_field == BYTES) {
-            if (sort_direction == INCOMING) {
-                return a.second.in_bytes > b.second.in_bytes;
-            } else if (sort_direction == OUTGOING) {
-                return a.second.out_bytes > b.second.out_bytes;
-            } else {
-                return false;
-            }
-        } else {
-            return false;
-        }
-    }
-};
 
 void sigpipe_handler_for_popen(int signo) {
     logger
@@ -1050,7 +1002,7 @@ void parse_hostgroups(std::string name, std::string value) {
 
 // Load configuration
 bool load_configuration_file() {
-    std::ifstream config_file(global_config_path.c_str());
+    std::ifstream config_file(fastnetmon_platform_configuration.global_config_path.c_str());
     std::string line;
 
     if (!config_file.is_open()) {
@@ -1108,7 +1060,7 @@ bool load_configuration_file() {
     }
 
     if (configuration_map.count("pid_path") != 0) {
-        pid_path = configuration_map["pid_path"];
+        fastnetmon_platform_configuration.pid_path = configuration_map["pid_path"];
     }
 
     if (configuration_map.count("cli_stats_file_path") != 0) {
@@ -1352,11 +1304,11 @@ bool load_configuration_file() {
     }
 
     if (configuration_map.count("white_list_path") != 0) {
-        white_list_path = configuration_map["white_list_path"];
+        fastnetmon_platform_configuration.white_list_path = configuration_map["white_list_path"];
     }
 
     if (configuration_map.count("networks_list_path") != 0) {
-        networks_list_path = configuration_map["networks_list_path"];
+        fastnetmon_platform_configuration.networks_list_path = configuration_map["networks_list_path"];
     }
 
 #ifdef REDIS
@@ -1421,17 +1373,17 @@ bool load_configuration_file() {
     }
 
     if (configuration_map.count("notify_script_path") != 0) {
-        notify_script_path = configuration_map["notify_script_path"];
+        fastnetmon_platform_configuration.notify_script_path = configuration_map["notify_script_path"];
     }
 
     if (configuration_map.count("notify_script_pass_details") != 0) {
         notify_script_pass_details = configuration_map["notify_script_pass_details"] == "on" ? true : false;
     }
 
-    if (file_exists(notify_script_path)) {
+    if (file_exists(fastnetmon_platform_configuration.notify_script_path)) {
         notify_script_enabled = true;
     } else {
-        logger << log4cpp::Priority::ERROR << "We can't find notify script " << notify_script_path;
+        logger << log4cpp::Priority::ERROR << "We can't find notify script " << fastnetmon_platform_configuration.notify_script_path;
         notify_script_enabled = false;
     }
 
@@ -1538,9 +1490,9 @@ void zeroify_all_flow_counters() {
 }
 
 bool load_our_networks_list() {
-    if (file_exists(white_list_path)) {
+    if (file_exists(fastnetmon_platform_configuration.white_list_path)) {
         unsigned int network_entries = 0;
-        std::vector<std::string> network_list_from_config = read_file_to_vector(white_list_path);
+        std::vector<std::string> network_list_from_config = read_file_to_vector(fastnetmon_platform_configuration.white_list_path);
 
         for (std::vector<std::string>::iterator ii = network_list_from_config.begin();
              ii != network_list_from_config.end(); ++ii) {
@@ -1622,8 +1574,8 @@ bool load_our_networks_list() {
         }
     }
 
-    if (file_exists(networks_list_path)) {
-        std::vector<std::string> network_list_from_config = read_file_to_vector(networks_list_path);
+    if (file_exists(fastnetmon_platform_configuration.networks_list_path)) {
+        std::vector<std::string> network_list_from_config = read_file_to_vector(fastnetmon_platform_configuration.networks_list_path);
 
         for (std::vector<std::string>::iterator line_itr = network_list_from_config.begin();
              line_itr != network_list_from_config.end(); ++line_itr) {
@@ -2577,7 +2529,7 @@ void traffic_draw_program() {
         sorter = PACKETS;
     }
 
-    output_buffer << "FastNetMon " << fastnetmon_version << " Try Advanced edition: https://fastnetmon.com"
+    output_buffer << "FastNetMon " << fastnetmon_platform_configuration.fastnetmon_version << " Try Advanced edition: https://fastnetmon.com"
                   << "\n"
                   << "IPs ordered by: " << sort_parameter << "\n";
 
@@ -2738,8 +2690,8 @@ void init_logging() {
     // So log4cpp will never notify you if it could not write to log file due to permissions issues
     // We will check it manually
 
-    if (!file_is_appendable(log_file_path)) {
-        std::cerr << "Can't open log file " << log_file_path
+    if (!file_is_appendable(fastnetmon_platform_configuration.log_file_path)) {
+        std::cerr << "Can't open log file " << fastnetmon_platform_configuration.log_file_path
                   << " for writing! Please check file and folder permissions" << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -2747,7 +2699,7 @@ void init_logging() {
     log4cpp::PatternLayout* layout = new log4cpp::PatternLayout();
     layout->setConversionPattern("%d [%p] %m%n");
 
-    log4cpp::Appender* appender = new log4cpp::FileAppender("default", log_file_path);
+    log4cpp::Appender* appender = new log4cpp::FileAppender("default", fastnetmon_platform_configuration.log_file_path);
     appender->setLayout(layout);
 
     logger.setPriority(log4cpp::Priority::INFO);
@@ -2848,7 +2800,7 @@ int main(int argc, char** argv) {
         }
 
         if (vm.count("version")) {
-            std::cout << "Version: " << fastnetmon_version << std::endl;
+            std::cout << "Version: " << fastnetmon_platform_configuration.fastnetmon_version << std::endl;
             exit(EXIT_SUCCESS);
         }
 
@@ -2861,13 +2813,13 @@ int main(int argc, char** argv) {
         }
 
         if (vm.count("configuration_file")) {
-            global_config_path = vm["configuration_file"].as<std::string>();
-            std::cout << "We will use custom path to configuration file: " << global_config_path << std::endl;
+            fastnetmon_platform_configuration.global_config_path = vm["configuration_file"].as<std::string>();
+            std::cout << "We will use custom path to configuration file: " << fastnetmon_platform_configuration.global_config_path << std::endl;
         }
 
         if (vm.count("log_file")) {
-            log_file_path = vm["log_file"].as<std::string>();
-            std::cout << "We will use custom path to log file: " << log_file_path << std::endl;
+            fastnetmon_platform_configuration.log_file_path = vm["log_file"].as<std::string>();
+            std::cout << "We will use custom path to log file: " << fastnetmon_platform_configuration.log_file_path << std::endl;
         }
     } catch (po::error& e) {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
@@ -2917,7 +2869,7 @@ int main(int argc, char** argv) {
     bool load_config_result = load_configuration_file();
 
     if (!load_config_result) {
-        std::cerr << "Can't open config file " << global_config_path << " please create it!" << std::endl;
+        std::cerr << "Can't open config file " << fastnetmon_platform_configuration.global_config_path << " please create it!" << std::endl;
         exit(1);
     }
 
@@ -2926,10 +2878,10 @@ int main(int argc, char** argv) {
         exit(0);
     }
 
-    if (file_exists(pid_path)) {
+    if (file_exists(fastnetmon_platform_configuration.pid_path)) {
         pid_t pid_from_file = 0;
 
-        if (read_pid_from_file(pid_from_file, pid_path)) {
+        if (read_pid_from_file(pid_from_file, fastnetmon_platform_configuration.pid_path)) {
             // We could read pid
             if (pid_from_file > 0) {
                 // We use signal zero for check process existence
@@ -2953,10 +2905,10 @@ int main(int argc, char** argv) {
     }
 
     // If we not failed in check steps we could run toolkit
-    bool print_pid_to_file_result = print_pid_to_file(getpid(), pid_path);
+    bool print_pid_to_file_result = print_pid_to_file(getpid(), fastnetmon_platform_configuration.pid_path);
 
     if (!print_pid_to_file_result) {
-        logger << log4cpp::Priority::ERROR << "Could not create pid file, please check permissions: " << pid_path;
+        logger << log4cpp::Priority::ERROR << "Could not create pid file, please check permissions: " << fastnetmon_platform_configuration.pid_path;
         exit(EXIT_FAILURE);
     }
 
@@ -2983,11 +2935,11 @@ int main(int argc, char** argv) {
     }
 
     /* Create folder for attack details */
-    if (!folder_exists(attack_details_folder)) {
-        int mkdir_result = mkdir(attack_details_folder.c_str(), S_IRWXU);
+    if (!folder_exists(fastnetmon_platform_configuration.attack_details_folder)) {
+        int mkdir_result = mkdir(fastnetmon_platform_configuration.attack_details_folder.c_str(), S_IRWXU);
 
         if (mkdir_result != 0) {
-            logger << log4cpp::Priority::ERROR << "Can't create folder for attack details: " << attack_details_folder;
+            logger << log4cpp::Priority::ERROR << "Can't create folder for attack details: " << fastnetmon_platform_configuration.attack_details_folder;
             exit(1);
         }
     }
@@ -3440,7 +3392,7 @@ void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::
     }
 
     if (notify_script_enabled) {
-        std::string script_call_params = notify_script_path + " " + client_ip_as_string + " " +
+        std::string script_call_params = fastnetmon_platform_configuration.notify_script_path + " " + client_ip_as_string + " " +
                                          data_direction_as_string + " " + pps_as_string + " " + "ban";
         logger << log4cpp::Priority::INFO << "Call script for ban client: " << client_ip_as_string;
 
@@ -3634,7 +3586,7 @@ void call_unban_handlers(uint32_t client_ip, attack_details& current_attack) {
         std::string data_direction_as_string = get_direction_name(current_attack.attack_direction);
         std::string pps_as_string = convert_int_to_string(current_attack.attack_power);
 
-        std::string script_call_params = notify_script_path + " " + client_ip_as_string + " " +
+        std::string script_call_params = fastnetmon_platform_configuration.notify_script_path + " " + client_ip_as_string + " " +
                                          data_direction_as_string + " " + pps_as_string + " unban";
 
         logger << log4cpp::Priority::INFO << "Call script for unban client: " << client_ip_as_string;
@@ -4046,7 +3998,7 @@ void call_attack_details_handlers(uint32_t client_ip, attack_details& current_at
     // We place this variables here because we need this paths from DPI parser code
     std::string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
     std::string attack_pcap_dump_path =
-    attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string + ".pcap";
+        fastnetmon_platform_configuration.attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string + ".pcap";
 
     if (collect_attack_pcap_dumps) {
         int pcap_fump_filedesc = open(attack_pcap_dump_path.c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
@@ -4089,7 +4041,7 @@ void call_attack_details_handlers(uint32_t client_ip, attack_details& current_at
         logger << log4cpp::Priority::INFO
                << "Call script for notify about attack details for: " << client_ip_as_string;
 
-        std::string script_params = notify_script_path + " " + client_ip_as_string + " " +
+        std::string script_params = fastnetmon_platform_configuration.notify_script_path + " " + client_ip_as_string + " " +
                                     attack_direction + " " + pps_as_string + " attack_details";
 
         // We should execute external script in separate thread because any lag in this code
@@ -4121,48 +4073,6 @@ uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash* struct_
     uint64_t unpacked_data = 0;
     memcpy(&unpacked_data, struct_value, sizeof(uint64_t));
     return unpacked_data;
-}
-
-void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_data,
-                                              packed_conntrack_hash* unpacked_data) {
-    memcpy(unpacked_data, packed_connection_data, sizeof(uint64_t));
-}
-
-std::string print_flow_tracking_for_specified_protocol(contrack_map_type& protocol_map,
-                                                       std::string client_ip,
-                                                       direction_t flow_direction) {
-    std::stringstream buffer;
-    // We shoud iterate over all fields
-
-    int printed_records = 0;
-    for (contrack_map_type::iterator itr = protocol_map.begin(); itr != protocol_map.end(); ++itr) {
-        // We should limit number of records in flow dump because syn flood attacks produce
-        // thounsands of lines
-        if (printed_records > ban_details_records_count) {
-            buffer << "Flows have cropped due to very long list.\n";
-            break;
-        }
-
-        uint64_t packed_connection_data = itr->first;
-        packed_conntrack_hash unpacked_key_struct;
-        convert_integer_to_conntrack_hash_struct(&packed_connection_data, &unpacked_key_struct);
-
-        std::string opposite_ip_as_string = convert_ip_as_uint_to_string(unpacked_key_struct.opposite_ip);
-        if (flow_direction == INCOMING) {
-            buffer << client_ip << ":" << unpacked_key_struct.dst_port << " < "
-                   << opposite_ip_as_string << ":" << unpacked_key_struct.src_port << " ";
-        } else if (flow_direction == OUTGOING) {
-            buffer << client_ip << ":" << unpacked_key_struct.src_port << " > "
-                   << opposite_ip_as_string << ":" << unpacked_key_struct.dst_port << " ";
-        }
-
-        buffer << itr->second.bytes << " bytes " << itr->second.packets << " packets";
-        buffer << "\n";
-
-        printed_records++;
-    }
-
-    return buffer.str();
 }
 
 /*
@@ -4198,654 +4108,3 @@ bool process_flow_tracking_table(conntrack_main_struct& conntrack_element, std::
     return true;
 }
 
-std::string print_flow_tracking_for_ip(conntrack_main_struct& conntrack_element, std::string client_ip) {
-    std::stringstream buffer;
-
-    std::string in_tcp =
-    print_flow_tracking_for_specified_protocol(conntrack_element.in_tcp, client_ip, INCOMING);
-    std::string in_udp =
-    print_flow_tracking_for_specified_protocol(conntrack_element.in_udp, client_ip, INCOMING);
-
-    unsigned long long total_number_of_incoming_tcp_flows = conntrack_element.in_tcp.size();
-    unsigned long long total_number_of_incoming_udp_flows = conntrack_element.in_udp.size();
-
-    unsigned long long total_number_of_outgoing_tcp_flows = conntrack_element.out_tcp.size();
-    unsigned long long total_number_of_outgoing_udp_flows = conntrack_element.out_udp.size();
-
-    bool we_have_incoming_flows = in_tcp.length() > 0 or in_udp.length() > 0;
-    if (we_have_incoming_flows) {
-        buffer << "Incoming\n\n";
-
-        if (in_tcp.length() > 0) {
-            buffer << "TCP flows: " << total_number_of_incoming_tcp_flows << "\n";
-            buffer << in_tcp << "\n";
-        }
-
-        if (in_udp.length() > 0) {
-            buffer << "UDP flows: " << total_number_of_incoming_udp_flows << "\n";
-            buffer << in_udp << "\n";
-        }
-    }
-
-    std::string out_tcp =
-    print_flow_tracking_for_specified_protocol(conntrack_element.out_tcp, client_ip, OUTGOING);
-    std::string out_udp =
-    print_flow_tracking_for_specified_protocol(conntrack_element.out_udp, client_ip, OUTGOING);
-
-    bool we_have_outgoing_flows = out_tcp.length() > 0 or out_udp.length() > 0;
-
-    // print delimiter if we have flows in both directions
-    if (we_have_incoming_flows && we_have_outgoing_flows) {
-        buffer << "\n";
-    }
-
-    if (we_have_outgoing_flows) {
-        buffer << "Outgoing\n\n";
-
-        if (out_tcp.length() > 0) {
-            buffer << "TCP flows: " << total_number_of_outgoing_tcp_flows << "\n";
-            buffer << out_tcp << "\n";
-        }
-
-        if (out_udp.length() > 0) {
-            buffer << "UDP flows: " << total_number_of_outgoing_udp_flows << "\n";
-            buffer << out_udp << "\n";
-        }
-    }
-
-    return buffer.str();
-}
-
-std::string print_subnet_load() {
-    std::stringstream buffer;
-
-    sort_type sorter;
-    if (sort_parameter == "packets") {
-        sorter = PACKETS;
-    } else if (sort_parameter == "bytes") {
-        sorter = BYTES;
-    } else if (sort_parameter == "flows") {
-        sorter = FLOWS;
-    } else {
-        logger << log4cpp::Priority::INFO << "Unexpected sorter type: " << sort_parameter;
-        sorter = PACKETS;
-    }
-
-    std::vector<pair_of_map_for_subnet_counters_elements_t> vector_for_sort;
-    vector_for_sort.reserve(PerSubnetSpeedMap.size());
-
-    for (map_for_subnet_counters::iterator itr = PerSubnetSpeedMap.begin();
-         itr != PerSubnetSpeedMap.end(); ++itr) {
-        vector_for_sort.push_back(std::make_pair(itr->first, itr->second));
-    }
-
-    std::sort(vector_for_sort.begin(), vector_for_sort.end(),
-              TrafficComparatorClass<pair_of_map_for_subnet_counters_elements_t>(INCOMING, sorter));
-
-    graphite_data_t graphite_data;
-
-    for (std::vector<pair_of_map_for_subnet_counters_elements_t>::iterator itr = vector_for_sort.begin();
-         itr != vector_for_sort.end(); ++itr) {
-        map_element* speed = &itr->second;
-        std::string subnet_as_string = convert_subnet_to_string(itr->first);
-
-        buffer << std::setw(18) << std::left << subnet_as_string;
-
-        if (graphite_enabled) {
-            std::string subnet_as_string_as_dash_delimiters = subnet_as_string;
-
-            // Replace dots by dashes
-            std::replace(subnet_as_string_as_dash_delimiters.begin(),
-                         subnet_as_string_as_dash_delimiters.end(), '.', '_');
-
-            // Replace / by dashes too
-            std::replace(subnet_as_string_as_dash_delimiters.begin(),
-                         subnet_as_string_as_dash_delimiters.end(), '/', '_');
-
-            graphite_data[graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".incoming.pps"] =
-            speed->in_packets;
-            graphite_data[graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".outgoing.pps"] =
-            speed->out_packets;
-
-            graphite_data[graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".incoming.bps"] =
-            speed->in_bytes * 8;
-            graphite_data[graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".outgoing.bps"] =
-            speed->out_bytes * 8;
-        }
-
-        buffer << " "
-               << "pps in: " << std::setw(8) << speed->in_packets << " out: " << std::setw(8)
-               << speed->out_packets << " mbps in: " << std::setw(5) << convert_speed_to_mbps(speed->in_bytes)
-               << " out: " << std::setw(5) << convert_speed_to_mbps(speed->out_bytes) << "\n";
-    }
-
-    if (graphite_enabled) {
-        bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
-
-        if (!graphite_put_result) {
-            logger << log4cpp::Priority::ERROR << "Can't store network load data to Graphite";
-        }
-    }
-
-    return buffer.str();
-}
-
-std::string print_ban_thresholds(ban_settings_t current_ban_settings) {
-    std::stringstream output_buffer;
-
-    output_buffer << "Configuration params:\n";
-    if (current_ban_settings.enable_ban) {
-        output_buffer << "We call ban script: yes\n";
-    } else {
-        output_buffer << "We call ban script: no\n";
-    }
-
-    output_buffer << "Packets per second: ";
-    if (current_ban_settings.enable_ban_for_pps) {
-        output_buffer << current_ban_settings.ban_threshold_pps;
-    } else {
-        output_buffer << "disabled";
-    }
-
-    output_buffer << "\n";
-
-    output_buffer << "Mbps per second: ";
-    if (current_ban_settings.enable_ban_for_bandwidth) {
-        output_buffer << current_ban_settings.ban_threshold_mbps;
-    } else {
-        output_buffer << "disabled";
-    }
-
-    output_buffer << "\n";
-
-    output_buffer << "Flows per second: ";
-    if (current_ban_settings.enable_ban_for_flows_per_second) {
-        output_buffer << current_ban_settings.ban_threshold_flows;
-    } else {
-        output_buffer << "disabled";
-    }
-
-    output_buffer << "\n";
-    return output_buffer.str();
-}
-
-void print_attack_details_to_file(std::string details, std::string client_ip_as_string, attack_details current_attack) {
-    std::ofstream my_attack_details_file;
-
-    std::string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
-    std::string attack_dump_path =
-    attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string + ".txt";
-
-    my_attack_details_file.open(attack_dump_path.c_str(), std::ios::app);
-
-    if (my_attack_details_file.is_open()) {
-        my_attack_details_file << details << "\n\n";
-        my_attack_details_file.close();
-    } else {
-        logger << log4cpp::Priority::ERROR << "Can't print attack details to file";
-    }
-}
-
-logging_configuration_t read_logging_settings(configuration_map_t configuration_map) {
-    logging_configuration_t logging_configuration_temp;
-
-    if (configuration_map.count("logging:local_syslog_logging") != 0) {
-        logging_configuration_temp.local_syslog_logging =
-        configuration_map["logging:local_syslog_logging"] == "on";
-    }
-
-    if (configuration_map.count("logging:remote_syslog_logging") != 0) {
-        logging_configuration_temp.remote_syslog_logging =
-        configuration_map["logging:remote_syslog_logging"] == "on";
-    }
-
-    if (configuration_map.count("logging:remote_syslog_server") != 0) {
-        logging_configuration_temp.remote_syslog_server =
-        configuration_map["logging:remote_syslog_server"];
-    }
-
-    if (configuration_map.count("logging:remote_syslog_port") != 0) {
-        logging_configuration_temp.remote_syslog_port =
-        convert_string_to_integer(configuration_map["logging:remote_syslog_port"]);
-    }
-
-    if (logging_configuration_temp.remote_syslog_logging) {
-        if (logging_configuration_temp.remote_syslog_port > 0 &&
-            !logging_configuration_temp.remote_syslog_server.empty()) {
-            logger << log4cpp::Priority::INFO << "We have configured remote syslog logging corectly";
-        } else {
-            logger << log4cpp::Priority::ERROR << "You have enabled remote logging but haven't specified port or host";
-            logging_configuration_temp.remote_syslog_logging = false;
-        }
-    }
-
-    if (logging_configuration_temp.local_syslog_logging) {
-        logger << log4cpp::Priority::INFO << "We have configured local syslog logging corectly";
-    }
-
-    return logging_configuration_temp;
-}
-
-ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::string host_group_name) {
-    ban_settings_t ban_settings;
-
-    std::string prefix = "";
-    if (host_group_name != "") {
-        prefix = host_group_name + "_";
-    }
-
-    if (configuration_map.count(prefix + "enable_ban") != 0) {
-        ban_settings.enable_ban = configuration_map[prefix + "enable_ban"] == "on";
-    }
-
-    if (configuration_map.count(prefix + "ban_for_pps") != 0) {
-        ban_settings.enable_ban_for_pps = configuration_map[prefix + "ban_for_pps"] == "on";
-    }
-
-    if (configuration_map.count(prefix + "ban_for_bandwidth") != 0) {
-        ban_settings.enable_ban_for_bandwidth = configuration_map[prefix + "ban_for_bandwidth"] == "on";
-    }
-
-    if (configuration_map.count(prefix + "ban_for_flows") != 0) {
-        ban_settings.enable_ban_for_flows_per_second =
-        configuration_map[prefix + "ban_for_flows"] == "on";
-    }
-
-    // Per protocol bandwidth triggers
-    if (configuration_map.count(prefix + "ban_for_tcp_bandwidth") != 0) {
-        ban_settings.enable_ban_for_tcp_bandwidth =
-        configuration_map[prefix + "ban_for_tcp_bandwidth"] == "on";
-    }
-
-    if (configuration_map.count(prefix + "ban_for_udp_bandwidth") != 0) {
-        ban_settings.enable_ban_for_udp_bandwidth =
-        configuration_map[prefix + "ban_for_udp_bandwidth"] == "on";
-    }
-
-    if (configuration_map.count(prefix + "ban_for_icmp_bandwidth") != 0) {
-        ban_settings.enable_ban_for_icmp_bandwidth =
-        configuration_map[prefix + "ban_for_icmp_bandwidth"] == "on";
-    }
-
-    // Per protocol pps ban triggers
-    if (configuration_map.count(prefix + "ban_for_tcp_pps") != 0) {
-        ban_settings.enable_ban_for_tcp_pps = configuration_map[prefix + "ban_for_tcp_pps"] == "on";
-    }
-
-    if (configuration_map.count(prefix + "ban_for_udp_pps") != 0) {
-        ban_settings.enable_ban_for_udp_pps = configuration_map[prefix + "ban_for_udp_pps"] == "on";
-    }
-
-    if (configuration_map.count(prefix + "ban_for_icmp_pps") != 0) {
-        ban_settings.enable_ban_for_icmp_pps =
-        configuration_map[prefix + "ban_for_icmp_pps"] == "on";
-    }
-
-    // Pps per protocol thresholds
-    if (configuration_map.count(prefix + "threshold_tcp_pps") != 0) {
-        ban_settings.ban_threshold_tcp_pps =
-        convert_string_to_integer(configuration_map[prefix + "threshold_tcp_pps"]);
-    }
-
-    if (configuration_map.count(prefix + "threshold_udp_pps") != 0) {
-        ban_settings.ban_threshold_udp_pps =
-        convert_string_to_integer(configuration_map[prefix + "threshold_udp_pps"]);
-    }
-
-    if (configuration_map.count(prefix + "threshold_icmp_pps") != 0) {
-        ban_settings.ban_threshold_icmp_pps =
-        convert_string_to_integer(configuration_map[prefix + "threshold_icmp_pps"]);
-    }
-
-    // Bandwidth per protocol thresholds
-    if (configuration_map.count(prefix + "threshold_tcp_mbps") != 0) {
-        ban_settings.ban_threshold_tcp_mbps =
-        convert_string_to_integer(configuration_map[prefix + "threshold_tcp_mbps"]);
-    }
-
-    if (configuration_map.count(prefix + "threshold_udp_mbps") != 0) {
-        ban_settings.ban_threshold_udp_mbps =
-        convert_string_to_integer(configuration_map[prefix + "threshold_udp_mbps"]);
-    }
-
-    if (configuration_map.count(prefix + "threshold_icmp_mbps") != 0) {
-        ban_settings.ban_threshold_icmp_mbps =
-        convert_string_to_integer(configuration_map[prefix + "threshold_icmp_mbps"]);
-    }
-
-    if (configuration_map.count(prefix + "threshold_pps") != 0) {
-        ban_settings.ban_threshold_pps =
-        convert_string_to_integer(configuration_map[prefix + "threshold_pps"]);
-    }
-
-    if (configuration_map.count(prefix + "threshold_mbps") != 0) {
-        ban_settings.ban_threshold_mbps =
-        convert_string_to_integer(configuration_map[prefix + "threshold_mbps"]);
-    }
-
-    if (configuration_map.count(prefix + "threshold_flows") != 0) {
-        ban_settings.ban_threshold_flows =
-        convert_string_to_integer(configuration_map[prefix + "threshold_flows"]);
-    }
-
-    return ban_settings;
-}
-
-
-bool exceed_pps_speed(uint64_t in_counter, uint64_t out_counter, unsigned int threshold) {
-    if (in_counter > threshold or out_counter > threshold) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-bool exceed_flow_speed(uint64_t in_counter, uint64_t out_counter, unsigned int threshold) {
-    if (in_counter > threshold or out_counter > threshold) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-bool exceed_mbps_speed(uint64_t in_counter, uint64_t out_counter, unsigned int threshold_mbps) {
-    if (convert_speed_to_mbps(in_counter) > threshold_mbps or convert_speed_to_mbps(out_counter) > threshold_mbps) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-// Return true when we should ban this IP
-bool we_should_ban_this_ip(map_element* average_speed_element, ban_settings_t current_ban_settings) {
-    // we detect overspeed by packets
-
-    if (current_ban_settings.enable_ban_for_pps &&
-        exceed_pps_speed(average_speed_element->in_packets, average_speed_element->out_packets,
-                         current_ban_settings.ban_threshold_pps)) {
-        logger << log4cpp::Priority::DEBUG << "We detected this attack by pps limit";
-        return true;
-    }
-
-    if (current_ban_settings.enable_ban_for_bandwidth &&
-        exceed_mbps_speed(average_speed_element->in_bytes, average_speed_element->out_bytes,
-                          current_ban_settings.ban_threshold_mbps)) {
-        logger << log4cpp::Priority::DEBUG << "We detected this attack by mbps limit";
-        return true;
-    }
-
-    if (current_ban_settings.enable_ban_for_flows_per_second &&
-        exceed_flow_speed(average_speed_element->in_flows, average_speed_element->out_flows,
-                          current_ban_settings.ban_threshold_flows)) {
-        logger << log4cpp::Priority::DEBUG << "We detected this attack by flow limit";
-        return true;
-    }
-
-    // We could try per protocol thresholds here
-
-    // Per protocol pps thresholds
-    if (current_ban_settings.enable_ban_for_tcp_pps &&
-        exceed_pps_speed(average_speed_element->tcp_in_packets, average_speed_element->tcp_out_packets,
-                         current_ban_settings.ban_threshold_tcp_pps)) {
-        logger << log4cpp::Priority::DEBUG << "We detected this attack by tcp pps limit";
-        return true;
-    }
-
-    if (current_ban_settings.enable_ban_for_udp_pps &&
-        exceed_pps_speed(average_speed_element->udp_in_packets, average_speed_element->udp_out_packets,
-                         current_ban_settings.ban_threshold_udp_pps)) {
-        logger << log4cpp::Priority::DEBUG << "We detected this attack by udp pps limit";
-        return true;
-    }
-
-    if (current_ban_settings.enable_ban_for_icmp_pps &&
-        exceed_pps_speed(average_speed_element->icmp_in_packets, average_speed_element->icmp_out_packets,
-                         current_ban_settings.ban_threshold_icmp_pps)) {
-        logger << log4cpp::Priority::DEBUG << "We detected this attack by icmp pps limit";
-        return true;
-    }
-
-    // Per protocol bandwidth thresholds
-    if (current_ban_settings.enable_ban_for_tcp_bandwidth &&
-        exceed_mbps_speed(average_speed_element->tcp_in_bytes, average_speed_element->tcp_out_bytes,
-                          current_ban_settings.ban_threshold_tcp_mbps)) {
-        logger << log4cpp::Priority::DEBUG << "We detected this attack by tcp mbps limit";
-        return true;
-    }
-
-    if (current_ban_settings.enable_ban_for_udp_bandwidth &&
-        exceed_mbps_speed(average_speed_element->udp_in_bytes, average_speed_element->udp_out_bytes,
-                          current_ban_settings.ban_threshold_udp_mbps)) {
-        logger << log4cpp::Priority::DEBUG << "We detected this attack by udp mbps limit";
-        return true;
-    }
-
-    if (current_ban_settings.enable_ban_for_icmp_bandwidth &&
-        exceed_mbps_speed(average_speed_element->icmp_in_bytes, average_speed_element->icmp_out_bytes,
-                          current_ban_settings.ban_threshold_icmp_mbps)) {
-        logger << log4cpp::Priority::DEBUG << "We detected this attack by icmp mbps limit";
-        return true;
-    }
-
-    return false;
-}
-
-std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type,
-                                                        std::string destination_ip) {
-    exabgp_flow_spec_rule_t exabgp_rule;
-
-    bgp_flow_spec_action_t my_action;
-
-    // We drop all traffic by default
-    my_action.set_type(FLOW_SPEC_ACTION_DISCARD);
-
-    // Assign action to the rule
-    exabgp_rule.set_action(my_action);
-
-    // TODO: rewrite!
-    exabgp_rule.set_destination_subnet(
-    convert_subnet_from_string_to_binary_with_cidr_format(destination_ip + "/32"));
-
-    // We use only UDP here
-    exabgp_rule.add_protocol(FLOW_SPEC_PROTOCOL_UDP);
-
-    if (amplification_attack_type == AMPLIFICATION_ATTACK_DNS) {
-        exabgp_rule.add_source_port(53);
-    } else if (amplification_attack_type == AMPLIFICATION_ATTACK_NTP) {
-        exabgp_rule.add_source_port(123);
-    } else if (amplification_attack_type == AMPLIFICATION_ATTACK_SSDP) {
-        exabgp_rule.add_source_port(1900);
-    } else if (amplification_attack_type == AMPLIFICATION_ATTACK_SNMP) {
-        exabgp_rule.add_source_port(161);
-    } else if (amplification_attack_type == AMPLIFICATION_ATTACK_CHARGEN) {
-        exabgp_rule.add_source_port(19);
-    }
-
-    return exabgp_rule.serialize_single_line_exabgp_v4_configuration();
-}
-
-std::string get_amplification_attack_type(amplification_attack_type_t attack_type) {
-    if (attack_type == AMPLIFICATION_ATTACK_UNKNOWN) {
-        return "unknown";
-    } else if (attack_type == AMPLIFICATION_ATTACK_DNS) {
-        return "dns_amplification";
-    } else if (attack_type == AMPLIFICATION_ATTACK_NTP) {
-        return "ntp_amplification";
-    } else if (attack_type == AMPLIFICATION_ATTACK_SSDP) {
-        return "ssdp_amplification";
-    } else if (attack_type == AMPLIFICATION_ATTACK_SNMP) {
-        return "snmp_amplification";
-    } else if (attack_type == AMPLIFICATION_ATTACK_CHARGEN) {
-        return "chargen_amplification";
-    } else {
-        return "unexpected";
-    }
-}
-
-// We calculate speed from packet counters here
-inline void build_speed_counters_from_packet_counters(map_element& new_speed_element,
-                                                      map_element* vector_itr,
-                                                      double speed_calc_period) {
-    // calculate_speed(new_speed_element speed_element, vector_itr* );
-    new_speed_element.in_packets = uint64_t((double)vector_itr->in_packets / speed_calc_period);
-    new_speed_element.out_packets = uint64_t((double)vector_itr->out_packets / speed_calc_period);
-
-    new_speed_element.in_bytes = uint64_t((double)vector_itr->in_bytes / speed_calc_period);
-    new_speed_element.out_bytes = uint64_t((double)vector_itr->out_bytes / speed_calc_period);
-
-    // Fragmented
-    new_speed_element.fragmented_in_packets =
-    uint64_t((double)vector_itr->fragmented_in_packets / speed_calc_period);
-    new_speed_element.fragmented_out_packets =
-    uint64_t((double)vector_itr->fragmented_out_packets / speed_calc_period);
-
-    new_speed_element.fragmented_in_bytes =
-    uint64_t((double)vector_itr->fragmented_in_bytes / speed_calc_period);
-    new_speed_element.fragmented_out_bytes =
-    uint64_t((double)vector_itr->fragmented_out_bytes / speed_calc_period);
-
-    // By protocol counters
-
-    // TCP
-    new_speed_element.tcp_in_packets = uint64_t((double)vector_itr->tcp_in_packets / speed_calc_period);
-    new_speed_element.tcp_out_packets = uint64_t((double)vector_itr->tcp_out_packets / speed_calc_period);
-
-    new_speed_element.tcp_in_bytes = uint64_t((double)vector_itr->tcp_in_bytes / speed_calc_period);
-    new_speed_element.tcp_out_bytes = uint64_t((double)vector_itr->tcp_out_bytes / speed_calc_period);
-
-    // TCP syn
-    new_speed_element.tcp_syn_in_packets = uint64_t((double)vector_itr->tcp_syn_in_packets / speed_calc_period);
-    new_speed_element.tcp_syn_out_packets =
-    uint64_t((double)vector_itr->tcp_syn_out_packets / speed_calc_period);
-
-    new_speed_element.tcp_syn_in_bytes = uint64_t((double)vector_itr->tcp_syn_in_bytes / speed_calc_period);
-    new_speed_element.tcp_syn_out_bytes = uint64_t((double)vector_itr->tcp_syn_out_bytes / speed_calc_period);
-
-    // UDP
-    new_speed_element.udp_in_packets = uint64_t((double)vector_itr->udp_in_packets / speed_calc_period);
-    new_speed_element.udp_out_packets = uint64_t((double)vector_itr->udp_out_packets / speed_calc_period);
-
-    new_speed_element.udp_in_bytes = uint64_t((double)vector_itr->udp_in_bytes / speed_calc_period);
-    new_speed_element.udp_out_bytes = uint64_t((double)vector_itr->udp_out_bytes / speed_calc_period);
-
-    // ICMP
-    new_speed_element.icmp_in_packets = uint64_t((double)vector_itr->icmp_in_packets / speed_calc_period);
-    new_speed_element.icmp_out_packets = uint64_t((double)vector_itr->icmp_out_packets / speed_calc_period);
-
-    new_speed_element.icmp_in_bytes = uint64_t((double)vector_itr->icmp_in_bytes / speed_calc_period);
-    new_speed_element.icmp_out_bytes = uint64_t((double)vector_itr->icmp_out_bytes / speed_calc_period);
-}
-
-inline void build_average_speed_counters_from_speed_counters(map_element* current_average_speed_element,
-                                                             map_element& new_speed_element,
-                                                             double exp_value,
-                                                             double exp_power) {
-
-    // Global bytes counters
-    current_average_speed_element->in_bytes =
-    uint64_t(new_speed_element.in_bytes + exp_value * ((double)current_average_speed_element->in_bytes -
-                                                       (double)new_speed_element.in_bytes));
-
-    current_average_speed_element->out_bytes =
-    uint64_t(new_speed_element.out_bytes + exp_value * ((double)current_average_speed_element->out_bytes -
-                                                        (double)new_speed_element.out_bytes));
-
-    // Global packet counters
-    current_average_speed_element->in_packets =
-    uint64_t(new_speed_element.in_packets + exp_value * ((double)current_average_speed_element->in_packets -
-                                                         (double)new_speed_element.in_packets));
-
-    current_average_speed_element->out_packets =
-    uint64_t(new_speed_element.out_packets + exp_value * ((double)current_average_speed_element->out_packets -
-                                                          (double)new_speed_element.out_packets));
-
-    // Per packet type packet counters for in traffic
-    current_average_speed_element->fragmented_in_packets =
-    uint64_t(new_speed_element.fragmented_in_packets +
-             exp_value * ((double)current_average_speed_element->fragmented_in_packets -
-                          (double)new_speed_element.fragmented_in_packets));
-
-    current_average_speed_element->tcp_in_packets =
-    uint64_t(new_speed_element.tcp_in_packets + exp_value * ((double)current_average_speed_element->tcp_in_packets -
-                                                             (double)new_speed_element.tcp_in_packets));
-
-    current_average_speed_element->tcp_syn_in_packets =
-    uint64_t(new_speed_element.tcp_syn_in_packets +
-             exp_value * ((double)current_average_speed_element->tcp_syn_in_packets -
-                          (double)new_speed_element.tcp_syn_in_packets));
-
-    current_average_speed_element->udp_in_packets =
-    uint64_t(new_speed_element.udp_in_packets + exp_value * ((double)current_average_speed_element->udp_in_packets -
-                                                             (double)new_speed_element.udp_in_packets));
-
-    current_average_speed_element->icmp_in_packets =
-    uint64_t(new_speed_element.icmp_in_packets + exp_value * ((double)current_average_speed_element->icmp_in_packets -
-                                                              (double)new_speed_element.icmp_in_packets));
-
-    // Per packet type packets counters for out
-    current_average_speed_element->fragmented_out_packets =
-    uint64_t(new_speed_element.fragmented_out_packets +
-             exp_value * ((double)current_average_speed_element->fragmented_out_packets -
-                          (double)new_speed_element.fragmented_out_packets));
-
-    current_average_speed_element->tcp_out_packets =
-    uint64_t(new_speed_element.tcp_out_packets + exp_value * ((double)current_average_speed_element->tcp_out_packets -
-                                                              (double)new_speed_element.tcp_out_packets));
-
-    current_average_speed_element->tcp_syn_out_packets =
-    uint64_t(new_speed_element.tcp_syn_out_packets +
-             exp_value * ((double)current_average_speed_element->tcp_syn_out_packets -
-                          (double)new_speed_element.tcp_syn_out_packets));
-
-    current_average_speed_element->udp_out_packets =
-    uint64_t(new_speed_element.udp_out_packets + exp_value * ((double)current_average_speed_element->udp_out_packets -
-                                                              (double)new_speed_element.udp_out_packets));
-
-    current_average_speed_element->icmp_out_packets = uint64_t(
-    new_speed_element.icmp_out_packets + exp_value * ((double)current_average_speed_element->icmp_out_packets -
-                                                      (double)new_speed_element.icmp_out_packets));
-
-    // Per packet type bytes counter for out
-    current_average_speed_element->fragmented_out_bytes =
-    uint64_t(new_speed_element.fragmented_out_bytes +
-             exp_value * ((double)current_average_speed_element->fragmented_out_bytes -
-                          (double)new_speed_element.fragmented_out_bytes));
-
-    current_average_speed_element->tcp_out_bytes =
-    uint64_t(new_speed_element.tcp_out_bytes + exp_value * ((double)current_average_speed_element->tcp_out_bytes -
-                                                            (double)new_speed_element.tcp_out_bytes));
-
-    current_average_speed_element->tcp_syn_out_bytes = uint64_t(
-    new_speed_element.tcp_syn_out_bytes + exp_value * ((double)current_average_speed_element->tcp_syn_out_bytes -
-                                                       (double)new_speed_element.tcp_syn_out_bytes));
-
-    current_average_speed_element->udp_out_bytes =
-    uint64_t(new_speed_element.udp_out_bytes + exp_value * ((double)current_average_speed_element->udp_out_bytes -
-                                                            (double)new_speed_element.udp_out_bytes));
-
-    current_average_speed_element->icmp_out_bytes =
-    uint64_t(new_speed_element.icmp_out_bytes + exp_value * ((double)current_average_speed_element->icmp_out_bytes -
-                                                             (double)new_speed_element.icmp_out_bytes));
-
-    // Per packet type bytes counter for in
-    current_average_speed_element->fragmented_in_bytes =
-    uint64_t(new_speed_element.fragmented_in_bytes +
-             exp_value * ((double)current_average_speed_element->fragmented_in_bytes -
-                          (double)new_speed_element.fragmented_in_bytes));
-
-    current_average_speed_element->tcp_in_bytes =
-    uint64_t(new_speed_element.tcp_in_bytes + exp_value * ((double)current_average_speed_element->tcp_in_bytes -
-                                                           (double)new_speed_element.tcp_in_bytes));
-
-    current_average_speed_element->tcp_syn_in_bytes = uint64_t(
-    new_speed_element.tcp_syn_in_bytes + exp_value * ((double)current_average_speed_element->tcp_syn_in_bytes -
-                                                      (double)new_speed_element.tcp_syn_in_bytes));
-
-    current_average_speed_element->udp_in_bytes =
-    uint64_t(new_speed_element.udp_in_bytes + exp_value * ((double)current_average_speed_element->udp_in_bytes -
-                                                           (double)new_speed_element.udp_in_bytes));
-
-    current_average_speed_element->icmp_in_bytes =
-    uint64_t(new_speed_element.icmp_in_bytes + exp_value * ((double)current_average_speed_element->icmp_in_bytes -
-                                                            (double)new_speed_element.icmp_in_bytes));
-}

@@ -212,8 +212,13 @@ target_link_libraries(unified_parser fastnetmon_packet_parser)
 # Our ipfix database library
 add_library(ipfix_rfc STATIC ipfix_rfc.cpp)
 
+add_library(bgp_protocol bgp_flow_spec.cpp)
+
 # Our packet parser
 add_library(fastnetmon_packet_parser STATIC fastnetmon_packet_parser.c)
+
+# Our logic library
+add_library(fastnetmon_logic STATIC fastnetmon_logic.cpp)
 
 CHECK_CXX_SOURCE_COMPILES("
 #include <linux/if_packet.h>
@@ -596,6 +601,8 @@ target_link_libraries(fastnetmon fastnetmon_pcap_format)
 
 target_link_libraries(fastnetmon ipfix_rfc)
 
+target_link_libraries(fastnetmon_logic bgp_protocol)
+
 # Link to our functions
 target_link_libraries(fastnetmon fast_library)
 
@@ -619,6 +626,8 @@ if (ENABLE_AFPACKET_SUPPORT)
 endif()
 
 target_link_libraries(fastnetmon sflow_plugin netflow_plugin pcap_plugin example_plugin)
+
+target_link_libraries(fastnetmon fastnetmon_logic)
 
 if (ENABLE_NETMAP_SUPPORT)
     target_link_libraries(fastnetmon netmap_plugin)

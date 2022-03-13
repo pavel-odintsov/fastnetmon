@@ -14,6 +14,57 @@
 
 #include "fastnetmon_simple_packet.h"
 
+typedef std::map<std::string, std::string> configuration_map_t;
+typedef std::map<std::string, uint64_t> graphite_data_t;
+
+// Enum with available sort by field
+enum sort_type { PACKETS, BYTES, FLOWS };
+
+/* Class for custom comparison fields by different fields */
+template <typename T> class TrafficComparatorClass {
+    private:
+    sort_type sort_field;
+    direction_t sort_direction;
+
+    public:
+    TrafficComparatorClass(direction_t sort_direction, sort_type sort_field) {
+        this->sort_field = sort_field;
+        this->sort_direction = sort_direction;
+    }    
+
+    bool operator()(T a, T b) { 
+        if (sort_field == FLOWS) {
+            if (sort_direction == INCOMING) {
+                return a.second.in_flows > b.second.in_flows;
+            } else if (sort_direction == OUTGOING) {
+                return a.second.out_flows > b.second.out_flows;
+            } else {
+                return false;
+            }
+        } else if (sort_field == PACKETS) {
+            if (sort_direction == INCOMING) {
+                return a.second.in_packets > b.second.in_packets;
+            } else if (sort_direction == OUTGOING) {
+                return a.second.out_packets > b.second.out_packets;
+            } else {
+                return false;
+            }
+        } else if (sort_field == BYTES) {
+            if (sort_direction == INCOMING) {
+                return a.second.in_bytes > b.second.in_bytes;
+            } else if (sort_direction == OUTGOING) {
+                return a.second.out_bytes > b.second.out_bytes;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }    
+};
+
+
+
 class logging_configuration_t {
     public:
     logging_configuration_t()
@@ -37,9 +88,6 @@ typedef std::map<subnet_t, std::string> subnet_to_host_group_map_t;
 typedef std::map<std::string, subnet_vector_t> host_group_map_t;
 
 typedef void (*process_packet_pointer)(simple_packet_t&);
-
-// Enum with available sort by field
-enum sort_type { PACKETS, BYTES, FLOWS };
 
 // Attack types
 enum attack_type_t {
