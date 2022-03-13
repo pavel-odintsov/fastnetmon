@@ -163,6 +163,7 @@ GetOptions(
     'help' => \$show_help,
     'install_dependency_packages_only' => \$install_dependency_packages_only, 
     'build_gcc_only' => \$build_gcc_only,
+    'use_custom_compiler' => \$use_custom_compiler,
 );
 
 # Export all meaningful customer facing flags to Sentry for better failure tracking
@@ -496,12 +497,12 @@ sub main {
         exit(0);
     }
 
-    # Fr this distro we need to use custom compiler
-    if ($build_boost && $distro_type eq 'centos' && int($distro_version) == 6) {
-        $use_custom_compiler = 1;
+    # For these distros we need to use custom compiler
+    if ($use_custom_compiler)  {
+        print "Will use custom compiler\n";
         init_compiler();
     }
-
+    
     # Install only depencdency packages, we need it to cache installed packages in CI
     if ($install_dependency_packages_only) {
         if ($we_have_pfring_support) {
