@@ -66,10 +66,6 @@
 #include "pfring_plugin/pfring_collector.h"
 #endif
 
-#ifdef SNABB_SWITCH
-#include "snabbswitch_plugin/snabbswitch_collector.h"
-#endif
-
 #ifdef FASTNETMON_ENABLE_AFPACKET
 #include "afpacket_plugin/afpacket_collector.h"
 #endif
@@ -263,7 +259,6 @@ void init_global_ban_settings() {
 
 bool enable_conection_tracking = true;
 
-bool enable_snabbswitch_collection = false;
 bool enable_afpacket_collection = false;
 bool enable_data_collection_from_mirror = true;
 bool enable_netmap_collection = false;
@@ -1314,10 +1309,6 @@ bool load_configuration_file() {
         } else {
             enable_netmap_collection = false;
         }
-    }
-
-    if (configuration_map.count("mirror_snabbswitch") != 0) {
-        enable_snabbswitch_collection = configuration_map["mirror_snabbswitch"] == "on";
     }
 
     if (configuration_map.count("mirror_afpacket") != 0) {
@@ -3082,12 +3073,6 @@ int main(int argc, char** argv) {
     // netmap processing
     if (enable_netmap_collection) {
         packet_capture_plugin_thread_group.add_thread(new boost::thread(start_netmap_collection, process_packet));
-    }
-#endif
-
-#ifdef SNABB_SWITCH
-    if (enable_snabbswitch_collection) {
-        packet_capture_plugin_thread_group.add_thread(new boost::thread(start_snabbswitch_collection, process_packet));
     }
 #endif
 
