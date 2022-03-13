@@ -114,8 +114,8 @@ my $ndpi_repository = 'https://github.com/pavel-odintsov/nDPI.git';
 
 my $stable_branch_name = 'v1.1.5';
 
-# By default use mirror
-my $use_mirror = 1;
+# By default do not use mirror
+my $use_mirror = '';
 
 my $mirror_url = 'https://github.com/pavel-odintsov/fastnetmon_dependencies/raw/master/files'; 
 
@@ -141,15 +141,11 @@ my $install_dependency_packages_only = '';
 
 my $build_boost = '';
 
-my $do_not_use_mirror = '';
-
 my $build_fastnetmon = 1;
 
 my $do_not_build_fastnetmon = '';
 
 my $build_gcc_only = '';
-
-my $source_build = '';
 
 # Get options from command line
 GetOptions(
@@ -159,12 +155,11 @@ GetOptions(
     'gobgp' => \$enable_gobgp_backend,
     'api' => \$enable_api,
     'boost' => \$build_boost,
-    'do-not-use-mirror' => \$do_not_use_mirror,
+    'use-mirror' => \$use_mirror,
     'do-not-build-fastnetmon' => \$do_not_build_fastnetmon,
     'help' => \$show_help,
     'install_dependency_packages_only' => \$install_dependency_packages_only, 
     'build_gcc_only' => \$build_gcc_only,
-    'source_build' => \$source_build,
 );
 
 # Export all meaningful customer facing flags to Sentry for better failure tracking
@@ -182,10 +177,6 @@ if ($show_help) {
 
 if ($do_not_build_fastnetmon) {
     $build_fastnetmon = '';
-}
-
-if ($do_not_use_mirror) {
-     $use_mirror = '';
 }
 
 if (defined($ENV{'CI'}) && $ENV{'CI'}) {
