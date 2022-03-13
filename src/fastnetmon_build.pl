@@ -297,20 +297,11 @@ sub main {
         }
     }
 
-    if ($os_type eq 'macosx') {
-        # Really strange issue https://github.com/pavel-odintsov/fastnetmon/issues/415 
-        $we_have_hiredis_support = 0;
-    }
-
     # CentOS base repository is very very poor and we need EPEL for some dependencies
     install_additional_repositories();
 
     # Refresh information about packages
     init_package_manager();
-
-    if ($os_type eq 'freebsd') {
-        exec_command("pkg install -y wget");
-    }
 
     # Install standard tools for building packages
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
@@ -533,12 +524,6 @@ sub install_json_c {
     exec_command("tar -xf $archive_name");
     chdir "json-c-json-c-0.13-20171207";
 
-    # Fix bugs (assigned but not used variable) which prevent code compilation
-    if ($os_type eq 'macosx' or $os_type eq 'freebsd') {
-        exec_command("sed -i -e '355 s#^#//#' json_tokener.c");
-        exec_command("sed -i -e '360 s#^#//#' json_tokener.c");
-    }
-
     print "Build it\n";
     exec_command("$configure_options ./configure --prefix=$install_path");
 
@@ -588,22 +573,6 @@ sub install_init_scripts {
         print "You could run it with command: /etc/init.d/fastnetmon start\n";
 
         return 1;
-    }
-
-    # For Gentoo
-    if ( $distro_type eq 'gentoo' ) {
-        my $init_path_in_src = "$fastnetmon_code_dir/fastnetmon_init_script_gentoo";
-        my $system_init_path = '/etc/init.d/fastnetmon';
-
-        # Checker for source code version, will work only for 1.1.3+ versions
-        if (-e $init_path_in_src) {
-            exec_command("cp $init_path_in_src $system_init_path");
-
-            print "We created service fastnetmon for you\n";
-            print "You could run it with command: /etc/init.d/fastnetmon start\n";
-
-            return 1;
-        }
     }
 
     # For Debian Squeeze and Wheezy 
@@ -669,16 +638,16 @@ sub install_log4cpp {
 
 sub install_grpc_dependencies {
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
-        apt_get('gcc', 'make', 'autoconf', 'automake', 'git', 'libtool', 'g++', 'python-all-dev', 'python-virtualenv');
+        apt_get('gcc', 'make', 'autoconf', 'automake', 'git', 'libtool', 'g++', 'python-all-dev', 'python-virtualenv', 'pkg-config');
+    } elsif ($distro_type eq 'centos') {
+        yum('pkgconfig');    
     }
 }
 
 sub install_grpc {
-    # Here we are storing revisions of code which are using multiple times in code
-    # https://github.com/grpc/grpc/releases/tag/v1.27.3
-    my $grpc_git_commit = "e73882dc0fcedab1ffe789e44ed6254819639ce3";
+    my $grpc_git_commit = "v1.30.2";
 
-    my $grpc_install_path = "$library_install_folder/grpc_1_27_3_$grpc_git_commit";
+    my $grpc_install_path = "$library_install_folder/grpc_1_30_2";
 
     if (-e $grpc_install_path && defined($ENV{'CI'})) {
 	print "gRPC was already installed\n";
@@ -702,7 +671,8 @@ sub install_grpc {
     exec_command("sed -i '82i DEFAULT_CXX=$default_cpp_compiler_path' Makefile");
 
     print "Build gRPC\n";
-    my $make_result = exec_command("$ld_library_path_for_make make $make_options");
+    # We need to specify PKG config path to pick up our custom OpenSSL instead of system one
+    my $make_result = exec_command("$ld_library_path_for_make PKG_CONFIG_PATH=/opt/openssl_1_0_2d/lib/pkgconfig make $make_options");
 
     unless ($make_result) {
         fast_die( "Could not build gRPC: make failed\n");
@@ -934,9 +904,7 @@ sub install_ndpi_dependencies {
     } elsif ($distro_type eq 'centos') {
         # We have json-c-devel for CentOS 6 and 7 and will use it for nDPI build system
         yum('git', 'autoconf', 'automake', 'libtool', 'libpcap-devel', 'json-c-devel', 'which');
-    } elsif ($os_type eq 'freebsd') {
-        exec_command("pkg install -y git autoconf automake libtool");
-    } 
+    }
 }
 
 # We use global variable $ndpi_repository here
@@ -984,10 +952,6 @@ sub init_package_manager {
     print "Update package manager cache\n";
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
         exec_command("apt-get update");
-    }
-
-    if ($os_type eq 'freebsd') {
-        exec_command("pkg update");
     }
 }
 
@@ -1149,27 +1113,9 @@ sub install_pf_ring_dependencies {
         # Install kernel headers only when we could compile kernel modules there
         my $kernel_headers_package_name = "linux-headers-$kernel_version";
 
-        if ($appliance_name eq 'vyos') { 
-            # VyOS uses another name for package for building kernel modules
-            $kernel_headers_package_name = 'linux-vyatta-kbuild';
-        } elsif ($appliance_name eq 'proxmox') {
-            $kernel_headers_package_name = "pve-headers-$kernel_version";
-        }
-
         push @debian_packages_for_pfring, $kernel_headers_package_name;
 
         apt_get(@debian_packages_for_pfring);
-
-        if ($appliance_name eq 'vyos') {
-            # By default we waven't this symlink and should add it manually
-
-            if ($distro_architecture eq 'x86_64') {  
-                exec_command("ln -s /usr/src/linux-image/debian/build/build-amd64-none-amd64-vyos/ /lib/modules/$kernel_version/build");
-            } else {
-                # i686
-                exec_command("ln -s /usr/src/linux-image/debian/build/build-i386-none-586-vyos/ /lib/modules/$kernel_version/build");
-            }
-        }
     } elsif ($distro_type eq 'centos') {
         my @centos_dependency_packages = ('make', 'bison', 'flex', 'gcc', 'gcc-c++', 'dkms', 'numactl-devel', 'subversion');
 
@@ -1190,15 +1136,6 @@ sub install_pf_ring_dependencies {
         push @centos_dependency_packages, "$kernel_package_name-$centos_kernel_version";
 
         yum(@centos_dependency_packages);
-    } elsif ($distro_type eq 'gentoo') {
-        my @gentoo_packages_for_pfring = ('subversion', 'sys-process/numactl', 'wget', 'tar');
-
-        my $gentoo_packages_for_pfring_as_string = join " ", @gentoo_packages_for_pfring;
-        exec_command("emerge -vu $gentoo_packages_for_pfring_as_string");
-
-        if ($? != 0) {
-            print "Emerge fail with code $?\n";
-        }
     }
 }
 
@@ -1790,7 +1727,7 @@ sub install_fastnetmon_dependencies {
         apt_get(@fastnetmon_deps);
     } elsif ($distro_type eq 'centos') {
         my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++',
-            'ncurses-devel', 'glibc-static', 'ncurses-static', 'libpcap-devel', 'gpm-static',
+            'ncurses-devel', 'libpcap-devel',
             'gpm-devel', 'cmake', 'pkgconfig',
         );
 
@@ -1799,19 +1736,6 @@ sub install_fastnetmon_dependencies {
         }
 
         yum(@fastnetmon_deps);
-    } elsif ($distro_type eq 'gentoo') {
-        my @fastnetmon_deps = ("dev-vcs/git", "gcc", "sys-libs/gpm", "sys-libs/ncurses", "dev-libs/log4cpp", "dev-libs/geoip", 
-            "net-libs/libpcap", "dev-util/cmake", "pkg-config", "dev-libs/boost"
-        );
-
-        my $fastnetmon_deps_as_string = join " ", @fastnetmon_deps;
-        exec_command("emerge -vu $fastnetmon_deps_as_string");
-
-        if ($? != 0) {
-            print "Emerge fail with code $?\n";
-        }
-    } elsif ($os_type eq 'freebsd') {
-        exec_command("pkg install -y cmake git ncurses boost-all log4cpp");
     }
 }
 
