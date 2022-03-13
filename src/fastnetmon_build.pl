@@ -1695,7 +1695,7 @@ sub install_boost {
     print "Build Boost\n";
     # We have troubles when run this code with vzctl exec so we should add custom compiler in path 
     # linkflags is required to specify custom path to libicu from regexp library
-    my $b2_build_result = exec_command("$library_install_folder/boost_build_4_3_0/bin/b2 -j $boost_build_threads -sICU_PATH=$library_install_folder/libicu_65_1 linkflags=\"-Wl,-rpath,$library_install_folder/libicu_65_1/lib\" --build-dir=$temp_folder_for_building_project/boost_build_temp_directory_1_7_4 link=shared --without-test --without-python --without-wave --without-log --without-mpi");
+    my $b2_build_result = exec_command("$ld_library_path_for_make $library_install_folder/boost_build_4_3_0/bin/b2 -j $boost_build_threads -sICU_PATH=$library_install_folder/libicu_65_1 linkflags=\"-Wl,-rpath,$library_install_folder/libicu_65_1/lib\" --build-dir=$temp_folder_for_building_project/boost_build_temp_directory_1_7_4 link=shared --without-test --without-python --without-wave --without-log --without-mpi");
 
     unless ($b2_build_result) {
         die "Can't execute b2 build correctly\n";
