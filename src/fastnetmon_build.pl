@@ -120,7 +120,14 @@ GetOptions(
 );
 
 if ($show_help) {
-    print "We have following options:\n--use-git-master\n--do-not-use-mirror\n--use-modern-pf-ring\n--install_dependency_packages_only\n--do-not-build-fastnetmon\n--build_gcc_only\n--help\n";
+    print "We have following options:\n" .
+        "--use-git-master\n" .
+        "--use-mirror\n" .
+        "--use-modern-pf-ring\n" . 
+        "--install_dependency_packages_only\n" . 
+        "--build_dependencies_only\n" .
+        "--build_fastnetmon_only\n" . 
+        "--build_gcc_only\n--help\n";
     exit (0);
 }
 
