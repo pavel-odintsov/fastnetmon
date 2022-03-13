@@ -101,19 +101,19 @@ my $show_help = '';
 
 my $install_dependency_packages_only = '';
 
-
-my $build_fastnetmon = 1;
-
-my $do_not_build_fastnetmon = '';
+my $build_fastnetmon_only = '';
 
 my $build_gcc_only = '';
+
+my $build_dependencies_only = '';
 
 # Get options from command line
 GetOptions(
     'use-git-master' => \$we_use_code_from_master,
     'use-modern-pf-ring' => \$use_modern_pf_ring,
     'use-mirror' => \$use_mirror,
-    'do-not-build-fastnetmon' => \$do_not_build_fastnetmon,
+    'build_fastnetmon_only' => \$build_fastnetmon_only,
+    'build_dependencies_only' => \$build_dependencies_only,
     'help' => \$show_help,
     'install_dependency_packages_only' => \$install_dependency_packages_only, 
     'build_gcc_only' => \$build_gcc_only
@@ -122,10 +122,6 @@ GetOptions(
 if ($show_help) {
     print "We have following options:\n--use-git-master\n--do-not-use-mirror\n--use-modern-pf-ring\n--install_dependency_packages_only\n--do-not-build-fastnetmon\n--build_gcc_only\n--help\n";
     exit (0);
-}
-
-if ($do_not_build_fastnetmon) {
-    $build_fastnetmon = '';
 }
 
 welcome_message();
@@ -355,7 +351,11 @@ sub main {
         }
 
         install_fastnetmon_dependencies();
-    } else {
+
+        exit(0);
+    }
+
+    if ($build_dependencies_only) {
         if ($we_have_pfring_support) {
        	   install_pf_ring_dependencies();
            install_pf_ring();
@@ -410,10 +410,11 @@ sub main {
         }
 
         install_fastnetmon_dependencies();
+    }
 
-        if ($build_fastnetmon) {
-            install_fastnetmon();
-        }
+    if ($build_fastnetmon_only) {
+        install_fastnetmon();
+        exit(0);
     }
 
     my $install_time = time() - $start_time;

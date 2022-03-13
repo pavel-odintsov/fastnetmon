@@ -29,7 +29,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 180m
-          command: perl src/fastnetmon_build.pl --use-git-master
+          command: perl src/fastnetmon_build.pl --build_dependencies_only
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -38,6 +38,7 @@ jobs:
           key: "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
           paths:
             - /opt
+      - run: perl src/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
@@ -81,7 +82,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 180m
-          command: perl src/fastnetmon_build.pl --use-git-master
+          command: perl src/fastnetmon_build.pl --build_dependencies_only
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -90,6 +91,7 @@ jobs:
           key: "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
           paths:
             - /opt
+      - run: perl src/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
@@ -133,7 +135,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 180m
-          command: perl src/fastnetmon_build.pl --use-git-master
+          command: perl src/fastnetmon_build.pl --build_dependencies_only
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -142,6 +144,7 @@ jobs:
           key: "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
           paths:
             - /opt
+      - run: perl src/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
@@ -185,7 +188,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 180m
-          command: perl src/fastnetmon_build.pl --use-git-master
+          command: perl src/fastnetmon_build.pl --build_dependencies_only
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -194,6 +197,7 @@ jobs:
           key: "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
           paths:
             - /opt
+      - run: perl src/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
@@ -237,7 +241,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 180m 
-          command: perl src/fastnetmon_build.pl --use-git-master
+          command: perl src/fastnetmon_build.pl --build_dependencies_only
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -246,6 +250,7 @@ jobs:
           key: "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
           paths:
             - /opt
+      - run: perl src/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
@@ -289,7 +294,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 180m 
-          command: perl src/fastnetmon_build.pl --use-git-master
+          command: perl src/fastnetmon_build.pl --build_dependencies_only
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -298,6 +303,7 @@ jobs:
           key: "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
           paths:
             - /opt
+      - run: perl src/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
@@ -341,7 +347,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 180m 
-          command: perl src/fastnetmon_build.pl --use-git-master
+          command: perl src/fastnetmon_build.pl --build_dependencies_only
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -350,6 +356,7 @@ jobs:
           key: "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
           paths:
             - /opt
+      - run: perl src/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
@@ -394,7 +401,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 180m
-          command: perl src/fastnetmon_build.pl --use-git-master
+          command: perl src/fastnetmon_build.pl --build_dependencies_only
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -404,6 +411,7 @@ jobs:
           paths:
             - /opt
             - /usr/include/linux/pf_ring.h
+      - run: perl src/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
@@ -445,7 +453,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 180m 
-          command: perl src/fastnetmon_build.pl --use-git-master
+          command: perl src/fastnetmon_build.pl --build_dependencies_only
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -460,6 +468,7 @@ jobs:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
+      - run: perl src/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
       - run: src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz 1.1.8 centos 7
       - store_artifacts:
           path: /tmp/result_data/fastnetmon-1.1.8-1.el7.x86_64.rpm
@@ -497,7 +506,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 180m 
-          command: perl src/fastnetmon_build.pl --use-git-master
+          command: perl src/fastnetmon_build.pl --build_dependencies_only
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -507,6 +516,7 @@ jobs:
           paths:
             - /opt
             - /usr/include/linux/pf_ring.h
+      - run: perl src/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
