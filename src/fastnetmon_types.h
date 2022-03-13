@@ -126,7 +126,7 @@ class attack_details : public map_element {
         customer_network.first = 0;
         customer_network.second = 0;
     }
-    direction attack_direction;
+    direction_t attack_direction;
     // first attackpower detected
     uint64_t attack_power;
     // max attack power

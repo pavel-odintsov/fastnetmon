@@ -4,7 +4,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
-enum direction { INCOMING = 0, OUTGOING, INTERNAL, OTHER };
+enum direction_t { INCOMING = 0, OUTGOING, INTERNAL, OTHER };
 enum source_t { UNKNOWN = 0, MIRROR = 1, SFLOW = 2, NETFLOW = 3, TERAFLOW = 4 };
 
 // simplified packet struct for lightweight save into memory
@@ -65,7 +65,7 @@ class simple_packet_t {
     int64_t flow_end = 0;
 
     // We store packet direction here because direction calculation is very difficult task for cpu
-    direction packet_direction = OTHER;
+    direction_t packet_direction = OTHER;
 
     // IP address of device which send this flow
     uint32_t agent_ip_address = 0;

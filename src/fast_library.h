@@ -82,7 +82,7 @@ int convert_string_to_integer(std::string line);
 bool print_pid_to_file(pid_t pid, std::string pid_path);
 bool read_pid_from_file(pid_t& pid, std::string pid_path);
 
-direction get_packet_direction(patricia_tree_t* lookup_tree,
+direction_t get_packet_direction(patricia_tree_t* lookup_tree,
                                uint32_t src_ip,
                                uint32_t dst_ip,
                                unsigned long& subnet,
@@ -92,12 +92,12 @@ direction get_packet_direction(patricia_tree_t* lookup_tree,
                                unsigned long& source_subnet,
                                unsigned int&  source_subnet_cidr_mas);
 
-direction get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_addr src_ipv6, struct in6_addr dst_ipv6);
+direction_t get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_addr src_ipv6, struct in6_addr dst_ipv6);
 
 std::string convert_prefix_to_string_representation(prefix_t* prefix);
 std::string find_subnet_by_ip_in_string_format(patricia_tree_t* patricia_tree, std::string ip);
 std::string convert_subnet_to_string(subnet_t my_subnet);
-std::string get_direction_name(direction direction_value);
+std::string get_direction_name(direction_t direction_value);
 subnet_t convert_subnet_from_string_to_binary(std::string subnet_cidr);
 std::vector<std::string> split_strings_to_vector_by_comma(std::string raw_string);
 subnet_t convert_subnet_from_string_to_binary_with_cidr_format(std::string subnet_cidr);

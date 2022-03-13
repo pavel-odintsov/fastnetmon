@@ -468,7 +468,7 @@ void send_attack_details(uint32_t client_ip, attack_details current_attack_detai
 void free_up_all_resources();
 std::string print_ddos_attack_details();
 void recalculate_speed();
-std::string print_channel_speed(std::string traffic_type, direction packet_direction);
+std::string print_channel_speed(std::string traffic_type, direction_t packet_direction);
 void process_packet(simple_packet_t& current_packet);
 void traffic_draw_program();
 void interruption_signal_handler(int signal_number);
@@ -592,10 +592,10 @@ void RunApiServer() {
 template <typename T> class TrafficComparatorClass {
     private:
     sort_type sort_field;
-    direction sort_direction;
+    direction_t sort_direction;
 
     public:
-    TrafficComparatorClass(direction sort_direction, sort_type sort_field) {
+    TrafficComparatorClass(direction_t sort_direction, sort_type sort_field) {
         this->sort_field = sort_field;
         this->sort_direction = sort_direction;
     }
@@ -782,7 +782,7 @@ void store_data_in_redis(std::string key_name, std::string attack_details) {
 }
 #endif
 
-std::string draw_table(direction data_direction, bool do_redis_update, sort_type sort_item) {
+std::string draw_table(direction_t data_direction, bool do_redis_update, sort_type sort_item) {
     std::vector<pair_of_map_elements> vector_for_sort;
 
     std::stringstream output_buffer;
@@ -1806,7 +1806,7 @@ void process_packet(simple_packet_t& current_packet) {
     unsigned int  source_subnet_cidr_mask = 0;
 
 
-    direction packet_direction = get_packet_direction(lookup_tree_ipv4, current_packet.src_ip,
+    direction_t packet_direction = get_packet_direction(lookup_tree_ipv4, current_packet.src_ip,
                                                       current_packet.dst_ip, subnet, subnet_cidr_mask,
                                                       destination_subnet_host, destination_subnet_cidr_mask,
                                                       source_subnet_host, source_subnet_cidr_mask);
@@ -2660,7 +2660,7 @@ void traffic_draw_program() {
 }
 
 // pretty print channel speed in pps and MBit
-std::string print_channel_speed(std::string traffic_type, direction packet_direction) {
+std::string print_channel_speed(std::string traffic_type, direction_t packet_direction) {
     uint64_t speed_in_pps = total_speed_average_counters[packet_direction].packets;
     uint64_t speed_in_bps = total_speed_average_counters[packet_direction].bytes;
 
@@ -3146,7 +3146,7 @@ void interruption_signal_handler(int signal_number) {
     exit(1);
 }
 
-unsigned int detect_attack_protocol(map_element& speed_element, direction attack_direction) {
+unsigned int detect_attack_protocol(map_element& speed_element, direction_t attack_direction) {
     if (attack_direction == INCOMING) {
         return get_max_used_protocol(speed_element.tcp_in_packets, speed_element.udp_in_packets,
                                      speed_element.icmp_in_packets);
@@ -3265,7 +3265,7 @@ void execute_ip_ban(uint32_t client_ip, map_element average_speed_element, std::
     uint64_t in_flows = average_speed_element.in_flows;
     uint64_t out_flows = average_speed_element.out_flows;
 
-    direction data_direction;
+    direction_t data_direction;
 
     if (!global_ban_settings.enable_ban) {
         logger << log4cpp::Priority::INFO << "We do not ban: " << convert_ip_as_uint_to_string(client_ip)
@@ -4130,7 +4130,7 @@ void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_
 
 std::string print_flow_tracking_for_specified_protocol(contrack_map_type& protocol_map,
                                                        std::string client_ip,
-                                                       direction flow_direction) {
+                                                       direction_t flow_direction) {
     std::stringstream buffer;
     // We shoud iterate over all fields
 
