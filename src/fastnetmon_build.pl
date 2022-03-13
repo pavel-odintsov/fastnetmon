@@ -316,8 +316,6 @@ sub main {
         exec_command("pkg install -y wget");
     }
 
-    send_tracking_information('started');
-
     # Install standard tools for building packages
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
         my @debian_packages_for_build = ('build-essential', 'make', 'tar', 'wget');
@@ -417,8 +415,6 @@ sub main {
             install_fastnetmon();
         }
     }
-
-    send_tracking_information('finished');
 
     my $install_time = time() - $start_time;
     my $pretty_install_time_in_minutes = sprintf("%.2f", $install_time / 60);
