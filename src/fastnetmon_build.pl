@@ -137,12 +137,8 @@ my $use_modern_pf_ring = '';
 
 my $show_help = '';
 
-my $enable_gobgp_backend = '';
-my $enable_api = '';
-
 my $install_dependency_packages_only = '';
 
-my $build_boost = '';
 
 my $build_fastnetmon = 1;
 
@@ -155,9 +151,6 @@ GetOptions(
     'use-git-master' => \$we_use_code_from_master,
     'do-not-track-me' => \$do_not_track_me,
     'use-modern-pf-ring' => \$use_modern_pf_ring,
-    'gobgp' => \$enable_gobgp_backend,
-    'api' => \$enable_api,
-    'boost' => \$build_boost,
     'use-mirror' => \$use_mirror,
     'do-not-build-fastnetmon' => \$do_not_build_fastnetmon,
     'help' => \$show_help,
@@ -170,12 +163,9 @@ GetOptions(
 $ENV{'use-git-master'} = $we_use_code_from_master;
 $ENV{'do-not-track-me'} = $do_not_track_me;
 $ENV{'use-modern-pf-ring'} = $use_modern_pf_ring;
-$ENV{'gobgp'} = $enable_gobgp_backend;
-$ENV{'api'} = $enable_api;
-$ENV{'boost'} = $build_boost;
 
 if ($show_help) {
-    print "We have following options:\n--use-git-master\n--do-not-use-mirror\n--do-not-track-me\n--use-modern-pf-ring\n--gobgp\n--api\n--install_dependency_packages_only\n--boost\ndo-not-build-fastnetmon\n--build_gcc_only\n--help\n--source_build\n";
+    print "We have following options:\n--use-git-master\n--do-not-use-mirror\n--do-not-track-me\n--use-modern-pf-ring\n--install_dependency_packages_only\ndo-not-build-fastnetmon\n--build_gcc_only\n--help\n--source_build\n";
     exit (0);
 }
 
@@ -199,18 +189,13 @@ if ($use_modern_pf_ring) {
 my $we_have_ndpi_support = '1';
 my $we_have_hiredis_support = '1';
 my $we_have_log4cpp_support = '1';
-my $we_have_pfring_support = '';
 my $we_have_mongo_support = '1';
-my $we_have_protobuf_support = '';
-my $we_have_grpc_support = '';
-my $we_have_gobgp_support = '';
+my $we_have_protobuf_support = '1';
+my $we_have_grpc_support = '1';
+my $we_have_gobgp_support = '1';
 
-# These modes use same modules
-if ($enable_gobgp_backend || $enable_api) {
-    $we_have_protobuf_support = 1;
-    $we_have_grpc_support = 1;
-    $we_have_gobgp_support = 1;
-}
+# We allow it only for legacy systems
+my $we_have_pfring_support = '';
 
 main();
 
@@ -536,19 +521,17 @@ sub main {
 
         install_poco();
 
-        if ($build_boost) {
-            # We need fresh cmake for this build, Boost requires it
-            $cmake_path = "$library_install_folder/cmake-3.16.4/bin/cmake";
+        # We need fresh cmake for this build, Boost requires it
+        $cmake_path = "$library_install_folder/cmake-3.16.4/bin/cmake";
 
-            install_gcc_dependencies();
+        install_gcc_dependencies();
 
-	        install_cmake_dependencies();
-	        install_cmake();
-            install_icu();
-	        install_boost_builder();
-            install_boost_dependencies();
-	        install_boost();
-	    }
+        install_cmake_dependencies();
+        install_cmake();
+        install_icu();
+        install_boost_builder();
+        install_boost_dependencies();
+        install_boost();
 
         if ($we_have_ndpi_support) {
 	        install_ndpi_dependencies();
@@ -1902,16 +1885,6 @@ sub install_fastnetmon_dependencies {
             "liblog4cpp5-dev", "libnuma-dev", "libpcap-dev", "cmake", "pkg-config",
         );
 
-        unless ($build_boost) {
-
- 	        # We add this dependencies because package libboost-all-dev is broken on VyOS
-            if ($appliance_name eq 'vyos') {
-                push @fastnetmon_deps, ('libboost-regex-dev', 'libboost-system-dev', 'libboost-thread-dev');
-            } else {
-                push @fastnetmon_deps, "libboost-all-dev";
-            }
-	    }
-
         apt_get(@fastnetmon_deps);
     } elsif ($distro_type eq 'centos') {
         my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++',
@@ -1921,10 +1894,6 @@ sub install_fastnetmon_dependencies {
 
         if ($distro_type eq 'centos' && int($distro_version) == 7) {
             push @fastnetmon_deps, 'net-tools';
-        }
-
-        unless ($build_boost) {
-            @fastnetmon_deps = (@fastnetmon_deps, 'boost-devel', 'boost-thread');
         }
 
         yum(@fastnetmon_deps);
@@ -1984,18 +1953,10 @@ sub install_fastnetmon {
         $cmake_params .= " -DENABLE_PF_RING_SUPPORT=ON";
     }
    
-    if ($build_boost) {
-	    $cmake_params .= " -DENABLE_CUSTOM_BOOST_BUILD=ON";
-    }
-
     if ($distro_type eq 'centos' && $distro_version == 6) {
         # Disable cmake script from Boost package because it's broken:
         # http://public.kitware.com/Bug/view.php?id=15270
         $cmake_params .= " -DBoost_NO_BOOST_CMAKE=BOOL:ON";
-    }
-
-    if ($enable_gobgp_backend) {
-        $cmake_params .= " -DENABLE_GOBGP_SUPPORT=ON";
     }
 
     # Bump version in cmake build system

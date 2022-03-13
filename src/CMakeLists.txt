@@ -40,15 +40,14 @@ set(CMAKE_INSTALL_SYSTEMD_SERVICEDIR "/lib/systemd/system"
   CACHE PATH "Location for systemd service files")
 
 # With this flag we can enable GoBGP build via console: cmake .. -DENABLE_GOBGP_SUPPORT=ON
-option(ENABLE_GOBGP_SUPPORT "Enable GoBGP support build" OFF)
+option(ENABLE_GOBGP_SUPPORT "Enable GoBGP support build" ON)
 
 if (ENABLE_GOBGP_SUPPORT)
-    # We could not compile gRPC without C++ 11
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++14")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++14")
 endif()
 
-# cmake -DENABLE_CUSTOM_BOOST_BUILD=ON .. 
+option(ENABLE_CUSTOM_BOOST_BUILD "Enable build with custom Boost" ON)
 if (ENABLE_CUSTOM_BOOST_BUILD)
     message(STATUS "Build with custom Boost")
 
@@ -59,8 +58,8 @@ if (ENABLE_CUSTOM_BOOST_BUILD)
 
     SET(Boost_DIR "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/boost_1_72_0/stage/lib/cmake/Boost-1.72.0/")
 
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++14")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++14")
 
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
 
