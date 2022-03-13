@@ -538,6 +538,7 @@ if (MONGOC_INCLUDES_FOLDER AND MONGOC_LIBRARY_PATH AND BSON_INCLUDES_FOLDER AND 
     include_directories("${BSON_INCLUDES_FOLDER}/libbson-1.0")
 
     target_link_libraries(fastnetmon ${MONGOC_LIBRARY_PATH} ${BSON_LIBRARY_PATH})
+    target_link_libraries(fastnetmon_logic ${MONGOC_LIBRARY_PATH} ${BSON_LIBRARY_PATH})
 else()
     message(FATAL_ERROR "We can't find Mongo C library")
 endif()
