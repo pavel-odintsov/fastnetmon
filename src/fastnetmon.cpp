@@ -147,8 +147,6 @@ FastnetmonPlatformConfigurtion fastnetmon_platform_configuration;
 // Send or not any details about attack for ban script call over stdin
 bool notify_script_pass_details = true;
 
-bool pfring_hardware_filters_enabled = false;
-
 bool notify_script_enabled = true;
 
 // We could collect attack dumps in pcap format
@@ -867,10 +865,6 @@ bool load_configuration_file() {
         } else {
             enable_sflow_collection = false;
         }
-    }
-
-    if (configuration_map.count("pfring_hardware_filters_enabled") != 0) {
-        pfring_hardware_filters_enabled = configuration_map["pfring_hardware_filters_enabled"] == "on";
     }
 
     if (configuration_map.count("netflow") != 0) {

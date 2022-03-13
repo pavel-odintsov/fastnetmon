@@ -302,9 +302,6 @@ if (ENABLE_PF_RING_SUPPORT)
     target_link_libraries(pfring_plugin ${PFRING_LIBRARIES})
     target_link_libraries(pfring_plugin numa)
     target_link_libraries(pfring_plugin ${CMAKE_THREAD_LIBS_INIT})
-
-    # Add action for hardware filetring
-    add_library(pfring_hardware_filter_action STATIC actions/pfring_hardware_filter_action.cpp)
 endif()
 
 if (ENABLE_GOBGP_SUPPORT)
@@ -613,7 +610,6 @@ target_link_libraries(fastnetmon unified_parser)
 
 if (ENABLE_PF_RING_SUPPORT)
     target_link_libraries(fastnetmon pfring_plugin)
-    target_link_libraries(fastnetmon pfring_hardware_filter_action)
 endif()
 
 target_link_libraries(fastnetmon ${OPENSSL_LIBRARY_PATH})
