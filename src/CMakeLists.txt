@@ -31,6 +31,7 @@ set(PFRING_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/pf_ring_6.0.
 set(LIBPCAP_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libpcap_1.7.4")
 set(MONGO_C_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/mongo_c_driver_1_1_9")
 set(CAPNP_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/capnproto_0_8_0")
+set(OPENSSL_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/openssl_1_0_2d")
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} --std=c++14")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} --std=c++14")
@@ -86,7 +87,7 @@ SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
 # Create builds in current folder with install RPATH
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
-SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libhiredis_0_13/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/log4cpp1.1.1/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/ndpi/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/pf_ring_6.0.3/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/json-c-0.13/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/mongo_c_driver_1_1_9/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/grpc_1_27_3_e73882dc0fcedab1ffe789e44ed6254819639ce3/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/protobuf_3.11.4/lib;${CAPNP_CUSTOM_INSTALL_PATH}/lib")
+SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libhiredis_0_13/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/log4cpp1.1.1/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/ndpi/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/pf_ring_6.0.3/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/json-c-0.13/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/mongo_c_driver_1_1_9/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/grpc_1_27_3_e73882dc0fcedab1ffe789e44ed6254819639ce3/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/protobuf_3.11.4/lib;${CAPNP_CUSTOM_INSTALL_PATH}/lib;${OPENSSL_CUSTOM_INSTALL_PATH}/lib")
 
 message(STATUS "C++ compilation flags: ${CMAKE_CXX_FLAGS_RELEASE}")
 message(STATUS "C++ debug compilation flags: ${CMAKE_CXX_FLAGS_DEBUG}")
@@ -484,6 +485,19 @@ else()
     message(STATUS "We can't find hiredis library and will disable Redis support")
 endif()
 
+set(ENABLE_OPENSSL_SUPPORT TRUE)
+if (ENABLE_OPENSSL_SUPPORT)
+    find_path(OPENSSL_INCLUDES_FOLDER NAMES "openssl/rsa.h" PATHS "${OPENSSL_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)
+    find_library(OPENSSL_LIBRARY_PATH NAMES ssl PATHS "${OPENSSL_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+    find_library(OPENSSL_CRYPTO_LIBRARY_PATH NAMES crypto PATHS "${OPENSSL_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
+
+    if (OPENSSL_INCLUDES_FOLDER AND OPENSSL_LIBRARY_PATH AND OPENSSL_CRYPTO_LIBRARY_PATH) 
+        include_directories(${OPENSSL_INCLUDES_FOLDER})
+    else()
+        message(FATAL_ERROR "Could not find OpenSSL library")
+    endif()
+endif()
+
 SET(CAPNP_SUPPORT TRUE)
 
 if (CAPNP_SUPPORT)
@@ -563,6 +577,9 @@ endif()
 
 target_link_libraries(fast_library ${JSONC_LIBRARY_PATH})
 
+target_link_libraries(fast_library ${OPENSSL_LIBRARY_PATH})
+target_link_libraries(fast_library ${OPENSSL_CRYPTO_LIBRARY_PATH})
+
 if (ENABLE_DPI_SUPPORT)
     target_link_libraries(fastnetmon fast_dpi)
 endif()
@@ -587,6 +604,9 @@ if (ENABLE_PF_RING_SUPPORT)
     target_link_libraries(fastnetmon pfring_plugin)
     target_link_libraries(fastnetmon pfring_hardware_filter_action)
 endif()
+
+target_link_libraries(fastnetmon ${OPENSSL_LIBRARY_PATH})
+target_link_libraries(fastnetmon ${OPENSSL_CRYPTO_LIBRARY_PATH})
 
 if (ENABLE_GOBGP_SUPPORT)
     target_link_libraries(fastnetmon gobgp_action)
