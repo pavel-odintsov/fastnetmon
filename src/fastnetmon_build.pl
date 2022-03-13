@@ -1661,9 +1661,17 @@ sub install_boost {
     my $archive_file_name = 'boost_1_74_0.tar.gz';
 
     print "Install Boost dependencies\n";
+   
+    my $url_boost = "https://dl.bintray.com/boostorg/release/1.74.0/source/boost_1_74_0.tar.bz2";
+
+    # For some reasons we cannot download default URL on Debian 8 
+    if ($distro_type eq 'debian' && int($distro_version) == 8) {
+        $url_boost = "http://ftp.osuosl.org/pub/blfs/conglomeration/boost/boost_1_74_0.tar.bz2";
+    }
+    
 
     print "Download Boost source code\n";
-    my $boost_download_result = download_file("https://dl.bintray.com/boostorg/release/1.74.0/source/boost_1_74_0.tar.bz2", $archive_file_name, 'f82c0d8685b4d0e3971e8e2a8f9ef1551412c125');
+    my $boost_download_result = download_file($url_boost, $archive_file_name, 'f82c0d8685b4d0e3971e8e2a8f9ef1551412c125');
 
     unless ($boost_download_result) {
         fast_die("Can't download Boost source code\n");

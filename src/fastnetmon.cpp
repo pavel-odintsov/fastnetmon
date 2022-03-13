@@ -72,10 +72,6 @@
 #include "afpacket_plugin/afpacket_collector.h"
 #endif
 
-#ifdef PF_RING
-#include "actions/pfring_hardware_filter_action.h"
-#endif
-
 #ifdef ENABLE_GOBGP
 #include "actions/gobgp_action.h"
 #endif
