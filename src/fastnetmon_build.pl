@@ -1539,15 +1539,15 @@ sub install_configure_based_software {
 }
 
 sub install_capnproto {
-    my $capnp_install_path = "$library_install_folder/capnproto_0_7_0";
+    my $capnp_install_path = "$library_install_folder/capnproto_0_8_0";
 
     if (-e $capnp_install_path) {
         warn "Cap'n'proto already existis, skip compilation\n";
         return 1;
     }    
 
-    my $res = install_configure_based_software("https://capnproto.org/capnproto-c++-0.7.0.tar.gz", 
-        "348f5af790c65927480106e1143c9c9554cf2443", $capnp_install_path, 
+    my $res = install_configure_based_software("https://capnproto.org/capnproto-c++-0.8.0.tar.gz", 
+        "fbc1c65b32748029f1a09783d3ebe9d496d5fcc4", $capnp_install_path, 
         '');
 
     unless ($res) { 
