@@ -161,10 +161,16 @@ std::string get_printable_protocol_name(unsigned int protocol) {
 }
 
 uint32_t convert_cidr_to_binary_netmask(unsigned int cidr) {
+    // We can do bit shift only for 0 .. 31 bits but we cannot do it in case of 32 bits
+    // Shift for same number of bits as type has is undefined behaviour in C standard:
+    // https://stackoverflow.com/questions/7401888/why-doesnt-left-bit-shift-for-32-bit-integers-work-as-expected-when-used
+    // We will handle this case manually
+    if (cidr == 0) { 
+        return 0;
+    }
+
     uint32_t binary_netmask = 0xFFFFFFFF;
     binary_netmask = binary_netmask << (32 - cidr);
-    // htonl from host byte order to network
-    // ntohl from network byte order to host
 
     // We need network byte order at output
     return htonl(binary_netmask);
