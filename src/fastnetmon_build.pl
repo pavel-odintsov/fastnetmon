@@ -522,7 +522,7 @@ sub main {
         install_poco();
 
         # We need fresh cmake for this build, Boost requires it
-        $cmake_path = "$library_install_folder/cmake-3.16.4/bin/cmake";
+        $cmake_path = "$ld_library_path_for_make $library_install_folder/cmake-3.16.4/bin/cmake";
 
         install_gcc_dependencies();
 
