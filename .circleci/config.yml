@@ -15,6 +15,17 @@ jobs:
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
+      - restore_cache:
+          keys:
+            - "{{ .Environment.CIRCLE_JOB }}_gcc_24_10_2020"
+      - run:
+          name: install_gcc
+          no_output_timeout: 80m 
+          command: perl src/fastnetmon_build.pl --build_gcc_only
+      - save_cache:
+          key: "{{ .Environment.CIRCLE_JOB }}_gcc_24_10_2020"
+          paths:
+            - /opt/gcc920
       - run:
           name: install_dependencies
           no_output_timeout: 180m
@@ -56,6 +67,17 @@ jobs:
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
+      - restore_cache:
+          keys:
+            - "{{ .Environment.CIRCLE_JOB }}_gcc_24_10_2020"
+      - run:
+          name: install_gcc
+          no_output_timeout: 80m 
+          command: perl src/fastnetmon_build.pl --build_gcc_only
+      - save_cache:
+          key: "{{ .Environment.CIRCLE_JOB }}_gcc_24_10_2020"
+          paths:
+            - /opt/gcc920
       - run:
           name: install_dependencies
           no_output_timeout: 180m
@@ -97,6 +119,17 @@ jobs:
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
+      - restore_cache:
+          keys:
+            - "{{ .Environment.CIRCLE_JOB }}_gcc_24_10_2020"
+      - run:
+          name: install_gcc
+          no_output_timeout: 80m 
+          command: perl src/fastnetmon_build.pl --build_gcc_only
+      - save_cache:
+          key: "{{ .Environment.CIRCLE_JOB }}_gcc_24_10_2020"
+          paths:
+            - /opt/gcc920
       - run:
           name: install_dependencies
           no_output_timeout: 180m
@@ -152,7 +185,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 180m
-          command: perl src/fastnetmon_build.pl --use-git-master --use_custom_compiler
+          command: perl src/fastnetmon_build.pl --use-git-master
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -204,7 +237,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 180m 
-          command: perl src/fastnetmon_build.pl --use-git-master --use_custom_compiler
+          command: perl src/fastnetmon_build.pl --use-git-master
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -242,6 +275,17 @@ jobs:
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
+      - restore_cache:
+          keys:
+            - "{{ .Environment.CIRCLE_JOB }}_gcc_24_10_2020"
+      - run:
+          name: install_gcc
+          no_output_timeout: 80m 
+          command: perl src/fastnetmon_build.pl --build_gcc_only
+      - save_cache:
+          key: "{{ .Environment.CIRCLE_JOB }}_gcc_24_10_2020"
+          paths:
+            - /opt/gcc920
       - run:
           name: install_dependencies
           no_output_timeout: 180m 
@@ -283,6 +327,17 @@ jobs:
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
+      - restore_cache:
+          keys:
+            - "{{ .Environment.CIRCLE_JOB }}_gcc_24_10_2020"
+      - run:
+          name: install_gcc
+          no_output_timeout: 80m 
+          command: perl src/fastnetmon_build.pl --build_gcc_only
+      - save_cache:
+          key: "{{ .Environment.CIRCLE_JOB }}_gcc_24_10_2020"
+          paths:
+            - /opt/gcc920
       - run:
           name: install_dependencies
           no_output_timeout: 180m 
@@ -339,7 +394,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 180m
-          command: perl src/fastnetmon_build.pl --use-git-master --use_custom_compiler
+          command: perl src/fastnetmon_build.pl --use-git-master
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -390,7 +445,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 180m 
-          command: perl src/fastnetmon_build.pl --use-git-master --use_custom_compiler
+          command: perl src/fastnetmon_build.pl --use-git-master
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -428,6 +483,17 @@ jobs:
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_24_10_2020"
+      - restore_cache:
+          keys:
+            - "{{ .Environment.CIRCLE_JOB }}_gcc_24_10_2020"
+      - run:
+          name: install_gcc
+          no_output_timeout: 80m 
+          command: perl src/fastnetmon_build.pl --build_gcc_only
+      - save_cache:
+          key: "{{ .Environment.CIRCLE_JOB }}_gcc_24_10_2020"
+          paths:
+            - /opt/gcc920
       - run:
           name: install_dependencies
           no_output_timeout: 180m 

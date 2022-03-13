@@ -29,9 +29,6 @@ my $ld_library_path_for_make = "";
 my $default_c_compiler_path = '/usr/bin/gcc';
 my $default_cpp_compiler_path = '/usr/bin/g++';
 
-# This option enables use of our own custom compiler
-my $use_custom_compiler = '';
-
 my $os_type = '';
 my $distro_type = '';  
 my $distro_version = '';  
@@ -155,8 +152,7 @@ GetOptions(
     'do-not-build-fastnetmon' => \$do_not_build_fastnetmon,
     'help' => \$show_help,
     'install_dependency_packages_only' => \$install_dependency_packages_only, 
-    'build_gcc_only' => \$build_gcc_only,
-    'use_custom_compiler' => \$use_custom_compiler,
+    'build_gcc_only' => \$build_gcc_only
 );
 
 # Export all meaningful customer facing flags to Sentry for better failure tracking
@@ -482,11 +478,8 @@ sub main {
         exit(0);
     }
 
-    # For these distros we need to use custom compiler
-    if ($use_custom_compiler)  {
-        print "Will use custom compiler\n";
-        init_compiler();
-    }
+    # For all platforms we use custom compiler
+    init_compiler();
     
     # Install only depencdency packages, we need it to cache installed packages in CI
     if ($install_dependency_packages_only) {
@@ -853,11 +846,9 @@ sub install_grpc {
     print "Update project submodules\n";
     exec_command("git submodule update --init");
 
-    if($use_custom_compiler) {
-        ### Patch makefile for custom gcc: https://github.com/grpc/grpc/issues/3893
-        exec_command("sed -i '81i DEFAULT_CC=$default_c_compiler_path' Makefile");
-        exec_command("sed -i '82i DEFAULT_CXX=$default_cpp_compiler_path' Makefile");
-    }
+    ### Patch makefile for custom gcc: https://github.com/grpc/grpc/issues/3893
+    exec_command("sed -i '81i DEFAULT_CC=$default_c_compiler_path' Makefile");
+    exec_command("sed -i '82i DEFAULT_CXX=$default_cpp_compiler_path' Makefile");
 
     print "Build gRPC\n";
     my $make_result = exec_command("$ld_library_path_for_make make $make_options");
