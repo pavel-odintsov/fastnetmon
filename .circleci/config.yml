@@ -67,10 +67,10 @@ jobs:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.7 ubuntu 20.04
+      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.8 ubuntu 20.04
       - store_artifacts:
-          path: /tmp/fastnetmon_1.1.7_amd64.deb
-      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_1.1.7_amd64.deb s3://fastnetmon_community_packages/ubuntu/20.04/fastnetmon_1.1.7_amd64.deb
+          path: /tmp/fastnetmon_1.1.8_amd64.deb
+      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_1.1.8_amd64.deb s3://fastnetmon_community_packages/ubuntu/20.04/fastnetmon_1.1.8_amd64.deb
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
       - run: ldd /opt/fastnetmon/fastnetmon
       - run: ldd /opt/fastnetmon/fastnetmon_client
@@ -141,10 +141,10 @@ jobs:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.7 ubuntu 18.04
+      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.8 ubuntu 18.04
       - store_artifacts:
-          path: /tmp/fastnetmon_1.1.7_amd64.deb
-      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_1.1.7_amd64.deb s3://fastnetmon_community_packages/ubuntu/18.04/fastnetmon_1.1.7_amd64.deb
+          path: /tmp/fastnetmon_1.1.8_amd64.deb
+      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_1.1.8_amd64.deb s3://fastnetmon_community_packages/ubuntu/18.04/fastnetmon_1.1.8_amd64.deb
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
       - run: ldd /opt/fastnetmon/fastnetmon
       - run: ldd /opt/fastnetmon/fastnetmon_client
@@ -215,10 +215,10 @@ jobs:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.7 ubuntu 16.04
+      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.8 ubuntu 16.04
       - store_artifacts:
-          path: /tmp/fastnetmon_1.1.7_amd64.deb
-      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_1.1.7_amd64.deb s3://fastnetmon_community_packages/ubuntu/16.04/fastnetmon_1.1.7_amd64.deb
+          path: /tmp/fastnetmon_1.1.8_amd64.deb
+      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_1.1.8_amd64.deb s3://fastnetmon_community_packages/ubuntu/16.04/fastnetmon_1.1.8_amd64.deb
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
       - run: ldd /opt/fastnetmon/fastnetmon
       - run: ldd /opt/fastnetmon/fastnetmon_client
@@ -289,10 +289,10 @@ jobs:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.7 ubuntu 14.04
+      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.8 ubuntu 14.04
       - store_artifacts:
-          path: /tmp/fastnetmon_1.1.7_amd64.deb
-      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_1.1.7_amd64.deb s3://fastnetmon_community_packages/ubuntu/14.04/fastnetmon_1.1.7_amd64.deb
+          path: /tmp/fastnetmon_1.1.8_amd64.deb
+      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_1.1.8_amd64.deb s3://fastnetmon_community_packages/ubuntu/14.04/fastnetmon_1.1.8_amd64.deb
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
       - run: ldd /opt/fastnetmon/fastnetmon
       - run: ldd /opt/fastnetmon/fastnetmon_client
@@ -363,10 +363,10 @@ jobs:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.7 debian 8
+      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.8 debian 8
       - store_artifacts:
-          path: /tmp/fastnetmon_1.1.7_amd64.deb
-      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_1.1.7_amd64.deb s3://fastnetmon_community_packages/debian/8/fastnetmon_1.1.7_amd64.deb
+          path: /tmp/fastnetmon_1.1.8_amd64.deb
+      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_1.1.8_amd64.deb s3://fastnetmon_community_packages/debian/8/fastnetmon_1.1.8_amd64.deb
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
       - run: ldd /opt/fastnetmon/fastnetmon
       - run: ldd /opt/fastnetmon/fastnetmon_client
@@ -437,10 +437,10 @@ jobs:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.7 debian 9
+      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.8 debian 9
       - store_artifacts:
-          path: /tmp/fastnetmon_1.1.7_amd64.deb
-      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_1.1.7_amd64.deb s3://fastnetmon_community_packages/debian/9/fastnetmon_1.1.7_amd64.deb
+          path: /tmp/fastnetmon_1.1.8_amd64.deb
+      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_1.1.8_amd64.deb s3://fastnetmon_community_packages/debian/9/fastnetmon_1.1.8_amd64.deb
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
       - run: ldd /opt/fastnetmon/fastnetmon
       - run: ldd /opt/fastnetmon/fastnetmon_client
@@ -511,10 +511,10 @@ jobs:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.7 debian 10
+      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz 1.1.8 debian 10
       - store_artifacts:
-          path: /tmp/fastnetmon_1.1.7_amd64.deb
-      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_1.1.7_amd64.deb s3://fastnetmon_community_packages/debian/10/fastnetmon_1.1.7_amd64.deb
+          path: /tmp/fastnetmon_1.1.8_amd64.deb
+      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_1.1.8_amd64.deb s3://fastnetmon_community_packages/debian/10/fastnetmon_1.1.8_amd64.deb
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
       - run: ldd /opt/fastnetmon/fastnetmon
       - run: ldd /opt/fastnetmon/fastnetmon_client
@@ -565,10 +565,10 @@ jobs:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz 1.1.7 centos 6
+      - run: src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz 1.1.8 centos 6
       - store_artifacts:
-          path: /tmp/result_data/fastnetmon-1.1.7-1.el6.x86_64.rpm
-      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/result_data/fastnetmon-1.1.7-1.el6.x86_64.rpm s3://fastnetmon_community_packages/centos/6/fastnetmon-1.1.7-1.el6.x86_64.rpm
+          path: /tmp/result_data/fastnetmon-1.1.8-1.el6.x86_64.rpm
+      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/result_data/fastnetmon-1.1.8-1.el6.x86_64.rpm s3://fastnetmon_community_packages/centos/6/fastnetmon-1.1.8-1.el6.x86_64.rpm
       - run: ldd /opt/fastnetmon/fastnetmon
       - run: ldd /opt/fastnetmon/fastnetmon_client
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
@@ -637,10 +637,10 @@ jobs:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz 1.1.7 centos 7
+      - run: src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz 1.1.8 centos 7
       - store_artifacts:
-          path: /tmp/result_data/fastnetmon-1.1.7-1.el7.x86_64.rpm
-      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/result_data/fastnetmon-1.1.7-1.el7.x86_64.rpm s3://fastnetmon_community_packages/centos/7/fastnetmon-1.1.7-1.el7.x86_64.rpm
+          path: /tmp/result_data/fastnetmon-1.1.8-1.el7.x86_64.rpm
+      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/result_data/fastnetmon-1.1.8-1.el7.x86_64.rpm s3://fastnetmon_community_packages/centos/7/fastnetmon-1.1.8-1.el7.x86_64.rpm
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
       - run: ldd /opt/fastnetmon/fastnetmon
       - run: ldd /opt/fastnetmon/fastnetmon_client
@@ -710,10 +710,10 @@ jobs:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz 1.1.7 centos 8
+      - run: src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz 1.1.8 centos 8
       - store_artifacts:
-          path: /tmp/result_data/fastnetmon-1.1.7-1.el8.x86_64.rpm
-      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/result_data/fastnetmon-1.1.7-1.el8.x86_64.rpm s3://fastnetmon_community_packages/centos/8/fastnetmon-1.1.7-1.el8.x86_64.rpm
+          path: /tmp/result_data/fastnetmon-1.1.8-1.el8.x86_64.rpm
+      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/result_data/fastnetmon-1.1.8-1.el8.x86_64.rpm s3://fastnetmon_community_packages/centos/8/fastnetmon-1.1.8-1.el8.x86_64.rpm
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
       - run: ldd /opt/fastnetmon/fastnetmon
       - run: ldd /opt/fastnetmon/fastnetmon_client
