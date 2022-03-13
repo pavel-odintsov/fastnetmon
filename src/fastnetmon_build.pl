@@ -508,7 +508,7 @@ sub install_json_c {
     my $archive_name  = 'json-c-0.13-20171207.tar.gz';
     my $install_path = "$library_install_folder/json-c-0.13";
 
-    if (-e $install_path && defined($ENV{'CI'})) {
+    if (-e $install_path) {
 	    print "json-c was already installed\n";
 	    return 1;
     }
@@ -656,7 +656,7 @@ sub install_grpc {
 
     my $grpc_install_path = "$library_install_folder/grpc_1_30_2";
 
-    if (-e $grpc_install_path && defined($ENV{'CI'})) {
+    if (-e $grpc_install_path) {
 	print "gRPC was already installed\n";
         return 1;
     }
@@ -696,7 +696,7 @@ sub install_gobgp {
 
     my $gobgp_install_path = "$library_install_folder/gobgp_2_16_0";
 
-    if (-e $gobgp_install_path && defined($ENV{'CI'})) {
+    if (-e $gobgp_install_path) {
         print "GoBGP was already installed\n";
 	return 1;
     }
@@ -743,8 +743,8 @@ sub install_protobuf {
 
     my $protobuf_install_path = "$library_install_folder/protobuf_3.11.4";
 
-    if (-e $protobuf_install_path && defined($ENV{'CI'})) {
-	print "protobuf was already installed\n";
+    if (-e $protobuf_install_path) {
+	    print "protobuf was already installed\n";
         return 1;
     }
 
@@ -882,8 +882,8 @@ sub install_hiredis {
     my $disto_file_name = 'v0.13.1.tar.gz'; 
     my $hiredis_install_path = "$library_install_folder/libhiredis_0_13";
 
-    if (-e $hiredis_install_path && defined($ENV{'CI'})) {
-	print "hiredis was already installed\n";
+    if (-e $hiredis_install_path) {
+	    print "hiredis was already installed\n";
         return 1;
     }
 
@@ -918,8 +918,8 @@ sub install_ndpi_dependencies {
 sub install_ndpi {
     my $ndpi_install_path = "$library_install_folder/ndpi";
 
-    if (-e $ndpi_install_path && defined($ENV{'CI'})) {
-	print "nDPI was already installed\n";
+    if (-e $ndpi_install_path) {
+	    print "nDPI was already installed\n";
         return 1;
     }
 
@@ -1152,8 +1152,8 @@ sub install_pf_ring {
 
     my $pf_ring_install_path = "$library_install_folder/pf_ring_$pf_ring_version";
 
-    if (-e $pf_ring_install_path && defined($ENV{'CI'})) {
-	print "PF_RING was already installed\n";
+    if (-e $pf_ring_install_path) {
+	    print "PF_RING was already installed\n";
         return 1;
     }
 
@@ -1486,7 +1486,7 @@ sub install_cmake {
 
     my $cmake_install_path = "$library_install_folder/cmake-3.18.4";
 
-    if (-e $cmake_install_path && defined($ENV{'CI'})) {
+    if (-e $cmake_install_path) {
         warn "Found installed cmake at $cmake_install_path\n";
         return 1;
     }
@@ -1533,18 +1533,18 @@ sub install_boost_builder {
     chdir $temp_folder_for_building_project;
 
     # We use another name because it uses same name as boost distribution
-    my $archive_file_name = 'build-boost-1.74.0.tar.gz';
+    my $archive_file_name = '4.3.0.tar.gz';
 
-    my $boost_builder_install_folder = "$library_install_folder/boost_build1.74.0";
+    my $boost_builder_install_folder = "$library_install_folder/boost_build_4_3_0";
 
-    if (-e $boost_builder_install_folder && defined($ENV{'CI'}) ) {
+    if (-e $boost_builder_install_folder) {
         warn "Found installed Boost builder at $boost_builder_install_folder\n";
         return 1;
     }
 
     print "Download boost builder\n";
-    my $boost_build_result = download_file("https://dl.bintray.com/boostorg/release/1.74.0/source/boost_1_74_0.tar.bz2", $archive_file_name,
-        'f82c0d8685b4d0e3971e8e2a8f9ef1551412c125');
+    my $boost_build_result = download_file("https://github.com/boostorg/build/archive/$archive_file_name", $archive_file_name,
+        '');
 
     unless ($boost_build_result) {
         fast_die("Can't download boost builder\n");
@@ -1553,7 +1553,7 @@ sub install_boost_builder {
     print "Unpack boost builder\n";
     exec_command("tar -xf $archive_file_name");
 
-    unless (chdir "build-boost-1.74.0") {
+    unless (chdir "build-4.3.0") {
         fast_die("Cannot do chdir to build boost folder\n");
     }
 
@@ -1591,7 +1591,7 @@ sub install_gcc {
 
     my $gcc_package_install_path = "$library_install_folder/gcc$gcc_version_for_path";
 
-    if (-e $gcc_package_install_path && defined($ENV{'CI'})) {
+    if (-e $gcc_package_install_path) {
         warn "Found already installed gcc in $gcc_package_install_path. Skip compilation\n";
         return '1'; 
     }    
@@ -1653,7 +1653,7 @@ sub install_boost_dependencies {
 sub install_boost {
     my $boost_install_path = "$library_install_folder/boost_1_74_0";
 
-    if (-e $boost_install_path && defined($ENV{'CI'})) {
+    if (-e $boost_install_path) {
         warn "Boost libraries already exist in $boost_install_path. Skip build process\n";
         return 1;
     }
@@ -1689,11 +1689,10 @@ sub install_boost {
     print "Build Boost\n";
     # We have troubles when run this code with vzctl exec so we should add custom compiler in path 
     # linkflags is required to specify custom path to libicu from regexp library
-    my $b2_build_result = exec_command("$library_install_folder/boost_build1.74.0/bin/b2 -j$cpus_number -sICU_PATH=$library_install_folder/libicu_65_1 linkflags=\"-Wl,-rpath,$library_install_folder/libicu_65_1/lib\" --build-dir=$temp_folder_for_building_project/boost_build_temp_directory_1_7_4 link=shared --without-test --without-python --without-wave --without-log --without-mpi");
+    my $b2_build_result = exec_command("$library_install_folder/boost_build_4_3_0/bin/b2 -j$cpus_number -sICU_PATH=$library_install_folder/libicu_65_1 linkflags=\"-Wl,-rpath,$library_install_folder/libicu_65_1/lib\" --build-dir=$temp_folder_for_building_project/boost_build_temp_directory_1_7_4 link=shared --without-test --without-python --without-wave --without-log --without-mpi");
 
-    # We should not do this check because b2 build return bad return code even in success case... when it can't build few non important targets
     unless ($b2_build_result) {
-        ### die "Can't execute b2 build correctly\n";
+        die "Can't execute b2 build correctly\n";
     }
 
     1;
