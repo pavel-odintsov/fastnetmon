@@ -127,6 +127,8 @@ time_t last_call_of_traffic_recalculation;
 
 std::string cli_stats_file_path = "/tmp/fastnetmon.dat";
 
+std::string cli_stats_ipv6_file_path = "/tmp/fastnetmon_ipv6.dat";
+
 unsigned int stats_thread_sleep_time = 3600;
 unsigned int stats_thread_initial_call_delay = 30;
 
@@ -151,9 +153,6 @@ bool process_pcap_attack_dumps_with_dpi = false;
 bool unban_only_if_attack_finished = true;
 
 logging_configuration_t logging_configuration;
-
-// Variable with all data from main screen
-std::string screen_data_stats = "";
 
 // Global map with parsed config file
 configuration_map_t configuration_map;
@@ -199,9 +198,6 @@ bool monitor_local_ip_addresses = true;
 
 // Enable monitoring for OpenVZ VPS IP addresses by reading their list from kernel 
 bool monitor_openvz_vps_ip_addresses = false;
-
-// This flag could enable print of ban actions and thresholds on the client's screen
-bool print_configuration_params_on_the_screen = false;
 
 // Trigger for enable or disable traffic counting for whole subnets
 bool enable_subnet_counters = false;
@@ -734,6 +730,10 @@ bool load_configuration_file() {
 
     if (configuration_map.count("cli_stats_file_path") != 0) {
         cli_stats_file_path = configuration_map["cli_stats_file_path"];
+    }
+
+    if (configuration_map.count("cli_stats_ipv6_file_path") != 0) {
+        cli_stats_ipv6_file_path = configuration_map["cli_stats_ipv6_file_path"];
     }
 
     if (configuration_map.count("unban_only_if_attack_finished") != 0) {
@@ -1331,7 +1331,7 @@ unsigned int get_asn_for_ip(uint32_t ip) {
 #endif
 
 // It's vizualization thread :)
-void screen_draw_thread() {
+void screen_draw_ipv4_thread() {
     // we need wait one second for calculating speed by recalculate_speed
 
     //#include <sys/prctl.h>
@@ -1344,9 +1344,28 @@ void screen_draw_thread() {
         // Available only from boost 1.54: boost::this_thread::sleep_for(
         // boost::chrono::seconds(check_period) );
         boost::this_thread::sleep(boost::posix_time::seconds(check_period));
-        traffic_draw_program();
+        traffic_draw_ipv4_program();
     }
 }
+
+// It's vizualization thread :)
+void screen_draw_ipv6_thread() {
+    // we need wait one second for calculating speed by recalculate_speed
+
+    //#include <sys/prctl.h>
+    // prctl(PR_SET_NAME , "fastnetmon calc thread", 0, 0, 0);
+
+    // Sleep for a half second for shift against calculatiuon thread
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+
+    while (true) {
+        // Available only from boost 1.54: boost::this_thread::sleep_for(
+        // boost::chrono::seconds(check_period) );
+        boost::this_thread::sleep(boost::posix_time::seconds(check_period));
+        traffic_draw_ipv6_program();
+    }    
+}
+
 
 void recalculate_speed_thread_handler() {
     while (true) {
@@ -1693,8 +1712,11 @@ int main(int argc, char** argv) {
     // Start system speed recalculation thread
     service_thread_group.add_thread(new boost::thread(system_counters_speed_thread_handler));
 
-    // Run screen draw thread
-    service_thread_group.add_thread(new boost::thread(screen_draw_thread));
+    // Run screen draw thread for IPv4
+    service_thread_group.add_thread(new boost::thread(screen_draw_ipv4_thread));
+
+    // Run screen draw thread for IPv6
+    service_thread_group.add_thread(new boost::thread(screen_draw_ipv6_thread));
 
     // start thread for recalculating speed in realtime
     service_thread_group.add_thread(new boost::thread(recalculate_speed_thread_handler));

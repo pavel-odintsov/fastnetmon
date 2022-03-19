@@ -52,7 +52,6 @@ extern bool DEBUG_DUMP_ALL_PACKETS;
 extern bool DEBUG_DUMP_OTHER_PACKETS;
 extern uint64_t total_ipv4_packets;
 extern uint64_t total_ipv6_packets;
-extern std::string screen_data_stats;
 extern map_of_vector_counters_t SubnetVectorMapSpeed;
 extern double average_calculation_amount;
 extern double average_calculation_amount_for_subnets;
@@ -65,6 +64,7 @@ extern unsigned int max_ips_in_list;
 extern struct timeval speed_calculation_time;
 extern struct timeval drawing_thread_execution_time;
 extern time_t last_call_of_traffic_recalculation;
+extern std::string cli_stats_ipv6_file_path;
 extern bool process_incoming_traffic;
 extern bool process_outgoing_traffic;
 extern uint64_t total_unparsed_packets;
@@ -2074,7 +2074,57 @@ std::string print_channel_speed(std::string traffic_type, direction_t packet_dir
 }
 
 
-void traffic_draw_program() {
+void traffic_draw_ipv6_program() {
+    std::stringstream output_buffer;
+
+    // logger<<log4cpp::Priority::INFO<<"Draw table call";
+
+    struct timeval start_calc_time;
+    gettimeofday(&start_calc_time, NULL);
+
+    sort_type_t sorter;
+    if (sort_parameter == "packets") {
+        sorter = PACKETS;
+    } else if (sort_parameter == "bytes") {
+        sorter = BYTES;
+    } else if (sort_parameter == "flows") {
+        sorter = FLOWS;
+    } else {
+        logger << log4cpp::Priority::INFO << "Unexpected sorter type: " << sort_parameter;
+        sorter = PACKETS;
+    }    
+
+    output_buffer << "FastNetMon " << fastnetmon_platform_configuration.fastnetmon_version << " Try Advanced edition: https://fastnetmon.com"
+                  << "\n" 
+                  << "IPs ordered by: " << sort_parameter << "\n";
+
+    output_buffer << print_channel_speed_ipv6("Incoming traffic", INCOMING) << std::endl;
+
+    if (process_incoming_traffic) {
+        // output_buffer << draw_table(INCOMING, true, sorter);
+        output_buffer << std::endl;
+    }    
+
+    output_buffer << print_channel_speed_ipv6("Outgoing traffic", OUTGOING) << std::endl;
+
+    if (process_outgoing_traffic) {
+        // output_buffer << draw_table(OUTGOING, false, sorter);
+        output_buffer << std::endl;
+    }    
+
+    output_buffer << print_channel_speed_ipv6("Internal traffic", INTERNAL) << std::endl;
+
+    output_buffer << std::endl;
+
+    output_buffer << print_channel_speed_ipv6("Other traffic", OTHER) << std::endl;
+
+    output_buffer << std::endl;
+
+    // Print screen contents into file
+    print_screen_contents_into_file(output_buffer.str(), cli_stats_ipv6_file_path);
+}
+
+void traffic_draw_ipv4_program() {
     std::stringstream output_buffer;
 
     // logger<<log4cpp::Priority::INFO<<"Draw table call";
@@ -2132,9 +2182,6 @@ void traffic_draw_program() {
         << "ALERT! Toolkit working incorrectly! We should calculate speed in ~1 second\n";
     }
 
-    output_buffer << "Total amount of IPv6 packets: " << total_ipv6_packets << "\n";
-
-    output_buffer << "Total amount of IPv6 packets related to our own network: " << our_ipv6_packets << "\n";
     output_buffer << "Not processed packets: " << total_unparsed_packets_speed << " pps\n";
 
     // Print backend stats
@@ -2148,11 +2195,6 @@ void traffic_draw_program() {
     }
 #endif
 
-    // Print thresholds
-    if (print_configuration_params_on_the_screen) {
-        output_buffer << "\n" << print_ban_thresholds(global_ban_settings);
-    }
-
     if (!ban_list.empty()) {
         output_buffer << std::endl << "Ban list:" << std::endl;
         output_buffer << print_ddos_attack_details();
@@ -2163,10 +2205,8 @@ void traffic_draw_program() {
         output_buffer << print_subnet_load() << "\n";
     }
 
-    screen_data_stats = output_buffer.str();
-
     // Print screen contents into file
-    print_screen_contents_into_file(screen_data_stats);
+    print_screen_contents_into_file(output_buffer.str(), cli_stats_file_path);
 
     struct timeval end_calc_time;
     gettimeofday(&end_calc_time, NULL);
@@ -2624,9 +2664,9 @@ std::string draw_table(direction_t data_direction, bool do_redis_update, sort_ty
     return output_buffer.str();
 }
 
-void print_screen_contents_into_file(std::string screen_data_stats_param) {
+void print_screen_contents_into_file(std::string screen_data_stats_param, std::string file_path) {
     std::ofstream screen_data_file;
-    screen_data_file.open(cli_stats_file_path.c_str(), std::ios::trunc);
+    screen_data_file.open(file_path.c_str(), std::ios::trunc);
 
     if (screen_data_file.is_open()) {
         // Set 660 permissions to file for security reasons
@@ -2635,7 +2675,7 @@ void print_screen_contents_into_file(std::string screen_data_stats_param) {
         screen_data_file << screen_data_stats_param;
         screen_data_file.close();
     } else {
-        logger << log4cpp::Priority::ERROR << "Can't print program screen into file";
+        logger << log4cpp::Priority::ERROR << "Can't print program screen into file: " << file_path;
     }    
 }
 
@@ -3054,5 +3094,32 @@ void increment_outgoing_flow_counters(map_of_vector_counters_for_flow_t& SubnetV
         conntrack_key_struct_ptr->packets += sampled_number_of_packets;
         conntrack_key_struct_ptr->bytes += sampled_number_of_bytes;
     }
+}
+
+// pretty print channel speed in pps and MBit
+std::string print_channel_speed_ipv6(std::string traffic_type, direction_t packet_direction) {
+    uint64_t speed_in_pps = total_speed_average_counters_ipv6[packet_direction].packets;
+    uint64_t speed_in_bps = total_speed_average_counters_ipv6[packet_direction].bytes;
+
+    unsigned int number_of_tabs = 1;
+    // We need this for correct alignment of blocks
+    if (traffic_type == "Other traffic") {
+        number_of_tabs = 2;
+    }
+
+    std::stringstream stream;
+    stream << traffic_type;
+
+    for (unsigned int i = 0; i < number_of_tabs; i++) {
+        stream << "\t";
+    }
+
+    uint64_t speed_in_mbps = convert_speed_to_mbps(speed_in_bps);
+
+    stream << std::setw(6) << speed_in_pps << " pps " << std::setw(6) << speed_in_mbps << " mbps";
+
+    // Flows are not supported yet
+
+    return stream.str();
 }
 
