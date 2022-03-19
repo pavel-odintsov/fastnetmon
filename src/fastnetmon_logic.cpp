@@ -50,7 +50,6 @@ extern bool DEBUG_DUMP_ALL_PACKETS;
 extern bool DEBUG_DUMP_OTHER_PACKETS;
 extern uint64_t total_ipv4_packets;
 extern uint64_t total_ipv6_packets;
-extern bool process_internal_traffic_as_external;
 extern std::string screen_data_stats;
 extern map_of_vector_counters SubnetVectorMapSpeed;
 extern double average_calculation_amount;
@@ -2712,17 +2711,9 @@ void process_packet(simple_packet_t& current_packet) {
     unsigned long subnet = 0;
     unsigned int subnet_cidr_mask = 0;
 
-    // We use these variables to track subnets for internal traffic because we have two of them
-    unsigned long destination_subnet_host = 0;
-    unsigned int  destination_subnet_cidr_mask = 0;
-    unsigned long source_subnet_host = 0;
-    unsigned int  source_subnet_cidr_mask = 0;
-
 
     direction_t packet_direction = get_packet_direction(lookup_tree_ipv4, current_packet.src_ip,
-                                                      current_packet.dst_ip, subnet, subnet_cidr_mask,
-                                                      destination_subnet_host, destination_subnet_cidr_mask,
-                                                      source_subnet_host, source_subnet_cidr_mask);
+                                                      current_packet.dst_ip, subnet, subnet_cidr_mask);
 
     // It's useful in case when we can't find what packets do not processed correctly
     if (DEBUG_DUMP_OTHER_PACKETS && packet_direction == OTHER) {
@@ -2736,10 +2727,6 @@ void process_packet(simple_packet_t& current_packet) {
     }
 
     subnet_t current_subnet = std::make_pair(subnet, subnet_cidr_mask);
-
-    // We will use them for INTERNAL traffic type
-    subnet_t source_subnet       = std::make_pair(source_subnet_host, source_subnet_cidr_mask);
-    subnet_t destination_subnet = std::make_pair(destination_subnet_host, destination_subnet_cidr_mask);
 
     if (packet_direction == OUTGOING or packet_direction == INCOMING) {
         if (enable_subnet_counters) {
@@ -2796,29 +2783,19 @@ void process_packet(simple_packet_t& current_packet) {
     // Below we will implement different logic according to packet direction
     // We cannot use if / else if / else in this case because same conditions may trigger twice
     // For internal traffic type we trigger incoming and outgoing processing paths in same time
-    if (packet_direction == OUTGOING or (process_internal_traffic_as_external && packet_direction == INTERNAL)) {
+    if (packet_direction == OUTGOING) {
         uint32_t subnet_in_host_byte_order = 0;
 
         // Try to find map key for this subnet
         map_of_vector_counters::iterator itr;
 
-        if (packet_direction == OUTGOING) {
-            // We operate in host bytes order and need to convert subnet
-            if (subnet != 0) {
-                subnet_in_host_byte_order = ntohl(current_subnet.first);
-            }
-
-            // Find element in map of vectors
-            itr = SubnetVectorMap.find(current_subnet);
+        // We operate in host bytes order and need to convert subnet
+        if (subnet != 0) {
+            subnet_in_host_byte_order = ntohl(current_subnet.first);
         }
 
-        // In this case we need to use another subnet
-        if (packet_direction == INTERNAL) {
-            subnet_in_host_byte_order = ntohl(source_subnet.first);
-
-            // Lookup another subnet in this case
-            itr = SubnetVectorMap.find(source_subnet);
-        }
+        // Find element in map of vectors
+        itr = SubnetVectorMap.find(current_subnet);
 
         if (itr == SubnetVectorMap.end()) {
             logger << log4cpp::Priority::ERROR << "Can't find vector address in subnet map";
@@ -2955,29 +2932,19 @@ void process_packet(simple_packet_t& current_packet) {
         }
     }
 
-    if (packet_direction == INCOMING or (process_internal_traffic_as_external && packet_direction == INTERNAL)) {
+    if (packet_direction == INCOMING) {
         uint32_t subnet_in_host_byte_order = 0;
 
         // Try to find map key for this subnet
         map_of_vector_counters::iterator itr;
 
-        if (packet_direction == INCOMING) {
-            // We operate in host bytes order and need to convert subnet
-            if (subnet != 0) {
-                subnet_in_host_byte_order = ntohl(current_subnet.first);
-            }
-
-            // Find element in map of vectors
-            itr = SubnetVectorMap.find(current_subnet);
+        // We operate in host bytes order and need to convert subnet
+        if (subnet != 0) {
+            subnet_in_host_byte_order = ntohl(current_subnet.first);
         }
 
-        // In this case we need to use another subnet
-        if (packet_direction == INTERNAL) {
-            subnet_in_host_byte_order = ntohl(destination_subnet.first);
-
-            // Lookup destination subnet in this case
-             itr = SubnetVectorMap.find(destination_subnet);
-        }
+        // Find element in map of vectors
+        itr = SubnetVectorMap.find(current_subnet);
 
         if (itr == SubnetVectorMap.end()) {
             logger << log4cpp::Priority::ERROR << "Can't find vector address in subnet map";

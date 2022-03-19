@@ -88,11 +88,7 @@ direction_t get_packet_direction(patricia_tree_t* lookup_tree,
                                uint32_t src_ip,
                                uint32_t dst_ip,
                                unsigned long& subnet,
-                               unsigned int& subnet_cidr_mask,
-                               unsigned long& destination_subnet,
-                               unsigned int&  destination_subnet_cidr_mask,
-                               unsigned long& source_subnet,
-                               unsigned int&  source_subnet_cidr_mas);
+                               unsigned int& subnet_cidr_mask);
 
 direction_t get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_addr src_ipv6, struct in6_addr dst_ipv6, subnet_ipv6_cidr_mask_t& subnet);
 
