@@ -64,7 +64,7 @@ std::string convert_int_to_string(int value) {
 }
 
 // BE AWARE! WE USE NON STANDARD SUBNET_T HERE! WE USE NON CIDR MASK HERE!
-subnet_t convert_subnet_from_string_to_binary(std::string subnet_cidr) {
+subnet_cidr_mask_t convert_subnet_from_string_to_binary(std::string subnet_cidr) {
     std::vector<std::string> subnet_as_string;
     split(subnet_as_string, subnet_cidr, boost::is_any_of("/"), boost::token_compress_on);
 
@@ -74,37 +74,45 @@ subnet_t convert_subnet_from_string_to_binary(std::string subnet_cidr) {
 
     uint32_t netmask_as_int = convert_cidr_to_binary_netmask(cidr);
 
-    return std::make_pair(subnet_as_int, netmask_as_int);
+    return subnet_cidr_mask_t(subnet_as_int, cidr);
 }
 
-subnet_t convert_subnet_from_string_to_binary_with_cidr_format(std::string subnet_cidr) {
+// TODO: very bad code without result checks!!! Get rid all functions which are using it
+// But this code is pretty handy in tests code
+subnet_cidr_mask_t convert_subnet_from_string_to_binary_with_cidr_format(std::string subnet_cidr) {
     std::vector<std::string> subnet_as_string;
     split(subnet_as_string, subnet_cidr, boost::is_any_of("/"), boost::token_compress_on);
+
+    // Return zero subnet in this case
+    if (subnet_as_string.size() != 2) { 
+        return subnet_cidr_mask_t();
+    }    
 
     unsigned int cidr = convert_string_to_integer(subnet_as_string[1]);
 
     uint32_t subnet_as_int = convert_ip_as_string_to_uint(subnet_as_string[0]);
 
-    return std::make_pair(subnet_as_int, cidr);
+    return subnet_cidr_mask_t(subnet_as_int, cidr);
 }
 
 void copy_networks_from_string_form_to_binary(std::vector<std::string> networks_list_as_string,
-                                              std::vector<subnet_t>& our_networks) {
+                                              std::vector<subnet_cidr_mask_t>& our_networks) {
     for (std::vector<std::string>::iterator ii = networks_list_as_string.begin();
          ii != networks_list_as_string.end(); ++ii) {
 
-        subnet_t current_subnet = convert_subnet_from_string_to_binary(*ii);
+        subnet_cidr_mask_t current_subnet = convert_subnet_from_string_to_binary(*ii);
         our_networks.push_back(current_subnet);
     }
 }
 
-std::string convert_subnet_to_string(subnet_t my_subnet) {
+std::string convert_subnet_to_string(subnet_cidr_mask_t my_subnet) {
     std::stringstream buffer;
 
-    buffer << convert_ip_as_uint_to_string(my_subnet.first) << "/" << my_subnet.second;
+    buffer << convert_ip_as_uint_to_string(my_subnet.subnet_address) << "/" << my_subnet.cidr_prefix_length;
 
     return buffer.str();
 }
+
 
 // extract 24 from 192.168.1.1/24
 unsigned int get_cidr_mask_from_network_as_string(std::string network_cidr_format) {
@@ -790,70 +798,55 @@ direction_t get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_a
 }
 
 /* Get traffic type: check it belongs to our IPs */
-/* It populates subnet and subnet_cidr_mask for incoming and outgoing traffic */
-/* But for internal traffic it populates destination_subnet* and source_subnet* */
-direction_t get_packet_direction(patricia_tree_t* lookup_tree,
-                               uint32_t src_ip,
-                               uint32_t dst_ip,
-                               unsigned long& subnet,
-                               unsigned int&  subnet_cidr_mask
-                               ) {
+direction_t get_packet_direction(patricia_tree_t* lookup_tree, uint32_t src_ip, uint32_t dst_ip, subnet_cidr_mask_t& subnet) {
     direction_t packet_direction;
 
     bool our_ip_is_destination = false;
-    bool our_ip_is_source = false;
+    bool our_ip_is_source      = false;
 
     prefix_t prefix_for_check_adreess;
     prefix_for_check_adreess.family = AF_INET;
     prefix_for_check_adreess.bitlen = 32;
 
-    patricia_node_t* found_patrica_node = NULL;
+    patricia_node_t* found_patrica_node     = NULL;
     prefix_for_check_adreess.add.sin.s_addr = dst_ip;
 
+    subnet_cidr_mask_t destination_subnet;
     found_patrica_node = patricia_search_best2(lookup_tree, &prefix_for_check_adreess, 1);
 
-    unsigned long destination_subnet = 0;
-    unsigned int destination_subnet_cidr_mask = 0;
-
     if (found_patrica_node) {
-        our_ip_is_destination = true;
-        destination_subnet = found_patrica_node->prefix->add.sin.s_addr;
-        destination_subnet_cidr_mask = found_patrica_node->prefix->bitlen;
-    }
+        our_ip_is_destination                 = true;
+        destination_subnet.subnet_address     = found_patrica_node->prefix->add.sin.s_addr;
+        destination_subnet.cidr_prefix_length = found_patrica_node->prefix->bitlen;
+    }    
 
-    found_patrica_node = NULL;
+    found_patrica_node                      = NULL;
     prefix_for_check_adreess.add.sin.s_addr = src_ip;
 
+    subnet_cidr_mask_t source_subnet;
     found_patrica_node = patricia_search_best2(lookup_tree, &prefix_for_check_adreess, 1);
 
-    unsigned long source_subnet = 0;
-    unsigned int source_subnet_cidr_mask = 0;
-
     if (found_patrica_node) {
-        our_ip_is_source = true;
-        source_subnet = found_patrica_node->prefix->add.sin.s_addr;
-        source_subnet_cidr_mask = found_patrica_node->prefix->bitlen;
-    }
+        our_ip_is_source                 = true;
+        source_subnet.subnet_address     = found_patrica_node->prefix->add.sin.s_addr;
+        source_subnet.cidr_prefix_length = found_patrica_node->prefix->bitlen;
+    }    
 
-    subnet = 0;
     if (our_ip_is_source && our_ip_is_destination) {
         packet_direction = INTERNAL;
     } else if (our_ip_is_source) {
-        subnet = source_subnet;
-        subnet_cidr_mask = source_subnet_cidr_mask;
-
+        subnet           = source_subnet;
         packet_direction = OUTGOING;
     } else if (our_ip_is_destination) {
-        subnet = destination_subnet;
-        subnet_cidr_mask = destination_subnet_cidr_mask;
-
+        subnet           = destination_subnet;
         packet_direction = INCOMING;
     } else {
         packet_direction = OTHER;
-    }
+    }    
 
     return packet_direction;
 }
+
 
 std::string get_direction_name(direction_t direction_value) {
     std::string direction_name;
