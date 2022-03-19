@@ -98,7 +98,8 @@ std::string print_channel_speed_ipv6(std::string traffic_type, direction_t packe
 std::string print_channel_speed(std::string traffic_type, direction_t packet_direction);
 void traffic_draw_ipv4_program();
 void recalculate_speed();
-std::string draw_table(direction_t data_direction, bool do_redis_update, sort_type_t sort_item);
+std::string draw_table_ipv4(direction_t data_direction, bool do_redis_update, sort_type_t sort_item);
+std::string draw_table_ipv6(direction_t data_direction, bool do_redis_update, sort_type_t sort_item);
 void print_screen_contents_into_file(std::string screen_data_stats_param, std::string file_path);
 void zeroify_all_flow_counters();
 void process_packet(simple_packet_t& current_packet) ;

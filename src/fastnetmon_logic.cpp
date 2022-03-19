@@ -2106,14 +2106,14 @@ void traffic_draw_ipv6_program() {
     output_buffer << print_channel_speed_ipv6("Incoming traffic", INCOMING) << std::endl;
 
     if (process_incoming_traffic) {
-        // output_buffer << draw_table(INCOMING, true, sorter);
+        output_buffer << draw_table_ipv6(INCOMING, true, sorter);
         output_buffer << std::endl;
     }    
 
     output_buffer << print_channel_speed_ipv6("Outgoing traffic", OUTGOING) << std::endl;
 
     if (process_outgoing_traffic) {
-        // output_buffer << draw_table(OUTGOING, false, sorter);
+        output_buffer << draw_table_ipv6(OUTGOING, false, sorter);
         output_buffer << std::endl;
     }    
 
@@ -2198,14 +2198,14 @@ void traffic_draw_ipv4_program() {
     output_buffer << print_channel_speed("Incoming traffic", INCOMING) << std::endl;
 
     if (process_incoming_traffic) {
-        output_buffer << draw_table(INCOMING, true, sorter);
+        output_buffer << draw_table_ipv4(INCOMING, true, sorter);
         output_buffer << std::endl;
     }
 
     output_buffer << print_channel_speed("Outgoing traffic", OUTGOING) << std::endl;
 
     if (process_outgoing_traffic) {
-        output_buffer << draw_table(OUTGOING, false, sorter);
+        output_buffer << draw_table_ipv4(OUTGOING, false, sorter);
         output_buffer << std::endl;
     }
 
@@ -2543,7 +2543,105 @@ void recalculate_speed() {
     timeval_subtract(&speed_calculation_time, &finish_calc_time, &start_calc_time);
 }
 
-std::string draw_table(direction_t data_direction, bool do_redis_update, sort_type_t sort_item) {
+std::string draw_table_ipv6(direction_t sort_direction, bool do_redis_update, sort_type_t sorter_type) {
+ 	std::vector<pair_of_map_for_ipv6_subnet_counters_elements_t> vector_for_sort;
+    ssize_t size_of_ipv6_counters_map = 0; 
+    std::stringstream output_buffer;
+
+    // TODO: implement method for such tasks
+    {    
+        std::lock_guard<std::mutex> lock_guard(ipv6_host_counters.counter_map_mutex);
+        size_of_ipv6_counters_map = ipv6_host_counters.average_speed_map.size();
+    }    
+
+    logger << log4cpp::Priority::DEBUG << "We create sort buffer with " << size_of_ipv6_counters_map << " elements";
+
+    vector_for_sort.reserve(size_of_ipv6_counters_map);
+
+    for (const auto& metric_pair : ipv6_host_counters.average_speed_map) {
+        vector_for_sort.push_back(metric_pair);
+    }    
+
+    // If we have so small number of elements reduce list length
+    unsigned int vector_size = vector_for_sort.size();
+
+	unsigned int shift_for_sort = max_ips_in_list;
+
+    if (vector_size < shift_for_sort) {
+        shift_for_sort = vector_size;
+    }    
+
+    logger << log4cpp::Priority::DEBUG << "Start vector sort";
+
+    std::partial_sort(vector_for_sort.begin(), vector_for_sort.begin() + shift_for_sort, vector_for_sort.end(),
+                      TrafficComparatorClass<pair_of_map_for_ipv6_subnet_counters_elements_t>(sort_direction, sorter_type));
+
+    logger << log4cpp::Priority::DEBUG << "Finished vector sort";
+
+    unsigned int element_number = 0; 
+ 
+	// In this loop we print only top X talkers in our subnet to screen buffer
+    for (std::vector<pair_of_map_for_ipv6_subnet_counters_elements_t>::iterator ii = vector_for_sort.begin();
+         ii != vector_for_sort.end(); ++ii) {
+         
+        // Print first max_ips_in_list elements in list, we will show top X "huge"
+        // channel loaders
+        if (element_number >= shift_for_sort) {
+            break;
+        }
+
+        element_number++;
+
+
+        std::string client_ip_as_string;
+
+        if (ii->first.cidr_prefix_length == 128) {
+            // For host addresses we do not need prefix
+            client_ip_as_string = print_ipv6_address(ii->first.subnet_address);
+        } else {
+            client_ip_as_string = print_ipv6_cidr_subnet(ii->first);
+        }
+
+        uint64_t pps = 0; 
+        uint64_t bps = 0; 
+        uint64_t flows = 0; 
+
+        uint64_t pps_average = 0; 
+        uint64_t bps_average = 0; 
+        uint64_t flows_average = 0; 
+
+        // Here we could have average or instantaneous speed
+        map_element_t* current_speed_element = &ii->second;
+
+        // Create polymorphic pps, byte and flow counters
+        if (sort_direction == INCOMING) {
+            pps = current_speed_element->in_packets;
+            bps = current_speed_element->in_bytes;
+            flows = current_speed_element->in_flows;
+        } else if (sort_direction == OUTGOING) {
+            pps = current_speed_element->out_packets;
+            bps = current_speed_element->out_bytes;
+            flows = current_speed_element->out_flows;
+        }
+
+        uint64_t mbps = convert_speed_to_mbps(bps);
+        uint64_t mbps_average = convert_speed_to_mbps(bps_average);
+
+
+        // We use setw for alignment
+        output_buffer << client_ip_as_string << "\t";
+
+        output_buffer << std::setw(6) << pps << " pps ";
+        output_buffer << std::setw(6) << mbps << " mbps ";
+        output_buffer << std::setw(6) << flows << " flows ";
+
+        output_buffer << std::endl;
+    }
+
+    return output_buffer.str();
+}
+
+std::string draw_table_ipv4(direction_t data_direction, bool do_redis_update, sort_type_t sort_item) {
     std::vector<pair_of_map_elements> vector_for_sort;
 
     std::stringstream output_buffer;
@@ -3213,10 +3311,11 @@ std::string print_channel_speed_ipv6(std::string traffic_type, direction_t packe
     uint64_t speed_in_pps = total_speed_average_counters_ipv6[packet_direction].packets;
     uint64_t speed_in_bps = total_speed_average_counters_ipv6[packet_direction].bytes;
 
-    unsigned int number_of_tabs = 1;
+    unsigned int number_of_tabs = 3;
+
     // We need this for correct alignment of blocks
     if (traffic_type == "Other traffic") {
-        number_of_tabs = 2;
+        number_of_tabs = 4;
     }
 
     std::stringstream stream;
