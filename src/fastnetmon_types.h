@@ -20,16 +20,16 @@ typedef std::map<std::string, std::string> configuration_map_t;
 typedef std::map<std::string, uint64_t> graphite_data_t;
 
 // Enum with available sort by field
-enum sort_type { PACKETS, BYTES, FLOWS };
+enum sort_type_t { PACKETS, BYTES, FLOWS };
 
 /* Class for custom comparison fields by different fields */
 template <typename T> class TrafficComparatorClass {
     private:
-    sort_type sort_field;
+    sort_type_t sort_field;
     direction_t sort_direction;
 
     public:
-    TrafficComparatorClass(direction_t sort_direction, sort_type sort_field) {
+    TrafficComparatorClass(direction_t sort_direction, sort_type_t sort_field) {
         this->sort_field = sort_field;
         this->sort_direction = sort_direction;
     }    

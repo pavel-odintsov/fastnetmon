@@ -96,7 +96,7 @@ void store_data_in_mongo(std::string key_name, std::string attack_details_json);
 std::string print_channel_speed(std::string traffic_type, direction_t packet_direction);
 void traffic_draw_program();
 void recalculate_speed();
-std::string draw_table(direction_t data_direction, bool do_redis_update, sort_type sort_item);
+std::string draw_table(direction_t data_direction, bool do_redis_update, sort_type_t sort_item);
 void print_screen_contents_into_file(std::string screen_data_stats_param);
 void zeroify_all_flow_counters();
 void process_packet(simple_packet_t& current_packet) ;
