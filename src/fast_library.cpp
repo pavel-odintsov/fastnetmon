@@ -1418,3 +1418,14 @@ bool write_simple_packet(int fd, simple_packet_t& packet, bool populate_ipv6) {
     return true;
 }
 
+// Represent IPv6 cidr subnet in string form
+std::string print_ipv6_cidr_subnet(subnet_ipv6_cidr_mask_t subnet) {
+    return print_ipv6_address(subnet.subnet_address) + "/" + std::to_string(subnet.cidr_prefix_length);
+}
+
+// Abstract function with overloads for templated classes where we use v4 and v4
+std::string convert_any_ip_to_string(subnet_ipv6_cidr_mask_t subnet) {
+    return print_ipv6_cidr_subnet(subnet);
+}
+
+

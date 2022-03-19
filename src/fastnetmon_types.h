@@ -6,6 +6,7 @@
 #include <sys/time.h> // struct timeval
 #include <utility> // std::pair
 
+#include <unordered_map>
 #include <map>
 #include <string>
 #include <vector>
@@ -205,6 +206,11 @@ typedef std::map<subnet_cidr_mask_t, vector_of_flow_counters_t> map_of_vector_co
 typedef map_element_t subnet_counter_t;
 typedef std::pair<subnet_cidr_mask_t, subnet_counter_t> pair_of_map_for_subnet_counters_elements_t;
 typedef std::map<subnet_cidr_mask_t, subnet_counter_t> map_for_subnet_counters_t;
+
+// IPv6 per subnet counters
+typedef std::pair<subnet_ipv6_cidr_mask_t, subnet_counter_t> pair_of_map_for_ipv6_subnet_counters_elements_t;
+typedef std::unordered_map<subnet_ipv6_cidr_mask_t, subnet_counter_t> map_for_ipv6_subnet_counters_t;
+
 
 class packed_conntrack_hash_t {
     public:

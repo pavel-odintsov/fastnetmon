@@ -2125,8 +2125,50 @@ void traffic_draw_ipv6_program() {
 
     output_buffer << std::endl;
 
+   if (enable_subnet_counters) {
+        output_buffer << std::endl << "Subnet load:" << std::endl;
+        output_buffer << print_subnet_ipv6_load() << "\n";
+    }
+
     // Print screen contents into file
     print_screen_contents_into_file(output_buffer.str(), cli_stats_ipv6_file_path);
+}
+
+std::string print_subnet_ipv6_load() {
+    std::stringstream buffer;
+
+    sort_type_t sorter_type;
+    if (sort_parameter == "packets") {
+        sorter_type = PACKETS;
+    } else if (sort_parameter == "bytes") {
+        sorter_type = BYTES;
+    } else if (sort_parameter == "flows") {
+        sorter_type = FLOWS;
+    } else {
+        logger << log4cpp::Priority::INFO << "Unexpected sorter type: " << sort_parameter;
+        sorter_type = PACKETS;
+    }    
+
+    direction_t sort_direction = OUTGOING;
+
+    std::vector<pair_of_map_for_ipv6_subnet_counters_elements_t> vector_for_sort;
+    ipv6_subnet_counters.get_sorted_average_speed(vector_for_sort, sorter_type, sort_direction);
+
+
+    for (std::vector<pair_of_map_for_ipv6_subnet_counters_elements_t>::iterator itr = vector_for_sort.begin();
+         itr != vector_for_sort.end(); ++itr) {
+        map_element_t* speed = &itr->second;
+        std::string subnet_as_string = print_ipv6_cidr_subnet(itr->first);
+
+        buffer << std::setw(42) << std::left << subnet_as_string;
+        
+        buffer << " "
+               << "pps in: " << std::setw(8) << speed->in_packets << " out: " << std::setw(8)
+               << speed->out_packets << " mbps in: " << std::setw(5) << convert_speed_to_mbps(speed->in_bytes)
+               << " out: " << std::setw(5) << convert_speed_to_mbps(speed->out_bytes) << "\n";
+    }
+
+    return buffer.str();
 }
 
 void traffic_draw_ipv4_program() {
