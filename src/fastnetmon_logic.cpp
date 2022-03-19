@@ -415,7 +415,7 @@ std::string print_flow_tracking_for_ip(conntrack_main_struct_t& conntrack_elemen
     return buffer.str();
 }
 
-std::string print_subnet_load() {
+std::string print_subnet_ipv4_load() {
     std::stringstream buffer;
 
     sort_type_t sorter;
@@ -2207,7 +2207,7 @@ void traffic_draw_ipv4_program() {
 
     if (enable_subnet_counters) {
         output_buffer << std::endl << "Subnet load:" << std::endl;
-        output_buffer << print_subnet_load() << "\n";
+        output_buffer << print_subnet_ipv4_load() << "\n";
     }
 
     // Print screen contents into file

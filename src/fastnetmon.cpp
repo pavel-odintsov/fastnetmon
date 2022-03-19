@@ -439,27 +439,9 @@ logging_configuration_t read_logging_settings(configuration_map_t configuration_
 std::string get_amplification_attack_type(amplification_attack_type_t attack_type);
 std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type,
                                                         std::string destination_ip);
-void call_attack_details_handlers(uint32_t client_ip, attack_details& current_attack, std::string attack_fingerprint);
-void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::string flow_attack_details);
-void call_unban_handlers(uint32_t client_ip, attack_details& current_attack);
 ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::string host_group_name = "");
-void exabgp_prefix_ban_manage(std::string action,
-                              std::string prefix_as_string_with_mask,
-                              std::string exabgp_next_hop,
-                              std::string exabgp_community);
-std::string print_subnet_load();
-bool we_should_ban_this_ip(map_element_t* current_average_speed_element, ban_settings_t current_ban_settings);
-unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp);
-void print_attack_details_to_file(std::string details, std::string client_ip_as_string, attack_details current_attack);
-std::string print_ban_thresholds(ban_settings_t current_ban_settings);
 bool load_configuration_file();
-void cleanup_ban_list();
-std::string get_attack_description(uint32_t client_ip, attack_details& current_attack);
-void send_attack_details(uint32_t client_ip, attack_details current_attack_details);
 void free_up_all_resources();
-std::string print_ddos_attack_details();
-std::string print_channel_speed(std::string traffic_type, direction_t packet_direction);
-void traffic_draw_program();
 void interruption_signal_handler(int signal_number);
 
 #ifdef FASTNETMON_API
