@@ -26,6 +26,38 @@ typedef std::map<std::string, uint64_t> graphite_data_t;
 // Enum with available sort by field
 enum sort_type_t { PACKETS, BYTES, FLOWS };
 
+// Source of attack detection
+enum class attack_detection_source_t : uint32_t { Automatic = 1, Manual = 2, Other = 255 };
+
+// Which direction of traffic triggered attack
+enum class attack_detection_direction_type_t {
+    unknown,
+    incoming,
+    outgoing,
+};
+
+
+// How we have detected this attack?
+enum class attack_detection_threshold_type_t {
+    unknown,
+
+    packets_per_second,
+    bytes_per_second,
+    flows_per_second,
+
+    tcp_packets_per_second,
+    udp_packets_per_second,
+    icmp_packets_per_second,
+
+    tcp_bytes_per_second,
+    udp_bytes_per_second,
+    icmp_bytes_per_second,
+
+    tcp_syn_packets_per_second,
+    tcp_syn_bytes_per_second,
+};
+
+
 /* Class for custom comparison fields by different fields */
 template <typename T> class TrafficComparatorClass {
     private:

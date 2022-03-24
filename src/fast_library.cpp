@@ -1428,4 +1428,3 @@ std::string convert_any_ip_to_string(subnet_ipv6_cidr_mask_t subnet) {
     return print_ipv6_cidr_subnet(subnet);
 }
 
-
