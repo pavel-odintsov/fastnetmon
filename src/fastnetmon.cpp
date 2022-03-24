@@ -110,6 +110,8 @@
 #include <hiredis/hiredis.h>
 #endif
 
+#include "packet_bucket.h"
+
 #ifdef FASTNETMON_API
 using fastmitigation::BanListReply;
 using fastmitigation::BanListRequest;
@@ -134,6 +136,9 @@ unsigned int stats_thread_initial_call_delay = 30;
 
 // Current time with pretty low precision, we use separate thread to update it
 time_t current_inaccurate_time = 0; 
+
+// This is thread safe storage for captured from the wire packets for IPv6 traffic
+packet_buckets_storage_t<subnet_ipv6_cidr_mask_t> packet_buckets_ipv6_storage;
 
 unsigned int recalculate_speed_timeout = 1;
 
@@ -1651,6 +1656,9 @@ int main(int argc, char** argv) {
     reconfigure_logging();
 
     load_our_networks_list();
+
+    // Set capacity for nested buffers
+    packet_buckets_ipv6_storage.set_buffers_capacity(ban_details_records_count);
 
     // Setup CTRL+C handler
     if (signal(SIGINT, interruption_signal_handler) == SIG_ERR) {
