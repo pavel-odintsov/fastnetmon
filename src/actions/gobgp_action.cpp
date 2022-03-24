@@ -16,6 +16,8 @@
 #include "attribute.pb.h"
 #include "gobgp.grpc.pb.h"
 
+#include "../bgp_protocol.hpp"
+
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif // __GNUC__
@@ -37,7 +39,8 @@ class GrpcClient {
     bool AnnounceUnicastPrefix(std::string announced_address,
                                std::string announced_prefix_nexthop,
                                bool is_withdrawal,
-                               unsigned int cidr_mask) {
+                               unsigned int cidr_mask,
+                               uint32_t community_as_32bit_int) {
         grpc::ClientContext context;
 
         // Set timeout for API
@@ -81,13 +84,11 @@ class GrpcClient {
         current_next_hop_t.set_next_hop(announced_prefix_nexthop);
         current_next_hop->PackFrom(current_next_hop_t);
 
-        /*
         // Updating CommunitiesAttribute for current_path
         google::protobuf::Any *current_communities = current_path->add_pattrs();
         gobgpapi::CommunitiesAttribute current_communities_t;
-        current_communities_t.add_communities(100);
+        current_communities_t.add_communities(community_as_32bit_int);
         current_communities->PackFrom(current_communities_t);
-            */
 
         request.set_allocated_path(current_path);
 
@@ -117,6 +118,9 @@ std::string gobgp_nexthop = "0.0.0.0";
 bool gobgp_announce_whole_subnet = false;
 bool gobgp_announce_host = false;
 
+bgp_community_attribute_element_t bgp_community_host;
+bgp_community_attribute_element_t bgp_community_subnet;
+
 void gobgp_action_init() {
     logger << log4cpp::Priority::INFO << "GoBGP action module loaded";
     gobgp_client =
@@ -133,6 +137,30 @@ void gobgp_action_init() {
     if (configuration_map.count("gobgp_announce_whole_subnet")) {
         gobgp_announce_whole_subnet = configuration_map["gobgp_announce_whole_subnet"] == "on";
     }
+
+    // Set them to safe defaults
+    bgp_community_host.asn_number = 65001;
+    bgp_community_host.community_number = 666;
+
+    if (configuration_map.count("gobgp_community_host")) {
+        if (!read_bgp_community_from_string(configuration_map["gobgp_community_host"], bgp_community_host)) {
+            logger << log4cpp::Priority::ERROR << "Cannot parse GoBGP community for host " << configuration_map["gobgp_community_host"];
+        }
+    }
+
+    logger << log4cpp::Priority::INFO << "GoBGP host community: " << bgp_community_host.asn_number << ":" << bgp_community_host.community_number;
+
+    // Set them to safe defaults
+    bgp_community_subnet.asn_number = 65001;
+    bgp_community_subnet.community_number = 666;
+
+    if (configuration_map.count("gobgp_community_subnet")) {
+        if (!read_bgp_community_from_string(configuration_map["gobgp_community_subnet"], bgp_community_subnet)) {
+            logger << log4cpp::Priority::ERROR << "Cannot parse GoBGP community for subnet " << configuration_map["gobgp_community_subnet"];
+        }
+    }
+
+    logger << log4cpp::Priority::INFO << "GoBGP subnet community: " << bgp_community_subnet.asn_number << ":" << bgp_community_subnet.community_number;
 }
 
 void gobgp_action_shutdown() {
@@ -157,10 +185,13 @@ void gobgp_ban_manage(std::string action, std::string ip_as_string, attack_detai
         logger << log4cpp::Priority::INFO << action_name << " "
                << convert_subnet_to_string(current_attack.customer_network) << " to GoBGP";
 
+        // https://github.com/osrg/gobgp/blob/0aff30a74216f499b8abfabc50016b041b319749/internal/pkg/table/policy_test.go#L2870
+        uint32_t community_as_32bit_int = uint32_t(bgp_community_subnet.asn_number << 16 | bgp_community_subnet.community_number);
+
         gobgp_client->AnnounceUnicastPrefix(convert_ip_as_uint_to_string(
                                             current_attack.customer_network.subnet_address),
                                             gobgp_nexthop, is_withdrawal,
-                                            current_attack.customer_network.cidr_prefix_length);
+                                            current_attack.customer_network.cidr_prefix_length, community_as_32bit_int);
     }
 
     if (gobgp_announce_host) {
@@ -168,6 +199,8 @@ void gobgp_ban_manage(std::string action, std::string ip_as_string, attack_detai
 
         logger << log4cpp::Priority::INFO << action_name << " " << ip_as_string_with_mask << " to GoBGP";
 
-        gobgp_client->AnnounceUnicastPrefix(ip_as_string, gobgp_nexthop, is_withdrawal, 32);
+        uint32_t community_as_32bit_int = uint32_t(bgp_community_host.asn_number << 16 | bgp_community_host.community_number);
+
+        gobgp_client->AnnounceUnicastPrefix(ip_as_string, gobgp_nexthop, is_withdrawal, 32, community_as_32bit_int);
     }
 }
