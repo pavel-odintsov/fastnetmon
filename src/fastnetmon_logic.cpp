@@ -1211,12 +1211,6 @@ std::string generate_simple_packets_dump(std::vector<simple_packet_t>& ban_list_
 
     std::map<unsigned int, unsigned int>::iterator max_proto =
     std::max_element(protocol_counter.begin(), protocol_counter.end(), protocol_counter.value_comp());
-    /*
-    attack_details
-        << "\n"
-        << "We got more packets (" << max_proto->second << " from " << ban_details_records_count
-        << ") for protocol: " << get_protocol_name_by_number(max_proto->first) << "\n";
-    */
 
     return attack_details.str();
 }
@@ -1225,6 +1219,11 @@ void send_attack_details(uint32_t client_ip, attack_details_t current_attack_det
     std::string pps_as_string = convert_int_to_string(current_attack_details.attack_power);
     std::string attack_direction = get_direction_name(current_attack_details.attack_direction);
     std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+
+    // In this case we do not collect any traffic samples
+    if (ban_details_records_count == 0) {
+        return;
+    }
 
     // Very strange code but it work in 95% cases
     if (ban_list_details.count(client_ip) > 0 && ban_list_details[client_ip].size() >= ban_details_records_count) {
@@ -3430,7 +3429,8 @@ void process_packet(simple_packet_t& current_packet) {
 	// Exceute ban related processing
 	if (current_packet.packet_direction == OUTGOING) {
         // Collect data when ban client
-        if (!ban_list_details.empty() && ban_list_details.count(current_packet.src_ip) > 0 && 
+        if (ban_details_records_count != 0 &&
+            !ban_list_details.empty() && ban_list_details.count(current_packet.src_ip) > 0 && 
             ban_list_details[current_packet.src_ip].size() < ban_details_records_count) {
 
             ban_list_details_mutex.lock();
@@ -3451,7 +3451,8 @@ void process_packet(simple_packet_t& current_packet) {
 
 	if (current_packet.packet_direction == INCOMING) {
         // Collect attack details
-        if (!ban_list_details.empty() && ban_list_details.count(current_packet.dst_ip) > 0 &&
+        if (ban_details_records_count != 0 &&
+            !ban_list_details.empty() && ban_list_details.count(current_packet.dst_ip) > 0 &&
             ban_list_details[current_packet.dst_ip].size() < ban_details_records_count) {
 
             ban_list_details_mutex.lock();

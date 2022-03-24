@@ -322,7 +322,7 @@ std::string sort_parameter = "packets";
 unsigned int max_ips_in_list = 7;
 
 // Number of lines for sending ben attack details to email
-unsigned int ban_details_records_count = 500;
+unsigned int ban_details_records_count = 50;
 
 // We haven't option for configure it with configuration file
 unsigned int number_of_packets_for_pcap_attack_dump = 500;
