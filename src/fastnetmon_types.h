@@ -198,7 +198,9 @@ class attack_details_t : public map_element_t {
 
     // If this attack was detected for IPv6 protocol
     bool ipv6 = false;
-    
+   
+    attack_detection_source_t attack_detection_source = attack_detection_source_t::Automatic;
+
     subnet_cidr_mask_t customer_network;
 
     packet_storage_t pcap_attack_dump;

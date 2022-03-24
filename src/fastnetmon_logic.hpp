@@ -50,7 +50,14 @@ void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_
                                               packed_conntrack_hash_t* unpacked_data);
 
 void cleanup_ban_list();
-void call_unban_handlers(uint32_t client_ip, attack_details_t& current_attack);
+
+void call_unban_handlers(uint32_t client_ip,
+                         subnet_ipv6_cidr_mask_t client_ipv6,
+                         bool ipv6,
+                         attack_details_t& current_attack,
+                         attack_detection_source_t attack_detection_source);
+
+
 std::string print_ddos_attack_details();
 
 std::string get_attack_description(uint32_t client_ip, attack_details_t& current_attack) ;
