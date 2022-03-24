@@ -23,7 +23,7 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 
-#include "bgp_flow_spec.h"
+#include "bgp_protocol.hpp"
 #include "fast_library.h"
 #include "fastnetmon_packet_parser.h"
 #include "fastnetmon_types.h"

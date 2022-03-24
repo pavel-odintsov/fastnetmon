@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "all_logcpp_libraries.h"
-#include "bgp_flow_spec.h"
+#include "bgp_protocol.hpp"
 #include "fast_library.h"
 #include "fast_platform.h"
 #include "fastnetmon_packet_parser.h"

@@ -1,4 +1,4 @@
-#include "bgp_flow_spec.h"
+#include "bgp_protocol.hpp"
 
 #include "log4cpp/Appender.hh"
 #include "log4cpp/BasicLayout.hh"
@@ -8,6 +8,11 @@
 #include "log4cpp/OstreamAppender.hh"
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
+
+#include "all_logcpp_libraries.h"
+
+// Get log4cpp logger from main programm
+extern log4cpp::Category& logger;
 
 // Enable custom casts from our own types
 std::ostream& operator<<(std::ostream& os, bgp_flow_spec_protocol_t const& protocol) {
@@ -61,5 +66,57 @@ std::ostream& operator<<(std::ostream& os, flow_spec_fragmentation_types_t const
     } else {
         return os;
     }
+}
+
+bool read_bgp_community_from_string(std::string community_as_string, bgp_community_attribute_element_t& bgp_community_attribute_element) {
+    std::vector<std::string> community_as_vector;
+
+    split(community_as_vector, community_as_string, boost::is_any_of(":"), boost::token_compress_on);
+
+    if (community_as_vector.size() != 2) {
+        logger << log4cpp::Priority::WARN << "Could not parse community: " << community_as_string;
+        return false;
+    }
+
+    int asn_as_integer = 0;
+
+    if (!convert_string_to_positive_integer_safe(community_as_vector[0], asn_as_integer)) {
+        logger << log4cpp::Priority::WARN << "Could not parse ASN from raw format: " << community_as_vector[0];
+        return false;
+    }
+
+    int community_number_as_integer = 0;
+
+    if (!convert_string_to_positive_integer_safe(community_as_vector[1], community_number_as_integer)) {
+        logger << log4cpp::Priority::WARN << "Could not parse community from raw format: " << community_as_vector[0];
+        return false;
+    }
+
+    if (asn_as_integer < 0 or community_number_as_integer < 0) {
+        logger << log4cpp::Priority::WARN << "For some strange reasons we've got negative ASN or community numbers";
+        return false;
+    }
+
+    if (asn_as_integer > UINT16_MAX) {
+        logger << log4cpp::Priority::ERROR << "Your ASN value exceeds maximum allowed value " << UINT16_MAX;
+        return false;
+    }
+
+    if (community_number_as_integer > UINT16_MAX) {
+        logger << log4cpp::Priority::ERROR << "Your community value exceeds maximum allowed value " << UINT16_MAX;
+        return false;
+    }
+
+    bgp_community_attribute_element.asn_number       = asn_as_integer;
+    bgp_community_attribute_element.community_number = community_number_as_integer;
+
+    return true;
+}
+
+// Wrapper function which just checks correctness of bgp community
+bool is_bgp_community_valid(std::string community_as_string) {
+    bgp_community_attribute_element_t bgp_community_attribute_element;
+
+    return read_bgp_community_from_string(community_as_string, bgp_community_attribute_element);
 }
 
