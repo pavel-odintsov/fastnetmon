@@ -1428,3 +1428,14 @@ std::string convert_any_ip_to_string(subnet_ipv6_cidr_mask_t subnet) {
     return print_ipv6_cidr_subnet(subnet);
 }
 
+// Return true if we have this IP in patricia tree
+bool ip_belongs_to_patricia_tree_ipv6(patricia_tree_t* patricia_tree, struct in6_addr client_ipv6_address) {
+    prefix_t prefix_for_check_address;
+
+    prefix_for_check_address.family   = AF_INET6;
+    prefix_for_check_address.bitlen   = 128;
+    prefix_for_check_address.add.sin6 = client_ipv6_address;
+
+    return patricia_search_best2(patricia_tree, &prefix_for_check_address, 1) != NULL;
+}
+
