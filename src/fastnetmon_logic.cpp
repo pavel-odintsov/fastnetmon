@@ -2890,11 +2890,13 @@ std::string draw_table_ipv6(direction_t sort_direction, bool do_redis_update, so
         // We use setw for alignment
         output_buffer << client_ip_as_string << "\t";
 
+        std::string is_banned = ban_list_ipv6_ng.is_blackholed(ii->first) ? " *banned* " : "";
+
         output_buffer << std::setw(6) << pps << " pps ";
         output_buffer << std::setw(6) << mbps << " mbps ";
         output_buffer << std::setw(6) << flows << " flows ";
 
-        output_buffer << std::endl;
+        output_buffer << is_banned <<  std::endl;
     }
 
     return output_buffer.str();
