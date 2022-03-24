@@ -31,7 +31,7 @@ bool exceed_flow_speed(uint64_t in_counter, uint64_t out_counter, unsigned int t
 bool exceed_pps_speed(uint64_t in_counter, uint64_t out_counter, unsigned int threshold);
 ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::string host_group_name);
 logging_configuration_t read_logging_settings(configuration_map_t configuration_map);
-void print_attack_details_to_file(std::string details, std::string client_ip_as_string, attack_details current_attack);
+void print_attack_details_to_file(std::string details, std::string client_ip_as_string, attack_details_t current_attack);
 std::string print_ban_thresholds(ban_settings_t current_ban_settings);
 std::string print_subnet_ipv4_load();
 std::string print_subnet_ipv6_load();
@@ -44,16 +44,16 @@ void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_
                                               packed_conntrack_hash_t* unpacked_data);
 
 void cleanup_ban_list();
-void call_unban_handlers(uint32_t client_ip, attack_details& current_attack);
+void call_unban_handlers(uint32_t client_ip, attack_details_t& current_attack);
 std::string print_ddos_attack_details();
 
-std::string get_attack_description(uint32_t client_ip, attack_details& current_attack) ;
+std::string get_attack_description(uint32_t client_ip, attack_details_t& current_attack) ;
 
-std::string get_attack_description_in_json(uint32_t client_ip, attack_details& current_attack) ;
+std::string get_attack_description_in_json(uint32_t client_ip, attack_details_t& current_attack) ;
 
 std::string generate_simple_packets_dump(std::vector<simple_packet_t>& ban_list_details) ;
 
-void send_attack_details(uint32_t client_ip, attack_details current_attack_details);
+void send_attack_details(uint32_t client_ip, attack_details_t current_attack_details);
 
 #ifdef ENABLE_DPI
 // Parse raw binary stand-alone packet with nDPI
@@ -70,12 +70,12 @@ void init_current_instance_of_ndpi();
 void zeroify_ndpi_flow(struct ndpi_flow_struct* flow);
 void launch_bgp_flow_spec_rule(amplification_attack_type_t attack_type, std::string client_ip_as_string);
 void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstream& ss, std::string client_ip_as_string);
-void call_attack_details_handlers(uint32_t client_ip, attack_details& current_attack, std::string attack_fingerprint);
+void call_attack_details_handlers(uint32_t client_ip, attack_details_t& current_attack, std::string attack_fingerprint);
 uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash_t* struct_value);
 bool process_flow_tracking_table(conntrack_main_struct_t& conntrack_element, std::string client_ip);
 bool exec_with_stdin_params(std::string cmd, std::string params);
 ban_settings_t get_ban_settings_for_this_subnet(subnet_cidr_mask_t subnet, std::string& host_group_name);
-void exabgp_ban_manage(std::string action, std::string ip_as_string, attack_details current_attack);
+void exabgp_ban_manage(std::string action, std::string ip_as_string, attack_details_t current_attack);
 void exabgp_prefix_ban_manage(std::string action,
                               std::string prefix_as_string_with_mask,
                               std::string exabgp_next_hop,
@@ -88,7 +88,7 @@ redisContext* redis_init_connection();
 #endif
 
 void execute_ip_ban(uint32_t client_ip, map_element_t average_speed_element, std::string flow_attack_details, subnet_cidr_mask_t customer_subnet);
-void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::string flow_attack_details);
+void call_ban_handlers(uint32_t client_ip, attack_details_t& current_attack, std::string flow_attack_details);
 
 #ifdef MONGO
 void store_data_in_mongo(std::string key_name, std::string attack_details_json);

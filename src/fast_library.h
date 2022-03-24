@@ -103,13 +103,13 @@ subnet_cidr_mask_t convert_subnet_from_string_to_binary_with_cidr_format(std::st
 bool manage_interface_promisc_mode(std::string interface_name, bool switch_on);
 #endif
 
-std::string serialize_attack_description(attack_details& current_attack);
-attack_type_t detect_attack_type(attack_details& current_attack);
+std::string serialize_attack_description(attack_details_t& current_attack);
+attack_type_t detect_attack_type(attack_details_t& current_attack);
 std::string get_printable_attack_name(attack_type_t attack);
 std::string serialize_network_load_to_text(map_element_t& network_speed_meter, bool average);
-json_object* serialize_attack_description_to_json(attack_details& current_attack);
+json_object* serialize_attack_description_to_json(attack_details_t& current_attack);
 json_object* serialize_network_load_to_json(map_element_t& network_speed_meter);
-std::string serialize_statistic_counters_about_attack(attack_details& current_attack);
+std::string serialize_statistic_counters_about_attack(attack_details_t& current_attack);
 
 std::string dns_lookup(std::string domain_name);
 bool store_data_to_stats_server(unsigned short int graphite_port, std::string graphite_host, std::string buffer_as_string);

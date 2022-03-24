@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "fastnetmon_types.h"
+#include "fixed_size_packet_storage.hpp"
+
 // This is dynamically allocated packet storage
 class packet_storage_t {
     public:

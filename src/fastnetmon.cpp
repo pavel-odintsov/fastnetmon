@@ -393,7 +393,7 @@ map_for_counters GeoIpCounter;
 #endif
 
 // In ddos info we store attack power and direction
-std::map<uint32_t, banlist_item> ban_list;
+std::map<uint32_t, banlist_item_t> ban_list;
 std::map<uint32_t, std::vector<simple_packet_t> > ban_list_details;
 
 host_group_map_t host_groups;
@@ -434,7 +434,6 @@ bool process_outgoing_traffic = true;
 void init_current_instance_of_ndpi();
 #endif
 
-std::string get_attack_description_in_json(uint32_t client_ip, attack_details& current_attack);
 logging_configuration_t read_logging_settings(configuration_map_t configuration_map);
 std::string get_amplification_attack_type(amplification_attack_type_t attack_type);
 std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type,
@@ -456,7 +455,7 @@ class FastnetmonApiServiceImpl final : public Fastnetmon::Service {
                       ::grpc::ServerWriter< ::fastmitigation::BanListReply>* writer) override {
         logger << log4cpp::Priority::INFO << "API we asked for banlist";
 
-        for (std::map<uint32_t, banlist_item>::iterator itr = ban_list.begin(); itr != ban_list.end(); ++itr) {
+        for (std::map<uint32_t, banlist_item_t>::iterator itr = ban_list.begin(); itr != ban_list.end(); ++itr) {
             std::string client_ip_as_string = convert_ip_as_uint_to_string(itr->first);
 
             BanListReply reply;
@@ -479,7 +478,7 @@ class FastnetmonApiServiceImpl final : public Fastnetmon::Service {
 
         uint32_t client_ip = convert_ip_as_string_to_uint(request->ip_address());
 
-        struct attack_details current_attack;
+        attack_details_t current_attack;
         ban_list_mutex.lock();
         ban_list[client_ip] = current_attack;
         ban_list_mutex.unlock();
@@ -513,7 +512,7 @@ class FastnetmonApiServiceImpl final : public Fastnetmon::Service {
             return Status::CANCELLED;
         }
 
-        banlist_item ban_details = ban_list[banned_ip];
+        banlist_item_t ban_details = ban_list[banned_ip];
 
         logger << log4cpp::Priority::INFO << "API: call unban handlers";
         call_unban_handlers(banned_ip, ban_details);

@@ -146,7 +146,7 @@ extern bool gobgp_enabled;
 extern map_of_vector_counters_t SubnetVectorMapSpeedAverage;
 extern int global_ban_time;
 extern bool notify_script_enabled;
-extern std::map<uint32_t, banlist_item> ban_list;
+extern std::map<uint32_t, banlist_item_t> ban_list;
 extern int unban_iteration_sleep_time;
 extern bool unban_enabled;
 extern bool unban_only_if_attack_finished;
@@ -528,7 +528,7 @@ std::string print_ban_thresholds(ban_settings_t current_ban_settings) {
     return output_buffer.str();
 }
 
-void print_attack_details_to_file(std::string details, std::string client_ip_as_string, attack_details current_attack) {
+void print_attack_details_to_file(std::string details, std::string client_ip_as_string, attack_details_t current_attack) {
     std::ofstream my_attack_details_file;
 
     std::string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
@@ -905,7 +905,7 @@ void cleanup_ban_list() {
 
         std::vector<uint32_t> ban_list_items_for_erase;
 
-        for (std::map<uint32_t, banlist_item>::iterator itr = ban_list.begin(); itr != ban_list.end(); ++itr) {
+        for (std::map<uint32_t, banlist_item_t>::iterator itr = ban_list.begin(); itr != ban_list.end(); ++itr) {
             uint32_t client_ip = itr->first;
 
             // This IP should be banned permanentely and we skip any processing
@@ -982,7 +982,7 @@ void cleanup_ban_list() {
     }
 }
 
-void call_unban_handlers(uint32_t client_ip, attack_details& current_attack) {
+void call_unban_handlers(uint32_t client_ip, attack_details_t& current_attack) {
     std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
 
     logger << log4cpp::Priority::INFO << "We will unban banned IP: " << client_ip_as_string
@@ -1029,7 +1029,7 @@ void call_unban_handlers(uint32_t client_ip, attack_details& current_attack) {
 std::string print_ddos_attack_details() {
     std::stringstream output_buffer;
 
-    for (std::map<uint32_t, banlist_item>::iterator ii = ban_list.begin(); ii != ban_list.end(); ++ii) {
+    for (std::map<uint32_t, banlist_item_t>::iterator ii = ban_list.begin(); ii != ban_list.end(); ++ii) {
         uint32_t client_ip = (*ii).first;
 
         std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
@@ -1046,7 +1046,7 @@ std::string print_ddos_attack_details() {
     return output_buffer.str();
 }
 
-std::string get_attack_description(uint32_t client_ip, attack_details& current_attack) {
+std::string get_attack_description(uint32_t client_ip, attack_details_t& current_attack) {
     std::stringstream attack_description;
 
     attack_description << "IP: " << convert_ip_as_uint_to_string(client_ip) << "\n";
@@ -1069,7 +1069,7 @@ std::string get_attack_description(uint32_t client_ip, attack_details& current_a
     return attack_description.str();
 }
 
-std::string get_attack_description_in_json(uint32_t client_ip, attack_details& current_attack) {
+std::string get_attack_description_in_json(uint32_t client_ip, attack_details_t& current_attack) {
     json_object* jobj = json_object_new_object();
 
     json_object_object_add(jobj, "ip",
@@ -1118,7 +1118,7 @@ std::string generate_simple_packets_dump(std::vector<simple_packet_t>& ban_list_
     return attack_details.str();
 }
 
-void send_attack_details(uint32_t client_ip, attack_details current_attack_details) {
+void send_attack_details(uint32_t client_ip, attack_details_t current_attack_details) {
     std::string pps_as_string = convert_int_to_string(current_attack_details.attack_power);
     std::string attack_direction = get_direction_name(current_attack_details.attack_direction);
     std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
@@ -1396,7 +1396,7 @@ void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstrea
 
 #endif
 
-void call_attack_details_handlers(uint32_t client_ip, attack_details& current_attack, std::string attack_fingerprint) {
+void call_attack_details_handlers(uint32_t client_ip, attack_details_t& current_attack, std::string attack_fingerprint) {
     std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
     std::string attack_direction = get_direction_name(current_attack.attack_direction);
     std::string pps_as_string = convert_int_to_string(current_attack.attack_power);
@@ -1564,7 +1564,7 @@ ban_settings_t get_ban_settings_for_this_subnet(subnet_cidr_mask_t subnet, std::
 }
 
 
-void exabgp_ban_manage(std::string action, std::string ip_as_string, attack_details current_attack) {
+void exabgp_ban_manage(std::string action, std::string ip_as_string, attack_details_t current_attack) {
     // We will announce whole subent here
     if (exabgp_announce_whole_subnet) {
         std::string subnet_as_string_with_mask = convert_subnet_to_string(current_attack.customer_network);
@@ -1702,7 +1702,7 @@ redisContext* redis_init_connection() {
 
 
 void execute_ip_ban(uint32_t client_ip, map_element_t average_speed_element, std::string flow_attack_details, subnet_cidr_mask_t customer_subnet) {
-    struct attack_details current_attack;
+    attack_details_t current_attack;
     uint64_t pps = 0;
 
     uint64_t in_pps = average_speed_element.in_packets;
@@ -1860,7 +1860,7 @@ void execute_ip_ban(uint32_t client_ip, map_element_t average_speed_element, std
     call_ban_handlers(client_ip, ban_list[client_ip], flow_attack_details);
 }
 
-void call_ban_handlers(uint32_t client_ip, attack_details& current_attack, std::string flow_attack_details) {
+void call_ban_handlers(uint32_t client_ip, attack_details_t& current_attack, std::string flow_attack_details) {
     std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
     std::string pps_as_string = convert_int_to_string(current_attack.attack_power);
     std::string data_direction_as_string = get_direction_name(current_attack.attack_direction);
