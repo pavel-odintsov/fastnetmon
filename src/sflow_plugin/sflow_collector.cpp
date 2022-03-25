@@ -33,6 +33,10 @@ extern std::map<std::string, std::string> configuration_map;
 // Number of raw packets received without any errors
 uint64_t raw_udp_packets_received = 0;
 
+
+// We have an option to use IP length from the packet header because some vendors may lie about it: https://github.com/pavel-odintsov/fastnetmon/issues/893
+bool sflow_read_packet_length_from_ip_header = false;
+
 // Number of failed receives
 uint64_t udp_receive_errors = 0;
 
@@ -112,12 +116,12 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
     for (auto port_string: sflow_ports_for_listen) {
         unsigned int sflow_port = convert_string_to_integer(port_string);
 
-	if (sflow_port == 0) {
-	     logger << log4cpp::Priority::ERROR << plugin_log_prefix << "Cannot parse port: " << port_string;
+	    if (sflow_port == 0) {
+	         logger << log4cpp::Priority::ERROR << plugin_log_prefix << "Cannot parse port: " << port_string;
              continue; 
-	}
+	    }
 
-	sflow_ports.push_back(sflow_port);
+    	sflow_ports.push_back(sflow_port);
     }
 
     if (sflow_ports.size() == 0) {
@@ -137,6 +141,11 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
 
     if (configuration_map.count("sflow_host") != 0) {
         sflow_host = configuration_map["sflow_host"];
+    }
+
+    if (configuration_map.count("sflow_read_packet_length_from_ip_header") != 0) {
+        sflow_read_packet_length_from_ip_header =
+        configuration_map["sflow_read_packet_length_from_ip_header"] == "on";
     }
 
     for (auto sflow_port: sflow_ports) {
@@ -297,21 +306,19 @@ bool process_sflow_flow_sample(uint8_t* data_pointer,
 
             uint8_t* header_payload_pointer = payload_ptr + sizeof(sflow_raw_protocol_header_t);
 
-            bool use_packet_length_from_wire = true;
-
-  	    // We could enable this new parser for testing purposes
-	    auto result = parse_raw_packet_to_simple_packet_full_ng(header_payload_pointer,
+  	        // We could enable this new parser for testing purposes
+	        auto result = parse_raw_packet_to_simple_packet_full_ng(header_payload_pointer,
 								sflow_raw_protocol_header.frame_length_before_sampling,
 								sflow_raw_protocol_header.header_size, packet,
-								use_packet_length_from_wire);
+								sflow_read_packet_length_from_ip_header);
 
-	    if (result != network_data_stuctures::parser_code_t::success) {
-	        sflow_parse_error_nested_header++;
+	        if (result != network_data_stuctures::parser_code_t::success) {
+	            sflow_parse_error_nested_header++;
 
-	        logger << log4cpp::Priority::DEBUG << plugin_log_prefix
-		    << "Cannot parse nested packet using ng parser: " << parser_code_to_string(result);
+	            logger << log4cpp::Priority::DEBUG << plugin_log_prefix
+		            << "Cannot parse nested packet using ng parser: " << parser_code_to_string(result);
 
-	        return false;
+	            return false;
             }
 
             // Pass pointer to raw header to FastNetMon processing functions

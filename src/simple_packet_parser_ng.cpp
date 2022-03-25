@@ -85,9 +85,9 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(uint8_t* pointer,
         packet.protocol = protocol;
 
         if (use_packet_length_from_wire) {
-            packet.length = length_before_sampling;
-        } else {
             packet.length = ipv4_header->total_length;
+        } else {
+            packet.length = length_before_sampling;
         }
 
         // Ignore all IP options and shift pointer to L3 payload
