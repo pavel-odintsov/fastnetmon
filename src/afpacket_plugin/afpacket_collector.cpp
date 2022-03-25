@@ -315,9 +315,9 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
     unsigned int num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
     logger.info("We have %d cpus for AF_PACKET", num_cpus);
 
-    if (configuration_map.count("netmap_read_packet_length_from_ip_header") != 0) {
+    if (configuration_map.count("af_packet_read_packet_length_from_ip_header") != 0) {
         afpacket_read_packet_length_from_ip_header =
-        configuration_map["netmap_read_packet_length_from_ip_header"] == "on";
+        configuration_map["af_packet_read_packet_length_from_ip_header"] == "on";
     }
 
     std::string interfaces_list = "";
