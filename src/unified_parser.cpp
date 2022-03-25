@@ -2,7 +2,7 @@
 
 #include "fastnetmon_packet_parser.h"
 
-bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet_t& packet, bool netmap_read_packet_length_from_ip_header) {
+bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet_t& packet, bool read_packet_length_from_ip_header) {
 
     struct pfring_pkthdr packet_header;
 
@@ -46,7 +46,7 @@ bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet_t&
     packet.source_port = packet_header.extended_hdr.parsed_pkt.l4_src_port;
     packet.destination_port = packet_header.extended_hdr.parsed_pkt.l4_dst_port;
 
-    if (netmap_read_packet_length_from_ip_header) {
+    if (read_packet_length_from_ip_header) {
         packet.length = packet_header.extended_hdr.parsed_pkt.ip_total_size;
     } else {
         packet.length = packet_header.len;
