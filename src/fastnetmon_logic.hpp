@@ -12,6 +12,9 @@
 #include "all_logcpp_libraries.h"
 #include "packet_bucket.h"
 
+#include "fastnetmon.grpc.pb.h"
+#include <grpc++/grpc++.h>
+
 typedef std::map<std::string, uint32_t> active_flow_spec_announces_t;
 
 void build_speed_counters_from_packet_counters(map_element_t& new_speed_element,
@@ -165,3 +168,27 @@ void check_traffic_buckets();
 void process_filled_buckets_ipv6();
 template <typename TemplatedKeyType>
 bool should_remove_orphaned_bucket(const std::pair<TemplatedKeyType, packet_bucket_t>& pair);
+
+
+// API declaration
+using fastmitigation::BanListReply;
+using fastmitigation::BanListRequest;
+using fastmitigation::Fastnetmon;
+using grpc::Server;
+using grpc::ServerBuilder;
+using grpc::ServerContext;
+using grpc::Status;
+
+class FastnetmonApiServiceImpl final : public Fastnetmon::Service {
+    Status GetBanlist(::grpc::ServerContext* context,
+                      const ::fastmitigation::BanListRequest* request,
+                      ::grpc::ServerWriter< ::fastmitigation::BanListReply>* writer) override;
+
+    Status ExecuteBan(ServerContext* context,
+                      const fastmitigation::ExecuteBanRequest* request,
+                      fastmitigation::ExecuteBanReply* reply) override;
+    Status ExecuteUnBan(ServerContext* context,
+                        const fastmitigation::ExecuteBanRequest* request,
+                        fastmitigation::ExecuteBanReply* reply) override;
+};
+
