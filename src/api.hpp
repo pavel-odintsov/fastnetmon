@@ -12,6 +12,19 @@
             writer->Write(reply);
         }
 
+        // IPv6
+        std::map<subnet_ipv6_cidr_mask_t, banlist_item_t> ban_list_copy;
+
+        // Get whole ban list content atomically
+        ban_list_ipv6_ng.get_whole_banlist(ban_list_copy);
+
+
+        for (auto itr : ban_list_copy) {
+            BanListReply reply;
+            reply.set_ip_address( print_ipv6_cidr_subnet(itr.first) );
+            writer->Write(reply);
+        }
+
         return Status::OK;
     }
 
