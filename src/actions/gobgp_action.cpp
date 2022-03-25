@@ -121,6 +121,9 @@ bool gobgp_announce_host = false;
 bgp_community_attribute_element_t bgp_community_host;
 bgp_community_attribute_element_t bgp_community_subnet;
 
+bgp_community_attribute_element_t bgp_community_host_ipv6;
+bgp_community_attribute_element_t bgp_community_subnet_ipv6;;
+
 void gobgp_action_init() {
     logger << log4cpp::Priority::INFO << "GoBGP action module loaded";
     gobgp_client =
@@ -148,7 +151,7 @@ void gobgp_action_init() {
         }
     }
 
-    logger << log4cpp::Priority::INFO << "GoBGP host community: " << bgp_community_host.asn_number << ":" << bgp_community_host.community_number;
+    logger << log4cpp::Priority::INFO << "GoBGP host IPv4 community: " << bgp_community_host.asn_number << ":" << bgp_community_host.community_number;
 
     // Set them to safe defaults
     bgp_community_subnet.asn_number = 65001;
@@ -160,7 +163,32 @@ void gobgp_action_init() {
         }
     }
 
-    logger << log4cpp::Priority::INFO << "GoBGP subnet community: " << bgp_community_subnet.asn_number << ":" << bgp_community_subnet.community_number;
+    logger << log4cpp::Priority::INFO << "GoBGP subnet IPv4 community: " << bgp_community_subnet.asn_number << ":" << bgp_community_subnet.community_number;
+
+    // IPv6 communities
+    bgp_community_host_ipv6.asn_number = 65001;
+    bgp_community_host_ipv6.community_number = 666;
+
+    if (configuration_map.count("gobgp_community_host_ipv6")) {
+        if (!read_bgp_community_from_string(configuration_map["gobgp_community_host_ipv6"], bgp_community_host_ipv6)) {
+            logger << log4cpp::Priority::ERROR << "Cannot parse GoBGP community for IPv6 host " << configuration_map["gobgp_community_host_ipv6"];
+        }
+    }   
+
+    logger << log4cpp::Priority::INFO << "GoBGP host IPv6 community: " << bgp_community_host_ipv6.asn_number << ":" << bgp_community_host_ipv6.community_number;
+
+    // Set them to safe defaults
+    bgp_community_subnet_ipv6.asn_number = 65001;
+    bgp_community_subnet_ipv6.community_number = 666;
+
+
+    if (configuration_map.count("gobgp_community_subnet_ipv6")) {
+        if (!read_bgp_community_from_string(configuration_map["gobgp_community_subnet_ipv6"], bgp_community_subnet_ipv6)) {
+            logger << log4cpp::Priority::ERROR << "Cannot parse GoBGP community for IPv6 subnet " << configuration_map["gobgp_community_subnet_ipv6"];
+        }
+    }   
+
+    logger << log4cpp::Priority::INFO << "GoBGP subnet IPv6 community: " << bgp_community_subnet_ipv6.asn_number << ":" << bgp_community_subnet_ipv6.community_number;
 }
 
 void gobgp_action_shutdown() {
