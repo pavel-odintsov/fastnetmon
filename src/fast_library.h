@@ -122,3 +122,4 @@ bool set_boost_process_name(boost::thread* thread, std::string process_name);
  std::string convert_any_ip_to_string(subnet_ipv6_cidr_mask_t subnet);
 bool convert_string_to_positive_integer_safe(std::string line, int& value);
 bool read_ipv6_host_from_string(std::string ipv6_host_as_string, in6_addr& result);
+bool validate_ipv6_or_ipv4_host(const std::string host);

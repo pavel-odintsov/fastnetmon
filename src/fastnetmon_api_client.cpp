@@ -42,7 +42,7 @@ class FastnetmonClient {
                 std::cerr << "Could not connect to API server. Timeout exceed" << std::endl;
                 return;
             } else {
-                std::cerr << "RPC failed " + status.error_message() << std::endl;
+                std::cerr << "Query failed " + status.error_message() << std::endl;
                 return;
             }
         }
@@ -80,7 +80,7 @@ class FastnetmonClient {
                 std::cerr << "Could not connect to API server. Timeout exceed" << std::endl;
                 return;
             } else {
-                std::cerr << "RPC failed " + status.error_message() << std::endl;
+                std::cerr << "Query failed " + status.error_message() << std::endl;
                 return;
             }
         }
