@@ -1462,3 +1462,12 @@ bool convert_string_to_positive_integer_safe(std::string line, int& value) {
     return true;
 }
 
+// Read IPv6 host address from string representation
+bool read_ipv6_host_from_string(std::string ipv6_host_as_string, in6_addr& result) {
+    if (inet_pton(AF_INET6, ipv6_host_as_string.c_str(), &result) == 1) {
+        return true;
+    } else {
+        return false;
+    }
+}
+

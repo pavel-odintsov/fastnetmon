@@ -128,6 +128,8 @@ bool gobgp_announce_host_ipv6 = false;
 bgp_community_attribute_element_t bgp_community_host_ipv6;
 bgp_community_attribute_element_t bgp_community_subnet_ipv6;;
 
+subnet_ipv6_cidr_mask_t ipv6_next_hop;
+
 void gobgp_action_init() {
     logger << log4cpp::Priority::INFO << "GoBGP action module loaded";
     gobgp_client =
@@ -136,6 +138,21 @@ void gobgp_action_init() {
     if (configuration_map.count("gobgp_next_hop")) {
         gobgp_nexthop = configuration_map["gobgp_next_hop"];
     }
+
+    // Set IPv6 hop to safe default
+    ipv6_next_hop.cidr_prefix_length = 128;
+    read_ipv6_host_from_string("100::1", ipv6_next_hop.subnet_address);
+
+    if (configuration_map.count("gobgp_next_hop_ipv6")) {
+        bool parsed_next_hop_result =
+            read_ipv6_host_from_string(configuration_map["gobgp_next_hop_ipv6"], ipv6_next_hop.subnet_address);
+
+        if (!parsed_next_hop_result) {
+            logger << log4cpp::Priority::ERROR << "Can't parse specified IPv6 next hop to IPv6 address: " << configuration_map["gobgp_next_hop_ipv6"];
+        }
+    }
+
+    logger << log4cpp::Priority::INFO << "IPv6 next hop: " << print_ipv6_cidr_subnet(ipv6_next_hop);
 
     if (configuration_map.count("gobgp_announce_host")) {
         gobgp_announce_host = configuration_map["gobgp_announce_host"] == "on";
