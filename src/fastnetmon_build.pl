@@ -694,7 +694,7 @@ sub install_grpc {
 sub install_gobgp {
     chdir $temp_folder_for_building_project;
 
-    my $gobgp_install_path = "$library_install_folder/gobgp_2_16_0";
+    my $gobgp_install_path = "$library_install_folder/gobgp_2_17_0";
 
     if (-e $gobgp_install_path) {
         print "GoBGP was already installed\n";
@@ -705,10 +705,10 @@ sub install_gobgp {
     my $distro_file_hash = '';
 
     if ($distro_architecture eq 'x86_64') {
-	$distro_file_name = 'gobgp_2.16.0_linux_amd64.tar.gz';
-	$distro_file_hash = '58dcf1f4b4b64383c5fbb731322c9fc2a2fcd5f0';
+	    $distro_file_name = 'gobgp_2.17.0_linux_amd64.tar.gz';
+	    $distro_file_hash = '3b12cf212eb7455be4ac2008fe7389666f1bc5ea';
     } elsif ($distro_architecture eq 'i686') {
-        $distro_file_name = 'gobgp_2.16.0_linux_386.tar.gz';
+        $distro_file_name = 'gobgp_2.17.0_linux_386.tar.gz';
         $distro_file_hash = '9d6f031058589618f414b4493b5cfa34230c0505';
     } else {
         fast_die("We do not have GoBGP for your platform, please check: https://github.com/osrg/gobgp/releases for available builds");
@@ -716,7 +716,7 @@ sub install_gobgp {
 
     print "Download GoBGP\n";
 
-    my $gobgp_download_result = download_file("https://github.com/osrg/gobgp/releases/download/v2.16.0/$distro_file_name",
+    my $gobgp_download_result = download_file("https://github.com/osrg/gobgp/releases/download/v2.17.0/$distro_file_name",
         $distro_file_name, $distro_file_hash);
 
     unless ($gobgp_download_result) {
