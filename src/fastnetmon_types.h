@@ -59,6 +59,18 @@ enum class attack_detection_threshold_type_t {
 };
 
 
+// Here we store different counters
+class system_counter_t {
+    public:
+    system_counter_t(std::string counter_name, uint64_t counter_value) {
+        this->counter_name  = counter_name;
+        this->counter_value = counter_value;
+    }   
+    std::string counter_name;
+    uint64_t counter_value = 0;
+};
+
+
 /* Class for custom comparison fields by different fields */
 template <typename T> class TrafficComparatorClass {
     private:

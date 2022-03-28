@@ -50,6 +50,9 @@
 
 #include "ban_list.hpp"
 
+
+extern uint64_t influxdb_writes_total; 
+extern uint64_t influxdb_writes_failed;
 extern packet_buckets_storage_t<subnet_ipv6_cidr_mask_t> packet_buckets_ipv6_storage;
 extern bool print_average_traffic_counts;
 extern std::string cli_stats_file_path;
@@ -3631,3 +3634,23 @@ bool should_remove_orphaned_bucket(const std::pair<TemplatedKeyType, packet_buck
     return false;
 }
 
+bool get_statistics(std::vector<system_counter_t>& system_counters) {
+    system_counters.push_back(system_counter_t("total_simple_packets_processed", total_simple_packets_processed));
+    system_counters.push_back(system_counter_t("total_ipv4_packets", total_ipv4_packets));
+    system_counters.push_back(system_counter_t("total_ipv6_packets", total_ipv6_packets));
+
+    system_counters.push_back(system_counter_t("non_ip_packets", non_ip_packets));
+
+    system_counters.push_back(system_counter_t("total_unparsed_packets_speed", total_unparsed_packets_speed));
+    system_counters.push_back(system_counter_t("total_unparsed_packets", total_unparsed_packets));
+
+    system_counters.push_back(system_counter_t("speed_recalculation_time_seconds", speed_calculation_time.tv_sec));
+    system_counters.push_back(system_counter_t("speed_recalculation_time_microseconds", speed_calculation_time.tv_usec));
+
+    system_counters.push_back(system_counter_t("total_number_of_hosts", total_number_of_hosts_in_our_networks));
+
+    system_counters.push_back(system_counter_t("influxdb_writes_total", influxdb_writes_total));
+    system_counters.push_back(system_counter_t("influxdb_writes_failed", influxdb_writes_failed));
+
+    return true;
+}

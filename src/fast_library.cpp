@@ -1883,3 +1883,21 @@ uint64_t get_current_unix_time_in_nanoseconds() {
     return unix_timestamp_nanoseconds;
 }
 
+// Joins data to format a=b,d=f
+std::string join_by_comma_and_equal(std::map<std::string, std::string>& data) {
+    std::stringstream buffer;
+
+    for (auto itr = data.begin(); itr != data.end(); ++itr) {
+        buffer << itr->first << "=" << itr->second;
+
+        // it's last element
+        if (std::distance(itr, data.end()) == 1) {
+            // Do not print comma
+        } else {
+            buffer << ",";
+        }
+    }
+
+    return buffer.str();
+}
+

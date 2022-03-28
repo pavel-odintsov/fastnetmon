@@ -204,6 +204,9 @@ add_library(patricia STATIC libpatricia/patricia.c)
 add_library(graphite_metrics STATIC metrics/graphite.cpp)
 target_link_libraries(fastnetmon graphite_metrics)
 
+# InfluxDB metrics
+add_library(influxdb_metrics STATIC metrics/influxdb.cpp)
+target_link_libraries(fastnetmon influxdb_metrics)
 
 add_library(fastnetmon_pcap_format STATIC fastnetmon_pcap_format.cpp)
 

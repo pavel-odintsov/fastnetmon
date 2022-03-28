@@ -115,6 +115,7 @@
 #include "ban_list.hpp"
 
 #include "metrics/graphite.hpp"
+#include "metrics/influxdb.hpp"
 
 #ifdef FASTNETMON_API
 using fastmitigation::BanListReply;
@@ -448,6 +449,23 @@ struct timeval graphite_thread_execution_time;
 
 // Default graphite namespace
 std::string graphite_prefix = "fastnetmon";
+
+
+// Total number of InfluxDB writes
+uint64_t influxdb_writes_total = 0; 
+
+// Total number of failed InfluxDB writes
+uint64_t influxdb_writes_failed = 0; 
+
+// InfluxDB
+bool influxdb_enabled = false;
+std::string influxdb_database = "fastnetmon";
+std::string influxdb_host = "127.0.0.1";
+unsigned short int influxdb_port = 8086;
+bool influxdb_auth = false;
+std::string influxdb_user = "";
+std::string influxdb_password = "";
+unsigned int influxdb_push_period = 1;
 
 bool process_incoming_traffic = true;
 bool process_outgoing_traffic = true;
@@ -825,8 +843,33 @@ bool load_configuration_file() {
         graphite_port = convert_string_to_integer(configuration_map["graphite_port"]);
     }
 
-    if (configuration_map.count("graphite_number_of_ips") != 0) {
-        logger << log4cpp::Priority::ERROR << "Sorry, you have used deprecated function graphite_number_of_ips";
+    // InfluxDB
+    if (configuration_map.count("influxdb") != 0) {
+        influxdb_enabled = configuration_map["influxdb"] == "on" ? true : false;
+    }
+
+    if (configuration_map.count("influxdb_port") != 0) {
+        influxdb_port = convert_string_to_integer(configuration_map["influxdb_port"]);
+    }
+
+    if (configuration_map.count("influxdb_host") != 0) {
+        influxdb_host = configuration_map["influxdb_host"];
+    }
+
+    if (configuration_map.count("influxdb_database") != 0) {
+        influxdb_database = configuration_map["influxdb_database"];
+    }
+
+    if (configuration_map.count("influxdb_auth") != 0) {
+        influxdb_auth = configuration_map["influxdb_auth"] == "on" ? true : false;
+    }
+
+    if (configuration_map.count("influxdb_user") != 0) {
+        influxdb_user = configuration_map["influxdb_user"];
+    }
+
+    if (configuration_map.count("influxdb_password") != 0) {
+        influxdb_password = configuration_map["influxdb_password"];
     }
 
     if (configuration_map.count("process_incoming_traffic") != 0) {
@@ -1650,6 +1693,11 @@ int main(int argc, char** argv) {
     if (graphite_enabled) {
         service_thread_group.add_thread(new boost::thread(graphite_push_thread));
     }    
+
+    // InfluxDB export thread
+    if (influxdb_enabled) {
+        service_thread_group.add_thread(new boost::thread(influxdb_push_thread));
+    }
 
     // start thread for recalculating speed in realtime
     service_thread_group.add_thread(new boost::thread(recalculate_speed_thread_handler));
