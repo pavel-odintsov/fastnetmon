@@ -114,6 +114,8 @@
 
 #include "ban_list.hpp"
 
+#include "metrics/graphite.hpp"
+
 #ifdef FASTNETMON_API
 using fastmitigation::BanListReply;
 using fastmitigation::BanListRequest;
@@ -439,6 +441,10 @@ std::string exabgp_next_hop = "";
 bool graphite_enabled = false;
 std::string graphite_host = "127.0.0.1";
 unsigned short int graphite_port = 2003;
+unsigned int graphite_push_period = 1;
+
+// Time consumed by pushing data to Graphite
+struct timeval graphite_thread_execution_time;
 
 // Default graphite namespace
 std::string graphite_prefix = "fastnetmon";
@@ -1639,6 +1645,11 @@ int main(int argc, char** argv) {
 
     // Run screen draw thread for IPv6
     service_thread_group.add_thread(new boost::thread(screen_draw_ipv6_thread));
+
+    // Graphite export thread
+    if (graphite_enabled) {
+        service_thread_group.add_thread(new boost::thread(graphite_push_thread));
+    }    
 
     // start thread for recalculating speed in realtime
     service_thread_group.add_thread(new boost::thread(recalculate_speed_thread_handler));
