@@ -58,7 +58,7 @@ Features
 - Thresholds can be configured per-subnet basis with the hostgroups feature
 - [Email notifications](https://fastnetmon.com/docs/attack_report_example/) about detected attack
 - IPv6 support for mirror, Netflow and IPFIX modes
-- Announce blocked IPs via BGP to routers with [ExaBGP](https://fastnetmon.com/docs/exabgp_integration/) or  [GoBGP](https://fastnetmon.com/docs/gobgp-integration/)
+- Announce blocked IPs via BGP to routers with [ExaBGP](https://fastnetmon.com/docs/exabgp_integration/) or  [GoBGP](https://fastnetmon.com/docs/gobgp-integration/) (recommended)
 - Full integration with [Graphite](https://fastnetmon.com/docs/graphite_integration/) and [InfluxDB](https://fastnetmon.com/docs/influxdb_integration/)
 - [API](https://fastnetmon.com/docs/fastnetmon-community-api/)
 - [Redis](https://fastnetmon.com/docs/redis/) integration
