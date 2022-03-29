@@ -82,6 +82,10 @@ uint64_t netflow9_options_packet_number         = 0;
 // As change we also count when we recived it for the first time
 uint64_t netflow9_sampling_rate_changes = 0;
 
+// How much times we changed sampling rate for same agent
+// As change we also count when we recived it for the first time
+uint64_t ipfix_sampling_rate_changes = 0;
+
 // Number of dropped packets due to unknown template in message
 uint64_t netflow9_packets_with_unknown_templates = 0;
 
@@ -100,6 +104,10 @@ uint64_t ipfix_duration_less_60_seconds    = 0;
 uint64_t ipfix_duration_less_90_seconds    = 0;
 uint64_t ipfix_duration_less_180_seconds   = 0;
 uint64_t ipfix_duration_exceed_180_seconds = 0;
+
+uint64_t ipfix_custom_sampling_rate_received = 0;
+
+uint64_t ipfix_duration_negative = 0;
 
 uint64_t netflow5_duration_less_15_seconds    = 0;
 uint64_t netflow5_duration_less_30_seconds    = 0;
@@ -159,7 +167,28 @@ void add_update_peer_template(global_template_storage_t& table_for_add,
                               peer_nf9_template& field_template,
                               bool& updated);
 
-int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data, simple_packet_t& packet, std::vector<peer_nf9_record_t> & template_records);
+// This class carries information which does not need to stay in simple_packet_t because we need it only for parsing
+class netflow_meta_info_t {
+    public:
+    // Packets selected by sampler
+    uint64_t selected_packets = 0; 
+
+    // Total number of packets on interface
+    uint64_t observed_packets = 0; 
+
+    // Sampling rate is observed_packets / selected_packets
+
+    // Full length of packet (Netflow Lite)
+    uint64_t data_link_frame_size = 0; 
+
+    // Decoded nested packet
+    simple_packet_t nested_packet;
+
+    // Set to true when we were able to parse nested packet
+    bool nested_packet_parsed = false;
+};
+
+int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data, simple_packet_t& packet, std::vector<peer_nf9_record_t> & template_records, netflow_meta_info_t& flow_meta);
 
 peer_nf9_template*
 peer_find_template(global_template_storage_t& table_for_lookup, uint32_t source_id, uint32_t template_id, std::string client_addres_in_string_format) {
@@ -288,36 +317,165 @@ bool process_netflow_v9_options_template(uint8_t* pkt, size_t len, uint32_t sour
 bool process_ipfix_options_template(uint8_t* pkt, size_t len, uint32_t source_id, std::string client_addres_in_string_format) {
     ipfix_options_header_common_t* options_template_header = (ipfix_options_header_common_t*)pkt;
 
-    if (len < sizeof(*options_template_header)) {
-        logger << log4cpp::Priority::ERROR << "Short IPFIX options template header " << len << " bytes";
+    if (len < sizeof(ipfix_options_header_common_t)) {
+        logger << log4cpp::Priority::ERROR << "Short IPFIX options template header " << len << " bytes. "
+               << "Agent IP: " << client_addres_in_string_format;
         return false;
     }
 
-    if (ntohs(options_template_header->flowset_id) != NF10_OPTIONS_FLOWSET_ID) {
-        logger << log4cpp::Priority::ERROR
-               << "Function process_ipfix_options_template "
-                  "expects only NF10_OPTIONS_FLOWSET_ID but got "
+    uint16_t flowset_id     = fast_ntoh(options_template_header->flowset_id);
+    uint16_t flowset_length = fast_ntoh(options_template_header->length);
+
+    if (flowset_id != NF10_OPTIONS_FLOWSET_ID) {
+        logger << log4cpp::Priority::ERROR << "For options template we expect " << NF10_OPTIONS_FLOWSET_ID
+               << "flowset_id but got "
                   "another id: "
-               << ntohs(options_template_header->flowset_id);
+               << flowset_id << "Agent IP: " << client_addres_in_string_format;
+
         return false;
     }
 
-    ipfix_options_header_t* options_nested_header = (ipfix_options_header_t*)(pkt + sizeof(ipfix_options_header_common_t*));
+    // logger << log4cpp::Priority::INFO << "flowset_id " << flowset_id << " flowset_length: " << flowset_length;
 
-    // Yes, I should convert it to host byter order but it broke it!
-    // WTF??
-    uint16_t template_id = options_nested_header->template_id;
+    ipfix_options_header_t* options_nested_header = (ipfix_options_header_t*)(pkt + sizeof(ipfix_options_header_common_t));
+
+    // Check that we have enough space in packet to read ipfix_options_header_t
+    if (len < sizeof(ipfix_options_header_common_t) + sizeof(ipfix_options_header_t)) {
+        logger << log4cpp::Priority::ERROR << "Could not read specific header for IPFIX options template."
+               << "Agent IP: " << client_addres_in_string_format;
+        return false;
+    }
+
+    // logger << log4cpp::Priority::INFO << "raw undecoded data template_id: " << options_nested_header->template_id <<
+    // " field_count: " << options_nested_header->field_count
+    //    << " scope_field_count: " << options_nested_header->scope_field_count;
+
+    // Get all fields from options_nested_header
+    uint16_t template_id       = fast_ntoh(options_nested_header->template_id);
+    uint16_t field_count       = fast_ntoh(options_nested_header->field_count);
+    uint16_t scope_field_count = fast_ntoh(options_nested_header->scope_field_count);
+
+    // According to RFC scope_field_count must not be zero but I'll assume that some vendors may fail to implement it
+    // https://tools.ietf.org/html/rfc7011#page-24
+
+    // logger << log4cpp::Priority::INFO << "Options template id: " << template_id << " field_count: " << field_count
+    //       << " scope_field_count: " << scope_field_count;
 
     if (template_id <= 255) {
-        logger << log4cpp::Priority::ERROR << "Template ID for options template should be bigger than 255";
+        logger << log4cpp::Priority::ERROR << "Template ID for IPFIX options template should be bigger than 255, got "
+               << template_id << " Agent IP: " << client_addres_in_string_format;
         return false;
     }
 
-    uint16_t field_count       = ntohs(options_nested_header->field_count);
-    uint16_t scope_field_count = ntohs(options_nested_header->scope_field_count);
-
-    logger << log4cpp::Priority::INFO << "Options template id: " << template_id << " field_count: " << field_count
+    logger << log4cpp::Priority::DEBUG << "Options template id: " << template_id << " field_count: " << field_count
            << " scope_field_count: " << scope_field_count;
+
+
+    // According to RFC field_count includes scope_field_count
+    // https://tools.ietf.org/html/rfc7011#page-24 "Number of all fields in this Options Template Record, including the Scope Fields."
+
+    if (scope_field_count > field_count) {
+        logger << log4cpp::Priority::ERROR << "Number of scope fields " << scope_field_count
+               << " cannot exceed number of all fields: " << field_count << " Agent IP: " << client_addres_in_string_format;
+        return false;
+    }
+
+    // Calculate number of all normal fields
+    uint16_t normal_field_count = field_count - scope_field_count;
+
+    // Shift our temporary pointer to place where scope section begins
+    uint8_t* current_pointer_in_packet = (uint8_t*)(pkt + sizeof(ipfix_options_header_common_t) + sizeof(ipfix_options_header_t));
+
+    uint32_t scopes_total_size = 0;
+
+    uint32_t scopes_payload_total_size = 0;
+
+    // Then we have scope fields in packet, I'm not going to process them, I'll just skip them
+    for (int scope_index = 0; scope_index < scope_field_count; scope_index++) {
+        nf10_template_flowset_record_t* current_scopes_record = (nf10_template_flowset_record_t*)(current_pointer_in_packet);
+
+        // Check that our attempt to read nf10_template_flowset_record_t will not exceed packet length
+        if (len < sizeof(ipfix_options_header_common_t) + sizeof(ipfix_options_header_t) + sizeof(nf10_template_flowset_record_t)) {
+            logger << log4cpp::Priority::ERROR << "Attempt to read IPFIX flowset_record outside of packet. "
+                   << "Agent IP: " << client_addres_in_string_format;
+            return false;
+        }
+
+        uint16_t scope_field_size = fast_ntoh(current_scopes_record->length);
+        uint16_t scope_field_type = fast_ntoh(current_scopes_record->type);
+
+        logger << log4cpp::Priority::DEBUG << "Reading scope section with size " << scope_field_size << " and type: " << scope_field_type;
+
+        // Increment scopes size
+        scopes_total_size += sizeof(nf10_template_flowset_record_t);
+
+        // Increment paylaod size
+        scopes_payload_total_size += scope_field_size;
+
+        // Shift pointer to the end of current scope field
+        current_pointer_in_packet = (uint8_t*)(current_pointer_in_packet + sizeof(nf10_template_flowset_record_t));
+    }
+
+    // We've reached normal fields section
+    uint32_t normal_fields_total_size = 0;
+
+    std::vector<peer_nf9_record_t> template_records_map;
+
+    uint32_t normal_fields_payload_total_size = 0;
+
+    // Try to read all normal fields
+    for (int field_index = 0; field_index < normal_field_count; field_index++) {
+        nf10_template_flowset_record_t* current_normal_record = (nf10_template_flowset_record_t*)(current_pointer_in_packet);
+
+        // Check that our attempt to read nf10_template_flowset_record_t will not exceed packet length
+        if (len < sizeof(ipfix_options_header_common_t) + sizeof(ipfix_options_header_t) + scopes_total_size +
+                      sizeof(nf10_template_flowset_record_t)) {
+            logger << log4cpp::Priority::ERROR << "Attempt to read IPFIX flowset_record outside of packet for normal field. "
+                   << "Agent IP: " << client_addres_in_string_format;
+            return false;
+        }
+
+        uint16_t normal_field_size = fast_ntoh(current_normal_record->length);
+        uint16_t normal_field_type = fast_ntoh(current_normal_record->type);
+
+        peer_nf9_record_t current_record;
+        current_record.record_type   = normal_field_type;
+        current_record.record_length = normal_field_size;
+
+        template_records_map.push_back(current_record);
+
+        logger << log4cpp::Priority::DEBUG << "Reading IPFIX options field with size " << normal_field_size
+               << " and type: " << normal_field_type;
+
+        // Increment total field size
+        normal_fields_total_size += sizeof(nf10_template_flowset_record_t);
+
+        // Increment toital payload size
+        normal_fields_payload_total_size += normal_field_size;
+
+        // Shift pointer to the end of current normal field
+        current_pointer_in_packet = (uint8_t*)(current_pointer_in_packet + sizeof(nf10_template_flowset_record_t));
+    }
+
+    peer_nf9_template field_template;
+
+    field_template.template_id = template_id;
+    field_template.records     = template_records_map;
+
+    // I do not think that we use it in our logic but I think it's reasonable to set it to number of normal fields
+    field_template.num_records = normal_field_count;
+
+    field_template.total_len = normal_fields_payload_total_size + scopes_payload_total_size;
+    field_template.type      = netflow9_template_type::Options;
+
+    field_template.option_scope_length = scopes_payload_total_size;
+
+    // logger << log4cpp::Priority::INFO << "Read options template:" << print_peer_nf9_template(field_template);
+
+    // Add/update template
+    bool updated = false;
+    add_update_peer_template(global_netflow10_templates, source_id, template_id, client_addres_in_string_format,
+                             field_template, updated);
 
     return true;
 }
@@ -398,7 +556,7 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
     return true;
 }
 
-bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, const std::string& client_addres_in_string_format) {
+bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, const std::string& client_addres_in_string_format, uint64_t flowset_number) {
     nf9_flowset_header_common_t* template_header = (nf9_flowset_header_common_t*)pkt;
     peer_nf9_template field_template;
 
@@ -555,7 +713,7 @@ bool be_copy_function(uint8_t* data, uint8_t* target, uint32_t target_field_leng
         BE_COPY(packet.flow_field);                 \
         break
 
-int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data, simple_packet_t& packet) {
+int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data, simple_packet_t& packet, netflow_meta_info_t& flow_meta) {
     /* XXX: use a table-based interpreter */
     switch (record_type) {
         V9_FIELD(NF9_IN_BYTES, OCTETS, length);
@@ -1123,12 +1281,15 @@ void nf9_flowset_to_store(uint8_t* pkt,
         }
     }
 
+    // Place to keep meta information which is not needed in simple_simple_packet_t structure
+    netflow_meta_info_t flow_meta;
+
     // We should iterate over all available template fields
     for (std::vector<peer_nf9_record_t> ::iterator iter = template_records.begin(); iter != template_records.end(); iter++) {
         uint32_t record_type   = iter->record_type;
         uint32_t record_length = iter->record_length;
 
-        int nf9_rec_to_flow_result = nf9_rec_to_flow(record_type, record_length, pkt + offset, packet);
+        int nf9_rec_to_flow_result = nf9_rec_to_flow(record_type, record_length, pkt + offset, packet, flow_meta);
         // logger<< log4cpp::Priority::INFO<<"Read data with type: "<<record_type<<"
         // and
         // length:"<<record_length;
@@ -1475,6 +1636,8 @@ bool process_netflow_packet_v9(uint8_t* packet, uint32_t len, std::string& clien
          * handlers below.
          */
 
+        uint64_t flowset_number = 0;
+
         if (offset + flowset_len > len) {
             logger << log4cpp::Priority::ERROR << "We tried to read from address outside Netflow's packet flowset agent IP: "
                    << client_addres_in_string_format << " flowset number: " << flowset_number
@@ -1486,7 +1649,7 @@ bool process_netflow_packet_v9(uint8_t* packet, uint32_t len, std::string& clien
         case NF9_TEMPLATE_FLOWSET_ID:
             netflow9_data_templates_number++;
             // logger<< log4cpp::Priority::INFO<<"We read template";
-            if (!process_netflow_v9_template(packet + offset, flowset_len, source_id, client_addres_in_string_format)) {
+            if (!process_netflow_v9_template(packet + offset, flowset_len, source_id, client_addres_in_string_format, flowset_number)) {
                 logger << log4cpp::Priority::ERROR
                        << "Function process_netflow_v9_template executed with errors agent IP: " << client_addres_in_string_format;
 
