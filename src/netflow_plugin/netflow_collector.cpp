@@ -163,6 +163,84 @@ process_packet_pointer netflow_process_func_ptr = NULL;
 global_template_storage_t global_netflow9_templates;
 global_template_storage_t global_netflow10_templates;
 
+std::vector<system_counter_t> get_netflow_stats() {
+    std::vector<system_counter_t> system_counter;
+
+    system_counter.push_back(system_counter_t("netflow_total_packets", netflow_total_packets));
+
+    // Netflow v5
+    system_counter.push_back(system_counter_t("netflow_v5_total_packets", netflow_v5_total_packets));
+    system_counter.push_back(system_counter_t("netflow_v5_total_flows", netflow_v5_total_flows));
+    system_counter.push_back(system_counter_t("netflow_v5_duration_less_15_seconds", netflow5_duration_less_15_seconds));
+    system_counter.push_back(system_counter_t("netflow_v5_duration_less_30_seconds", netflow5_duration_less_30_seconds));
+    system_counter.push_back(system_counter_t("netflow_v5_duration_less_60_seconds", netflow5_duration_less_60_seconds));
+    system_counter.push_back(system_counter_t("netflow_v5_duration_less_90_seconds", netflow5_duration_less_90_seconds));
+    system_counter.push_back(system_counter_t("netflow_v5_duration_less_180_seconds", netflow5_duration_less_180_seconds));
+    system_counter.push_back(system_counter_t("netflow_v5_duraion_exceed_180_seconds", netflow5_duration_exceed_180_seconds));
+
+    // Netflow v9
+    system_counter.push_back(system_counter_t("netflow_v9_total_packets", netflow_v9_total_packets));
+
+    system_counter.push_back(system_counter_t("netflow_v9_total_flows", netflow_v9_total_flows));
+    system_counter.push_back(system_counter_t("netflow_v9_total_ipv4_packets", netflow_v9_total_ipv4_packets));
+    system_counter.push_back(system_counter_t("netflow_v9_total_ipv6_packets", netflow_v9_total_ipv6_packets));
+
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_15_seconds", netflow9_duration_less_15_seconds));
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_30_seconds", netflow9_duration_less_30_seconds));
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_60_seconds", netflow9_duration_less_60_seconds));
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_90_seconds", netflow9_duration_less_90_seconds));
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_180_seconds", netflow9_duration_less_180_seconds));
+    system_counter.push_back(system_counter_t("netflow_v9_duraion_exceed_180_seconds", netflow9_duration_exceed_180_seconds));
+
+    system_counter.push_back(system_counter_t("ipfix_duration_less_15_seconds", ipfix_duration_less_15_seconds));
+    system_counter.push_back(system_counter_t("ipfix_duration_less_30_seconds", ipfix_duration_less_30_seconds));
+    system_counter.push_back(system_counter_t("ipfix_duration_less_60_seconds", ipfix_duration_less_60_seconds));
+    system_counter.push_back(system_counter_t("ipfix_duration_less_90_seconds", ipfix_duration_less_90_seconds));
+    system_counter.push_back(system_counter_t("ipfix_duration_less_180_seconds", ipfix_duration_less_180_seconds));
+    system_counter.push_back(system_counter_t("ipfix_duraion_exceed_180_seconds", ipfix_duration_exceed_180_seconds));
+    system_counter.push_back(system_counter_t("ipfix_duration_negative", ipfix_duration_negative));
+
+    system_counter.push_back(system_counter_t("ipfix_flows_end_reason_idle_timeout", ipfix_flows_end_reason_idle_timeout));
+    system_counter.push_back(system_counter_t("ipfix_flows_end_reason_active_timeout", ipfix_flows_end_reason_active_timeout));
+    system_counter.push_back(system_counter_t("ipfix_flows_end_reason_end_of_flow_timeout", ipfix_flows_end_reason_end_of_flow_timeout));
+    system_counter.push_back(system_counter_t("ipfix_flows_end_reason_force_end_timeout", ipfix_flows_end_reason_force_end_timeout));
+    system_counter.push_back(system_counter_t("ipfix_flows_end_reason_lack_of_resource_timeout",
+                                              ipfix_flows_end_reason_lack_of_resource_timeout));
+
+    system_counter.push_back(system_counter_t("netflow_ipfix_total_packets", netflow_ipfix_total_packets));
+    system_counter.push_back(system_counter_t("netflow_ipfix_total_flows", netflow_ipfix_total_flows));
+    system_counter.push_back(system_counter_t("netflow_ipfix_total_ipv4_packets", netflow_ipfix_total_ipv4_packets));
+    system_counter.push_back(system_counter_t("netflow_ipfix_total_ipv6_packets", netflow_ipfix_total_ipv6_packets));
+
+    system_counter.push_back(system_counter_t("netflow_all_protocols_total_flows", netflow_all_protocols_total_flows));
+
+    system_counter.push_back(system_counter_t("netflow_broken_packets", netflow_broken_packets));
+    system_counter.push_back(system_counter_t("template_updates_number_due_to_real_changes", template_updates_number_due_to_real_changes));
+    system_counter.push_back(system_counter_t("template_update_attempts_with_same_template_data",
+                                              template_update_attempts_with_same_template_data));
+    system_counter.push_back(system_counter_t("ipfix_data_packet_number", ipfix_data_packet_number));
+    system_counter.push_back(system_counter_t("ipfix_data_templates_number", ipfix_data_templates_number));
+    system_counter.push_back(system_counter_t("ipfix_options_templates_number", ipfix_options_templates_number));
+    system_counter.push_back(system_counter_t("ipfix_options_packet_number", ipfix_options_packet_number));
+    system_counter.push_back(system_counter_t("ipfix_packets_with_unknown_templates", ipfix_packets_with_unknown_templates));
+    system_counter.push_back(system_counter_t("ipfix_custom_sampling_rate_received", ipfix_custom_sampling_rate_received));
+    system_counter.push_back(system_counter_t("ipfix_sampling_rate_changes", ipfix_sampling_rate_changes));
+
+    system_counter.push_back(system_counter_t("netflow9_data_packet_number", netflow9_data_packet_number));
+    system_counter.push_back(system_counter_t("netflow9_data_templates_number", netflow9_data_templates_number));
+    system_counter.push_back(system_counter_t("netflow9_options_templates_number", netflow9_options_templates_number));
+    system_counter.push_back(system_counter_t("netflow9_options_packet_number", netflow9_options_packet_number));
+    system_counter.push_back(system_counter_t("netflow9_packets_with_unknown_templates", netflow9_packets_with_unknown_templates));
+    system_counter.push_back(system_counter_t("netflow9_custom_sampling_rate_received", netflow9_custom_sampling_rate_received));
+    system_counter.push_back(system_counter_t("netflow9_sampling_rate_changes", netflow9_sampling_rate_changes));
+    system_counter.push_back(system_counter_t("netflow_ignored_long_flows", netflow_ignored_long_flows));
+
+    system_counter.push_back(system_counter_t("template_netflow_ipfix_disk_writes", template_netflow_ipfix_disk_writes));
+
+    return system_counter;
+}
+
+
 /* Prototypes */
 void add_update_peer_template(global_template_storage_t& table_for_add,
                               uint32_t source_id,

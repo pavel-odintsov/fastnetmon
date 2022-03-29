@@ -3652,5 +3652,11 @@ bool get_statistics(std::vector<system_counter_t>& system_counters) {
     system_counters.push_back(system_counter_t("influxdb_writes_total", influxdb_writes_total));
     system_counters.push_back(system_counter_t("influxdb_writes_failed", influxdb_writes_failed));
 
+    if (enable_netflow_collection) {
+        auto netflow_stats = get_netflow_stats();
+
+        system_counters.insert(system_counters.end(), netflow_stats.begin(), netflow_stats.end());
+    }    
+    
     return true;
 }
