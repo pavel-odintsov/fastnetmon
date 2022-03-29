@@ -671,7 +671,7 @@ bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, c
 
         uint32_t total_size = 0;
 
-        std::vector<peer_nf9_record_t>  template_records_map;
+        std::vector<peer_nf9_record_t> template_records_map;
         for (uint32_t i = 0; i < count; i++) {
             if (offset >= len) {
                 logger << log4cpp::Priority::ERROR << "Short Netflow v9 flowset template";
@@ -1820,8 +1820,8 @@ bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string
 
             ipfix_data_packet_number++;
 
-            if (process_netflow_v10_data(packet + offset, flowset_len, nf10_hdr, source_id,
-                                         client_addres_in_string_format, client_ipv4_address) != 0) {
+            if (!process_netflow_v10_data(packet + offset, flowset_len, nf10_hdr, source_id,
+                                         client_addres_in_string_format, client_ipv4_address)) {
                 return false;
             }
 
@@ -1844,30 +1844,27 @@ bool process_netflow_packet_v9(uint8_t* packet, uint32_t len, std::string& clien
     nf9_flowset_header_common_t* flowset = nullptr;
 
     if (len < sizeof(*nf9_hdr)) {
-        logger << log4cpp::Priority::ERROR << "Short netflow v9 header";
+        logger << log4cpp::Priority::ERROR << "Short Netflow v9 header";
         return false;
     }
 
-    uint32_t count     = ntohs(nf9_hdr->c.flows);
-    uint32_t source_id = ntohl(nf9_hdr->source_id);
+    uint32_t flowset_count_total = ntohs(nf9_hdr->c.flows);
 
+    // Limit reasonable number of flow sets per packet
+    if (flowset_count_total > flowsets_per_packet_maximum_number) {
+        logger << log4cpp::Priority::ERROR << "We have so many flowsets inside Netflow v9 packet: " << flowset_count_total
+               << " Agent IP:" << client_addres_in_string_format;
+        return false;
+    }
+
+    uint32_t source_id = ntohl(nf9_hdr->source_id);
     // logger<< log4cpp::Priority::INFO<<"Template source id: "<<source_id;
 
     uint32_t offset      = sizeof(*nf9_hdr);
-    uint32_t total_flows = 0;
 
-    uint64_t flowset_number = 0;
+    // logger<< log4cpp::Priority::INFO<< "Total flowsets " << flowset_count_total;
 
-    for (uint32_t i = 0;; i++) {
-        flowset_number++;
-
-        // We limit number of flow sets in packet and also use it for infinite loop prevention
-        if (flowset_number > flowsets_per_packet_maximum_number) {
-            logger << log4cpp::Priority::ERROR
-                   << "Infinite loop prevention triggered or we have so many flowsets inside Netflow v9 packet";
-            return false;
-        }
-
+    for (uint32_t flowset_number = 0; flowset_number < flowset_count_total; flowset_number++) {
         /* Make sure we don't run off the end of the flow */
         if (offset >= len) {
             logger << log4cpp::Priority::ERROR
@@ -1887,8 +1884,6 @@ bool process_netflow_packet_v9(uint8_t* packet, uint32_t len, std::string& clien
          * the packet before we pass it to the flowset-specific
          * handlers below.
          */
-
-        uint64_t flowset_number = 0;
 
         if (offset + flowset_len > len) {
             logger << log4cpp::Priority::ERROR << "We tried to read from address outside Netflow's packet flowset agent IP: "
@@ -1932,6 +1927,8 @@ bool process_netflow_packet_v9(uint8_t* packet, uint32_t len, std::string& clien
             break;
         }
 
+        // This logic will stop processing if we've reached end of flow set setction before reading all flow sets
+        // It's not reliable to use alone because we may have garbadge at the end of packet. That's why we have loop over number of flowset records as main condition.
         offset += flowset_len;
         if (offset == len) {
             break;
