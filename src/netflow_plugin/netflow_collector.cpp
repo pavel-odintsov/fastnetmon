@@ -848,6 +848,57 @@ int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data,
         }
 
         break;
+    case NF9_FORWARDING_STATUS:
+        // Documented here: https://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
+        // Forwarding status is encoded on 1 byte with the 2 left bits giving the status and the 6 remaining bits giving the reason code.
+        // This field may carry information about fragmentation but we cannot confirm it, ASR 9000 exports most of the traffic with field 64, which means unknown
+        if (record_length == 1) {
+            uint8_t forwarding_status = 0;
+
+            memcpy(&forwarding_status, data, record_length);
+
+            // logger << log4cpp::Priority::ERROR << "Forwarding status: " << int(forwarding_status);
+        } else {
+            // It must be exactly one byte
+        }
+
+        break;
+    case NF9_SELECTOR_TOTAL_PACKETS_OBSERVED:
+        if (record_length == 8) {
+            uint64_t packets_observed = 0;
+
+            memcpy(&packets_observed, data, record_length);
+            flow_meta.observed_packets = fast_ntoh(packets_observed);
+        } else {
+            // We do not support other length
+        }
+
+        break;
+    case NF9_SELECTOR_TOTAL_PACKETS_SELECTED:
+        if (record_length == 8) {
+            uint64_t packets_selected = 0;
+
+            memcpy(&packets_selected, data, record_length);
+            flow_meta.selected_packets = fast_ntoh(packets_selected);
+        } else {
+            // We do not support other length
+        }
+
+        break;
+    case NF9_DATALINK_FRAME_SIZE:
+        if (record_length == 2) {
+            uint16_t datalink_frame_size = 0;
+
+            memcpy(&datalink_frame_size, data, record_length);
+            flow_meta.data_link_frame_size = fast_ntoh(datalink_frame_size);
+        } else {
+            // We do not support other length
+        }
+
+        break;
+    case NF9_LAYER2_PACKET_SECTION_DATA:
+		// Netflow Lite parser logic
+		break;
     }
 
     return 0;
@@ -1009,6 +1060,28 @@ bool nf10_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* dat
         }
 
         break;
+    case NF10_FLOW_END_REASON:
+        // It should be 1 byte value
+        if (record_length == 1) {
+            uint8_t flow_end_reason = 0;
+
+            memcpy(&flow_end_reason, data, record_length);
+
+            // https://www.iana.org/assignments/ipfix/ipfix.xhtml#ipfix-flow-end-reason
+            if (flow_end_reason == 1) {
+                ipfix_flows_end_reason_idle_timeout++;
+            } else if (flow_end_reason == 2) {
+                ipfix_flows_end_reason_active_timeout++;
+            } else if (flow_end_reason == 3) {
+                ipfix_flows_end_reason_end_of_flow_timeout++;
+            } else if (flow_end_reason == 4) {
+                ipfix_flows_end_reason_force_end_timeout++;
+            } else if (flow_end_reason == 5) {
+                ipfix_flows_end_reason_lack_of_resource_timeout++;
+            }
+        }
+
+		break;
     }
 
     return true;
