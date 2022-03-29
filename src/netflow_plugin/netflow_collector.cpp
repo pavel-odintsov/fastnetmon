@@ -596,7 +596,7 @@ bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, c
         std::vector<peer_nf9_record_t>  template_records_map;
         for (uint32_t i = 0; i < count; i++) {
             if (offset >= len) {
-                logger << log4cpp::Priority::ERROR << "short netflow v.9 flowset template";
+                logger << log4cpp::Priority::ERROR << "Short Netflow v9 flowset template";
                 return false;
             }
 
@@ -1672,10 +1672,10 @@ bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string
     nf10_header_t* nf10_hdr = (nf10_header_t*)packet;
     nf10_flowset_header_common_t* flowset;
 
-    uint32_t flowset_id, flowset_len, flowset_flows;
+    uint32_t flowset_id, flowset_len;
 
     if (len < sizeof(*nf10_hdr)) {
-        logger << log4cpp::Priority::ERROR << "Short netflow v10 header " << len << " bytes";
+        logger << log4cpp::Priority::ERROR << "Short IPFIX header " << len << " bytes";
         return false;
     }
 
@@ -1688,7 +1688,8 @@ bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string
 
     uint64_t flowset_number = 0;
 
-    for (uint32_t i = 0;; i++) {
+    // Yes, it's infinite loop but we apply boundaries inside to limit it
+    while (true) {
         flowset_number++;
 
         // We limit number of flow sets in packet and also use it for infinite loop prevention
@@ -1724,18 +1725,14 @@ bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string
         case NF10_TEMPLATE_FLOWSET_ID:
             ipfix_data_templates_number++;
             if (!process_netflow_v10_template(packet + offset, flowset_len, source_id, client_addres_in_string_format)) {
-                logger << log4cpp::Priority::ERROR
-                       << "Function process_netflow_v10_template executed with errors. Agent IP: " << client_addres_in_string_format;
-
                 return false;
             }
             break;
         case NF10_OPTIONS_FLOWSET_ID:
             ipfix_options_templates_number++;
-            // process_ipfix_options_template(packet + offset, flowset_len,
-            // source_id, client_addres_in_string_format);
-            // logger << log4cpp::Priority::INFO << "Received ipfix options flowset id, which is not supported";
-            /* Not implemented yet */
+            if (!process_ipfix_options_template(packet + offset, flowset_len, source_id, client_addres_in_string_format)) {
+                return false;
+            }
             break;
         default:
             if (flowset_id < NF10_MIN_RECORD_FLOWSET_ID) {
@@ -1747,8 +1744,6 @@ bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string
 
             if (process_netflow_v10_data(packet + offset, flowset_len, nf10_hdr, source_id,
                                          client_addres_in_string_format, client_ipv4_address) != 0) {
-                // logger<< log4cpp::Priority::ERROR<<"Can't process function
-                // process_netflow_v10_data correctly";
                 return false;
             }
 
@@ -1829,18 +1824,12 @@ bool process_netflow_packet_v9(uint8_t* packet, uint32_t len, std::string& clien
             netflow9_data_templates_number++;
             // logger<< log4cpp::Priority::INFO<<"We read template";
             if (!process_netflow_v9_template(packet + offset, flowset_len, source_id, client_addres_in_string_format, flowset_number)) {
-                logger << log4cpp::Priority::ERROR
-                       << "Function process_netflow_v9_template executed with errors agent IP: " << client_addres_in_string_format;
-
                 return false;
             }
             break;
         case NF9_OPTIONS_FLOWSET_ID:
             netflow9_options_templates_number++;
             if (!process_netflow_v9_options_template(packet + offset, flowset_len, source_id, client_addres_in_string_format)) {
-                logger << log4cpp::Priority::ERROR << "Function process_netflow_v9_options_template executed with errors agent IP: "
-                       << client_addres_in_string_format;
-
                 return false;
             }
             break;
