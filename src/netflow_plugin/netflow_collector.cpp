@@ -112,8 +112,16 @@ uint64_t netflow5_duration_exceed_180_seconds = 0;
 uint64_t ipfix_data_packet_number       = 0;
 uint64_t ipfix_data_templates_number    = 0;
 uint64_t ipfix_options_templates_number = 0;
+uint64_t ipfix_options_packet_number    = 0;
 // Number of dropped packets due to unknown template in message
 uint64_t ipfix_packets_with_unknown_templates = 0;
+
+// https://www.iana.org/assignments/ipfix/ipfix.xhtml#ipfix-flow-end-reason
+uint64_t ipfix_flows_end_reason_idle_timeout             = 0;
+uint64_t ipfix_flows_end_reason_active_timeout           = 0;
+uint64_t ipfix_flows_end_reason_end_of_flow_timeout      = 0;
+uint64_t ipfix_flows_end_reason_force_end_timeout        = 0;
+uint64_t ipfix_flows_end_reason_lack_of_resource_timeout = 0;
 
 // Number of template updates when actual template content was changed
 uint64_t template_updates_number_due_to_real_changes = 0;
@@ -147,11 +155,11 @@ global_template_storage_t global_netflow10_templates;
 void add_update_peer_template(global_template_storage_t& table_for_add,
                               uint32_t source_id,
                               uint32_t template_id,
-                              std::string& client_addres_in_string_format,
+                              const std::string& client_addres_in_string_format,
                               peer_nf9_template& field_template,
                               bool& updated);
 
-int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data, simple_packet_t& packet, std::vector<peer_nf9_record> & template_records);
+int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data, simple_packet_t& packet, std::vector<peer_nf9_record_t> & template_records);
 
 peer_nf9_template*
 peer_find_template(global_template_storage_t& table_for_lookup, uint32_t source_id, uint32_t template_id, std::string client_addres_in_string_format) {
@@ -184,7 +192,7 @@ peer_nf9_template* peer_nf10_find_template(uint32_t source_id, uint32_t template
 
 // This function reads all available options templates
 // http://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
-bool process_netflow_v9_options_template(uint8_t* pkt, size_t len, uint32_t source_id, std::string client_addres_in_string_format) {
+bool process_netflow_v9_options_template(uint8_t* pkt, size_t len, uint32_t source_id, const std::string& client_addres_in_string_format) {
     nf9_options_header_common_t* options_template_header = (nf9_options_header_common_t*)pkt;
 
     if (len < sizeof(*options_template_header)) {
@@ -235,7 +243,7 @@ bool process_netflow_v9_options_template(uint8_t* pkt, size_t len, uint32_t sour
     uint32_t offset         = 0;
     uint32_t records_number = 0;
     
-    std::vector<peer_nf9_record> template_records_map;
+    std::vector<peer_nf9_record_t> template_records_map;
     uint32_t total_size = 0;
 
     for (; offset < fast_ntoh(options_nested_header->option_length);) {
@@ -245,7 +253,7 @@ bool process_netflow_v9_options_template(uint8_t* pkt, size_t len, uint32_t sour
         uint32_t record_type   = fast_ntoh(tmplr->type);
         uint32_t record_length = fast_ntoh(tmplr->length);
 
-        peer_nf9_record current_record;
+        peer_nf9_record_t current_record;
         current_record.record_type = record_type;
         current_record.record_length  = record_length;
 
@@ -277,24 +285,24 @@ bool process_netflow_v9_options_template(uint8_t* pkt, size_t len, uint32_t sour
 }
 
 // https://tools.ietf.org/html/rfc5101#page-18
-int process_netflow_v10_options_template(uint8_t* pkt, size_t len, uint32_t source_id, std::string client_addres_in_string_format) {
-    nf10_options_header_common_t* options_template_header = (nf10_options_header_common_t*)pkt;
+bool process_ipfix_options_template(uint8_t* pkt, size_t len, uint32_t source_id, std::string client_addres_in_string_format) {
+    ipfix_options_header_common_t* options_template_header = (ipfix_options_header_common_t*)pkt;
 
     if (len < sizeof(*options_template_header)) {
         logger << log4cpp::Priority::ERROR << "Short IPFIX options template header " << len << " bytes";
-        return 1;
+        return false;
     }
 
     if (ntohs(options_template_header->flowset_id) != NF10_OPTIONS_FLOWSET_ID) {
         logger << log4cpp::Priority::ERROR
-               << "Function process_netflow_v10_options_template "
+               << "Function process_ipfix_options_template "
                   "expects only NF10_OPTIONS_FLOWSET_ID but got "
                   "another id: "
                << ntohs(options_template_header->flowset_id);
-        return 1;
+        return false;
     }
 
-    nf10_options_header_t* options_nested_header = (nf10_options_header_t*)(pkt + sizeof(nf10_options_header_common_t*));
+    ipfix_options_header_t* options_nested_header = (ipfix_options_header_t*)(pkt + sizeof(ipfix_options_header_common_t*));
 
     // Yes, I should convert it to host byter order but it broke it!
     // WTF??
@@ -302,7 +310,7 @@ int process_netflow_v10_options_template(uint8_t* pkt, size_t len, uint32_t sour
 
     if (template_id <= 255) {
         logger << log4cpp::Priority::ERROR << "Template ID for options template should be bigger than 255";
-        return 1;
+        return false;
     }
 
     uint16_t field_count       = ntohs(options_nested_header->field_count);
@@ -311,10 +319,10 @@ int process_netflow_v10_options_template(uint8_t* pkt, size_t len, uint32_t sour
     logger << log4cpp::Priority::INFO << "Options template id: " << template_id << " field_count: " << field_count
            << " scope_field_count: " << scope_field_count;
 
-    return 0;
+    return true;
 }
 
-bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, std::string client_addres_in_string_format) {
+bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, const std::string& client_addres_in_string_format) {
     nf10_flowset_header_common_t* template_header = (nf10_flowset_header_common_t*)pkt;
     // We use same struct as netflow v9 because netflow v9 and v10 (ipfix) is
     // compatible
@@ -344,7 +352,7 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
         uint32_t count       = ntohs(tmplh->count);
         offset += sizeof(*tmplh);
 
-        std::vector<peer_nf9_record>  template_records_map;
+        std::vector<peer_nf9_record_t>  template_records_map;
         uint32_t total_size = 0;
         for (uint32_t i = 0; i < count; i++) {
             if (offset >= len) {
@@ -356,7 +364,7 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
             uint32_t record_type                     = ntohs(tmplr->type);
             uint32_t record_length                   = ntohs(tmplr->length);
 
-            peer_nf9_record current_record;
+            peer_nf9_record_t current_record;
             current_record.record_type = record_type;
             current_record.record_length  = record_length;
 
@@ -375,6 +383,7 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
         field_template.num_records = count;
         field_template.total_len   = total_size;
         field_template.records     = template_records_map;
+        field_template.type        = netflow9_template_type::Data;
 
         bool updated = false;
         add_update_peer_template(global_netflow10_templates, source_id, template_id, client_addres_in_string_format,
@@ -389,7 +398,7 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
     return true;
 }
 
-bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, std::string client_addres_in_string_format) {
+bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, const std::string& client_addres_in_string_format) {
     nf9_flowset_header_common_t* template_header = (nf9_flowset_header_common_t*)pkt;
     peer_nf9_template field_template;
 
@@ -422,7 +431,7 @@ bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, s
 
         uint32_t total_size = 0;
 
-        std::vector<peer_nf9_record>  template_records_map;
+        std::vector<peer_nf9_record_t>  template_records_map;
         for (uint32_t i = 0; i < count; i++) {
             if (offset >= len) {
                 logger << log4cpp::Priority::ERROR << "short netflow v.9 flowset template";
@@ -434,7 +443,7 @@ bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, s
             uint32_t record_type   = ntohs(tmplr->type);
             uint32_t record_length = ntohs(tmplr->length);
 
-            peer_nf9_record current_record;
+            peer_nf9_record_t current_record;
             current_record.record_type = record_type;
             current_record.record_length  = record_length;
 
@@ -478,7 +487,7 @@ bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, s
 void add_update_peer_template(global_template_storage_t& table_for_add,
                               uint32_t source_id,
                               uint32_t template_id,
-                              std::string& client_addres_in_string_format,
+                              const std::string& client_addres_in_string_format,
                               peer_nf9_template& field_template,
                               bool& updated) {
 
@@ -873,7 +882,7 @@ void nf10_flowset_to_store(uint8_t* pkt, size_t len, nf10_header_t* nf10_hdr, pe
     // But code below can switch it to IPv6
     packet.ip_protocol_version = 4;
 
-    for (std::vector<peer_nf9_record>::iterator iter = field_template->records.begin();
+    for (std::vector<peer_nf9_record_t>::iterator iter = field_template->records.begin();
          iter != field_template->records.end(); iter++) {
         
         uint32_t record_type   = iter->record_type;
@@ -1078,7 +1087,7 @@ void increment_duration_counters_netflow_v5(int64_t duration) {
 void nf9_flowset_to_store(uint8_t* pkt,
                           size_t len,
                           nf9_header_t* nf9_hdr,
-                          std::vector<peer_nf9_record>& template_records,
+                          std::vector<peer_nf9_record_t>& template_records,
                           std::string& client_addres_in_string_format,
                           uint32_t client_ipv4_address) {
     // Should be done according to
@@ -1115,7 +1124,7 @@ void nf9_flowset_to_store(uint8_t* pkt,
     }
 
     // We should iterate over all available template fields
-    for (std::vector<peer_nf9_record> ::iterator iter = template_records.begin(); iter != template_records.end(); iter++) {
+    for (std::vector<peer_nf9_record_t> ::iterator iter = template_records.begin(); iter != template_records.end(); iter++) {
         uint32_t record_type   = iter->record_type;
         uint32_t record_length = iter->record_length;
 
@@ -1191,7 +1200,7 @@ int process_netflow_v10_data(uint8_t* pkt,
                              size_t len,
                              nf10_header_t* nf10_hdr,
                              uint32_t source_id,
-                             std::string& client_addres_in_string_format,
+                             const std::string& client_addres_in_string_format,
                              uint32_t client_ipv4_address) {
 
     nf10_data_flowset_header_t* dath = (nf10_data_flowset_header_t*)pkt;
@@ -1319,7 +1328,7 @@ int process_netflow_v9_data(uint8_t* pkt,
     return 0;
 }
 
-bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, std::string& client_addres_in_string_format, uint32_t client_ipv4_address) {
+bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string& client_addres_in_string_format, uint32_t client_ipv4_address) {
     nf10_header_t* nf10_hdr = (nf10_header_t*)packet;
     nf10_flowset_header_common_t* flowset;
 
@@ -1383,7 +1392,7 @@ bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, std::string& clie
             break;
         case NF10_OPTIONS_FLOWSET_ID:
             ipfix_options_templates_number++;
-            // process_netflow_v10_options_template(packet + offset, flowset_len,
+            // process_ipfix_options_template(packet + offset, flowset_len,
             // source_id, client_addres_in_string_format);
             // logger << log4cpp::Priority::INFO << "Received ipfix options flowset id, which is not supported";
             /* Not implemented yet */

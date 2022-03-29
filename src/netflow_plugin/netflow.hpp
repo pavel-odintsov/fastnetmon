@@ -29,18 +29,18 @@
 enum class netflow9_template_type { Unknown, Data, Options };
 
 /* A record in a NetFlow v9 template record */
-class peer_nf9_record {
+class peer_nf9_record_t {
     public:
     uint32_t record_type = 0;
     uint32_t record_length  = 0;
 
-    peer_nf9_record(uint32_t record_type, uint32_t record_length) {
+    peer_nf9_record_t(uint32_t record_type, uint32_t record_length) {
         this->record_type = record_type;
         this->record_length  = record_length;
     }
 
     // We created custom constructor but I still want to have default with no arguments
-    peer_nf9_record() = default;
+    peer_nf9_record_t() = default;
 
     // For boost serialize
     template <typename Archive> void serialize(Archive& ar, const unsigned int version) {
@@ -49,8 +49,8 @@ class peer_nf9_record {
     }
 };
 
-bool operator==(const peer_nf9_record& lhs, const peer_nf9_record& rhs);
-bool operator!=(const peer_nf9_record& lhs, const peer_nf9_record& rhs);
+bool operator==(const peer_nf9_record_t& lhs, const peer_nf9_record_t& rhs);
+bool operator!=(const peer_nf9_record_t& lhs, const peer_nf9_record_t& rhs);
 
 /* NetFlow v9 template record */
 /* It's used for wire data decoding. Feel free to add any new fields */
@@ -63,7 +63,7 @@ class peer_nf9_template {
     // Only for options templates
     uint32_t option_scope_length = 0;
     netflow9_template_type type  = netflow9_template_type::Unknown;
-    std::vector<peer_nf9_record> records;
+    std::vector<peer_nf9_record_t> records;
 
     // For boost serialize
     template <typename Archive> void serialize(Archive& ar, const unsigned int version) {
@@ -239,7 +239,6 @@ class __attribute__((__packed__)) nf9_data_flowset_header_t {
 #define NF9_IPV6_SRC_MASK 29
 #define NF9_IPV6_DST_MASK 30
 
-/* Added by Odintsov Pavel */
 #define NF9_SAMPLING_INTERVAL 34
 
 /* ... */
@@ -247,6 +246,15 @@ class __attribute__((__packed__)) nf9_data_flowset_header_t {
 #define NF9_ENGINE_ID 39
 /* ... */
 #define NF9_IPV6_NEXT_HOP 62
+
+#define NF9_FORWARDING_STATUS 89
+
+#define NF9_LAYER2_PACKET_SECTION_DATA 104
+
+#define NF9_DATALINK_FRAME_SIZE 312
+#define NF9_SELECTOR_TOTAL_PACKETS_OBSERVED 318
+#define NF9_SELECTOR_TOTAL_PACKETS_SELECTED 319
+
 
 /* Netflow v10 */
 class __attribute__((__packed__)) nf10_header_t {
@@ -312,23 +320,30 @@ class __attribute__((__packed__)) nf10_data_flowset_header_t {
 #define NF10_IPV6_SRC_MASK 29
 #define NF10_IPV6_DST_MASK 30
 /* ... */
+// RFC claims that this field is deprecated in favour of NF10_SAMPLING_PACKET_INTERVAL but many vendors use it, we need to support it too
+#define NF10_SAMPLING_INTERVAL 34
+/* ... */
 #define NF10_ENGINE_TYPE 38
 #define NF10_ENGINE_ID 39
 /* ... */
 #define NF10_IPV6_NEXT_HOP 62
 
+#define NF10_FLOW_END_REASON 136
+
 // We use 8 byte encoding for "dateTimeMilliseconds" https://tools.ietf.org/html/rfc7011#page-35
 #define NF10_FLOW_START_MILLISECONDS 152
 #define NF10_FLOW_END_MILLISECONDS 153
 
+#define NF10_SAMPLING_PACKET_INTERVAL 305
+
 // IPFIX options structures
-class nf10_options_header_common_t {
+class __attribute__((__packed__)) ipfix_options_header_common_t {
     public:
     uint16_t flowset_id = 0;
     uint16_t length = 0;
 };
 
-class nf10_options_header_t {
+class __attribute__((__packed__)) ipfix_options_header_t {
     public:
     uint16_t template_id = 0;
     uint16_t field_count = 0;

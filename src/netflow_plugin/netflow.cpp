@@ -14,11 +14,11 @@ bool operator!=(const peer_nf9_template& lhs, const peer_nf9_template& rhs) {
     return !(lhs == rhs);
 }
 
-bool operator==(const peer_nf9_record& lhs, const peer_nf9_record& rhs) {
+bool operator==(const peer_nf9_record_t& lhs, const peer_nf9_record_t& rhs) {
     return lhs.record_type == rhs.record_type && lhs.record_length == rhs.record_length;
 }
 
-bool operator!=(const peer_nf9_record& lhs, const peer_nf9_record& rhs) {
+bool operator!=(const peer_nf9_record_t& lhs, const peer_nf9_record_t& rhs) {
     return !(lhs == rhs);
 }
 
