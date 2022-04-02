@@ -35,10 +35,6 @@
 
 #include "fastnetmon_logic.hpp"
 
-#ifdef ENABLE_DPI
-#include "fast_dpi.h"
-#endif
-
 #ifdef FASTNETMON_API
 
 #ifdef __GNUC__
@@ -164,9 +160,6 @@ bool notify_script_enabled = true;
 // We could collect attack dumps in pcap format
 bool collect_attack_pcap_dumps = false;
 
-// We could process this dumps with DPI
-bool process_pcap_attack_dumps_with_dpi = false;
-
 bool unban_only_if_attack_finished = true;
 
 logging_configuration_t logging_configuration;
@@ -179,13 +172,6 @@ configuration_map_t configuration_map;
 int unban_iteration_sleep_time = 60;
 
 bool unban_enabled = true;
-
-#ifdef ENABLE_DPI
-struct ndpi_detection_module_struct* my_ndpi_struct = NULL;
-
-u_int32_t ndpi_size_flow_struct = 0;
-u_int32_t ndpi_size_id_struct = 0;
-#endif
 
 #ifdef ENABLE_GOBGP
 bool gobgp_enabled = false;
@@ -469,11 +455,6 @@ unsigned int influxdb_push_period = 1;
 
 bool process_incoming_traffic = true;
 bool process_outgoing_traffic = true;
-
-// Prototypes
-#ifdef ENABLE_DPI
-void init_current_instance_of_ndpi();
-#endif
 
 logging_configuration_t read_logging_settings(configuration_map_t configuration_map);
 std::string get_amplification_attack_type(amplification_attack_type_t attack_type);
@@ -1032,13 +1013,6 @@ bool load_configuration_file() {
         collect_attack_pcap_dumps = configuration_map["collect_attack_pcap_dumps"] == "on" ? true : false;
     }
 
-    if (configuration_map.count("process_pcap_attack_dumps_with_dpi") != 0) {
-        if (collect_attack_pcap_dumps) {
-            process_pcap_attack_dumps_with_dpi =
-            configuration_map["process_pcap_attack_dumps_with_dpi"] == "on" ? true : false;
-        }
-    }
-
     return true;
 }
 
@@ -1593,10 +1567,6 @@ int main(int argc, char** argv) {
         logger << log4cpp::Priority::ERROR << "Could not create pid file, please check permissions: " << fastnetmon_platform_configuration.pid_path;
         exit(EXIT_FAILURE);
     }
-
-#ifdef ENABLE_DPI
-    init_current_instance_of_ndpi();
-#endif
 
     lookup_tree_ipv4 = New_Patricia(32);
     whitelist_tree_ipv4 = New_Patricia(32);

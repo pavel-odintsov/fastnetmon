@@ -104,7 +104,7 @@ int main(int argc, char* argv[]) {
     init_logging();
 
     if (argc < 2) {
-        std::cout << "Please specify sflow, netflow, raw, dpi, afpacket as param" << std::endl;
+        std::cout << "Please specify sflow, netflow, raw, afpacket as param" << std::endl;
         return 1;
     }
 

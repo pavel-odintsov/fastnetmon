@@ -108,16 +108,6 @@ extern subnet_to_host_group_map_t subnet_to_host_groups;
 extern active_flow_spec_announces_t active_flow_spec_announces;
 extern bool collect_attack_pcap_dumps;
 
-#ifdef ENABLE_DPI
-#include "fast_dpi.h"
-#endif
-
-#ifdef ENABLE_DPI
-extern struct ndpi_detection_module_struct* my_ndpi_struct;
-extern u_int32_t ndpi_size_flow_struct; 
-extern u_int32_t ndpi_size_id_struct; 
-#endif
-
 extern boost::mutex ban_list_details_mutex;
 extern boost::mutex ban_list_mutex;
 extern std::mutex flow_counter;
@@ -141,7 +131,6 @@ extern bool notify_script_pass_details;
 extern unsigned int number_of_packets_for_pcap_attack_dump;
 extern patricia_tree_t *lookup_tree_ipv4, *whitelist_tree_ipv4;
 extern patricia_tree_t *lookup_tree_ipv6, *whitelist_tree_ipv6;
-extern bool process_pcap_attack_dumps_with_dpi;
 extern std::map<uint32_t, std::vector<simple_packet_t> > ban_list_details;
 extern map_for_subnet_counters_t PerSubnetAverageSpeedMap;
 extern bool enable_subnet_counters;
@@ -1216,68 +1205,6 @@ void send_attack_details(uint32_t client_ip, attack_details_t current_attack_det
     }
 }
 
-#ifdef ENABLE_DPI
-// Parse raw binary stand-alone packet with nDPI
-ndpi_protocol dpi_parse_packet(char* buffer,
-                               uint32_t len,
-                               uint32_t snap_len,
-                               struct ndpi_id_struct* src,
-                               struct ndpi_id_struct* dst,
-                               struct ndpi_flow_struct* flow,
-                               std::string& parsed_packet_as_string) {
-    struct pfring_pkthdr packet_header;
-    memset(&packet_header, 0, sizeof(packet_header));
-    packet_header.len = len;
-    packet_header.caplen = snap_len;
-
-    fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, 1, 0);
-
-    uint32_t current_tickt = 0;
-    uint8_t* iph = (uint8_t*)(&buffer[packet_header.extended_hdr.parsed_pkt.offset.l3_offset]);
-    unsigned int ipsize = packet_header.len;
-
-    ndpi_protocol detected_protocol =
-    ndpi_detection_process_packet(my_ndpi_struct, flow, iph, ipsize, current_tickt, src, dst);
-
-    // So bad approach :(
-    char print_buffer[512];
-    fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)buffer, &packet_header);
-
-    parsed_packet_as_string = std::string(print_buffer);
-
-    return detected_protocol;
-}
-#endif
-
-#ifdef ENABLE_DPI
-void init_current_instance_of_ndpi() {
-    my_ndpi_struct = init_ndpi();
-
-    if (my_ndpi_struct == NULL) {
-        logger << log4cpp::Priority::ERROR << "Can't load nDPI, disable it!";
-        process_pcap_attack_dumps_with_dpi = false;
-
-        return;
-    }
-
-    // Load sizes of main parsing structures
-    ndpi_size_id_struct = ndpi_detection_get_sizeof_ndpi_id_struct();
-    ndpi_size_flow_struct = ndpi_detection_get_sizeof_ndpi_flow_struct();
-}
-
-// Zeroify nDPI structure without memory leaks
-void zeroify_ndpi_flow(struct ndpi_flow_struct* flow) {
-    if (flow->http.url) {
-        ndpi_free(flow->http.url);
-    }
-
-    if (flow->http.content_type) {
-        ndpi_free(flow->http.content_type);
-    }
-
-    memset(flow, 0, ndpi_size_flow_struct);
-}
-
 // Run flow spec mitigation rule
 void launch_bgp_flow_spec_rule(amplification_attack_type_t attack_type, std::string client_ip_as_string) {
     logger << log4cpp::Priority::INFO
@@ -1310,169 +1237,11 @@ void launch_bgp_flow_spec_rule(amplification_attack_type_t attack_type, std::str
     }
 }
 
-// Not so pretty copy and paste from pcap_reader()
-// TODO: rewrite to memory parser
-void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstream& ss, std::string client_ip_as_string) {
-    int filedesc = open(pcap_file_path.c_str(), O_RDONLY);
-
-    if (filedesc <= 0) {
-        logger << log4cpp::Priority::ERROR << "Can't open file for DPI";
-        return;
-    }
-
-    struct fastnetmon_pcap_file_header pcap_header;
-    ssize_t file_header_readed_bytes =
-    read(filedesc, &pcap_header, sizeof(struct fastnetmon_pcap_file_header));
-
-    if (file_header_readed_bytes != sizeof(struct fastnetmon_pcap_file_header)) {
-        logger << log4cpp::Priority::ERROR << "Can't read pcap file header";
-        return;
-    }
-
-    // http://www.tcpdump.org/manpages/pcap-savefile.5.html
-    if (pcap_header.magic == 0xa1b2c3d4 or pcap_header.magic == 0xd4c3b2a1) {
-        // printf("Magic readed correctly\n");
-    } else {
-        logger << log4cpp::Priority::ERROR << "Magic in file header broken";
-        return;
-    }
-
-    // Buffer for packets
-    char packet_buffer[pcap_header.snaplen];
-
-    unsigned int total_packets_number = 0;
-
-    uint64_t dns_amplification_packets = 0;
-    uint64_t ntp_amplification_packets = 0;
-    uint64_t ssdp_amplification_packets = 0;
-    uint64_t snmp_amplification_packets = 0;
-
-
-    struct ndpi_id_struct* src = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
-    memset(src, 0, ndpi_size_id_struct);
-
-    struct ndpi_id_struct* dst = (struct ndpi_id_struct*)malloc(ndpi_size_id_struct);
-    memset(dst, 0, ndpi_size_id_struct);
-
-    struct ndpi_flow_struct* flow = (struct ndpi_flow_struct*)malloc(ndpi_size_flow_struct);
-    memset(flow, 0, ndpi_size_flow_struct);
-
-    while (1) {
-        struct fastnetmon_pcap_pkthdr pcap_packet_header;
-        ssize_t packet_header_readed_bytes =
-        read(filedesc, &pcap_packet_header, sizeof(struct fastnetmon_pcap_pkthdr));
-
-        if (packet_header_readed_bytes != sizeof(struct fastnetmon_pcap_pkthdr)) {
-            if (packet_header_readed_bytes != 0) {
-                logger << log4cpp::Priority::INFO << "All packet read ? ("
-                       << packet_header_readed_bytes << ", " << errno << ")";
-            }
-            // We haven't any packets
-            break;
-        }
-
-        if (pcap_packet_header.incl_len > pcap_header.snaplen) {
-            logger << log4cpp::Priority::ERROR << "Please enlarge packet buffer for DPI";
-            return;
-        }
-
-        ssize_t packet_payload_readed_bytes = read(filedesc, packet_buffer, pcap_packet_header.incl_len);
-
-        if (pcap_packet_header.incl_len != packet_payload_readed_bytes) {
-            logger << log4cpp::Priority::ERROR << "I read packet header but can't read packet payload";
-            return;
-        }
-
-        // The flow must be reset to zero state - in other case the DPI will not detect all packets properly.
-        // To use flow properly there must be much more complicated code (with flow buffer for each flow probably)
-        // following code is copied from ndpi_free_flow() just to be sure there will be no memory leaks due to memset()
-        zeroify_ndpi_flow(flow);
-
-        std::string parsed_packet_as_string;
-
-        ndpi_protocol detected_protocol =
-        dpi_parse_packet(packet_buffer, pcap_packet_header.orig_len, pcap_packet_header.incl_len,
-                         src, dst, flow, parsed_packet_as_string);
-
-#if NDPI_MAJOR >= 2
-        u_int16_t app_protocol = detected_protocol.app_protocol;
-#else
-        u_int16_t app_protocol = detected_protocol.protocol;
-#endif
-        char* protocol_name = ndpi_get_proto_name(my_ndpi_struct, app_protocol);
-        char* master_protocol_name = ndpi_get_proto_name(my_ndpi_struct, detected_protocol.master_protocol);
-
-        if (app_protocol == NDPI_PROTOCOL_DNS) {
-            // It's answer for ANY request with so much
-            if (flow->protos.dns.query_type == 255 &&
-                flow->protos.dns.num_queries < flow->protos.dns.num_answers) {
-                dns_amplification_packets++;
-            }
-
-        } else if (app_protocol == NDPI_PROTOCOL_NTP) {
-            // Detect packets with type MON_GETLIST_1
-            if (flow->protos.ntp.version == 2 && flow->protos.ntp.request_code == 42) {
-                ntp_amplification_packets++;
-            }
-        } else if (app_protocol == NDPI_PROTOCOL_SSDP) {
-            // So, this protocol completely unexpected in WAN networks
-            ssdp_amplification_packets++;
-        } else if (app_protocol == NDPI_PROTOCOL_SNMP) {
-            // TODO: we need detailed tests for SNMP!
-            snmp_amplification_packets++;
-        }
-
-        ss << parsed_packet_as_string << " protocol: " << protocol_name
-           << " master_protocol: " << master_protocol_name << "\n";
-
-        total_packets_number++;
-    }
-
-    // Free up all memory
-    ndpi_free_flow(flow);
-    free(dst);
-    free(src);
-
-    close(filedesc);
-
-    logger << log4cpp::Priority::INFO << "DPI pkt stats: total:" << total_packets_number
-           << " DNS:" << dns_amplification_packets << " NTP:" << ntp_amplification_packets
-           << " SSDP:" << ssdp_amplification_packets << " SNMP:" << snmp_amplification_packets;
-
-    amplification_attack_type_t attack_type;
-
-    // Attack type in unknown by default
-    attack_type = AMPLIFICATION_ATTACK_UNKNOWN;
-
-    // Detect amplification attack type
-    if ((double)dns_amplification_packets / (double)total_packets_number > 0.2) {
-        launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_DNS, client_ip_as_string);
-    } else if ((double)ntp_amplification_packets / (double)total_packets_number > 0.2) {
-        launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_NTP, client_ip_as_string);
-    } else if ((double)ssdp_amplification_packets / (double)total_packets_number > 0.2) {
-        launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_SSDP, client_ip_as_string);
-    } else if ((double)snmp_amplification_packets / (double)total_packets_number > 0.2) {
-        launch_bgp_flow_spec_rule(AMPLIFICATION_ATTACK_SNMP, client_ip_as_string);
-    } else {
-        /*TODO
-            - full IP ban should be announced here !
-            - and maybe some protocol/port based statistics could be used to filter new/unknown attacks...
-        */
-
-        logger
-        << log4cpp::Priority::ERROR
-        << "We can't detect attack type with DPI. It's not so critical, only for your information";
-    }
-}
-
-#endif
-
 void call_attack_details_handlers(uint32_t client_ip, attack_details_t& current_attack, std::string attack_fingerprint) {
     std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
     std::string attack_direction = get_direction_name(current_attack.attack_direction);
     std::string pps_as_string = convert_int_to_string(current_attack.attack_power);
 
-    // We place this variables here because we need this paths from DPI parser code
     std::string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
     std::string attack_pcap_dump_path =
         fastnetmon_platform_configuration.attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string + ".pcap";
@@ -1496,20 +1265,6 @@ void call_attack_details_handlers(uint32_t client_ip, attack_details_t& current_
             current_attack.pcap_attack_dump.deallocate_buffer();
         }
     }
-
-#ifdef ENABLE_DPI
-    // Yes, will be fine to read packets from the memory but we haven't this code yet
-    // Thus we could read from file with not good performance because it's simpler
-    if (collect_attack_pcap_dumps && process_pcap_attack_dumps_with_dpi) {
-        std::stringstream string_buffer_for_dpi_data;
-
-        string_buffer_for_dpi_data << "\n\nDPI\n\n";
-
-        produce_dpi_dump_for_pcap_dump(attack_pcap_dump_path, string_buffer_for_dpi_data, client_ip_as_string);
-
-        attack_fingerprint = attack_fingerprint + string_buffer_for_dpi_data.str();
-    }
-#endif
 
     print_attack_details_to_file(attack_fingerprint, client_ip_as_string, current_attack);
 
