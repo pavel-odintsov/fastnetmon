@@ -1,10 +1,6 @@
 #include "fastnetmon_types.h"
 #include "bgp_protocol.hpp"
 
-#ifdef ENABLE_DPI
-#include "fast_dpi.h"
-#endif
-
 #ifdef REDIS
 #include <hiredis/hiredis.h>
 #endif
@@ -71,21 +67,7 @@ std::string generate_simple_packets_dump(std::vector<simple_packet_t>& ban_list_
 
 void send_attack_details(uint32_t client_ip, attack_details_t current_attack_details);
 
-#ifdef ENABLE_DPI
-// Parse raw binary stand-alone packet with nDPI
-ndpi_protocol dpi_parse_packet(char* buffer,
-                               uint32_t len,
-                               uint32_t snap_len,
-                               struct ndpi_id_struct* src,
-                               struct ndpi_id_struct* dst,
-                               struct ndpi_flow_struct* flow,
-                               std::string& parsed_packet_as_string);
-void init_current_instance_of_ndpi();
-#endif
-
-void zeroify_ndpi_flow(struct ndpi_flow_struct* flow);
 void launch_bgp_flow_spec_rule(amplification_attack_type_t attack_type, std::string client_ip_as_string);
-void produce_dpi_dump_for_pcap_dump(std::string pcap_file_path, std::stringstream& ss, std::string client_ip_as_string);
 void call_attack_details_handlers(uint32_t client_ip, attack_details_t& current_attack, std::string attack_fingerprint);
 uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash_t* struct_value);
 bool process_flow_tracking_table(conntrack_main_struct_t& conntrack_element, std::string client_ip);

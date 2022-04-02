@@ -87,7 +87,7 @@ SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
 # Create builds in current folder with install RPATH
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
-SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libhiredis_0_13/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/log4cpp1.1.1/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/ndpi/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/pf_ring_6.0.3/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/json-c-0.13/lib;${MONGO_C_CUSTOM_INSTALL_PATH}/lib;${MONGO_C_CUSTOM_INSTALL_PATH}/lib64;${GRPC_CUSTOM_INSTALL_PATH}/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/protobuf_3.11.4/lib;${CAPNP_CUSTOM_INSTALL_PATH}/lib;${OPENSSL_CUSTOM_INSTALL_PATH}/lib")
+SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libhiredis_0_13/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/log4cpp1.1.1/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/pf_ring_6.0.3/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/json-c-0.13/lib;${MONGO_C_CUSTOM_INSTALL_PATH}/lib;${MONGO_C_CUSTOM_INSTALL_PATH}/lib64;${GRPC_CUSTOM_INSTALL_PATH}/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/protobuf_3.11.4/lib;${CAPNP_CUSTOM_INSTALL_PATH}/lib;${OPENSSL_CUSTOM_INSTALL_PATH}/lib")
 
 message(STATUS "C++ compilation flags: ${CMAKE_CXX_FLAGS_RELEASE}")
 message(STATUS "C++ debug compilation flags: ${CMAKE_CXX_FLAGS_DEBUG}")
@@ -276,28 +276,6 @@ add_library(netflow STATIC netflow_plugin/netflow.cpp)
 # netflow plugin
 add_library(netflow_plugin STATIC netflow_plugin/netflow_collector.cpp)
 target_link_libraries(netflow_plugin ipfix_rfc netflow)
-
-option(ENABLE_DPI_SUPPORT "Enable Deep Packet Inspection support" ON)
-if (ENABLE_DPI_SUPPORT) 
-    message(STATUS "We will enable nDPI support")
-
-    add_library(fast_dpi STATIC fast_dpi.cpp)
-
-    set(NDPI_INCLUDE_DIRS "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/ndpi/include/libndpi-1.7.1")
-
-    find_library(NDPI_LIBRARIES NAMES ndpi PATHS "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/ndpi/lib" NO_DEFAULT_PATH)
-
-    if (NOT NDPI_LIBRARIES)
-        message(FATAL_ERROR "Could not find nDPI library")
-    endif()
-
-    link_directories("${FASTNETMON_LIBRARIES_GLOBAL_PATH}/ndpi/lib")
-    include_directories(${NDPI_INCLUDE_DIRS})
-
-    add_definitions(-DENABLE_DPI)
-
-    target_link_libraries(fast_dpi ${NDPI_LIBRARIES})
-endif()
 
 # pcap plugin
 add_library(pcap_plugin STATIC pcap_plugin/pcap_collector.cpp)
@@ -597,10 +575,6 @@ target_link_libraries(fast_library ${JSONC_LIBRARY_PATH})
 target_link_libraries(fast_library ${OPENSSL_LIBRARY_PATH})
 target_link_libraries(fast_library ${OPENSSL_CRYPTO_LIBRARY_PATH})
 
-if (ENABLE_DPI_SUPPORT)
-    target_link_libraries(fastnetmon fast_dpi)
-endif()
-
 target_link_libraries(fastnetmon ${LOG4CPP_LIBRARY_PATH})
 
 target_link_libraries(fastnetmon ${CMAKE_THREAD_LIBS_INIT})
@@ -611,7 +585,7 @@ target_link_libraries(fastnetmon fastnetmon_pcap_format)
 
 target_link_libraries(fastnetmon ipfix_rfc)
 
-target_link_libraries(fastnetmon_logic bgp_protocol fast_dpi exabgp_action)
+target_link_libraries(fastnetmon_logic bgp_protocol exabgp_action)
 
 # Link to our functions
 target_link_libraries(fastnetmon fast_library)
@@ -686,10 +660,6 @@ if (BUILD_PCAP_READER)
 
     if (ENABLE_NETMAP_SUPPORT)
         target_link_libraries(fastnetmon_pcap_reader netmap_plugin)
-    endif()
-
-    if (ENABLE_DPI_SUPPORT)
-        target_link_libraries(fastnetmon_pcap_reader fast_dpi)
     endif()
 endif()
 

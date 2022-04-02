@@ -73,10 +73,6 @@ my $start_time = time();
 
 my $fastnetmon_code_dir = "$temp_folder_for_building_project/fastnetmon/src";
 
-# Official mirror: https://github.com/ntop/nDPI.git
-# But we have some patches for NTP and DNS protocols here
-my $ndpi_repository = 'https://github.com/pavel-odintsov/nDPI.git';
-
 my $stable_branch_name = 'v1.1.5';
 
 # By default do not use mirror
@@ -140,7 +136,6 @@ if ($use_modern_pf_ring) {
     $pf_ring_sha = '79ff86e48df857e4e884646accfc97bdcdc54b04';
 }
 
-my $we_have_ndpi_support = '1';
 my $we_have_hiredis_support = '1';
 my $we_have_log4cpp_support = '1';
 my $we_have_mongo_support = '1';
@@ -338,10 +333,6 @@ sub main {
             install_pf_ring_dependencies();
     	}
 
-        if ($we_have_ndpi_support) {
-            install_ndpi_dependencies();
-        }
-
         if ($we_have_protobuf_support) {
             install_protobuf_dependencies();
         }
@@ -377,11 +368,6 @@ sub main {
         install_boost_builder();
         install_boost_dependencies();
         install_boost();
-
-        if ($we_have_ndpi_support) {
-	        install_ndpi_dependencies();
-            install_ndpi();
-        }
 
         if ($we_have_hiredis_support) {
            install_hiredis();
@@ -904,56 +890,6 @@ sub install_hiredis {
     print "Build hiredis\n";
     chdir "hiredis-0.13.1";
     exec_command("PREFIX=$hiredis_install_path make $make_options install");
-}
-
-# We use global variable $ndpi_repository here
-sub install_ndpi_dependencies {
-    if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
-        apt_get('git', 'autoconf', 'libtool', 'automake', 'libpcap-dev');
-    } elsif ($distro_type eq 'centos') {
-        # We have json-c-devel for CentOS 6 and 7 and will use it for nDPI build system
-        yum('git', 'autoconf', 'automake', 'libtool', 'libpcap-devel', 'json-c-devel', 'which');
-    }
-}
-
-# We use global variable $ndpi_repository here
-sub install_ndpi {
-    my $ndpi_install_path = "$library_install_folder/ndpi";
-
-    if (-e $ndpi_install_path) {
-	    print "nDPI was already installed\n";
-        return 1;
-    }
-
-    print "Download nDPI\n";
-
-    if (-e "$temp_folder_for_building_project/nDPI") {
-        # Get new code from the repository
-        chdir "$temp_folder_for_building_project/nDPI";
-        exec_command("git pull");
-    } else {
-        chdir $temp_folder_for_building_project;
-        exec_command("git clone $ndpi_repository");
-        chdir "$temp_folder_for_building_project/nDPI";
-    }   
-
-    print "Configure nDPI\n";
-    unless (exec_command("./autogen.sh")) {
-        fast_die("Cannot generate configuration for nDPI");
-    }
-
-    # We have specified direct path to json-c here because it required for example app compilation
-    exec_command("PKG_CONFIG_PATH=$library_install_folder/json-c-0.13/lib/pkgconfig $configure_options ./configure --prefix=$ndpi_install_path");
-
-   if ($? != 0) {
-        print "Configure failed\n";
-        fast_die("Cannot configure nDPI");
-    }
-
-    print "Build and install nDPI\n";
-    unless (exec_command("make $make_options install")) {
-        fast_die("Cannot build nDPI");
-    }
 }
 
 sub init_package_manager { 
