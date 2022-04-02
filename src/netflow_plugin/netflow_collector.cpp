@@ -1561,6 +1561,43 @@ void nf9_flowset_to_store(uint8_t* pkt,
         offset += record_length;
     }
 
+    bool netflow_lite_flow = false;
+
+    // If we were able to decode nested packet then it means that it was Netflow Lite and we can overwrite information in packet
+    if (flow_meta.nested_packet_parsed) {
+        // Copy IP addresses
+        packet.src_ip = flow_meta.nested_packet.src_ip;
+        packet.dst_ip = flow_meta.nested_packet.dst_ip;
+
+        packet.src_ipv6 = flow_meta.nested_packet.src_ipv6;
+        packet.dst_ipv6 = flow_meta.nested_packet.dst_ipv6;
+
+        packet.ip_protocol_version = flow_meta.nested_packet.ip_protocol_version;
+        packet.ttl                 = flow_meta.nested_packet.ttl;
+
+        // Ports
+        packet.source_port      = flow_meta.nested_packet.source_port;
+        packet.destination_port = flow_meta.nested_packet.destination_port;
+
+        packet.protocol          = flow_meta.nested_packet.protocol;
+        packet.length            = flow_meta.nested_packet.length;
+        packet.ip_length         = flow_meta.nested_packet.ip_length;
+        packet.number_of_packets = 1;
+        packet.flags             = flow_meta.nested_packet.flags;
+        packet.ip_fragmented     = flow_meta.nested_packet.ip_fragmented;
+        packet.ip_dont_fragment  = flow_meta.nested_packet.ip_dont_fragment;
+        packet.vlan              = flow_meta.nested_packet.vlan;
+
+        // Try to calculate sampling rate
+        if (flow_meta.selected_packets != 0) {
+            packet.sample_ratio = uint32_t(double(flow_meta.observed_packets) / double(flow_meta.selected_packets));
+        }
+
+        // We need to set it to disable logic which populates and decodes data below
+        netflow_lite_flow = true;
+    }
+
+
     // Total number of Netflow v9 flows
     netflow_v9_total_flows++;
 
@@ -1581,37 +1618,39 @@ void nf9_flowset_to_store(uint8_t* pkt,
     // Increments duration counters
     increment_duration_counters_netflow_v9(duration);
 
-    // logger<< log4cpp::Priority::INFO<< "Flow start: " << packet.flow_start << " end: " << packet.flow_end << " duration: " << duration;
+    if (!netflow_lite_flow) {
+        // logger<< log4cpp::Priority::INFO<< "Flow start: " << packet.flow_start << " end: " << packet.flow_end << " duration: " << duration;
 
-    // decode data in network byte order to host byte order
-    packet.length = fast_ntoh(packet.length);
+        // decode data in network byte order to host byte order
+        packet.length = fast_ntoh(packet.length);
 
-    // It's tricky to distinguish IP length and full packet lenght here. Let's use same.
-    packet.ip_length         = packet.length;
-    packet.number_of_packets = fast_ntoh(packet.number_of_packets);
+        // It's tricky to distinguish IP length and full packet lenght here. Let's use same.
+        packet.ip_length         = packet.length;
+        packet.number_of_packets = fast_ntoh(packet.number_of_packets);
 
-    packet.protocol = fast_ntoh(packet.protocol);
+        packet.protocol = fast_ntoh(packet.protocol);
 
-    // We should convert ports to host byte order too
-    packet.source_port      = fast_ntoh(packet.source_port);
-    packet.destination_port = fast_ntoh(packet.destination_port);
+        // We should convert ports to host byte order too
+        packet.source_port      = fast_ntoh(packet.source_port);
+        packet.destination_port = fast_ntoh(packet.destination_port);
 
-    // Set protocol
-    switch (packet.protocol) {
-    case 1: {
-        packet.protocol = IPPROTO_ICMP;
+        // Set protocol
+        switch (packet.protocol) {
+        case 1: {
+            packet.protocol = IPPROTO_ICMP;
 
-        packet.source_port      = 0;
-        packet.destination_port = 0;
-    } break;
+            packet.source_port      = 0;
+            packet.destination_port = 0;
+        } break;
 
-    case 6: {
-        packet.protocol = IPPROTO_TCP;
-    } break;
+        case 6: {
+            packet.protocol = IPPROTO_TCP;
+        } break;
 
-    case 17: {
-        packet.protocol = IPPROTO_UDP;
-    } break;
+        case 17: {
+            packet.protocol = IPPROTO_UDP;
+        } break;
+        }
     }
 
     // pass data to FastNetMon
