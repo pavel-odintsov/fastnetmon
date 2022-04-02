@@ -506,7 +506,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_gcc_25_10_2020"
       - run:
           name: install_gcc
-          no_output_timeout: 80m 
+          no_output_timeout: 120m 
           command: perl src/fastnetmon_build.pl --build_gcc_only
       - save_cache:
           key: "{{ .Environment.CIRCLE_JOB }}_gcc_25_10_2020"
