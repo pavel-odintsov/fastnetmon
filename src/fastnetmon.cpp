@@ -843,6 +843,10 @@ bool load_configuration_file() {
         graphite_port = convert_string_to_integer(configuration_map["graphite_port"]);
     }
 
+    if (configuration_map.count("graphite_push_period") != 0) {
+        graphite_push_period = convert_string_to_integer(configuration_map["graphite_push_period"]);
+    }
+
     // InfluxDB
     if (configuration_map.count("influxdb") != 0) {
         influxdb_enabled = configuration_map["influxdb"] == "on" ? true : false;
