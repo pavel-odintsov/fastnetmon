@@ -22,7 +22,7 @@ Project
 
 Supported packet capture engines
 --------------------------------
-- NetFlow v5, v9
+- NetFlow v5, v9, v9 lite (dev branch)
 - IPFIX
 - ![sFlow](http://sflow.org/images/sflowlogo.gif) v5
 - PCAP
