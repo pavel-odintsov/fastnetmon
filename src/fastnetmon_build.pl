@@ -1664,7 +1664,7 @@ sub install_boost {
 
     print "Install Boost dependencies\n";
    
-    my $url_boost = "https://dl.bintray.com/boostorg/release/1.74.0/source/boost_1_74_0.tar.bz2";
+    my $url_boost = "https://boostorg.jfrog.io/artifactory/main/release/1.74.0/source/boost_1_74_0.tar.bz2";
 
     # For some reasons we cannot download default URL on Debian 8 
     if ($distro_type eq 'debian' && int($distro_version) == 8) {
