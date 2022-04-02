@@ -284,8 +284,10 @@ sub main {
     $cpus_number = get_logical_cpus_number();
 
     if (defined($ENV{'CIRCLECI'}) && $ENV{'CIRCLECI'}) { 
-        # We use machine with 8 CPUs, let's set explicitly 8 threads, get_logical_cpus_number returns 36 which is not real number of CPU cores
-	    $make_options = "-j 8"; 
+        my $circle_ci_cpu_number = 4;
+        # We use machine with X CPUs, let's set explicitly X threads, get_logical_cpus_number returns 36 which is not real number of CPU cores
+	    $make_options = "-j $circle_ci_cpu_number";
+        print "Will use $circle_ci_cpu_number CPUs for build process\n";
     } else {
         if ($cpus_number > 1) {
             print "Will use $cpus_number CPUs for build process\n";
