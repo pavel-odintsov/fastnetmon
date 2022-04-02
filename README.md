@@ -11,7 +11,7 @@ perform a configurable action to handle that event. These configurable actions i
 
 Flow is one or more ICMP, UDP, or TCP packets which can be identified via their unique src IP, dst IP, src port, dst port, and protocol fields.
 
-![https://circleci.com/gh/pavel-odintsov/fastnetmon.svg](CI status)
+![CI status](https://circleci.com/gh/pavel-odintsov/fastnetmon.svg)
 
 Project 
 -------
