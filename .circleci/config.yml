@@ -7,6 +7,7 @@ jobs:
   ubuntu2004:
     docker:
       - image: ubuntu:focal-20200423
+    resource_class: large
     steps:
       - checkout
       - run: apt-get update; true
@@ -60,6 +61,7 @@ jobs:
   ubuntu1804:
     docker:
       - image: ubuntu:bionic-20200403
+    resource_class: large
     steps:
       - checkout
       - run: apt-get update; true
@@ -113,6 +115,7 @@ jobs:
   ubuntu1604:
     docker:
       - image: ubuntu:xenial-20200326
+    resource_class: large
     steps:
       - checkout
       - run: apt-get update; true
@@ -166,6 +169,7 @@ jobs:
   ubuntu1404:
     docker:
       - image: ubuntu:trusty-20191217
+    resource_class: large
     steps:
       - checkout
       - run: apt-get update; true
@@ -219,6 +223,7 @@ jobs:
   debian8:
     docker:
       - image: debian:jessie-20200514
+    resource_class: large
     steps:
       - checkout
       - run: apt-get update; true
@@ -272,6 +277,7 @@ jobs:
   debian9:
     docker:
       - image: debian:stretch-20200514
+    resource_class: large
     steps:
       - checkout
       - run: apt-get update; true
@@ -325,6 +331,7 @@ jobs:
   debian10:
     docker:
       - image: debian:buster-20200514
+    resource_class: large
     steps:
       - checkout
       - run: apt-get update; true
@@ -378,6 +385,7 @@ jobs:
   centos6:
     docker:
       - image: centos:centos6.9
+    resource_class: large
     steps:
       - checkout
       - run: sed -i '/mirrorlist/d' /etc/yum.repos.d/CentOS-Base.repo
@@ -437,6 +445,7 @@ jobs:
   centos7:
     docker:
       - image: centos:centos7.8.2003
+    resource_class: large
     steps:
       - checkout
       - run: yum install -y perl wget python3-pip perl-Archive-Tar
@@ -490,6 +499,7 @@ jobs:
   centos8:
     docker:
       - image: almalinux:8
+    resource_class: large
     steps:
       - checkout
       - run: yum install -y perl wget python3-pip
