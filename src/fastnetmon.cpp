@@ -852,6 +852,10 @@ bool load_configuration_file() {
         influxdb_port = convert_string_to_integer(configuration_map["influxdb_port"]);
     }
 
+    if (configuration_map.count("influxdb_push_period") != 0) {
+        influxdb_push_period = convert_string_to_integer(configuration_map["influxdb_push_period"]);
+    }
+
     if (configuration_map.count("influxdb_host") != 0) {
         influxdb_host = configuration_map["influxdb_host"];
     }
