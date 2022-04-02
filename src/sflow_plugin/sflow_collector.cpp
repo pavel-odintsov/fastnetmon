@@ -302,7 +302,7 @@ bool process_sflow_flow_sample(uint8_t* data_pointer,
             memcpy(&sflow_raw_protocol_header, payload_ptr, sizeof(sflow_raw_protocol_header_t));
 
             sflow_raw_protocol_header.network_to_host_byte_order();
-            sflow_raw_protocol_header.print();
+            // sflow_raw_protocol_header.print();
 
             uint8_t* header_payload_pointer = payload_ptr + sizeof(sflow_raw_protocol_header_t);
 
