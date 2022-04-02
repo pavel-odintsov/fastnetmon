@@ -124,13 +124,12 @@ chmod 0755, "$target_path/fastnetmon/fastnetmon_client";
 chmod 0755, "$target_path/fastnetmon/fastnetmon_api_client";
 
 # Install GoBGP's binary files
-my $gobgp_folder_name = "gobgp_2_16_0";
+my $gobgp_folder_name = "gobgp_2_17_0";
 mkdir "$target_path/$gobgp_folder_name";
 
 for my $gobgp_binary ('gobgp', 'gobgpd') {
     unless (-e "$global_path/$gobgp_folder_name/$gobgp_binary") {
-        warn "GoBGP binary $gobgp_binary does not exist\n";
-        next;
+        die "GoBGP binary $gobgp_binary does not exist\n";
     }
 
     my $gobgp_copy_result = copy("$global_path/$gobgp_folder_name/$gobgp_binary",
