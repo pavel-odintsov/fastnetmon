@@ -489,7 +489,7 @@ jobs:
       - run: /opt/fastnetmon/fastnetmon --configuration_check
   centos8:
     docker:
-      - image: centos:centos8.1.1911
+      - image: almalinux:8
     steps:
       - checkout
       - run: yum install -y perl wget python3-pip
