@@ -27,6 +27,9 @@
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
 
+// For Netflow lite parsing
+#include "../simple_packet_parser_ng.h"
+
 // Get it from main programm
 extern log4cpp::Category& logger;
 
@@ -979,8 +982,30 @@ int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data,
 
         break;
     case NF9_LAYER2_PACKET_SECTION_DATA:
-		// Netflow Lite parser logic
-		break;
+        bool read_packet_length_from_ip_header = true;
+        bool decapsulate_tunnels               = false;
+
+        // It's our safe fallback
+        uint64_t full_packet_length = record_length;
+
+        // Device must provide this information on previous iteration, let's try to get it in case if we've got it:
+        if (flow_meta.data_link_frame_size != 0) {
+            full_packet_length = flow_meta.data_link_frame_size;
+        }
+
+        auto result = parse_raw_packet_to_simple_packet_full_ng( (u_char*)(data), full_packet_length,
+            record_length, flow_meta.nested_packet, read_packet_length_from_ip_header
+        );
+
+        if (result != network_data_stuctures::parser_code_t::success) {
+            // Cannot decode data
+            // TODO: add counter for this case
+        } else {
+            // Successfully decoded data!
+            flow_meta.nested_packet_parsed = true;
+        }
+
+        break;
     }
 
     return 0;
