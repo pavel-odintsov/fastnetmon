@@ -384,7 +384,7 @@ jobs:
       - run: /opt/fastnetmon/fastnetmon --configuration_check
   centos6:
     docker:
-      - image: centos:centos6.9
+      - image: centos:centos6.10
     resource_class: large
     steps:
       - checkout
