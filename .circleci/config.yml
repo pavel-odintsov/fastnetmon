@@ -2,7 +2,7 @@ version: 2.1
 parameters:
   fastnetmon_build_version:
     type: string
-    default: "1.2.0"
+    default: "1.2.1"
 jobs:
   ubuntu2004:
     docker:
