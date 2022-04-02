@@ -223,7 +223,7 @@ sub main {
         # Dev version has release version incremented by one 
         $stable_release_version = $development_release_version;
         
-        $download_path = "https://storage.googleapis.com/fastnetmon_community_packages/$stable_release_version/";
+        $download_path = "https://storage.googleapis.com/fastnetmon_community_packages/$stable_release_version";
 
         print "We will install FastNetMon $stable_release_version using binary packages built from master branch via CI\n";
     } else {
