@@ -635,7 +635,7 @@ sub install_grpc_dependencies {
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
         apt_get('gcc', 'make', 'autoconf', 'automake', 'git', 'libtool', 'g++', 'python-all-dev', 'python-virtualenv', 'pkg-config');
     } elsif ($distro_type eq 'centos') {
-        yum('pkgconfig', 'autoconf', 'automake');
+        yum('pkgconfig', 'autoconf', 'automake', 'libtool');
     }
 }
 
