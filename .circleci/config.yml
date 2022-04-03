@@ -6,7 +6,7 @@ parameters:
 jobs:
   ubuntu2004:
     docker:
-      - image: ubuntu:focal-20200423
+      - image: ubuntu:focal
     resource_class: large
     steps:
       - checkout
@@ -60,7 +60,7 @@ jobs:
       - run: /opt/fastnetmon/fastnetmon --configuration_check
   ubuntu1804:
     docker:
-      - image: ubuntu:bionic-20200403
+      - image: ubuntu:bionic
     resource_class: large
     steps:
       - checkout
@@ -114,7 +114,7 @@ jobs:
       - run: /opt/fastnetmon/fastnetmon --configuration_check
   ubuntu1604:
     docker:
-      - image: ubuntu:xenial-20200326
+      - image: ubuntu:xenial
     resource_class: large
     steps:
       - checkout
@@ -168,7 +168,7 @@ jobs:
       - run: /opt/fastnetmon/fastnetmon --configuration_check
   ubuntu1404:
     docker:
-      - image: ubuntu:trusty-20191217
+      - image: ubuntu:trusty
     resource_class: large
     steps:
       - checkout
@@ -222,7 +222,7 @@ jobs:
       - run: /opt/fastnetmon/fastnetmon --configuration_check
   debian9:
     docker:
-      - image: debian:stretch-20200514
+      - image: debian:stretch
     resource_class: large
     steps:
       - checkout
@@ -276,7 +276,7 @@ jobs:
       - run: /opt/fastnetmon/fastnetmon --configuration_check
   debian10:
     docker:
-      - image: debian:buster-20200514
+      - image: debian:buster
     resource_class: large
     steps:
       - checkout
@@ -330,7 +330,7 @@ jobs:
       - run: /opt/fastnetmon/fastnetmon --configuration_check
   centos7:
     docker:
-      - image: centos:centos7.8.2003
+      - image: centos:centos7
     resource_class: large
     steps:
       - checkout
