@@ -4,10 +4,9 @@ parameters:
     type: string
     default: "1.2.1"
 jobs:
-
-  ubuntu2004:
+  ubuntu2204:
     docker:
-      - image: ubuntu:focal
+      - image: ubuntu:jammy
     resource_class: large
     steps:
       - checkout
