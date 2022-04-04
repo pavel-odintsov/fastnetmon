@@ -17,10 +17,6 @@
 #include "../pcap_plugin/pcap_collector.h"
 #include "../sflow_plugin/sflow_collector.h"
 
-#ifdef PF_RING
-#include "../pfring_plugin/pfring_collector.h"
-#endif
-
 #include "../netmap_plugin/netmap_collector.h"
 
 #include <boost/atomic.hpp>
@@ -128,7 +124,7 @@ int main(int argc, char* argv[]) {
 
     init_logging();
 
-    // Required by Netmap and PF_RING plugins
+    // Required by Netmap plugin
     // We use fake interface name here because netmap could make server unreachable :)
     configuration_map["interfaces"] = "eth5";
     start_netmap_collection(process_packet);

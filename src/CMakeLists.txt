@@ -27,7 +27,6 @@ set (FASTNETMON_VERSION_MINOR 1)
 set(HIREDIS_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libhiredis_0_13")
 set(LOG4CPP_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/log4cpp1.1.1")
 set(JSONC_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/json-c-0.13")
-set(PFRING_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/pf_ring_6.0.3")
 set(LIBPCAP_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libpcap_1.7.4")
 set(MONGO_C_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/mongo_c_driver_1_16_1")
 set(CAPNP_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/capnproto_0_8_0")
@@ -87,7 +86,7 @@ SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
 # Create builds in current folder with install RPATH
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
-SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libhiredis_0_13/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/log4cpp1.1.1/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/pf_ring_6.0.3/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/json-c-0.13/lib;${MONGO_C_CUSTOM_INSTALL_PATH}/lib;${MONGO_C_CUSTOM_INSTALL_PATH}/lib64;${GRPC_CUSTOM_INSTALL_PATH}/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/protobuf_3.11.4/lib;${CAPNP_CUSTOM_INSTALL_PATH}/lib;${OPENSSL_CUSTOM_INSTALL_PATH}/lib")
+SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libhiredis_0_13/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/log4cpp1.1.1/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/json-c-0.13/lib;${MONGO_C_CUSTOM_INSTALL_PATH}/lib;${MONGO_C_CUSTOM_INSTALL_PATH}/lib64;${GRPC_CUSTOM_INSTALL_PATH}/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/protobuf_3.11.4/lib;${CAPNP_CUSTOM_INSTALL_PATH}/lib;${OPENSSL_CUSTOM_INSTALL_PATH}/lib")
 
 message(STATUS "C++ compilation flags: ${CMAKE_CXX_FLAGS_RELEASE}")
 message(STATUS "C++ debug compilation flags: ${CMAKE_CXX_FLAGS_DEBUG}")
@@ -145,9 +144,6 @@ if (NOT HAVE__ATOMIC_ADD_FETCH)
     endif()
 endif()
 
-# With this flag we can enable PF_RING build via console: cmake .. -DENABLE_PF_RING_SUPPORT=ON
-option(ENABLE_PF_RING_SUPPORT "Enable PF_RING build" OFF)
-
 option(ENABLE_NETMAP_SUPPORT "Enable Netmap support" ON)
 
 CHECK_CXX_SOURCE_COMPILES("
@@ -167,32 +163,6 @@ endif()
 if (ENABLE_NETMAP_SUPPORT)
     message(STATUS "We will build Netmap support for you")
     add_definitions(-DNETMAP_PLUGIN)
-endif()
-
-if (ENABLE_PF_RING_SUPPORT)
-    # Set path to manually compiled PF_RING
-    set(PFRING_INCLUDE_DIRS "${PFRING_CUSTOM_INSTALL_PATH}/include")
-
-    find_library(PFRING_LIBRARIES NAMES pfring PATHS "${PFRING_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
-
-    if (NOT PFRING_LIBRARIES)
-        message(FATAL_ERROR "Could not find PF_RING")
-    endif()
-    
-    link_directories("${PFRING_CUSTOM_INSTALL_PATH}/lib")
-    add_definitions(-DPF_RING)
-
-    if (EXISTS "${PFRING_CUSTOM_INSTALL_PATH}/include/pfring_zc.h" OR EXISTS "/usr/local/include/pfring_zc.h")
-        message(STATUS "We found PF_RING ZC headers and will build PF_RING ZC support")
-        # Enable ZC support
-        add_definitions(-DPF_RING_ZC)
-    else()
-        message(WARNING "We can't find PF_RING ZC header pfring_zc.h. Will not compile ZC support") 
-    endif()
-
-    include_directories(${PFRING_INCLUDE_DIRS})
-
-    message(STATUS "We have enabled PF_RING's hardware filtering option")
 endif()
 
 add_library(simple_packet_capnp STATIC simple_packet_capnp/simple_packet.capnp.c++)
@@ -282,13 +252,6 @@ add_library(pcap_plugin STATIC pcap_plugin/pcap_collector.cpp)
 target_link_libraries(pcap_plugin pcap)
 
 find_package(Threads)
-
-if (ENABLE_PF_RING_SUPPORT) 
-    add_library(pfring_plugin STATIC pfring_plugin/pfring_collector.cpp)
-    target_link_libraries(pfring_plugin ${PFRING_LIBRARIES})
-    target_link_libraries(pfring_plugin numa)
-    target_link_libraries(pfring_plugin ${CMAKE_THREAD_LIBS_INIT})
-endif()
 
 add_library(exabgp_action STATIC actions/exabgp_action.cpp)
 
@@ -593,10 +556,6 @@ target_link_libraries(fastnetmon fast_library)
 # link to our unified parser
 target_link_libraries(fastnetmon unified_parser)
 
-if (ENABLE_PF_RING_SUPPORT)
-    target_link_libraries(fastnetmon pfring_plugin)
-endif()
-
 target_link_libraries(fastnetmon ${OPENSSL_LIBRARY_PATH})
 target_link_libraries(fastnetmon ${OPENSSL_CRYPTO_LIBRARY_PATH})
 
@@ -637,11 +596,6 @@ if (BUILD_PLUGIN_RUNNER)
 
     if (ENABLE_NETMAP_SUPPORT)
         target_link_libraries(fastnetmon_plugin_runner netmap_plugin)
-    endif()
-
-    if (ENABLE_PF_RING_SUPPORT)
-        target_link_libraries(fastnetmon_plugin_runner ${PFRING_LIBRARIES})
-        target_link_libraries(fastnetmon_plugin_runner pfring_plugin)
     endif()
 endif()
 

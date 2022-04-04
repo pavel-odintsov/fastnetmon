@@ -32,7 +32,7 @@ RUN cd /usr/src; git clone https://github.com/pavel-odintsov/fastnetmon.git
 
 #COPY exabgp_blackhole.conf /etc/exabgp_blackhole.conf
 
-RUN cd /usr/src/fastnetmon/src; mkdir build; cd build; cmake .. -DDISABLE_PF_RING_SUPPORT=ON; make
+RUN cd /usr/src/fastnetmon/src; mkdir build; cd build; cmake ..; make
 
 RUN cp /usr/src/fastnetmon/src/fastnetmon.conf /etc/
 RUN cp /usr/src/fastnetmon/src/build/fastnetmon /usr/bin/
