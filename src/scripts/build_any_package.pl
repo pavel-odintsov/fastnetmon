@@ -210,7 +210,7 @@ DOC
     my $spec_file_summary_section = <<'DOC';
 Release:           1%{?dist}
 
-Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
+Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PCAP).
 Group:             System Environment/Daemons
 License:           GPLv2
 URL:               https://fastnetmon.com
@@ -239,7 +239,7 @@ DOC
 
 %description
 A high performance DoS/DDoS load analyzer built on top of multiple packet capture
-engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
+engines (NetFlow, IPFIX, sFlow, Netmap, PCAP).
 
 
 DOC
@@ -509,7 +509,7 @@ my $fastnetmon_systemv_init = <<'DOC';
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: Fast DDoS detection toolkit.
-# Description:       Fast DDoS detection toolkit with sFLOW/Netflow/netmap/pf_ring support.
+# Description:       Fast DDoS detection toolkit with sFLOW/Netflow/Netmap support.
 ### END INIT INFO
 
 # test -r /etc/default/fastnetmon && . /etc/default/fastnetmon

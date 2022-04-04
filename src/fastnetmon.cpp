@@ -62,10 +62,6 @@
 #include "netmap_plugin/netmap_collector.h"
 #endif
 
-#ifdef PF_RING
-#include "pfring_plugin/pfring_collector.h"
-#endif
-
 #ifdef FASTNETMON_ENABLE_AFPACKET
 #include "afpacket_plugin/afpacket_collector.h"
 #endif
@@ -1689,12 +1685,6 @@ int main(int argc, char** argv) {
     auto check_traffic_buckets_thread = new boost::thread(check_traffic_buckets);
     set_boost_process_name(check_traffic_buckets_thread, "check_buckets");
     service_thread_group.add_thread(check_traffic_buckets_thread);
-
-#ifdef PF_RING
-    if (enable_data_collection_from_mirror) {
-        packet_capture_plugin_thread_group.add_thread(new boost::thread(start_pfring_collection, process_packet));
-    }
-#endif
 
 #ifdef NETMAP_PLUGIN
     // netmap processing

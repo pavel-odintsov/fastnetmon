@@ -39,7 +39,6 @@ boost_1_74_0
 json-c-0.13
 libicu_65_1
 log4cpp1.1.1
-pf_ring_6.0.3
 gobgp_2_17_0
 grpc_1_30_2
 libhiredis_0_13 
@@ -55,12 +54,7 @@ for my $library (@our_libraries) {
 
     unless (-e $library_path) {
         warn "Can't find library $library please check\n";
-        
-        if ($library eq 'pf_ring_6.0.3') {
-            next;
-        } else {
-            die "Some required libraries are missing\n";
-        }
+        die "Some required libraries are missing\n";
     }
 
     print "Library: $library\n";

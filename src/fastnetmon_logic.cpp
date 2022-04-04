@@ -20,10 +20,6 @@
 #include "netmap_plugin/netmap_collector.h"
 #endif
 
-#ifdef PF_RING
-#include "pfring_plugin/pfring_collector.h"
-#endif
-
 #ifdef FASTNETMON_ENABLE_AFPACKET
 #include "afpacket_plugin/afpacket_collector.h"
 #endif
@@ -1981,12 +1977,6 @@ void traffic_draw_ipv4_program() {
     if (enable_pcap_collection) {
         output_buffer << get_pcap_stats() << "\n";
     }
-
-#ifdef PF_RING
-    if (enable_data_collection_from_mirror) {
-        output_buffer << get_pf_ring_stats();
-    }
-#endif
 
     if (!ban_list.empty()) {
         output_buffer << std::endl << "Ban list:" << std::endl;

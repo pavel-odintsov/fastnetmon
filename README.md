@@ -11,7 +11,8 @@ perform a configurable action to handle that event. These configurable actions i
 
 Flow is one or more ICMP, UDP, or TCP packets which can be identified via their unique src IP, dst IP, src port, dst port, and protocol fields.
 
-![CI status](https://circleci.com/gh/pavel-odintsov/fastnetmon.svg) [CI status](https://app.circleci.com/pipelines/github/pavel-odintsov/fastnetmon)
+![CI status](https://circleci.com/gh/pavel-odintsov/fastnetmon.svg)
+[CI status](https://app.circleci.com/pipelines/github/pavel-odintsov/fastnetmon)
 
 Project 
 -------
@@ -28,7 +29,7 @@ Supported packet capture engines
 - PCAP
 - AF_PACKET
 - Netmap
-- PF_RING / PF_RING ZC (available only for CentOS 6 for compatibiliy, otherwise use AF_PACKET)
+- PF_RING / PF_RING ZC (CentOS 6 only)
 
 You can check out the [comparison table](https://fastnetmon.com/docs/capture_backends/) for all available packet capture engines.
 

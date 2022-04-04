@@ -2,4 +2,4 @@
 %:
 	dh $@ --buildsystem=cmake --sourcedirectory=src
 override_dh_auto_configure:
-	dh_auto_configure -- -DDISABLE_PF_RING_SUPPORT=yes
+	dh_auto_configure --
