@@ -678,7 +678,7 @@ DOC
     put_text_to_file("$folder_for_build/etc/init/fastnetmon.conf", $fastnetmon_upstart_init);
 
     # Configuration file
-    put_text_to_file("$folder_for_build/DEBIAN/conffiles", "etc/fastnetmon.conf\n");
+    put_text_to_file("$folder_for_build/DEBIAN/conffiles", "/etc/fastnetmon.conf\n");
 
     # Create folder for config
     my $mkdir_etc_res = system("mkdir -p $folder_for_build/etc");
