@@ -978,6 +978,10 @@ sub detect_distribution {
                 if ($distro_version =~ /^(\d+\.\d+)\.\d+$/) {
                     $distro_version = $1;
                 }
+            } elsif ($issue_first_line =~ m/Ubuntu Jammy Jellyfish/) {
+                # It's pre release Ubuntu 22.04
+                $distro_type = 'ubuntu';
+                $distro_version = "22.04";
             } elsif ($issue_first_line =~ m/Ubuntu (\d+(?:\.\d+)?)/) {
                 $distro_type = 'ubuntu';
                 $distro_version = $1;
