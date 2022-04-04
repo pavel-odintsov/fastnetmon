@@ -11,7 +11,7 @@ Name:              fastnetmon
 Version:           1.1.1
 Release:           1%{?dist}
 
-Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
+Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFlow, Netmap, PCAP).
 Group:             System Environment/Daemons
 License:           GPLv2
 URL:               https://fastnetmon.com
@@ -32,7 +32,7 @@ Provides:          fastnetmon
 
 %description
 A high performance DoS/DDoS load analyzer built on top of multiple packet capture
-engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
+engines (NetFlow, IPFIX, sFlow, Netmap, PCAP).
 
 %prep
 %setup -n %{name}-%{fastnetmon_commit}
@@ -41,8 +41,7 @@ engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
 cd src
 mkdir build
 cd build
-# We should disable PF_RING plugon support because we did not have it in repository 
-cmake .. -DDISABLE_PF_RING_SUPPORT=ON
+cmake ..
 make
 
 %install

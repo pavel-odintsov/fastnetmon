@@ -56,10 +56,6 @@ sub fast_die {
     exit(1);
 }
 
-my $pf_ring_version = '6.0.3';
-my $pf_ring_url = "https://github.com/ntop/PF_RING/archive/v$pf_ring_version.tar.gz";
-my $pf_ring_sha = '9fb8080defd1a079ad5f0097e8a8adb5bc264d00';
-
 my $fastnetmon_git_path = 'https://github.com/pavel-odintsov/fastnetmon.git';
 
 my $temp_folder_for_building_project = `mktemp -d /tmp/fastnetmon.build.dir.XXXXXXXXXX`;
@@ -91,8 +87,6 @@ my $make_options = '';
 # We could pass options to configure with this variable
 my $configure_options = '';
 
-my $use_modern_pf_ring = '';
-
 my $show_help = '';
 
 my $install_dependency_packages_only = '';
@@ -106,7 +100,6 @@ my $build_dependencies_only = '';
 # Get options from command line
 GetOptions(
     'use-git-master' => \$we_use_code_from_master,
-    'use-modern-pf-ring' => \$use_modern_pf_ring,
     'use-mirror' => \$use_mirror,
     'build_fastnetmon_only' => \$build_fastnetmon_only,
     'build_dependencies_only' => \$build_dependencies_only,
@@ -129,22 +122,12 @@ if ($show_help) {
 
 welcome_message();
 
-# Bump PF_RING version
-if ($use_modern_pf_ring) {
-    $pf_ring_version = '6.6.0';
-    $pf_ring_url = "https://github.com/ntop/PF_RING/archive/$pf_ring_version.tar.gz";
-    $pf_ring_sha = '79ff86e48df857e4e884646accfc97bdcdc54b04';
-}
-
 my $we_have_hiredis_support = '1';
 my $we_have_log4cpp_support = '1';
 my $we_have_mongo_support = '1';
 my $we_have_protobuf_support = '1';
 my $we_have_grpc_support = '1';
 my $we_have_gobgp_support = '1';
-
-# We allow it only for legacy systems
-my $we_have_pfring_support = '';
 
 main();
 
@@ -290,17 +273,6 @@ sub main {
         }
     }
 
-    # We use PF_RING only for very old Linux distros, all new one should use AF_PACKET
-    if ($os_type eq 'linux') {
-        if ($distro_type eq 'ubuntu' && $distro_version =~ m/^12\.04/) {
-            $we_have_pfring_support = 1;
-        }
-
-        if ($distro_type eq 'centos' && $distro_version == 6) {
-            $we_have_pfring_support = 1;
-        }
-    }
-
     # CentOS base repository is very very poor and we need EPEL for some dependencies
     install_additional_repositories();
 
@@ -329,10 +301,6 @@ sub main {
     
     # Install only depencdency packages, we need it to cache installed packages in CI
     if ($install_dependency_packages_only) {
-        if ($we_have_pfring_support) {
-            install_pf_ring_dependencies();
-    	}
-
         if ($we_have_protobuf_support) {
             install_protobuf_dependencies();
         }
@@ -347,11 +315,6 @@ sub main {
     }
 
     if ($build_dependencies_only) {
-        if ($we_have_pfring_support) {
-       	   install_pf_ring_dependencies();
-           install_pf_ring();
-        }
-
         install_json_c();
 
         install_openssl();
@@ -1049,110 +1012,6 @@ sub detect_distribution {
     } 
 }
 
-sub install_pf_ring_dependencies {
-    my $kernel_version = `uname -r`;
-    chomp $kernel_version;
-
-    print "Install PF_RING dependencies with package manager\n";
-
-    if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
-        my @debian_packages_for_pfring = ('build-essential', 'bison', 'flex', 'subversion',
-            'libnuma-dev', 'wget', 'tar', 'make', 'dpkg-dev', 'dkms', 'debhelper');
-  
-        # Install kernel headers only when we could compile kernel modules there
-        my $kernel_headers_package_name = "linux-headers-$kernel_version";
-
-        push @debian_packages_for_pfring, $kernel_headers_package_name;
-
-        apt_get(@debian_packages_for_pfring);
-    } elsif ($distro_type eq 'centos') {
-        my @centos_dependency_packages = ('make', 'bison', 'flex', 'gcc', 'gcc-c++', 'dkms', 'numactl-devel', 'subversion');
-
-        # This package is not going to install devel headers for current kernel!
-        my $kernel_package_name = 'kernel-devel';
-
-        # Fix deplist for OpenVZ
-        if ($kernel_version =~ /stab/) {
-            $kernel_package_name = "vzkernel-devel-$kernel_version";
-        }
-
-        push @centos_dependency_packages, $kernel_package_name;
-  
-        my $centos_kernel_version = `uname -r`;
-        chomp $centos_kernel_version;
- 
-        # But this package will install kernel devel headers for current kernel version!
-        push @centos_dependency_packages, "$kernel_package_name-$centos_kernel_version";
-
-        yum(@centos_dependency_packages);
-    }
-}
-
-sub install_pf_ring {
-    my $pf_ring_archive_path = "$temp_folder_for_building_project/PF_RING-$pf_ring_version.tar.gz";
-    my $pf_ring_sources_path = "$temp_folder_for_building_project/PF_RING-$pf_ring_version";
-
-    my $pf_ring_install_path = "$library_install_folder/pf_ring_$pf_ring_version";
-
-    if (-e $pf_ring_install_path) {
-	    print "PF_RING was already installed\n";
-        return 1;
-    }
-
-    # Sometimes we do not want to build kernel module (Docker, KVM and other cases)
-    my $we_could_install_kernel_modules = 1;
-    
-    if ($we_could_install_kernel_modules) {
-        print "Download PF_RING $pf_ring_version sources\n";
-        my $pfring_download_result = download_file($pf_ring_url, $pf_ring_archive_path, $pf_ring_sha);
-
-        unless ($pfring_download_result) {
-            fast_die("Can't download PF_RING sources");
-        }
- 
-        my $archive_file_name = $pf_ring_archive_path;
-
-        if ($? == 0) {
-            print "Unpack PF_RING\n";
-            mkdir $pf_ring_sources_path;
-            exec_command("tar -xf $pf_ring_archive_path -C $temp_folder_for_building_project");
-
-            print "Build PF_RING kernel module\n";
-            exec_command("make $make_options -C $pf_ring_sources_path/kernel clean");
-            exec_command("make $make_options -C $pf_ring_sources_path/kernel");
-            exec_command("make $make_options -C $pf_ring_sources_path/kernel install");
-
-            print "Unload PF_RING if it was installed earlier\n";
-            exec_command("rmmod pf_ring 2>/dev/null");
-
-            print "Load PF_RING module into kernel\n";
-            exec_command("modprobe pf_ring");
-
-            my @dmesg = `dmesg`;
-            chomp @dmesg;
-    
-            if (scalar grep (/\[PF_RING\] Initialized correctly/, @dmesg) > 0) {
-                print "PF_RING loaded correctly\n";
-
-            } else {
-                warn "PF_RING load error! Please fix this issue manually\n";
-
-                # We need this headers for building userspace libs
-                exec_command("cp $pf_ring_sources_path/kernel/linux/pf_ring.h /usr/include/linux");
-            }
-        } else {
-            warn "Can't download PF_RING source code. Disable support of PF_RING\n";
-        } 
-    }
-
-    print "Build PF_RING lib\n";
-    # Because we can't run configure from another folder because it can't find ZC dependency :(
-    chdir "$pf_ring_sources_path/userland/lib";
-    exec_command("$configure_options ./configure --prefix=$pf_ring_install_path");
-    exec_command("make $make_options");
-    exec_command("make $make_options install"); 
-}
-
 sub apt_get {
     my @packages_list = @_; 
 
@@ -1714,19 +1573,10 @@ sub install_fastnetmon {
 
     my $cmake_params = "";
 
-    if ($we_have_pfring_support) {
-        $cmake_params .= " -DENABLE_PF_RING_SUPPORT=ON";
-    }
-   
     if ($distro_type eq 'centos' && $distro_version == 6) {
         # Disable cmake script from Boost package because it's broken:
         # http://public.kitware.com/Bug/view.php?id=15270
         $cmake_params .= " -DBoost_NO_BOOST_CMAKE=BOOL:ON";
-    }
-
-    # Bump version in cmake build system
-    if ($use_modern_pf_ring) {
-        system("sed -i 's/pf_ring_6.0.3/pf_ring_$pf_ring_version/' ../CMakeLists.txt")
     }
 
     # Fix dependencies for Netmap in 1.1.4

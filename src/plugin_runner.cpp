@@ -17,10 +17,6 @@
 #include "pcap_plugin/pcap_collector.h"
 #include "sflow_plugin/sflow_collector.h"
 
-#ifdef PF_RING
-#include "pfring_plugin/pfring_collector.h"
-#endif
-
 #ifdef FASTNETMON_ENABLE_AFPACKET
 #include "afpacket_plugin/afpacket_collector.h"
 #endif
@@ -121,7 +117,7 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
-    // Required by Netmap and PF_RING plugins
+    // Required by Netmap plugin
     // We use fake interface name here because netmap could make server unreachable :)
     configuration_map["interfaces"] = "ethXXX";
 
@@ -134,13 +130,6 @@ int main(int argc, char* argv[]) {
     } else if (strstr(argv[1], "pcap") != NULL) {
         std::cout << "Starting pcap" << std::endl;
         start_pcap_collection(process_packet);
-    } else if (strstr(argv[1], "pfring") != NULL) {
-#ifdef PF_RING
-        std::cout << "Starting pf_ring" << std::endl;
-        start_pfring_collection(process_packet);
-#else
-        std::cout << "PF_RING support disabled here" << std::endl;
-#endif
     } else if (strstr(argv[1], "afpacket") != NULL) {
 #ifdef FASTNETMON_ENABLE_AFPACKET
         std::cout << "Starting afpacket" << std::endl;

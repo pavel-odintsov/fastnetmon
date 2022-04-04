@@ -449,7 +449,7 @@ std::string print_simple_packet(simple_packet_t packet) {
     std::stringstream buffer;
 
     if (packet.ts.tv_sec == 0) {
-        // PF_RING and netmap do not generate timestamp for all packets because it's very CPU
+        // Netmap does not generate timestamp for all packets because it's very CPU
         // intensive operation
         // But we want pretty attack report and fill it there
         gettimeofday(&packet.ts, NULL);

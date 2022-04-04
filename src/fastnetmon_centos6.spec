@@ -11,7 +11,7 @@ Name:              fastnetmon
 Version:           1.1.1
 Release:           1%{?dist}
 
-Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
+Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFlow, Netmap, PCAP).
 Group:             System Environment/Daemons
 License:           GPLv2
 URL:               https://fastnetmon.com
@@ -20,13 +20,9 @@ URL:               https://fastnetmon.com
 #Source0:           https://github.com/pavel-odintsov/fastnetmon/archive/v%{version}.tar.gz
 Source0:            https://github.com/pavel-odintsov/fastnetmon/archive/fastnetmon-%{version}.tar.gz
 
-# Yes, it's bad idea to specify fixed version of PF_RING but they have strange issue when we use another library version 
-
 BuildRequires:     git, make, gcc, gcc-c++, boost-devel, GeoIP-devel, log4cpp-devel
 BuildRequires:     ncurses-devel, boost-thread, boost-regex, libpcap-devel, gpm-devel, clang, cmake
-BuildRequires:     pfring >= 6.0.3-9154
 
-Requires:          pfring >= 6.0.3-9154
 Requires:          log4cpp, daemonize, libpcap, boost-thread, boost-thread, boost-regex
 Requires(pre):     shadow-utils
 Requires(post):    chkconfig
@@ -36,7 +32,7 @@ Provides:          fastnetmon
 
 %description
 A high performance DoS/DDoS load analyzer built on top of multiple packet capture
-engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
+engines (NetFlow, IPFIX, sFlow, Netmap, PCAP).
 
 %prep
 # For production
@@ -49,10 +45,7 @@ engines (NetFlow, IPFIX, sFLOW, netmap, PF_RING, PCAP).
 cd src
 mkdir build
 cd build
-# You could disable PF_RING support with param: -DDISABLE_PF_RING_SUPPORT=ON
-# WE have broken cmake library with Boost on CentOS 6 and should use library from cmake
-# http://public.kitware.com/Bug/view.php?id=15270
-cmake .. -DWE_USE_PFRING_FROM_NTOP=ON  -DBoost_NO_BOOST_CMAKE=BOOL:ON
+cmake .. -DBoost_NO_BOOST_CMAKE=BOOL:ON
 make
 
 %install
