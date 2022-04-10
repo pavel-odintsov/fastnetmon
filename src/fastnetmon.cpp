@@ -301,7 +301,7 @@ double average_calculation_amount_for_subnets = 30;
 bool print_average_traffic_counts = true;
 
 // Key used for sorting clients in output.  Allowed sort params: packets/bytes/flows
-std::string sort_parameter = "packets";
+std::string sort_parameter = "bytes";
 
 // Number of lines in program output
 unsigned int max_ips_in_list = 7;
