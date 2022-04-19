@@ -26,9 +26,9 @@ Supported packet capture engines
 - IPFIX
 - ![sFlow](http://sflow.org/images/sflowlogo.gif) v5
 - PCAP
-- AF_PACKET
-- Netmap
-- PF_RING / PF_RING ZC (CentOS 6 only)
+- AF_PACKET (recommended)
+- Netmap (deprecated)
+- PF_RING / PF_RING ZC (deprecated, availavle only for CentOS 6 in 1.2.0)
 
 You can check out the [comparison table](https://fastnetmon.com/docs/capture_backends/) for all available packet capture engines.
 
@@ -66,7 +66,6 @@ Features
 - [API](https://fastnetmon.com/docs/fastnetmon-community-api/)
 - [Redis](https://fastnetmon.com/docs/redis/) integration
 - [MongoDB](https://fastnetmon.com/docs/mongodb/) integration
-- Netmap support (wire speed processing; only Intel hardware NICs or any hypervisor VM type)
 - Supports L2TP decapsulation, VLAN untagging in mirror mode 
 - Complete plug-in support
 - Capture attack fingerprints in PCAP format

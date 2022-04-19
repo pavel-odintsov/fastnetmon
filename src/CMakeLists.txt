@@ -144,7 +144,7 @@ if (NOT HAVE__ATOMIC_ADD_FETCH)
     endif()
 endif()
 
-option(ENABLE_NETMAP_SUPPORT "Enable Netmap support" ON)
+option(ENABLE_NETMAP_SUPPORT "Enable Netmap support" OFF)
 
 CHECK_CXX_SOURCE_COMPILES("
 int main() {
