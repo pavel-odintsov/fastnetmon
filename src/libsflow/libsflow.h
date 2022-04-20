@@ -12,8 +12,8 @@
 
 #include <arpa/inet.h>
 
-// We need it for sanity checks 
-const uint32_t max_udp_packet_size = 65535; 
+// We need it for sanity checks
+const uint32_t max_udp_packet_size = 65535;
 
 enum class sflow_sample_type_t : unsigned int {
     FLOW_SAMPLE             = 1,

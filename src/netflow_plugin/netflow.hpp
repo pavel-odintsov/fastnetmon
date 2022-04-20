@@ -31,12 +31,12 @@ enum class netflow9_template_type { Unknown, Data, Options };
 /* A record in a NetFlow v9 template record */
 class peer_nf9_record_t {
     public:
-    uint32_t record_type = 0;
-    uint32_t record_length  = 0;
+    uint32_t record_type   = 0;
+    uint32_t record_length = 0;
 
     peer_nf9_record_t(uint32_t record_type, uint32_t record_length) {
-        this->record_type = record_type;
-        this->record_length  = record_length;
+        this->record_type   = record_type;
+        this->record_length = record_length;
     }
 
     // We created custom constructor but I still want to have default with no arguments
@@ -129,7 +129,7 @@ class __attribute__((__packed__)) nf5_header_t {
     uint32_t flow_sequence;
     uint8_t engine_type;
     uint8_t engine_id;
-    
+
     // "First two bits hold the sampling mode; remaining 14 bits hold value of
     // sampling interval"
     // accoring to https://www.plixer.com/support/netflow_v5.html
@@ -260,21 +260,21 @@ class __attribute__((__packed__)) nf9_data_flowset_header_t {
 class __attribute__((__packed__)) nf10_header_t {
     public:
     nf_header_common_t c;
-    uint32_t time_sec = 0;
+    uint32_t time_sec         = 0;
     uint32_t package_sequence = 0;
-    uint32_t source_id = 0;
+    uint32_t source_id        = 0;
 };
 
 class __attribute__((__packed__)) nf10_flowset_header_common_t {
     public:
     uint16_t flowset_id = 0;
-    uint16_t length = 0;
+    uint16_t length     = 0;
 };
 
 class __attribute__((__packed__)) nf10_template_flowset_header_t {
     public:
     uint16_t template_id = 0;
-    uint16_t count = 0;
+    uint16_t count       = 0;
 };
 
 class __attribute__((__packed__)) nf10_template_flowset_record_t {
@@ -340,13 +340,13 @@ class __attribute__((__packed__)) nf10_data_flowset_header_t {
 class __attribute__((__packed__)) ipfix_options_header_common_t {
     public:
     uint16_t flowset_id = 0;
-    uint16_t length = 0;
+    uint16_t length     = 0;
 };
 
 class __attribute__((__packed__)) ipfix_options_header_t {
     public:
-    uint16_t template_id = 0;
-    uint16_t field_count = 0;
+    uint16_t template_id       = 0;
+    uint16_t field_count       = 0;
     uint16_t scope_field_count = 0;
 };
 
@@ -354,7 +354,7 @@ class __attribute__((__packed__)) ipfix_options_header_t {
 class __attribute__((__packed__)) nf9_options_header_common_t {
     public:
     uint16_t flowset_id = 0;
-    uint16_t length = 0;
+    uint16_t length     = 0;
 };
 
 

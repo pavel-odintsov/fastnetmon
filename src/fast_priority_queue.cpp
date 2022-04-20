@@ -39,8 +39,7 @@ order_by_template_type fast_priority_queue<order_by_template_type>::get_min_elem
     return internal_list.front();
 }
 
-template <class order_by_template_type>
-void fast_priority_queue<order_by_template_type>::print_internal_list() {
+template <class order_by_template_type> void fast_priority_queue<order_by_template_type>::print_internal_list() {
     for (unsigned int i = 0; i < internal_list.size(); i++) {
         std::cout << internal_list[i] << std::endl;
     }

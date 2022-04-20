@@ -57,7 +57,7 @@ int get_interface_number_by_device_name(int socket_fd, std::string interface_nam
 unsigned int af_packet_threads = 1;
 
 uint64_t received_packets = 0;
-uint64_t received_bytes = 0;
+uint64_t received_bytes   = 0;
 
 void speed_printer() {
     while (true) {
@@ -66,7 +66,7 @@ void speed_printer() {
         boost::this_thread::sleep(boost::posix_time::seconds(1));
 
         uint64_t packets_after = received_packets;
-        uint64_t pps = packets_after - packets_before;
+        uint64_t pps           = packets_after - packets_before;
 
         printf("We process: %llu pps\n", pps);
     }
@@ -77,7 +77,7 @@ void flush_block(struct block_desc* pbd) {
 }
 
 void walk_block(struct block_desc* pbd, const int block_num) {
-    int num_pkts = pbd->h1.num_pkts, i;
+    int num_pkts        = pbd->h1.num_pkts, i;
     unsigned long bytes = 0;
     struct tpacket3_hdr* ppd;
 
@@ -92,11 +92,11 @@ void walk_block(struct block_desc* pbd, const int block_num) {
 #ifdef PRINT_PACKETS
         struct pfring_pkthdr packet_header;
         memset(&packet_header, 0, sizeof(packet_header));
-        packet_header.len = ppd->tp_snaplen;
+        packet_header.len    = ppd->tp_snaplen;
         packet_header.caplen = ppd->tp_snaplen;
 
         u_int8_t timestamp = 0;
-        u_int8_t add_hash = 0;
+        u_int8_t add_hash  = 0;
 
         u_char* data_pointer = (u_char*)((uint8_t*)ppd + ppd->tp_mac);
 
@@ -128,9 +128,8 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
     }
 
     // We whould use V3 bcause it could read/pool in per block basis instead per packet
-    int version = TPACKET_V3;
-    int setsockopt_packet_version =
-    setsockopt(packet_socket, SOL_PACKET, PACKET_VERSION, &version, sizeof(version));
+    int version                   = TPACKET_V3;
+    int setsockopt_packet_version = setsockopt(packet_socket, SOL_PACKET, PACKET_VERSION, &version, sizeof(version));
 
     if (setsockopt_packet_version < 0) {
         printf("Can't set packet v3 version\n");
@@ -147,11 +146,10 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
     // Switch to PROMISC mode
     struct packet_mreq sock_params;
     memset(&sock_params, 0, sizeof(sock_params));
-    sock_params.mr_type = PACKET_MR_PROMISC;
+    sock_params.mr_type    = PACKET_MR_PROMISC;
     sock_params.mr_ifindex = interface_number;
 
-    int set_promisc = setsockopt(packet_socket, SOL_PACKET, PACKET_ADD_MEMBERSHIP,
-                                 (void*)&sock_params, sizeof(sock_params));
+    int set_promisc = setsockopt(packet_socket, SOL_PACKET, PACKET_ADD_MEMBERSHIP, (void*)&sock_params, sizeof(sock_params));
 
     if (set_promisc == -1) {
         printf("Can't enable promisc mode\n");
@@ -161,9 +159,9 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
     struct sockaddr_ll bind_address;
     memset(&bind_address, 0, sizeof(bind_address));
 
-    bind_address.sll_family = AF_PACKET;
+    bind_address.sll_family   = AF_PACKET;
     bind_address.sll_protocol = htons(ETH_P_ALL);
-    bind_address.sll_ifindex = interface_number;
+    bind_address.sll_ifindex  = interface_number;
 
     // We will follow http://yusufonlinux.blogspot.ru/2010/11/data-link-access-and-zero-copy.html
     // And this: https://www.kernel.org/doc/Documentation/networking/packet_mmap.txt
@@ -173,10 +171,10 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
 
     req.tp_block_size = blocksiz;
     req.tp_frame_size = framesiz;
-    req.tp_block_nr = blocknum;
-    req.tp_frame_nr = (blocksiz * blocknum) / framesiz;
+    req.tp_block_nr   = blocknum;
+    req.tp_frame_nr   = (blocksiz * blocknum) / framesiz;
 
-    req.tp_retire_blk_tov = 60; // Timeout in msec
+    req.tp_retire_blk_tov   = 60; // Timeout in msec
     req.tp_feature_req_word = TP_FT_REQ_FILL_RXHASH;
 
     int setsockopt_rx_ring = setsockopt(packet_socket, SOL_PACKET, PACKET_RX_RING, (void*)&req, sizeof(req));
@@ -188,7 +186,7 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
 
     // We use per thread structures
     uint8_t* mapped_buffer = NULL;
-    struct iovec* rd = NULL;
+    struct iovec* rd       = NULL;
 
     mapped_buffer = (uint8_t*)mmap(NULL, req.tp_block_size * req.tp_block_nr, PROT_READ | PROT_WRITE,
                                    MAP_SHARED | MAP_LOCKED, packet_socket, 0);
@@ -204,7 +202,7 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
     // Initilize iov structures
     for (int i = 0; i < req.tp_block_nr; ++i) {
         rd[i].iov_base = mapped_buffer + (i * req.tp_block_size);
-        rd[i].iov_len = req.tp_block_size;
+        rd[i].iov_len  = req.tp_block_size;
     }
 
     int bind_result = bind(packet_socket, (struct sockaddr*)&bind_address, sizeof(bind_address));
@@ -221,8 +219,7 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
 
         int fanout_arg = (fanout_group_id | (fanout_type << 16));
 
-        int setsockopt_fanout =
-        setsockopt(packet_socket, SOL_PACKET, PACKET_FANOUT, &fanout_arg, sizeof(fanout_arg));
+        int setsockopt_fanout = setsockopt(packet_socket, SOL_PACKET, PACKET_FANOUT, &fanout_arg, sizeof(fanout_arg));
 
         if (setsockopt_fanout < 0) {
             printf("Can't configure fanout\n");
@@ -235,8 +232,8 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
     struct pollfd pfd;
     memset(&pfd, 0, sizeof(pfd));
 
-    pfd.fd = packet_socket;
-    pfd.events = POLLIN | POLLERR;
+    pfd.fd      = packet_socket;
+    pfd.events  = POLLIN | POLLERR;
     pfd.revents = 0;
 
     while (true) {
@@ -290,7 +287,7 @@ int main() {
                 CPU_SET(cpu_to_bind, &current_cpu_set);
 
                 int set_affinity_result =
-                pthread_attr_setaffinity_np(thread_attrs.native_handle(), sizeof(cpu_set_t), &current_cpu_set);
+                    pthread_attr_setaffinity_np(thread_attrs.native_handle(), sizeof(cpu_set_t), &current_cpu_set);
 
                 if (set_affinity_result != 0) {
                     printf("Can't set CPU affinity for thread\n");
@@ -298,7 +295,7 @@ int main() {
             }
 
             packet_receiver_thread_group.add_thread(
-            new boost::thread(thread_attrs, boost::bind(start_af_packet_capture, "eth6", fanout_group_id)));
+                new boost::thread(thread_attrs, boost::bind(start_af_packet_capture, "eth6", fanout_group_id)));
         }
 
         // Wait all processes for finish

@@ -13,7 +13,7 @@ int main(int argc, char* argv[]) {
 
     mongoc_init();
 
-    client = mongoc_client_new("mongodb://localhost:27017/");
+    client     = mongoc_client_new("mongodb://localhost:27017/");
     collection = mongoc_client_get_collection(client, "test", "test");
 
     doc = bson_new();

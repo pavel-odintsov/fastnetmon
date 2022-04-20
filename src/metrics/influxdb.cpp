@@ -1,8 +1,8 @@
 #include "influxdb.hpp"
 
-#include "../fastnetmon_types.h"
-#include "../fast_library.h"
 #include "../abstract_subnet_counters.hpp"
+#include "../fast_library.h"
+#include "../fastnetmon_types.h"
 
 #include "../all_logcpp_libraries.h"
 
@@ -75,7 +75,6 @@ bool push_system_counters_to_influxdb(std::string influx_database,
 
     return true;
 }
-
 
 
 // Push total traffic counters to InfluxDB
@@ -170,7 +169,8 @@ void influxdb_push_thread() {
         }
 
         // First of all push total counters to InfluxDB
-        push_total_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port), influxdb_auth, influxdb_user,
+        push_total_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address,
+                                                std::to_string(influxdb_port), influxdb_auth, influxdb_user,
                                                 influxdb_password, "total_traffic", total_speed_average_counters, false);
 
         // Push per subnet counters to InfluxDB
@@ -178,20 +178,20 @@ void influxdb_push_thread() {
                                                   influxdb_auth, influxdb_user, influxdb_password);
 
         // Push per host counters to InfluxDB
-        push_hosts_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port), influxdb_auth,
-                                                influxdb_user, influxdb_password);
+        push_hosts_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
+                                                influxdb_auth, influxdb_user, influxdb_password);
 
-        push_system_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port), influxdb_auth,
-                                         influxdb_user, influxdb_password);
+        push_system_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
+                                         influxdb_auth, influxdb_user, influxdb_password);
 
         // Push per host IPv6 counters to InfluxDB
         push_hosts_ipv6_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
                                                      influxdb_auth, influxdb_user, influxdb_password);
 
         // Push total IPv6 counters
-        push_total_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
-                                            influxdb_auth, influxdb_user, influxdb_password, "total_traffic_ipv6",
-                                                total_speed_average_counters_ipv6, true);
+        push_total_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address,
+                                                std::to_string(influxdb_port), influxdb_auth, influxdb_user, influxdb_password,
+                                                "total_traffic_ipv6", total_speed_average_counters_ipv6, true);
     }
 }
 
@@ -405,11 +405,11 @@ void fill_per_protocol_countres_for_influxdb(const map_element_t* current_speed_
     plain_total_counters_map["udp_packets_incoming"]        = current_speed_element->udp_in_packets;
     plain_total_counters_map["icmp_packets_incoming"]       = current_speed_element->icmp_in_packets;
 
-    plain_total_counters_map["fragmented_bits_incoming"] = current_speed_element->fragmented_in_bytes * 8; 
-    plain_total_counters_map["tcp_bits_incoming"]        = current_speed_element->tcp_in_bytes * 8; 
-    plain_total_counters_map["tcp_syn_bits_incoming"]    = current_speed_element->tcp_syn_in_bytes * 8; 
-    plain_total_counters_map["udp_bits_incoming"]        = current_speed_element->udp_in_bytes * 8; 
-    plain_total_counters_map["icmp_bits_incoming"]       = current_speed_element->icmp_in_bytes * 8; 
+    plain_total_counters_map["fragmented_bits_incoming"] = current_speed_element->fragmented_in_bytes * 8;
+    plain_total_counters_map["tcp_bits_incoming"]        = current_speed_element->tcp_in_bytes * 8;
+    plain_total_counters_map["tcp_syn_bits_incoming"]    = current_speed_element->tcp_syn_in_bytes * 8;
+    plain_total_counters_map["udp_bits_incoming"]        = current_speed_element->udp_in_bytes * 8;
+    plain_total_counters_map["icmp_bits_incoming"]       = current_speed_element->icmp_in_bytes * 8;
 
 
     // Outgoing
@@ -419,11 +419,11 @@ void fill_per_protocol_countres_for_influxdb(const map_element_t* current_speed_
     plain_total_counters_map["udp_packets_outgoing"]        = current_speed_element->udp_out_packets;
     plain_total_counters_map["icmp_packets_outgoing"]       = current_speed_element->icmp_out_packets;
 
-    plain_total_counters_map["fragmented_bits_outgoing"] = current_speed_element->fragmented_out_bytes * 8; 
-    plain_total_counters_map["tcp_bits_outgoing"]        = current_speed_element->tcp_out_bytes * 8; 
-    plain_total_counters_map["tcp_syn_bits_outgoing"]    = current_speed_element->tcp_syn_out_bytes * 8; 
-    plain_total_counters_map["udp_bits_outgoing"]        = current_speed_element->udp_out_bytes * 8; 
-    plain_total_counters_map["icmp_bits_outgoing"]       = current_speed_element->icmp_out_bytes * 8; 
+    plain_total_counters_map["fragmented_bits_outgoing"] = current_speed_element->fragmented_out_bytes * 8;
+    plain_total_counters_map["tcp_bits_outgoing"]        = current_speed_element->tcp_out_bytes * 8;
+    plain_total_counters_map["tcp_syn_bits_outgoing"]    = current_speed_element->tcp_syn_out_bytes * 8;
+    plain_total_counters_map["udp_bits_outgoing"]        = current_speed_element->udp_out_bytes * 8;
+    plain_total_counters_map["icmp_bits_outgoing"]       = current_speed_element->icmp_out_bytes * 8;
 }
 
 // Fills special structure which we use to export metrics into InfluxDB
@@ -432,16 +432,16 @@ void fill_main_counters_for_influxdb(const map_element_t* current_speed_element,
                                      bool populate_flow) {
     // Prepare incoming traffic data
     plain_total_counters_map["packets_incoming"] = current_speed_element->in_packets;
-    plain_total_counters_map["bits_incoming"]    = current_speed_element->in_bytes * 8; 
+    plain_total_counters_map["bits_incoming"]    = current_speed_element->in_bytes * 8;
 
     // Outdoing traffic
     plain_total_counters_map["packets_outgoing"] = current_speed_element->out_packets;
-    plain_total_counters_map["bits_outgoing"]    = current_speed_element->out_bytes * 8; 
+    plain_total_counters_map["bits_outgoing"]    = current_speed_element->out_bytes * 8;
 
     if (populate_flow) {
         plain_total_counters_map["flows_incoming"] = current_speed_element->in_flows;
         plain_total_counters_map["flows_outgoing"] = current_speed_element->out_flows;
-    }    
+    }
 }
 
 
@@ -451,28 +451,26 @@ std::string craft_line_for_influxdb_line_protocol(uint64_t unix_timestamp_nanose
                                                   std::map<std::string, std::string>& tags,
                                                   std::map<std::string, uint64_t>& plain_total_counters_map) {
     std::stringstream buffer;
-    buffer << measurement << ","; 
+    buffer << measurement << ",";
 
     // tag set section
     buffer << join_by_comma_and_equal(tags);
 
-    buffer << " "; 
+    buffer << " ";
 
     // field set section
     for (auto itr = plain_total_counters_map.begin(); itr != plain_total_counters_map.end(); ++itr) {
         buffer << itr->first << "=" << std::to_string(itr->second);
 
         // it's last element
-        if (std::distance(itr, plain_total_counters_map.end()) == 1) { 
+        if (std::distance(itr, plain_total_counters_map.end()) == 1) {
             // Do not print comma
         } else {
-            buffer << ","; 
+            buffer << ",";
         }
-    }    
+    }
 
     buffer << " " << std::to_string(unix_timestamp_nanoseconds);
 
     return buffer.str();
 }
-
-

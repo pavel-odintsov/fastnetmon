@@ -44,9 +44,9 @@ void set_tsc_freq_fallback() {
 class token_bucket_t {
     public:
     token_bucket_t() {
-        this->tokens = 0;
-        this->rate = 0;
-        this->burst = 0;
+        this->tokens         = 0;
+        this->rate           = 0;
+        this->burst          = 0;
         this->last_timestamp = 0;
     }
 
@@ -66,7 +66,7 @@ class token_bucket_t {
         this->rate = rate;
 
         this->tokens = burst;
-        this->burst = burst;
+        this->burst  = burst;
 
         // Start counter!
         this->last_timestamp = (double)rte_rdtsc() / system_tsc_resolution_hz;
@@ -74,17 +74,15 @@ class token_bucket_t {
 
     int64_t consume(int64_t consumed_tokens) {
         double current_time = (double)rte_rdtsc() / system_tsc_resolution_hz;
-        double interval = (current_time - this->last_timestamp);
+        double interval     = (current_time - this->last_timestamp);
 
         if (interval < 0) {
-            printf("Your TSC is buggy, we have last %llu and current time: %llu\n",
-                   this->last_timestamp, current_time);
+            printf("Your TSC is buggy, we have last %llu and current time: %llu\n", this->last_timestamp, current_time);
         }
 
         this->last_timestamp = current_time;
 
-        this->tokens =
-        std::max((double)0, std::min(double(this->tokens + this->rate * interval), double(this->burst))) - 1;
+        this->tokens = std::max((double)0, std::min(double(this->tokens + this->rate * interval), double(this->burst))) - 1;
 
         return this->tokens;
     }
@@ -143,7 +141,7 @@ int firehose_callback_v1(const char* pciaddr, char** packets, struct firehose_rd
         __builtin_prefetch(packets[next_index]);
         firehose_packet(pciaddr, packets[index], rxring[index].length);
         rxring[index].status = 0; /* reset descriptor for reuse */
-        index = next_index;
+        index                = next_index;
     }
     return index;
 }
@@ -158,7 +156,7 @@ void* speed_printer(void* ptr) {
         sleep(1);
 
         uint64_t packets_after = received_packets;
-        uint64_t pps = packets_after - packets_before;
+        uint64_t pps           = packets_after - packets_before;
 
         printf("We process: %llu pps tokens %lld rate %lld burst %lld \n", (long long)pps,
                global_token_bucket_counter.get_tokens(), global_token_bucket_counter.get_rate(),

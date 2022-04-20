@@ -76,11 +76,11 @@ int receive_packets(struct netmap_ring* ring, int thread_number) {
     u_int cur, rx, n;
 
     cur = ring->cur;
-    n = nm_ring_space(ring);
+    n   = nm_ring_space(ring);
 
     for (rx = 0; rx < n; rx++) {
         struct netmap_slot* slot = &ring->slot[cur];
-        char* p = NETMAP_BUF(ring, slot->buf_idx);
+        char* p                  = NETMAP_BUF(ring, slot->buf_idx);
 
         // process data
         consume_pkt((u_char*)p, slot->len, thread_number);
@@ -117,7 +117,7 @@ void receiver(std::string interface_for_listening) {
     base_nmd.nr_tx_rings = base_nmd.nr_rx_rings = 0;
     base_nmd.nr_tx_slots = base_nmd.nr_rx_slots = 0;
 
-    std::string interface = "";
+    std::string interface             = "";
     std::string system_interface_name = "";
     // If we haven't netmap: prefix in interface name we will append it
     if (interface_for_listening.find("netmap:") == std::string::npos) {
@@ -145,10 +145,8 @@ void receiver(std::string interface_for_listening) {
         return;
     }
 
-    logger.info("Mapped %dKB memory at %p", netmap_descriptor->req.nr_memsize >> 10,
-                netmap_descriptor->mem);
-    logger.info("We have %d tx and %d rx rings", netmap_descriptor->req.nr_tx_rings,
-                netmap_descriptor->req.nr_rx_rings);
+    logger.info("Mapped %dKB memory at %p", netmap_descriptor->req.nr_memsize >> 10, netmap_descriptor->mem);
+    logger.info("We have %d tx and %d rx rings", netmap_descriptor->req.nr_tx_rings, netmap_descriptor->req.nr_rx_rings);
 
     if (num_cpus > netmap_descriptor->req.nr_rx_rings) {
         num_cpus = netmap_descriptor->req.nr_rx_rings;
@@ -180,22 +178,20 @@ void receiver(std::string interface_for_listening) {
             logger.error("Ooops, main descriptor should be with NR_REG_ALL_NIC flag");
         }
 
-        nmd.req.nr_flags = NR_REG_ONE_NIC;
+        nmd.req.nr_flags  = NR_REG_ONE_NIC;
         nmd.req.nr_ringid = i;
 
         /* Only touch one of the rings (rx is already ok) */
         nmd_flags |= NETMAP_NO_TX_POLL;
 
-        struct nm_desc* new_nmd =
-        nm_open(interface.c_str(), NULL, nmd_flags | NM_OPEN_IFNAME | NM_OPEN_NO_MMAP, &nmd);
+        struct nm_desc* new_nmd = nm_open(interface.c_str(), NULL, nmd_flags | NM_OPEN_IFNAME | NM_OPEN_NO_MMAP, &nmd);
 
         if (new_nmd == NULL) {
             logger.error("Can't open netmap descriptor for netmap per hardware queue thread");
             return;
         }
 
-        logger.info("My first ring is %d and last ring id is %d I'm thread %d",
-                    new_nmd->first_rx_ring, new_nmd->last_rx_ring, i);
+        logger.info("My first ring is %d and last ring id is %d I'm thread %d", new_nmd->first_rx_ring, new_nmd->last_rx_ring, i);
 
 
         /*
@@ -209,8 +205,7 @@ void receiver(std::string interface_for_listening) {
 
         // Well, we have thread attributes from Boost 1.50
 
-#if defined(BOOST_THREAD_PLATFORM_PTHREAD) && BOOST_VERSION / 100 % 1000 >= 50 && \
-!defined(__APPLE__) && defined(__GLIBC__)
+#if defined(BOOST_THREAD_PLATFORM_PTHREAD) && BOOST_VERSION / 100 % 1000 >= 50 && !defined(__APPLE__) && defined(__GLIBC__)
         /* Bind to certain core */
         boost::thread::attributes thread_attrs;
 
@@ -225,8 +220,7 @@ void receiver(std::string interface_for_listening) {
 
             logger.info("I will bind this thread to logical CPU: %d", cpu_to_bind);
 
-            int set_affinity_result =
-            pthread_attr_setaffinity_np(thread_attrs.native_handle(), sizeof(cpu_set_t), &current_cpu_set);
+            int set_affinity_result = pthread_attr_setaffinity_np(thread_attrs.native_handle(), sizeof(cpu_set_t), &current_cpu_set);
 
             if (set_affinity_result != 0) {
                 logger.error("Can't specify CPU affinity for netmap thread");
@@ -234,8 +228,7 @@ void receiver(std::string interface_for_listening) {
         }
 
         // Start thread and pass netmap descriptor to it
-        packet_receiver_thread_group.add_thread(
-        new boost::thread(thread_attrs, boost::bind(netmap_thread, new_nmd, i)));
+        packet_receiver_thread_group.add_thread(new boost::thread(thread_attrs, boost::bind(netmap_thread, new_nmd, i)));
 #else
         logger.error("Sorry but CPU affinity did not supported for your platform");
         packet_receiver_thread_group.add_thread(new boost::thread(netmap_thread, new_nmd, i));
@@ -250,11 +243,11 @@ void netmap_thread(struct nm_desc* netmap_descriptor, int thread_number) {
     struct nm_pkthdr h;
     u_char* buf;
     struct pollfd fds;
-    fds.fd = netmap_descriptor->fd; // NETMAP_FD(netmap_descriptor);
+    fds.fd     = netmap_descriptor->fd; // NETMAP_FD(netmap_descriptor);
     fds.events = POLLIN;
 
     struct netmap_ring* rxring = NULL;
-    struct netmap_if* nifp = netmap_descriptor->nifp;
+    struct netmap_if* nifp     = netmap_descriptor->nifp;
 
     // printf("Reading from fd %d thread id: %d", netmap_descriptor->fd, thread_number);
 
@@ -304,13 +297,12 @@ void start_netmap_collection(process_packet_pointer func_ptr) {
     }
 
     if (configuration_map.count("netmap_sampling_ratio") != 0) {
-        netmap_sampling_ratio =
-        convert_string_to_integer(configuration_map["netmap_sampling_ratio"]);
+        netmap_sampling_ratio = convert_string_to_integer(configuration_map["netmap_sampling_ratio"]);
     }
 
     if (configuration_map.count("netmap_read_packet_length_from_ip_header") != 0) {
         netmap_read_packet_length_from_ip_header =
-        configuration_map["netmap_read_packet_length_from_ip_header"] == "on";
+            configuration_map["netmap_read_packet_length_from_ip_header"] == "on";
     }
 
     std::vector<std::string> interfaces_for_listen;

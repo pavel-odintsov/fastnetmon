@@ -136,4 +136,3 @@ class packet_storage_t {
     // We should not store packets with incl_len exceeding this value
     unsigned int max_captured_packet_size;
 };
-

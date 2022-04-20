@@ -129,4 +129,3 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(uint8_t* pointer,
 
     return parser_code_t::success;
 }
-

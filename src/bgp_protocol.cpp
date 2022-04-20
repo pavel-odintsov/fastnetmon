@@ -114,4 +114,3 @@ bool is_bgp_community_valid(std::string community_as_string) {
 
     return read_bgp_community_from_string(community_as_string, bgp_community_attribute_element);
 }
-

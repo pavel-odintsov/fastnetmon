@@ -39,9 +39,9 @@ void start_example_collection(process_packet_pointer func_ptr) {
     current_packet.src_ip = 0;
     current_packet.dst_ip = 0;
 
-    current_packet.ts.tv_sec = 0;
+    current_packet.ts.tv_sec  = 0;
     current_packet.ts.tv_usec = 0;
-    current_packet.flags = 0;
+    current_packet.flags      = 0;
 
     // There we store packet length or total length of aggregated stream
     current_packet.length = 128;
@@ -56,13 +56,13 @@ void start_example_collection(process_packet_pointer func_ptr) {
     current_packet.protocol = IPPROTO_ICMP;
 
     /* TCP */
-    current_packet.protocol = IPPROTO_TCP;
-    current_packet.source_port = 0;
+    current_packet.protocol         = IPPROTO_TCP;
+    current_packet.source_port      = 0;
     current_packet.destination_port = 0;
 
     /* UDP */
-    current_packet.protocol = IPPROTO_UDP;
-    current_packet.source_port = 0;
+    current_packet.protocol         = IPPROTO_UDP;
+    current_packet.source_port      = 0;
     current_packet.destination_port = 0;
 
     example_process_func_ptr(current_packet);

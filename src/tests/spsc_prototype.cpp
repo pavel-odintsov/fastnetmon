@@ -43,7 +43,7 @@
 using namespace std;
 
 typedef simple_packet* simple_packet_shared_ptr_t;
-typedef boost::lockfree::spsc_queue<simple_packet_shared_ptr_t, boost::lockfree::capacity<1048576> > my_spsc_queue_t;
+typedef boost::lockfree::spsc_queue<simple_packet_shared_ptr_t, boost::lockfree::capacity<1048576>> my_spsc_queue_t;
 
 uint64_t total_unparsed_packets = 0;
 
@@ -112,7 +112,7 @@ void speed_printer() {
         boost::this_thread::sleep(boost::posix_time::seconds(1));
 
         uint64_t packets_after = received_packets;
-        uint64_t pps = packets_after - packets_before;
+        uint64_t pps           = packets_after - packets_before;
 
         printf("We process: %llu pps\n", pps);
     }

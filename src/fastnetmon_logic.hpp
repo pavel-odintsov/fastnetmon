@@ -1,5 +1,5 @@
-#include "fastnetmon_types.h"
 #include "bgp_protocol.hpp"
+#include "fastnetmon_types.h"
 
 #ifdef REDIS
 #include <hiredis/hiredis.h>
@@ -13,18 +13,15 @@
 
 typedef std::map<std::string, uint32_t> active_flow_spec_announces_t;
 
-void build_speed_counters_from_packet_counters(map_element_t& new_speed_element,
-                                                      map_element_t* vector_itr,
-                                                      double speed_calc_period) ;
-                                                  
+void build_speed_counters_from_packet_counters(map_element_t& new_speed_element, map_element_t* vector_itr, double speed_calc_period);
+
 void build_average_speed_counters_from_speed_counters(map_element_t* current_average_speed_element,
-         map_element_t& new_speed_element,
-         double exp_value,
-         double exp_power);
+                                                      map_element_t& new_speed_element,
+                                                      double exp_value,
+                                                      double exp_power);
 
 std::string get_amplification_attack_type(amplification_attack_type_t attack_type);
-std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type,
-                                                        std::string destination_ip);
+std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type, std::string destination_ip);
 
 bool we_should_ban_this_entity(map_element_t* average_speed_element,
                                ban_settings_t& current_ban_settings,
@@ -41,12 +38,9 @@ std::string print_ban_thresholds(ban_settings_t current_ban_settings);
 std::string print_subnet_ipv4_load();
 std::string print_subnet_ipv6_load();
 std::string print_flow_tracking_for_ip(conntrack_main_struct_t& conntrack_element, std::string client_ip);
-std::string print_flow_tracking_for_specified_protocol(contrack_map_type& protocol_map,
-                                                       std::string client_ip,
-                                                       direction_t flow_direction);
+std::string print_flow_tracking_for_specified_protocol(contrack_map_type& protocol_map, std::string client_ip, direction_t flow_direction);
 
-void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_data,
-                                              packed_conntrack_hash_t* unpacked_data);
+void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_data, packed_conntrack_hash_t* unpacked_data);
 
 void cleanup_ban_list();
 
@@ -59,11 +53,11 @@ void call_unban_handlers(uint32_t client_ip,
 
 std::string print_ddos_attack_details();
 
-std::string get_attack_description(uint32_t client_ip, attack_details_t& current_attack) ;
+std::string get_attack_description(uint32_t client_ip, attack_details_t& current_attack);
 
-std::string get_attack_description_in_json(uint32_t client_ip, attack_details_t& current_attack) ;
+std::string get_attack_description_in_json(uint32_t client_ip, attack_details_t& current_attack);
 
-std::string generate_simple_packets_dump(std::vector<simple_packet_t>& ban_list_details) ;
+std::string generate_simple_packets_dump(std::vector<simple_packet_t>& ban_list_details);
 
 void send_attack_details(uint32_t client_ip, attack_details_t current_attack_details);
 
@@ -73,10 +67,7 @@ uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash_t* struc
 bool process_flow_tracking_table(conntrack_main_struct_t& conntrack_element, std::string client_ip);
 bool exec_with_stdin_params(std::string cmd, std::string params);
 ban_settings_t get_ban_settings_for_this_subnet(subnet_cidr_mask_t subnet, std::string& host_group_name);
-void exabgp_prefix_ban_manage(std::string action,
-                              std::string prefix_as_string_with_mask,
-                              std::string exabgp_next_hop,
-                              std::string exabgp_community);
+void exabgp_prefix_ban_manage(std::string action, std::string prefix_as_string_with_mask, std::string exabgp_next_hop, std::string exabgp_community);
 bool exabgp_flow_spec_ban_manage(std::string action, std::string flow_spec_rule_as_text);
 
 #ifdef REDIS
@@ -93,7 +84,7 @@ void call_ban_handlers(uint32_t client_ip,
                        std::string flow_attack_details,
                        attack_detection_source_t attack_detection_source,
                        std::string simple_packets_dump,
-                       boost::circular_buffer<simple_packet_t>& simple_packets_buffer); 
+                       boost::circular_buffer<simple_packet_t>& simple_packets_buffer);
 
 #ifdef MONGO
 void store_data_in_mongo(std::string key_name, std::string attack_details_json);
@@ -107,7 +98,7 @@ std::string draw_table_ipv4(direction_t data_direction, bool do_redis_update, so
 std::string draw_table_ipv6(direction_t data_direction, bool do_redis_update, sort_type_t sort_item);
 void print_screen_contents_into_file(std::string screen_data_stats_param, std::string file_path);
 void zeroify_all_flow_counters();
-void process_packet(simple_packet_t& current_packet) ;
+void process_packet(simple_packet_t& current_packet);
 
 void increment_outgoing_counters(map_element_t* current_element,
                                  simple_packet_t& current_packet,
@@ -164,13 +155,10 @@ using grpc::Status;
 class FastnetmonApiServiceImpl final : public Fastnetmon::Service {
     Status GetBanlist(::grpc::ServerContext* context,
                       const ::fastmitigation::BanListRequest* request,
-                      ::grpc::ServerWriter< ::fastmitigation::BanListReply>* writer) override;
+                      ::grpc::ServerWriter<::fastmitigation::BanListReply>* writer) override;
 
-    Status ExecuteBan(ServerContext* context,
-                      const fastmitigation::ExecuteBanRequest* request,
-                      fastmitigation::ExecuteBanReply* reply) override;
+    Status ExecuteBan(ServerContext* context, const fastmitigation::ExecuteBanRequest* request, fastmitigation::ExecuteBanReply* reply) override;
     Status ExecuteUnBan(ServerContext* context,
                         const fastmitigation::ExecuteBanRequest* request,
                         fastmitigation::ExecuteBanReply* reply) override;
 };
-

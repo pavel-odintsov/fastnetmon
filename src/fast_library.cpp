@@ -94,9 +94,9 @@ subnet_cidr_mask_t convert_subnet_from_string_to_binary_with_cidr_format(std::st
     split(subnet_as_string, subnet_cidr, boost::is_any_of("/"), boost::token_compress_on);
 
     // Return zero subnet in this case
-    if (subnet_as_string.size() != 2) { 
+    if (subnet_as_string.size() != 2) {
         return subnet_cidr_mask_t();
-    }    
+    }
 
     unsigned int cidr = convert_string_to_integer(subnet_as_string[1]);
 
@@ -107,8 +107,7 @@ subnet_cidr_mask_t convert_subnet_from_string_to_binary_with_cidr_format(std::st
 
 void copy_networks_from_string_form_to_binary(std::vector<std::string> networks_list_as_string,
                                               std::vector<subnet_cidr_mask_t>& our_networks) {
-    for (std::vector<std::string>::iterator ii = networks_list_as_string.begin();
-         ii != networks_list_as_string.end(); ++ii) {
+    for (std::vector<std::string>::iterator ii = networks_list_as_string.begin(); ii != networks_list_as_string.end(); ++ii) {
 
         subnet_cidr_mask_t current_subnet = convert_subnet_from_string_to_binary(*ii);
         our_networks.push_back(current_subnet);
@@ -187,12 +186,12 @@ uint32_t convert_cidr_to_binary_netmask(unsigned int cidr) {
     // Shift for same number of bits as type has is undefined behaviour in C standard:
     // https://stackoverflow.com/questions/7401888/why-doesnt-left-bit-shift-for-32-bit-integers-work-as-expected-when-used
     // We will handle this case manually
-    if (cidr == 0) { 
+    if (cidr == 0) {
         return 0;
     }
 
     uint32_t binary_netmask = 0xFFFFFFFF;
-    binary_netmask = binary_netmask << (32 - cidr);
+    binary_netmask          = binary_netmask << (32 - cidr);
 
     // We need network byte order at output
     return htonl(binary_netmask);
@@ -249,12 +248,12 @@ bool folder_exists(std::string path) {
 // 64-bit hash for 64-bit platforms
 uint64_t MurmurHash64A(const void* key, int len, uint64_t seed) {
     const uint64_t m = BIG_CONSTANT(0xc6a4a7935bd1e995);
-    const int r = 47;
+    const int r      = 47;
 
     uint64_t h = seed ^ (len * m);
 
     const uint64_t* data = (const uint64_t*)key;
-    const uint64_t* end = data + (len / 8);
+    const uint64_t* end  = data + (len / 8);
 
     while (data != end) {
         uint64_t k = *data++;
@@ -310,7 +309,7 @@ int timeval_subtract(struct timeval* result, struct timeval* x, struct timeval* 
     }
 
     /* Compute the time remaining to wait. tv_usec is certainly positive. */
-    result->tv_sec = x->tv_sec - y->tv_sec;
+    result->tv_sec  = x->tv_sec - y->tv_sec;
     result->tv_usec = x->tv_usec - y->tv_usec;
 
     /* Return 1 if result is negative. */
@@ -457,14 +456,14 @@ std::string print_simple_packet(simple_packet_t packet) {
 
     buffer << convert_timeval_to_date(packet.ts) << " ";
 
-    std::string source_ip_as_string = "";
+    std::string source_ip_as_string      = "";
     std::string destination_ip_as_string = "";
 
     if (packet.ip_protocol_version == 4) {
-        source_ip_as_string = convert_ip_as_uint_to_string(packet.src_ip);
+        source_ip_as_string      = convert_ip_as_uint_to_string(packet.src_ip);
         destination_ip_as_string = convert_ip_as_uint_to_string(packet.dst_ip);
     } else if (packet.ip_protocol_version == 6) {
-        source_ip_as_string = print_ipv6_address(packet.src_ipv6);
+        source_ip_as_string      = print_ipv6_address(packet.src_ipv6);
         destination_ip_as_string = print_ipv6_address(packet.dst_ipv6);
     } else {
         // WTF?
@@ -494,7 +493,7 @@ std::string print_simple_packet(simple_packet_t packet) {
 }
 
 std::string convert_timeval_to_date(struct timeval tv) {
-    time_t nowtime = tv.tv_sec;
+    time_t nowtime   = tv.tv_sec;
     struct tm* nowtm = localtime(&nowtime);
 
     char tmbuf[64];
@@ -518,7 +517,7 @@ uint64_t convert_speed_to_mbps(uint64_t speed_in_bps) {
 
 std::string get_protocol_name_by_number(unsigned int proto_number) {
     struct protoent* proto_ent = getprotobynumber(proto_number);
-    std::string proto_name = proto_ent->p_name;
+    std::string proto_name     = proto_ent->p_name;
     return proto_name;
 }
 
@@ -590,7 +589,7 @@ bool store_data_to_graphite(unsigned short int graphite_port, std::string graphi
     memset(&serv_addr, 0, sizeof(serv_addr));
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(graphite_port);
+    serv_addr.sin_port   = htons(graphite_port);
 
     int pton_result = inet_pton(AF_INET, graphite_host.c_str(), &serv_addr.sin_addr);
 
@@ -691,7 +690,7 @@ ip_addresses_list_t get_local_ip_v4_addresses_list() {
 
     for (interfaces_list_t::iterator iter = interfaces_list.begin(); iter != interfaces_list.end(); ++iter) {
         std::vector<std::string>::iterator iter_exclude_list =
-        std::find(list_of_ignored_interfaces.begin(), list_of_ignored_interfaces.end(), *iter);
+            std::find(list_of_ignored_interfaces.begin(), list_of_ignored_interfaces.end(), *iter);
 
         // Skip ignored interface
         if (iter_exclude_list != list_of_ignored_interfaces.end()) {
@@ -722,8 +721,8 @@ std::string find_subnet_by_ip_in_string_format(patricia_tree_t* patricia_tree, s
 
     prefix_t prefix_for_check_adreess;
     prefix_for_check_adreess.add.sin.s_addr = client_ip;
-    prefix_for_check_adreess.family = AF_INET;
-    prefix_for_check_adreess.bitlen = 32;
+    prefix_for_check_adreess.family         = AF_INET;
+    prefix_for_check_adreess.bitlen         = 32;
 
     found_patrica_node = patricia_search_best2(patricia_tree, &prefix_for_check_adreess, 1);
 
@@ -743,19 +742,21 @@ std::string print_ipv6_address(const in6_addr& ipv6_address) {
     // For short print
     const uint8_t* b = ipv6_address.s6_addr;
 
-    sprintf(buffer, "%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x", b[0], b[1],
-            b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10], b[11], b[12], b[13], b[14], b[15]);
+    sprintf(buffer, "%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x", b[0], b[1], b[2], b[3],
+            b[4], b[5], b[6], b[7], b[8], b[9], b[10], b[11], b[12], b[13], b[14], b[15]);
 
     std::string buffer_string(buffer);
 
     // Compress IPv6 address
-    std::string result =
-    boost::regex_replace(buffer_string, ipv6_address_compression_algorithm, ":", boost::format_first_only);
+    std::string result = boost::regex_replace(buffer_string, ipv6_address_compression_algorithm, ":", boost::format_first_only);
 
     return result;
 }
 
-direction_t get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_addr src_ipv6, struct in6_addr dst_ipv6, subnet_ipv6_cidr_mask_t& subnet) {
+direction_t get_packet_direction_ipv6(patricia_tree_t* lookup_tree,
+                                      struct in6_addr src_ipv6,
+                                      struct in6_addr dst_ipv6,
+                                      subnet_ipv6_cidr_mask_t& subnet) {
     direction_t packet_direction;
 
     bool our_ip_is_destination = false;
@@ -763,7 +764,7 @@ direction_t get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_a
 
     prefix_t prefix_for_check_address;
     prefix_for_check_address.family = AF_INET6;
-    prefix_for_check_address.bitlen = 128; 
+    prefix_for_check_address.bitlen = 128;
 
     patricia_node_t* found_patrica_node = NULL;
     prefix_for_check_address.add.sin6   = dst_ipv6;
@@ -776,7 +777,7 @@ direction_t get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_a
 
         destination_subnet.subnet_address     = found_patrica_node->prefix->add.sin6;
         destination_subnet.cidr_prefix_length = found_patrica_node->prefix->bitlen;
-    }    
+    }
 
     found_patrica_node                = NULL;
     prefix_for_check_address.add.sin6 = src_ipv6;
@@ -790,7 +791,7 @@ direction_t get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_a
 
         source_subnet.subnet_address     = found_patrica_node->prefix->add.sin6;
         source_subnet.cidr_prefix_length = found_patrica_node->prefix->bitlen;
-    }    
+    }
 
     if (our_ip_is_source && our_ip_is_destination) {
         packet_direction = INTERNAL;
@@ -828,7 +829,7 @@ direction_t get_packet_direction(patricia_tree_t* lookup_tree, uint32_t src_ip, 
         our_ip_is_destination                 = true;
         destination_subnet.subnet_address     = found_patrica_node->prefix->add.sin.s_addr;
         destination_subnet.cidr_prefix_length = found_patrica_node->prefix->bitlen;
-    }    
+    }
 
     found_patrica_node                      = NULL;
     prefix_for_check_adreess.add.sin.s_addr = src_ip;
@@ -840,7 +841,7 @@ direction_t get_packet_direction(patricia_tree_t* lookup_tree, uint32_t src_ip, 
         our_ip_is_source                 = true;
         source_subnet.subnet_address     = found_patrica_node->prefix->add.sin.s_addr;
         source_subnet.cidr_prefix_length = found_patrica_node->prefix->bitlen;
-    }    
+    }
 
     if (our_ip_is_source && our_ip_is_destination) {
         packet_direction = INTERNAL;
@@ -852,7 +853,7 @@ direction_t get_packet_direction(patricia_tree_t* lookup_tree, uint32_t src_ip, 
         packet_direction = INCOMING;
     } else {
         packet_direction = OTHER;
-    }    
+    }
 
     return packet_direction;
 }
@@ -950,18 +951,16 @@ bool manage_interface_promisc_mode(std::string interface_name, bool switch_on) {
 json_object* serialize_attack_description_to_json(attack_details_t& current_attack) {
     json_object* jobj = json_object_new_object();
 
-    attack_type_t attack_type = detect_attack_type(current_attack);
+    attack_type_t attack_type         = detect_attack_type(current_attack);
     std::string printable_attack_type = get_printable_attack_name(attack_type);
 
     json_object_object_add(jobj, "attack_type", json_object_new_string(printable_attack_type.c_str()));
     json_object_object_add(jobj, "initial_attack_power", json_object_new_int(current_attack.attack_power));
     json_object_object_add(jobj, "peak_attack_power", json_object_new_int(current_attack.max_attack_power));
     json_object_object_add(jobj, "attack_direction",
-                           json_object_new_string(
-                           get_direction_name(current_attack.attack_direction).c_str()));
+                           json_object_new_string(get_direction_name(current_attack.attack_direction).c_str()));
     json_object_object_add(jobj, "attack_protocol",
-                           json_object_new_string(
-                           get_printable_protocol_name(current_attack.attack_protocol).c_str()));
+                           json_object_new_string(get_printable_protocol_name(current_attack.attack_protocol).c_str()));
 
     json_object_object_add(jobj, "total_incoming_traffic", json_object_new_int(current_attack.in_bytes));
     json_object_object_add(jobj, "total_outgoing_traffic", json_object_new_int(current_attack.out_bytes));
@@ -971,21 +970,16 @@ json_object* serialize_attack_description_to_json(attack_details_t& current_atta
     json_object_object_add(jobj, "total_outgoing_flows", json_object_new_int(current_attack.out_flows));
 
     json_object_object_add(jobj, "average_incoming_traffic", json_object_new_int(current_attack.average_in_bytes));
-    json_object_object_add(jobj, "average_outgoing_traffic",
-                           json_object_new_int(current_attack.average_out_bytes));
+    json_object_object_add(jobj, "average_outgoing_traffic", json_object_new_int(current_attack.average_out_bytes));
     json_object_object_add(jobj, "average_incoming_pps", json_object_new_int(current_attack.average_in_packets));
     json_object_object_add(jobj, "average_outgoing_pps", json_object_new_int(current_attack.average_out_packets));
     json_object_object_add(jobj, "average_incoming_flows", json_object_new_int(current_attack.average_in_flows));
     json_object_object_add(jobj, "average_outgoing_flows", json_object_new_int(current_attack.average_out_flows));
 
-    json_object_object_add(jobj, "incoming_ip_fragmented_traffic",
-                           json_object_new_int(current_attack.fragmented_in_bytes));
-    json_object_object_add(jobj, "outgoing_ip_fragmented_traffic",
-                           json_object_new_int(current_attack.fragmented_out_bytes));
-    json_object_object_add(jobj, "incoming_ip_fragmented_pps",
-                           json_object_new_int(current_attack.fragmented_in_packets));
-    json_object_object_add(jobj, "outgoing_ip_fragmented_pps",
-                           json_object_new_int(current_attack.fragmented_out_packets));
+    json_object_object_add(jobj, "incoming_ip_fragmented_traffic", json_object_new_int(current_attack.fragmented_in_bytes));
+    json_object_object_add(jobj, "outgoing_ip_fragmented_traffic", json_object_new_int(current_attack.fragmented_out_bytes));
+    json_object_object_add(jobj, "incoming_ip_fragmented_pps", json_object_new_int(current_attack.fragmented_in_packets));
+    json_object_object_add(jobj, "outgoing_ip_fragmented_pps", json_object_new_int(current_attack.fragmented_out_packets));
 
     json_object_object_add(jobj, "incoming_tcp_traffic", json_object_new_int(current_attack.tcp_in_bytes));
     json_object_object_add(jobj, "outgoing_tcp_traffic", json_object_new_int(current_attack.tcp_out_bytes));
@@ -993,8 +987,7 @@ json_object* serialize_attack_description_to_json(attack_details_t& current_atta
     json_object_object_add(jobj, "outgoing_tcp_pps", json_object_new_int(current_attack.tcp_out_packets));
 
     json_object_object_add(jobj, "incoming_syn_tcp_traffic", json_object_new_int(current_attack.tcp_syn_in_bytes));
-    json_object_object_add(jobj, "outgoing_syn_tcp_traffic",
-                           json_object_new_int(current_attack.tcp_syn_out_bytes));
+    json_object_object_add(jobj, "outgoing_syn_tcp_traffic", json_object_new_int(current_attack.tcp_syn_out_bytes));
     json_object_object_add(jobj, "incoming_syn_tcp_pps", json_object_new_int(current_attack.tcp_syn_in_packets));
     json_object_object_add(jobj, "outgoing_syn_tcp_pps", json_object_new_int(current_attack.tcp_syn_out_packets));
 
@@ -1014,58 +1007,55 @@ json_object* serialize_attack_description_to_json(attack_details_t& current_atta
 std::string serialize_attack_description(attack_details_t& current_attack) {
     std::stringstream attack_description;
 
-    attack_type_t attack_type = detect_attack_type(current_attack);
+    attack_type_t attack_type         = detect_attack_type(current_attack);
     std::string printable_attack_type = get_printable_attack_name(attack_type);
 
-    attack_description
-    << "Attack type: " << printable_attack_type << "\n"
-    << "Initial attack power: " << current_attack.attack_power << " packets per second\n"
-    << "Peak attack power: " << current_attack.max_attack_power << " packets per second\n"
-    << "Attack direction: " << get_direction_name(current_attack.attack_direction) << "\n"
-    << "Attack protocol: " << get_printable_protocol_name(current_attack.attack_protocol) << "\n";
+    attack_description << "Attack type: " << printable_attack_type << "\n"
+                       << "Initial attack power: " << current_attack.attack_power << " packets per second\n"
+                       << "Peak attack power: " << current_attack.max_attack_power << " packets per second\n"
+                       << "Attack direction: " << get_direction_name(current_attack.attack_direction) << "\n"
+                       << "Attack protocol: " << get_printable_protocol_name(current_attack.attack_protocol) << "\n";
 
-    attack_description
-    << "Total incoming traffic: " << convert_speed_to_mbps(current_attack.in_bytes) << " mbps\n"
-    << "Total outgoing traffic: " << convert_speed_to_mbps(current_attack.out_bytes) << " mbps\n"
-    << "Total incoming pps: " << current_attack.in_packets << " packets per second\n"
-    << "Total outgoing pps: " << current_attack.out_packets << " packets per second\n"
-    << "Total incoming flows: " << current_attack.in_flows << " flows per second\n"
-    << "Total outgoing flows: " << current_attack.out_flows << " flows per second\n";
+    attack_description << "Total incoming traffic: " << convert_speed_to_mbps(current_attack.in_bytes) << " mbps\n"
+                       << "Total outgoing traffic: " << convert_speed_to_mbps(current_attack.out_bytes) << " mbps\n"
+                       << "Total incoming pps: " << current_attack.in_packets << " packets per second\n"
+                       << "Total outgoing pps: " << current_attack.out_packets << " packets per second\n"
+                       << "Total incoming flows: " << current_attack.in_flows << " flows per second\n"
+                       << "Total outgoing flows: " << current_attack.out_flows << " flows per second\n";
 
 
     // Add average counters
-    attack_description
-    << "Average incoming traffic: " << convert_speed_to_mbps(current_attack.average_in_bytes) << " mbps\n"
-    << "Average outgoing traffic: " << convert_speed_to_mbps(current_attack.average_out_bytes) << " mbps\n"
-    << "Average incoming pps: " << current_attack.average_in_packets << " packets per second\n"
-    << "Average outgoing pps: " << current_attack.average_out_packets << " packets per second\n"
-    << "Average incoming flows: " << current_attack.average_in_flows << " flows per second\n"
-    << "Average outgoing flows: " << current_attack.average_out_flows << " flows per second\n";
+    attack_description << "Average incoming traffic: " << convert_speed_to_mbps(current_attack.average_in_bytes) << " mbps\n"
+                       << "Average outgoing traffic: " << convert_speed_to_mbps(current_attack.average_out_bytes) << " mbps\n"
+                       << "Average incoming pps: " << current_attack.average_in_packets << " packets per second\n"
+                       << "Average outgoing pps: " << current_attack.average_out_packets << " packets per second\n"
+                       << "Average incoming flows: " << current_attack.average_in_flows << " flows per second\n"
+                       << "Average outgoing flows: " << current_attack.average_out_flows << " flows per second\n";
 
     attack_description
-    << "Incoming ip fragmented traffic: " << convert_speed_to_mbps(current_attack.fragmented_in_bytes) << " mbps\n"
-    << "Outgoing ip fragmented traffic: " << convert_speed_to_mbps(current_attack.fragmented_out_bytes) << " mbps\n"
-    << "Incoming ip fragmented pps: " << current_attack.fragmented_in_packets << " packets per second\n"
-    << "Outgoing ip fragmented pps: " << current_attack.fragmented_out_packets << " packets per second\n"
+        << "Incoming ip fragmented traffic: " << convert_speed_to_mbps(current_attack.fragmented_in_bytes) << " mbps\n"
+        << "Outgoing ip fragmented traffic: " << convert_speed_to_mbps(current_attack.fragmented_out_bytes) << " mbps\n"
+        << "Incoming ip fragmented pps: " << current_attack.fragmented_in_packets << " packets per second\n"
+        << "Outgoing ip fragmented pps: " << current_attack.fragmented_out_packets << " packets per second\n"
 
-    << "Incoming tcp traffic: " << convert_speed_to_mbps(current_attack.tcp_in_bytes) << " mbps\n"
-    << "Outgoing tcp traffic: " << convert_speed_to_mbps(current_attack.tcp_out_bytes) << " mbps\n"
-    << "Incoming tcp pps: " << current_attack.tcp_in_packets << " packets per second\n"
-    << "Outgoing tcp pps: " << current_attack.tcp_out_packets << " packets per second\n"
-    << "Incoming syn tcp traffic: " << convert_speed_to_mbps(current_attack.tcp_syn_in_bytes) << " mbps\n"
-    << "Outgoing syn tcp traffic: " << convert_speed_to_mbps(current_attack.tcp_syn_out_bytes) << " mbps\n"
-    << "Incoming syn tcp pps: " << current_attack.tcp_syn_in_packets << " packets per second\n"
-    << "Outgoing syn tcp pps: " << current_attack.tcp_syn_out_packets << " packets per second\n"
+        << "Incoming tcp traffic: " << convert_speed_to_mbps(current_attack.tcp_in_bytes) << " mbps\n"
+        << "Outgoing tcp traffic: " << convert_speed_to_mbps(current_attack.tcp_out_bytes) << " mbps\n"
+        << "Incoming tcp pps: " << current_attack.tcp_in_packets << " packets per second\n"
+        << "Outgoing tcp pps: " << current_attack.tcp_out_packets << " packets per second\n"
+        << "Incoming syn tcp traffic: " << convert_speed_to_mbps(current_attack.tcp_syn_in_bytes) << " mbps\n"
+        << "Outgoing syn tcp traffic: " << convert_speed_to_mbps(current_attack.tcp_syn_out_bytes) << " mbps\n"
+        << "Incoming syn tcp pps: " << current_attack.tcp_syn_in_packets << " packets per second\n"
+        << "Outgoing syn tcp pps: " << current_attack.tcp_syn_out_packets << " packets per second\n"
 
-    << "Incoming udp traffic: " << convert_speed_to_mbps(current_attack.udp_in_bytes) << " mbps\n"
-    << "Outgoing udp traffic: " << convert_speed_to_mbps(current_attack.udp_out_bytes) << " mbps\n"
-    << "Incoming udp pps: " << current_attack.udp_in_packets << " packets per second\n"
-    << "Outgoing udp pps: " << current_attack.udp_out_packets << " packets per second\n"
+        << "Incoming udp traffic: " << convert_speed_to_mbps(current_attack.udp_in_bytes) << " mbps\n"
+        << "Outgoing udp traffic: " << convert_speed_to_mbps(current_attack.udp_out_bytes) << " mbps\n"
+        << "Incoming udp pps: " << current_attack.udp_in_packets << " packets per second\n"
+        << "Outgoing udp pps: " << current_attack.udp_out_packets << " packets per second\n"
 
-    << "Incoming icmp traffic: " << convert_speed_to_mbps(current_attack.icmp_in_bytes) << " mbps\n"
-    << "Outgoing icmp traffic: " << convert_speed_to_mbps(current_attack.icmp_out_bytes) << " mbps\n"
-    << "Incoming icmp pps: " << current_attack.icmp_in_packets << " packets per second\n"
-    << "Outgoing icmp pps: " << current_attack.icmp_out_packets << " packets per second\n";
+        << "Incoming icmp traffic: " << convert_speed_to_mbps(current_attack.icmp_in_bytes) << " mbps\n"
+        << "Outgoing icmp traffic: " << convert_speed_to_mbps(current_attack.icmp_out_bytes) << " mbps\n"
+        << "Incoming icmp pps: " << current_attack.icmp_in_packets << " packets per second\n"
+        << "Outgoing icmp pps: " << current_attack.icmp_out_packets << " packets per second\n";
 
     return attack_description.str();
 }
@@ -1123,11 +1113,10 @@ std::string serialize_network_load_to_text(map_element_t& network_speed_meter, b
         prefix = "Average network";
     }
 
-    buffer
-    << prefix << " incoming traffic: " << convert_speed_to_mbps(network_speed_meter.in_bytes) << " mbps\n"
-    << prefix << " outgoing traffic: " << convert_speed_to_mbps(network_speed_meter.out_bytes) << " mbps\n"
-    << prefix << " incoming pps: " << network_speed_meter.in_packets << " packets per second\n"
-    << prefix << " outgoing pps: " << network_speed_meter.out_packets << " packets per second\n";
+    buffer << prefix << " incoming traffic: " << convert_speed_to_mbps(network_speed_meter.in_bytes) << " mbps\n"
+           << prefix << " outgoing traffic: " << convert_speed_to_mbps(network_speed_meter.out_bytes) << " mbps\n"
+           << prefix << " incoming pps: " << network_speed_meter.in_packets << " packets per second\n"
+           << prefix << " outgoing pps: " << network_speed_meter.out_packets << " packets per second\n";
 
     return buffer.str();
 }
@@ -1150,13 +1139,11 @@ std::string serialize_statistic_counters_about_attack(attack_details_t& current_
     double average_packet_size_for_outgoing_traffic = 0;
 
     if (current_attack.average_in_packets > 0) {
-        average_packet_size_for_incoming_traffic =
-        (double)current_attack.average_in_bytes / (double)current_attack.average_in_packets;
+        average_packet_size_for_incoming_traffic = (double)current_attack.average_in_bytes / (double)current_attack.average_in_packets;
     }
 
     if (current_attack.average_out_packets > 0) {
-        average_packet_size_for_outgoing_traffic =
-        (double)current_attack.average_out_bytes / (double)current_attack.average_out_packets;
+        average_packet_size_for_outgoing_traffic = (double)current_attack.average_out_bytes / (double)current_attack.average_out_packets;
     }
 
     // We do not need very accurate size
@@ -1199,7 +1186,7 @@ bool store_data_to_stats_server(unsigned short int graphite_port, std::string gr
     memset(&serv_addr, 0, sizeof(serv_addr));
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(graphite_port);
+    serv_addr.sin_port   = htons(graphite_port);
 
     int pton_result = inet_pton(AF_INET, graphite_host.c_str(), &serv_addr.sin_addr);
 
@@ -1256,8 +1243,7 @@ bool get_interface_number_by_device_name(int socket_fd, std::string interface_na
 #else
     /* Fallback to if_nametoindex(3) otherwise. */
     interface_number = if_nametoindex(interface_name.c_str());
-    if (interface_number == 0)
-	    return false;
+    if (interface_number == 0) return false;
 #endif /* SIOCGIFINDEX */
     return true;
 }
@@ -1741,7 +1727,7 @@ bool execute_web_request(std::string address,
     if (request_type != "post" && request_type != "get") {
         error_text = "execute_web_request has support only for post and get requests. Requested: ";
         error_text += request_type;
-        
+
         return false;
     }
 
@@ -1900,4 +1886,3 @@ std::string join_by_comma_and_equal(std::map<std::string, std::string>& data) {
 
     return buffer.str();
 }
-

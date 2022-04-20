@@ -73,7 +73,7 @@ void speed_printer() {
         boost::this_thread::sleep(boost::posix_time::seconds(1));
 
         uint64_t packets_after = received_packets;
-        uint64_t pps = packets_after - packets_before;
+        uint64_t pps           = packets_after - packets_before;
 
         printf("We process: %llu pps\n", pps);
     }
@@ -102,11 +102,10 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
     // Switch to PROMISC mode
     struct packet_mreq sock_params;
     memset(&sock_params, 0, sizeof(sock_params));
-    sock_params.mr_type = PACKET_MR_PROMISC;
+    sock_params.mr_type    = PACKET_MR_PROMISC;
     sock_params.mr_ifindex = interface_number;
 
-    int set_promisc = setsockopt(packet_socket, SOL_PACKET, PACKET_ADD_MEMBERSHIP,
-                                 (void*)&sock_params, sizeof(sock_params));
+    int set_promisc = setsockopt(packet_socket, SOL_PACKET, PACKET_ADD_MEMBERSHIP, (void*)&sock_params, sizeof(sock_params));
 
     if (set_promisc == -1) {
         printf("Can't enable promisc mode\n");
@@ -116,9 +115,9 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
     struct sockaddr_ll bind_address;
     memset(&bind_address, 0, sizeof(bind_address));
 
-    bind_address.sll_family = AF_PACKET;
+    bind_address.sll_family   = AF_PACKET;
     bind_address.sll_protocol = htons(ETH_P_ALL);
-    bind_address.sll_ifindex = interface_number;
+    bind_address.sll_ifindex  = interface_number;
 
     // We will follow http://yusufonlinux.blogspot.ru/2010/11/data-link-access-and-zero-copy.html
     // And this: https://www.kernel.org/doc/Documentation/networking/packet_mmap.txt
@@ -145,8 +144,7 @@ int setup_socket(std::string interface_name, int fanout_group_id) {
 
         int fanout_arg = (fanout_group_id | (fanout_type << 16));
 
-        int setsockopt_fanout =
-        setsockopt(packet_socket, SOL_PACKET, PACKET_FANOUT, &fanout_arg, sizeof(fanout_arg));
+        int setsockopt_fanout = setsockopt(packet_socket, SOL_PACKET, PACKET_FANOUT, &fanout_arg, sizeof(fanout_arg));
 
         if (setsockopt_fanout < 0) {
             printf("Can't configure fanout\n");
@@ -214,7 +212,7 @@ int main() {
                 CPU_SET(cpu_to_bind, &current_cpu_set);
 
                 int set_affinity_result =
-                pthread_attr_setaffinity_np(thread_attrs.native_handle(), sizeof(cpu_set_t), &current_cpu_set);
+                    pthread_attr_setaffinity_np(thread_attrs.native_handle(), sizeof(cpu_set_t), &current_cpu_set);
 
                 if (set_affinity_result != 0) {
                     printf("Can't set CPU affinity for thread\n");
@@ -222,7 +220,7 @@ int main() {
             }
 
             packet_receiver_thread_group.add_thread(
-            new boost::thread(thread_attrs, boost::bind(start_af_packet_capture, "eth6", fanout_group_id)));
+                new boost::thread(thread_attrs, boost::bind(start_af_packet_capture, "eth6", fanout_group_id)));
         }
 
         // Wait all processes for finish

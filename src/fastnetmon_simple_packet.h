@@ -11,12 +11,12 @@ enum source_t { UNKNOWN = 0, MIRROR = 1, SFLOW = 2, NETFLOW = 3, TERAFLOW = 4 };
 class simple_packet_t {
     public:
     simple_packet_t()
-    : sample_ratio(1), src_ip(0), dst_ip(0), source_port(0), destination_port(0), protocol(0),
-      length(0), flags(0), number_of_packets(1), ip_fragmented(false), ip_protocol_version(4),
-      ttl(0), packet_payload_pointer(NULL), packet_payload_length(0), packet_direction(OTHER) {
+    : sample_ratio(1), src_ip(0), dst_ip(0), source_port(0), destination_port(0), protocol(0), length(0), flags(0),
+      number_of_packets(1), ip_fragmented(false), ip_protocol_version(4), ttl(0), packet_payload_pointer(NULL),
+      packet_payload_length(0), packet_direction(OTHER) {
 
         ts.tv_usec = 0;
-        ts.tv_sec = 0;
+        ts.tv_sec  = 0;
     }
     // Source plugin for this traffic type
     source_t source = UNKNOWN;
@@ -41,7 +41,7 @@ class simple_packet_t {
     uint16_t source_port;
     uint16_t destination_port;
     unsigned int protocol;
-    
+
     uint64_t length;
     uint64_t ip_length = 0; /* IP packet total length. We use it in addition to length because flow spec rule need this length */
 
@@ -49,7 +49,7 @@ class simple_packet_t {
     uint8_t flags; /* tcp flags */
 
     bool ip_fragmented; /* If IP packet fragmented */
-    bool ip_dont_fragment               = false; /* If IP has don't fragment flag */
+    bool ip_dont_fragment = false; /* If IP has don't fragment flag */
 
     struct timeval ts;
     void* packet_payload_pointer;
@@ -70,4 +70,3 @@ class simple_packet_t {
     // IP address of device which send this flow
     uint32_t agent_ip_address = 0;
 };
-

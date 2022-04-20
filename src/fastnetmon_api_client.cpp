@@ -61,7 +61,7 @@ class FastnetmonClient {
 
         // Set timeout for API
         std::chrono::system_clock::time_point deadline =
-        std::chrono::system_clock::now() + std::chrono::seconds(client_connection_timeout);
+            std::chrono::system_clock::now() + std::chrono::seconds(client_connection_timeout);
 
         context.set_deadline(deadline);
 

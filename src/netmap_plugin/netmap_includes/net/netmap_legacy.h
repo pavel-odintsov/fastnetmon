@@ -202,8 +202,7 @@ struct nmreq {
 #undef _IO // ws2def.h
 #define _WIN_NM_IOCTL_TYPE 40000
 #define _IO(_c, _n) CTL_CODE(_WIN_NM_IOCTL_TYPE, ((_n) + 0x800), METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define _IO_direct(_c, _n) \
-    CTL_CODE(_WIN_NM_IOCTL_TYPE, ((_n) + 0x800), METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
+#define _IO_direct(_c, _n) CTL_CODE(_WIN_NM_IOCTL_TYPE, ((_n) + 0x800), METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
 
 #define _IOWR(_c, _n, _s) _IO(_c, _n)
 

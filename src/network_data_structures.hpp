@@ -14,7 +14,7 @@
  * TODO:
  * Add strict type check for ntohl/ntohs and ntonl/htons
  *
-*/
+ */
 
 #include <arpa/inet.h> // ntohs, ntohl
 

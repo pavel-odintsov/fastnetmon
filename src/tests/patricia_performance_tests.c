@@ -31,8 +31,8 @@ int main() {
     make_and_lookup(lookup_tree, "193.42.142.0/24");
 
     prefix_t prefix_for_check_adreess;
-    prefix_for_check_adreess.family = AF_INET;
-    prefix_for_check_adreess.bitlen = 32;
+    prefix_for_check_adreess.family     = AF_INET;
+    prefix_for_check_adreess.bitlen     = 32;
     patricia_node_t* found_patrica_node = NULL;
     // prefix_for_check_adreess.add.sin.s_addr = 123123123;
 
@@ -60,8 +60,7 @@ int main() {
         for (i = 0; i < i_iter; i++) {
             // Random Pseudo IP
             prefix_for_check_adreess.add.sin.s_addr = i * j;
-            patricia_node_t* found_patrica_node =
-            patricia_search_best2(lookup_tree, &prefix_for_check_adreess, 1);
+            patricia_node_t* found_patrica_node     = patricia_search_best2(lookup_tree, &prefix_for_check_adreess, 1);
 
             unsigned long destination_subnet = 0;
 
@@ -75,11 +74,10 @@ int main() {
     clock_gettime(CLOCK_REALTIME, &finish_time);
 
     unsigned long used_seconds = finish_time.tv_sec - start_time.tv_sec;
-    unsigned long total_ops = i_iter * j_iter;
-    float megaops_per_second = (float)total_ops / (float)used_seconds / 1000000;
+    unsigned long total_ops    = i_iter * j_iter;
+    float megaops_per_second   = (float)total_ops / (float)used_seconds / 1000000;
 
-    printf("Total time is %d seconds total ops: %d\nMillion of ops per second: %.1f\n",
-           used_seconds, total_ops, megaops_per_second);
+    printf("Total time is %d seconds total ops: %d\nMillion of ops per second: %.1f\n", used_seconds, total_ops, megaops_per_second);
 
     Destroy_Patricia(lookup_tree, (void_fn_t)0);
 }

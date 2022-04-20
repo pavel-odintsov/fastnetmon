@@ -83,12 +83,10 @@ int convert_string_to_integer(std::string line);
 bool print_pid_to_file(pid_t pid, std::string pid_path);
 bool read_pid_from_file(pid_t& pid, std::string pid_path);
 
-direction_t get_packet_direction(patricia_tree_t* lookup_tree,
-                               uint32_t src_ip,
-                               uint32_t dst_ip,
-                               subnet_cidr_mask_t& subnet);
+direction_t get_packet_direction(patricia_tree_t* lookup_tree, uint32_t src_ip, uint32_t dst_ip, subnet_cidr_mask_t& subnet);
 
-direction_t get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_addr src_ipv6, struct in6_addr dst_ipv6, subnet_ipv6_cidr_mask_t& subnet);
+direction_t
+get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_addr src_ipv6, struct in6_addr dst_ipv6, subnet_ipv6_cidr_mask_t& subnet);
 
 std::string convert_prefix_to_string_representation(prefix_t* prefix);
 std::string find_subnet_by_ip_in_string_format(patricia_tree_t* patricia_tree, std::string ip);
@@ -116,10 +114,10 @@ bool store_data_to_stats_server(unsigned short int graphite_port, std::string gr
 bool get_interface_number_by_device_name(int socket_fd, std::string interface_name, int& interface_number);
 
 bool set_boost_process_name(boost::thread* thread, std::string process_name);
- std::string convert_subnet_to_string(subnet_cidr_mask_t my_subnet);
+std::string convert_subnet_to_string(subnet_cidr_mask_t my_subnet);
 
- std::string print_ipv6_cidr_subnet(subnet_ipv6_cidr_mask_t subnet);
- std::string convert_any_ip_to_string(subnet_ipv6_cidr_mask_t subnet);
+std::string print_ipv6_cidr_subnet(subnet_ipv6_cidr_mask_t subnet);
+std::string convert_any_ip_to_string(subnet_ipv6_cidr_mask_t subnet);
 bool convert_string_to_positive_integer_safe(std::string line, int& value);
 bool read_ipv6_host_from_string(std::string ipv6_host_as_string, in6_addr& result);
 bool validate_ipv6_or_ipv4_host(const std::string host);

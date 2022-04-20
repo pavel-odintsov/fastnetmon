@@ -10,8 +10,8 @@
 
 #include <fstream>
 #include <map>
-#include <vector>
 #include <mutex>
+#include <vector>
 
 #include "../fast_library.h"
 #include "../ipfix_rfc.h"
@@ -256,15 +256,15 @@ void add_update_peer_template(global_template_storage_t& table_for_add,
 class netflow_meta_info_t {
     public:
     // Packets selected by sampler
-    uint64_t selected_packets = 0; 
+    uint64_t selected_packets = 0;
 
     // Total number of packets on interface
-    uint64_t observed_packets = 0; 
+    uint64_t observed_packets = 0;
 
     // Sampling rate is observed_packets / selected_packets
 
     // Full length of packet (Netflow Lite)
-    uint64_t data_link_frame_size = 0; 
+    uint64_t data_link_frame_size = 0;
 
     // Decoded nested packet
     simple_packet_t nested_packet;
@@ -273,10 +273,17 @@ class netflow_meta_info_t {
     bool nested_packet_parsed = false;
 };
 
-int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data, simple_packet_t& packet, std::vector<peer_nf9_record_t> & template_records, netflow_meta_info_t& flow_meta);
+int nf9_rec_to_flow(uint32_t record_type,
+                    uint32_t record_length,
+                    uint8_t* data,
+                    simple_packet_t& packet,
+                    std::vector<peer_nf9_record_t>& template_records,
+                    netflow_meta_info_t& flow_meta);
 
-peer_nf9_template*
-peer_find_template(global_template_storage_t& table_for_lookup, uint32_t source_id, uint32_t template_id, std::string client_addres_in_string_format) {
+peer_nf9_template* peer_find_template(global_template_storage_t& table_for_lookup,
+                                      uint32_t source_id,
+                                      uint32_t template_id,
+                                      std::string client_addres_in_string_format) {
 
     // We use source_id for distinguish multiple netflow agents with same IP
     std::string key = client_addres_in_string_format + "_" + std::to_string(source_id);
@@ -356,7 +363,7 @@ bool process_netflow_v9_options_template(uint8_t* pkt, size_t len, uint32_t sour
 
     uint32_t offset         = 0;
     uint32_t records_number = 0;
-    
+
     std::vector<peer_nf9_record_t> template_records_map;
     uint32_t total_size = 0;
 
@@ -368,8 +375,8 @@ bool process_netflow_v9_options_template(uint8_t* pkt, size_t len, uint32_t sour
         uint32_t record_length = fast_ntoh(tmplr->length);
 
         peer_nf9_record_t current_record;
-        current_record.record_type = record_type;
-        current_record.record_length  = record_length;
+        current_record.record_type   = record_type;
+        current_record.record_length = record_length;
 
         template_records_map.push_back(current_record);
 
@@ -604,12 +611,12 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
             }
 
             nf10_template_flowset_record_t* tmplr = (nf10_template_flowset_record_t*)(pkt + offset);
-            uint32_t record_type                     = ntohs(tmplr->type);
-            uint32_t record_length                   = ntohs(tmplr->length);
+            uint32_t record_type                  = ntohs(tmplr->type);
+            uint32_t record_length                = ntohs(tmplr->length);
 
             peer_nf9_record_t current_record;
-            current_record.record_type = record_type;
-            current_record.record_length  = record_length;
+            current_record.record_type   = record_type;
+            current_record.record_length = record_length;
 
             template_records_map.push_back(current_record);
 
@@ -687,8 +694,8 @@ bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, c
             uint32_t record_length = ntohs(tmplr->length);
 
             peer_nf9_record_t current_record;
-            current_record.record_type = record_type;
-            current_record.record_length  = record_length;
+            current_record.record_type   = record_type;
+            current_record.record_length = record_length;
 
             template_records_map.push_back(current_record);
 
@@ -993,9 +1000,8 @@ int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data,
             full_packet_length = flow_meta.data_link_frame_size;
         }
 
-        auto result = parse_raw_packet_to_simple_packet_full_ng( (u_char*)(data), full_packet_length,
-            record_length, flow_meta.nested_packet, read_packet_length_from_ip_header
-        );
+        auto result = parse_raw_packet_to_simple_packet_full_ng((u_char*)(data), full_packet_length, record_length,
+                                                                flow_meta.nested_packet, read_packet_length_from_ip_header);
 
         if (result != network_data_stuctures::parser_code_t::success) {
             // Cannot decode data
@@ -1188,7 +1194,7 @@ bool nf10_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* dat
             }
         }
 
-		break;
+        break;
     }
 
     return true;
@@ -1267,7 +1273,12 @@ bool nf10_options_flowset_to_store(uint8_t* pkt, size_t len, nf10_header_t* nf10
 }
 
 // We should rewrite nf9_flowset_to_store accroding to fixes here
-void nf10_flowset_to_store(uint8_t* pkt, size_t len, nf10_header_t* nf10_hdr, peer_nf9_template* field_template, uint32_t client_ipv4_address, const std::string& client_addres_in_string_format) {
+void nf10_flowset_to_store(uint8_t* pkt,
+                           size_t len,
+                           nf10_header_t* nf10_hdr,
+                           peer_nf9_template* field_template,
+                           uint32_t client_ipv4_address,
+                           const std::string& client_addres_in_string_format) {
     uint32_t offset = 0;
 
     if (len < field_template->total_len) {
@@ -1303,7 +1314,7 @@ void nf10_flowset_to_store(uint8_t* pkt, size_t len, nf10_header_t* nf10_hdr, pe
 
     for (std::vector<peer_nf9_record_t>::iterator iter = field_template->records.begin();
          iter != field_template->records.end(); iter++) {
-        
+
         uint32_t record_type   = iter->record_type;
         uint32_t record_length = iter->record_length;
 
@@ -1392,7 +1403,8 @@ void nf9_options_flowset_to_store(uint8_t* pkt, size_t len, nf9_header_t* nf9_hd
         // Cisco ASR1000
         if (elem.record_type == FLOW_SAMPLER_RANDOM_INTERVAL) {
             // Check supported length
-            if (elem.record_length == FLOW_SAMPLER_RANDOM_INTERVAL_LENGTH or elem.record_length == FLOW_SAMPLER_RANDOM_INTERVAL_LENGTH_ASR1000) {
+            if (elem.record_length == FLOW_SAMPLER_RANDOM_INTERVAL_LENGTH or
+                elem.record_length == FLOW_SAMPLER_RANDOM_INTERVAL_LENGTH_ASR1000) {
                 bool result = be_copy_function(data_shift, (uint8_t*)&sampling_rate, sizeof(sampling_rate), elem.record_length);
 
                 if (!result) {
@@ -1658,11 +1670,11 @@ void nf9_flowset_to_store(uint8_t* pkt,
 }
 
 bool process_netflow_v10_data(uint8_t* pkt,
-                             size_t len,
-                             nf10_header_t* nf10_hdr,
-                             uint32_t source_id,
-                             const std::string& client_addres_in_string_format,
-                             uint32_t client_ipv4_address) {
+                              size_t len,
+                              nf10_header_t* nf10_hdr,
+                              uint32_t source_id,
+                              const std::string& client_addres_in_string_format,
+                              uint32_t client_ipv4_address) {
 
     nf10_data_flowset_header_t* dath = (nf10_data_flowset_header_t*)pkt;
 
@@ -1885,7 +1897,7 @@ bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string
             ipfix_data_packet_number++;
 
             if (!process_netflow_v10_data(packet + offset, flowset_len, nf10_hdr, source_id,
-                                         client_addres_in_string_format, client_ipv4_address)) {
+                                          client_addres_in_string_format, client_ipv4_address)) {
                 return false;
             }
 
@@ -1924,7 +1936,7 @@ bool process_netflow_packet_v9(uint8_t* packet, uint32_t len, std::string& clien
     uint32_t source_id = ntohl(nf9_hdr->source_id);
     // logger<< log4cpp::Priority::INFO<<"Template source id: "<<source_id;
 
-    uint32_t offset      = sizeof(*nf9_hdr);
+    uint32_t offset = sizeof(*nf9_hdr);
 
     // logger<< log4cpp::Priority::INFO<< "Total flowsets " << flowset_count_total;
 
@@ -2183,7 +2195,7 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
 
     std::vector<unsigned int> netflow_ports;
 
-    for (auto port: ports_for_listen) {
+    for (auto port : ports_for_listen) {
         unsigned int netflow_port = convert_string_to_integer(port);
 
         if (netflow_port == 0) {

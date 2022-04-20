@@ -45,11 +45,11 @@ log4cpp::Category& logger = log4cpp::Category::getRoot();
 
 uint64_t total_unparsed_packets = 0;
 
-uint64_t dns_amplification_packets = 0;
-uint64_t ntp_amplification_packets = 0;
+uint64_t dns_amplification_packets  = 0;
+uint64_t ntp_amplification_packets  = 0;
 uint64_t ssdp_amplification_packets = 0;
 
-uint64_t raw_parsed_packets = 0;
+uint64_t raw_parsed_packets   = 0;
 uint64_t raw_unparsed_packets = 0;
 
 /* It's prototype for moc testing of FastNetMon, it's very useful for netflow or direct packet
@@ -81,7 +81,7 @@ char* flow_type = NULL;
 void pcap_parse_packet(char* buffer, uint32_t len, uint32_t snap_len) {
     struct pfring_pkthdr packet_header;
     memset(&packet_header, 0, sizeof(packet_header));
-    packet_header.len = len;
+    packet_header.len    = len;
     packet_header.caplen = snap_len;
 
     fastnetmon_parse_pkt((u_char*)buffer, &packet_header, 4, 1, 0);
@@ -111,8 +111,8 @@ void pcap_parse_packet(char* buffer, uint32_t len, uint32_t snap_len) {
         SFSample sample;
         memset(&sample, 0, sizeof(sample));
 
-        sample.rawSample = (uint8_t*)payload_ptr;
-        sample.rawSampleLen = payload_length;
+        sample.rawSample     = (uint8_t*)payload_ptr;
+        sample.rawSampleLen  = payload_length;
         sample.sourceIP.type = SFLADDRESSTYPE_IP_V4;
 
         read_sflow_datagram(&sample);
@@ -121,15 +121,15 @@ void pcap_parse_packet(char* buffer, uint32_t len, uint32_t snap_len) {
         struct pfring_pkthdr raw_packet_header;
         memset(&raw_packet_header, 0, sizeof(raw_packet_header));
 
-        raw_packet_header.len = len;
+        raw_packet_header.len    = len;
         raw_packet_header.caplen = snap_len;
 
         int parser_return_code = fastnetmon_parse_pkt((u_char*)buffer, &raw_packet_header, 4, 1, 0);
 
         // We are not interested so much in l2 data and we interested only in l3 data here and more
         if (parser_return_code < 3) {
-            printf("Parser failed for with code %d following packet with number %llu\n",
-                   parser_return_code, raw_unparsed_packets + raw_parsed_packets);
+            printf("Parser failed for with code %d following packet with number %llu\n", parser_return_code,
+                   raw_unparsed_packets + raw_parsed_packets);
             raw_unparsed_packets++;
         } else {
             raw_parsed_packets++;

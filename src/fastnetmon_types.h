@@ -6,9 +6,9 @@
 #include <sys/time.h> // struct timeval
 #include <utility> // std::pair
 
-#include <unordered_map>
 #include <map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "packet_storage.h"
@@ -65,7 +65,7 @@ class system_counter_t {
     system_counter_t(std::string counter_name, uint64_t counter_value) {
         this->counter_name  = counter_name;
         this->counter_value = counter_value;
-    }   
+    }
     std::string counter_name;
     uint64_t counter_value = 0;
 };
@@ -79,11 +79,11 @@ template <typename T> class TrafficComparatorClass {
 
     public:
     TrafficComparatorClass(direction_t sort_direction, sort_type_t sort_field) {
-        this->sort_field = sort_field;
+        this->sort_field     = sort_field;
         this->sort_direction = sort_direction;
-    }    
+    }
 
-    bool operator()(T a, T b) { 
+    bool operator()(T a, T b) {
         if (sort_field == FLOWS) {
             if (sort_direction == INCOMING) {
                 return a.second.in_flows > b.second.in_flows;
@@ -111,16 +111,14 @@ template <typename T> class TrafficComparatorClass {
         } else {
             return false;
         }
-    }    
+    }
 };
-
 
 
 class logging_configuration_t {
     public:
     logging_configuration_t()
-    : filesystem_logging(true), local_syslog_logging(false), remote_syslog_logging(false),
-      remote_syslog_port(0) {
+    : filesystem_logging(true), local_syslog_logging(false), remote_syslog_logging(false), remote_syslog_port(0) {
     }
     bool filesystem_logging;
     std::string filesystem_logging_path;
@@ -141,20 +139,20 @@ typedef void (*process_packet_pointer)(simple_packet_t&);
 
 // Attack types
 enum attack_type_t {
-    ATTACK_UNKNOWN = 1,
-    ATTACK_SYN_FLOOD = 2,
-    ATTACK_ICMP_FLOOD = 3,
-    ATTACK_UDP_FLOOD = 4,
+    ATTACK_UNKNOWN                = 1,
+    ATTACK_SYN_FLOOD              = 2,
+    ATTACK_ICMP_FLOOD             = 3,
+    ATTACK_UDP_FLOOD              = 4,
     ATTACK_IP_FRAGMENTATION_FLOOD = 5,
 };
 
 // Amplification types
 enum amplification_attack_type_t {
     AMPLIFICATION_ATTACK_UNKNOWN = 1,
-    AMPLIFICATION_ATTACK_DNS = 2,
-    AMPLIFICATION_ATTACK_NTP = 3,
-    AMPLIFICATION_ATTACK_SSDP = 4,
-    AMPLIFICATION_ATTACK_SNMP = 5,
+    AMPLIFICATION_ATTACK_DNS     = 2,
+    AMPLIFICATION_ATTACK_NTP     = 3,
+    AMPLIFICATION_ATTACK_SSDP    = 4,
+    AMPLIFICATION_ATTACK_SNMP    = 5,
     AMPLIFICATION_ATTACK_CHARGEN = 6,
 };
 
@@ -168,21 +166,21 @@ class total_counter_element_t {
         bytes   = 0;
         packets = 0;
         flows   = 0;
-    } 
+    }
 };
 
 // structure with attack details
 class attack_details_t : public map_element_t {
     public:
     attack_details_t()
-    : attack_protocol(0), attack_power(0), max_attack_power(0), average_in_bytes(0),
-      average_out_bytes(0), average_in_packets(0), average_out_packets(0), average_in_flows(0),
-      average_out_flows(0), ban_time(0), attack_direction(OTHER), unban_enabled(true) {
+    : attack_protocol(0), attack_power(0), max_attack_power(0), average_in_bytes(0), average_out_bytes(0),
+      average_in_packets(0), average_out_packets(0), average_in_flows(0), average_out_flows(0), ban_time(0),
+      attack_direction(OTHER), unban_enabled(true) {
 
         customer_network.subnet_address     = 0;
         customer_network.cidr_prefix_length = 0;
     }
-    
+
     // Host group for this attack
     std::string host_group;
 
@@ -211,7 +209,7 @@ class attack_details_t : public map_element_t {
 
     // If this attack was detected for IPv6 protocol
     bool ipv6 = false;
-   
+
     attack_detection_source_t attack_detection_source = attack_detection_source_t::Automatic;
 
     subnet_cidr_mask_t customer_network;
@@ -284,12 +282,11 @@ class ban_settings_t {
     public:
     ban_settings_t()
     : enable_ban(false), enable_ban_ipv6(false), enable_ban_for_pps(false), enable_ban_for_bandwidth(false),
-      enable_ban_for_flows_per_second(false), enable_ban_for_tcp_pps(false),
-      enable_ban_for_tcp_bandwidth(false), enable_ban_for_udp_pps(false),
-      enable_ban_for_udp_bandwidth(false), enable_ban_for_icmp_pps(false),
+      enable_ban_for_flows_per_second(false), enable_ban_for_tcp_pps(false), enable_ban_for_tcp_bandwidth(false),
+      enable_ban_for_udp_pps(false), enable_ban_for_udp_bandwidth(false), enable_ban_for_icmp_pps(false),
       enable_ban_for_icmp_bandwidth(false), ban_threshold_tcp_mbps(0), ban_threshold_tcp_pps(0),
-      ban_threshold_udp_mbps(0), ban_threshold_udp_pps(0), ban_threshold_icmp_mbps(0),
-      ban_threshold_icmp_pps(0), ban_threshold_mbps(0), ban_threshold_flows(0), ban_threshold_pps(0) {
+      ban_threshold_udp_mbps(0), ban_threshold_udp_pps(0), ban_threshold_icmp_mbps(0), ban_threshold_icmp_pps(0),
+      ban_threshold_mbps(0), ban_threshold_flows(0), ban_threshold_pps(0) {
     }
     bool enable_ban;
     bool enable_ban_ipv6;

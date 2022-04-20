@@ -31,7 +31,7 @@ uint64_t get_tsc_freq_from_clock(void) {
 #define NS_PER_SEC 1E9
     struct timespec sleeptime;
 
-    sleeptime.tv_sec = 1;
+    sleeptime.tv_sec  = 1;
     sleeptime.tv_nsec = 5E8; /* 1/2 second */
 
     struct timespec t_start, t_end;
@@ -44,7 +44,7 @@ uint64_t get_tsc_freq_from_clock(void) {
         nanosleep(&sleeptime, NULL);
         clock_gettime(CLOCK_MONOTONIC_RAW, &t_end);
         end = read_tsc_cpu_register();
-        ns = ((t_end.tv_sec - t_start.tv_sec) * NS_PER_SEC);
+        ns  = ((t_end.tv_sec - t_start.tv_sec) * NS_PER_SEC);
         ns += (t_end.tv_nsec - t_start.tv_nsec);
 
         double secs = (double)ns / NS_PER_SEC;

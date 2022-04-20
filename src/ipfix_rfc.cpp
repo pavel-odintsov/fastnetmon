@@ -14,12 +14,12 @@ unsigned int ipfix_information_element_t::get_length() {
 }
 
 ipfix_information_element_t::ipfix_information_element_t(std::string name, unsigned int length) {
-    this->name = name;
+    this->name   = name;
     this->length = length;
 }
 
 ipfix_information_element_t::ipfix_information_element_t() {
-    this->name = std::string("");
+    this->name   = std::string("");
     this->length = 0;
 }
 

@@ -8,8 +8,7 @@
 #include "fastnetmon_types.h"
 
 // Helper for serialization by comma
-template <typename T>
-std::string serialize_vector_by_string(const std::vector<T> vect, std::string delimiter) {
+template <typename T> std::string serialize_vector_by_string(const std::vector<T> vect, std::string delimiter) {
     std::ostringstream output_buffer;
 
     std::copy(vect.begin(), vect.end() - 1, std::ostream_iterator<T>(output_buffer, delimiter.c_str()));
@@ -19,8 +18,7 @@ std::string serialize_vector_by_string(const std::vector<T> vect, std::string de
 }
 
 template <typename T>
-std::string
-serialize_vector_by_string_with_prefix(const std::vector<T> vect, std::string delimiter, std::string prefix) {
+std::string serialize_vector_by_string_with_prefix(const std::vector<T> vect, std::string delimiter, std::string prefix) {
     std::vector<std::string> elements_with_prefix;
 
     for (typename std::vector<T>::const_iterator itr = vect.begin(); itr != vect.end(); ++itr) {
@@ -91,7 +89,7 @@ class bgp_flow_spec_action_t {
     public:
     bgp_flow_spec_action_t() {
         this->action_type = FLOW_SPEC_ACTION_ACCEPT;
-        this->rate_limit = 9600;
+        this->rate_limit  = 9600;
 
         sentence_separator = ";";
     }
@@ -134,7 +132,7 @@ class flow_spec_rule_t {
     public:
     flow_spec_rule_t() {
         // We should explidictly initialize it!
-        source_subnet_used = false;
+        source_subnet_used      = false;
         destination_subnet_used = false;
     }
 
@@ -147,12 +145,12 @@ class flow_spec_rule_t {
     }
 
     void set_source_subnet(subnet_cidr_mask_t source_subnet) {
-        this->source_subnet = source_subnet;
+        this->source_subnet      = source_subnet;
         this->source_subnet_used = true;
     }
 
     void set_destination_subnet(subnet_cidr_mask_t destination_subnet) {
-        this->destination_subnet = destination_subnet;
+        this->destination_subnet      = destination_subnet;
         this->destination_subnet_used = true;
     }
 
@@ -216,10 +214,10 @@ class flow_spec_rule_t {
 class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
     public:
     exabgp_flow_spec_rule_t() {
-        four_spaces = "    ";
+        four_spaces        = "    ";
         sentence_separator = ";";
 
-        this->enabled_indents = true;
+        this->enabled_indents     = true;
         this->enble_block_headers = true;
     }
 
@@ -230,8 +228,7 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
     std::string serialize_source_ports() {
         std::ostringstream output_buffer;
 
-        output_buffer << "source-port [ "
-                      << serialize_vector_by_string_with_prefix<uint16_t>(this->source_ports, " ", "=")
+        output_buffer << "source-port [ " << serialize_vector_by_string_with_prefix<uint16_t>(this->source_ports, " ", "=")
                       << " ]" << sentence_separator;
 
         return output_buffer.str();
@@ -241,8 +238,8 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
         std::ostringstream output_buffer;
 
         output_buffer << "destination-port [ "
-                      << serialize_vector_by_string_with_prefix<uint16_t>(this->destination_ports, " ", "=")
-                      << " ]" << sentence_separator;
+                      << serialize_vector_by_string_with_prefix<uint16_t>(this->destination_ports, " ", "=") << " ]"
+                      << sentence_separator;
 
         return output_buffer.str();
     }
@@ -250,8 +247,7 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
     std::string serialize_packet_lengths() {
         std::ostringstream output_buffer;
 
-        output_buffer << "packet-length [ "
-                      << serialize_vector_by_string_with_prefix<uint16_t>(this->packet_lengths, " ", "=")
+        output_buffer << "packet-length [ " << serialize_vector_by_string_with_prefix<uint16_t>(this->packet_lengths, " ", "=")
                       << " ]" << sentence_separator;
 
         return output_buffer.str();
@@ -261,16 +257,14 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
     std::string serialize_protocols() {
         std::ostringstream output_buffer;
 
-        output_buffer << "protocol [ " << serialize_vector_by_string(this->protocols, " ") << " ]"
-                      << sentence_separator;
+        output_buffer << "protocol [ " << serialize_vector_by_string(this->protocols, " ") << " ]" << sentence_separator;
 
         return output_buffer.str();
     }
     std::string serialize_fragmentation_flags() {
         std::ostringstream output_buffer;
 
-        output_buffer << "fragment [ " << serialize_vector_by_string(this->fragmentation_flags, " ")
-                      << " ]" << sentence_separator;
+        output_buffer << "fragment [ " << serialize_vector_by_string(this->fragmentation_flags, " ") << " ]" << sentence_separator;
 
         return output_buffer.str();
     }
@@ -278,8 +272,7 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
     std::string serialize_tcp_flags() {
         std::ostringstream output_buffer;
 
-        output_buffer << "tcp-flags [ " << serialize_vector_by_string(this->tcp_flags, " ") << " ]"
-                      << sentence_separator;
+        output_buffer << "tcp-flags [ " << serialize_vector_by_string(this->tcp_flags, " ") << " ]" << sentence_separator;
 
         return output_buffer.str();
     }
@@ -296,14 +289,14 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
     // https://plus.google.com/+ThomasMangin/posts/bL6w16BXcJ4
     // This format is INCOMPATIBLE with ExaBGP v3, please be careful!
     std::string serialize_single_line_exabgp_v4_configuration() {
-        this->enabled_indents = false;
+        this->enabled_indents     = false;
         this->enble_block_headers = false;
-        sentence_separator = " ";
+        sentence_separator        = " ";
 
         return "flow route " + this->serialize_match() + this->serialize_then();
 
-        sentence_separator = ";";
-        this->enabled_indents = true;
+        sentence_separator        = ";";
+        this->enabled_indents     = true;
         this->enble_block_headers = true;
     }
 
@@ -422,8 +415,7 @@ class exabgp_flow_spec_rule_t : public flow_spec_rule_t {
         }
 
         // If we have TCP in protocols list explicitly, we add flags
-        if (find(this->protocols.begin(), this->protocols.end(), FLOW_SPEC_PROTOCOL_TCP) !=
-            this->protocols.end()) {
+        if (find(this->protocols.begin(), this->protocols.end(), FLOW_SPEC_PROTOCOL_TCP) != this->protocols.end()) {
 
             if (!this->tcp_flags.empty()) {
                 if (enabled_indents) {

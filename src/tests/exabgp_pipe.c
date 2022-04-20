@@ -15,8 +15,8 @@ int ban_ip() {
     }
 
     char bgp_message[256];
-    char* ip_cidr_form = "10.10.10.123/32";
-    char* next_hop = "10.0.3.114";
+    char* ip_cidr_form     = "10.10.10.123/32";
+    char* next_hop         = "10.0.3.114";
     char* exabgp_community = "65001:666";
     // withdraw
     char* action = "announce";

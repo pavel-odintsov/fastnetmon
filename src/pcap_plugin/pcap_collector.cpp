@@ -120,7 +120,7 @@ void parse_packet(u_char* user, struct pcap_pkthdr* packethdr, const u_char* pac
 #if defined(__FreeBSD__) || defined(__APPLE__) || defined(__DragonFly__) || defined(__OpenBSD__)
         current_packet.source_port = ntohs(tcphdr->th_sport);
 #else
-        current_packet.source_port = ntohs(tcphdr->source);
+        current_packet.source_port      = ntohs(tcphdr->source);
 #endif
 
 #if defined(__FreeBSD__) || defined(__APPLE__) || defined(__DragonFly__) || defined(__OpenBSD__)
@@ -135,7 +135,7 @@ void parse_packet(u_char* user, struct pcap_pkthdr* packethdr, const u_char* pac
 #if defined(__FreeBSD__) || defined(__APPLE__) || defined(__DragonFly__) || defined(__OpenBSD__)
         current_packet.source_port = ntohs(udphdr->uh_sport);
 #else
-        current_packet.source_port = ntohs(udphdr->source);
+        current_packet.source_port      = ntohs(udphdr->source);
 #endif
 
 #if defined(__FreeBSD__) || defined(__APPLE__) || defined(__DragonFly__) || defined(__OpenBSD__)
@@ -146,15 +146,15 @@ void parse_packet(u_char* user, struct pcap_pkthdr* packethdr, const u_char* pac
         break;
     case IPPROTO_ICMP:
         // there are no port for ICMP
-        current_packet.source_port = 0;
+        current_packet.source_port      = 0;
         current_packet.destination_port = 0;
         break;
     }
 
     current_packet.protocol = iphdr->ip_p;
-    current_packet.src_ip = src_ip;
-    current_packet.dst_ip = dst_ip;
-    current_packet.length = packet_length;
+    current_packet.src_ip   = src_ip;
+    current_packet.dst_ip   = dst_ip;
+    current_packet.length   = packet_length;
 
     // Do packet processing
     pcap_process_func_ptr(current_packet);

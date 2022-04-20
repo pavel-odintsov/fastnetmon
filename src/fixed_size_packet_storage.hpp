@@ -42,4 +42,3 @@ class fixed_size_packet_storage_t {
     // Packet itself. Let's zeroify packet payload
     uint8_t packet_payload[2048] = {};
 };
-

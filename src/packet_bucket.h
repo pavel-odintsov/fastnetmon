@@ -101,16 +101,16 @@ template <typename TemplateKeyType> class packet_buckets_storage_t {
 
         if (buffers_maximum_capacity == 0) {
             // In this case we mark this bucket as already collected to trigger immediate detection without tpacket capture
-            new_packet_bucket.we_could_receive_new_data = false;
+            new_packet_bucket.we_could_receive_new_data           = false;
             new_packet_bucket.we_collected_full_buffer_least_once = true;
-            new_packet_bucket.collection_finished_time = std::chrono::system_clock::now();
+            new_packet_bucket.collection_finished_time            = std::chrono::system_clock::now();
         } else {
             new_packet_bucket.we_could_receive_new_data = true;
         }
 
-        new_packet_bucket.collection_pattern        = collection_pattern;
-        new_packet_bucket.attack_details            = attack_details;
-        
+        new_packet_bucket.collection_pattern = collection_pattern;
+        new_packet_bucket.attack_details     = attack_details;
+
         packet_buckets_map[client_ip] = new_packet_bucket;
 
         return true;
@@ -213,4 +213,3 @@ template <typename TemplateKeyType> class packet_buckets_storage_t {
     std::mutex packet_buckets_map_mutex;
     std::map<TemplateKeyType, packet_bucket_t> packet_buckets_map;
 };
-

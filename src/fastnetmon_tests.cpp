@@ -59,16 +59,14 @@ TEST(BgpFlowSpec, packet_length) {
 
 TEST(BgpFlowSpec, source_subnet) {
     exabgp_flow_spec_rule_t exabgp_rule;
-    exabgp_rule.set_source_subnet(
-    convert_subnet_from_string_to_binary_with_cidr_format("4.0.0.0/24"));
+    exabgp_rule.set_source_subnet(convert_subnet_from_string_to_binary_with_cidr_format("4.0.0.0/24"));
 
     EXPECT_EQ(exabgp_rule.serialize_source_subnet(), "source 4.0.0.0/24;");
 }
 
 TEST(BgpFlowSpec, destination_subnet) {
     exabgp_flow_spec_rule_t exabgp_rule;
-    exabgp_rule.set_destination_subnet(
-    convert_subnet_from_string_to_binary_with_cidr_format("77.0.0.0/24"));
+    exabgp_rule.set_destination_subnet(convert_subnet_from_string_to_binary_with_cidr_format("77.0.0.0/24"));
 
     EXPECT_EQ(exabgp_rule.serialize_destination_subnet(), "destination 77.0.0.0/24;");
 }
@@ -201,10 +199,8 @@ TEST(BgpFlowSpec, serialize_match_first) {
     exabgp_rule.add_fragmentation_flag(FLOW_SPEC_IS_A_FRAGMENT);
     exabgp_rule.add_fragmentation_flag(FLOW_SPEC_DONT_FRAGMENT);
 
-    exabgp_rule.set_destination_subnet(
-    convert_subnet_from_string_to_binary_with_cidr_format("127.0.0.0/24"));
-    exabgp_rule.set_source_subnet(
-    convert_subnet_from_string_to_binary_with_cidr_format("4.0.0.0/24"));
+    exabgp_rule.set_destination_subnet(convert_subnet_from_string_to_binary_with_cidr_format("127.0.0.0/24"));
+    exabgp_rule.set_source_subnet(convert_subnet_from_string_to_binary_with_cidr_format("4.0.0.0/24"));
 
     // Disable indentation
     exabgp_rule.disable_indents();
@@ -247,10 +243,8 @@ TEST(BgpFlowSpec, serialize_signle_line) {
     exabgp_rule.add_fragmentation_flag(FLOW_SPEC_IS_A_FRAGMENT);
     exabgp_rule.add_fragmentation_flag(FLOW_SPEC_DONT_FRAGMENT);
 
-    exabgp_rule.set_destination_subnet(
-    convert_subnet_from_string_to_binary_with_cidr_format("127.0.0.0/24"));
-    exabgp_rule.set_source_subnet(
-    convert_subnet_from_string_to_binary_with_cidr_format("4.0.0.0/24"));
+    exabgp_rule.set_destination_subnet(convert_subnet_from_string_to_binary_with_cidr_format("127.0.0.0/24"));
+    exabgp_rule.set_source_subnet(convert_subnet_from_string_to_binary_with_cidr_format("4.0.0.0/24"));
 
     exabgp_rule.set_action(my_action);
 
@@ -277,10 +271,8 @@ TEST(BgpFlowSpec, serialize_whole_single_line_form) {
     exabgp_rule.add_fragmentation_flag(FLOW_SPEC_IS_A_FRAGMENT);
     exabgp_rule.add_fragmentation_flag(FLOW_SPEC_DONT_FRAGMENT);
 
-    exabgp_rule.set_destination_subnet(
-    convert_subnet_from_string_to_binary_with_cidr_format("127.0.0.0/24"));
-    exabgp_rule.set_source_subnet(
-    convert_subnet_from_string_to_binary_with_cidr_format("4.0.0.0/24"));
+    exabgp_rule.set_destination_subnet(convert_subnet_from_string_to_binary_with_cidr_format("127.0.0.0/24"));
+    exabgp_rule.set_source_subnet(convert_subnet_from_string_to_binary_with_cidr_format("4.0.0.0/24"));
 
     exabgp_rule.set_action(my_action);
 
@@ -304,10 +296,8 @@ TEST(BgpFlowSpec, serialize_with_real_exabgp) {
     exabgp_rule.add_fragmentation_flag(FLOW_SPEC_IS_A_FRAGMENT);
     exabgp_rule.add_fragmentation_flag(FLOW_SPEC_DONT_FRAGMENT);
 
-    exabgp_rule.set_destination_subnet(
-    convert_subnet_from_string_to_binary_with_cidr_format("127.0.0.0/24"));
-    exabgp_rule.set_source_subnet(
-    convert_subnet_from_string_to_binary_with_cidr_format("4.0.0.0/24"));
+    exabgp_rule.set_destination_subnet(convert_subnet_from_string_to_binary_with_cidr_format("127.0.0.0/24"));
+    exabgp_rule.set_source_subnet(convert_subnet_from_string_to_binary_with_cidr_format("4.0.0.0/24"));
 
     exabgp_rule.set_action(my_action);
 
@@ -322,8 +312,7 @@ TEST(BgpFlowSpec, serialize_with_real_exabgp) {
         config_file.close();
     }
 
-    int system_ret_code =
-    system("/usr/src/exabgp/sbin/exabgp --test /tmp/exabgp_test_config.conf 2>/dev/null");
+    int system_ret_code = system("/usr/src/exabgp/sbin/exabgp --test /tmp/exabgp_test_config.conf 2>/dev/null");
 
     EXPECT_EQ(system_ret_code, 0);
 }
@@ -437,24 +426,22 @@ TEST(patricia, positive_lookup_ipv6_prefix) {
 TEST(serialize_attack_description, blank_attack) {
     attack_details current_attack;
     std::string result = serialize_attack_description(current_attack);
-    EXPECT_EQ(
-    result,
-    "Attack type: unknown\nInitial attack power: 0 packets per second\nPeak attack power: 0 "
-    "packets per second\nAttack direction: other\nAttack protocol: unknown\nTotal incoming "
-    "traffic: 0 mbps\nTotal outgoing traffic: 0 mbps\nTotal incoming pps: 0 packets per "
-    "second\nTotal outgoing pps: 0 packets per second\nTotal incoming flows: 0 flows per "
-    "second\nTotal outgoing flows: 0 flows per second\nAverage incoming traffic: 0 mbps\nAverage "
-    "outgoing traffic: 0 mbps\nAverage incoming pps: 0 packets per second\nAverage outgoing pps: 0 "
-    "packets per second\nAverage incoming flows: 0 flows per second\nAverage outgoing flows: 0 "
-    "flows per second\nIncoming ip fragmented traffic: 0 mbps\nOutgoing ip fragmented traffic: 0 "
-    "mbps\nIncoming ip fragmented pps: 0 packets per second\nOutgoing ip fragmented pps: 0 packets "
-    "per second\nIncoming tcp traffic: 0 mbps\nOutgoing tcp traffic: 0 mbps\nIncoming tcp pps: 0 "
-    "packets per second\nOutgoing tcp pps: 0 packets per second\nIncoming syn tcp traffic: 0 "
-    "mbps\nOutgoing syn tcp traffic: 0 mbps\nIncoming syn tcp pps: 0 packets per second\nOutgoing "
-    "syn tcp pps: 0 packets per second\nIncoming udp traffic: 0 mbps\nOutgoing udp traffic: 0 "
-    "mbps\nIncoming udp pps: 0 packets per second\nOutgoing udp pps: 0 packets per "
-    "second\nIncoming icmp traffic: 0 mbps\nOutgoing icmp traffic: 0 mbps\nIncoming icmp pps: 0 "
-    "packets per second\nOutgoing icmp pps: 0 packets per second\n");
+    EXPECT_EQ(result, "Attack type: unknown\nInitial attack power: 0 packets per second\nPeak attack power: 0 "
+                      "packets per second\nAttack direction: other\nAttack protocol: unknown\nTotal incoming "
+                      "traffic: 0 mbps\nTotal outgoing traffic: 0 mbps\nTotal incoming pps: 0 packets per "
+                      "second\nTotal outgoing pps: 0 packets per second\nTotal incoming flows: 0 flows per "
+                      "second\nTotal outgoing flows: 0 flows per second\nAverage incoming traffic: 0 mbps\nAverage "
+                      "outgoing traffic: 0 mbps\nAverage incoming pps: 0 packets per second\nAverage outgoing pps: 0 "
+                      "packets per second\nAverage incoming flows: 0 flows per second\nAverage outgoing flows: 0 "
+                      "flows per second\nIncoming ip fragmented traffic: 0 mbps\nOutgoing ip fragmented traffic: 0 "
+                      "mbps\nIncoming ip fragmented pps: 0 packets per second\nOutgoing ip fragmented pps: 0 packets "
+                      "per second\nIncoming tcp traffic: 0 mbps\nOutgoing tcp traffic: 0 mbps\nIncoming tcp pps: 0 "
+                      "packets per second\nOutgoing tcp pps: 0 packets per second\nIncoming syn tcp traffic: 0 "
+                      "mbps\nOutgoing syn tcp traffic: 0 mbps\nIncoming syn tcp pps: 0 packets per second\nOutgoing "
+                      "syn tcp pps: 0 packets per second\nIncoming udp traffic: 0 mbps\nOutgoing udp traffic: 0 "
+                      "mbps\nIncoming udp pps: 0 packets per second\nOutgoing udp pps: 0 packets per "
+                      "second\nIncoming icmp traffic: 0 mbps\nOutgoing icmp traffic: 0 mbps\nIncoming icmp pps: 0 "
+                      "packets per second\nOutgoing icmp pps: 0 packets per second\n");
 }
 
 TEST(serialize_attack_description_to_json, blank_attack) {

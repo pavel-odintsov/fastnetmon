@@ -81,7 +81,7 @@ uint32_t convert_ip_as_string_to_uint(string ip) {
 
 uint32_t convert_cidr_to_binary_netmask(int cidr) {
     uint32_t binary_netmask = 0xFFFFFFFF;
-    binary_netmask = binary_netmask << (32 - cidr);
+    binary_netmask          = binary_netmask << (32 - cidr);
     // htonl from host byte order to network
     // ntohl from network byte order to host
 
@@ -113,7 +113,7 @@ void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask) {
     // Iterate over significant subnet bits and ignore other
     for (int i = 31; i >= 32 - cidr_mask; i--) {
         uint32_t result_bit = netmask_as_int & (1 << i);
-        bool bit = result_bit == 0 ? false : true;
+        bool bit            = result_bit == 0 ? false : true;
         // cout<<"Insert: "<<bit<<" from position "<<i<<endl;
 
         // from the left - zeros, from the rigth - ones
@@ -129,7 +129,7 @@ void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask) {
                 // No element here, we should create it
                 tree_leaf* new_leaf = new tree_leaf;
                 new_leaf->right = new_leaf->left = NULL;
-                new_leaf->bit = bit;
+                new_leaf->bit                    = bit;
 
                 temp_root->right = new_leaf;
 
@@ -145,7 +145,7 @@ void insert_prefix_bitwise_tree(tree_leaf* root, string subnet, int cidr_mask) {
                 // No element here, we should create it
                 tree_leaf* new_leaf = new tree_leaf;
                 new_leaf->right = new_leaf->left = NULL;
-                new_leaf->bit = bit;
+                new_leaf->bit                    = bit;
 
                 temp_root->left = new_leaf;
 
@@ -175,7 +175,7 @@ bool fast_ip_lookup(tree_leaf* root, uint32_t ip) {
         // cout<<"bit"<<i<<endl;
 
         uint32_t result_bit = ip & (1 << i);
-        bool bit = result_bit == 0 ? false : true;
+        bool bit            = result_bit == 0 ? false : true;
 
         // Current node is terminal node
         if ((temp_root->left == NULL && temp_root->right == NULL)) {
@@ -259,13 +259,12 @@ int main() {
     networks_list_as_string.insert(networks_list_as_string.end(), network_list_from_config.begin(),
                                    network_list_from_config.end());
 
-    for (vector<string>::iterator ii = networks_list_as_string.begin();
-         ii != networks_list_as_string.end(); ++ii) {
+    for (vector<string>::iterator ii = networks_list_as_string.begin(); ii != networks_list_as_string.end(); ++ii) {
         vector<string> subnet_as_string;
         split(subnet_as_string, *ii, boost::is_any_of("/"), boost::token_compress_on);
         int cidr = atoi(subnet_as_string[1].c_str());
 
-        uint32_t subnet_as_int = convert_ip_as_string_to_uint(subnet_as_string[0]);
+        uint32_t subnet_as_int  = convert_ip_as_string_to_uint(subnet_as_string[0]);
         uint32_t netmask_as_int = convert_cidr_to_binary_netmask(cidr);
 
         insert_prefix_bitwise_tree(root, subnet_as_string[0], cidr);

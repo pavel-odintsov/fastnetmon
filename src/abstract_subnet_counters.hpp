@@ -3,18 +3,19 @@
 #include <unordered_map>
 
 // I keep these declaration here because of following error:
-// error: there are no arguments to ‘increment_outgoing_counters’ that depend on a template parameter, so a declaration of ‘increment_outgoing_counters’ must be available [-fpermissive]
+// error: there are no arguments to ‘increment_outgoing_counters’ that depend on a template parameter, so a declaration
+// of ‘increment_outgoing_counters’ must be available [-fpermissive]
 //  increment_outgoing_counters(counter_ptr, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
 void increment_incoming_counters(map_element_t* current_element,
-                                         simple_packet_t& current_packet,
-                                                                          uint64_t sampled_number_of_packets,
-                                                                                                           uint64_t sampled_number_of_bytes);
-                            
+                                 simple_packet_t& current_packet,
+                                 uint64_t sampled_number_of_packets,
+                                 uint64_t sampled_number_of_bytes);
+
 void build_speed_counters_from_packet_counters(map_element_t& new_speed_element, map_element_t* vector_itr, double speed_calc_period);
 void increment_outgoing_counters(map_element_t* current_element,
-                                         simple_packet_t& current_packet,
-                                                                          uint64_t sampled_number_of_packets,
-                                                                                                           uint64_t sampled_number_of_bytes);
+                                 simple_packet_t& current_packet,
+                                 uint64_t sampled_number_of_packets,
+                                 uint64_t sampled_number_of_bytes);
 void build_average_speed_counters_from_speed_counters(map_element_t* current_average_speed_element,
                                                       map_element_t& new_speed_element,
                                                       double exp_value,
@@ -151,4 +152,3 @@ template <typename T> class abstract_subnet_counters_t {
                                TrafficComparatorClass<std::pair<T, subnet_counter_t>>(sort_direction, sorter_type));
     }
 };
-

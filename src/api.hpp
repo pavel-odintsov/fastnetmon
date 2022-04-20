@@ -1,7 +1,7 @@
 
 Status FastnetmonApiServiceImpl::GetBanlist(::grpc::ServerContext* context,
-                  const ::fastmitigation::BanListRequest* request,
-                  ::grpc::ServerWriter< ::fastmitigation::BanListReply>* writer) {
+                                            const ::fastmitigation::BanListRequest* request,
+                                            ::grpc::ServerWriter<::fastmitigation::BanListReply>* writer) {
     logger << log4cpp::Priority::INFO << "API we asked for banlist";
 
     for (std::map<uint32_t, banlist_item_t>::iterator itr = ban_list.begin(); itr != ban_list.end(); ++itr) {
@@ -21,7 +21,7 @@ Status FastnetmonApiServiceImpl::GetBanlist(::grpc::ServerContext* context,
 
     for (auto itr : ban_list_copy) {
         BanListReply reply;
-        reply.set_ip_address( print_ipv6_cidr_subnet(itr.first) );
+        reply.set_ip_address(print_ipv6_cidr_subnet(itr.first));
         writer->Write(reply);
     }
 
@@ -29,28 +29,28 @@ Status FastnetmonApiServiceImpl::GetBanlist(::grpc::ServerContext* context,
 }
 
 Status FastnetmonApiServiceImpl::ExecuteBan(ServerContext* context,
-                  const fastmitigation::ExecuteBanRequest* request,
-                  fastmitigation::ExecuteBanReply* reply) {
+                                            const fastmitigation::ExecuteBanRequest* request,
+                                            fastmitigation::ExecuteBanReply* reply) {
     logger << log4cpp::Priority::INFO << "API we asked for ban for IP: " << request->ip_address();
 
     if (!validate_ipv6_or_ipv4_host(request->ip_address())) {
         logger << log4cpp::Priority::ERROR << "You specified malformed IP address";
         return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, "Malformed IP address");
-    }    
+    }
 
     // At this step IP should be valid IPv4 or IPv6 address
     bool ipv6 = false;
 
     if (request->ip_address().find(":") != std::string::npos) {
         ipv6 = true;
-    }    
+    }
 
     bool ipv4 = !ipv6;
 
-    uint32_t client_ip = 0; 
+    uint32_t client_ip = 0;
 
     subnet_ipv6_cidr_mask_t ipv6_address;
-    ipv6_address.cidr_prefix_length = 128; 
+    ipv6_address.cidr_prefix_length = 128;
 
     attack_details_t current_attack;
     current_attack.ipv6 = ipv6;
@@ -88,14 +88,15 @@ Status FastnetmonApiServiceImpl::ExecuteBan(ServerContext* context,
     }
 
     logger << log4cpp::Priority::INFO << "API call ban handlers manually";
-    call_ban_handlers(client_ip, ipv6_address, ipv6, current_attack, flow_attack_details, attack_detection_source_t::Automatic, "", empty_simple_packets_buffer); 
+    call_ban_handlers(client_ip, ipv6_address, ipv6, current_attack, flow_attack_details,
+                      attack_detection_source_t::Automatic, "", empty_simple_packets_buffer);
 
     return Status::OK;
 }
 
 Status FastnetmonApiServiceImpl::ExecuteUnBan(ServerContext* context,
-                    const fastmitigation::ExecuteBanRequest* request,
-                    fastmitigation::ExecuteBanReply* reply) {
+                                              const fastmitigation::ExecuteBanRequest* request,
+                                              fastmitigation::ExecuteBanReply* reply) {
     logger << log4cpp::Priority::INFO << "API: We asked for unban for IP: " << request->ip_address();
 
     if (!validate_ipv6_or_ipv4_host(request->ip_address())) {
@@ -131,7 +132,7 @@ Status FastnetmonApiServiceImpl::ExecuteUnBan(ServerContext* context,
         current_attack = ban_list[client_ip];
 
         logger << log4cpp::Priority::INFO << "API: call unban handlers";
-        
+
         logger << log4cpp::Priority::INFO << "API: remove IP from ban list";
 
         ban_list_mutex.lock();
@@ -157,9 +158,9 @@ Status FastnetmonApiServiceImpl::ExecuteUnBan(ServerContext* context,
         if (!get_details) {
             return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, "Could not get IPv6 blackhole details");
         }
-            
+
         ban_list_ipv6_ng.remove_from_blackhole(ipv6_address);
-    }   
+    }
 
     call_unban_handlers(client_ip, ipv6_address, ipv6, current_attack, attack_detection_source_t::Automatic);
 

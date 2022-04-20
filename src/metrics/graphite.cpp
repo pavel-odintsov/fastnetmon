@@ -1,8 +1,8 @@
 #include "graphite.hpp"
 
 
-#include "../fastnetmon_types.h"
 #include "../fast_library.h"
+#include "../fastnetmon_types.h"
 
 #include <vector>
 
@@ -70,8 +70,8 @@ bool push_hosts_traffic_counters_to_graphite() {
                     direction_as_string = "outgoing";
                 }
 
-                std::string graphite_current_prefix = graphite_prefix + ".hosts." +
-                                                      ip_as_string_with_dash_delimiters + "." + direction_as_string;
+                std::string graphite_current_prefix =
+                    graphite_prefix + ".hosts." + ip_as_string_with_dash_delimiters + "." + direction_as_string;
 
                 if (print_average_traffic_counts) {
                     graphite_current_prefix = graphite_current_prefix + ".average";
@@ -115,8 +115,8 @@ bool push_hosts_traffic_counters_to_graphite() {
         bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
 
         if (!graphite_put_result) {
-            logger << log4cpp::Priority::ERROR << "Can't store host load data to Graphite server "
-                   << graphite_host << " port: " << graphite_port;
+            logger << log4cpp::Priority::ERROR << "Can't store host load data to Graphite server " << graphite_host
+                   << " port: " << graphite_port;
             return false;
         }
     }
@@ -146,19 +146,17 @@ bool push_total_traffic_counters_to_graphite() {
                 flow_counter_for_this_direction = outgoing_total_flows_speed;
             }
 
-            graphite_data[graphite_prefix + ".total." + direction_as_string + ".flows"] =
-                flow_counter_for_this_direction;
+            graphite_data[graphite_prefix + ".total." + direction_as_string + ".flows"] = flow_counter_for_this_direction;
         }
 
         graphite_data[graphite_prefix + ".total." + direction_as_string + ".pps"] = speed_in_pps;
-        graphite_data[graphite_prefix + ".total." + direction_as_string + ".bps"] =
-            speed_in_bps * 8;
+        graphite_data[graphite_prefix + ".total." + direction_as_string + ".bps"] = speed_in_bps * 8;
 
         bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
 
         if (!graphite_put_result) {
-            logger << log4cpp::Priority::ERROR << "Can't store total load data to Graphite server "
-                   << graphite_host << " port: " << graphite_port;
+            logger << log4cpp::Priority::ERROR << "Can't store total load data to Graphite server " << graphite_host
+                   << " port: " << graphite_port;
             ;
             return false;
         }
@@ -182,26 +180,25 @@ bool push_network_traffic_counters_to_graphite() {
         // Replace / by dashes too
         std::replace(subnet_as_string_as_dash_delimiters.begin(), subnet_as_string_as_dash_delimiters.end(), '/', '_');
 
-        std::string current_prefix = graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + "."; 
+        std::string current_prefix = graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".";
 
         graphite_data[current_prefix + "incoming.pps"] = speed->in_packets;
         graphite_data[current_prefix + "outgoing.pps"] = speed->out_packets;
-        graphite_data[current_prefix + "incoming.bps"] = speed->in_bytes * 8; 
-        graphite_data[current_prefix + "outgoing.bps"] = speed->out_bytes * 8; 
-    }    
+        graphite_data[current_prefix + "incoming.bps"] = speed->in_bytes * 8;
+        graphite_data[current_prefix + "outgoing.bps"] = speed->out_bytes * 8;
+    }
 
 
     bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
 
     if (!graphite_put_result) {
-        logger << log4cpp::Priority::ERROR << "Can't store network load data to Graphite server "
-               << graphite_host << " port: " << graphite_port;
+        logger << log4cpp::Priority::ERROR << "Can't store network load data to Graphite server " << graphite_host
+               << " port: " << graphite_port;
         return false;
-    }    
+    }
 
     return true;
 }
-
 
 
 // This thread pushes speed counters to graphite
@@ -233,4 +230,3 @@ void graphite_push_thread() {
                << " sec " << graphite_thread_execution_time.tv_usec << " microseconds\n";
     }
 }
-

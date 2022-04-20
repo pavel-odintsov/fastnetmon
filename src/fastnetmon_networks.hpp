@@ -195,4 +195,3 @@ template <> struct hash<subnet_cidr_mask_t> {
 };
 
 } // namespace std
-

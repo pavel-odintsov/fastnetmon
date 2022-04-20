@@ -116,6 +116,3 @@ template <typename TemplateKeyType> class blackhole_ban_list_t {
     std::map<TemplateKeyType, banlist_item_t> ban_list_storage;
     std::mutex structure_mutex;
 };
-
-
-

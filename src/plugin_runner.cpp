@@ -68,11 +68,11 @@ void init_logging() {
 void process_packet(simple_packet& current_packet) {
     std::cout << print_simple_packet(current_packet);
 #ifdef DO_SUBNET_LOOKUP
-    unsigned long subnet = 0;
+    unsigned long subnet          = 0;
     unsigned int subnet_cidr_mask = 0;
 
-    direction packet_direction = get_packet_direction(lookup_tree, current_packet.src_ip,
-                                                      current_packet.dst_ip, subnet, subnet_cidr_mask);
+    direction packet_direction =
+        get_packet_direction(lookup_tree, current_packet.src_ip, current_packet.dst_ip, subnet, subnet_cidr_mask);
     std::cout << "direction: " << get_direction_name(packet_direction) << std::endl;
 #endif
 }
@@ -109,8 +109,7 @@ int main(int argc, char* argv[]) {
 
     std::vector<std::string> network_list_from_config = read_file_to_vector("/etc/networks_list");
 
-    for (std::vector<std::string>::iterator ii = network_list_from_config.begin();
-         ii != network_list_from_config.end(); ++ii) {
+    for (std::vector<std::string>::iterator ii = network_list_from_config.begin(); ii != network_list_from_config.end(); ++ii) {
         std::string network_address_in_cidr_form = *ii;
 
         make_and_lookup(lookup_tree, const_cast<char*>(network_address_in_cidr_form.c_str()));

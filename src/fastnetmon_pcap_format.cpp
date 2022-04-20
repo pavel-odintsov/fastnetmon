@@ -11,8 +11,7 @@ int pcap_reader(const char* pcap_file_path, pcap_packet_parser_callback pcap_par
     }
 
     struct fastnetmon_pcap_file_header pcap_header;
-    ssize_t file_header_readed_bytes =
-    read(filedesc, &pcap_header, sizeof(struct fastnetmon_pcap_file_header));
+    ssize_t file_header_readed_bytes = read(filedesc, &pcap_header, sizeof(struct fastnetmon_pcap_file_header));
 
     if (file_header_readed_bytes != sizeof(struct fastnetmon_pcap_file_header)) {
         printf("Can't read pcap file header");
@@ -33,8 +32,7 @@ int pcap_reader(const char* pcap_file_path, pcap_packet_parser_callback pcap_par
     while (1) {
         // printf("Start packet %d processing\n", read_packets);
         struct fastnetmon_pcap_pkthdr pcap_packet_header;
-        ssize_t packet_header_readed_bytes =
-        read(filedesc, &pcap_packet_header, sizeof(struct fastnetmon_pcap_pkthdr));
+        ssize_t packet_header_readed_bytes = read(filedesc, &pcap_packet_header, sizeof(struct fastnetmon_pcap_pkthdr));
 
         if (packet_header_readed_bytes != sizeof(struct fastnetmon_pcap_pkthdr)) {
             // We haven't any packets
@@ -56,8 +54,7 @@ int pcap_reader(const char* pcap_file_path, pcap_packet_parser_callback pcap_par
         }
 
         // printf("packet payload read\n");
-        pcap_parse_packet_function_ptr(packet_buffer, pcap_packet_header.orig_len,
-                                       pcap_packet_header.incl_len);
+        pcap_parse_packet_function_ptr(packet_buffer, pcap_packet_header.orig_len, pcap_packet_header.incl_len);
 
         // printf("Process packet %d\n", read_packets);
         read_packets++;
@@ -69,11 +66,11 @@ int pcap_reader(const char* pcap_file_path, pcap_packet_parser_callback pcap_par
 }
 
 bool fill_pcap_header(struct fastnetmon_pcap_file_header* pcap_header, bpf_u_int32 snap_length) {
-    pcap_header->magic = 0xa1b2c3d4;
+    pcap_header->magic         = 0xa1b2c3d4;
     pcap_header->version_major = 2;
     pcap_header->version_minor = 4;
-    pcap_header->thiszone = 0;
-    pcap_header->sigfigs = 0;
+    pcap_header->thiszone      = 0;
+    pcap_header->sigfigs       = 0;
     // TODO: fix this!!!
     pcap_header->snaplen = snap_length;
     // http://www.tcpdump.org/linktypes.html

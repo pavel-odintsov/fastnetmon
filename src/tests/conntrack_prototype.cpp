@@ -16,12 +16,12 @@
 #define BIG_CONSTANT(x) (x##LLU)
 uint64_t MurmurHash64A(const void* key, int len, uint64_t seed) {
     const uint64_t m = BIG_CONSTANT(0xc6a4a7935bd1e995);
-    const int r = 47;
+    const int r      = 47;
 
     uint64_t h = seed ^ (len * m);
 
     const uint64_t* data = (const uint64_t*)key;
-    const uint64_t* end = data + (len / 8);
+    const uint64_t* end  = data + (len / 8);
 
     while (data != end) {
         uint64_t k = *data++;
@@ -77,14 +77,13 @@ class conntrack_hash_struct_for_simple_packet_t {
 };
 
 // Extract only important for us fields from main simple_packet structure
-bool convert_simple_packet_toconntrack_hash_struct(simple_packet_t& packet,
-                                                   conntrack_hash_struct_for_simple_packet_t& conntrack_struct) {
+bool convert_simple_packet_toconntrack_hash_struct(simple_packet_t& packet, conntrack_hash_struct_for_simple_packet_t& conntrack_struct) {
     conntrack_struct.src_ip = packet.src_ip;
     conntrack_struct.dst_ip = packet.dst_ip;
 
     conntrack_struct.protocol = packet.protocol;
 
-    conntrack_struct.source_port = packet.source_port;
+    conntrack_struct.source_port      = packet.source_port;
     conntrack_struct.destination_port = packet.destination_port;
 }
 
@@ -93,7 +92,7 @@ typedef std::vector<conntrack_hash_struct_for_simple_packet_t> vector_of_connetr
 class connection_tracking_fast_storage_t {
     public:
     connection_tracking_fast_storage_t(unsigned int structure_size) {
-        murmur_seed = 13;
+        murmur_seed     = 13;
         max_vector_size = 0;
 
         number_of_buckets = structure_size;
@@ -102,8 +101,7 @@ class connection_tracking_fast_storage_t {
     }
 
     uint64_t get_bucket_number(conntrack_hash_struct_for_simple_packet_t& element) {
-        uint64_t conntrack_hash =
-        MurmurHash64A(&element, sizeof(conntrack_hash_struct_for_simple_packet_t), murmur_seed);
+        uint64_t conntrack_hash = MurmurHash64A(&element, sizeof(conntrack_hash_struct_for_simple_packet_t), murmur_seed);
 
         return conntrack_hash % number_of_buckets;
     }
@@ -126,8 +124,7 @@ class connection_tracking_fast_storage_t {
             return false;
         }
 
-        vector_of_connetrack_structs_t::iterator itr =
-        std::find(vector_pointer->begin(), vector_pointer->end(), *element);
+        vector_of_connetrack_structs_t::iterator itr = std::find(vector_pointer->begin(), vector_pointer->end(), *element);
 
         if (itr == vector_pointer->end()) {
             return false;
