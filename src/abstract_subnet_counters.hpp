@@ -2,6 +2,7 @@
 
 #include <mutex>
 #include <unordered_map>
+#include <algorithm>
 
 // I keep these declaration here because of following error:
 // error: there are no arguments to ‘increment_outgoing_counters’ that depend on a template parameter, so a declaration
