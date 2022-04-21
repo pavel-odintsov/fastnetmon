@@ -14,7 +14,6 @@ jobs:
      - run: echo $CR_PAT | docker login ghcr.io -u USERNAME --password-stdin
      - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:1.2.0
      - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:latest
-
   build_ubuntu:
     parameters:
       docker_image:
@@ -235,3 +234,4 @@ workflows:
           docker_image: "debian:bullseye"
           debian_version: "11"
           name: "debian11"
+      - build_docker
