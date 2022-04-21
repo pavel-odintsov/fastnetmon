@@ -257,13 +257,13 @@ workflows:
           name: "ubuntu1404"
       - build_debian:
           docker_image: "debian:stretch"
-          ubuntu_version: "9"
+          debian_version: "9"
           name: "debian9"
-      - build_ubuntu:
+      - build_debian:
           docker_image: "debian:buster"
-          ubuntu_version: "10"
+          debian_version: "10"
           name: "debian10"
-      - build_ubuntu:
+      - build_debian:
           docker_image: "debian:bullseye"
-          ubuntu_version: "11"
+          debian_version: "11"
           name: "debian11"
