@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
 
         reading_file.close();
 
-        printw(screen_buffer.str().c_str());
+        addstr(screen_buffer.str().c_str());
         // update screen
         refresh();
     }
