@@ -554,23 +554,26 @@ sub install_init_scripts {
 }
 
 sub install_log4cpp {
-    my $distro_file_name = 'log4cpp-1.1.1.tar.gz';
-    my $log4cpp_url = 'https://sourceforge.net/projects/log4cpp/files/log4cpp-1.1.x%20%28new%29/log4cpp-1.1/log4cpp-1.1.1.tar.gz/download';
-    my $log4cpp_install_path = "$library_install_folder/log4cpp1.1.1";
+    my $log_cpp_version_short = '1.1.3';
+
+    my $log4cpp_install_path = "$library_install_folder/log4cpp1.1.3";
 
     if (-e $log4cpp_install_path) {
-        print "log4cpp was installed\n";
-        return 1;
-    }
+    warn "We have log4cpp already, skip build\n";
+    return 1;
+    }    
+
+    my $distro_file_name = "log4cpp-$log_cpp_version_short.tar.gz";
+    my $log4cpp_url = "https://sourceforge.net/projects/log4cpp/files/log4cpp-1.1.x%20%28new%29/log4cpp-1.1/log4cpp-$log_cpp_version_short.tar.gz/download";
 
     chdir $temp_folder_for_building_project;
 
     print "Download log4cpp sources\n";
-    my $log4cpp_download_result = download_file($log4cpp_url, $distro_file_name, '23aa5bd7d6f79992c92bad3e1c6d64a34f8fcf68');
+    my $log4cpp_download_result = download_file($log4cpp_url, $distro_file_name, '74f0fea7931dc1bc4e5cd34a6318cd2a51322041');
 
     unless ($log4cpp_download_result) {
-        fast_die("Can't download log4cpp");
-    }
+        die "Can't download log4cpp\n";
+    }    
 
     print "Unpack log4cpp sources\n";
     exec_command("tar -xf $distro_file_name");
@@ -578,20 +581,20 @@ sub install_log4cpp {
 
     print "Build log4cpp\n";
 
-    my $configure_res = '';
-
     # TODO: we need some more reliable way to specify options here
     if ($configure_options) {
-        $configure_res = exec_command("$configure_options ./configure --prefix=$log4cpp_install_path");
+        exec_command("$configure_options ./configure --prefix=$log4cpp_install_path");
     } else {
-        $configure_res = exec_command("./configure --prefix=$log4cpp_install_path");
-    }
+        exec_command("./configure --prefix=$log4cpp_install_path");
+    }    
 
-    if (!$configure_res) {
-        fast_die("Cannot configure log4cpp");
-    }
+    my $make_result = exec_command("make $make_options install"); 
 
-    exec_command("make $make_options install"); 
+    if (!$make_result) {
+        print "Make for log4cpp failed\n";
+    }    
+    
+    return 1;  
 }
 
 sub install_grpc_dependencies {
