@@ -4,6 +4,17 @@ parameters:
     type: string
     default: "1.2.1"
 jobs:
+  build_docker:
+    machine:
+      image: ubuntu-2004:current
+    steps:
+     - checkout
+     - run: docker build -t pavel-odintsov/fastnetmon-community:1.2.0 -t pavel-odintsov/fastnetmon-community:latest - < src/Dockerfile
+     - run: sudo docker images
+     - run: echo $CR_PAT | docker login ghcr.io -u USERNAME --password-stdin
+     - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:1.2.0
+     - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:latest
+
   build_ubuntu:
     parameters:
       docker_image:
