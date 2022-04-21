@@ -165,6 +165,14 @@ if (ENABLE_NETMAP_SUPPORT)
     add_definitions(-DNETMAP_PLUGIN)
 endif()
 
+# Generate capnp bindings
+ADD_CUSTOM_COMMAND(
+    OUTPUT ${PROJECT_SOURCE_DIR}/simple_packet_capnp/simple_packet.capnp.c++
+    DEPENDS ${PROJECT_SOURCE_DIR}/simple_packet_capnp/simple_packet.capnp
+    COMMAND "LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH}" "PATH=$PATH:/opt/${CAPNP_CUSTOM_INSTALL_PATH}/bin" ${CAPNP_CUSTOM_INSTALL_PATH}/bin/capnp compile --output c++:${PROJECT_SOURCE_DIR}/simple_packet_capnp --src-prefix=${PROJECT_SOURCE_DIR}/simple_packet_capnp ${PROJECT_SOURCE_DIR}/simple_packet_capnp/simple_packet.capnp
+    COMMENT "Build Cap'n'Proto binding for C++"
+)
+
 add_library(simple_packet_capnp STATIC simple_packet_capnp/simple_packet.capnp.c++)
 
 # Our LPM library
