@@ -121,9 +121,14 @@ jobs:
       - run: ldd /opt/fastnetmon/fastnetmon
       - run: ldd /opt/fastnetmon/fastnetmon_client
       - run: ldd /opt/fastnetmon/fastnetmon_api_client
-  centos7:
+  build_centos:
+    parameters:
+      docker_image:
+        type: string
+      centos_version:
+        type: string
     docker:
-      - image: centos:centos7
+      - image: << parameters.docker_image >>
     resource_class: large
     steps:
       - checkout
@@ -166,64 +171,10 @@ jobs:
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
-      - run: src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> centos 7
+      - run: src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> centos << parameters.centos_version >>
       - store_artifacts:
-          path: /tmp/result_data/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el7.x86_64.rpm
-      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/result_data/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el7.x86_64.rpm s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/centos/7/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el7.x86_64.rpm
-      - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
-      - run: ldd /opt/fastnetmon/fastnetmon
-      - run: ldd /opt/fastnetmon/fastnetmon_client
-      - run: ldd /opt/fastnetmon/fastnetmon_api_client
-      - run: /opt/fastnetmon/fastnetmon --configuration_check
-  centos8:
-    docker:
-      - image: almalinux:8
-    resource_class: large
-    steps:
-      - checkout
-      - run: yum install -y perl wget python3-pip
-      - run: pip3 install s3cmd
-      - run:
-          name: install_required_packages
-          no_output_timeout: 20m 
-          command: perl src/fastnetmon_build.pl --install_dependency_packages_only
-      - restore_cache:
-          keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_31_10_2020"
-      - restore_cache:
-          keys:
-            - "{{ .Environment.CIRCLE_JOB }}_gcc_25_10_2020"
-      - run:
-          name: install_gcc
-          no_output_timeout: 120m 
-          command: perl src/fastnetmon_build.pl --build_gcc_only
-      - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_gcc_25_10_2020"
-          paths:
-            - /opt/gcc930
-      - run:
-          name: install_dependencies
-          no_output_timeout: 180m 
-          command: perl src/fastnetmon_build.pl --build_dependencies_only
-      - run:
-          name: collect_debug
-          command: cat /tmp/fastnetmon_install.log
-          when: on_fail
-      - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_31_10_2020"
-          paths:
-            - /opt
-            - /usr/include/linux/pf_ring.h
-      - run: perl src/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
-      - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
-      - store_artifacts:
-          path: /opt/fastnetmon_libraries_bundle.tar.gz
-      - store_artifacts:
-          path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> centos 8
-      - store_artifacts:
-          path: /tmp/result_data/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el8.x86_64.rpm
-      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/result_data/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el8.x86_64.rpm s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/centos/8/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el8.x86_64.rpm
+          path: /tmp/result_data/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el<< parameters.centos_version >>.x86_64.rpm
+      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/result_data/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el<< parameters.centos_version >>.x86_64.rpm s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/centos/<< parameters.centos_version >>/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el<< parameters.centos_version >>.x86_64.rpm
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
       - run: ldd /opt/fastnetmon/fastnetmon
       - run: ldd /opt/fastnetmon/fastnetmon_client
@@ -233,8 +184,14 @@ workflows:
   version: 2
   all_distros:
     jobs:
-      - centos7
-      - centos8
+      - build_centos7:
+          docker_image: centos:centos7
+          centos_version: 7
+          name: "centos7"
+      - build_centos8:
+          docker_image: almalinux:8
+          centos_version: 8
+          name: "centos8"
       - build_ubuntu:
           docker_image: "ubuntu:jammy"
           ubuntu_version: "22.04"
