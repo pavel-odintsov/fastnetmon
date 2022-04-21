@@ -4,9 +4,14 @@ parameters:
     type: string
     default: "1.2.1"
 jobs:
-  ubuntu2204:
+  build_ubuntu:
+    parameters:
+      docker_image:
+        type: string
+      ubuntu_version:
+        type: string
     docker:
-      - image: ubuntu:jammy
+      - image: << parameters.docker_image >>
     resource_class: large
     steps:
       - checkout
@@ -49,226 +54,10 @@ jobs:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> ubuntu 22.04
+      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> ubuntu << parameters.ubuntu_version >>
       - store_artifacts:
           path: /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
-      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/ubuntu/22.04/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
-      - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
-      - run: ldd /opt/fastnetmon/fastnetmon
-      - run: ldd /opt/fastnetmon/fastnetmon_client
-      - run: ldd /opt/fastnetmon/fastnetmon_api_client
-      - run: /opt/fastnetmon/fastnetmon --configuration_check
-  ubuntu2004:
-    docker:
-      - image: ubuntu:focal
-    resource_class: large
-    steps:
-      - checkout
-      - run: apt-get update; true
-      - run: apt-get install -y perl wget python3-pip
-      - run: pip3 install s3cmd
-      - run:
-          name: install_required_packages
-          no_output_timeout: 20m
-          command: perl src/fastnetmon_build.pl --install_dependency_packages_only
-      - restore_cache:
-          keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_31_10_2020"
-      - restore_cache:
-          keys:
-            - "{{ .Environment.CIRCLE_JOB }}_gcc_25_10_2020"
-      - run:
-          name: install_gcc
-          no_output_timeout: 120m 
-          command: perl src/fastnetmon_build.pl --build_gcc_only
-      - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_gcc_25_10_2020"
-          paths:
-            - /opt/gcc930
-      - run:
-          name: install_dependencies
-          no_output_timeout: 180m
-          command: perl src/fastnetmon_build.pl --build_dependencies_only
-      - run:
-          name: collect_debug
-          command: cat /tmp/fastnetmon_install.log
-          when: on_fail
-      - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_31_10_2020"
-          paths:
-            - /opt
-      - run: perl src/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
-      - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
-      - store_artifacts:
-          path: /opt/fastnetmon_libraries_bundle.tar.gz
-      - store_artifacts:
-          path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> ubuntu 20.04
-      - store_artifacts:
-          path: /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
-      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/ubuntu/20.04/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
-      - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
-      - run: ldd /opt/fastnetmon/fastnetmon
-      - run: ldd /opt/fastnetmon/fastnetmon_client
-      - run: ldd /opt/fastnetmon/fastnetmon_api_client
-      - run: /opt/fastnetmon/fastnetmon --configuration_check
-  ubuntu1804:
-    docker:
-      - image: ubuntu:bionic
-    resource_class: large
-    steps:
-      - checkout
-      - run: apt-get update; true
-      - run: apt-get install -y perl wget python3-pip
-      - run: pip3 install s3cmd
-      - run:
-          name: install_required_packages
-          no_output_timeout: 20m
-          command: perl src/fastnetmon_build.pl --install_dependency_packages_only
-      - restore_cache:
-          keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_31_10_2020"
-      - restore_cache:
-          keys:
-            - "{{ .Environment.CIRCLE_JOB }}_gcc_25_10_2020"
-      - run:
-          name: install_gcc
-          no_output_timeout: 120m 
-          command: perl src/fastnetmon_build.pl --build_gcc_only
-      - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_gcc_25_10_2020"
-          paths:
-            - /opt/gcc930
-      - run:
-          name: install_dependencies
-          no_output_timeout: 180m
-          command: perl src/fastnetmon_build.pl --build_dependencies_only
-      - run:
-          name: collect_debug
-          command: cat /tmp/fastnetmon_install.log
-          when: on_fail
-      - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_31_10_2020"
-          paths:
-            - /opt
-      - run: perl src/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
-      - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
-      - store_artifacts:
-          path: /opt/fastnetmon_libraries_bundle.tar.gz
-      - store_artifacts:
-          path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> ubuntu 18.04
-      - store_artifacts:
-          path: /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
-      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/ubuntu/18.04/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
-      - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
-      - run: ldd /opt/fastnetmon/fastnetmon
-      - run: ldd /opt/fastnetmon/fastnetmon_client
-      - run: ldd /opt/fastnetmon/fastnetmon_api_client
-      - run: /opt/fastnetmon/fastnetmon --configuration_check
-  ubuntu1604:
-    docker:
-      - image: ubuntu:xenial
-    resource_class: large
-    steps:
-      - checkout
-      - run: apt-get update; true
-      - run: apt-get install -y perl wget python3-pip
-      - run: pip3 install s3cmd
-      - run:
-          name: install_required_packages
-          no_output_timeout: 20m
-          command: perl src/fastnetmon_build.pl --install_dependency_packages_only
-      - restore_cache:
-          keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_31_10_2020"
-      - restore_cache:
-          keys:
-            - "{{ .Environment.CIRCLE_JOB }}_gcc_25_10_2020"
-      - run:
-          name: install_gcc
-          no_output_timeout: 120m 
-          command: perl src/fastnetmon_build.pl --build_gcc_only
-      - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_gcc_25_10_2020"
-          paths:
-            - /opt/gcc930
-      - run:
-          name: install_dependencies
-          no_output_timeout: 180m
-          command: perl src/fastnetmon_build.pl --build_dependencies_only
-      - run:
-          name: collect_debug
-          command: cat /tmp/fastnetmon_install.log
-          when: on_fail
-      - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_31_10_2020"
-          paths:
-            - /opt
-      - run: perl src/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
-      - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
-      - store_artifacts:
-          path: /opt/fastnetmon_libraries_bundle.tar.gz
-      - store_artifacts:
-          path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> ubuntu 16.04
-      - store_artifacts:
-          path: /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
-      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/ubuntu/16.04/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
-      - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
-      - run: ldd /opt/fastnetmon/fastnetmon
-      - run: ldd /opt/fastnetmon/fastnetmon_client
-      - run: ldd /opt/fastnetmon/fastnetmon_api_client
-      - run: /opt/fastnetmon/fastnetmon --configuration_check
-  ubuntu1404:
-    docker:
-      - image: ubuntu:trusty
-    resource_class: large
-    steps:
-      - checkout
-      - run: apt-get update; true
-      - run: apt-get install -y perl wget python3-pip
-      - run: pip3 install s3cmd
-      - run:
-          name: install_required_packages
-          no_output_timeout: 20m
-          command: perl src/fastnetmon_build.pl --install_dependency_packages_only
-      - restore_cache:
-          keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_31_10_2020"
-      - restore_cache:
-          keys:
-            - "{{ .Environment.CIRCLE_JOB }}_gcc_25_10_2020"
-      - run:
-          name: install_gcc
-          no_output_timeout: 120m 
-          command: perl src/fastnetmon_build.pl --build_gcc_only
-      - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_gcc_25_10_2020"
-          paths:
-            - /opt/gcc930
-      - run:
-          name: install_dependencies
-          no_output_timeout: 180m
-          command: perl src/fastnetmon_build.pl --build_dependencies_only
-      - run:
-          name: collect_debug
-          command: cat /tmp/fastnetmon_install.log
-          when: on_fail
-      - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_31_10_2020"
-          paths:
-            - /opt
-      - run: perl src/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
-      - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
-      - store_artifacts:
-          path: /opt/fastnetmon_libraries_bundle.tar.gz
-      - store_artifacts:
-          path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> ubuntu 14.04
-      - store_artifacts:
-          path: /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
-      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/ubuntu/14.04/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
+      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/ubuntu/<< parameters.ubuntu_version >>/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
       - run: ldd /opt/fastnetmon/fastnetmon
       - run: ldd /opt/fastnetmon/fastnetmon_client
@@ -552,10 +341,25 @@ workflows:
       - debian9
       - debian10
       - debian11
-      - ubuntu1404
-      - ubuntu1604
-      - ubuntu1804
-      - ubuntu2004
-      - ubuntu2204
       - centos7
       - centos8
+      - build_ubuntu:
+          docker_image: "ubuntu:jammy"
+          ubuntu_version: "22.04"
+          name: "ubuntu2204"
+      - build_ubuntu:
+          docker_image: "ubuntu:focal"
+          ubuntu_version: "20.04"
+          name: "ubuntu2004"
+      - build_ubuntu:
+          docker_image: "ubuntu:bionic"
+          ubuntu_version: "18.04"
+          name: "ubuntu1804"
+      - build_ubuntu:
+          docker_image: "ubuntu:xenial"
+          ubuntu_version: "16.04"
+          name: "ubuntu1604"
+      - build_ubuntu:
+          docker_image: "ubuntu:trusty"
+          ubuntu_version: "14.04"
+          name: "ubuntu1404"
