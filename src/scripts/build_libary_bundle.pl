@@ -38,7 +38,7 @@ my @our_libraries = qw(
 boost_1_74_0
 json-c-0.13
 libicu_65_1
-log4cpp1.1.1
+log4cpp1.1.3
 gobgp_2_17_0
 grpc_1_30_2
 libhiredis_0_13 
