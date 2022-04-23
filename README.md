@@ -28,7 +28,7 @@ Supported packet capture engines
 - PCAP
 - AF_PACKET (recommended)
 - Netmap (deprecated)
-- PF_RING / PF_RING ZC (deprecated, availavle only for CentOS 6 in 1.2.0)
+- PF_RING / PF_RING ZC (deprecated, available only for CentOS 6 in 1.2.0)
 
 You can check out the [comparison table](https://fastnetmon.com/docs/capture_backends/) for all available packet capture engines.
 
