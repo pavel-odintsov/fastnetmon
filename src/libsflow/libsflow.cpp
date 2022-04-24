@@ -31,8 +31,8 @@ std::string sflow_parser_log_prefix = "sflow_parser ";
 #endif
 
 #define FMT_HEADER_ONLY
-#include "fmt/compile.h"
-#include "fmt/format.h"
+#include "../fmt/compile.h"
+#include "../fmt/format.h"
 
 // Type safe versions of ntohl, ntohs with type control
 uint16_t strict_ntoh(uint16_t value) {
