@@ -40,6 +40,9 @@ bool sflow_read_packet_length_from_ip_header = false;
 // Number of failed receives
 uint64_t udp_receive_errors = 0;
 
+// Number of eagains
+uint64_t udp_receive_eagain = 0;
+
 // sFLOW v4 specification: http://www.sflow.org/rfc3176.txt
 
 std::string plugin_name       = "sflow";
@@ -78,6 +81,40 @@ uint64_t sflow_extended_switch_data_records = 0;
 
 // For gateway data
 uint64_t sflow_extended_gateway_data_records = 0;
+
+// Number of packets for unknown header protocol
+uint64_t sflow_unknown_header_protocol = 0;
+
+uint64_t sflow_ipv4_header_protocol = 0;
+
+uint64_t sflow_ipv6_header_protocol = 0;
+
+std::vector<system_counter_t> get_sflow_stats() {
+    std::vector<system_counter_t> counters;
+
+    counters.push_back(system_counter_t("sflow_raw_udp_packets_received", raw_udp_packets_received));
+    counters.push_back(system_counter_t("sflow_udp_receive_errors", udp_receive_errors));
+    counters.push_back(system_counter_t("sflow_udp_receive_eagain", udp_receive_eagain));
+    counters.push_back(system_counter_t("sflow_total_packets", sflow_total_packets));
+    counters.push_back(system_counter_t("sflow_bad_packets", sflow_bad_packets));
+    counters.push_back(system_counter_t("sflow_flow_samples", sflow_flow_samples));
+    counters.push_back(system_counter_t("sflow_bad_flow_samples", sflow_bad_flow_samples));
+    counters.push_back(system_counter_t("sflow_padding_flow_sample", sflow_padding_flow_sample));
+    counters.push_back(system_counter_t("sflow_with_padding_at_the_end_of_packet", sflow_with_padding_at_the_end_of_packet));
+    counters.push_back(system_counter_t("sflow_parse_error_nested_header", sflow_parse_error_nested_header));
+    counters.push_back(system_counter_t("sflow_counter_sample", sflow_counter_sample));
+    counters.push_back(system_counter_t("sflow_raw_packet_headers_total", sflow_raw_packet_headers_total));
+    counters.push_back(system_counter_t("sflow_ipv4_header_protocol", sflow_ipv4_header_protocol));
+    counters.push_back(system_counter_t("sflow_ipv6_header_protocol", sflow_ipv6_header_protocol));
+    counters.push_back(system_counter_t("sflow_unknown_header_protocol", sflow_unknown_header_protocol));
+    counters.push_back(system_counter_t("sflow_extended_router_data_records", sflow_extended_router_data_records));
+
+
+    counters.push_back(system_counter_t("sflow_extended_switch_data_records", sflow_extended_switch_data_records));
+    counters.push_back(system_counter_t("sflow_extended_gateway_data_records", sflow_extended_gateway_data_records));
+
+    return counters;
+}
 
 // Prototypes
 
@@ -193,6 +230,18 @@ void start_sflow_collector(std::string interface_for_binding, unsigned int sflow
 
     setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&tv, sizeof(struct timeval));
 
+    int receive_buffer     = 0;
+    socklen_t value_length = sizeof(receive_buffer);
+
+    // Get current read buffer size
+    int get_buffer_size_res = getsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &receive_buffer, &value_length);
+
+    if (get_buffer_size_res != 0) {
+        logger << log4cpp::Priority::ERROR << "Cannot retrieve default receive buffer size for sFlow";
+    } else {
+        logger << log4cpp::Priority::INFO << "Default sFlow receive buffer size: " << receive_buffer << " bytes";
+    }
+
     while (true) {
         struct sockaddr_in client_addr;
         socklen_t address_len = sizeof(client_addr);
@@ -215,13 +264,13 @@ void start_sflow_collector(std::string interface_for_binding, unsigned int sflow
 
             parse_sflow_v5_packet((uint8_t*)udp_buffer, received_bytes, client_ipv4_address);
         } else {
-            udp_receive_errors++;
-
             if (received_bytes == -1) {
 
                 if (errno == EAGAIN) {
                     // We got timeout, it's OK!
+                    udp_receive_eagain++;
                 } else {
+                    udp_receive_errors++;
                     logger << log4cpp::Priority::ERROR << plugin_log_prefix << "data receive failed";
                 }
             }
@@ -259,6 +308,7 @@ bool process_sflow_flow_sample(uint8_t* data_pointer,
     uint8_t* flow_record_zone_start = data_pointer + sflow_sample_header_unified_accessor.get_original_payload_length();
 
     vector_tuple_t vector_tuple;
+    vector_tuple.reserve(sflow_sample_header_unified_accessor.get_number_of_flow_records());
 
     bool padding_found = false;
 
@@ -298,21 +348,39 @@ bool process_sflow_flow_sample(uint8_t* data_pointer,
             memcpy(&sflow_raw_protocol_header, payload_ptr, sizeof(sflow_raw_protocol_header_t));
 
             sflow_raw_protocol_header.network_to_host_byte_order();
-            // sflow_raw_protocol_header.print();
+            // logger << log4cpp::Priority::DEBUG << "Raw protocol header: " << sflow_raw_protocol_header.print();
 
             uint8_t* header_payload_pointer = payload_ptr + sizeof(sflow_raw_protocol_header_t);
 
-            // We could enable this new parser for testing purposes
-            auto result = parse_raw_packet_to_simple_packet_full_ng(header_payload_pointer,
-                                                                    sflow_raw_protocol_header.frame_length_before_sampling,
-                                                                    sflow_raw_protocol_header.header_size, packet,
-                                                                    sflow_read_packet_length_from_ip_header);
+            if (sflow_raw_protocol_header.header_protocol == SFLOW_HEADER_PROTOCOL_ETHERNET) {
 
-            if (result != network_data_stuctures::parser_code_t::success) {
-                sflow_parse_error_nested_header++;
+                // We could enable this new parser for testing purpose
+                auto result = parse_raw_packet_to_simple_packet_full_ng(header_payload_pointer,
+                                                                        sflow_raw_protocol_header.frame_length_before_sampling,
+                                                                        sflow_raw_protocol_header.header_size, packet,
+                                                                        sflow_read_packet_length_from_ip_header);
 
-                logger << log4cpp::Priority::DEBUG << plugin_log_prefix
-                       << "Cannot parse nested packet using ng parser: " << parser_code_to_string(result);
+                if (result != network_data_stuctures::parser_code_t::success) {
+                    sflow_parse_error_nested_header++;
+
+                    logger << log4cpp::Priority::DEBUG << plugin_log_prefix
+                           << "Cannot parse nested packet using ng parser: " << parser_code_to_string(result);
+
+                    return false;
+                }
+            } else if (sflow_raw_protocol_header.header_protocol == SFLOW_HEADER_PROTOCOL_IPv4) {
+                // It's IPv4 without Ethernet header at all
+                sflow_ipv4_header_protocol++;
+
+                return false;
+            } else if (sflow_raw_protocol_header.header_protocol == SFLOW_HEADER_PROTOCOL_IPv6) {
+                // It's IPv6 without Ethernet header at all
+                sflow_ipv6_header_protocol++;
+
+                return false;
+            } else {
+                // Something really unusual, MPLS?
+                sflow_unknown_header_protocol++;
 
                 return false;
             }
@@ -324,8 +392,10 @@ bool process_sflow_flow_sample(uint8_t* data_pointer,
 
             packet.sample_ratio = sflow_sample_header_unified_accessor.sampling_rate;
 
-            // std::cout << print_simple_packet(packet) << std::endl;
+            packet.input_interface  = sflow_sample_header_unified_accessor.input_port_index;
+            packet.output_interface = sflow_sample_header_unified_accessor.output_port_index;
 
+            // std::cout << print_simple_packet(packet) << std::endl;
         } else if (record_type == SFLOW_RECORD_TYPE_EXTENDED_ROUTER_DATA) {
             sflow_extended_router_data_records++;
         } else if (record_type == SFLOW_RECORD_TYPE_EXTENDED_SWITCH_DATA) {
@@ -396,6 +466,7 @@ void parse_sflow_v5_packet(uint8_t* payload_ptr, unsigned int payload_length, ui
     }
 
     vector_sample_tuple_t samples_vector;
+    samples_vector.reserve(sflow_header_accessor.get_datagram_samples_count());
 
     uint8_t* samples_block_start = payload_ptr + sflow_header_accessor.get_original_payload_length();
 
@@ -424,8 +495,6 @@ void parse_sflow_v5_packet(uint8_t* payload_ptr, unsigned int payload_length, ui
         int32_t integer_format = std::get<1>(sample);
         uint8_t* data_pointer  = std::get<2>(sample);
         size_t data_length     = std::get<3>(sample);
-
-        uint8_t* current_packet_end = data_pointer + data_length;
 
         if (enterprise == 0) {
             sflow_sample_type_t sample_format = sflow_sample_type_from_integer(integer_format);
@@ -484,6 +553,7 @@ bool process_sflow_counter_sample(uint8_t* data_pointer,
     }
 
     counter_record_sample_vector_t counter_record_sample_vector;
+    counter_record_sample_vector.reserve(sflow_counter_header_unified_accessor.get_number_of_counter_records());
 
     bool get_all_counter_records_result =
         get_all_counter_records(counter_record_sample_vector,
