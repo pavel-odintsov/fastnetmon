@@ -30,6 +30,10 @@ std::string sflow_parser_log_prefix = "sflow_parser ";
 #include <sys/endian.h>
 #endif
 
+#define FMT_HEADER_ONLY
+#include "fmt/compile.h"
+#include "fmt/format.h"
+
 // Type safe versions of ntohl, ntohs with type control
 uint16_t strict_ntoh(uint16_t value) {
     return ntohs(value);
@@ -68,18 +72,10 @@ unsigned int get_flow_enum_type_as_number(const sflow_sample_type_t& value) {
     return static_cast<std::underlying_type<sflow_sample_type_t>::type>(value);
 }
 
-std::string build_ipv4_address_from_array(std::array<uint8_t, 4> ipv4_array_address) {
-    std::stringstream buffer;
-
-    for (int index = 0; index < 4; index++) {
-        buffer << int(ipv4_array_address[index]);
-
-        if (index + 1 != 4) {
-            buffer << ".";
-        }
-    }
-
-    return buffer.str();
+void build_ipv4_address_from_array(std::array<uint8_t, 4> ipv4_array_address, std::string& output_string) {
+    // Use most efficient way to implement this transformation
+    output_string = fmt::format(FMT_COMPILE("{}.{}.{}.{}"), int(ipv4_array_address[0]), int(ipv4_array_address[1]),
+                                int(ipv4_array_address[2]), int(ipv4_array_address[3]));
 }
 
 std::string build_ipv6_address_from_array(std::array<uint8_t, 16> ipv6_array_address) {
@@ -126,6 +122,7 @@ bool get_records(vector_tuple_t& vector_tuple,
         int32_t element_type   = get_int_value_by_32bit_shift(flow_record_start, 0);
         int32_t element_length = get_int_value_by_32bit_shift(flow_record_start, 1);
 
+
         // sFlow v5 standard does not constrain size of each sample but
         // we need to apply some reasonable limits on this value to avoid possible integer overflows in boundary checks
         // code below and I've decided to limit sample size by maximum UDP packet size
@@ -135,7 +132,6 @@ bool get_records(vector_tuple_t& vector_tuple,
 
             return false;
         }
-
 
         uint8_t* flow_record_data_ptr = flow_record_start + sizeof(element_type) + sizeof(element_length);
         uint8_t* flow_record_end      = flow_record_data_ptr + element_length;
@@ -223,7 +219,7 @@ bool get_all_samples(vector_sample_tuple_t& vector_sample,
     }
 
     // Sanity check! We should achieve end of whole packet in any case
-    // We discovered that Brocade MLXe-4 adds 20 bytes at the end of sflow packet and this check prevent FNM from
+    // We discovered that Brocade MLXe-4 adds 20 bytes at the end of sFlow packet and this check prevent FNM from
     // correct work
     // And I do not think that this change could harm other customers
     if (sample_start != total_packet_end) {
@@ -316,9 +312,6 @@ bool read_sflow_header(uint8_t* payload_ptr, unsigned int payload_length, sflow_
         return false;
     }
 
-    // Calculate packet end, it's too useful for sanity checks
-    uint8_t* total_packet_end = payload_ptr + payload_length;
-
     // if received packet is smaller than smallest possible header size
     if (payload_length < sizeof(sflow_packet_header_v4_t)) {
         logger << log4cpp::Priority::ERROR << sflow_parser_log_prefix << "received packet too small. It shorter than sFlow header";
@@ -328,17 +321,11 @@ bool read_sflow_header(uint8_t* payload_ptr, unsigned int payload_length, sflow_
     int32_t sflow_version = get_int_value_by_32bit_shift(payload_ptr, 0);
 
     if (sflow_version != 5) {
-        logger << log4cpp::Priority::ERROR << sflow_parser_log_prefix << "We do not support sFLOW version " << sflow_version;
+        logger << log4cpp::Priority::ERROR << sflow_parser_log_prefix << "We do not support sFlow version " << sflow_version;
         return false;
     }
 
     int32_t ip_protocol_version = get_int_value_by_32bit_shift(payload_ptr, 1);
-
-    // Reject broken protocol numbers
-    if (!(ip_protocol_version == 1 or ip_protocol_version == 2)) {
-        logger << log4cpp::Priority::ERROR << sflow_parser_log_prefix << "Unknown ip protocol version for sflow: " << ip_protocol_version;
-        return false;
-    }
 
     if (ip_protocol_version == 1) {
         // IPv4
@@ -356,7 +343,7 @@ bool read_sflow_header(uint8_t* payload_ptr, unsigned int payload_length, sflow_
 
         // Check for packet length
         if (payload_length < sizeof(sflow_packet_header_v6_t)) {
-            logger << log4cpp::Priority::ERROR << sflow_parser_log_prefix << "received packet too small for IPv6 sflow packet.";
+            logger << log4cpp::Priority::ERROR << sflow_parser_log_prefix << "received packet too small for IPv6 sFlow packet.";
             return false;
         }
 
@@ -367,6 +354,9 @@ bool read_sflow_header(uint8_t* payload_ptr, unsigned int payload_length, sflow_
 
         // Create unified accessor format
         sflow_header_accessor = sflow_v6_header_struct;
+    } else {
+        logger << log4cpp::Priority::ERROR << sflow_parser_log_prefix << "Unknown ip protocol version for sFlow: " << ip_protocol_version;
+        return false;
     }
 
     return true;

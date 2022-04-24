@@ -75,7 +75,7 @@ sflow_sample_type_t sflow_sample_type_from_integer(int32_t format_as_integer);
 
 std::tuple<uint32_t, uint32_t> split_32bit_integer_by_8_and_24_bits(uint32_t original_data);
 std::tuple<int32_t, int32_t> split_mixed_enterprise_and_format(int32_t enterprise_and_format);
-std::string build_ipv4_address_from_array(std::array<uint8_t, 4> ipv4_array_address);
+void build_ipv4_address_from_array(std::array<uint8_t, 4> ipv4_array_address, std::string& output_string);
 std::string build_ipv6_address_from_array(std::array<uint8_t, 16> ipv6_array_address);
 unsigned int get_flow_enum_type_as_number(const sflow_sample_type_t& value);
 
@@ -116,7 +116,7 @@ class __attribute__((__packed__)) sflow_sample_header_as_struct_t {
     public:
     union {
         uint32_t enterprise : 20, sample_type : 12;
-        uint32_t enterprise_and_sample_type_as_integer;
+        uint32_t enterprise_and_sample_type_as_integer = 0;
     };
     uint32_t sample_length = 0;
 
@@ -178,7 +178,7 @@ class __attribute__((__packed__)) sflow_raw_protocol_header_t {
 
 class __attribute__((__packed__)) sflow_sample_header_t {
     public:
-    uint32_t sample_sequence_number; // sample sequence number
+    uint32_t sample_sequence_number = 0; // sample sequence number
     union __attribute__((__packed__)) {
         uint32_t source_id_with_id_type{ 0 }; // source id type + source id
         uint32_t source_id : 24, source_id_type : 8;
@@ -234,17 +234,17 @@ class __attribute__((__packed__)) sflow_sample_header_t {
 // value
 class __attribute__((__packed__)) sflow_sample_expanded_header_t {
     public:
-    uint32_t sample_sequence_number; // sample sequence number
-    uint32_t source_id_type; // source id type
-    uint32_t source_id_index; // source id index
-    uint32_t sampling_rate; // sampling ratio
-    uint32_t sample_pool; // number of sampled packets
-    uint32_t drops_count; // number of drops due to hardware overload
-    uint32_t input_port_type; // input port type
-    uint32_t input_port_index; // input port index
-    uint32_t output_port_type; // output port type
-    uint32_t output_port_index; // outpurt port index
-    uint32_t number_of_flow_records;
+    uint32_t sample_sequence_number = 0; // sample sequence number
+    uint32_t source_id_type         = 0; // source id type
+    uint32_t source_id_index        = 0; // source id index
+    uint32_t sampling_rate          = 0; // sampling ratio
+    uint32_t sample_pool            = 0; // number of sampled packets
+    uint32_t drops_count            = 0; // number of drops due to hardware overload
+    uint32_t input_port_type        = 0; // input port type
+    uint32_t input_port_index       = 0; // input port index
+    uint32_t output_port_type       = 0; // output port type
+    uint32_t output_port_index      = 0; // outpurt port index
+    uint32_t number_of_flow_records = 0;
 
     void network_to_host_byte_order() {
         sample_sequence_number = strict_ntoh(sample_sequence_number);
@@ -280,18 +280,18 @@ class __attribute__((__packed__)) sflow_sample_expanded_header_t {
 // classes.
 class sflow_sample_header_unified_accessor_t {
     public:
-    uint32_t sample_sequence_number; // sample sequence number
-    uint32_t source_id_type; // source id type
-    uint32_t source_id_index; // source id index
-    uint32_t sampling_rate; // sampling ratio
-    uint32_t sample_pool; // number of sampled packets
-    uint32_t drops_count; // number of drops due to hardware overload
-    uint32_t input_port_type; // input port type
-    uint32_t input_port_index; // input port index
-    uint32_t output_port_type; // output port type
-    uint32_t output_port_index; // outpurt port index
-    uint32_t number_of_flow_records;
-    ssize_t original_payload_length;
+    uint32_t sample_sequence_number = 0; // sample sequence number
+    uint32_t source_id_type         = 0; // source id type
+    uint32_t source_id_index        = 0; // source id index
+    uint32_t sampling_rate          = 0; // sampling ratio
+    uint32_t sample_pool            = 0; // number of sampled packets
+    uint32_t drops_count            = 0; // number of drops due to hardware overload
+    uint32_t input_port_type        = 0; // input port type
+    uint32_t input_port_index       = 0; // input port index
+    uint32_t output_port_type       = 0; // output port type
+    uint32_t output_port_index      = 0; // outpurt port index
+    uint32_t number_of_flow_records = 0;
+    ssize_t original_payload_length = 0;
 
     uint32_t get_sample_sequence_number() {
         return sample_sequence_number;
@@ -439,7 +439,10 @@ template <std::size_t address_length> class __attribute__((__packed__)) sflow_pa
                << "sub_agent_id: " << sub_agent_id << std::endl;
 
         if (address_length == 4) {
-            buffer << "agent_ip_address: " << build_ipv4_address_from_array(address_v4_or_v6) << std::endl;
+            std::string string_ipv4_address;
+            build_ipv4_address_from_array(address_v4_or_v6, string_ipv4_address);
+
+            buffer << "agent_ip_address: " << string_ipv4_address << std::endl;
         } else {
             buffer << "agent_ip_address: " << build_ipv6_address_from_array(address_v4_or_v6) << std::endl;
         }
@@ -517,7 +520,7 @@ class sflow_packet_header_unified_accessor {
         datagram_sequence_number = sflow_packet_header_v4.datagram_sequence_number;
         device_uptime            = sflow_packet_header_v4.device_uptime;
         datagram_samples_count   = sflow_packet_header_v4.datagram_samples_count;
-        agent_ip_address         = build_ipv4_address_from_array(sflow_packet_header_v4.address_v4_or_v6);
+        build_ipv4_address_from_array(sflow_packet_header_v4.address_v4_or_v6, agent_ip_address);
 
         original_payload_length = sizeof(sflow_packet_header_v4);
     }
@@ -548,9 +551,9 @@ class __attribute__((__packed__)) sflow_extended_gateway_information_t {
 
 class __attribute__((__packed__)) sflow_counter_header_t {
     public:
-    uint32_t sample_sequence_number;
-    uint32_t source_type_with_id;
-    uint32_t number_of_counter_records;
+    uint32_t sample_sequence_number    = 0;
+    uint32_t source_type_with_id       = 0;
+    uint32_t number_of_counter_records = 0;
 
     void network_to_host_byte_order() {
         sample_sequence_number    = strict_ntoh(sample_sequence_number);
@@ -572,10 +575,10 @@ class __attribute__((__packed__)) sflow_counter_header_t {
 // Expanded form of sflow_counter_header_t
 class __attribute__((__packed__)) sflow_counter_expanded_header_t {
     public:
-    uint32_t sample_sequence_number;
-    uint32_t source_id_type;
-    uint32_t source_id_index;
-    uint32_t number_of_counter_records;
+    uint32_t sample_sequence_number    = 0;
+    uint32_t source_id_type            = 0;
+    uint32_t source_id_index           = 0;
+    uint32_t number_of_counter_records = 0;
 
     void network_to_host_byte_order() {
         sample_sequence_number    = strict_ntoh(sample_sequence_number);
@@ -668,19 +671,19 @@ class sflow_counter_header_unified_accessor_t {
 
 class __attribute__((__packed__)) ethernet_sflow_interface_counters_t {
     public:
-    uint32_t alignment_errors;
-    uint32_t fcs_errors;
-    uint32_t single_collision_frames;
-    uint32_t multiple_collision_frames;
-    uint32_t sqe_test_errors;
-    uint32_t deferred_transmissions;
-    uint32_t late_collisions;
-    uint32_t excessive_collisions;
-    uint32_t internal_mac_transmit_errors;
-    uint32_t carrier_sense_errors;
-    uint32_t frame_too_longs;
-    uint32_t internal_mac_receive_errors;
-    uint32_t symbol_errors;
+    uint32_t alignment_errors             = 0;
+    uint32_t fcs_errors                   = 0;
+    uint32_t single_collision_frames      = 0;
+    uint32_t multiple_collision_frames    = 0;
+    uint32_t sqe_test_errors              = 0;
+    uint32_t deferred_transmissions       = 0;
+    uint32_t late_collisions              = 0;
+    uint32_t excessive_collisions         = 0;
+    uint32_t internal_mac_transmit_errors = 0;
+    uint32_t carrier_sense_errors         = 0;
+    uint32_t frame_too_longs              = 0;
+    uint32_t internal_mac_receive_errors  = 0;
+    uint32_t symbol_errors                = 0;
 
     ethernet_sflow_interface_counters_t(uint8_t* data_pointer) {
         memcpy(this, data_pointer, sizeof(ethernet_sflow_interface_counters_t));
@@ -725,29 +728,29 @@ class __attribute__((__packed__)) ethernet_sflow_interface_counters_t {
 // http://www.sflow.org/SFLOW-STRUCTS5.txt
 class __attribute__((__packed__)) generic_sflow_interface_counters_t {
     public:
-    uint32_t if_index;
-    uint32_t if_type;
-    uint64_t if_speed;
-    uint32_t if_direction; /* derived from MAU MIB (RFC 2668)
+    uint32_t if_index     = 0;
+    uint32_t if_type      = 0;
+    uint64_t if_speed     = 0;
+    uint32_t if_direction = 0; /* derived from MAU MIB (RFC 2668)
                             0 = unkown, 1=full-duplex, 2=half-duplex,
                             3 = in, 4=out */
-    uint32_t if_status; /* bit field with the following bits assigned
+    uint32_t if_status = 0; /* bit field with the following bits assigned
                          bit 0 = ifAdminStatus (0 = down, 1 = up)
                          bit 1 = ifOperStatus (0 = down, 1 = up) */
-    uint64_t if_in_octets;
-    uint32_t if_in_ucast_pkts;
-    uint32_t if_in_multicast_pkts;
-    uint32_t if_in_broadcast_pkts;
-    uint32_t if_in_discards;
-    uint32_t if_in_errors;
-    uint32_t if_in_unknown_protos;
-    uint64_t if_out_octets;
-    uint32_t if_out_ucast_pkts;
-    uint32_t if_out_multicast_pkts;
-    uint32_t if_out_broadcast_pkts;
-    uint32_t if_out_discards;
-    uint32_t if_out_errors;
-    uint32_t if_promiscuous_mode;
+    uint64_t if_in_octets          = 0;
+    uint32_t if_in_ucast_pkts      = 0;
+    uint32_t if_in_multicast_pkts  = 0;
+    uint32_t if_in_broadcast_pkts  = 0;
+    uint32_t if_in_discards        = 0;
+    uint32_t if_in_errors          = 0;
+    uint32_t if_in_unknown_protos  = 0;
+    uint64_t if_out_octets         = 0;
+    uint32_t if_out_ucast_pkts     = 0;
+    uint32_t if_out_multicast_pkts = 0;
+    uint32_t if_out_broadcast_pkts = 0;
+    uint32_t if_out_discards       = 0;
+    uint32_t if_out_errors         = 0;
+    uint32_t if_promiscuous_mode   = 0;
 
     generic_sflow_interface_counters_t(uint8_t* data_pointer) {
         memcpy(this, data_pointer, sizeof(generic_sflow_interface_counters_t));
