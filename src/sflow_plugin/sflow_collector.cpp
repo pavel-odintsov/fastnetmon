@@ -377,7 +377,7 @@ bool process_sflow_flow_sample(uint8_t* data_pointer,
                     parse_raw_ipv4_packet_to_simple_packet_full_ng(header_payload_pointer,
                                                                    sflow_raw_protocol_header.frame_length_before_sampling,
                                                                    sflow_raw_protocol_header.header_size, packet,
-                                                                   fastnetmon_global_configuration.sflow_read_packet_length_from_ip_header);
+                                                                   sflow_read_packet_length_from_ip_header);
 
                 if (result != network_data_stuctures::parser_code_t::success) {
                     sflow_parse_error_nested_header++;
