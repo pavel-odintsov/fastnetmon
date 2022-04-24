@@ -23,6 +23,13 @@ enum class sflow_sample_type_t : unsigned int {
     BROKEN_TYPE             = UINT_MAX,
 };
 
+// This one stores protocol of header https://sflow.org/sflow_version_5.txt
+enum sflow_header_protocol {
+    SFLOW_HEADER_PROTOCOL_ETHERNET = 1, // Typically, it's Ethernet
+    SFLOW_HEADER_PROTOCOL_IPv4     = 11,
+    SFLOW_HEADER_PROTOCOL_IPv6     = 12,
+};
+
 // Old fashioned not typed enums for fast comparisions and assignments to
 // integers
 enum sflow_sample_type_not_typed_t {
