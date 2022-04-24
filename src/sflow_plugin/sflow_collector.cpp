@@ -372,7 +372,22 @@ bool process_sflow_flow_sample(uint8_t* data_pointer,
                 // It's IPv4 without Ethernet header at all
                 sflow_ipv4_header_protocol++;
 
-                return false;
+                // We parse this packet using special version of our parser which looks only on IPv4 packet
+                auto result =
+                    parse_raw_ipv4_packet_to_simple_packet_full_ng(header_payload_pointer,
+                                                                   sflow_raw_protocol_header.frame_length_before_sampling,
+                                                                   sflow_raw_protocol_header.header_size, packet,
+                                                                   fastnetmon_global_configuration.sflow_read_packet_length_from_ip_header);
+
+                if (result != network_data_stuctures::parser_code_t::success) {
+                    sflow_parse_error_nested_header++;
+
+                    logger << log4cpp::Priority::DEBUG << plugin_log_prefix
+                           << "Cannot parse nested IPv4 packet using ng parser: " << parser_code_to_string(result);
+
+                    return false;
+                }
+
             } else if (sflow_raw_protocol_header.header_protocol == SFLOW_HEADER_PROTOCOL_IPv6) {
                 // It's IPv6 without Ethernet header at all
                 sflow_ipv6_header_protocol++;
