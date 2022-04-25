@@ -17,7 +17,7 @@ We support only latest current version of FastNetMon. We do not issue security f
 | 1.1.2   | :x:                |
 | 1.1.1   | :x:                | 
 
-Debian, Ubuntu and FreeBSD packages in their official repositories have their own security policeis. 
+Debian, Ubuntu and FreeBSD packages in their official repositories have their own security policies. 
 
 ## Reporting a Vulnerability
 
