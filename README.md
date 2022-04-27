@@ -36,7 +36,7 @@ Official support groups:
 -------
 - [Mailing list](https://groups.google.com/forum/#!forum/fastnetmon)
 - [Slack](https://join.slack.com/t/fastnetmon/shared_invite/MjM3NDUwNzY4NjA5LTE1MDQ4MzE5NTAtYmU4MjYyYWNiZQ)
-- IRC: #fastnetmon at irc.libera.chat:6697 (TLS)[web client](https://web.libera.chat/)
+- IRC: #fastnetmon at irc.libera.chat:6697 (TLS) [web client](https://web.libera.chat/?channels=#fastnetmon)
 - Telegram: [fastnetmon](https://t.me/fastnetmon)
 - Discord: [fastnetmon](https://discord.gg/Q4h9AUqFng)
 
