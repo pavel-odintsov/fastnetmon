@@ -5,29 +5,28 @@ parameters:
     default: "1.2.1"
 jobs:
   build_debian_upstream_package:
-    docker:
-      - image: debian:bullseye
+    machine:
+      - image: ubuntu-2004:current
     resource_class: large
     steps:
-      - run: apt-get update; true
-      - run: apt install -y dpkg-dev pbuilder
-      - run: git clone https://github.com/pavel-odintsov/fastnetmon
-      - run: git clone https://salsa.debian.org/debian/fastnetmon.git fastnetmon-debian-salsa
-      - run: tar -czf fastnetmon_$(head -n 1 fastnetmon-debian-salsa/debian/changelog|awk '{print $2}'|sed 's/[()]//g' | sed -E 's/(\-[0-9]+)?$//').orig.tar.gz fastnetmon
-      - run: ls -la
-      - run: cd fastnetmon && rm -rf debian && cp -a ../fastnetmon-debian-salsa/debian/ . && dpkg-buildpackage -S -sa -d
+      - run "sudo docker run -d -v /sys/fs/cgroup/:/sys/fs/cgroup:ro -v /data:/data:ro --privileged --cap-add SYS_ADMIN  --name linux_priviledged_container debian:bullseye tail -f /dev/null"
+      - run: sudo docker exec -it linux_priviledged_container apt-get update; true
+      - run: sudo docker exec -it linux_priviledged_container apt install -y dpkg-dev
+      - run: sudo docker exec -it linux_priviledged_container git clone https://github.com/pavel-odintsov/fastnetmon
+      - run: sudo docker exec -it linux_priviledged_container git clone https://salsa.debian.org/debian/fastnetmon.git fastnetmon-debian-salsa
+      - run: sudo docker exec -it linux_priviledged_container tar -czf fastnetmon_$(head -n 1 fastnetmon-debian-salsa/debian/changelog|awk '{print $2}'|sed 's/[()]//g' | sed -E 's/(\-[0-9]+)?$//').orig.tar.gz fastnetmon
+      - run: sudo docker exec -it linux_priviledged_container ls -la
+      - run: sudo docker exec -it linux_priviledged_container "cd fastnetmon && rm -rf debian && cp -a ../fastnetmon-debian-salsa/debian/ . && dpkg-buildpackage -S -sa -d"
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_debian_sid_image"
-      - run:
-          name: "Install debootstrap from Debian Unstable to address incompatibility with Docker: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=930684"
-          command: wget http://ftp.us.debian.org/debian/pool/main/d/debootstrap/debootstrap_1.0.126+nmu1_all.deb; dpkg -i debootstrap_1.0.126+nmu1_all.deb
-      - run: "[ ! -f /root/sid_base.tgz ] && /usr/sbin/pbuilder --create --basetgz /root/sid_base.tgz --distribution sid"
+      - run: sudo docker run -d -v /sys/fs/cgroup/:/sys/fs/cgroup:ro -v /data:/data:ro --privileged --cap-add SYS_ADMIN  --name linux_priviledged_container debian:bullseye tail -f /dev/null
+      - run: "[ ! -f /data/sid_base.tgz ] && sudo docker exec -it linux_priviledged_container apt-get install pbuilder; /usr/sbin/pbuilder --create --basetgz /data/sid_base.tgz --distribution sid"
       - save_cache:
           key: "{{ .Environment.CIRCLE_JOB }}_debian_sid_image"
           paths:
-            - /root/sid_base.tgz
-
+            - /data/sid_base.tgz
+      - run: ls -la /data
   build_docker:
     machine:
       image: ubuntu-2004:current
