@@ -13,7 +13,7 @@ jobs:
       - run: apt install -y dpkg-dev pbuilder
       - run: git clone https://github.com/pavel-odintsov/fastnetmon
       - run: git clone https://salsa.debian.org/debian/fastnetmon.git fastnetmon-debian-salsa
-      - run: tar -czf fastnetmon_$(head -n 1 fastnetmon-debian-salsa/debian/changelog|awk '{print $2}'|sed 's/[()]//g').orig.tar.gz fastnetmon
+      - run: tar -czf fastnetmon_$(head -n 1 fastnetmon-debian-salsa/debian/changelog|awk '{print $2}'|sed 's/[()]//g' | sed 's/\-[0-9]+$//').orig.tar.gz fastnetmon
       - run: ls -la
       - run: cd fastnetmon && rm -rf debian && cp -a ../fastnetmon-debian-salsa/debian/ . && dpkg-buildpackage -S -sa -d
   build_docker:
