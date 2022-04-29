@@ -16,6 +16,15 @@ jobs:
       - run: tar -czf fastnetmon_$(head -n 1 fastnetmon-debian-salsa/debian/changelog|awk '{print $2}'|sed 's/[()]//g' | sed -E 's/(\-[0-9]+)?$//').orig.tar.gz fastnetmon
       - run: ls -la
       - run: cd fastnetmon && rm -rf debian && cp -a ../fastnetmon-debian-salsa/debian/ . && dpkg-buildpackage -S -sa -d
+      - restore_cache:
+          keys:
+            - "{{ .Environment.CIRCLE_JOB }}_debian_sid_image"
+      - run: [ ! -f /root/sid_base.tgz ] && /usr/sbin/pbuilder --create --basetgz /root/sid_base.tgz --distribution sid
+      - save_cache:
+          key: "{{ .Environment.CIRCLE_JOB }}_debian_sid_image"
+          paths:
+            - /root/sid_base.tgz
+
   build_docker:
     machine:
       image: ubuntu-2004:current
