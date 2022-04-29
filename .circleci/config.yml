@@ -18,11 +18,16 @@ jobs:
       - run: sudo docker exec -it linux_priviledged_container git clone https://salsa.debian.org/debian/fastnetmon.git fastnetmon-debian-salsa
       - run: sudo docker exec -it linux_priviledged_container tar -czf fastnetmon_$(head -n 1 fastnetmon-debian-salsa/debian/changelog|awk '{print $2}'|sed 's/[()]//g' | sed -E 's/(\-[0-9]+)?$//').orig.tar.gz fastnetmon
       - run: sudo docker exec -it linux_priviledged_container ls -la
-      - run: sudo docker exec -it linux_priviledged_container "cd fastnetmon && rm -rf debian && cp -a ../fastnetmon-debian-salsa/debian/ . && dpkg-buildpackage -S -sa -d"
+      - run: sudo docker exec -it linux_priviledged_container bash -c "cd fastnetmon && rm -rf debian && cp -a ../fastnetmon-debian-salsa/debian/ . && dpkg-buildpackage -S -sa -d"
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_debian_sid_image"
-      - run: "[ ! -f /data/sid_base.tgz ] && sudo docker exec -it linux_priviledged_container apt-get install pbuilder; /usr/sbin/pbuilder --create --basetgz /data/sid_base.tgz --distribution sid"
+      - run:
+          name: Check that we have anything in data folder
+          command: ls -la /data 
+      - run:
+          name: "Run pbuilder run Docker if we have no image in place"
+          command: "[ ! -f /data/sid_base.tgz ] && sudo docker exec -it linux_priviledged_container apt-get install pbuilder; /usr/sbin/pbuilder --create --basetgz /data/sid_base.tgz --distribution sid"
       - save_cache:
           key: "{{ .Environment.CIRCLE_JOB }}_debian_sid_image"
           paths:
