@@ -22,7 +22,6 @@ jobs:
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_debian_sid_image"
-      - run: sudo docker run -d -v /sys/fs/cgroup/:/sys/fs/cgroup:ro -v /data:/data:ro --privileged --cap-add SYS_ADMIN  --name linux_priviledged_container debian:bullseye tail -f /dev/null
       - run: "[ ! -f /data/sid_base.tgz ] && sudo docker exec -it linux_priviledged_container apt-get install pbuilder; /usr/sbin/pbuilder --create --basetgz /data/sid_base.tgz --distribution sid"
       - save_cache:
           key: "{{ .Environment.CIRCLE_JOB }}_debian_sid_image"
