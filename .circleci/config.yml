@@ -21,7 +21,7 @@ jobs:
             - "{{ .Environment.CIRCLE_JOB }}_debian_sid_image"
       - run:
           name: "Install debootstrap from Debian Unstable to address incompatibility with Docker: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=930684"
-          command: wget https://ftp.us.debian.org/debian/pool/main/d/debootstrap/debootstrap_1.0.126+nmu1_all.deb; dpkg -i debootstrap_1.0.126+nmu1_all.deb
+          command: wget http://ftp.us.debian.org/debian/pool/main/d/debootstrap/debootstrap_1.0.126+nmu1_all.deb; dpkg -i debootstrap_1.0.126+nmu1_all.deb
       - run: "[ ! -f /root/sid_base.tgz ] && /usr/sbin/pbuilder --create --basetgz /root/sid_base.tgz --distribution sid"
       - save_cache:
           key: "{{ .Environment.CIRCLE_JOB }}_debian_sid_image"
