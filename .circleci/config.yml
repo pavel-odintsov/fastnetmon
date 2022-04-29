@@ -19,7 +19,7 @@ jobs:
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_debian_sid_image"
-      - run: [ ! -f /root/sid_base.tgz ] && /usr/sbin/pbuilder --create --basetgz /root/sid_base.tgz --distribution sid
+      - run: "[ ! -f /root/sid_base.tgz ] && /usr/sbin/pbuilder --create --basetgz /root/sid_base.tgz --distribution sid"
       - save_cache:
           key: "{{ .Environment.CIRCLE_JOB }}_debian_sid_image"
           paths:
