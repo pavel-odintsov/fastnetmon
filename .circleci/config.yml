@@ -36,6 +36,7 @@ jobs:
           paths:
             - /data/sid_base.tgz
       - run: ls -la /data
+      - run: sudo docker exec -it linux_priviledged_container pbuilder --build --basetgz /data/sid_base.tgz --debbuildopts "-sa" /fastnetmon_$(sudo docker exec -it linux_priviledged_container head -n 1 fastnetmon-debian-salsa/debian/changelog|awk '{print $2}'|sed 's/[()]//g').dsc
   build_docker:
     machine:
       image: ubuntu-2004:current
