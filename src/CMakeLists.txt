@@ -165,11 +165,20 @@ if (ENABLE_NETMAP_SUPPORT)
     add_definitions(-DNETMAP_PLUGIN)
 endif()
 
+find_program(CAPNP_BINARY capnp PATHS "${CAPNP_CUSTOM_INSTALL_PATH}/bin" NO_DEFAULT_PATH)
+
+if (CAPNP_BINARY)
+    message(STATUS "Found capnp compiler: ${CAPNP_BINARY}")
+else()
+    message(FATAL_ERROR "Can't find capnp compiler")
+endif()
+
+
 # Generate capnp bindings
 ADD_CUSTOM_COMMAND(
     OUTPUT ${PROJECT_SOURCE_DIR}/simple_packet_capnp/simple_packet.capnp.c++
     DEPENDS ${PROJECT_SOURCE_DIR}/simple_packet_capnp/simple_packet.capnp
-    COMMAND "LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH}" "PATH=$PATH:/opt/${CAPNP_CUSTOM_INSTALL_PATH}/bin" ${CAPNP_CUSTOM_INSTALL_PATH}/bin/capnp compile --output c++:${PROJECT_SOURCE_DIR}/simple_packet_capnp --src-prefix=${PROJECT_SOURCE_DIR}/simple_packet_capnp ${PROJECT_SOURCE_DIR}/simple_packet_capnp/simple_packet.capnp
+    COMMAND "LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH}" "PATH=$PATH:/opt/${CAPNP_CUSTOM_INSTALL_PATH}/bin" ${CAPNP_BINARY} compile --output c++:${PROJECT_SOURCE_DIR}/simple_packet_capnp --src-prefix=${PROJECT_SOURCE_DIR}/simple_packet_capnp ${PROJECT_SOURCE_DIR}/simple_packet_capnp/simple_packet.capnp
     COMMENT "Build Cap'n'Proto binding for C++"
 )
 
