@@ -22,6 +22,9 @@ jobs:
       - run:
           name: List produced source files
           command: sudo docker exec -it linux_priviledged_container ls -la
+      - run:
+          name: Show content of data folder and permissions for it
+          command: ls -la /data
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_debian_sid_image"
