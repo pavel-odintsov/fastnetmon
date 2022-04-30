@@ -171,6 +171,8 @@ option(ENABLE_CAPNP_SUPPORT "Enable Cap'N'Proto support build" ON)
 
 if (ENABLE_CAPNP_SUPPORT)
 
+message(STATUS "We will build Cap'N'Proto support")
+
 find_program(CAPNP_BINARY capnp PATHS "${CAPNP_CUSTOM_INSTALL_PATH}/bin" NO_DEFAULT_PATH)
 
 if (CAPNP_BINARY)
