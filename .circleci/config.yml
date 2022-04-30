@@ -15,6 +15,9 @@ jobs:
       - run: sudo docker exec -it linux_priviledged_container apt-get update; true
       - run: sudo docker exec -it linux_priviledged_container apt install -y dpkg-dev git pbuilder
       - run: sudo docker exec -it linux_priviledged_container git clone https://github.com/pavel-odintsov/fastnetmon
+      - run: 
+          name: Remove existing capnp bindings to force automatic generation
+          command: sudo docker exec -it linux_priviledged_container rm -f fastnetmon/src/simple_packet_capnp/simple_packet.capnp.c++ fastnetmon/src/simple_packet_capnp/simple_packet.capnp.h
       - run: sudo docker exec -it linux_priviledged_container git clone https://github.com/pavel-odintsov/fastnetmon-debian-salsa.git fastnetmon-debian-salsa
       - run: sudo docker exec -it linux_priviledged_container tar -czf fastnetmon_$(sudo docker exec -it linux_priviledged_container head -n 1 fastnetmon-debian-salsa/debian/changelog|awk '{print $2}'|sed 's/[()]//g' | sed -E 's/(\-[0-9]+)?$//').orig.tar.gz fastnetmon
       - run: sudo docker exec -it linux_priviledged_container ls -la
