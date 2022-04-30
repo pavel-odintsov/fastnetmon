@@ -26,10 +26,11 @@
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
 
-
+#ifdef ENABLE_CAPNP
 #include "simple_packet_capnp/simple_packet.capnp.h"
 #include <capnp/message.h>
 #include <capnp/serialize-packed.h>
+#endif
 
 #if defined(__APPLE__)
 #include <libkern/OSByteOrder.h>
