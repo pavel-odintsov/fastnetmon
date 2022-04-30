@@ -165,6 +165,12 @@ if (ENABLE_NETMAP_SUPPORT)
     add_definitions(-DNETMAP_PLUGIN)
 endif()
 
+# It's enabled by default but can be disabled using: 
+# cmake .. -DENABLE_CAPNP_SUPPORT=OFF
+option(ENABLE_CAPNP_SUPPORT "Enable Cap'N'Proto support build" ON)
+
+if (ENABLE_CAPNP_SUPPORT)
+
 find_program(CAPNP_BINARY capnp PATHS "${CAPNP_CUSTOM_INSTALL_PATH}/bin" NO_DEFAULT_PATH)
 
 if (CAPNP_BINARY)
@@ -183,6 +189,8 @@ ADD_CUSTOM_COMMAND(
 )
 
 add_library(simple_packet_capnp STATIC simple_packet_capnp/simple_packet.capnp.c++)
+
+endif()
 
 # Our LPM library
 add_library(patricia STATIC libpatricia/patricia.c)
@@ -474,9 +482,9 @@ if (ENABLE_OPENSSL_SUPPORT)
     endif()
 endif()
 
-SET(CAPNP_SUPPORT TRUE)
+if (ENABLE_CAPNP_SUPPORT)
+    add_definitions(-DENABLE_CAPNP)
 
-if (CAPNP_SUPPORT)
     find_library(CAPNP_LIBRARY_PATH NAMES capnp PATHS "${CAPNP_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
     find_library(CAPNP_KJ_LIBRARY_PATH NAMES kj PATHS "${CAPNP_CUSTOM_INSTALL_PATH}/lib" NO_DEFAULT_PATH)
 
@@ -487,12 +495,14 @@ if (CAPNP_SUPPORT)
     endif()
 
     include_directories("${CAPNP_CUSTOM_INSTALL_PATH}/include")
+
+    target_link_libraries(simple_packet_capnp ${CAPNP_LIBRARY_PATH} ${CAPNP_KJ_LIBRARY_PATH})
+
+    # Link it with cap'n'p stuff
+    target_link_libraries(fast_library simple_packet_capnp)
+
 endif()
 
-target_link_libraries(simple_packet_capnp ${CAPNP_LIBRARY_PATH} ${CAPNP_KJ_LIBRARY_PATH})
-
-# Link it with cap'n'p stuff
-target_link_libraries(fast_library simple_packet_capnp)
 
 ### Find mongo-c
 find_path(MONGOC_INCLUDES_FOLDER NAMES libmongoc-1.0/mongoc.h PATHS "${MONGO_C_CUSTOM_INSTALL_PATH}/include" NO_DEFAULT_PATH)

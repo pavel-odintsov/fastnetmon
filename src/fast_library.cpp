@@ -1271,6 +1271,7 @@ bool set_boost_process_name(boost::thread* thread, std::string process_name) {
     return true;
 }
 
+#ifdef ENABLE_CAPNP
 bool read_simple_packet(uint8_t* buffer, size_t buffer_length, simple_packet_t& packet) {
     extern log4cpp::Category& logger;
 
@@ -1413,6 +1414,8 @@ bool write_simple_packet(int fd, simple_packet_t& packet, bool populate_ipv6) {
 
     return true;
 }
+
+#endif
 
 // Represent IPv6 cidr subnet in string form
 std::string print_ipv6_cidr_subnet(subnet_ipv6_cidr_mask_t subnet) {
