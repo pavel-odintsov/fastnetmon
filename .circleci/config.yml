@@ -39,7 +39,7 @@ jobs:
           command: ls -la /data 
       - run:
           name: "Run pbuilder run Docker if we have no image in place"
-          command: "[ ! -f /data/sid_base.tgz ] && sudo docker exec -it linux_priviledged_container pbuilder --create --basetgz /data/sid_base.tgz --distribution sid"
+          command: "if [ ! -f /data/sid_base.tgz ]; then sudo docker exec -it linux_priviledged_container pbuilder --create --basetgz /data/sid_base.tgz --distribution sid; else true; fi"
       - save_cache:
           key: "{{ .Environment.CIRCLE_JOB }}_debian_sid_image"
           paths:
