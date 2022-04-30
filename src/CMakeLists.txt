@@ -309,9 +309,16 @@ if (ENABLE_GOBGP_SUPPORT)
         message(FATAL_ERROR "Can't find protoc compiler")
     endif()
 
-    message(STATUS "Building protobuf and gRPC mappings for C++")
+    # Search for gRPC plugin for protobuf, it's just binary
+    find_program(GRPC_CPP_PLUGIN grpc_cpp_plugin PATHS "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/bin" NO_DEFAULT_PATH)
 
-    set(GRPC_CPP_PLUGIN "${GRPC_CUSTOM_INSTALL_PATH}/bin/grpc_cpp_plugin")
+    if (GRPC_CPP_PLUGIN) 
+        message(STATUS "Found Protobuf gRPC compiler plugin: ${GRPC_CPP_PLUGIN}")
+    else()
+        message(FATAL_ERROR "Can't find Protobuf gRPC compiler plugin")
+    endif()
+
+    message(STATUS "Building protobuf and gRPC mappings for C++")
 
     execute_process(COMMAND ${PROTOC_BINARY} -I ${PROJECT_SOURCE_DIR}/actions --grpc_out=${PROJECT_SOURCE_DIR}/actions --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} ${PROJECT_SOURCE_DIR}/actions/gobgp.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
 
