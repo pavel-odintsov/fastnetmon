@@ -310,7 +310,7 @@ if (ENABLE_GOBGP_SUPPORT)
     endif()
 
     # Search for gRPC plugin for protobuf, it's just binary
-    find_program(GRPC_CPP_PLUGIN grpc_cpp_plugin PATHS "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/bin" NO_DEFAULT_PATH)
+    find_program(GRPC_CPP_PLUGIN grpc_cpp_plugin PATHS "${GRPC_CUSTOM_INSTALL_PATH}/bin" NO_DEFAULT_PATH)
 
     if (GRPC_CPP_PLUGIN) 
         message(STATUS "Found Protobuf gRPC compiler plugin: ${GRPC_CPP_PLUGIN}")
