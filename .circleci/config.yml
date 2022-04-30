@@ -11,7 +11,7 @@ jobs:
     steps:
       - run:
           name: Create folder to share data between host and Docker container with relaxed permissions to allow use of save / restore cache logic
-          command: sudo kdir /data; sudo chmod 770 /data
+          command: sudo mkdir /data; sudo chmod 770 /data
       - run:
           name: Docker with priviledged mode to run chroot inside and we use tail -f to keep container running
           command: sudo docker run -d -v /sys/fs/cgroup/:/sys/fs/cgroup:ro -v /data:/data:rw --privileged --cap-add SYS_ADMIN  --name linux_priviledged_container debian:bullseye tail -f /dev/null
