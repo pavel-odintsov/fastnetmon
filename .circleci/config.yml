@@ -21,12 +21,12 @@ jobs:
       - run: sudo docker exec -it linux_priviledged_container bash -c "cd fastnetmon && rm -rf debian && cp -a ../fastnetmon-debian-salsa/debian/ . && dpkg-buildpackage -S -sa -d"
       - run:
           name: List produced source files
-          command: ls -la
+          command: sudo docker exec -it linux_priviledged_container ls -la
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_debian_sid_image"
-      - run:
-          name: Check that we have anything in data folder
+      - run: 
+          name: Check that we have anything in data folder on VM
           command: ls -la /data 
       - run:
           name: "Run pbuilder run Docker if we have no image in place"

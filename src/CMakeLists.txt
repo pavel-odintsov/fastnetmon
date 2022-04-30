@@ -313,11 +313,11 @@ if (ENABLE_GOBGP_SUPPORT)
 
     set(GRPC_CPP_PLUGIN "${GRPC_CUSTOM_INSTALL_PATH}/bin/grpc_cpp_plugin")
 
-    execute_process(COMMAND ${PROTOC_BINARY} -I ${PROJECT_BINARY_DIR}/../actions --grpc_out=${PROJECT_BINARY_DIR}/../actions --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} ${PROJECT_BINARY_DIR}/../actions/gobgp.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${PROTOC_BINARY} -I ${PROJECT_SOURCE_DIR}/actions --grpc_out=${PROJECT_SOURCE_DIR}/actions --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} ${PROJECT_SOURCE_DIR}/actions/gobgp.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     message(STATUS "Protoc return code for gobgp.proto gRPC: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
 
-    execute_process(COMMAND ${PROTOC_BINARY} -I  ${PROJECT_BINARY_DIR}/../actions --cpp_out=${PROJECT_BINARY_DIR}/../actions ${PROJECT_BINARY_DIR}/../actions/gobgp.proto ${PROJECT_BINARY_DIR}/../actions/attribute.proto  ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${PROTOC_BINARY} -I  ${PROJECT_SOURCE_DIR}/actions --cpp_out=${PROJECT_SOURCE_DIR}/actions ${PROJECT_SOURCE_DIR}/actions/gobgp.proto ${PROJECT_SOURCE_DIR}/actions/attribute.proto  ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     message(STATUS "Protoc return code for gobgp.proto and attribute.proto Protobuf: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
 
