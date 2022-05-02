@@ -1,6 +1,6 @@
 [Unit]
 Description=FastNetMon - DoS/DDoS analyzer with sFlow/Netflow/mirror support
-Documentation=man:fastnetmon(1)
+Documentation=man:fastnetmon(8)
 After=network.target remote-fs.target
  
 [Service]

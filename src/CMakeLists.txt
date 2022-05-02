@@ -707,7 +707,7 @@ install(FILES networks_list DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}")
 install(FILES networks_whitelist DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}")
 
 # man pages
-install(FILES man/fastnetmon.1 DESTINATION /usr/share/man/man1)
+install(FILES man/fastnetmon.8 DESTINATION /usr/share/man/man8)
 install(FILES man/fastnetmon_client.1 DESTINATION /usr/share/man/man1)
 
 # service files
