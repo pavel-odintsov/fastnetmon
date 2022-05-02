@@ -30,7 +30,7 @@
 // For Netflow lite parsing
 #include "../simple_packet_parser_ng.h"
 
-// Get it from main programm
+// Get it from main programme
 extern log4cpp::Category& logger;
 
 // Global configuration map

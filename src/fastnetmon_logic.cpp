@@ -1287,7 +1287,7 @@ bool process_flow_tracking_table(conntrack_main_struct_t& conntrack_element, std
 bool exec_with_stdin_params(std::string cmd, std::string params) {
     FILE* pipe = popen(cmd.c_str(), "w");
     if (!pipe) {
-        logger << log4cpp::Priority::ERROR << "Can't execute programm " << cmd << " error code: " << errno
+        logger << log4cpp::Priority::ERROR << "Can't execute programme " << cmd << " error code: " << errno
                << " error text: " << strerror(errno);
         return false;
     }
@@ -1306,7 +1306,7 @@ bool exec_with_stdin_params(std::string cmd, std::string params) {
 
         return true;
     } else {
-        logger << log4cpp::Priority::ERROR << "Can't pass data to stdin of programm " << cmd;
+        logger << log4cpp::Priority::ERROR << "Can't pass data to stdin of programme " << cmd;
         pclose(pipe);
         return false;
     }

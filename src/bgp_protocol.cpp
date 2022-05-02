@@ -11,7 +11,7 @@
 
 #include "all_logcpp_libraries.h"
 
-// Get log4cpp logger from main programm
+// Get log4cpp logger from main programme
 extern log4cpp::Category& logger;
 
 // Enable custom casts from our own types

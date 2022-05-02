@@ -12,5 +12,5 @@
 
 #include "fast_platform.h"
 
-// Get log4cpp logger from main programm
+// Get log4cpp logger from main programme
 extern log4cpp::Category& logger;
