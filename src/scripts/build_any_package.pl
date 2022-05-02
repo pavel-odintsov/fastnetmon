@@ -128,8 +128,8 @@ DOC
 
     my $systemd_init_script = <<'DOC';
 [Unit]
-Description=FastNetMon - DoS/DDoS analyzer with sflow/netflow/mirror support
-After=syslog.target network.target remote-fs.target
+Description=FastNetMon - DoS/DDoS analyzer with sFlow/Netflow/mirror support
+After=network.target remote-fs.target
  
 [Service]
 Type=forking
