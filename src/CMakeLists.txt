@@ -90,14 +90,21 @@ if (ENABLE_CUSTOM_BOOST_BUILD)
     endif()
 
 endif()
- 
-# Specify full RPATH for build tree
-SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
 
-# Create builds in current folder with install RPATH
-SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+# We use hardcoded RPATH for our libraries only when we compile against our custom libraries
+if (DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD) 
 
-SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libhiredis_0_13/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/log4cpp1.1.3/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/json-c-0.13/lib;${MONGO_C_CUSTOM_INSTALL_PATH}/lib;${MONGO_C_CUSTOM_INSTALL_PATH}/lib64;${GRPC_CUSTOM_INSTALL_PATH}/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/protobuf_3.11.4/lib;${CAPNP_CUSTOM_INSTALL_PATH}/lib;${OPENSSL_CUSTOM_INSTALL_PATH}/lib")
+    # Specify full RPATH for build tree
+    SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+
+    # Create builds in current folder with install RPATH
+    SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+
+    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libhiredis_0_13/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/log4cpp1.1.3/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/json-c-0.13/lib;${MONGO_C_CUSTOM_INSTALL_PATH}/lib;${MONGO_C_CUSTOM_INSTALL_PATH}/lib64;${GRPC_CUSTOM_INSTALL_PATH}/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/protobuf_3.11.4/lib;${CAPNP_CUSTOM_INSTALL_PATH}/lib;${OPENSSL_CUSTOM_INSTALL_PATH}/lib")
+
+else()
+   # We do not need any RPATH alterations when we want to link with system libraries (i.e. upstream builds for Debian or RedHat family)
+endif()
 
 message(STATUS "C++ compilation flags: ${CMAKE_CXX_FLAGS_RELEASE}")
 message(STATUS "C++ debug compilation flags: ${CMAKE_CXX_FLAGS_DEBUG}")
