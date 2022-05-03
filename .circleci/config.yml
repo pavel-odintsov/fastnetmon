@@ -1,4 +1,4 @@
-Version: 2.1
+version: 2.1
 parameters:
   fastnetmon_build_version:
     type: string
