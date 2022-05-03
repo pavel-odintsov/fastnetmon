@@ -278,5 +278,5 @@ workflows:
           name: "debian11"
       - build_docker
       - build_debian_upstream_package:
-          name: Debian Sid Upstream Build
-          debian_codename: sid
+          name: "Debian Sid Upstream Build"
+          debian_codename: "sid"
