@@ -280,3 +280,6 @@ workflows:
       - build_debian_upstream_package:
           name: "Debian Sid Upstream Build"
           debian_codename: "sid"
+      - build_debian_upstream_package:
+          name: "Debian Bullseye Upstream Backports Build"
+          debian_codename: "bullseye"
