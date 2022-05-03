@@ -1,4 +1,4 @@
-version: 2.1
+Version: 2.1
 parameters:
   fastnetmon_build_version:
     type: string
@@ -8,6 +8,9 @@ jobs:
     machine:
       image: ubuntu-2004:current
     resource_class: large
+    parameters:
+      debian_codename:
+        type: string
     steps:
       - run:
           name: Create folder to share data between host and Docker container with relaxed permissions to allow use of save / restore cache logic
@@ -30,19 +33,19 @@ jobs:
           command: ls -la /data
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_debian_sid_image"
+            - "{{ .Environment.CIRCLE_JOB }}_debian_base_image"
       - run: 
           name: Check that we have anything in data folder on VM
           command: ls -la /data 
       - run:
           name: "Run pbuilder run Docker if we have no image in place"
-          command: "if [ ! -f /data/sid_base.tgz ]; then sudo docker exec -it linux_priviledged_container pbuilder --create --basetgz /data/sid_base.tgz --distribution sid; else true; fi"
+          command: "if [ ! -f /data/debian_base.tgz ]; then sudo docker exec -it linux_priviledged_container pbuilder --create --basetgz /data/debian_base.tgz --distribution << parameters.debian_codename >>; else true; fi"
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_debian_sid_image"
+          key: "{{ .Environment.CIRCLE_JOB }}_debian_base__image"
           paths:
-            - /data/sid_base.tgz
+            - /data/debian_base.tgz
       - run: ls -la /data
-      - run: sudo docker exec -it linux_priviledged_container pbuilder --build --basetgz /data/sid_base.tgz --debbuildopts "-sa" /fastnetmon_$(sudo docker exec -it linux_priviledged_container head -n 1 fastnetmon-debian-salsa/debian/changelog|awk '{print $2}'|sed 's/[()]//g').dsc
+      - run: sudo docker exec -it linux_priviledged_container pbuilder --build --basetgz /data/debian_base.tgz --debbuildopts "-sa" /fastnetmon_$(sudo docker exec -it linux_priviledged_container head -n 1 fastnetmon-debian-salsa/debian/changelog|awk '{print $2}'|sed 's/[()]//g').dsc
   build_docker:
     machine:
       image: ubuntu-2004:current
@@ -274,4 +277,6 @@ workflows:
           debian_version: "11"
           name: "debian11"
       - build_docker
-      - build_debian_upstream_package
+      - build_debian_upstream_package:
+          name: Debian Sid Upstream Build
+          debian_codename: sid
