@@ -9,7 +9,7 @@ ExecStart=@CMAKE_INSTALL_SBINDIR@/fastnetmon --daemonize
 PIDFile=/run/fastnetmon.pid
 Restart=on-failure
 RestartSec=3
-
+LimitNOFILE=65535
 #ExecReload=/bin/kill -s HUP $MAINPID
 #ExecStop=/bin/kill -s QUIT $MAINPID
  

@@ -135,6 +135,7 @@ After=network.target remote-fs.target
 Type=forking
 ExecStart=/opt/fastnetmon/fastnetmon --daemonize
 PIDFile=/run/fastnetmon.pid
+LimitNOFILE=65535
 
 #ExecReload=/bin/kill -s HUP $MAINPID
 #ExecStop=/bin/kill -s QUIT $MAINPID
@@ -469,7 +470,8 @@ After=network.target remote-fs.target
 Type=forking
 ExecStart=/opt/fastnetmon/fastnetmon --daemonize
 PIDFile=/run/fastnetmon.pid
- 
+LimitNOFILE=65535
+
 [Install]
 WantedBy=multi-user.target
 DOC
