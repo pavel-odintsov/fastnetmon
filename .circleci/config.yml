@@ -41,7 +41,7 @@ jobs:
           name: "Run pbuilder run Docker if we have no image in place"
           command: "if [ ! -f /data/debian_base.tgz ]; then sudo docker exec -it linux_priviledged_container pbuilder --create --basetgz /data/debian_base.tgz --distribution << parameters.debian_codename >>; else true; fi"
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_debian_base__image"
+          key: "{{ .Environment.CIRCLE_JOB }}_debian_base_image"
           paths:
             - /data/debian_base.tgz
       - run: ls -la /data
