@@ -39,9 +39,8 @@ BuildRequires:     json-c-devel
 BuildRequires:     systemd
 
 Requires(pre):     shadow-utils
-Requires(post):    %{?systemd_requires}
-Requires(preun):   systemd
-Requires(postun):  systemd
+
+%{?systemd_requires}
 
 Provides:          fastnetmon
 
