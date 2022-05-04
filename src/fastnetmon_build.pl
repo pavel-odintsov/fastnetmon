@@ -1582,6 +1582,9 @@ sub install_fastnetmon {
         $cmake_params .= " -DBoost_NO_BOOST_CMAKE=BOOL:ON";
     }
 
+    # Test that atomics build works as expected
+    $cmake_params .= " -DUSE_NEW_ATOMIC_BUILTINS=ON";
+
     # Fix dependencies for Netmap in 1.1.4
     if ($distro_type eq 'centos' && int($distro_version) == 6) {
         system("sed -i 's/netmap_plugin fastnetmon_packet_parser/netmap_plugin fastnetmon_packet_parser unified_parser/' ../CMakeLists.txt")
