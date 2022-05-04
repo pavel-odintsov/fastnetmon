@@ -19,10 +19,10 @@ URL:               https://fastnetmon.com
 Source0:       https://github.com/pavel-odintsov/fastnetmon/archive/%{fastnetmon_commit}/%{name}-%{fastnetmon_commit}.tar.gz
 
 BuildRequires:     git, make, gcc, gcc-c++, boost-devel, log4cpp-devel
-BuildRequires:     ncurses-devel, boost-thread, boost-regex, libpcap-devel, gpm-devel, cmake
+BuildRequires:     ncurses-devel, boost-thread, boost-regex, libpcap-devel, gpm-devel, cmake, capnproto-devel, grpc-devel, grpc-cpp, grpc-plugins, mongo-c-driver-devel, json-c-devel
 BuildRequires:     systemd
 
-Requires:          log4cpp, libpcap, boost-thread, boost-thread, boost-regex
+Requires:          log4cpp, libpcap, boost-thread, boost-thread, boost-regex, capnproto-libs, capnproto, grpc, mongo-c-driver-libs, json-c
 Requires(pre):     shadow-utils
 Requires(post):    systemd
 Requires(preun):   systemd
