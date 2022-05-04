@@ -68,7 +68,7 @@ jobs:
       - run:
           name: Install build dependencies
           command: dnf builddep -y src/fastnetmon_fedora.spec
-      - run: mkdir ~/rpmbuild/SPECS
+      - run: mkdir -p ~/rpmbuild/SPECS
       - run: cp src/fastnetmon_fedora.spec ~/rpmbuild/SPECS
       - run:
           name: Download source
