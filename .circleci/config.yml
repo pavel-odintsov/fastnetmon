@@ -64,7 +64,7 @@ jobs:
       - image: << parameters.docker_image >>
     steps:
       - checkout
-      - run: dns install -y rpm-build rpmdevtools
+      - run: dnf install -y rpm-build rpmdevtools
       - run:
           name: Install build dependencies
           command: dnf builddep src/fastnetmon_fedora.spec
