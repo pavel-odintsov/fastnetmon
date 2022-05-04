@@ -3,23 +3,23 @@
 %global  fastnetmon_group       %{fastnetmon_user}
 %global  fastnetmon_config_path %{_sysconfdir}/fastnetmon.conf
 
-%global  fastnetmon_commit       86b951b6dffae0fc1e6cbf66fe5f0f4aa61aaa5a
+%global  fastnetmon_commit       89e8923759175a104aa491d4d0b683d627088110
 %global  fastnetmon_project_name fastnetmon
 %global  fastnetmon_company      FastNetMon LTD
 
 Name:              fastnetmon
-Version:           1.1.1
+Version:           1.2.1
 Release:           1%{?dist}
 
-Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFlow, Netmap, PCAP).
+Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFlow, PCAP).
 Group:             System Environment/Daemons
 License:           GPLv2
 URL:               https://fastnetmon.com
 
-Source0:       https://github.com/%{fastnetmon_company}/%{name}/archive/%{fastnetmon_commit}/%{name}-%{fastnetmon_commit}.tar.gz
+Source0:       https://github.com/pavel-odintsov/fastnetmon/archive/%{fastnetmon_commit}/%{name}-%{fastnetmon_commit}.tar.gz
 
-BuildRequires:     git, make, gcc, gcc-c++, boost-devel, GeoIP-devel, log4cpp-devel
-BuildRequires:     ncurses-devel, boost-thread, boost-regex, libpcap-devel, gpm-devel, clang, cmake
+BuildRequires:     git, make, gcc, gcc-c++, boost-devel, log4cpp-devel
+BuildRequires:     ncurses-devel, boost-thread, boost-regex, libpcap-devel, gpm-devel, cmake
 BuildRequires:     systemd
 
 Requires:          log4cpp, libpcap, boost-thread, boost-thread, boost-regex
@@ -32,7 +32,7 @@ Provides:          fastnetmon
 
 %description
 A high performance DoS/DDoS load analyzer built on top of multiple packet capture
-engines (NetFlow, IPFIX, sFlow, Netmap, PCAP).
+engines (NetFlow, IPFIX, sFlow, PCAP).
 
 %prep
 %setup -n %{name}-%{fastnetmon_commit}
@@ -41,7 +41,7 @@ engines (NetFlow, IPFIX, sFlow, Netmap, PCAP).
 cd src
 mkdir build
 cd build
-cmake ..
+cmake .. -DENABLE_CUSTOM_BOOST_BUILD=FALSE -DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE
 make
 
 %install
@@ -98,6 +98,6 @@ fi
 
 
 %changelog
-* Mon Mar 23 2015 Pavel Odintsov <pavel.odintsov@gmail.com> - 1.1.1-1
+* Wed May 4 2022 Pavel Odintsov <pavel.odintsov@gmail.com> - 1.2.1-1
 - First RPM package release
 
