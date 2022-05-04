@@ -155,10 +155,17 @@ int main() {
 }
 " HAVE__ATOMIC_ADD_FETCH)
 
-if (NOT HAVE__ATOMIC_ADD_FETCH)
+if (HAVE__ATOMIC_ADD_FETCH)
+    message(STATUS "We have __atomic_add_fetch on this platform")
+else()
+    message(STATUS "We have no __atomic_add_fetch, will try linking with libatomic")
+
     check_library_exists(atomic __atomic_add_fetch_8 "" HAVE_LIBATOMIC)
+
     if (HAVE_LIBATOMIC)
         target_link_libraries(fastnetmon atomic)
+    else()
+        message(STATUS "We have no support for __atomic_add_fetch in atomic library, skip linking")
     endif()
 endif()
 
