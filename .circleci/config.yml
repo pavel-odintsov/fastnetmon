@@ -56,6 +56,26 @@ jobs:
      - run: echo $CR_PAT | sudo docker login ghcr.io -u pavel-odintsov --password-stdin
      - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:1.2.0
      - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:latest
+  build_fedora_upstream:
+    parameters:
+      docker_image:
+        type: string
+    docker:
+      - image: << parameters.docker_image >>
+    steps:
+      - checkout
+      - run: dns install -y rpm-build rpmdevtools
+      - run:
+          name: Install build dependencies
+          command: dnf builddep src/fastnetmon_fedora.spec
+      - run: mkdir ~/rpmbuild/SPECS
+      - run: cp src/fastnetmon_fedora.spec ~/rpmbuild/SPECS
+      - run:
+          name: Download source
+          command: cd ~/rpmbuild && spectool -g -R SPECS/fastnetmon_fedora.spec
+      - run:
+          name: Build RPM
+          command: cd ~/rpmbuild/SPECS && rpmbuild -bb fastnetmon_fedora.spec
   build_ubuntu:
     parameters:
       docker_image:
@@ -283,3 +303,6 @@ workflows:
       - build_debian_upstream_package:
           name: "Debian Bullseye Upstream Backports Build"
           debian_codename: "bullseye"
+      - build_fedora_upstream:
+          name: "Fedora 35 Upstream RPM"
+          docker_image: fedora:35
