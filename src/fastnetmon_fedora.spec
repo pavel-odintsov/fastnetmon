@@ -12,19 +12,34 @@ Version:           1.2.1
 Release:           1%{?dist}
 
 Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFlow, PCAP).
-Group:             System Environment/Daemons
 License:           GPLv2
 URL:               https://fastnetmon.com
 
 Source0:       https://github.com/pavel-odintsov/fastnetmon/archive/%{fastnetmon_commit}/%{name}-%{fastnetmon_commit}.tar.gz
 
-BuildRequires:     git, make, gcc, gcc-c++, boost-devel, log4cpp-devel
-BuildRequires:     ncurses-devel, boost-thread, boost-regex, libpcap-devel, gpm-devel, cmake, capnproto-devel, capnproto, grpc-devel, grpc-cpp, grpc-plugins, mongo-c-driver-devel, json-c-devel
+BuildRequires:     git
+BuildRequires:     make
+BuildRequires:     gcc
+BuildRequires:     gcc-c++
+BuildRequires:     boost-devel
+BuildRequires:     log4cpp-devel
+BuildRequires:     ncurses-devel
+BuildRequires:     boost-thread
+BuildRequires:     boost-regex
+BuildRequires:     libpcap-devel
+BuildRequires:     gpm-devel
+BuildRequires:     cmake
+BuildRequires:     capnproto-devel
+BuildRequires:     capnproto
+BuildRequires:     grpc-devel
+BuildRequires:     grpc-cpp
+BuildRequires:     grpc-plugins
+BuildRequires:     mongo-c-driver-devel
+BuildRequires:     json-c-devel
 BuildRequires:     systemd
 
-Requires:          log4cpp, libpcap, boost-thread, boost-thread, boost-regex, capnproto-libs, grpc, mongo-c-driver-libs, json-c
 Requires(pre):     shadow-utils
-Requires(post):    systemd
+Requires(post):    %{?systemd_requires}
 Requires(preun):   systemd
 Requires(postun):  systemd
 
@@ -35,18 +50,17 @@ A high performance DoS/DDoS load analyzer built on top of multiple packet captur
 engines (NetFlow, IPFIX, sFlow, PCAP).
 
 %prep
-%setup -n %{name}-%{fastnetmon_commit}
+%autosetup -n %{name}-%{fastnetmon_commit}
 
 %build
-cd src
-mkdir build
-cd build
-cmake .. -DENABLE_CUSTOM_BOOST_BUILD=FALSE -DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE
-make
+
+%cmake -DENABLE_CUSTOM_BOOST_BUILD=FALSE -DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE
+
+%cmake_build
 
 %install
 # install init script
-install -p -D -m 0755 src/fastnetmon.service %{buildroot}%{_sysconfdir}/systemd/system/fastnetmon.service
+install -p -D -m 0755 src/fastnetmon.service %{buildroot}%{_unitdir}//fastnetmon.service
 
 # install daemon binary file
 install -p -D -m 0755 src/build/fastnetmon %{buildroot}%{_sbindir}/fastnetmon
@@ -62,14 +76,11 @@ install -p -d -m 0700 %{buildroot}%{fastnetmon_attackdir}
 
 %pre
 
-exit 0
-
 %post
 %systemd_post fastnetmon.service
 
 if [ $1 -eq 2 ]; then
     # upgrade
-    chmod 700 %{fastnetmon_attackdir}
 fi
 
 %preun
