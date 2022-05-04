@@ -67,7 +67,7 @@ jobs:
       - run: dnf install -y rpm-build rpmdevtools dnf-plugins-core
       - run:
           name: Install build dependencies
-          command: dnf builddep src/fastnetmon_fedora.spec
+          command: dnf builddep -y src/fastnetmon_fedora.spec
       - run: mkdir ~/rpmbuild/SPECS
       - run: cp src/fastnetmon_fedora.spec ~/rpmbuild/SPECS
       - run:
