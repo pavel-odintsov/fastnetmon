@@ -163,9 +163,35 @@ else()
     check_library_exists(atomic __atomic_add_fetch_8 "" HAVE_LIBATOMIC)
 
     if (HAVE_LIBATOMIC)
+        message(STATUS "Linked with atomic library")
         target_link_libraries(fastnetmon atomic)
     else()
         message(STATUS "We have no support for __atomic_add_fetch in atomic library, skip linking")
+    endif()
+endif()
+
+CHECK_CXX_SOURCE_COMPILES("
+#include <cstdint>
+int main() {
+    uint64_t x = 1;
+    __sync_fetch_and_add(&x, 1);
+    return x;
+}
+" HAVE__SYNC_FETCH_AND_ADD)
+
+if (HAVE__SYNC_FETCH_AND_ADD) 
+    message(STATUS "We have __sync_fetch_and_add on this platform")
+else()
+    # We know that it happens for mipsel platform due to https://reviews.llvm.org/D45691
+    message(STATUS "We have no __sync_fetch_and_add on this platform, will try linking with libatomic")
+    
+    check_library_exists(atomic __sync_fetch_and_add_8 "" HAVE_LIBATOMIC_SYNC_FETCH_AND_ADD)
+
+    if (HAVE_LIBATOMIC_SYNC_FETCH_AND_ADD)
+        message(STATUS "Linked with atomic library")
+        target_link_libraries(fastnetmon atomic)
+    else()
+        message(STATUS "We have no support for __sync_fetch_and_add in atomic library, skip linking")
     endif()
 endif()
 
