@@ -141,6 +141,7 @@ configure_file(fast_platform.h.template "${PROJECT_SOURCE_DIR}/fast_platform.h")
 
 # Use new Memory Model Aware Atomic Operations
 # You could enable it using: cmake .. -DUSE_NEW_ATOMIC_BUILTINS=ON
+# We use it for exotic platforms where we have no specific functions in atomics library: https://salsa.debian.org/debian/fastnetmon/-/blob/master/debian/rules#L11
 if (USE_NEW_ATOMIC_BUILTINS)
     message(STATUS "Will use new memory model aware atomic builtins")
     add_definitions(-DUSE_NEW_ATOMIC_BUILTINS) 
