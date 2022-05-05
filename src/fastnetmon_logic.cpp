@@ -2707,7 +2707,7 @@ void process_packet(simple_packet_t& current_packet) {
             get_packet_direction_ipv6(lookup_tree_ipv6, current_packet.src_ipv6, current_packet.dst_ipv6, ipv6_cidr_subnet);
 
 #ifdef USE_NEW_ATOMIC_BUILTINS
-        __atomic_add_fetch(&total_counters_ipv6[current_packet.packet_direction].packets, sampled_number_of_packets, __ATOMIC_RELAXED)
+        __atomic_add_fetch(&total_counters_ipv6[current_packet.packet_direction].packets, sampled_number_of_packets, __ATOMIC_RELAXED);
         __atomic_add_fetch(&total_counters_ipv6[current_packet.packet_direction].bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
 
         __atomic_add_fetch(&total_ipv6_packets, 1, __ATOMIC_RELAXED);
