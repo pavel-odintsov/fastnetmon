@@ -147,6 +147,10 @@ if (USE_NEW_ATOMIC_BUILTINS)
     add_definitions(-DUSE_NEW_ATOMIC_BUILTINS) 
 endif() 
 
+# Be default we do not link with it but we need it on platforms without native support for atomic operations
+# On these platforms we will use logic emulated by libatomic
+set(LINK_WITH_ATOMIC_LIBRARY OFF)
+
 CHECK_CXX_SOURCE_COMPILES("
 #include <cstdint>
 int main() {
@@ -165,7 +169,7 @@ else()
 
     if (HAVE_LIBATOMIC)
         message(STATUS "Linked with atomic library")
-        target_link_libraries(fastnetmon atomic)
+        set(LINK_WITH_ATOMIC_LIBRARY ON)
     else()
         message(STATUS "We have no support for __atomic_add_fetch in atomic library, skip linking")
     endif()
@@ -190,7 +194,7 @@ else()
 
     if (HAVE_LIBATOMIC_SYNC_FETCH_AND_ADD)
         message(STATUS "Linked with atomic library")
-        target_link_libraries(fastnetmon atomic)
+        set(LINK_WITH_ATOMIC_LIBRARY ON)
     else()
         message(STATUS "We have no support for __sync_fetch_and_add in atomic library, skip linking")
     endif()
@@ -663,6 +667,13 @@ target_link_libraries(fastnetmon fastnetmon_logic)
 
 if (ENABLE_NETMAP_SUPPORT)
     target_link_libraries(fastnetmon netmap_plugin)
+endif()
+
+# According to YunQiang Su debian-mips@lists.debian.org 
+# Due to the limitation of gnu ld, -latomic should be put after library which calls it
+# I decided that keeping it here as very last dependency is pretty good option to guarantee it
+if (LINK_WITH_ATOMIC_LIBRARY) 
+    target_link_libraries(fastnetmon atomic)
 endif()
 
 # cmake .. -DBUILD_PLUGIN_RUNNER=ON
