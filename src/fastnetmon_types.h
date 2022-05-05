@@ -17,7 +17,13 @@
 
 #include "map_element.hpp"
 
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
 #include "fastnetmon_networks.hpp"
+
+enum attack_severity_t { ATTACK_SEVERITY_LOW, ATTACK_SEVERITY_MIDDLE, ATTACK_SEVERITY_HIGH };
 
 typedef std::vector<map_element_t> vector_of_counters_t;
 
@@ -172,13 +178,25 @@ class total_counter_element_t {
 // structure with attack details
 class attack_details_t : public map_element_t {
     public:
-    attack_details_t()
-    : attack_protocol(0), attack_power(0), max_attack_power(0), average_in_bytes(0), average_out_bytes(0),
-      average_in_packets(0), average_out_packets(0), average_in_flows(0), average_out_flows(0), ban_time(0),
-      attack_direction(OTHER), unban_enabled(true) {
+    // This operation is very heavy, it may crash in case of entropy shortage and it actually happened to our customer
+    bool generate_uuid() {
+        boost::uuids::random_generator gen;
 
-        customer_network.subnet_address     = 0;
-        customer_network.cidr_prefix_length = 0;
+        try {
+            attack_uuid = gen();
+        } catch (...) {
+            return false;
+        }
+
+        return true;
+    }
+
+    std::string get_protocol_name() const {
+        if (ipv6) {
+            return "IPv6";
+        } else {
+            return "IPv4";
+        }
     }
 
     // Host group for this attack
@@ -187,34 +205,46 @@ class attack_details_t : public map_element_t {
     // Parent hostgroup for host's host group
     std::string parent_host_group;
 
-    direction_t attack_direction;
+    direction_t attack_direction = OTHER;
+
     // first attackpower detected
-    uint64_t attack_power;
+    uint64_t attack_power = 0;
+
     // max attack power
-    uint64_t max_attack_power;
-    unsigned int attack_protocol;
+    uint64_t max_attack_power    = 0;
+    unsigned int attack_protocol = 0;
 
     // Average counters
-    uint64_t average_in_bytes;
-    uint64_t average_out_bytes;
-    uint64_t average_in_packets;
-    uint64_t average_out_packets;
-    uint64_t average_in_flows;
-    uint64_t average_out_flows;
+    uint64_t average_in_bytes    = 0;
+    uint64_t average_out_bytes   = 0;
+    uint64_t average_in_packets  = 0;
+    uint64_t average_out_packets = 0;
+    uint64_t average_in_flows    = 0;
+    uint64_t average_out_flows   = 0;
 
-    // time when we but this user
-    time_t ban_timestamp;
-    bool unban_enabled;
-    int ban_time; // seconds of the ban
+    // Time when we ban this IP
+    time_t ban_timestamp = 0;
+    bool unban_enabled   = true;
+    int ban_time         = 0; // seconds of the ban
 
     // If this attack was detected for IPv6 protocol
     bool ipv6 = false;
 
-    attack_detection_source_t attack_detection_source = attack_detection_source_t::Automatic;
-
     subnet_cidr_mask_t customer_network;
 
-    packet_storage_t pcap_attack_dump;
+    attack_detection_source_t attack_detection_source = attack_detection_source_t::Automatic;
+    boost::uuids::uuid attack_uuid{};
+    attack_severity_t attack_severity = ATTACK_SEVERITY_MIDDLE;
+
+    // Threshold used to trigger this attack
+    attack_detection_threshold_type_t attack_detection_threshold = attack_detection_threshold_type_t::unknown;
+
+    // Direction of threshold used to trigger this attack
+    attack_detection_direction_type_t attack_detection_direction = attack_detection_direction_type_t::unknown;
+
+    std::string get_attack_uuid_as_string() const {
+        return boost::uuids::to_string(attack_uuid);
+    }
 };
 
 
