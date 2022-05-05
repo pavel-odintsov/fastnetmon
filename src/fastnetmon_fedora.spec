@@ -3,7 +3,7 @@
 %global  fastnetmon_group       %{fastnetmon_user}
 %global  fastnetmon_config_path %{_sysconfdir}/fastnetmon.conf
 
-%global  fastnetmon_commit       1f03ad72f0cc2d59977fc085c6833d5ac7613467
+%global  fastnetmon_commit       master
 %global  fastnetmon_project_name fastnetmon
 %global  fastnetmon_company      FastNetMon LTD
 
