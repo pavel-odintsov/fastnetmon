@@ -62,6 +62,7 @@ jobs:
         type: string
     docker:
       - image: << parameters.docker_image >>
+    resource_class: large
     steps:
       - checkout
       - run: dnf install -y rpm-build rpmdevtools dnf-plugins-core
