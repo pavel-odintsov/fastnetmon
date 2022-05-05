@@ -12,8 +12,11 @@
  * "demo.c" so that it could be used as a standalone API.
  */
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 static char copyright[] = "This product includes software developed by the University of Michigan, Merit"
                           "Network, Inc., and their contributors.";
+#pragma GCC diagnostic pop
 
 #include <arpa/inet.h> /* BSD, Linux, Solaris: for inet_addr */
 #include <assert.h> /* assert */

@@ -11,10 +11,11 @@
 #include "iana_ip_protocols.h"
 
 /*
- * TODO:
- * Add strict type check for ntohl/ntohs and ntonl/htons
- *
- */
+
+TODO:
+1) Add strict type check for ntohl/ntohs and ntonl/htons
+
+*/
 
 #include <arpa/inet.h> // ntohs, ntohl
 
@@ -29,10 +30,10 @@ namespace network_data_stuctures {
  * host byte order (little
  * endian) */
 struct __attribute__((__packed__)) ipv4_octets_form_little_endian_t {
-    uint8_t fourth;
-    uint8_t third;
-    uint8_t second;
-    uint8_t first;
+    uint8_t fourth = 0;
+    uint8_t third  = 0;
+    uint8_t second = 0;
+    uint8_t first  = 0;
 };
 
 // Convert IP as integer to string representation
@@ -81,7 +82,7 @@ inline std::string convert_mac_to_string(uint8_t (&mac_as_array)[6]) {
 // TODO: it's not finished yet
 class __attribute__((__packed__)) mpls_label_t {
     public:
-    uint32_t label : 20, qos : 3, bottom_of_stack : 1, ttl : 8;
+    uint32_t label : 20 = 0, qos : 3 = 0, bottom_of_stack : 1 = 0, ttl : 8 = 0;
 
     std::string print() {
         std::stringstream buffer;
@@ -102,11 +103,12 @@ static_assert(sizeof(mpls_label_t) == 4, "Bad size for mpls_label_t");
 class __attribute__((__packed__)) ethernet_vlan_header_t {
     public:
     union {
+        // it's not allowed to initlize each bitfield here as we initialize vlan_metadata_as_integer
         __extension__ struct { uint16_t vlan_id : 12, cfi : 1, priority : 3; };
-        uint16_t vlan_metadata_as_integer;
+        uint16_t vlan_metadata_as_integer = 0;
     };
 
-    uint16_t ethertype;
+    uint16_t ethertype = 0;
 
     void convert() {
         ethertype                = ntohs(ethertype);
@@ -131,7 +133,7 @@ class __attribute__((__packed__)) ethernet_header_t {
     public:
     uint8_t destination_mac[6];
     uint8_t source_mac[6];
-    uint16_t ethertype;
+    uint16_t ethertype = 0;
 
     void convert() {
         ethertype = ntohs(ethertype);
@@ -155,17 +157,19 @@ static_assert(sizeof(ethernet_header_t) == 14, "Bad size for ethernet_header_t")
 // address)
 class __attribute__((__packed__)) arp_header_t {
     public:
-    uint16_t hardware_type;
-    uint16_t protocol_type;
+    uint16_t hardware_type = 0;
+    uint16_t protocol_type = 0;
 
-    uint8_t hardware_address_length;
-    uint8_t protocol_address_length;
+    uint8_t hardware_address_length = 0;
+    uint8_t protocol_address_length = 0;
 
-    uint16_t operation;
+    uint16_t operation = 0;
+
     uint8_t sender_hardware_address[6];
-    uint32_t sender_protocol_address;
+    uint32_t sender_protocol_address = 0;
+
     uint8_t target_hardware_address[6];
-    uint32_t target_protocol_address;
+    uint32_t target_protocol_address = 0;
 
     void convert() {
         // 16 bit
@@ -197,10 +201,10 @@ class __attribute__((__packed__)) arp_header_t {
 
 class __attribute__((__packed__)) icmp_header_t {
     public:
-    uint8_t type;
-    uint8_t code;
-    uint16_t checksum;
-    uint32_t rest_of_header;
+    uint8_t type            = 0;
+    uint8_t code            = 0;
+    uint16_t checksum       = 0;
+    uint32_t rest_of_header = 0;
 
     void convert() {
         checksum = htons(checksum);
@@ -219,10 +223,10 @@ class __attribute__((__packed__)) icmp_header_t {
 
 class __attribute__((__packed__)) udp_header_t {
     public:
-    uint16_t source_port;
-    uint16_t destination_port;
-    uint16_t length;
-    uint16_t checksum;
+    uint16_t source_port      = 0;
+    uint16_t destination_port = 0;
+    uint16_t length           = 0;
+    uint16_t checksum         = 0;
 
     void convert() {
         source_port      = ntohs(source_port);
@@ -245,10 +249,38 @@ class __attribute__((__packed__)) udp_header_t {
 
 static_assert(sizeof(udp_header_t) == 8, "Bad size for udp_header_t");
 
+// https://datatracker.ietf.org/doc/html/rfc2784
+class __attribute__((__packed__)) gre_packet_t {
+    public:
+    // Not sure about order of them, worth checking in future
+    // For some reasons PVS thinks that we did not initlized all members. I think they're not that great with bitfields
+    uint16_t checksum : 1 = 0, reserved : 12 = 0, version : 3 = 0; //-V730
+    uint16_t protocol_type = 0;
+
+    void convert() {
+        // 16 bit
+        protocol_type = ntohs(protocol_type);
+    }
+
+    std::string print() {
+        std::stringstream buffer;
+
+        buffer << "checksum: " << uint32_t(checksum) << " "
+               << "reserved: " << uint32_t(reserved) << " "
+               << "version: " << uint32_t(version) << " "
+               << "protocol_type: " << uint32_t(protocol_type);
+
+        return buffer.str();
+    }
+};
+
+static_assert(sizeof(gre_packet_t) == 4, "Bad size for gre_packet_t");
+
 // It's tcp packet flags represented as bitfield for user friendly access to this flags
 class __attribute__((__packed__)) tcp_flags_as_uint16_t {
     public:
-    uint16_t fin : 1, syn : 1, rst : 1, psh : 1, ack : 1, urg : 1, ece : 1, cwr : 1, ns : 1, reserved : 3, data_offset : 4;
+    uint16_t fin : 1 = 0, syn : 1 = 0, rst : 1 = 0, psh : 1 = 0, ack : 1 = 0, urg : 1 = 0, ece : 1 = 0, cwr : 1 = 0,
+                   ns : 1 = 0, reserved : 3 = 0, data_offset : 4 = 0;
 
     std::string print() {
         std::stringstream buffer;
@@ -272,9 +304,10 @@ class __attribute__((__packed__)) tcp_flags_as_uint16_t {
 // It's another version of previous code suitable for nice casting from 32 bit
 class __attribute__((__packed__)) tcp_flags_as_uint32_t {
     public:
-    tcp_flags_as_uint16_t data;
-    uint16_t not_used1;
-    uint8_t not_used2;
+    tcp_flags_as_uint16_t data{};
+    uint16_t not_used1i = 0;
+    uint8_t not_used2   = 0;
+
     std::string print() {
         return data.print();
     }
@@ -282,23 +315,24 @@ class __attribute__((__packed__)) tcp_flags_as_uint32_t {
 
 class __attribute__((__packed__)) tcp_header_t {
     public:
-    uint16_t source_port;
-    uint16_t destination_port;
-    uint32_t sequence_number;
-    uint32_t ack_number;
+    uint16_t source_port      = 0;
+    uint16_t destination_port = 0;
+    uint32_t sequence_number  = 0;
+    uint32_t ack_number       = 0;
     union {
         __extension__ struct __attribute__((__packed__)) {
             // uint16_t data_offset : 4, reserved : 3, ns : 1, cwr : 1, ece : 1, urg :
             // 1, ack : 1,
             // psh : 1, rst : 1, syn : 1, fin : 1;
+            // it's not allowed to initlize each bitfield here as we initialize data_offset_and_flags_as_integer
             uint16_t fin : 1, syn : 1, rst : 1, psh : 1, ack : 1, urg : 1, ece : 1, cwr : 1, ns : 1, reserved : 3, data_offset : 4;
         };
 
-        uint16_t data_offset_and_flags_as_integer;
+        uint16_t data_offset_and_flags_as_integer = 0;
     };
-    uint16_t window_size;
-    uint16_t checksum;
-    uint16_t urgent;
+    uint16_t window_size = 0;
+    uint16_t checksum    = 0;
+    uint16_t urgent      = 0;
 
     void convert() {
         // 16 bit data
@@ -379,17 +413,18 @@ inline std::string convert_ipv6_in_big_endian_to_string(uint8_t (&v6_address)[16
 /* IPv6 fragmentation header option */
 class __attribute__((__packed__)) ipv6_extention_header_fragment_t {
     public:
-    uint8_t next_header;
-    uint8_t reserved1;
+    uint8_t next_header = 0;
+    uint8_t reserved1   = 0;
     union {
         __extension__ struct {
             // uint16_t fragment_offset : 13, reserved2 : 2, more_fragments : 1;
+            // it's not allowed to initlize each bitfield here as we initialize fragmentation_and_flags_as_integer
             uint16_t more_fragments : 1, reserved2 : 2, fragment_offset : 13;
         };
-        uint16_t fragmentation_and_flags_as_integer;
+        uint16_t fragmentation_and_flags_as_integer = 0;
     };
 
-    uint32_t identification;
+    uint32_t identification = 0;
 
     void convert() {
         fragmentation_and_flags_as_integer = ntohs(fragmentation_and_flags_as_integer);
@@ -415,13 +450,14 @@ static_assert(sizeof(ipv6_extention_header_fragment_t) == 8, "Bad size for ipv6_
 class __attribute__((__packed__)) ipv6_header_t {
     public:
     union {
+        // it's not allowed to initlize each bitfield here as we initialize version_and_traffic_class_as_integer
         __extension__ struct { uint32_t flow_label : 20, traffic_class : 8, version : 4; };
 
-        uint32_t version_and_traffic_class_as_integer;
+        uint32_t version_and_traffic_class_as_integer = 0;
     };
-    uint16_t payload_length;
-    uint8_t next_header;
-    uint8_t hop_limit;
+    uint16_t payload_length = 0;
+    uint8_t next_header     = 0;
+    uint8_t hop_limit       = 0;
     ipv6_address source_address;
     ipv6_address destination_address;
 
@@ -458,11 +494,12 @@ class __attribute__((__packed__)) ipv4_header_fragmentation_flags_t {
         // We are using GCC extension here. It's working perfectly for clang and gcc
         // but could
         // produce warning in pedantic mode
+        // it's not allowed to initlize each bitfield here as we initialize fragmentation_details_as_integer
         __extension__ struct {
             uint16_t fragment_offset : 13, more_fragments_flag : 1, dont_fragment_flag : 1, reserved_flag : 1;
         };
 
-        uint16_t fragmentation_details_as_integer;
+        uint16_t fragmentation_details_as_integer = 0;
     };
 
     std::string print() {
@@ -481,7 +518,7 @@ class __attribute__((__packed__)) ipv4_header_fragmentation_flags_t {
 class __attribute__((__packed__)) ipv4_header_fragmentation_flags_as_32bit_t {
     public:
     ipv4_header_fragmentation_flags_t data;
-    uint16_t not_used1;
+    uint16_t not_used1 = 0;
 
     std::string print() {
         return data.print();
@@ -490,12 +527,12 @@ class __attribute__((__packed__)) ipv4_header_fragmentation_flags_as_32bit_t {
 
 class __attribute__((__packed__)) ipv4_header_t {
     public:
-    uint8_t ihl : 4, version : 4;
-    uint8_t ecn : 2, dscp : 6;
+    uint8_t ihl : 4 = 0, version : 4 = 0;
+    uint8_t ecn : 2 = 0, dscp : 6 = 0;
 
     // This is the combined length of the header and the data
-    uint16_t total_length;
-    uint16_t identification;
+    uint16_t total_length   = 0;
+    uint16_t identification = 0;
 
     union {
         // We should store bitfields in nested struct. Othervise each of bitfields
@@ -504,18 +541,19 @@ class __attribute__((__packed__)) ipv4_header_t {
         // We are using GCC extension here. It's working perfectly for clang and gcc
         // but could
         // produce warning in pedantic mode
+        // it's not allowed to initlize each bitfield here as we initialize fragmentation_details_as_integer
         __extension__ struct {
             uint16_t fragment_offset : 13, more_fragments_flag : 1, dont_fragment_flag : 1, reserved_flag : 1;
         };
 
-        uint16_t fragmentation_details_as_integer;
+        uint16_t fragmentation_details_as_integer = 0;
     };
 
-    uint8_t ttl;
-    uint8_t protocol;
-    uint16_t checksum;
-    uint32_t source_ip;
-    uint32_t destination_ip;
+    uint8_t ttl             = 0;
+    uint8_t protocol        = 0;
+    uint16_t checksum       = 0;
+    uint32_t source_ip      = 0;
+    uint32_t destination_ip = 0;
 
     ipv4_header_t()
     : version(0), ihl(0), ecn(0), dscp(0), total_length(0), identification(0), ttl(0), protocol(0), checksum(0),
@@ -575,7 +613,7 @@ class __attribute__((__packed__)) ipv4_header_t {
 
 static_assert(sizeof(ipv4_header_t) == 20, "Bad size for ipv4_header_t");
 
-enum class parser_code_t { memory_violation, not_ipv4, success };
+enum class parser_code_t { memory_violation, not_ipv4, success, broken_gre, no_ipv6_support, unknown_ethertype, arp };
 
 std::string parser_code_to_string(parser_code_t code);
 } // namespace network_data_stuctures
