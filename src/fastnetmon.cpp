@@ -1398,9 +1398,14 @@ void redirect_fds() {
     }
 
     // Create copy of zero decriptor for 1 and 2 fd's
-    // We do not need return codes here but we need do it for suppressing complaints from compiler
+    // We do not need return codes here but we need do it for suppressing
+    // complaints from compiler
+    // Ignore warning because I prefer to have these unusued variables here for clarity
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
     int first_dup_result  = dup(0);
     int second_dup_result = dup(0);
+#pragma GCC diagnostic pop
 }
 
 int main(int argc, char** argv) {
@@ -1478,7 +1483,11 @@ int main(int argc, char** argv) {
             umask(0);
 
             // Chdir to root
+            // I prefer to keep this variable for clarity
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
             int chdir_result = chdir("/");
+#pragma GCC diagnostic pop
 
             // close all descriptors because we are daemon!
             redirect_fds();

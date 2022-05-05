@@ -839,8 +839,6 @@ void execute_unban_operation_ipv6() {
     ban_list_ipv6_ng.get_whole_banlist(ban_list_copy);
 
     for (auto itr : ban_list_copy) {
-        auto client_ip = itr.first;
-
         // This IP should be banned permanentely and we skip any processing
         if (!itr.second.unban_enabled) {
             continue;
@@ -1678,7 +1676,6 @@ void call_ban_handlers(uint32_t client_ip,
 void store_data_in_mongo(std::string key_name, std::string attack_details_json) {
     mongoc_client_t* client;
     mongoc_collection_t* collection;
-    mongoc_cursor_t* cursor;
     bson_error_t error;
     bson_oid_t oid;
     bson_t* doc;
@@ -2474,9 +2471,7 @@ std::string draw_table_ipv6(direction_t sort_direction, bool do_redis_update, so
         uint64_t bps   = 0;
         uint64_t flows = 0;
 
-        uint64_t pps_average   = 0;
         uint64_t bps_average   = 0;
-        uint64_t flows_average = 0;
 
         // Here we could have average or instantaneous speed
         map_element_t* current_speed_element = &ii->second;
@@ -2587,9 +2582,7 @@ std::string draw_table_ipv4(direction_t data_direction, bool do_redis_update, so
         uint64_t bps   = 0;
         uint64_t flows = 0;
 
-        uint64_t pps_average   = 0;
         uint64_t bps_average   = 0;
-        uint64_t flows_average = 0;
 
         // Here we could have average or instantaneous speed
         map_element_t* current_speed_element = &ii->second;

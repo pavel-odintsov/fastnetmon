@@ -127,9 +127,6 @@ void walk_block(struct block_desc* pbd, const int block_num) {
         packet_header.len    = ppd->tp_snaplen;
         packet_header.caplen = ppd->tp_snaplen;
 
-        u_int8_t timestamp = 0;
-        u_int8_t add_hash  = 0;
-
         u_char* data_pointer = (u_char*)((uint8_t*)ppd + ppd->tp_mac);
 
         simple_packet_t packet;
