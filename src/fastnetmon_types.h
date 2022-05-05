@@ -239,6 +239,8 @@ class attack_details_t : public map_element_t {
     // Threshold used to trigger this attack
     attack_detection_threshold_type_t attack_detection_threshold = attack_detection_threshold_type_t::unknown;
 
+    packet_storage_t pcap_attack_dump;
+
     // Direction of threshold used to trigger this attack
     attack_detection_direction_type_t attack_detection_direction = attack_detection_direction_type_t::unknown;
 
