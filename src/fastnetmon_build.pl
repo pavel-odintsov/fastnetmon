@@ -1583,7 +1583,7 @@ sub install_fastnetmon {
     }
 
     # Test that atomics build works as expected
-    $cmake_params .= " -DUSE_NEW_ATOMIC_BUILTINS=ON";
+    # $cmake_params .= " -DUSE_NEW_ATOMIC_BUILTINS=ON";
 
     # Fix dependencies for Netmap in 1.1.4
     if ($distro_type eq 'centos' && int($distro_version) == 6) {
