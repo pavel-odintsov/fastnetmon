@@ -15,7 +15,8 @@ Summary:           A high performance DoS/DDoS load analyzer built on top of mul
 License:           GPLv2
 URL:               https://fastnetmon.com
 
-Source0:       https://github.com/pavel-odintsov/fastnetmon/archive/%{fastnetmon_commit}/%{name}-%{fastnetmon_commit}.tar.gz
+# Source           https://github.com/pavel-odintsov/fastnetmon/archive/%{fastnetmon_commit}/%{name}-%{fastnetmon_commit}.tar.gz
+Source0:           https://github.com/pavel-odintsov/fastnetmon/archive/master.tar.gz
 
 BuildRequires:     git
 BuildRequires:     make
