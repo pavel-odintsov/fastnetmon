@@ -62,10 +62,10 @@ engines (NetFlow, IPFIX, sFlow, PCAP).
 install -p -D -m 0644 src/fastnetmon_fedora.service %{buildroot}%{_unitdir}/fastnetmon.service
 
 # install daemon binary file
-install -p -D -m 0755 src/build/fastnetmon %{buildroot}%{_sbindir}/fastnetmon
+install -p -D -m 0755 %__cmake_builddir/fastnetmon %{buildroot}%{_sbindir}/fastnetmon
 
 # install client binary file 
-install -p -D -m 0755 src/build/fastnetmon_client %{buildroot}%{_bindir}/fastnetmon_client
+install -p -D -m 0755 %__cmake_builddir/fastnetmon_client %{buildroot}%{_bindir}/fastnetmon_client
 
 # install config
 install -p -D -m 0644 src/fastnetmon.conf %{buildroot}%{fastnetmon_config_path}
