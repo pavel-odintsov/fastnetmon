@@ -59,7 +59,7 @@ engines (NetFlow, IPFIX, sFlow, PCAP).
 
 %install
 # install init script
-install -p -D -m 0644 src/fastnetmon.service %{buildroot}%{_unitdir}//fastnetmon.service
+install -p -D -m 0644 src/fastnetmon_fedora.service %{buildroot}%{_unitdir}/fastnetmon.service
 
 # install daemon binary file
 install -p -D -m 0755 src/build/fastnetmon %{buildroot}%{_sbindir}/fastnetmon
