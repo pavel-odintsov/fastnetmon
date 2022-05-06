@@ -77,6 +77,12 @@ jobs:
       - run:
           name: Build RPM
           command: cd ~/rpmbuild/SPECS && rpmbuild -bb fastnetmon_fedora.spec
+      - store_artifacts:
+          path: /root/rpmbuild/RPMS/x86_64/fastnetmon-1.2.1-1.fc35.x86_64.rpm
+      - store_artifacts:
+          path: /root/rpmbuild/RPMS/x86_64/fastnetmon-debugsource-1.2.1-1.fc35.x86_64.rpm
+      - store_artifacts:
+          path: /root/rpmbuild/RPMS/x86_64/fastnetmon-debuginfo-1.2.1-1.fc35.x86_64.rpm
   build_ubuntu:
     parameters:
       docker_image:
