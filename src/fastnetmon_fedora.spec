@@ -15,7 +15,6 @@ Summary:           A high performance DoS/DDoS load analyzer built on top of mul
 License:           GPLv2
 URL:               https://fastnetmon.com
 
-# Source           https://github.com/pavel-odintsov/fastnetmon/archive/%{fastnetmon_commit}/%{name}-%{fastnetmon_commit}.tar.gz
 Source0:           https://github.com/pavel-odintsov/fastnetmon/archive/master.tar.gz
 
 BuildRequires:     git
@@ -54,7 +53,7 @@ engines (NetFlow, IPFIX, sFlow, PCAP).
 
 %build
 
-%cmake -DENABLE_CUSTOM_BOOST_BUILD=FALSE -DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE src
+%cmake -DENABLE_CUSTOM_BOOST_BUILD=FALSE -DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE -DCMAKE_SKIP_BUILD_RPATH=TRUE src
 
 %cmake_build
 
@@ -96,8 +95,6 @@ fi
 
 
 %files
-#%doc LICENSE CHANGES README
-# init script
 %{_sysconfdir}/systemd/system
 
 # binary daemon
