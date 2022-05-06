@@ -2488,8 +2488,6 @@ std::string draw_table_ipv6(direction_t sort_direction, bool do_redis_update, so
         }
 
         uint64_t mbps         = convert_speed_to_mbps(bps);
-        uint64_t mbps_average = convert_speed_to_mbps(bps_average);
-
 
         // We use setw for alignment
         output_buffer << client_ip_as_string << "\t";
@@ -2599,7 +2597,6 @@ std::string draw_table_ipv4(direction_t data_direction, bool do_redis_update, so
         }
 
         uint64_t mbps         = convert_speed_to_mbps(bps);
-        uint64_t mbps_average = convert_speed_to_mbps(bps_average);
 
         std::string is_banned = ban_list.count(client_ip) > 0 ? " *banned* " : "";
 
