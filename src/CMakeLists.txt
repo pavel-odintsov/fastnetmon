@@ -781,7 +781,7 @@ if (NOT DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
 # Specify config for deb package
 # http://www.cmake.org/Wiki/CMake:CPackPackageGenerators#DEB_.28UNIX_only.29
 # These dependencies are for Debian Bullseye
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-thread-dev, libboost-system-dev, libboost-regex-dev, libpcap-dev, libnuma-dev, liblog4cpp5-dev libgrpc10, libgrpc++1, libcapnp-0.7.0, libmongoc-1.0-0, libbson-1.0-0, libboost-program-options1.74.0")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-thread-dev, libboost-system-dev, libboost-regex-dev, libpcap-dev, libnuma-dev, liblog4cpp5-dev, libgrpc10, libgrpc++1, libcapnp-0.7.0, libmongoc-1.0-0, libbson-1.0-0, libboost-program-options1.74.0")
 
 endif()
 
