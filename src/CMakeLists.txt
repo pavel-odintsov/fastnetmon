@@ -765,17 +765,26 @@ if (${OS_ID} MATCHES debian|ubuntu)
 install(FILES fastnetmon_init_script_debian_6_7 DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/init.d RENAME fastnetmon)
 endif()
 
+# Get version information from Git repository for later use in CPACK
+execute_process(COMMAND git describe --tags --dirty=-dirty
+                OUTPUT_VARIABLE GIT_DESCRIBE_OUT
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+string(REGEX REPLACE "^v([0-9]+)\\..*" "\\1" VERSION_MAJOR "${GIT_DESCRIBE_OUT}")
+string(REGEX REPLACE "^v[0-9]+\\.([0-9]+).*" "\\1" VERSION_MINOR "${GIT_DESCRIBE_OUT}")
+string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" VERSION_PATCH "${GIT_DESCRIBE_OUT}")
+string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.[0-9]+(.*)" "\\1" VERSION_DESCRIBE "${GIT_DESCRIBE_OUT}")
+
 # Configure cpack package builder
 # Run it with: cd build; cpack -G DEB ..
 set(CPACK_PACKAGE_NAME "fastnetmon")
 set(CPACK_PACKAGE_VENDOR "fastnetmon.com")
 set(CPACK_PACKAGE_CONTACT "pavel.odintsov@gmail.com")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "FastNetMon - very fast DDoS analyzer with sflow/netflow/mirror support")
-set(CPACK_PACKAGE_VERSION "1.1.2")
-set(CPACK_PACKAGE_VERSION_MAJOR "1")
-set(CPACK_PACKAGE_VERSION_MINOR "1")
-set(CPACK_PACKAGE_VERSION_PATCH "2")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "")
+set(CPACK_PACKAGE_VERSION_MAJOR "${VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "${VERSION_PATCH}${VERSION_DESCRIBE}")
 # set(CPACK_PACKAGE_INSTALL_DIRECTORY "CPack Component Example")
 
 # Specify config for deb package
