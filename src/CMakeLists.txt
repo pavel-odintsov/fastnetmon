@@ -789,7 +789,11 @@ set(CPACK_PACKAGE_VERSION_PATCH "${VERSION_PATCH}${VERSION_DESCRIBE}")
 
 # Specify config for deb package
 # http://www.cmake.org/Wiki/CMake:CPackPackageGenerators#DEB_.28UNIX_only.29
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-thread-dev, libboost-system-dev, libboost-regex-dev, libpcap-dev, libnuma-dev, liblog4cpp5-dev")
+if (DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-thread-dev, libboost-system-dev, libboost-regex-dev, libpcap-dev, libnuma-dev, liblog4cpp5-dev")
+else ()
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libgrpc10, libgrpc++1, libcapnp-0.7.0, libmongoc-1.0-0, libbson-1.0-0, liblog4cpp5v5, libboost-program-options1.74.0")
+endif ()
 
 # This must always be last!
 include(CPack)
