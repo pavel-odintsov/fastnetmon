@@ -21,8 +21,8 @@ include(CheckLibraryExists)
 # add_definitions ("-Wall")
 
 set (FASTNETMON_VERSION_MAJOR 1)
-set (FASTNETMON_VERSION_MINOR 1)
-
+set (FASTNETMON_VERSION_MINOR 2)
+set (FASTNETMON_VERSION_PATCH 1)
 
 set(HIREDIS_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libhiredis_0_13")
 set(LOG4CPP_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/log4cpp1.1.3")
@@ -136,7 +136,7 @@ add_executable(fastnetmon fastnetmon.cpp)
 # Get last commit hash
 execute_process(COMMAND git rev-list HEAD COMMAND head -n 1 OUTPUT_VARIABLE GIT_LAST_COMMIT_HASH OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-set(FASTNETMON_APPLICATION_VERSION "1.2.1 master git-${GIT_LAST_COMMIT_HASH}")
+set(FASTNETMON_APPLICATION_VERSION "${FASTNETMON_VERSION_MAJOR}.${FASTNETMON_VERSION_MINOR}.${FASTNETMON_VERSION_PATCH} master git-${GIT_LAST_COMMIT_HASH}")
 configure_file(fast_platform.h.template "${PROJECT_SOURCE_DIR}/fast_platform.h")
 
 # Use new Memory Model Aware Atomic Operations
@@ -765,22 +765,25 @@ if (${OS_ID} MATCHES debian|ubuntu)
 install(FILES fastnetmon_init_script_debian_6_7 DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/init.d RENAME fastnetmon)
 endif()
 
+# For Debian packages build please use our logic from upstream: https://salsa.debian.org/debian/fastnetmon
+
 # Configure cpack package builder
 # Run it with: cd build; cpack -G DEB ..
 set(CPACK_PACKAGE_NAME "fastnetmon")
 set(CPACK_PACKAGE_VENDOR "fastnetmon.com")
 set(CPACK_PACKAGE_CONTACT "pavel.odintsov@gmail.com")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "FastNetMon - very fast DDoS analyzer with sflow/netflow/mirror support")
-set(CPACK_PACKAGE_VERSION "1.1.2")
-set(CPACK_PACKAGE_VERSION_MAJOR "1")
-set(CPACK_PACKAGE_VERSION_MINOR "1")
-set(CPACK_PACKAGE_VERSION_PATCH "2")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "FastNetMon - very fast DoS/DDoS detector with sFlow/Netflow/mirror support")
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "")
 # set(CPACK_PACKAGE_INSTALL_DIRECTORY "CPack Component Example")
 
+if (NOT DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
+
 # Specify config for deb package
 # http://www.cmake.org/Wiki/CMake:CPackPackageGenerators#DEB_.28UNIX_only.29
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-thread-dev, libboost-system-dev, libboost-regex-dev, libpcap-dev, libnuma-dev, liblog4cpp5-dev")
+# These dependencies are for Debian Bullseye
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-thread-dev, libboost-system-dev, libboost-regex-dev, libpcap-dev, libnuma-dev, liblog4cpp5-dev libgrpc10, libgrpc++1, libcapnp-0.7.0, libmongoc-1.0-0, libbson-1.0-0, libboost-program-options1.74.0")
+
+endif()
 
 # This must always be last!
 include(CPack)
