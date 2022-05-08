@@ -794,6 +794,7 @@ if (DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
 else ()
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "libgrpc10, libgrpc++1, libcapnp-0.7.0, libmongoc-1.0-0, libbson-1.0-0, liblog4cpp5v5, libboost-program-options1.74.0")
 endif ()
+set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
 
 # This must always be last!
 include(CPack)
