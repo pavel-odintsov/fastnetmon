@@ -8,7 +8,7 @@
 %global  fastnetmon_company      FastNetMon LTD
 
 Name:              fastnetmon
-Version:           1.2.1
+Version:           1.2.2
 Release:           1%{?dist}
 
 Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFlow, PCAP).
@@ -111,6 +111,6 @@ fi
 
 
 %changelog
-* Wed May 4 2022 Pavel Odintsov <pavel.odintsov@gmail.com> - 1.2.1-1
+* Saturday May 14 2022 Pavel Odintsov <pavel.odintsov@gmail.com> - 1.2.2-1
 - First RPM package release
 

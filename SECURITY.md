@@ -6,7 +6,8 @@ We support only latest current version of FastNetMon. We do not issue security f
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.2.0   | :white_check_mark: |
+| 1.2.1   | :white_check_mark: |
+| 1.2.0   | :x:                |
 | 1.1.9   | :x:                |
 | 1.1.8   | :x:                |
 | 1.1.7   | :x:                |
