@@ -271,6 +271,10 @@ workflows:
           docker_image: almalinux:8
           centos_version: "8"
           name: "centos8"
+      - build_centos:
+          docker_image: almalinux:9
+          centos_version: "9"
+          name: "centos9"
       - build_ubuntu:
           docker_image: "ubuntu:jammy"
           ubuntu_version: "22.04"
