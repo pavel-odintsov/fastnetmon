@@ -18,6 +18,8 @@
 
 #include <json-c/json.h>
 
+#include "nlohmann/json.hpp"
+
 // Boost libs
 #include <boost/algorithm/string.hpp>
 

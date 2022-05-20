@@ -949,33 +949,14 @@ bool manage_interface_promisc_mode(std::string interface_name, bool switch_on) {
 
 #endif
 
-json_object* serialize_attack_description_to_json(attack_details_t& current_attack) {
-    json_object* jobj = json_object_new_object();
-
-    attack_type_t attack_type         = detect_attack_type(current_attack);
-    std::string printable_attack_type = get_printable_attack_name(attack_type);
-
-    json_object_object_add(jobj, "attack_type", json_object_new_string(printable_attack_type.c_str()));
-    json_object_object_add(jobj, "initial_attack_power", json_object_new_int(current_attack.attack_power));
-    json_object_object_add(jobj, "peak_attack_power", json_object_new_int(current_attack.max_attack_power));
-    json_object_object_add(jobj, "attack_direction",
-                           json_object_new_string(get_direction_name(current_attack.attack_direction).c_str()));
-    json_object_object_add(jobj, "attack_protocol",
-                           json_object_new_string(get_printable_protocol_name(current_attack.attack_protocol).c_str()));
-
+// Adds traffic speed to JSON structure
+void serialize_traffic_counters_to_json(json_object* jobj, const attack_details_t& current_attack) {
     json_object_object_add(jobj, "total_incoming_traffic", json_object_new_int(current_attack.in_bytes));
     json_object_object_add(jobj, "total_outgoing_traffic", json_object_new_int(current_attack.out_bytes));
     json_object_object_add(jobj, "total_incoming_pps", json_object_new_int(current_attack.in_packets));
     json_object_object_add(jobj, "total_outgoing_pps", json_object_new_int(current_attack.out_packets));
     json_object_object_add(jobj, "total_incoming_flows", json_object_new_int(current_attack.in_flows));
     json_object_object_add(jobj, "total_outgoing_flows", json_object_new_int(current_attack.out_flows));
-
-    json_object_object_add(jobj, "average_incoming_traffic", json_object_new_int(current_attack.average_in_bytes));
-    json_object_object_add(jobj, "average_outgoing_traffic", json_object_new_int(current_attack.average_out_bytes));
-    json_object_object_add(jobj, "average_incoming_pps", json_object_new_int(current_attack.average_in_packets));
-    json_object_object_add(jobj, "average_outgoing_pps", json_object_new_int(current_attack.average_out_packets));
-    json_object_object_add(jobj, "average_incoming_flows", json_object_new_int(current_attack.average_in_flows));
-    json_object_object_add(jobj, "average_outgoing_flows", json_object_new_int(current_attack.average_out_flows));
 
     json_object_object_add(jobj, "incoming_ip_fragmented_traffic", json_object_new_int(current_attack.fragmented_in_bytes));
     json_object_object_add(jobj, "outgoing_ip_fragmented_traffic", json_object_new_int(current_attack.fragmented_out_bytes));
@@ -1001,6 +982,35 @@ json_object* serialize_attack_description_to_json(attack_details_t& current_atta
     json_object_object_add(jobj, "outgoing_icmp_traffic", json_object_new_int(current_attack.icmp_out_bytes));
     json_object_object_add(jobj, "incoming_icmp_pps", json_object_new_int(current_attack.icmp_in_packets));
     json_object_object_add(jobj, "outgoing_icmp_pps", json_object_new_int(current_attack.icmp_out_packets));
+}
+
+json_object* serialize_attack_description_to_json(attack_details_t& current_attack) {
+    json_object* jobj = json_object_new_object();
+
+    attack_type_t attack_type         = detect_attack_type(current_attack);
+    std::string printable_attack_type = get_printable_attack_name(attack_type);
+
+    json_object_object_add(jobj, "attack_type", json_object_new_string(printable_attack_type.c_str()));
+    
+    json_object_object_add(jobj, "initial_attack_power", json_object_new_int(current_attack.attack_power));
+    
+    json_object_object_add(jobj, "peak_attack_power", json_object_new_int(current_attack.max_attack_power));
+    
+    json_object_object_add(jobj, "attack_direction",
+                           json_object_new_string(get_direction_name(current_attack.attack_direction).c_str()));
+    
+    json_object_object_add(jobj, "attack_protocol",
+                           json_object_new_string(get_printable_protocol_name(current_attack.attack_protocol).c_str()));
+
+    // Populate traffic counters
+    serialize_traffic_counters_to_json(jobj, current_attack);
+
+    json_object_object_add(jobj, "average_incoming_traffic", json_object_new_int(current_attack.average_in_bytes));
+    json_object_object_add(jobj, "average_outgoing_traffic", json_object_new_int(current_attack.average_out_bytes));
+    json_object_object_add(jobj, "average_incoming_pps", json_object_new_int(current_attack.average_in_packets));
+    json_object_object_add(jobj, "average_outgoing_pps", json_object_new_int(current_attack.average_out_packets));
+    json_object_object_add(jobj, "average_incoming_flows", json_object_new_int(current_attack.average_in_flows));
+    json_object_object_add(jobj, "average_outgoing_flows", json_object_new_int(current_attack.average_out_flows));
 
     return jobj;
 }
