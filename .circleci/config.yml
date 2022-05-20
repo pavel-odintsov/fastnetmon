@@ -243,7 +243,6 @@ jobs:
           key: "{{ .Environment.CIRCLE_JOB }}_dependencies_21_05_2022"
           paths:
             - /opt
-            - /usr/include/linux/pf_ring.h
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
       - run: perl src/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
