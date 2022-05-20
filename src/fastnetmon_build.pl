@@ -192,9 +192,7 @@ sub install_additional_repositories {
         if ($distro_version == 7) {
             print "Install EPEL repository for your system\n"; 
             yum('https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm');
-        }
-
-        if ($distro_version == 8) {
+        } elsif ($distro_version == 8) {
             print "Install EPEL repository for your system\n";
             yum('https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm');
 
@@ -202,6 +200,12 @@ sub install_additional_repositories {
 	        print "Enable PowerTools repo\n";
 	        yum('dnf-plugins-core');
 	        system("dnf config-manager --set-enabled powertools");
+        } elsif ($distro_version == 9) {
+            print "Install EPEL repository for your system\n";
+            system("dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm");
+
+            print "Install CodeReady Linux Builder repository\n";
+            system("dnf config-manager --set-enabled crb");
         }
     }
 }
