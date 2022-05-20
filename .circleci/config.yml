@@ -114,7 +114,7 @@ jobs:
       - save_cache:
           key: "{{ .Environment.CIRCLE_JOB }}_gcc_21_05_2022"
           paths:
-            - /opt/1210
+            - /opt/gcc1210
       - run:
           name: install_dependencies
           no_output_timeout: 180m
