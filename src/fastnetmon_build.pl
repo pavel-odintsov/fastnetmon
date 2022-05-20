@@ -198,13 +198,13 @@ sub install_additional_repositories {
 
 	        # Part of devel libraries was moved here https://github.com/pavel-odintsov/fastnetmon/issues/801
 	        print "Enable PowerTools repo\n";
-	        yum('dnf-plugins-core');
 	        system("dnf config-manager --set-enabled powertools");
         } elsif ($distro_version == 9) {
             print "Install EPEL repository for your system\n";
             system("dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm");
 
             print "Install CodeReady Linux Builder repository\n";
+            yum('dnf-plugins-core');
             system("dnf config-manager --set-enabled crb");
         }
     }
