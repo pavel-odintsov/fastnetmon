@@ -189,11 +189,6 @@ sub get_logical_cpus_number {
 
 sub install_additional_repositories {
     if ($distro_type eq 'centos') {
-        if ($distro_version == 6) {
-            print "Install EPEL repository for your system\n"; 
-            yum('https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm');
-        }    
-
         if ($distro_version == 7) {
             print "Install EPEL repository for your system\n"; 
             yum('https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm');
@@ -520,22 +515,8 @@ sub install_init_scripts {
         return 1;
     }
 
-    # Init file for CentOS 6
-    if ($distro_type eq 'centos' && $distro_version == 6) {
-        my $system_init_path = '/etc/init.d/fastnetmon';
-        exec_command("cp $fastnetmon_code_dir/fastnetmon_init_script_centos6 $system_init_path");
-
-        exec_command("sed -i 's#/usr/sbin/fastnetmon#$library_install_folder/fastnetmon/fastnetmon#' $system_init_path");
-
-        print "We created service fastnetmon for you\n";
-        print "You could run it with command: /etc/init.d/fastnetmon start\n";
-
-        return 1;
-    }
-
-    # For Debian Squeeze and Wheezy 
     # And any stable Ubuntu version
-    if ( ($distro_type eq 'debian' && ($distro_version == 6 or $distro_version == 7)) or $distro_type eq 'ubuntu') {
+    if ($distro_type eq 'ubuntu') {
         my $init_path_in_src = "$fastnetmon_code_dir/fastnetmon_init_script_debian_6_7";
         my $system_init_path = '/etc/init.d/fastnetmon';
 
@@ -1181,11 +1162,6 @@ sub install_capnproto {
 
     my $configure_arguments = '';
 
-    # We need it to address this bug: https://github.com/capnproto/capnproto/issues/1092
-    if ($distro_type eq 'centos' && $distro_version == 6) {
-        $configure_arguments = 'LIBS="-lrt"';
-    }
-
     my $res = install_configure_based_software("https://capnproto.org/capnproto-c++-0.8.0.tar.gz", 
         "fbc1c65b32748029f1a09783d3ebe9d496d5fcc4", $capnp_install_path, 
         $configure_arguments);
@@ -1468,12 +1444,6 @@ sub install_boost {
    
     my $url_boost = "https://boostorg.jfrog.io/artifactory/main/release/1.74.0/source/boost_1_74_0.tar.bz2";
 
-    # For some reasons we cannot download default URL on Debian 8 
-    if ($distro_type eq 'debian' && int($distro_version) == 8) {
-        $url_boost = "http://ftp.osuosl.org/pub/blfs/conglomeration/boost/boost_1_74_0.tar.bz2";
-    }
-    
-
     print "Download Boost source code\n";
     my $boost_download_result = download_file($url_boost, $archive_file_name, 'f82c0d8685b4d0e3971e8e2a8f9ef1551412c125');
 
@@ -1576,19 +1546,9 @@ sub install_fastnetmon {
 
     my $cmake_params = "";
 
-    if ($distro_type eq 'centos' && $distro_version == 6) {
-        # Disable cmake script from Boost package because it's broken:
-        # http://public.kitware.com/Bug/view.php?id=15270
-        $cmake_params .= " -DBoost_NO_BOOST_CMAKE=BOOL:ON";
-    }
 
     # Test that atomics build works as expected
     # $cmake_params .= " -DUSE_NEW_ATOMIC_BUILTINS=ON";
-
-    # Fix dependencies for Netmap in 1.1.4
-    if ($distro_type eq 'centos' && int($distro_version) == 6) {
-        system("sed -i 's/netmap_plugin fastnetmon_packet_parser/netmap_plugin fastnetmon_packet_parser unified_parser/' ../CMakeLists.txt")
-    }
 
     # We use $configure_options to pass CC and CXX variables about custom compiler when we use it 
     if ((defined($ENV{'TRAVIS'}) && $ENV{'TRAVIS'}) or (defined($ENV{'CI'}) && $ENV{'CI'})) {
