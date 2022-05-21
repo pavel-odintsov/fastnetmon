@@ -103,16 +103,16 @@ jobs:
           command: perl src/fastnetmon_build.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_21_05_2022"
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_22_05_2022"
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_gcc_21_05_2022"
+            - "{{ .Environment.CIRCLE_JOB }}_gcc_22_05_2022"
       - run:
           name: install_gcc
           no_output_timeout: 120m 
           command: perl src/fastnetmon_build.pl --build_gcc_only
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_gcc_21_05_2022"
+          key: "{{ .Environment.CIRCLE_JOB }}_gcc_22_05_2022"
           paths:
             - /opt/gcc1210
       - run:
@@ -124,7 +124,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_21_05_2022"
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_22_05_2022"
           paths:
             - /opt
       - run: perl src/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
