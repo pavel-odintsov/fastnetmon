@@ -60,6 +60,8 @@ jobs:
     parameters:
       docker_image:
         type: string
+      fedora_version:
+        type: string
     docker:
       - image: << parameters.docker_image >>
     resource_class: large
@@ -78,11 +80,11 @@ jobs:
           name: Build RPM
           command: cd ~/rpmbuild/SPECS && rpmbuild -bb fastnetmon_fedora.spec
       - store_artifacts:
-          path: /root/rpmbuild/RPMS/x86_64/fastnetmon-1.2.2-1.fc35.x86_64.rpm
+          path: /root/rpmbuild/RPMS/x86_64/fastnetmon-1.2.2-1.fc<< parameters.fedora_version >>.x86_64.rpm
       - store_artifacts:
-          path: /root/rpmbuild/RPMS/x86_64/fastnetmon-debugsource-1.2.2-1.fc35.x86_64.rpm
+          path: /root/rpmbuild/RPMS/x86_64/fastnetmon-debugsource-1.2.2-1.fc<< parameters.fedora_version >>.x86_64.rpm
       - store_artifacts:
-          path: /root/rpmbuild/RPMS/x86_64/fastnetmon-debuginfo-1.2.2-1.fc35.x86_64.rpm
+          path: /root/rpmbuild/RPMS/x86_64/fastnetmon-debuginfo-1.2.2-1.fc<< parameters.fedora_version >>.x86_64.rpm
   build_ubuntu:
     parameters:
       docker_image:
@@ -315,4 +317,9 @@ workflows:
           debian_codename: "bullseye"
       - build_fedora_upstream:
           name: "Fedora 35 Upstream RPM"
+          fedora_version: 35
           docker_image: fedora:35
+      - build_fedora_upstream:
+          name: "Fedora 36 Upstream RPM"
+          docker_image: fedora:36
+          fedora_version: 36
