@@ -317,9 +317,9 @@ workflows:
           debian_codename: "bullseye"
       - build_fedora_upstream:
           name: "Fedora 35 Upstream RPM"
-          fedora_version: 35
+          fedora_version: "35"
           docker_image: fedora:35
       - build_fedora_upstream:
           name: "Fedora 36 Upstream RPM"
           docker_image: fedora:36
-          fedora_version: 36
+          fedora_version: "36"
