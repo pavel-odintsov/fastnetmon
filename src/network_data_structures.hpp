@@ -98,12 +98,12 @@ class __attribute__((__packed__)) mpls_label_t {
 
 static_assert(sizeof(mpls_label_t) == 4, "Bad size for mpls_label_t");
 
-// We are storing vlan meta data and next ethertype in same packet
+// We are storing VLAN meta data and next ethertype in same packet
 // It's not standard approach! Be careful!
 class __attribute__((__packed__)) ethernet_vlan_header_t {
     public:
     union {
-        // it's not allowed to initlize each bitfield here as we initialize vlan_metadata_as_integer
+        // it's not allowed to initialise each bit field here as we initialize vlan_metadata_as_integer
         __extension__ struct { uint16_t vlan_id : 12, cfi : 1, priority : 3; };
         uint16_t vlan_metadata_as_integer = 0;
     };
@@ -241,7 +241,7 @@ class __attribute__((__packed__)) udp_header_t {
         buffer << "source_port: " << source_port << " "
                << "destination_port: " << destination_port << " "
                << "length: " << length << " "
-               << "cheksum: " << checksum;
+               << "checksum: " << checksum;
 
         return buffer.str();
     }
@@ -253,7 +253,7 @@ static_assert(sizeof(udp_header_t) == 8, "Bad size for udp_header_t");
 class __attribute__((__packed__)) gre_packet_t {
     public:
     // Not sure about order of them, worth checking in future
-    // For some reasons PVS thinks that we did not initlized all members. I think they're not that great with bitfields
+    // For some reasons PVS thinks that we did not initialised all members. I think they're not that great with bitfields
     uint16_t checksum : 1 = 0, reserved : 12 = 0, version : 3 = 0; //-V730
     uint16_t protocol_type = 0;
 
@@ -324,7 +324,7 @@ class __attribute__((__packed__)) tcp_header_t {
             // uint16_t data_offset : 4, reserved : 3, ns : 1, cwr : 1, ece : 1, urg :
             // 1, ack : 1,
             // psh : 1, rst : 1, syn : 1, fin : 1;
-            // it's not allowed to initlize each bitfield here as we initialize data_offset_and_flags_as_integer
+            // it's not allowed to initialize each bitfield here as we initialize data_offset_and_flags_as_integer
             uint16_t fin : 1, syn : 1, rst : 1, psh : 1, ack : 1, urg : 1, ece : 1, cwr : 1, ns : 1, reserved : 3, data_offset : 4;
         };
 
@@ -411,14 +411,14 @@ inline std::string convert_ipv6_in_big_endian_to_string(uint8_t (&v6_address)[16
 */
 
 /* IPv6 fragmentation header option */
-class __attribute__((__packed__)) ipv6_extention_header_fragment_t {
+class __attribute__((__packed__)) ipv6_extension_header_fragment_t {
     public:
     uint8_t next_header = 0;
     uint8_t reserved1   = 0;
     union {
         __extension__ struct {
             // uint16_t fragment_offset : 13, reserved2 : 2, more_fragments : 1;
-            // it's not allowed to initlize each bitfield here as we initialize fragmentation_and_flags_as_integer
+            // it's not allowed to initialize each bitfield here as we initialize fragmentation_and_flags_as_integer
             uint16_t more_fragments : 1, reserved2 : 2, fragment_offset : 13;
         };
         uint16_t fragmentation_and_flags_as_integer = 0;
@@ -445,12 +445,12 @@ class __attribute__((__packed__)) ipv6_extention_header_fragment_t {
     }
 };
 
-static_assert(sizeof(ipv6_extention_header_fragment_t) == 8, "Bad size for ipv6_extention_header_fragment_t");
+static_assert(sizeof(ipv6_extension_header_fragment_t) == 8, "Bad size for ipv6_extension_header_fragment_t");
 
 class __attribute__((__packed__)) ipv6_header_t {
     public:
     union {
-        // it's not allowed to initlize each bitfield here as we initialize version_and_traffic_class_as_integer
+        // it's not allowed to initialize each bitfield here as we initialize version_and_traffic_class_as_integer
         __extension__ struct { uint32_t flow_label : 20, traffic_class : 8, version : 4; };
 
         uint32_t version_and_traffic_class_as_integer = 0;
@@ -488,13 +488,13 @@ static_assert(sizeof(ipv6_header_t) == 40, "Bad size for ipv6_header_t");
 class __attribute__((__packed__)) ipv4_header_fragmentation_flags_t {
     public:
     union {
-        // We should store bitfields in nested struct. Othervise each of bitfields
+        // We should store bitfields in nested struct. Otherwise each of bitfields
         // will use same
         // storage as each other!
         // We are using GCC extension here. It's working perfectly for clang and gcc
         // but could
         // produce warning in pedantic mode
-        // it's not allowed to initlize each bitfield here as we initialize fragmentation_details_as_integer
+        // it's not allowed to initialize each bitfield here as we initialize fragmentation_details_as_integer
         __extension__ struct {
             uint16_t fragment_offset : 13, more_fragments_flag : 1, dont_fragment_flag : 1, reserved_flag : 1;
         };
@@ -535,13 +535,13 @@ class __attribute__((__packed__)) ipv4_header_t {
     uint16_t identification = 0;
 
     union {
-        // We should store bitfields in nested struct. Othervise each of bitfields
+        // We should store bitfields in nested struct. Otherwise each of bitfields
         // will use same
         // storage as each other!
         // We are using GCC extension here. It's working perfectly for clang and gcc
         // but could
         // produce warning in pedantic mode
-        // it's not allowed to initlize each bitfield here as we initialize fragmentation_details_as_integer
+        // it's not allowed to initialize each bitfield here as we initialize fragmentation_details_as_integer
         __extension__ struct {
             uint16_t fragment_offset : 13, more_fragments_flag : 1, dont_fragment_flag : 1, reserved_flag : 1;
         };
@@ -556,8 +556,8 @@ class __attribute__((__packed__)) ipv4_header_t {
     uint32_t destination_ip = 0;
 
     ipv4_header_t()
-    : version(0), ihl(0), ecn(0), dscp(0), total_length(0), identification(0), ttl(0), protocol(0), checksum(0),
-      source_ip(0), destination_ip(0), fragmentation_details_as_integer(0) {
+    : ihl(0), version(0), ecn(0), dscp(0), total_length(0), identification(0), fragmentation_details_as_integer(0),
+      ttl(0), protocol(0), checksum(0), source_ip(0), destination_ip(0) {
     }
 
     // Should be called AFTER convert() call
