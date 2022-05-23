@@ -50,7 +50,6 @@
 extern uint64_t influxdb_writes_total;
 extern uint64_t influxdb_writes_failed;
 extern packet_buckets_storage_t<subnet_ipv6_cidr_mask_t> packet_buckets_ipv6_storage;
-extern bool print_average_traffic_counts;
 extern std::string cli_stats_file_path;
 extern unsigned int total_number_of_hosts_in_our_networks;
 extern map_for_subnet_counters_t PerSubnetCountersMap;
@@ -1114,9 +1113,6 @@ std::string generate_simple_packets_dump(std::vector<simple_packet_t>& ban_list_
 
         protocol_counter[iii->protocol]++;
     }
-
-    std::map<unsigned int, unsigned int>::iterator max_proto =
-        std::max_element(protocol_counter.begin(), protocol_counter.end(), protocol_counter.value_comp());
 
     return attack_details.str();
 }
@@ -2185,8 +2181,7 @@ void recalculate_speed() {
         speed_calc_period = time_difference;
     }
 
-    map_element_t zero_map_element;
-    memset(&zero_map_element, 0, sizeof(zero_map_element));
+    map_element_t zero_map_element{};
 
     uint64_t incoming_total_flows = 0;
     uint64_t outgoing_total_flows = 0;
@@ -2471,8 +2466,6 @@ std::string draw_table_ipv6(direction_t sort_direction, bool do_redis_update, so
         uint64_t bps   = 0;
         uint64_t flows = 0;
 
-        uint64_t bps_average   = 0;
-
         // Here we could have average or instantaneous speed
         map_element_t* current_speed_element = &ii->second;
 
@@ -2513,17 +2506,9 @@ std::string draw_table_ipv4(direction_t data_direction, bool do_redis_update, so
     // We use total networks size for this vector
     vector_for_sort.reserve(total_number_of_hosts_in_our_networks);
 
-    // Switch to Average speed there!!!
-    map_of_vector_counters_t* current_speed_map = NULL;
+    map_of_vector_counters_t* current_speed_map = &SubnetVectorMapSpeedAverage;
 
-    if (print_average_traffic_counts) {
-        current_speed_map = &SubnetVectorMapSpeedAverage;
-    } else {
-        current_speed_map = &SubnetVectorMapSpeed;
-    }
-
-    map_element_t zero_map_element;
-    memset(&zero_map_element, 0, sizeof(zero_map_element));
+    map_element_t zero_map_element{};
 
     unsigned int count_of_zero_speed_packets = 0;
     for (map_of_vector_counters_t::iterator itr = current_speed_map->begin(); itr != current_speed_map->end(); ++itr) {
@@ -2579,8 +2564,6 @@ std::string draw_table_ipv4(direction_t data_direction, bool do_redis_update, so
         uint64_t pps   = 0;
         uint64_t bps   = 0;
         uint64_t flows = 0;
-
-        uint64_t bps_average   = 0;
 
         // Here we could have average or instantaneous speed
         map_element_t* current_speed_element = &ii->second;

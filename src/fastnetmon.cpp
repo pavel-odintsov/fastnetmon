@@ -297,9 +297,6 @@ double average_calculation_amount = 15;
 // We calc average pps/bps for subnets with this time, we use longer value for calculation average network traffic
 double average_calculation_amount_for_subnets = 30;
 
-// Show average or absolute value of speed
-bool print_average_traffic_counts = true;
-
 // Key used for sorting clients in output.  Allowed sort params: packets/bytes/flows
 std::string sort_parameter = "bytes";
 
