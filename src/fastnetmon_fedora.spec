@@ -33,6 +33,7 @@ BuildRequires:     capnproto-devel
 BuildRequires:     capnproto
 BuildRequires:     grpc-devel
 BuildRequires:     grpc-cpp
+BuildRequires:     abseil-cpp-devel
 BuildRequires:     grpc-plugins
 BuildRequires:     mongo-c-driver-devel
 BuildRequires:     json-c-devel
