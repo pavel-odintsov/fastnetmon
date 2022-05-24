@@ -1024,8 +1024,7 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
 
     subnet_cidr_mask_t current_subnet(subnet_as_integer, bitlen);
 
-    map_element_t zero_map_element;
-    memset(&zero_map_element, 0, sizeof(zero_map_element));
+    map_element_t zero_map_element{};
 
     // Initilize our counters with fill constructor
     try {
@@ -1049,8 +1048,7 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
 }
 
 void zeroify_all_counters() {
-    map_element_t zero_map_element;
-    memset(&zero_map_element, 0, sizeof(zero_map_element));
+    map_element_t zero_map_element{};
 
     for (map_of_vector_counters_t::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); ++itr) {
         // logger<< log4cpp::Priority::INFO<<"Zeroify "<<itr->first;
