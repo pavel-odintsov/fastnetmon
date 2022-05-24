@@ -8,7 +8,6 @@
 
 #include <vector>
 
-extern bool print_average_traffic_counts;
 extern struct timeval graphite_thread_execution_time;
 extern total_counter_element_t total_speed_average_counters[4];
 extern map_of_vector_counters_t SubnetVectorMapSpeed;
@@ -253,13 +252,7 @@ bool push_hosts_traffic_counters_to_influxdb(std::string influx_database,
      although different use cases may be better served by significantly smaller or larger batches.
      */
 
-    map_of_vector_counters_t* current_speed_map = nullptr;
-
-    if (print_average_traffic_counts) {
-        current_speed_map = &SubnetVectorMapSpeedAverage;
-    } else {
-        current_speed_map = &SubnetVectorMapSpeed;
-    }
+    map_of_vector_counters_t* current_speed_map = &SubnetVectorMapSpeedAverage;
 
     // Iterate over all networks
     for (map_of_vector_counters_t::iterator itr = current_speed_map->begin(); itr != current_speed_map->end(); ++itr) {

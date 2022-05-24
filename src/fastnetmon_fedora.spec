@@ -33,6 +33,7 @@ BuildRequires:     capnproto-devel
 BuildRequires:     capnproto
 BuildRequires:     grpc-devel
 BuildRequires:     grpc-cpp
+BuildRequires:     abseil-cpp-devel
 BuildRequires:     grpc-plugins
 BuildRequires:     mongo-c-driver-devel
 BuildRequires:     json-c-devel
@@ -53,7 +54,7 @@ engines (NetFlow, IPFIX, sFlow, PCAP).
 
 %build
 
-%cmake -DENABLE_CUSTOM_BOOST_BUILD=FALSE -DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE -DCMAKE_SKIP_BUILD_RPATH=TRUE src
+%cmake -DENABLE_CUSTOM_BOOST_BUILD=FALSE -DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE -DCMAKE_SKIP_BUILD_RPATH=TRUE -DLINK_WITH_ABSL=TRUE src
 
 %cmake_build
 

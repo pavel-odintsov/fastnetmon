@@ -42,6 +42,12 @@ set(CMAKE_INSTALL_SYSTEMD_SERVICEDIR "/lib/systemd/system"
 # With this flag we can enable GoBGP build via console: cmake .. -DENABLE_GOBGP_SUPPORT=ON
 option(ENABLE_GOBGP_SUPPORT "Enable GoBGP support build" ON)
 
+# On some platforms like Fedora we need to explicitly link with libabseil / libabsl.
+# We do not use it directly but gRPC uses it for libgpr and we need to link with absl explicitly to avoid linker errors like this:
+# libgpr.so: undefined reference to symbol '_ZN4absl12lts_202103245Mutex4LockEv'
+# /usr/lib64/libabsl_synchronization.so.2103.0.1: error adding symbols: DSO missing from command line
+option(LINK_WITH_ABSL "Enable optonal linking with ABSL" OFF)
+
 option(DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD "Disables use of libraries from system path" ON)
 
 if (DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
@@ -330,6 +336,12 @@ find_package(Threads)
 
 add_library(exabgp_action STATIC actions/exabgp_action.cpp)
 
+if (LINK_WITH_ABSL)
+    find_package(absl REQUIRED)
+
+    # TODO: check that we actually found it. Otherwise trigger fatal erorr
+endif()
+
 if (ENABLE_GOBGP_SUPPORT)
     set(PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/protobuf_3.11.4")
 
@@ -346,10 +358,14 @@ if (ENABLE_GOBGP_SUPPORT)
         target_link_libraries(gobgp_action ${GRPC_LIBRARY_GRPC_PATH})
         target_link_libraries(gobgp_action ${GRPC_LIBRARY_GPR_PATH})
         target_link_libraries(gobgp_action ${GRPC_LIBRARY_GRPC_CPP_PATH})
-
+        
 	    message(STATUS "Found gRPC library: ${GRPC_LIBRARY_GRPC_PATH} ${GRPC_LIBRARY_GPR_PATH} ${GRPC_LIBRARY_GRPC_CPP_PATH}")
     else()
         message(FATAL_ERROR "Could not find gRPC library")
+    endif()
+
+    if (LINK_WITH_ABSL)
+        target_link_libraries(gobgp_action absl::base absl::synchronization)
     endif()
 
     find_path(PROTOCOL_BUFFERS_INCLUDE_FOLDER NAMES "google/protobuf/stubs/common.h" PATHS "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/include")
@@ -434,6 +450,10 @@ if (ENABLE_GOBGP_SUPPORT)
     add_library(fastnetmon_pb_cc STATIC fastnetmon.pb.cc)
 
     add_executable(fastnetmon_api_client fastnetmon_api_client.cpp)
+
+    if (LINK_WITH_ABSL)
+        target_link_libraries(fastnetmon_api_client  absl::base absl::synchronization)
+    endif()
 
     target_link_libraries(fastnetmon_api_client ${GRPC_LIBRARY_GPR_PATH})
     target_link_libraries(fastnetmon_api_client ${GRPC_LIBRARY_GRPC_CPP_PATH})

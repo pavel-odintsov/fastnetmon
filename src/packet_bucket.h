@@ -136,8 +136,6 @@ template <typename TemplateKeyType> class packet_buckets_storage_t {
     bool add_packet_to_storage(TemplateKeyType client_ip, simple_packet_t& current_packet) {
         std::lock_guard<std::mutex> lock_guard(packet_buckets_map_mutex);
 
-        bool we_will_call_overflow_with_this_append_operation = false;
-
         // We should explicitly add map element here before starting collection
         auto itr = packet_buckets_map.find(client_ip);
 
