@@ -388,7 +388,7 @@ TEST(patricia, negative_lookup_ipv6_prefix) {
 
     make_and_lookup_ipv6(lookup_ipv6_tree, (char*)"2a03:f480::/32");
 
-    // Destroy_Patricia(lookup_ipv6_tree, (void_fn_t)0);
+    // Destroy_Patricia(lookup_ipv6_tree);
 
     prefix_t prefix_for_check_address;
 
@@ -409,7 +409,7 @@ TEST(patricia, positive_lookup_ipv6_prefix) {
 
     make_and_lookup_ipv6(lookup_ipv6_tree, (char*)"2a03:f480::/32");
 
-    // Destroy_Patricia(lookup_ipv6_tree, (void_fn_t)0);
+    // Destroy_Patricia(lookup_ipv6_tree);
 
     prefix_t prefix_for_check_address;
 

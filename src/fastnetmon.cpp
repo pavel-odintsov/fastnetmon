@@ -1216,7 +1216,7 @@ bool load_our_networks_list() {
     logger << log4cpp::Priority::INFO << "We need " << memory_requirements << " MB of memory for storing counters for your networks";
 
     /* Preallocate data structures */
-    patricia_process(lookup_tree_ipv4, (void_fn_t)subnet_vectors_allocator);
+    patricia_process(lookup_tree_ipv4, subnet_vectors_allocator);
 
     logger << log4cpp::Priority::INFO << "We start total zerofication of counters";
     zeroify_all_counters();
@@ -1714,11 +1714,11 @@ void free_up_all_resources() {
     GeoIP_delete(geo_ip);
 #endif
 
-    Destroy_Patricia(lookup_tree_ipv4, (void_fn_t)0);
-    Destroy_Patricia(whitelist_tree_ipv4, (void_fn_t)0);
+    Destroy_Patricia(lookup_tree_ipv4);
+    Destroy_Patricia(whitelist_tree_ipv4);
 
-    Destroy_Patricia(lookup_tree_ipv6, (void_fn_t)0);
-    Destroy_Patricia(whitelist_tree_ipv6, (void_fn_t)0);
+    Destroy_Patricia(lookup_tree_ipv6);
+    Destroy_Patricia(whitelist_tree_ipv6);
 }
 
 // For correct program shutdown by CTRL+C

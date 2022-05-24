@@ -79,5 +79,5 @@ int main() {
 
     printf("Total time is %d seconds total ops: %d\nMillion of ops per second: %.1f\n", used_seconds, total_ops, megaops_per_second);
 
-    Destroy_Patricia(lookup_tree, (void_fn_t)0);
+    Destroy_Patricia(lookup_tree);
 }

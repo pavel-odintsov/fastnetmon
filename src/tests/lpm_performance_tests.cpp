@@ -107,7 +107,7 @@ int main() {
     make_and_lookup(lookup_tree, "181.114.240.0/20");
     make_and_lookup(lookup_tree, "193.42.142.0/24");
 
-    // patricia_process (lookup_tree, (void_fn_t)subnet_vectors_allocator);
+    // patricia_process (lookup_tree, subnet_vectors_allocator);
     // std::sort(SubnetVectorVector.begin(), SubnetVectorVector.end(), mysortfunction);
 
     prefix_t prefix_for_check_adreess;
@@ -201,5 +201,5 @@ int main() {
 
     printf("Total time is %d seconds total ops: %d\nMillion of ops per second: %.1f\n", used_seconds, total_ops, megaops_per_second);
 
-    Destroy_Patricia(lookup_tree, (void_fn_t)0);
+    Destroy_Patricia(lookup_tree);
 }
