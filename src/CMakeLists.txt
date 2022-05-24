@@ -249,7 +249,7 @@ add_library(simple_packet_capnp STATIC simple_packet_capnp/simple_packet.capnp.c
 endif()
 
 # Our LPM library
-add_library(patricia STATIC libpatricia/patricia.c)
+add_library(patricia STATIC libpatricia/patricia.cpp)
 
 # Graphite metrics
 add_library(graphite_metrics STATIC metrics/graphite.cpp)
