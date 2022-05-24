@@ -114,10 +114,11 @@ std::tuple<uint32_t, uint32_t> split_32bit_integer_by_2_and_30_bits(uint32_t ori
 
 class __attribute__((__packed__)) sflow_sample_header_as_struct_t {
     public:
-    union {
+    union __attribute__((__packed__)) {
         uint32_t enterprise : 20, sample_type : 12;
         uint32_t enterprise_and_sample_type_as_integer = 0;
     };
+
     uint32_t sample_length = 0;
 
     void host_byte_order_to_network_byte_order() {

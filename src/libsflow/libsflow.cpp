@@ -111,7 +111,7 @@ bool get_records(vector_tuple_t& vector_tuple,
                  bool& padding_found) {
     uint8_t* flow_record_start = flow_record_zone_start;
 
-    for (int i = 0; i < number_of_flow_records; i++) {
+    for (uint32_t i = 0; i < number_of_flow_records; i++) {
         // Check that we have at least 2 4 byte integers here
         if (current_packet_end - flow_record_start < 8) {
             logger << log4cpp::Priority::ERROR << sflow_parser_log_prefix
@@ -160,7 +160,7 @@ bool get_records(vector_tuple_t& vector_tuple,
     }
 
     /*
-     * I just discovered that Brocade devices (Brocade ICX6610) could add 4 byte pagging at the end of packet.
+     * I just discovered that Brocade devices (Brocade ICX6610) could add 4 byte padding at the end of packet.
      * So I see no reasons to return error here.
      */
 
@@ -178,7 +178,7 @@ bool get_all_samples(vector_sample_tuple_t& vector_sample,
 
     for (int i = 0; i < samples_count; i++) {
         if (total_packet_end - sample_start < 8) {
-            logger << log4cpp::Priority::ERROR << sflow_parser_log_prefix << "we haven't sample format and length information here";
+            logger << log4cpp::Priority::ERROR << sflow_parser_log_prefix << "we do not have sample format and length information here";
             return false;
         }
 
@@ -219,7 +219,7 @@ bool get_all_samples(vector_sample_tuple_t& vector_sample,
     }
 
     // Sanity check! We should achieve end of whole packet in any case
-    // We discovered that Brocade MLXe-4 adds 20 bytes at the end of sFlow packet and this check prevent FNM from
+    // We discovered that Brocade MLXe-4 adds 20 bytes at the end of sFlow packet and this check prevent FastNetMon from
     // correct work
     // And I do not think that this change could harm other customers
     if (sample_start != total_packet_end) {
@@ -244,7 +244,7 @@ bool get_all_counter_records(counter_record_sample_vector_t& counter_record_samp
 
     uint8_t* record_start = data_block_start;
 
-    for (int i = 0; i < number_of_records; i++) {
+    for (uint32_t i = 0; i < number_of_records; i++) {
         uint8_t* payload_ptr = record_start + sizeof(uint32_t) + sizeof(uint32_t);
 
         if (payload_ptr >= data_block_end) {
