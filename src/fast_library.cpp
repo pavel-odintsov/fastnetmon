@@ -1400,15 +1400,21 @@ bool write_simple_packet(int fd, simple_packet_t& packet, bool populate_ipv6) {
         kj::Array<capnp::word> words = messageToFlatArray(message);
         kj::ArrayPtr<kj::byte> bytes = words.asBytes();
 
-        size_t write_result = write(fd, bytes.begin(), bytes.size());
+        ssize_t write_result = write(fd, bytes.begin(), bytes.size());
 
-        // If write returned error or we could not write whole packet notify caller about it
-        if (write_result < 0 || write_result != bytes.size()) {
+        // If write returned error then stop processing
+        if (write_result < 0) {
             // If we received error from it, let's provide details about it in DEBUG mode
             if (write_result == -1) {
                 logger << log4cpp::Priority::DEBUG << "write in write_simple_packet returned error: " << errno;
             }
 
+            return false;
+        }
+
+        // we could not write whole packet notify caller about it
+        if (write_result != bytes.size()) {
+            logger << log4cpp::Priority::DEBUG << "write in write_simple_packet did not write all data";
             return false;
         }
     } catch (...) {
