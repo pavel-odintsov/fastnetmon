@@ -83,8 +83,6 @@ subnet_cidr_mask_t convert_subnet_from_string_to_binary(std::string subnet_cidr)
 
     uint32_t subnet_as_int = convert_ip_as_string_to_uint(subnet_as_string[0]);
 
-    uint32_t netmask_as_int = convert_cidr_to_binary_netmask(cidr);
-
     return subnet_cidr_mask_t(subnet_as_int, cidr);
 }
 
@@ -1483,7 +1481,7 @@ bool validate_ipv6_or_ipv4_host(const std::string host) {
     boost::system::error_code ec;
 
     // Try to build it from string representation
-    auto parsed_ip_address = boost::asio::ip::address::from_string(host, ec);
+    boost::asio::ip::address::from_string(host, ec);
 
     // If we failed to parse it
     if (ec) {
