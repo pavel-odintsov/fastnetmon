@@ -493,24 +493,19 @@ std::string print_simple_packet(simple_packet_t packet) {
     return buffer.str();
 }
 
-std::string convert_timeval_to_date(struct timeval tv) {
+std::string convert_timeval_to_date(const timeval& tv) {
     time_t nowtime   = tv.tv_sec;
-    struct tm* nowtm = localtime(&nowtime);
+    tm* nowtm = localtime(&nowtime);
 
-    char tmbuf[64];
-    char buf[64];
+    std::ostringstream ss;
+    ss << std::put_time(nowtm, "%F %H:%M:%S");
 
-    strftime(tmbuf, sizeof(tmbuf), "%Y-%m-%d %H:%M:%S", nowtm);
+    // Add microseconds
+    // If value is short we will add leading zeros
+    ss << "." << std::setfill('0') << std::setw(6) << tv.tv_usec;
 
-#if defined(__APPLE__)
-    snprintf(buf, sizeof(buf), "%s.%06d", tmbuf, tv.tv_usec);
-#else
-    snprintf(buf, sizeof(buf), "%s.%06ld", tmbuf, tv.tv_usec);
-#endif
-
-    return std::string(buf);
+    return ss.str();
 }
-
 
 uint64_t convert_speed_to_mbps(uint64_t speed_in_bps) {
     return uint64_t((double)speed_in_bps / 1000 / 1000 * 8);
