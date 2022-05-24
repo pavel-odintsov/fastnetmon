@@ -102,7 +102,7 @@ static_assert(sizeof(mpls_label_t) == 4, "Bad size for mpls_label_t");
 // It's not standard approach! Be careful!
 class __attribute__((__packed__)) ethernet_vlan_header_t {
     public:
-    union {
+    union __attribute__((__packed__)) {
         // it's not allowed to initialise each bit field here as we initialize vlan_metadata_as_integer
         __extension__ struct { uint16_t vlan_id : 12, cfi : 1, priority : 3; };
         uint16_t vlan_metadata_as_integer = 0;
@@ -319,7 +319,7 @@ class __attribute__((__packed__)) tcp_header_t {
     uint16_t destination_port = 0;
     uint32_t sequence_number  = 0;
     uint32_t ack_number       = 0;
-    union {
+    union __attribute__((__packed__)) {
         __extension__ struct __attribute__((__packed__)) {
             // uint16_t data_offset : 4, reserved : 3, ns : 1, cwr : 1, ece : 1, urg :
             // 1, ack : 1,
@@ -415,7 +415,8 @@ class __attribute__((__packed__)) ipv6_extension_header_fragment_t {
     public:
     uint8_t next_header = 0;
     uint8_t reserved1   = 0;
-    union {
+
+    union __attribute__((__packed__)) {
         __extension__ struct {
             // uint16_t fragment_offset : 13, reserved2 : 2, more_fragments : 1;
             // it's not allowed to initialize each bitfield here as we initialize fragmentation_and_flags_as_integer
@@ -449,7 +450,7 @@ static_assert(sizeof(ipv6_extension_header_fragment_t) == 8, "Bad size for ipv6_
 
 class __attribute__((__packed__)) ipv6_header_t {
     public:
-    union {
+    union __attribute__((__packed__)) {
         // it's not allowed to initialize each bitfield here as we initialize version_and_traffic_class_as_integer
         __extension__ struct { uint32_t flow_label : 20, traffic_class : 8, version : 4; };
 
@@ -487,7 +488,7 @@ static_assert(sizeof(ipv6_header_t) == 40, "Bad size for ipv6_header_t");
 // It's class for fragmentation flag representation. It's pretty useful in some cases
 class __attribute__((__packed__)) ipv4_header_fragmentation_flags_t {
     public:
-    union {
+    union __attribute__((__packed__)) {
         // We should store bitfields in nested struct. Otherwise each of bitfields
         // will use same
         // storage as each other!
@@ -514,6 +515,8 @@ class __attribute__((__packed__)) ipv4_header_fragmentation_flags_t {
     }
 };
 
+static_assert(sizeof(ipv4_header_fragmentation_flags_t) == 2, "Bad size for ipv4_header_fragmentation_flags_t");
+
 // It's another version of previous code suitable for nice casting from 32 bit
 class __attribute__((__packed__)) ipv4_header_fragmentation_flags_as_32bit_t {
     public:
@@ -534,7 +537,7 @@ class __attribute__((__packed__)) ipv4_header_t {
     uint16_t total_length   = 0;
     uint16_t identification = 0;
 
-    union {
+    union __attribute__((__packed__)) {
         // We should store bitfields in nested struct. Otherwise each of bitfields
         // will use same
         // storage as each other!
