@@ -593,8 +593,6 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
         return false;
     }
 
-    bool template_cache_update_required = false;
-
     for (uint32_t offset = sizeof(*template_header); offset < len;) {
         nf10_template_flowset_header_t* tmplh = (nf10_template_flowset_header_t*)(pkt + offset);
 
@@ -639,10 +637,6 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
         add_update_peer_template(global_netflow10_templates, source_id, template_id, client_addres_in_string_format,
                                  field_template, updated);
 
-        // If we have any changes for this template, let's flush them to disk
-        if (updated) {
-            template_cache_update_required = true;
-        }
     }
 
     return true;
@@ -666,8 +660,6 @@ bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, c
                << ntohs(template_header->flowset_id);
         return false;
     }
-
-    bool template_cache_update_required = false;
 
     for (uint32_t offset = sizeof(*template_header); offset < len;) {
         nf9_template_flowset_header_t* tmplh = (nf9_template_flowset_header_t*)(pkt + offset);
@@ -719,11 +711,6 @@ bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, c
         bool updated = false;
         add_update_peer_template(global_netflow9_templates, source_id, template_id, client_addres_in_string_format,
                                  field_template, updated);
-
-        // If we have any changes for this template, let's flush them to disk
-        if (updated) {
-            template_cache_update_required = true;
-        }
     }
 
     // for (auto elem: global_netflow9_templates) {
