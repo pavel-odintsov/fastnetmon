@@ -8,7 +8,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "../libpatricia/patricia.h"
+#include "../libpatricia/patricia.hpp"
 
 /*
   How to compile:

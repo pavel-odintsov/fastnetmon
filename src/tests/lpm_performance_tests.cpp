@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <vector>
 
-#include "../libpatricia/patricia.h"
+#include "../libpatricia/patricia.hpp"
 
 using namespace std;
 

@@ -12,7 +12,7 @@
 
 #include "fast_library.h"
 #include "fastnetmon_types.h"
-#include "libpatricia/patricia.h"
+#include "libpatricia/patricia.hpp"
 #include "netflow_plugin/netflow_collector.h"
 #include "pcap_plugin/pcap_collector.h"
 #include "sflow_plugin/sflow_collector.h"

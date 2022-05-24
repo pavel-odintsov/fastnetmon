@@ -27,7 +27,7 @@
 #include "fast_library.h"
 #include "fastnetmon_packet_parser.h"
 #include "fastnetmon_types.h"
-#include "libpatricia/patricia.h"
+#include "libpatricia/patricia.hpp"
 #include "packet_storage.h"
 
 // Here we store variables which differs for different paltforms

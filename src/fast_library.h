@@ -23,7 +23,7 @@
 // Boost libs
 #include <boost/algorithm/string.hpp>
 
-#include "libpatricia/patricia.h"
+#include "libpatricia/patricia.hpp"
 
 #include "fast_endianless.hpp"
 
