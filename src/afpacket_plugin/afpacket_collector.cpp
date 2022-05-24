@@ -239,8 +239,8 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
     // Allocate iov structure for each block
     rd = (struct iovec*)malloc(req.tp_block_nr * sizeof(struct iovec));
 
-    // Initilize iov structures
-    for (int i = 0; i < req.tp_block_nr; ++i) {
+    // Initilise iov structures
+    for (unsigned int i = 0; i < req.tp_block_nr; ++i) {
         rd[i].iov_base = mapped_buffer + (i * req.tp_block_size);
         rd[i].iov_len  = req.tp_block_size;
     }
@@ -341,7 +341,7 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
     // Thread group for all "master" processes
     boost::thread_group af_packet_main_threads;
 
-    for (int i = 0; i < interfaces_for_listen.size(); i++) {
+    for (std::vector<std::string>::size_type i = 0; i < interfaces_for_listen.size(); i++) {
         // Use process id to identify particular fanout group
         int group_identifier = getpid();
 
@@ -374,7 +374,7 @@ void start_af_packet_capture_for_interface(std::string capture_interface, int fa
         // We have two or more CPUs
         boost::thread_group packet_receiver_thread_group;
 
-        for (int cpu = 0; cpu < num_cpus; cpu++) {
+        for (unsigned int cpu = 0; cpu < num_cpus; cpu++) {
             logger << log4cpp::Priority::INFO << "Start AF_PACKET worker process for " << capture_interface
                    << " with fanout group id " << fanout_group_id << " on CPU " << cpu;
 
