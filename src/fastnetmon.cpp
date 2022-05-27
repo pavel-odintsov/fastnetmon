@@ -1470,6 +1470,7 @@ int main(int argc, char** argv) {
         }
 
         if (vm.count("log_to_console")) {
+            std::cout << "We will log everything on console" << std::endl;
             log_to_console = true;
         }
 
