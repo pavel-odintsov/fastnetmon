@@ -1313,24 +1313,31 @@ bool file_is_appendable(std::string path) {
     }
 }
 
-void init_logging() {
-    // So log4cpp will never notify you if it could not write to log file due to permissions issues
-    // We will check it manually
-
-    if (!file_is_appendable(fastnetmon_platform_configuration.log_file_path)) {
-        std::cerr << "Can't open log file " << fastnetmon_platform_configuration.log_file_path
-                  << " for writing! Please check file and folder permissions" << std::endl;
-        exit(EXIT_FAILURE);
-    }
+void init_logging(bool log_to_console) {
+    logger.setPriority(log4cpp::Priority::INFO);
 
     log4cpp::PatternLayout* layout = new log4cpp::PatternLayout();
     layout->setConversionPattern("%d [%p] %m%n");
 
-    log4cpp::Appender* appender = new log4cpp::FileAppender("default", fastnetmon_platform_configuration.log_file_path);
-    appender->setLayout(layout);
+    // In this case we log everything to console
+    if (log_to_console) {
+        log4cpp::Appender* console_appender = new log4cpp::OstreamAppender("console", &std::cout);
+        console_appender->setLayout(console_layout);
+        logger.addAppender(appender);
+    } else {
+        // So log4cpp will never notify you if it could not write to log file due to permissions issues
+        // We will check it manually
 
-    logger.setPriority(log4cpp::Priority::INFO);
-    logger.addAppender(appender);
+        if (!file_is_appendable(fastnetmon_platform_configuration.log_file_path)) {
+            std::cerr << "Can't open log file " << fastnetmon_platform_configuration.log_file_path
+                      << " for writing! Please check file and folder permissions" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        log4cpp::Appender* appender = new log4cpp::FileAppender("default", fastnetmon_platform_configuration.log_file_path);
+        appender->setLayout(layout);
+        logger.addAppender(appender); 
+    }  
 
     logger << log4cpp::Priority::INFO << "Logger initialized!";
 }
@@ -1409,6 +1416,9 @@ int main(int argc, char** argv) {
 
     namespace po = boost::program_options;
 
+    // Switch logging to console
+    bool log_to_console = false;    
+
     try {
         // clang-format off
         po::options_description desc("Allowed options");
@@ -1418,7 +1428,8 @@ int main(int argc, char** argv) {
 		("daemonize", "detach from the terminal")
 		("configuration_check", "check configuration and exit")
 		("configuration_file", po::value<std::string>(),"set path to custom configuration file")
-		("log_file", po::value<std::string>(), "set path to custom log file");
+		("log_file", po::value<std::string>(), "set path to custom log file")
+        ("log_to_console", "switches all logging to console");
         // clang-format on
 
         po::variables_map vm;
@@ -1452,6 +1463,10 @@ int main(int argc, char** argv) {
         if (vm.count("log_file")) {
             fastnetmon_platform_configuration.log_file_path = vm["log_file"].as<std::string>();
             std::cout << "We will use custom path to log file: " << fastnetmon_platform_configuration.log_file_path << std::endl;
+        }
+
+        if (vm.count("log_to_console")) {
+            log_to_console = true;
         }
     } catch (po::error& e) {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
@@ -1492,7 +1507,7 @@ int main(int argc, char** argv) {
     // enable core dumps
     enable_core_dumps();
 
-    init_logging();
+    init_logging(log_to_console);
 
 #ifdef FASTNETMON_API
     gpr_set_log_function(silent_logging_function);
