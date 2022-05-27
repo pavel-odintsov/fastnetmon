@@ -86,36 +86,26 @@ install -p -d -m 0700 %{buildroot}%{fastnetmon_attackdir}
 %post
 %systemd_post fastnetmon.service
 
-if [ $1 -eq 2 ]; then
-    # upgrade
-fi
-
 %preun
 %systemd_preun fastnetmon.service
 
-# Pre remove
-#if [ $1 -eq 0 ]; then
-    # Uninstall
-#fi
-
 %postun
 %systemd_postun_with_restart fastnetmon.service 
-
 
 %files
 
 %{_unitdir}/fastnetmon.service
 
-# binary daemon
+# Binary daemon
 %{_sbindir}/fastnetmon
 %{_bindir}/fastnetmon_client
 %{_bindir}/fastnetmon_api_client
 
-%config(noreplace) %{_sysconfdir}/fastnetmon.conf
+%config(noreplace) %{fastnetmon_config_path}
+%config(noreplace) %{fastnetmon_logrotate_path}
 %attr(700,%{fastnetmon_user},%{fastnetmon_group}) %dir %{fastnetmon_attackdir}
 
-
 %changelog
-* Saturday May 14 2022 Pavel Odintsov <pavel.odintsov@gmail.com> - 1.2.2-1
+* Saturday May 27 2022 Pavel Odintsov <pavel.odintsov@gmail.com> - 1.2.2-1
 - First RPM package release
 
