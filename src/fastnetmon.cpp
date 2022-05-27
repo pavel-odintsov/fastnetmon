@@ -1419,6 +1419,9 @@ int main(int argc, char** argv) {
     // Switch logging to console
     bool log_to_console = false;    
 
+    // By default we do PID checks
+    bool do_pid_checks = true;
+
     try {
         // clang-format off
         po::options_description desc("Allowed options");
@@ -1429,7 +1432,8 @@ int main(int argc, char** argv) {
 		("configuration_check", "check configuration and exit")
 		("configuration_file", po::value<std::string>(),"set path to custom configuration file")
 		("log_file", po::value<std::string>(), "set path to custom log file")
-        ("log_to_console", "switches all logging to console");
+        ("log_to_console", "switches all logging to console")
+        ("disable_pid_logic", "Disables logic which stores PID to file and uses it for duplicate instance checks");
         // clang-format on
 
         po::variables_map vm;
@@ -1467,6 +1471,10 @@ int main(int argc, char** argv) {
 
         if (vm.count("log_to_console")) {
             log_to_console = true;
+        }
+
+        if (vm.count("disable_pid_logic")) {
+            do_pid_checks = false;
         }
     } catch (po::error& e) {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
@@ -1530,7 +1538,7 @@ int main(int argc, char** argv) {
         exit(0);
     }
 
-    if (file_exists(fastnetmon_platform_configuration.pid_path)) {
+    if (do_pid_checks && file_exists(fastnetmon_platform_configuration.pid_path)) {
         pid_t pid_from_file = 0;
 
         if (read_pid_from_file(pid_from_file, fastnetmon_platform_configuration.pid_path)) {
@@ -1555,13 +1563,17 @@ int main(int argc, char** argv) {
         // no pid file
     }
 
-    // If we not failed in check steps we could run toolkit
-    bool print_pid_to_file_result = print_pid_to_file(getpid(), fastnetmon_platform_configuration.pid_path);
+    if (do_pid_checks) {
 
-    if (!print_pid_to_file_result) {
-        logger << log4cpp::Priority::ERROR
-               << "Could not create pid file, please check permissions: " << fastnetmon_platform_configuration.pid_path;
-        exit(EXIT_FAILURE);
+        // If we not failed in check steps we could run toolkit
+        bool print_pid_to_file_result = print_pid_to_file(getpid(), fastnetmon_platform_configuration.pid_path);
+
+        if (!print_pid_to_file_result) {
+            logger << log4cpp::Priority::ERROR
+                   << "Could not create pid file, please check permissions: " << fastnetmon_platform_configuration.pid_path;
+            exit(EXIT_FAILURE);
+        }
+
     }
 
     lookup_tree_ipv4    = New_Patricia(32);

@@ -5,7 +5,7 @@ After=network.target remote-fs.target
  
 [Service]
 Type=simple
-ExecStart=/usr/sbin/fastnetmon --log_to_console
+ExecStart=/usr/sbin/fastnetmon --log_to_console --disable_pid_logic
 User=fastnetmon
 Group=fastnetmon
 Restart=on-failure
