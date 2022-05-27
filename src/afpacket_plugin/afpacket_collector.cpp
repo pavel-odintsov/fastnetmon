@@ -161,7 +161,7 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
     int packet_socket = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
 
     if (packet_socket == -1) {
-        logger << log4cpp::Priority::ERROR << "Can't create AF_PACKET socket";
+        logger << log4cpp::Priority::ERROR << "Can't create AF_PACKET socket. Error number: " << errno << " error text: " << strerror(errno);
         return false;
     }
 
