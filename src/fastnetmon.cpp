@@ -1316,15 +1316,19 @@ bool file_is_appendable(std::string path) {
 void init_logging(bool log_to_console) {
     logger.setPriority(log4cpp::Priority::INFO);
 
-    log4cpp::PatternLayout* layout = new log4cpp::PatternLayout();
-    layout->setConversionPattern("%d [%p] %m%n");
-
     // In this case we log everything to console
     if (log_to_console) {
-        log4cpp::Appender* console_appender = new log4cpp::OstreamAppender("console", &std::cout);
+        log4cpp::PatternLayout* layout = new log4cpp::PatternLayout();
+        layout->setConversionPattern("[%p] %m%n");        
+
+        // We duplicate stdout because it will be closed by lo4cpp on object termination and we do not need it
+        log4cpp::Appender* console_appender = new log4cpp::FileAppender("stdout", ::dup(fileno(stdout)));
         console_appender->setLayout(layout);
         logger.addAppender(console_appender);
     } else {
+        log4cpp::PatternLayout* layout = new log4cpp::PatternLayout();
+        layout->setConversionPattern("%d [%p] %m%n");
+
         // So log4cpp will never notify you if it could not write to log file due to permissions issues
         // We will check it manually
 
