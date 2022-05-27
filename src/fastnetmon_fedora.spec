@@ -2,7 +2,6 @@
 %global  fastnetmon_user           root
 %global  fastnetmon_group          %{fastnetmon_user}
 %global  fastnetmon_config_path    %{_sysconfdir}/fastnetmon.conf
-%global  fastnetmon_logrotate_path %{_sysconfdir}/logrotate.d/fastnetmon
 
 %global  fastnetmon_commit       master
 %global  fastnetmon_project_name fastnetmon
@@ -76,9 +75,6 @@ install -p -D -m 0755 %__cmake_builddir/fastnetmon_api_client %{buildroot}%{_bin
 # install config
 install -p -D -m 0644 src/fastnetmon.conf %{buildroot}%{fastnetmon_config_path}
 
-# install logrotate confioguration
-install -p -D -m 0644 src/fastnetmon_logrotate  %{buildroot}%{fastnetmon_logrotate_path}
-
 # Create log folder
 install -p -d -m 0700 %{buildroot}%{fastnetmon_attackdir}
 
@@ -109,7 +105,6 @@ install -D -p -m 0644 src/fastnetmon.sysusers %{buildroot}%{_sysusersdir}/fastne
 %{_bindir}/fastnetmon_api_client
 
 %config(noreplace) %{fastnetmon_config_path}
-%config(noreplace) %{fastnetmon_logrotate_path}
 %attr(700,%{fastnetmon_user},%{fastnetmon_group}) %dir %{fastnetmon_attackdir}
 
 %changelog
