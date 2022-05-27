@@ -4,9 +4,8 @@ Documentation=man:fastnetmon(8)
 After=network.target remote-fs.target
  
 [Service]
-Type=forking
-ExecStart=/usr/sbin/fastnetmon --daemonize
-PIDFile=/run/fastnetmon.pid
+Type=simple
+ExecStart=/usr/sbin/fastnetmon --log_to_console
 User=fastnetmon
 Group=fastnetmon
 Restart=on-failure
