@@ -1321,7 +1321,7 @@ void init_logging(bool log_to_console) {
         log4cpp::PatternLayout* layout = new log4cpp::PatternLayout();
         layout->setConversionPattern("[%p] %m%n");        
 
-        // We duplicate stdout because it will be closed by lo4cpp on object termination and we do not need it
+        // We duplicate stdout because it will be closed by log4cpp on object termination and we do not need it
         log4cpp::Appender* console_appender = new log4cpp::FileAppender("stdout", ::dup(fileno(stdout)));
         console_appender->setLayout(layout);
         logger.addAppender(console_appender);
