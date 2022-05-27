@@ -1,0 +1,11 @@
+/var/log/fastnetmon.log
+{
+    rotate 31
+    daily
+    size 10M
+    missingok
+    copytruncate
+    notifempty
+    delaycompress
+}
+
