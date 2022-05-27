@@ -39,6 +39,7 @@ BuildRequires:     grpc-plugins
 BuildRequires:     mongo-c-driver-devel
 BuildRequires:     json-c-devel
 BuildRequires:     systemd
+BuildRequires:     systemd-rpm-macros
 
 Requires(pre):     shadow-utils
 
@@ -81,7 +82,11 @@ install -p -D -m 0644 src/fastnetmon_logrotate  %{buildroot}%{fastnetmon_logrota
 # Create log folder
 install -p -d -m 0700 %{buildroot}%{fastnetmon_attackdir}
 
+# Create sysuser manifest to create dynamic user for us
+install -D -p -m 0644 src/fastnetmon.sysusers %{buildroot}%{_sysusersdir}/fastnetmon.conf
+
 %pre
+%sysusers_create_compat src/fastnetmon.sysusers
 
 %post
 %systemd_post fastnetmon.service
@@ -95,6 +100,8 @@ install -p -d -m 0700 %{buildroot}%{fastnetmon_attackdir}
 %files
 
 %{_unitdir}/fastnetmon.service
+
+%{_sysusersdir}/fastnetmon.conf
 
 # Binary daemon
 %{_sbindir}/fastnetmon
