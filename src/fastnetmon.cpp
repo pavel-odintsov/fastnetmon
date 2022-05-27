@@ -1322,8 +1322,8 @@ void init_logging(bool log_to_console) {
     // In this case we log everything to console
     if (log_to_console) {
         log4cpp::Appender* console_appender = new log4cpp::OstreamAppender("console", &std::cout);
-        console_appender->setLayout(console_layout);
-        logger.addAppender(appender);
+        console_appender->setLayout(layout);
+        logger.addAppender(console_appender);
     } else {
         // So log4cpp will never notify you if it could not write to log file due to permissions issues
         // We will check it manually
