@@ -45,7 +45,7 @@ Requires(pre):     shadow-utils
 %{?systemd_requires}
 
 %description
-DDoS detection tool with sFlow, Netflow, IPFIX and port mirror support
+DDoS detection tool with sFlow, Netflow, IPFIX and port mirror support.
 
 %prep
 %autosetup -n %{name}-%{commit0}
