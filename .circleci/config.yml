@@ -323,3 +323,8 @@ workflows:
           name: "Fedora 36 Upstream RPM"
           docker_image: fedora:36
           fedora_version: "36"
+      - build_fedora_upstream:
+          name: "Fedora 37 Upstream RPM"
+          docker_image: fedora:37
+          fedora_version: "37"
+ 
