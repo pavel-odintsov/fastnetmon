@@ -3,7 +3,7 @@
 %global  fastnetmon_group          %{fastnetmon_user}
 %global  fastnetmon_config_path    %{_sysconfdir}/fastnetmon.conf
 
-%global  fastnetmon_commit       master
+%global  fastnetmon_commit       420e7b873253fdc1b52b517d9c28db39bf384427
 %global  fastnetmon_project_name fastnetmon
 
 Name:              fastnetmon
@@ -14,7 +14,7 @@ Summary:           A high performance DoS/DDoS load analyzer built on top of mul
 License:           GPLv2
 URL:               https://fastnetmon.com
 
-Source0:           https://github.com/pavel-odintsov/fastnetmon/archive/master.tar.gz
+Source0:           https://github.com/pavel-odintsov/fastnetmon/archive/%{fastnetmon_commit}.tar.gz
 Source1:           fastnetmon.sysusers
 
 BuildRequires:     make
