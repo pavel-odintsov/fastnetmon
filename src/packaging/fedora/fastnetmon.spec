@@ -49,7 +49,7 @@ A high performance DoS/DDoS load analyzer built on top of multiple packet captur
 engines (NetFlow, IPFIX, sFlow, PCAP).
 
 %prep
-%autosetup -n %{name}-%{fastnetmon_commit}
+%autosetup -n %{name}-%{commit0}
 
 %build
 
