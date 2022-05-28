@@ -15,7 +15,7 @@ License:           GPLv2
 URL:               https://fastnetmon.com
 
 Source0:           https://github.com/pavel-odintsov/fastnetmon/archive/master.tar.gz
-Source1:           src/packaging/fedora/fastnetmon.sysusers
+Source1:           fastnetmon.sysusers
 
 BuildRequires:     make
 BuildRequires:     gcc
