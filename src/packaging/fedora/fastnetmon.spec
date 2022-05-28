@@ -11,7 +11,7 @@ Name:              fastnetmon
 Version:           1.2.1
 Release:           1.%{date}git%{shortcommit0}%{?dist}
 
-Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFlow, PCAP)
+Summary:           DDoS detection tool with sFlow, Netflow, IPFIX and port mirror support
 License:           GPLv2
 URL:               https://fastnetmon.com
 
@@ -45,8 +45,7 @@ Requires(pre):     shadow-utils
 %{?systemd_requires}
 
 %description
-A high performance DoS/DDoS load analyzer built on top of multiple packet capture
-engines (NetFlow, IPFIX, sFlow, PCAP).
+DDoS detection tool with sFlow, Netflow, IPFIX and port mirror support
 
 %prep
 %autosetup -n %{name}-%{commit0}
@@ -109,6 +108,6 @@ install -D -p -m 0644 %{SOURCE1} %{buildroot}%{_sysusersdir}/fastnetmon.conf
 %doc README.md SECURITY.md THANKS.md
 
 %changelog
-* Sat May 28 2022 Pavel Odintsov <pavel.odintsov@gmail.com> - 1.2.1-1
+* Sat May 28 2022 Pavel Odintsov <pavel.odintsov@gmail.com> - 1.2.1-1.20220528git420e7b8
 - First RPM package release
 
