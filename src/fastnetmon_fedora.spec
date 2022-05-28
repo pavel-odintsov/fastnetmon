@@ -1,12 +1,10 @@
 %global  fastnetmon_attackdir      %{_localstatedir}/log/fastnetmon_attacks
-%global  fastnetmon_user           root
+%global  fastnetmon_user           fastnetmon
 %global  fastnetmon_group          %{fastnetmon_user}
 %global  fastnetmon_config_path    %{_sysconfdir}/fastnetmon.conf
 
 %global  fastnetmon_commit       master
 %global  fastnetmon_project_name fastnetmon
-%global  fastnetmon_company      FastNetMon LTD
-%global _vpath_srcdir src
 
 Name:              fastnetmon
 Version:           1.2.2
@@ -44,8 +42,6 @@ Requires(pre):     shadow-utils
 
 %{?systemd_requires}
 
-Provides:          fastnetmon
-
 %description
 A high performance DoS/DDoS load analyzer built on top of multiple packet capture
 engines (NetFlow, IPFIX, sFlow, PCAP).
@@ -55,7 +51,7 @@ engines (NetFlow, IPFIX, sFlow, PCAP).
 
 %build
 
-%cmake -DENABLE_CUSTOM_BOOST_BUILD=FALSE -DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE -DCMAKE_SKIP_BUILD_RPATH=TRUE -DLINK_WITH_ABSL=TRUE
+%cmake -DENABLE_CUSTOM_BOOST_BUILD=FALSE -DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE -DCMAKE_SKIP_BUILD_RPATH=TRUE -DLINK_WITH_ABSL=TRUE -S src
 
 %cmake_build
 
@@ -108,6 +104,6 @@ install -D -p -m 0644 src/fastnetmon.sysusers %{buildroot}%{_sysusersdir}/fastne
 %attr(700,%{fastnetmon_user},%{fastnetmon_group}) %dir %{fastnetmon_attackdir}
 
 %changelog
-* Saturday May 27 2022 Pavel Odintsov <pavel.odintsov@gmail.com> - 1.2.2-1
+* Sat May 28 2022 Pavel Odintsov <pavel.odintsov@gmail.com> - 1.2.1-1
 - First RPM package release
 
