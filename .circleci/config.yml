@@ -80,6 +80,9 @@ jobs:
           name: Added sysusers file to SOURCES
           command: cp src/packaging/fedora/fastnetmon.sysusers ~/rpmbuild/SOURCES
       - run:
+          name: Build source RPM
+          command: cd ~/rpmbuild/SPECS && rpmbuild -bs fastnetmon.spec
+      - run:
           name: Build RPM
           command: cd ~/rpmbuild/SPECS && rpmbuild -bb fastnetmon.spec
       - store_artifacts:
