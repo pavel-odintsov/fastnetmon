@@ -7,7 +7,7 @@
 %global  fastnetmon_project_name fastnetmon
 
 Name:              fastnetmon
-Version:           1.2.2
+Version:           1.2.1
 Release:           1%{?dist}
 
 Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFlow, PCAP).
