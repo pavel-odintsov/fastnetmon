@@ -57,7 +57,7 @@ engines (NetFlow, IPFIX, sFlow, PCAP).
 
 %install
 # install systemd unit file
-install -p -D -m 0644 src/fastnetmon_fedora.service %{buildroot}%{_unitdir}/fastnetmon.service
+install -p -D -m 0644 src/packaging/fedora/fastnetmon.service %{buildroot}%{_unitdir}/fastnetmon.service
 
 # install daemon binary
 install -p -D -m 0755 %__cmake_builddir/fastnetmon %{buildroot}%{_sbindir}/fastnetmon
