@@ -105,6 +105,9 @@ install -D -p -m 0644 %{SOURCE1} %{buildroot}%{_sysusersdir}/fastnetmon.conf
 %config(noreplace) %{fastnetmon_config_path}
 %attr(700,%{fastnetmon_user},%{fastnetmon_group}) %dir %{fastnetmon_attackdir}
 
+%license LICENSE
+%doc README.md SECURITY.md THANKS.md
+
 %changelog
 * Sat May 28 2022 Pavel Odintsov <pavel.odintsov@gmail.com> - 1.2.1-1
 - First RPM package release
