@@ -15,6 +15,7 @@ License:           GPLv2
 URL:               https://fastnetmon.com
 
 Source0:           https://github.com/pavel-odintsov/fastnetmon/archive/master.tar.gz
+Source1:           src/packaging/fedora/fastnetmon.sysusers
 
 BuildRequires:     make
 BuildRequires:     gcc
@@ -75,10 +76,10 @@ install -p -D -m 0644 src/fastnetmon.conf %{buildroot}%{fastnetmon_config_path}
 install -p -d -m 0700 %{buildroot}%{fastnetmon_attackdir}
 
 # Create sysuser manifest to create dynamic user for us
-install -D -p -m 0644 src/fastnetmon.sysusers %{buildroot}%{_sysusersdir}/fastnetmon.conf
+install -D -p -m 0644 %{SOURCE1} %{buildroot}%{_sysusersdir}/fastnetmon.conf
 
 %pre
-%sysusers_create_compat src/fastnetmon.sysusers
+%sysusers_create_compat %{SOURCE1}
 
 %post
 %systemd_post fastnetmon.service
