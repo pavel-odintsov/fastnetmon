@@ -3,18 +3,19 @@
 %global  fastnetmon_group          %{fastnetmon_user}
 %global  fastnetmon_config_path    %{_sysconfdir}/fastnetmon.conf
 
-%global  fastnetmon_commit       420e7b873253fdc1b52b517d9c28db39bf384427
-%global  fastnetmon_project_name fastnetmon
+%global  commit0 420e7b873253fdc1b52b517d9c28db39bf384427
+%global  shortcommit0 %(c=%{commit0}; echo ${c:0:7})
+%global  date 20220528
 
 Name:              fastnetmon
 Version:           1.2.1
-Release:           1%{?dist}
+Release:           1.%{date}git%{shortcommit0}%{?dist}
 
-Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFlow, PCAP).
+Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFlow, PCAP)
 License:           GPLv2
 URL:               https://fastnetmon.com
 
-Source0:           https://github.com/pavel-odintsov/fastnetmon/archive/%{fastnetmon_commit}.tar.gz
+Source0:           https://github.com/pavel-odintsov/fastnetmon/archive/%{commit0}.tar.gz
 Source1:           fastnetmon.sysusers
 
 BuildRequires:     make
