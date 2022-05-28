@@ -6,6 +6,7 @@
 %global  fastnetmon_commit       master
 %global  fastnetmon_project_name fastnetmon
 %global  fastnetmon_company      FastNetMon LTD
+%global _vpath_srcdir src
 
 Name:              fastnetmon
 Version:           1.2.2
@@ -54,7 +55,7 @@ engines (NetFlow, IPFIX, sFlow, PCAP).
 
 %build
 
-%cmake -DENABLE_CUSTOM_BOOST_BUILD=FALSE -DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE -DCMAKE_SKIP_BUILD_RPATH=TRUE -DLINK_WITH_ABSL=TRUE src
+%cmake -DENABLE_CUSTOM_BOOST_BUILD=FALSE -DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE -DCMAKE_SKIP_BUILD_RPATH=TRUE -DLINK_WITH_ABSL=TRUE
 
 %cmake_build
 
