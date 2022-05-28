@@ -17,7 +17,6 @@ URL:               https://fastnetmon.com
 
 Source0:           https://github.com/pavel-odintsov/fastnetmon/archive/master.tar.gz
 
-BuildRequires:     git
 BuildRequires:     make
 BuildRequires:     gcc
 BuildRequires:     gcc-c++
