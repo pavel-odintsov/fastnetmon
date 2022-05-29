@@ -6,6 +6,12 @@ use warnings;
 use Getopt::Long;
 use File::Basename;
 
+# Use path to our libraries folder relvant to path where we keep script itself 
+use FindBin;
+use lib "$FindBin::Bin/perllib";
+
+use Fastnetmon;
+
 # It's from base system
 use Archive::Tar;
 
