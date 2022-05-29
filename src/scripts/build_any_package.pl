@@ -42,90 +42,6 @@ sub build_rpm_package {
     mkdir '/root/rpmbuild' or die "Cannot create rpmbuild folder";;
     mkdir '/root/rpmbuild/SOURCES' or die "Cannot create source folder";
 
-    my $system_v_init_script = <<'DOC';
-#!/bin/bash
-#
-# fastnetmon        Startup script for FastNetMon 
-#
-# chkconfig: - 85 15
-# description: FastNetMon - high performance DoS/DDoS analyzer with sflow/netflow/mirror support
-# processname: fastnetmon
-# config: /etc/fastnetmon.conf
-# pidfile: /var/run/fastnetmon.pid
-#
-### BEGIN INIT INFO
-# Provides: fastnetmon
-# Required-Start: $local_fs $remote_fs $network
-# Required-Stop: $local_fs $remote_fs $network
-# Should-Start: 
-# Short-Description: start and stop FastNetMon
-# Description:  high performance DoS/DDoS analyzer with sflow/netflow/mirror support
-### END INIT INFO
-
-# Source function library.
-. /etc/rc.d/init.d/functions
-
-# We do not use this configs
-#if [ -f /etc/sysconfig/fastnetmon ]; then
-#        . /etc/sysconfig/fastnetmon
-#fi
-
-
-FASTNETMON=/opt/fastnetmon/fastnetmon
-PROGNAME="fastnetmon"
-PIDFILE=/var/run/fastnetmon.pid
-RETVAL=0
-ARGS="--daemonize"
-
-start() {
-        echo -n $"Starting $PROGNAME: "
-        $FASTNETMON $ARGS > /dev/null 2>&1 && echo_success || echo_failure
-        RETVAL=$?
-        echo ""
-        return $RETVAL
-}
-
-stop() {
-        echo -n $"Stopping $PROGNAME: "
-        killproc -p $PIDFILE $FASTNETMON
-        RETVAL=$?
-        echo ""
-        rm -f $PIDFILE
-}
-reload() {
-    echo "Reloading is not supported now, sorry"
-    #echo -n $"Reloading $PROGNAME: "
-    #kill -HUP `cat $PIDFILE`
-}
-
-# See how we were called.
-case "$1" in
-  start)
-    start
-    ;;
-  stop)
-    stop
-    ;;
-  status)
-        status -p ${PIDFILE} $PROGNAME
-    RETVAL=$?
-    ;;
-  restart)
-    stop
-        sleep 1
-    start
-    ;;
-  reload)
-        reload
-    ;;
-  *)
-    echo $"Usage: $prog {start|stop|restart|reload|status}"
-    RETVAL=2
-esac
-
-exit $RETVAL
-DOC
-
     my $systemd_init_script = <<'DOC';
 [Unit]
 Description=FastNetMon - DoS/DDoS analyzer with sFlow/Netflow/mirror support
@@ -169,7 +85,6 @@ DOC
         }
     }
 
-    put_text_to_file("$rpm_sources_path/system_v_init", $system_v_init_script);
     put_text_to_file("$rpm_sources_path/systemd_init", $systemd_init_script);
 
     # Create files list from archive
@@ -333,107 +248,7 @@ fi
 - First RPM package release
 DOC
 
-   my $spec_file_init_d_section = <<'DOC';
-
-Requires:          libpcap, numactl
-Requires(pre):     shadow-utils
-Requires(post):    chkconfig
-Requires(preun):   chkconfig, initscripts
-Requires(postun):  initscripts
-Provides:          fastnetmon
-
-DOC
-
-my $spec_file_prep_footer_init_d_section = <<'DOC';
-
-# Copy service scripts
-mkdir fastnetmon-tree/etc
-cp /root/rpmbuild/SOURCES/system_v_init fastnetmon-tree/etc
-cp /root/rpmbuild/SOURCES/fastnetmon.conf fastnetmon-tree/etc
-
-DOC
-
-
-   my $spec_file = $spec_file_header . $spec_file_version . $spec_file_summary_section . $spec_file_init_d_section . $spec_file_description_section . $spec_file_prep_section 
-       . $spec_file_prep_footer_init_d_section;
-
-   $spec_file .= <<'DOC';
-
-%build
-
-# We do not build anything
-exit 0
-
-%install
-
-mkdir %{buildroot}/opt
-cp -R fastnetmon-tree/opt/* %{buildroot}/opt
-chmod 755 %{buildroot}/opt/fastnetmon/fastnetmon
-chmod 755 %{buildroot}/opt/fastnetmon/fastnetmon_client
-
-# install init script
-install -p -D -m 0755 fastnetmon-tree/etc/system_v_init %{buildroot}%{_initrddir}/fastnetmon
-
-# install config
-install -p -D -m 0644 fastnetmon-tree/etc/fastnetmon.conf %{buildroot}%{fastnetmon_config_path}
-
-# Create log folder
-install -p -d -m 0700 %{buildroot}%{fastnetmon_attackdir}
-
-exit 0
-
-%pre
-
-exit 0
-
-%post
-
-if [ $1 -eq 1 ]; then
-    # It's install
-    /sbin/chkconfig --add %{name}
-    /sbin/chkconfig %{name} on
-    /sbin/service %{name} start
-fi
-
-
-#if [ $1 -eq 2 ]; then
-    # upgrade
-    #/sbin/service %{name} restart >/dev/null 2>&1
-#fi
-
-%preun
-
-# Pre remove
-if [ $1 -eq 0 ]; then
-    # Uninstall
-    # Stops fastnetmon and disable it loading at startup
-    /sbin/service %{name} stop >/dev/null 2>&1
-    /sbin/chkconfig --del %{name}
-fi
-
-%postun
-# Post remove
-
-%files
-#%doc LICENSE CHANGES README
-
-{files_list}
-
-%{_initrddir}/fastnetmon
-%config(noreplace) %{_sysconfdir}/fastnetmon.conf
-%attr(700,%{fastnetmon_user},%{fastnetmon_group}) %dir %{fastnetmon_attackdir}
-
-%changelog
-* Mon Mar 23 2015 Pavel Odintsov <pavel.odintsov@gmail.com> - 1.1.1-1
-- First RPM package release
-DOC
-
     my $selected_spec_file = $systemd_spec_file;
-
-    # Only for CentOS 6 we use old apprach based on init scripts, for newer centos versions we use systemd
-    if ($distro_name eq 'centos' && $distro_version eq '6') {
-        $selected_spec_file = $spec_file;
-    }
 
     # Add full list of files into RPM spec
     my $joined_file_list = join "\n", @files_list;
