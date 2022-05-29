@@ -317,65 +317,6 @@ kill timeout 5
 
 exec $DAEMON $DAEMON_OPTIONS
 DOC
-my $fastnetmon_systemv_init = <<'DOC';
-#!/bin/sh
-### BEGIN INIT INFO
-# Provides:          fastnetmon
-# Required-Start:    $local_fs $remote_fs $network $syslog
-# Required-Stop:     $local_fs $remote_fs $network $syslog
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
-# Short-Description: Fast DDoS detection toolkit.
-# Description:       Fast DDoS detection toolkit with sFLOW/Netflow/Netmap support.
-### END INIT INFO
-
-# test -r /etc/default/fastnetmon && . /etc/default/fastnetmon
-
-NAME="fastnetmon"
-
-. /lib/lsb/init-functions
-
-PIDFILE="/var/run/${NAME}.pid"
-DAEMON="/opt/fastnetmon/fastnetmon"
-
-DAEMON_OPTS="--daemonize"
-START_OPTS="--start --background --exec ${DAEMON} -- ${DAEMON_OPTS}"
-STOP_OPTS="--stop --pidfile ${PIDFILE}"
-STATUS_OPTS="--status --pidfile ${PIDFILE}"
-
-case "$1" in
-  start)
-        echo -n "Starting $NAME: "
-    start-stop-daemon $START_OPTS
-    echo "$NAME."
-        ;;
-  stop)
-        echo -n "Stopping $NAME: "
-    start-stop-daemon $STOP_OPTS
-        rm -f $PIDFILE
-    echo "$NAME."
-        ;;
-  restart)
-        $0 stop
-        sleep 2
-        $0 start
-        ;;
-  force-reload)
-        $0 restart
-        ;;
-# no support of status on Debian squeeze
-#  status)
-#   start-stop-daemon $STATUS_OPTS
-#   ;;
-  *)
-        N=/etc/init.d/$NAME
-        echo "Usage: $N {start|stop|restart}" >&2
-        exit 1
-        ;;
-esac
-
-exit 0
-DOC
 
 my $fastnetmon_control_file = <<DOC;
 Package: fastnetmon
@@ -459,10 +400,6 @@ DOC
     # Create init files for different versions of Debian like OS 
     mkdir "$folder_for_build/etc" or die "Cannot create etc folder\n";
     mkdir "$folder_for_build/etc/init" or die "Cannot create init folder\n";
-    mkdir "$folder_for_build/etc/init.d" or die "Cannot create init.d folder\n";
-
-    put_text_to_file("$folder_for_build/etc/init.d/fastnetmon", $fastnetmon_systemv_init);
-    chmod 0755, "$folder_for_build/etc/init.d/fastnetmon" or die "Cannot set exec bit for init.d/fastntemon";;
 
     # Create folders for system service file
     mkdir "$folder_for_build/lib" or die "Cannot create lib folder";
