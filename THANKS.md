@@ -32,5 +32,5 @@ For all people who helped this project:
 - Dmitry Kaminsky for help with configuration sanity checks and fixing redis bug
 
 For all companies who helped this project:
-- GitHub for their amazing platform
-- CircleCI for great CI which is free for OSS projects
+- [GitHub](https://github.com) for their amazing platform
+- [CircleCI](https://circleci.com/) for great CI which is free for OSS projects
