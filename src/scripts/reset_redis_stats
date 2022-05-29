@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-/usr/bin/redis-cli FLUSHALL
