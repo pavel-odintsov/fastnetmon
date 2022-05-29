@@ -5,7 +5,7 @@ cmake_minimum_required (VERSION 2.8)
 # Debian 7 - 2.8.9
 # CentOS 6 - 2.8.12
 
-set(FASTNETMON_LIBRARIES_GLOBAL_PATH "/opt")
+set(FASTNETMON_LIBRARIES_GLOBAL_PATH "/opt/fastnetmon-community/libraries")
 
 project(FastNetMon)
 

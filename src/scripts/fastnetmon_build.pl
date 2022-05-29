@@ -26,7 +26,7 @@ BEGIN {
     }
 }
 
-my $library_install_folder = '/opt';
+my $library_install_folder = '/opt/fastnetmon-community/libraries';
 my $we_use_code_from_master = '';
 
 my $ld_library_path_for_make = "";
@@ -295,6 +295,11 @@ sub main {
 
         yum(@centos_dependency_packages);
     }
+
+    unless (-e $library_install_folder) {
+        exec_command("mkdir -p $library_install_folder");
+    }
+
 
     if ($build_gcc_only) {
         install_gcc_dependencies();
@@ -625,7 +630,7 @@ sub install_grpc {
 
     print "Build gRPC\n";
     # We need to specify PKG config path to pick up our custom OpenSSL instead of system one
-    my $make_result = exec_command("$ld_library_path_for_make PKG_CONFIG_PATH=/opt/openssl_1_0_2d/lib/pkgconfig make $make_options");
+    my $make_result = exec_command("$ld_library_path_for_make PKG_CONFIG_PATH=$library_install_folder/openssl_1_0_2d/lib/pkgconfig make $make_options");
 
     unless ($make_result) {
         fast_die( "Could not build gRPC: make failed\n");

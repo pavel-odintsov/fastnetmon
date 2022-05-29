@@ -25,7 +25,7 @@ if (-e $archive_bundle_name) {
     unlink $archive_bundle_name;
 }
 
-my $global_path = '/opt';
+my $global_path = '/opt/fastnetmon-community/libraries';
 
 my $target_path = `mktemp -d`;
 chomp $target_path;
