@@ -121,24 +121,25 @@ chmod 0755, "$target_path/fastnetmon/fastnetmon_api_client";
 
 # Install GoBGP's binary files
 my $gobgp_folder_name = "gobgp_2_17_0";
-mkdir "$target_path/$gobgp_folder_name";
+mkdir "$target_path/fastnetmon-community/libraries/$gobgp_folder_name";
 
 for my $gobgp_binary ('gobgp', 'gobgpd') {
-    unless (-e "$global_path/$gobgp_folder_name/$gobgp_binary") {
+    unless (-e "$fastnetmon_libraries_path/$gobgp_folder_name/$gobgp_binary") {
         die "GoBGP binary $gobgp_binary does not exist\n";
-    }
+    }   
 
-    my $gobgp_copy_result = copy("$global_path/$gobgp_folder_name/$gobgp_binary",
-        "$target_path/$gobgp_folder_name/$gobgp_binary");
+    my $gobgp_copy_result = copy("$fastnetmon_libraries_path/$gobgp_folder_name/$gobgp_binary",
+        "$target_path/fastnetmon-community/libraries/$gobgp_folder_name/$gobgp_binary");
 
     unless ($gobgp_copy_result) {
         die "Could not copy GoBGP's binary $gobgp_binary $!\n";
-    }
+    }   
 
     # Enable exec flag
-    chmod 0755, "$target_path/$gobgp_folder_name/$gobgp_binary";
+    chmod 0755, "$target_path/fastnetmon-community/libraries/$gobgp_folder_name/$gobgp_binary";
 }
 
-
-`tar -cpzf $archive_bundle_name -C $target_path ./`;
+# Just tar it. We do not need compression here because this bundle will be unpacked by our own code later
+# I explicitly set uid and git to zero here to prevent any non zero owners for production build
+`tar -cpf $archive_bundle_name -C $target_path --owner=0 --group=0 ./`;
 print "We have created bundle $archive_bundle_name\n";
