@@ -511,7 +511,7 @@ endif()
 target_link_libraries(fast_library patricia)
 target_link_libraries(fast_library fastnetmon_pcap_format)
 
-# Try to find ncurses librreary
+# Try to find ncurses library
 find_package(Curses REQUIRED)
 
 if(CURSES_FOUND) 
@@ -756,6 +756,7 @@ endif()
 
 install(TARGETS fastnetmon DESTINATION "${CMAKE_INSTALL_SBINDIR}")
 install(TARGETS fastnetmon_client DESTINATION "${CMAKE_INSTALL_BINDIR}")
+install(TARGETS fastnetmon_api_client DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
 install(FILES fastnetmon.conf DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}")
 
