@@ -49,7 +49,7 @@ After=network.target remote-fs.target
  
 [Service]
 Type=forking
-ExecStart=/opt/fastnetmon/fastnetmon --daemonize
+ExecStart=/opt/fastnetmon-community/fastnetmon --daemonize
 PIDFile=/run/fastnetmon.pid
 LimitNOFILE=65535
 
@@ -191,8 +191,9 @@ exit 0
 
 mkdir %{buildroot}/opt
 cp -R fastnetmon-tree/opt/* %{buildroot}/opt
-chmod 755 %{buildroot}/opt/fastnetmon/fastnetmon
-chmod 755 %{buildroot}/opt/fastnetmon/fastnetmon_client
+chmod 755 %{buildroot}/opt/fastnetmon-community/fastnetmon
+chmod 755 %{buildroot}/opt/fastnetmon-community/fastnetmon_client
+chmod 755 %{buildroot}/opt/fastnetmon-community/fastnetmon_api_client
 
 # install init script
 install -p -D -m 0755 fastnetmon-tree/etc/systemd_init %{buildroot}%{_sysconfdir}/systemd/system/fastnetmon.service
@@ -283,7 +284,7 @@ After=network.target remote-fs.target
  
 [Service]
 Type=forking
-ExecStart=/opt/fastnetmon/fastnetmon --daemonize
+ExecStart=/opt/fastnetmon-community/fastnetmon --daemonize
 PIDFile=/run/fastnetmon.pid
 LimitNOFILE=65535
 
@@ -298,7 +299,7 @@ author "Pavel Odintsov <pavel.odintsov@gmail.com>"
 start on (filesystem and net-device-up IFACE=lo and started mongod)
 stop on runlevel [!2345]
 
-env DAEMON=/opt/fastnetmon/fastnetmon
+env DAEMON=/opt/fastnetmon-community/fastnetmon
 env DAEMON_OPTIONS="--daemonize"
 env PID=/run/fastnetmon.pid
 
@@ -410,19 +411,19 @@ DOC
     mkdir "$folder_for_build/usr" or die "Cannot create usr folder";
     mkdir "$folder_for_build/usr/bin" or die "Cannot reate usr/bin folder";
 
-    my $fastnetmon_client_ln_res = system("ln -s /opt/fastnetmon/fastnetmon_client $folder_for_build/usr/bin/fastnetmon_client");
+    my $fastnetmon_client_ln_res = system("ln -s /opt/fastnetmon-community/fastnetmon_client $folder_for_build/usr/bin/fastnetmon_client");
 
     if ($fastnetmon_client_ln_res != 0) {
         die "Cannot create symlink for fastnetmon_client";
     }
 
-    my $fastnetmon_api_client_ln_res = system("ln -s /opt/fastnetmon/fastnetmon_api_client $folder_for_build/usr/bin/fastnetmon_api_client");
+    my $fastnetmon_api_client_ln_res = system("ln -s /opt/fastnetmon-community/fastnetmon_api_client $folder_for_build/usr/bin/fastnetmon_api_client");
 
     if ($fastnetmon_api_client_ln_res != 0) {
         die "Cannot create symlink for fastnetmon_api_client";
     }
 
-    my $fastnetmon_ln_res = system("ln -s /opt/fastnetmon/fastnetmon $folder_for_build/usr/bin/fastnetmon");
+    my $fastnetmon_ln_res = system("ln -s /opt/fastnetmon-community/fastnetmon $folder_for_build/usr/bin/fastnetmon");
 
     if ($fastnetmon_ln_res != 0) {
         die "Cannot create symlink for fastnetmon";
