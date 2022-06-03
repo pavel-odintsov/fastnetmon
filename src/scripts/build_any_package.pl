@@ -189,6 +189,13 @@ exit 0
 
 %install
 
+# Create symlinks for better customer experience
+mkdir %{buildroot}/usr
+mkdir %{buildroot}/usr/bin
+ln -s /opt/fastnetmon-community/app/bin/fastnetmon %{buildroot}/usr/bin/fastnetmon
+ln -s /opt/fastnetmon-community/app/bin/fastnetmon_client %{buildroot}/usr/bin/fastnetmon_client
+ln -s /opt/fastnetmon-community/app/bin/fastnetmon_api_client %{buildroot}/usr/bin/fastnetmon_api_client
+
 mkdir %{buildroot}/opt
 cp -R fastnetmon-tree/opt/* %{buildroot}/opt
 chmod 755 %{buildroot}/opt/fastnetmon-community/app/bin/fastnetmon
