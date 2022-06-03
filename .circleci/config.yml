@@ -107,7 +107,7 @@ jobs:
           command: perl src/scripts/fastnetmon_build.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_29_05_2022"
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_03_06_2022"
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_gcc_30_05_2022"
@@ -128,7 +128,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_29_05_2022"
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_03_06_2022"
           paths:
             - /opt
       - run: perl src/scripts/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
@@ -166,7 +166,7 @@ jobs:
           command: perl src/scripts/fastnetmon_build.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_29_05_2022"
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_03_06_2022"
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_gcc_30_05_2022"
@@ -187,7 +187,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_29_05_2022"
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_03_06_2022"
           paths:
             - /opt
       - run: perl src/scripts/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
@@ -224,7 +224,7 @@ jobs:
           command: perl src/scripts/fastnetmon_build.pl --install_dependency_packages_only
       - restore_cache:
           keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_29_05_2022"
+            - "{{ .Environment.CIRCLE_JOB }}_dependencies_03_06_2022"
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_gcc_30_05_2022"
@@ -245,7 +245,7 @@ jobs:
           command: cat /tmp/fastnetmon_install.log
           when: on_fail
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_29_05_2022"
+          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_03_06_2022"
           paths:
             - /opt
       - store_artifacts:
