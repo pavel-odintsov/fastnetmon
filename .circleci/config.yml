@@ -145,7 +145,7 @@ jobs:
       - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon
       - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon_client
       - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon_api_client
-      - run: /opt/fastnetmon-community/fastnetmon --configuration_check
+      - run: /opt/fastnetmon-community/app/bin/fastnetmon --configuration_check
   build_debian:
     parameters:
       docker_image:
@@ -204,7 +204,7 @@ jobs:
       - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon
       - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon_client
       - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon_api_client
-      - run: /opt/fastnetmon-community/fastnetmon --configuration_check
+      - run: /opt/fastnetmon-community/app/bin/fastnetmon --configuration_check
   build_centos:
     parameters:
       docker_image:
@@ -262,7 +262,7 @@ jobs:
       - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon
       - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon_client
       - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon_api_client
-      - run: /opt/fastnetmon-community/fastnetmon --configuration_check
+      - run: /opt/fastnetmon-community/app/bin/fastnetmon --configuration_check
 workflows:
   version: 2
   all_distros:
