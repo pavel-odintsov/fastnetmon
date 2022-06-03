@@ -26,7 +26,8 @@ BEGIN {
     }
 }
 
-my $library_install_folder = '/opt/fastnetmon-community/libraries';
+my $fastnetmon_install_folder = '/opt/fastnetmon-community';
+my $library_install_folder = "$fastnetmon_install_folder/libraries";
 my $we_use_code_from_master = '';
 
 my $ld_library_path_for_make = "";
@@ -1578,22 +1579,18 @@ sub install_fastnetmon {
         system("$ld_library_path_for_make make $make_options >> $install_log_path 2>&1");
     }
 
-    my $fastnetmon_dir = "$library_install_folder/fastnetmon";
     my $fastnetmon_build_binary_path = "$fastnetmon_code_dir/build/fastnetmon";
 
     unless (-e $fastnetmon_build_binary_path) {
         fast_die("Can't build fastnetmon!");
     }
 
-    mkdir $fastnetmon_dir;
+    mkdir $fastnetmon_install_folder;
 
-    print "Install fastnetmon to dir $fastnetmon_dir\n";
-    exec_command("cp $fastnetmon_build_binary_path $fastnetmon_dir/fastnetmon");
-    exec_command("cp $fastnetmon_code_dir/build/fastnetmon_client $fastnetmon_dir/fastnetmon_client");
-
-    if (-e "$fastnetmon_code_dir/build/fastnetmon_api_client") {
-        exec_command("cp $fastnetmon_code_dir/build/fastnetmon_api_client $fastnetmon_dir/fastnetmon_api_client");
-    }
+    print "Install fastnetmon to directory $fastnetmon_install_folder\n";
+    exec_command("cp $fastnetmon_build_binary_path $fastnetmon_install_folder/fastnetmon");
+    exec_command("cp $fastnetmon_code_dir/build/fastnetmon_client $fastnetmon_install_folder/fastnetmon_client");
+    exec_command("cp $fastnetmon_code_dir/build/fastnetmon_api_client $fastnetmon_install_folder/fastnetmon_api_client");
 
     my $fastnetmon_config_path = "/etc/fastnetmon.conf";
     unless (-e $fastnetmon_config_path) {
@@ -1601,14 +1598,11 @@ sub install_fastnetmon {
         exec_command("cp $fastnetmon_code_dir/fastnetmon.conf $fastnetmon_config_path");
     }
 
-    print "If you have any issues, please check /var/log/fastnetmon.log file contents\n";
-    print "Please add your subnets in /etc/networks_list in CIDR format one subnet per line\n";
-
     my $init_script_result = install_init_scripts();
 
     # Print unified run message 
     unless ($init_script_result) {
-        print "You can run fastnetmon with command: $fastnetmon_dir/fastnetmon\n";
+        print "You can run fastnetmon with command: $fastnetmon_install_folder/fastnetmon\n";
     }
 }
 
