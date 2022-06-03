@@ -228,7 +228,6 @@ if [ $1 -eq 1 ]; then
     /usr/bin/systemctl start fastnetmon.service
 fi
 
-
 #if [ $1 -eq 2 ]; then
     # upgrade
     #/sbin/service %{name} restart >/dev/null 2>&1
@@ -243,7 +242,10 @@ fi
 %systemd_postun_with_restart fastnetmon.service 
 
 %files
-#%doc LICENSE CHANGES README
+
+/usr/bin/fastnetmon
+/usr/bin/fastnetmon_client
+/usr/bin/fastnetmon_api_client
 
 {files_list}
 
@@ -252,7 +254,7 @@ fi
 %attr(700,%{fastnetmon_user},%{fastnetmon_group}) %dir %{fastnetmon_attackdir}
 
 %changelog
-* Mon Mar 23 2015 Pavel Odintsov <pavel.odintsov@gmail.com> - 1.1.1-1
+* Mon Mar 23 2022 Pavel Odintsov <pavel.odintsov@gmail.com> - 1.2.1-1
 - First RPM package release
 DOC
 
