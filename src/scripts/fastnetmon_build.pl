@@ -665,7 +665,7 @@ sub install_gobgp {
 
     print "Download GoBGP\n";
 
-    my $gobgp_download_result = download_file("https://github.com/osrg/gobgp/releases/download/v2.17.0/$distro_file_name",
+    my $gobgp_download_result = download_file("https://github.com/osrg/gobgp/releases/download/v2.27.0/$distro_file_name",
         $distro_file_name, $distro_file_hash);
 
     unless ($gobgp_download_result) {
