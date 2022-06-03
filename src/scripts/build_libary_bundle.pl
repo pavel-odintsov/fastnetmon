@@ -139,9 +139,8 @@ chmod 0755, "$temp_folder_global_path/fastnetmon";
 chmod 0755, "$temp_folder_global_path/fastnetmon_client";
 chmod 0755, "$temp_folder_global_path/fastnetmon_api_client";
 
-# TODO: upgrade it to 2.27
 # Install GoBGP binary files
-my $gobgp_folder_name = "gobgp_2_17_0";
+my $gobgp_folder_name = "gobgp_2_27_0";
 mkdir "$temp_folder_global_path/libraries/$gobgp_folder_name";
 
 for my $gobgp_binary ('gobgp', 'gobgpd') {
