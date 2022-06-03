@@ -501,56 +501,6 @@ sub install_json_c {
     exec_command("make $make_options install");
 }
 
-sub install_init_scripts {
-    # Init file for any systemd aware distro
-    my $systemd_distro = '';
-
-    # All new versions of Debian use systemd
-    if ($distro_type eq 'debian' && $distro_version > 7) {
-        $systemd_distro = 1;
-    }
-
-    # All new versions of CentOS/RHEL use systemd
-    if ($distro_type eq 'centos' && $distro_version >= 7) {
-        $systemd_distro = 1;
-    }
-
-    # Some heuristic approach for Debian-like distros
-    if (-e "/bin/systemd") {
-        $systemd_distro = 1;
-    }
-
-    if ($systemd_distro) {
-        my $systemd_service_path = "/etc/systemd/system/fastnetmon.service";
-        exec_command("cp $fastnetmon_code_dir/fastnetmon.service.in $systemd_service_path");
-
-        exec_command("sed -i 's#\@CMAKE_INSTALL_SBINDIR\@#$library_install_folder/fastnetmon#' $systemd_service_path");
-
-        print "We found systemd enabled distro and created service: fastnetmon.service\n";
-        print "You could run it with command: systemctl start fastnetmon.service\n";
-
-        return 1;
-    }
-
-    # And any stable Ubuntu version
-    if ($distro_type eq 'ubuntu') {
-        my $init_path_in_src = "$fastnetmon_code_dir/fastnetmon_init_script_debian_6_7";
-        my $system_init_path = '/etc/init.d/fastnetmon';
-
-        # Checker for source code version, will work only for 1.1.3+ versions
-        if (-e $init_path_in_src) {
-           exec_command("cp $init_path_in_src $system_init_path");
-
-            exec_command("sed -i 's#/usr/sbin/fastnetmon#$library_install_folder/fastnetmon/fastnetmon#' $system_init_path");
-
-            print "We created service fastnetmon for you\n";
-            print "You could run it with command: /etc/init.d/fastnetmon start\n";
-
-            return 1;
-        }
-    }
-}
-
 sub install_log4cpp {
     my $log_cpp_version_short = '1.1.3';
 
@@ -1594,13 +1544,6 @@ sub install_fastnetmon {
     unless (-e $fastnetmon_config_path) {
         print "Create stub configuration file\n";
         exec_command("cp $fastnetmon_code_dir/fastnetmon.conf $fastnetmon_config_path");
-    }
-
-    my $init_script_result = install_init_scripts();
-
-    # Print unified run message 
-    unless ($init_script_result) {
-        print "You can run fastnetmon with command: $fastnetmon_install_folder/fastnetmon\n";
     }
 }
 

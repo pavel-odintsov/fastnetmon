@@ -774,10 +774,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/fastnetmon.service" DESTINATION ${CMAKE_INSTALL_SYSTEMD_SERVICEDIR})
 endif()
 
-if (${OS_ID} MATCHES debian|ubuntu)
-install(FILES fastnetmon_init_script_debian_6_7 DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/init.d RENAME fastnetmon)
-endif()
-
 # For Debian packages build please use our logic from upstream: https://salsa.debian.org/debian/fastnetmon
 
 # Configure cpack package builder
