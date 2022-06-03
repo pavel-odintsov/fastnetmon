@@ -292,33 +292,6 @@ LimitNOFILE=65535
 WantedBy=multi-user.target
 DOC
 
-my $fastnetmon_upstart_init = <<'DOC';
-description "FastNetMon DDoS detection daemon"
-author "Pavel Odintsov <pavel.odintsov@gmail.com>"
-
-start on (filesystem and net-device-up IFACE=lo and started mongod)
-stop on runlevel [!2345]
-
-env DAEMON=/opt/fastnetmon-community/app/bin/fastnetmon
-env DAEMON_OPTIONS="--daemonize"
-env PID=/run/fastnetmon.pid
-
-# Expect 2 forks from service
-expect daemon
-#respawn
-#respawn limit 10 5
-#oom never
-
-# We are using SIGINT for correct shutdown instead of SIGTERM
-kill signal SIGINT
-
-# We should give some time to polite tool shutdown
-# and we will wait this time until we send SIGKILL to toolkit
-kill timeout 5
-
-exec $DAEMON $DAEMON_OPTIONS
-DOC
-
 my $fastnetmon_control_file = <<DOC;
 Package: fastnetmon
 Maintainer: Pavel Odintsov <pavel.odintsov\@gmail.com>
@@ -430,7 +403,6 @@ DOC
     }
 
     put_text_to_file("$folder_for_build/lib/systemd/system/fastnetmon.service", $fastnetmon_systemd_unit);
-    put_text_to_file("$folder_for_build/etc/init/fastnetmon.conf", $fastnetmon_upstart_init);
 
     # Configuration file
     put_text_to_file("$folder_for_build/DEBIAN/conffiles", "/etc/fastnetmon.conf\n");

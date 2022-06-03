@@ -311,7 +311,7 @@ sub main {
     # For all platforms we use custom compiler
     init_compiler();
     
-    # Install only depencdency packages, we need it to cache installed packages in CI
+    # Install only dependency packages, we need it to cache installed packages in CI
     if ($install_dependency_packages_only) {
         if ($we_have_protobuf_support) {
             install_protobuf_dependencies();
