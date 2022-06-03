@@ -468,7 +468,7 @@ sub download_file {
 }
 
 sub install_json_c {
-    my $archive_name  = 'json-c-0.13-20171207.tar.gz';
+    my $archive_name  = 'json-c-0.13.1-20180305.tar.gz';
     my $install_path = "$library_install_folder/json-c-0.13";
 
     if (-e $install_path) {
@@ -484,7 +484,7 @@ sub install_json_c {
 
     my $json_c_download_result = download_file("https://github.com/json-c/json-c/archive/$archive_name",
         $archive_name,
-        '6fc7fdd11eadd5a05e882df11bb4998219615de2');
+        'd4c667ab94e7051b1e78aa727f0d937caba971e9');
 
     unless ($json_c_download_result) {
         fast_die("Can't download json-c sources");
@@ -492,7 +492,7 @@ sub install_json_c {
 
     print "Uncompress it\n";
     exec_command("tar -xf $archive_name");
-    chdir "json-c-json-c-0.13-20171207";
+    chdir "json-c-json-c-0.13.1-20180305";
 
     print "Build it\n";
     exec_command("$configure_options ./configure --prefix=$install_path");
