@@ -142,9 +142,9 @@ jobs:
           path: /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
       - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/ubuntu/<< parameters.ubuntu_version >>/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
-      - run: ldd /opt/fastnetmon-community/fastnetmon
-      - run: ldd /opt/fastnetmon-community/fastnetmon_client
-      - run: ldd /opt/fastnetmon-community/fastnetmon_api_client
+      - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon
+      - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon_client
+      - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon_api_client
       - run: /opt/fastnetmon-community/fastnetmon --configuration_check
   build_debian:
     parameters:
@@ -201,9 +201,9 @@ jobs:
           path: /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
       - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/debian/<< parameters.debian_version >>/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
-      - run: ldd /opt/fastnetmon-community/fastnetmon
-      - run: ldd /opt/fastnetmon-community/fastnetmon_client
-      - run: ldd /opt/fastnetmon-community/fastnetmon_api_client
+      - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon
+      - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon_client
+      - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon_api_client
       - run: /opt/fastnetmon-community/fastnetmon --configuration_check
   build_centos:
     parameters:
@@ -259,9 +259,9 @@ jobs:
           path: /tmp/result_data/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el<< parameters.centos_version >>.x86_64.rpm
       - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/result_data/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el<< parameters.centos_version >>.x86_64.rpm s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/centos/<< parameters.centos_version >>/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el<< parameters.centos_version >>.x86_64.rpm
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
-      - run: ldd /opt/fastnetmon-community/fastnetmon
-      - run: ldd /opt/fastnetmon-community/fastnetmon_client
-      - run: ldd /opt/fastnetmon-community/fastnetmon_api_client
+      - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon
+      - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon_client
+      - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon_api_client
       - run: /opt/fastnetmon-community/fastnetmon --configuration_check
 workflows:
   version: 2
