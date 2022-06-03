@@ -129,15 +129,24 @@ sub list_files_in_folder {
 
 ### Copy binary files
 
-mkdir "$temp_folder_global_path";
-copy("$global_path/fastnetmon",             "$temp_folder_global_path/fastnetmon");
-copy("$global_path/fastnetmon_client",      "$temp_folder_global_path/fastnetmon_client");
-copy("$global_path/fastnetmon_api_client",  "$temp_folder_global_path/fastnetmon_api_client");
+my $binary_files = list_files_in_folder("$global_path/app/bin");
 
-# Set exec flag
-chmod 0755, "$temp_folder_global_path/fastnetmon";
-chmod 0755, "$temp_folder_global_path/fastnetmon_client";
-chmod 0755, "$temp_folder_global_path/fastnetmon_api_client";
+mkdir "$temp_folder_global_path/app";
+mkdir "$temp_folder_global_path/app/bin";
+
+for my $binary_file (@$binary_files) {
+    my $source_full_file_name = "$global_path/app/bin/$binary_file";
+    my $target_full_file_name = "$temp_folder_global_path/app/bin/$binary_file";
+
+    my $copy_result = copy($source_full_file_name, $target_full_file_name);
+
+    unless ($copy_result) {
+        die "Could not copy binary file from $source_full_file_name to $target_full_file_name\n";
+    }
+
+    chmod 0755, $target_full_file_name;
+
+}
 
 # Install GoBGP binary files
 my $gobgp_folder_name = "gobgp_2_27_0";

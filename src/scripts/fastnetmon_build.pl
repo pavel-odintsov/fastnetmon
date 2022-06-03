@@ -1585,9 +1585,10 @@ sub install_fastnetmon {
     mkdir $fastnetmon_install_folder;
 
     print "Install fastnetmon to directory $fastnetmon_install_folder\n";
-    exec_command("cp $fastnetmon_build_binary_path $fastnetmon_install_folder/fastnetmon");
-    exec_command("cp $fastnetmon_code_dir/build/fastnetmon_client $fastnetmon_install_folder/fastnetmon_client");
-    exec_command("cp $fastnetmon_code_dir/build/fastnetmon_api_client $fastnetmon_install_folder/fastnetmon_api_client");
+    system("mkdir -p $fastnetmon_install_folder/app/bin");
+    exec_command("cp $fastnetmon_build_binary_path $fastnetmon_install_folder/app/bin/fastnetmon");
+    exec_command("cp $fastnetmon_code_dir/build/fastnetmon_client $fastnetmon_install_folder/app/bin/fastnetmon_client");
+    exec_command("cp $fastnetmon_code_dir/build/fastnetmon_api_client $fastnetmon_install_folder/app/bin/fastnetmon_api_client");
 
     my $fastnetmon_config_path = "/etc/fastnetmon.conf";
     unless (-e $fastnetmon_config_path) {
