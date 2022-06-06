@@ -3,15 +3,11 @@
 %global  fastnetmon_group          %{fastnetmon_user}
 %global  fastnetmon_config_path    %{_sysconfdir}/fastnetmon.conf
 
-# We use commit version as we're still in progress of testing FastNetMon on Fedora.
-# We're planning to cut next stable release in next few weeks
-%global  commit0 420e7b873253fdc1b52b517d9c28db39bf384427
-%global  shortcommit0 %(c=%{commit0}; echo ${c:0:7})
-%global  date 20220528
+%global  commit0 master
 
 Name:              fastnetmon
-Version:           1.2.1
-Release:           1.%{date}git%{shortcommit0}%{?dist}
+Version:           1.2.2
+Release:           1.git%{commit0}%{?dist}
 
 Summary:           DDoS detection tool with sFlow, Netflow, IPFIX and port mirror support
 License:           GPLv2
