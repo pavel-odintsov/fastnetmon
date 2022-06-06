@@ -295,10 +295,6 @@ workflows:
           docker_image: "ubuntu:xenial"
           ubuntu_version: "16.04"
           name: "ubuntu1604"
-      - build_ubuntu:
-          docker_image: "ubuntu:trusty"
-          ubuntu_version: "14.04"
-          name: "ubuntu1404"
       - build_debian:
           docker_image: "debian:stretch"
           debian_version: "9"
