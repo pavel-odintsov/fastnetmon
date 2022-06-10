@@ -323,4 +323,7 @@ workflows:
       - build_fedora_upstream:
           name: "Fedora 37 Upstream RPM"
           docker_image: fedora:37
+      - build_fedora_upstream:
+          name: "EPEL 9 RPM"
+          docker_image: almalinux:9
  
