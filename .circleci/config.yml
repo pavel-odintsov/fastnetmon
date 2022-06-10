@@ -88,37 +88,6 @@ jobs:
       - store_artifacts:
           path: /root/rpmbuild/RPMS/x86_64
 
-  build_epel8_upstream:
-    docker:
-      - image: almalinux:8
-    resource_class: large
-    steps:
-      - checkout
-      - run: dnf install -y rpm-build rpmdevtools dnf-plugins-core
-      - run: dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
-      - run: dnf config-manager --set-enabled powertools
-      - run: mkdir -p ~/rpmbuild/SPECS
-      - run: cp src/packaging/fedora/fastnetmon.spec ~/rpmbuild/SPECS
-      - run:
-          name: Install build dependencies
-          command: dnf builddep -y ~/rpmbuild/SPECS/fastnetmon.spec
-      - run:
-          name: Download source
-          command: cd ~/rpmbuild && spectool -g -R SPECS/fastnetmon.spec
-      - run:
-          name: Added sysusers file to SOURCES
-          command: cp src/packaging/fedora/fastnetmon.sysusers ~/rpmbuild/SOURCES
-      - run:
-          name: Build source RPM
-          command: cd ~/rpmbuild/SPECS && rpmbuild -bs fastnetmon.spec
-      - store_artifacts:
-          path: /root/rpmbuild/SRPMS
-      - run:
-          name: Build RPM
-          command: cd ~/rpmbuild/SPECS && rpmbuild -bb fastnetmon.spec
-      - store_artifacts:
-          path: /root/rpmbuild/RPMS/x86_64
-
   build_epel9_upstream:
     docker:
       - image: almalinux:9
@@ -390,5 +359,3 @@ workflows:
           docker_image: fedora:37
       - build_epel9_upstream:
           name: "EPEL 9 RPM"
-      - build_epel8_upstream:
-          name: "EPEL 8 RPM"
