@@ -102,7 +102,7 @@ jobs:
       - run: dnf config-manager --set-enabled crb
       - run: dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
       - run: mkdir -p ~/rpmbuild/SPECS
-      - run: cp src/packaging/fedora/fastnetmon.spec ~/rpmbuild/SPECS
+      - run: cp src/packaging/epel/fastnetmon.spec ~/rpmbuild/SPECS
       - run:
           name: Install build dependencies
           command: dnf builddep -y ~/rpmbuild/SPECS/fastnetmon.spec
