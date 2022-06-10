@@ -88,12 +88,9 @@ jobs:
       - store_artifacts:
           path: /root/rpmbuild/RPMS/x86_64
 
-  build_epel_upstream:
-    parameters:
-      docker_image:
-        type: string
+  build_epel9_upstream:
     docker:
-      - image: << parameters.docker_image >>
+      - image: almalinux:9
     resource_class: large
     steps:
       - checkout
@@ -102,6 +99,7 @@ jobs:
       - run: dnf config-manager --set-enabled crb
       - run: dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
       - run: mkdir -p ~/rpmbuild/SPECS
+      # It's copy of Fedora SPEC file with capnproto disabled because we have no package for it in EPEL: https://src.fedoraproject.org/rpms/capnproto
       - run: cp src/packaging/epel/fastnetmon.spec ~/rpmbuild/SPECS
       - run:
           name: Install build dependencies
@@ -359,7 +357,6 @@ workflows:
       - build_fedora_upstream:
           name: "Fedora 37 Upstream RPM"
           docker_image: fedora:37
-      - build_epel_upstream:
+      - build_epel9_upstream:
           name: "EPEL 9 RPM"
-          docker_image: almalinux:9
  
