@@ -31,19 +31,12 @@ jobs:
       - run:
           name: Show content of data folder and permissions for it
           command: ls -la /data
-      - restore_cache:
-          keys:
-            - "{{ .Environment.CIRCLE_JOB }}_debian_base_image_may_2022"
       - run: 
           name: Check that we have anything in data folder on VM
           command: ls -la /data 
       - run:
           name: "Run pbuilder run Docker if we have no image in place"
-          command: "if [ ! -f /data/debian_base.tgz ]; then sudo docker exec -it linux_priviledged_container pbuilder --create --basetgz /data/debian_base.tgz --distribution << parameters.debian_codename >>; else true; fi"
-      - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_debian_base_image_may_2022"
-          paths:
-            - /data/debian_base.tgz
+          command: "sudo docker exec -it linux_priviledged_container pbuilder --create --basetgz /data/debian_base.tgz --distribution << parameters.debian_codename >>"
       - run: ls -la /data
       - run: sudo docker exec -it linux_priviledged_container pbuilder --build --basetgz /data/debian_base.tgz --debbuildopts "-sa" /fastnetmon_$(sudo docker exec -it linux_priviledged_container head -n 1 fastnetmon-debian-salsa/debian/changelog|awk '{print $2}'|sed 's/[()]//g').dsc
   build_docker:
