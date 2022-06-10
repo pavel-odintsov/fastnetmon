@@ -87,6 +87,41 @@ jobs:
           command: cd ~/rpmbuild/SPECS && rpmbuild -bb fastnetmon.spec
       - store_artifacts:
           path: /root/rpmbuild/RPMS/x86_64
+
+  build_epel_upstream:
+    parameters:
+      docker_image:
+        type: string
+    docker:
+      - image: << parameters.docker_image >>
+    resource_class: large
+    steps:
+      - checkout
+      - run: dnf install -y rpm-build rpmdevtools dnf-plugins-core
+      - run: dnf install -y dnf-plugins-core
+      - run: dnf config-manager --set-enabled crb
+      - run: mkdir -p ~/rpmbuild/SPECS
+      - run: cp src/packaging/fedora/fastnetmon.spec ~/rpmbuild/SPECS
+      - run:
+          name: Install build dependencies
+          command: dnf builddep -y ~/rpmbuild/SPECS/fastnetmon.spec
+      - run:
+          name: Download source
+          command: cd ~/rpmbuild && spectool -g -R SPECS/fastnetmon.spec
+      - run:
+          name: Added sysusers file to SOURCES
+          command: cp src/packaging/fedora/fastnetmon.sysusers ~/rpmbuild/SOURCES
+      - run:
+          name: Build source RPM
+          command: cd ~/rpmbuild/SPECS && rpmbuild -bs fastnetmon.spec
+      - store_artifacts:
+          path: /root/rpmbuild/SRPMS
+      - run:
+          name: Build RPM
+          command: cd ~/rpmbuild/SPECS && rpmbuild -bb fastnetmon.spec
+      - store_artifacts:
+          path: /root/rpmbuild/RPMS/x86_64
+
   build_ubuntu:
     parameters:
       docker_image:
@@ -323,7 +358,7 @@ workflows:
       - build_fedora_upstream:
           name: "Fedora 37 Upstream RPM"
           docker_image: fedora:37
-      - build_fedora_upstream:
+      - build_epel_upstream:
           name: "EPEL 9 RPM"
           docker_image: almalinux:9
  
