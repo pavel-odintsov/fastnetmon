@@ -96,6 +96,7 @@ jobs:
       - checkout
       - run: dnf install -y rpm-build rpmdevtools dnf-plugins-core
       - run: dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+      - run: dnf config-manager --set-enabled powertools
       - run: mkdir -p ~/rpmbuild/SPECS
       - run: cp src/packaging/fedora/fastnetmon.spec ~/rpmbuild/SPECS
       - run:
