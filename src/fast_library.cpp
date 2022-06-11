@@ -32,18 +32,6 @@
 #include <capnp/serialize-packed.h>
 #endif
 
-#if defined(__APPLE__)
-#include <libkern/OSByteOrder.h>
-// Source: https://gist.github.com/pavel-odintsov/d13684600423d1c5e64e
-#define be64toh(x) OSSwapBigToHostInt64(x)
-#define htobe64(x) OSSwapHostToBigInt64(x)
-#endif
-
-// For be64toh and htobe64
-#if defined(__FreeBSD__) || defined(__DragonFly__)
-#include <sys/endian.h>
-#endif
-
 boost::regex regular_expression_cidr_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+\\/\\d+$");
 boost::regex regular_expression_host_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+$");
 
@@ -1253,7 +1241,15 @@ bool get_interface_number_by_device_name(int socket_fd, std::string interface_na
 }
 
 
-bool set_boost_process_name(boost::thread* thread, std::string process_name) {
+#if defined(__APPLE__)
+bool set_boost_process_name(boost::thread* thread, const std::string& process_name) {
+    logger << log4cpp::Priority::ERROR << "Apple platforms do not support thread name changes";
+    return false;
+}
+
+#else
+
+bool set_boost_process_name(boost::thread* thread, const std::string& process_name) {
     extern log4cpp::Category& logger;
 
     if (process_name.size() > 15) {
@@ -1274,6 +1270,8 @@ bool set_boost_process_name(boost::thread* thread, std::string process_name) {
 
     return true;
 }
+
+#endif
 
 #ifdef ENABLE_CAPNP
 bool read_simple_packet(uint8_t* buffer, size_t buffer_length, simple_packet_t& packet) {
