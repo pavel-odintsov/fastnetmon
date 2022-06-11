@@ -358,5 +358,5 @@ workflows:
           docker_image: fedora:37
       - build_epel9_upstream:
           name: "EPEL 9 RPM"
-      - build_macos
+      - build_macos:
           name: "Build on MacOS"
