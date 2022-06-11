@@ -8,7 +8,9 @@ jobs:
     macos:
       xcode: 12.5.1 
     steps:
-      - checkout 
+      - checkout
+      - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      - run: brew install cmake
       - run: cd src && mkdir build && cd build && cmake ..
   build_debian_upstream_package:
     machine:
