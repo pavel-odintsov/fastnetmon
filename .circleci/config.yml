@@ -9,7 +9,7 @@ jobs:
       xcode: 12.5.1 
     steps:
       - checkout 
-      - run: cd src && mkdir build && cd buuld && cmake ..
+      - run: cd src && mkdir build && cd build && cmake ..
   build_debian_upstream_package:
     machine:
       image: ubuntu-2004:current
