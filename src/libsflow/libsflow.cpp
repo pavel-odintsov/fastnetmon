@@ -16,56 +16,9 @@ extern log4cpp::Category& logger;
 
 std::string sflow_parser_log_prefix = "sflow_parser ";
 
-// start copy and paste from fast_library
-
-#if defined(__APPLE__)
-#include <libkern/OSByteOrder.h>
-// Source: https://gist.github.com/pavel-odintsov/d13684600423d1c5e64e
-#define be64toh(x) OSSwapBigToHostInt64(x)
-#define htobe64(x) OSSwapHostToBigInt64(x)
-#endif
-
-// For be64toh and htobe64
-#if defined(__FreeBSD__) || defined(__DragonFly__)
-#include <sys/endian.h>
-#endif
-
 #define FMT_HEADER_ONLY
 #include "../fmt/compile.h"
 #include "../fmt/format.h"
-
-// Type safe versions of ntohl, ntohs with type control
-uint16_t strict_ntoh(uint16_t value) {
-    return ntohs(value);
-}
-
-uint32_t strict_ntoh(uint32_t value) {
-    return ntohl(value);
-}
-
-int32_t strict_ntoh(int32_t value) {
-    return ntohl(value);
-}
-
-// network (big endian) byte order to host byte order
-uint64_t strict_ntoh(uint64_t value) {
-    return be64toh(value);
-}
-
-// Little endian (host) to network byte order conversion
-uint16_t strict_hton(uint16_t value) {
-    return htons(value);
-}
-
-uint32_t strict_hton(uint32_t value) {
-    return htonl(value);
-}
-
-int32_t strict_hton(int32_t value) {
-    return htonl(value);
-}
-
-// end copy and paste
 
 // Convert scoped enum to internal integer representation
 unsigned int get_flow_enum_type_as_number(const sflow_sample_type_t& value) {
@@ -234,7 +187,7 @@ bool get_all_samples(vector_sample_tuple_t& vector_sample,
 }
 
 int32_t get_int_value_by_32bit_shift(uint8_t* payload_ptr, unsigned int shift) {
-    return strict_ntoh(*(int32_t*)(payload_ptr + shift * 4));
+    return fast_ntoh(*(int32_t*)(payload_ptr + shift * 4));
 }
 
 bool get_all_counter_records(counter_record_sample_vector_t& counter_record_sample_vector,

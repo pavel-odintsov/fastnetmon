@@ -12,6 +12,8 @@
 
 #include <arpa/inet.h>
 
+#include "../fast_endianless.hpp"
+
 // We need it for sanity checks
 const uint32_t max_udp_packet_size = 65535;
 
@@ -79,19 +81,6 @@ void build_ipv4_address_from_array(std::array<uint8_t, 4> ipv4_array_address, st
 std::string build_ipv6_address_from_array(std::array<uint8_t, 16> ipv6_array_address);
 unsigned int get_flow_enum_type_as_number(const sflow_sample_type_t& value);
 
-// Type safe versions of ntohl, ntohs with type control
-// network (big endian) byte order to host byte order
-uint16_t strict_ntoh(uint16_t value);
-uint32_t strict_ntoh(uint32_t value);
-int32_t strict_ntoh(int32_t value);
-uint64_t strict_ntoh(uint64_t value);
-
-// Type safe version of functions fot converting from host byte order to network
-// byte order
-uint16_t strict_hton(uint16_t value);
-uint32_t strict_hton(uint32_t value);
-int32_t strict_hton(int32_t value);
-
 bool get_all_samples(vector_sample_tuple_t& vector_sample,
                      uint8_t* samples_block_start,
                      uint8_t* total_packet_end,
@@ -151,18 +140,18 @@ class __attribute__((__packed__)) sflow_raw_protocol_header_t {
 
     // Convert byte order from network to host byte order
     void network_to_host_byte_order() {
-        header_protocol                     = strict_ntoh(header_protocol);
-        frame_length_before_sampling        = strict_ntoh(frame_length_before_sampling);
-        number_of_bytes_removed_from_packet = strict_ntoh(number_of_bytes_removed_from_packet);
-        header_size                         = strict_ntoh(header_size);
+        header_protocol                     = fast_ntoh(header_protocol);
+        frame_length_before_sampling        = fast_ntoh(frame_length_before_sampling);
+        number_of_bytes_removed_from_packet = fast_ntoh(number_of_bytes_removed_from_packet);
+        header_size                         = fast_ntoh(header_size);
     }
 
     // Convert byte order from host to network
     void host_byte_order_to_network_byte_order() {
-        header_protocol                     = strict_hton(header_protocol);
-        frame_length_before_sampling        = strict_hton(frame_length_before_sampling);
-        number_of_bytes_removed_from_packet = strict_hton(number_of_bytes_removed_from_packet);
-        header_size                         = strict_hton(header_size);
+        header_protocol                     = fast_hton(header_protocol);
+        frame_length_before_sampling        = fast_hton(frame_length_before_sampling);
+        number_of_bytes_removed_from_packet = fast_hton(number_of_bytes_removed_from_packet);
+        header_size                         = fast_hton(header_size);
     }
 
     std::string print() {
@@ -193,28 +182,28 @@ class __attribute__((__packed__)) sflow_sample_header_t {
 
     // Convert all fields to host byte order (little endian)
     void network_to_host_byte_order() {
-        sample_sequence_number = strict_ntoh(sample_sequence_number);
-        sampling_rate          = strict_ntoh(sampling_rate);
-        sample_pool            = strict_ntoh(sample_pool);
-        drops_count            = strict_ntoh(drops_count);
-        number_of_flow_records = strict_ntoh(number_of_flow_records);
+        sample_sequence_number = fast_ntoh(sample_sequence_number);
+        sampling_rate          = fast_ntoh(sampling_rate);
+        sample_pool            = fast_ntoh(sample_pool);
+        drops_count            = fast_ntoh(drops_count);
+        number_of_flow_records = fast_ntoh(number_of_flow_records);
 
-        input_port             = strict_ntoh(input_port);
-        output_port            = strict_ntoh(output_port);
-        source_id_with_id_type = strict_ntoh(source_id_with_id_type);
+        input_port             = fast_ntoh(input_port);
+        output_port            = fast_ntoh(output_port);
+        source_id_with_id_type = fast_ntoh(source_id_with_id_type);
     }
 
     // Convert all fields ti network byte order (big endian)
     void host_byte_order_to_network_byte_order() {
-        sample_sequence_number = strict_hton(sample_sequence_number);
-        sampling_rate          = strict_hton(sampling_rate);
-        sample_pool            = strict_hton(sample_pool);
-        drops_count            = strict_hton(drops_count);
-        number_of_flow_records = strict_hton(number_of_flow_records);
+        sample_sequence_number = fast_hton(sample_sequence_number);
+        sampling_rate          = fast_hton(sampling_rate);
+        sample_pool            = fast_hton(sample_pool);
+        drops_count            = fast_hton(drops_count);
+        number_of_flow_records = fast_hton(number_of_flow_records);
 
-        input_port             = strict_hton(input_port);
-        output_port            = strict_hton(output_port);
-        source_id_with_id_type = strict_hton(source_id_with_id_type);
+        input_port             = fast_hton(input_port);
+        output_port            = fast_hton(output_port);
+        source_id_with_id_type = fast_hton(source_id_with_id_type);
     }
 
     std::string print() {
@@ -248,17 +237,17 @@ class __attribute__((__packed__)) sflow_sample_expanded_header_t {
     uint32_t number_of_flow_records = 0;
 
     void network_to_host_byte_order() {
-        sample_sequence_number = strict_ntoh(sample_sequence_number);
-        source_id_type         = strict_ntoh(source_id_type);
-        source_id_index        = strict_ntoh(source_id_index);
-        sampling_rate          = strict_ntoh(sampling_rate);
-        sample_pool            = strict_ntoh(sample_pool);
-        drops_count            = strict_ntoh(drops_count);
-        input_port_type        = strict_ntoh(input_port_type);
-        input_port_index       = strict_ntoh(input_port_index);
-        output_port_type       = strict_ntoh(output_port_type);
-        output_port_index      = strict_ntoh(output_port_index);
-        number_of_flow_records = strict_ntoh(number_of_flow_records);
+        sample_sequence_number = fast_ntoh(sample_sequence_number);
+        source_id_type         = fast_ntoh(source_id_type);
+        source_id_index        = fast_ntoh(source_id_index);
+        sampling_rate          = fast_ntoh(sampling_rate);
+        sample_pool            = fast_ntoh(sample_pool);
+        drops_count            = fast_ntoh(drops_count);
+        input_port_type        = fast_ntoh(input_port_type);
+        input_port_index       = fast_ntoh(input_port_index);
+        output_port_type       = fast_ntoh(output_port_type);
+        output_port_index      = fast_ntoh(output_port_index);
+        number_of_flow_records = fast_ntoh(number_of_flow_records);
     }
 
     std::string print() {
@@ -414,22 +403,22 @@ template <std::size_t address_length> class __attribute__((__packed__)) sflow_pa
 
     // Convert all structure fields to host byte order
     void network_to_host_byte_order() {
-        sflow_version            = strict_ntoh(sflow_version);
-        agent_ip_version         = strict_ntoh(agent_ip_version);
-        sub_agent_id             = strict_ntoh(sub_agent_id);
-        datagram_sequence_number = strict_ntoh(datagram_sequence_number);
-        device_uptime            = strict_ntoh(device_uptime);
-        datagram_samples_count   = strict_ntoh(datagram_samples_count);
+        sflow_version            = fast_ntoh(sflow_version);
+        agent_ip_version         = fast_ntoh(agent_ip_version);
+        sub_agent_id             = fast_ntoh(sub_agent_id);
+        datagram_sequence_number = fast_ntoh(datagram_sequence_number);
+        device_uptime            = fast_ntoh(device_uptime);
+        datagram_samples_count   = fast_ntoh(datagram_samples_count);
     }
 
     // Convert all structure fields to network byte order
     void host_byte_order_to_network_byte_order() {
-        sflow_version            = strict_hton(sflow_version);
-        agent_ip_version         = strict_hton(agent_ip_version);
-        sub_agent_id             = strict_hton(sub_agent_id);
-        datagram_sequence_number = strict_hton(datagram_sequence_number);
-        device_uptime            = strict_hton(device_uptime);
-        datagram_samples_count   = strict_hton(datagram_samples_count);
+        sflow_version            = fast_hton(sflow_version);
+        agent_ip_version         = fast_hton(agent_ip_version);
+        sub_agent_id             = fast_hton(sub_agent_id);
+        datagram_sequence_number = fast_hton(datagram_sequence_number);
+        device_uptime            = fast_hton(device_uptime);
+        datagram_samples_count   = fast_hton(datagram_samples_count);
     }
 
     std::string print() {
@@ -557,9 +546,9 @@ class __attribute__((__packed__)) sflow_counter_header_t {
     uint32_t number_of_counter_records = 0;
 
     void network_to_host_byte_order() {
-        sample_sequence_number    = strict_ntoh(sample_sequence_number);
-        source_type_with_id       = strict_ntoh(source_type_with_id);
-        number_of_counter_records = strict_ntoh(number_of_counter_records);
+        sample_sequence_number    = fast_ntoh(sample_sequence_number);
+        source_type_with_id       = fast_ntoh(source_type_with_id);
+        number_of_counter_records = fast_ntoh(number_of_counter_records);
     }
 
     std::string print() {
@@ -582,10 +571,10 @@ class __attribute__((__packed__)) sflow_counter_expanded_header_t {
     uint32_t number_of_counter_records = 0;
 
     void network_to_host_byte_order() {
-        sample_sequence_number    = strict_ntoh(sample_sequence_number);
-        source_id_type            = strict_ntoh(source_id_type);
-        source_id_index           = strict_ntoh(source_id_index);
-        number_of_counter_records = strict_ntoh(number_of_counter_records);
+        sample_sequence_number    = fast_ntoh(sample_sequence_number);
+        source_id_type            = fast_ntoh(source_id_type);
+        source_id_index           = fast_ntoh(source_id_index);
+        number_of_counter_records = fast_ntoh(number_of_counter_records);
     }
 
     std::string print() {
@@ -692,19 +681,19 @@ class __attribute__((__packed__)) ethernet_sflow_interface_counters_t {
     }
 
     void network_to_host_byte_order() {
-        alignment_errors             = strict_ntoh(alignment_errors);
-        fcs_errors                   = strict_ntoh(alignment_errors);
-        single_collision_frames      = strict_ntoh(single_collision_frames);
-        multiple_collision_frames    = strict_ntoh(multiple_collision_frames);
-        sqe_test_errors              = strict_ntoh(sqe_test_errors);
-        deferred_transmissions       = strict_ntoh(deferred_transmissions);
-        late_collisions              = strict_ntoh(late_collisions);
-        excessive_collisions         = strict_ntoh(excessive_collisions);
-        internal_mac_transmit_errors = strict_ntoh(internal_mac_transmit_errors);
-        carrier_sense_errors         = strict_ntoh(carrier_sense_errors);
-        frame_too_longs              = strict_ntoh(frame_too_longs);
-        internal_mac_receive_errors  = strict_ntoh(internal_mac_receive_errors);
-        symbol_errors                = strict_ntoh(symbol_errors);
+        alignment_errors             = fast_ntoh(alignment_errors);
+        fcs_errors                   = fast_ntoh(alignment_errors);
+        single_collision_frames      = fast_ntoh(single_collision_frames);
+        multiple_collision_frames    = fast_ntoh(multiple_collision_frames);
+        sqe_test_errors              = fast_ntoh(sqe_test_errors);
+        deferred_transmissions       = fast_ntoh(deferred_transmissions);
+        late_collisions              = fast_ntoh(late_collisions);
+        excessive_collisions         = fast_ntoh(excessive_collisions);
+        internal_mac_transmit_errors = fast_ntoh(internal_mac_transmit_errors);
+        carrier_sense_errors         = fast_ntoh(carrier_sense_errors);
+        frame_too_longs              = fast_ntoh(frame_too_longs);
+        internal_mac_receive_errors  = fast_ntoh(internal_mac_receive_errors);
+        symbol_errors                = fast_ntoh(symbol_errors);
     }
 
     std::string print() {
@@ -759,25 +748,25 @@ class __attribute__((__packed__)) generic_sflow_interface_counters_t {
     }
 
     void network_to_host_byte_order() {
-        if_index              = strict_ntoh(if_index);
-        if_type               = strict_ntoh(if_type);
-        if_speed              = strict_ntoh(if_speed);
-        if_direction          = strict_ntoh(if_direction);
-        if_status             = strict_ntoh(if_status);
-        if_in_octets          = strict_ntoh(if_in_octets);
-        if_in_ucast_pkts      = strict_ntoh(if_in_ucast_pkts);
-        if_in_multicast_pkts  = strict_ntoh(if_in_multicast_pkts);
-        if_in_broadcast_pkts  = strict_ntoh(if_in_broadcast_pkts);
-        if_in_discards        = strict_ntoh(if_in_discards);
-        if_in_errors          = strict_ntoh(if_in_errors);
-        if_in_unknown_protos  = strict_ntoh(if_in_unknown_protos);
-        if_out_octets         = strict_ntoh(if_out_octets);
-        if_out_ucast_pkts     = strict_ntoh(if_out_ucast_pkts);
-        if_out_multicast_pkts = strict_ntoh(if_out_multicast_pkts);
-        if_out_broadcast_pkts = strict_ntoh(if_out_broadcast_pkts);
-        if_out_discards       = strict_ntoh(if_out_discards);
-        if_out_errors         = strict_ntoh(if_out_errors);
-        if_promiscuous_mode   = strict_ntoh(if_promiscuous_mode);
+        if_index              = fast_ntoh(if_index);
+        if_type               = fast_ntoh(if_type);
+        if_speed              = fast_ntoh(if_speed);
+        if_direction          = fast_ntoh(if_direction);
+        if_status             = fast_ntoh(if_status);
+        if_in_octets          = fast_ntoh(if_in_octets);
+        if_in_ucast_pkts      = fast_ntoh(if_in_ucast_pkts);
+        if_in_multicast_pkts  = fast_ntoh(if_in_multicast_pkts);
+        if_in_broadcast_pkts  = fast_ntoh(if_in_broadcast_pkts);
+        if_in_discards        = fast_ntoh(if_in_discards);
+        if_in_errors          = fast_ntoh(if_in_errors);
+        if_in_unknown_protos  = fast_ntoh(if_in_unknown_protos);
+        if_out_octets         = fast_ntoh(if_out_octets);
+        if_out_ucast_pkts     = fast_ntoh(if_out_ucast_pkts);
+        if_out_multicast_pkts = fast_ntoh(if_out_multicast_pkts);
+        if_out_broadcast_pkts = fast_ntoh(if_out_broadcast_pkts);
+        if_out_discards       = fast_ntoh(if_out_discards);
+        if_out_errors         = fast_ntoh(if_out_errors);
+        if_promiscuous_mode   = fast_ntoh(if_promiscuous_mode);
     }
 
     std::string print() {
