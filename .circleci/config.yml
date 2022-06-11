@@ -10,8 +10,8 @@ jobs:
     steps:
       - checkout
       - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-      - run: brew install cmake boost log4cpp hiredis json-c mongo-c-driver grpc capnp openssl@1.1
-      - run: cd src && mkdir build && cd build && cmake -DENABLE_CUSTOM_BOOST_BUILD=FALSE -DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE ..
+      - run: brew install cmake boost log4cpp hiredis json-c mongo-c-driver grpc capnp openssl@3
+      - run: cd src && mkdir build && cd build && cmake -DENABLE_CUSTOM_BOOST_BUILD=FALSE -DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE -DCMAKE_SYSTEM_INCLUDE_PATH=/usr/local/opt/openssl@3/include -DCMAKE_SYSTEM_LIBRARY_PATH=/usr/local/opt/openssl@3/lib ..
   build_debian_upstream_package:
     machine:
       image: ubuntu-2004:current
