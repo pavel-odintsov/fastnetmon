@@ -41,3 +41,11 @@ inline uint64_t fast_hton(uint64_t value) {
     // host to big endian (network byte order)
     return htobe64(value);
 }
+
+// Explicitly remove all other types to avoid implicit conversion
+template <class T>
+void fast_ntoh(T) = delete;
+
+template <class T>
+void fast_hton(T) = delete;
+
