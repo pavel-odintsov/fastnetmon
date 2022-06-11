@@ -541,14 +541,23 @@ endif()
 set(ENABLE_OPENSSL_SUPPORT TRUE)
 if (ENABLE_OPENSSL_SUPPORT)
     find_path(OPENSSL_INCLUDES_FOLDER NAMES "openssl/rsa.h" PATHS "${OPENSSL_CUSTOM_INSTALL_PATH}/include" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
+    
+    # Check that we found headers
+    if (OPENSSL_INCLUDES_FOLDER) 
+        message(STATUS "We found OpenSSL library headers: ${OPENSSL_INCLUDES_FOLDER}")
+        include_directories(${OPENSSL_INCLUDES_FOLDER})
+    else()
+        message(FATAL_ERROR "Could not find OpenSSL headers")
+    endif()
+
     find_library(OPENSSL_LIBRARY_PATH NAMES ssl PATHS "${OPENSSL_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
     find_library(OPENSSL_CRYPTO_LIBRARY_PATH NAMES crypto PATHS "${OPENSSL_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
 
-    if (OPENSSL_INCLUDES_FOLDER AND OPENSSL_LIBRARY_PATH AND OPENSSL_CRYPTO_LIBRARY_PATH) 
+    # Check that we found libraries
+    if (OPENSSL_LIBRARY_PATH AND OPENSSL_CRYPTO_LIBRARY_PATH)
         message(STATUS "We found OpenSSL library: ${OPENSSL_LIBRARY_PATH} ${OPENSSL_CRYPTO_LIBRARY_PATH}")
-        include_directories(${OPENSSL_INCLUDES_FOLDER})
     else()
-        message(FATAL_ERROR "Could not find OpenSSL library")
+        message(FATAL_ERROR "Could not find OpenSSL libraries")
     endif()
 endif()
 
