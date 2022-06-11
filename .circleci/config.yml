@@ -4,6 +4,12 @@ parameters:
     type: string
     default: "1.2.2"
 jobs:
+  build_macos:
+    macos:
+      xcode: 12.5.1 
+    steps:
+      - checkout 
+      - run: cd src && mkdir build && cd buuld && cmake ..
   build_debian_upstream_package:
     machine:
       image: ubuntu-2004:current
@@ -352,3 +358,5 @@ workflows:
           docker_image: fedora:37
       - build_epel9_upstream:
           name: "EPEL 9 RPM"
+      - build_macos
+          name: "Build on MacOS"
