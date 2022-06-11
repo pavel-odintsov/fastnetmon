@@ -758,6 +758,7 @@ elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     set(CMAKE_INSTALL_SBINDIR "/usr/sbin")
     set(CMAKE_INSTALL_SYSCONFDIR "/etc")
 else()
+    message(STATUS "We run on platform ${CMAKE_SYSTEM_NAME} and we do not touch install paths")
     # Do not touch these variables and use default values
 endif()
 
