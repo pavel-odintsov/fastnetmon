@@ -1243,6 +1243,8 @@ bool get_interface_number_by_device_name(int socket_fd, std::string interface_na
 
 #if defined(__APPLE__)
 bool set_boost_process_name(boost::thread* thread, const std::string& process_name) {
+    extern log4cpp::Category& logger;
+
     logger << log4cpp::Priority::ERROR << "Apple platforms do not support thread name changes";
     return false;
 }
