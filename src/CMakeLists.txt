@@ -753,10 +753,12 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Dr
     set(CMAKE_INSTALL_BINDIR "bin")
     set(CMAKE_INSTALL_SBINDIR "bin")
     set(CMAKE_INSTALL_SYSCONFDIR "etc")
-else()
+elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     set(CMAKE_INSTALL_BINDIR "/usr/bin")
     set(CMAKE_INSTALL_SBINDIR "/usr/sbin")
     set(CMAKE_INSTALL_SYSCONFDIR "/etc")
+else()
+    # Do not touch these variables and use default values
 endif()
 
 install(TARGETS fastnetmon DESTINATION "${CMAKE_INSTALL_SBINDIR}")
