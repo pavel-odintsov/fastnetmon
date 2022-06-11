@@ -1,3 +1,6 @@
+# It's version of cmake in our oldest supported distro CentOS 7: https://repology.org/project/cmake/versions
+cmake_minimum_required (VERSION 2.8.12)
+
 set(FASTNETMON_LIBRARIES_GLOBAL_PATH "/opt/fastnetmon-community/libraries")
 
 project(FastNetMon)
@@ -10,7 +13,7 @@ project(FastNetMon)
 include(CheckCXXCompilerFlag)
 include(CheckLibraryExists)
 
-# Enable it and fix all warnigns!
+# Enable it and fix all warnings
 # add_definitions ("-Wall")
 
 set (FASTNETMON_VERSION_MAJOR 1)
