@@ -10,7 +10,7 @@ jobs:
     steps:
       - checkout
       - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-      - run: brew install cmake boost log4cpp hiredis json-c mongo-c-driver grpc
+      - run: brew install cmake boost log4cpp hiredis json-c mongo-c-driver grpc capnp
       - run: cd src && mkdir build && cd build && cmake -DENABLE_CUSTOM_BOOST_BUILD=FALSE -DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE ..
   build_debian_upstream_package:
     machine:
