@@ -1601,13 +1601,8 @@ int main(int argc, char** argv) {
 
     /* Create folder for attack details */
     if (!folder_exists(fastnetmon_platform_configuration.attack_details_folder)) {
-        int mkdir_result = mkdir(fastnetmon_platform_configuration.attack_details_folder.c_str(), S_IRWXU);
-
-        if (mkdir_result != 0) {
-            logger << log4cpp::Priority::ERROR
-                   << "Can't create folder for attack details: " << fastnetmon_platform_configuration.attack_details_folder;
-            exit(1);
-        }
+        logger << log4cpp::Priority::ERROR
+               << "Folder for attack details does not exist: " << fastnetmon_platform_configuration.attack_details_folder;
     }
 
     if (getenv("DUMP_ALL_PACKETS") != NULL) {
