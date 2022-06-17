@@ -5,10 +5,7 @@ set(FASTNETMON_LIBRARIES_GLOBAL_PATH "/opt/fastnetmon-community/libraries")
 
 project(FastNetMon)
 
-# Unfortunately, Debian Squeeze haven't support for this feature
-# It added in 2.8.5 release: http://www.cmake.org/cmake/help/v2.8.5/cmake.html
-# Get convinient paths for all system folders: http://www.cmake.org/gitweb?p=cmake.git;a=commitdiff;h=a262fe09
-# include(GNUInstallDirs)
+include(GNUInstallDirs)
 
 include(CheckCXXCompilerFlag)
 include(CheckLibraryExists)
