@@ -5,7 +5,6 @@ class Fastnetmon < Formula
   version "1.2.2"
   sha256 "c581a9bcdf416b1b585ffa9ca7de6dcd1a5778d3da6bc6c948fdd87009686a75"
   license "GPL-2.0-only"
-  revision 1
 
   depends_on "cmake" => :build
   depends_on "boost"
