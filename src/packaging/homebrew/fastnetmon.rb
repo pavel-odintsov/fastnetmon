@@ -9,12 +9,12 @@ class Fastnetmon < Formula
 
   depends_on "cmake" => :build
   depends_on "boost"
-  depends_on "log4cpp"
+  depends_on "capnp"
+  depends_on "grpc"
   depends_on "hiredis"
   depends_on "json-c"
+  depends_on "log4cpp"
   depends_on "mongo-c-driver"
-  depends_on "grpc"
-  depends_on "capnp"
   depends_on "openssl@3"
 
   def install
@@ -29,4 +29,3 @@ class Fastnetmon < Formula
     working_dir HOMEBREW_PREFIX
   end
 end
-
