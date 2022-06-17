@@ -6,8 +6,6 @@ class Fastnetmon < Formula
   sha256 "c581a9bcdf416b1b585ffa9ca7de6dcd1a5778d3da6bc6c948fdd87009686a75"
   license "GPL-2.0-only"
 
-  # We need C++ 20 available for build which is available from Big Sur
-  depends_on macos: :big_sur
 
   depends_on "cmake" => :build
   depends_on "boost"
@@ -16,6 +14,7 @@ class Fastnetmon < Formula
   depends_on "hiredis"
   depends_on "json-c"
   depends_on "log4cpp"
+  depends_on macos: :big_sur # We need C++ 20 available for build which is available from Big Sur
   depends_on "mongo-c-driver"
   depends_on "openssl@1.1"
 
