@@ -1,9 +1,9 @@
 class Fastnetmon < Formula
   desc "DDoS detection tool with sFlow, Netflow, IPFIX and port mirror support"
   homepage "https://github.com/pavel-odintsov/fastnetmon/"
-  url "https://github.com/pavel-odintsov/fastnetmon/archive/14481a07685171de11a6be61895d83a3dc51d763.tar.gz"
+  url "https://github.com/pavel-odintsov/fastnetmon/archive/3f7f3b26d657e7f5e6e2a222a3ba08060201aa7b.tar.gz"
   version "1.2.2"
-  sha256 "c581a9bcdf416b1b585ffa9ca7de6dcd1a5778d3da6bc6c948fdd87009686a75"
+  sha256 "dcc744721db86f09da15c33094c39b034725bb5d6b283d6383f51d20d3a9a11c"
   license "GPL-2.0-only"
 
   depends_on "cmake" => :build
