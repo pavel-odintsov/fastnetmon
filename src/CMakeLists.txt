@@ -757,6 +757,7 @@ elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     set(CMAKE_INSTALL_BINDIR "/usr/bin")
     set(CMAKE_INSTALL_SBINDIR "/usr/sbin")
     set(CMAKE_INSTALL_SYSCONFDIR "/etc")
+    set(CMAKE_INSTALL_MANDIR "/usr/share/man")
 elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     message(STATUS "We run on Apple platform")
 else()
@@ -775,10 +776,10 @@ install(FILES networks_list DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}")
 install(FILES networks_whitelist DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}")
 
 # man pages
-install(FILES man/fastnetmon.8 DESTINATION /usr/share/man/man8)
-install(FILES man/fastnetmon_client.1 DESTINATION /usr/share/man/man1)
+install(FILES man/fastnetmon.8 DESTINATION ${CMAKE_INSTALL_MANDIR}/man8)
+install(FILES man/fastnetmon_client.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
 
-# service files
+# Generate service files
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     configure_file(fastnetmon.service.in "${CMAKE_CURRENT_BINARY_DIR}/fastnetmon.service" @ONLY)
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/fastnetmon.service" DESTINATION ${CMAKE_INSTALL_SYSTEMD_SERVICEDIR})
