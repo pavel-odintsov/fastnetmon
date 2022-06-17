@@ -28,6 +28,7 @@ class Fastnetmon < Formula
     system "cmake", "-S", "src", "-B", "build",
       "-DENABLE_CUSTOM_BOOST_BUILD=FALSE",
       "-DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE",
+      "-DLINK_WITH_ABSL=TRUE",
       "-DCMAKE_SYSTEM_INCLUDE_PATH=#{Formula["openssl@1.1"].include}",
       "-DCMAKE_SYSTEM_LIBRARY_PATH=#{Formula["openssl@1.1"].lib}", *std_cmake_args
     system "cmake", "--build", "build"
