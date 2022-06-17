@@ -13,6 +13,8 @@ class Fastnetmon < Formula
   depends_on "hiredis"
   depends_on "json-c"
   depends_on "log4cpp"
+  # We do not build for Linux as we have native packages for all leading Linux distros
+  depends_on :macos
   depends_on macos: :big_sur # We need C++ 20 available for build which is available from Big Sur
   depends_on "mongo-c-driver"
   depends_on "openssl@1.1"
