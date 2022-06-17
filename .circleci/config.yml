@@ -13,6 +13,8 @@ jobs:
       - run: brew install cmake boost log4cpp hiredis json-c mongo-c-driver grpc capnp openssl@3
       - run: cd src && mkdir build && cd build && cmake -DENABLE_CUSTOM_BOOST_BUILD=FALSE -DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE -DCMAKE_SYSTEM_INCLUDE_PATH=/usr/local/opt/openssl@3/include -DCMAKE_SYSTEM_LIBRARY_PATH=/usr/local/opt/openssl@3/lib ..
       - run: cd src && cd build && make 
+      - run: cp src/packaging/homebrew/fastnetmon.rb /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula
+      - run: brew install --build-from-source --verbose --debug fastnetmon
   build_debian_upstream_package:
     machine:
       image: ubuntu-2004:current
