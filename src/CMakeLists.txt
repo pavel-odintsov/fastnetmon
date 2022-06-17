@@ -749,6 +749,12 @@ if (BUILD_TESTS)
     target_link_libraries(fastnetmon_tests ${GOOGLE_TEST_LIBRARIES})
 endif()
 
+# Check default values prepared by CMAKE for us
+message(STATUS "Install BINDIR path: ${CMAKE_INSTALL_BINDIR}")
+message(STATUS "Install SBINDIR path: ${CMAKE_INSTALL_SBINDIR}")
+message(STATUS "Install SYSCONFDIR path: ${CMAKE_INSTALL_SYSCONFDIR}")
+message(STATUS "Install MANDIR path: ${CMAKE_INSTALL_MANDIR}")
+
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" OR ${CMAKE_SYSTEM_NAME} STREQUAL "DragonFly")
     set(CMAKE_INSTALL_BINDIR "bin")
     set(CMAKE_INSTALL_SBINDIR "bin")
