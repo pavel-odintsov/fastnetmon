@@ -28,7 +28,6 @@ BEGIN {
 
 my $fastnetmon_install_folder = '/opt/fastnetmon-community';
 my $library_install_folder = "$fastnetmon_install_folder/libraries";
-my $we_use_code_from_master = '';
 
 my $ld_library_path_for_make = "";
 
@@ -76,8 +75,6 @@ my $start_time = time();
 
 my $fastnetmon_code_dir = "$temp_folder_for_building_project/fastnetmon/src";
 
-my $stable_branch_name = 'v1.1.5';
-
 # By default do not use mirror
 my $use_mirror = '';
 
@@ -106,7 +103,6 @@ my $build_dependencies_only = '';
 
 # Get options from command line
 GetOptions(
-    'use-git-master' => \$we_use_code_from_master,
     'use-mirror' => \$use_mirror,
     'build_fastnetmon_only' => \$build_fastnetmon_only,
     'build_dependencies_only' => \$build_dependencies_only,
@@ -1482,11 +1478,8 @@ sub install_fastnetmon {
         # Code already downloaded
         chdir $fastnetmon_code_dir;
 
-        # Switch to master if we on stable branch
-        if ($we_use_code_from_master) {
-            exec_command("git checkout master");
-            printf("\n");
-        }
+        exec_command("git checkout master");
+        printf("\n");
 
         exec_command("git pull");
     } else {
@@ -1497,13 +1490,6 @@ sub install_fastnetmon {
             fast_die("Can't clone source code");
         }
     }
-
-    unless ($we_use_code_from_master) {
-        # We use this approach because older git versions do not support git clone -b ... correctly
-        # warning: Remote branch v1.1.2 not found in upstream origin, using HEAD instead
-        chdir "fastnetmon";
-        exec_command("git checkout $stable_branch_name");
-    } 
 
     exec_command("mkdir -p $fastnetmon_code_dir/build");
     chdir "$fastnetmon_code_dir/build";

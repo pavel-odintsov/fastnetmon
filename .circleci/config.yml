@@ -169,7 +169,7 @@ jobs:
           key: "{{ .Environment.CIRCLE_JOB }}_dependencies_03_06_2022"
           paths:
             - /opt
-      - run: perl src/scripts/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
+      - run: perl src/scripts/fastnetmon_build.pl --build_fastnetmon_only
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
@@ -228,7 +228,7 @@ jobs:
           key: "{{ .Environment.CIRCLE_JOB }}_dependencies_03_06_2022"
           paths:
             - /opt
-      - run: perl src/scripts/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
+      - run: perl src/scripts/fastnetmon_build.pl --build_fastnetmon_only
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
@@ -288,7 +288,7 @@ jobs:
             - /opt
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-      - run: perl src/scripts/fastnetmon_build.pl --use-git-master --build_fastnetmon_only
+      - run: perl src/scripts/fastnetmon_build.pl --build_fastnetmon_only
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
