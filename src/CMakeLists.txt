@@ -752,15 +752,22 @@ message(STATUS "Install SBINDIR path: ${CMAKE_INSTALL_SBINDIR}")
 message(STATUS "Install SYSCONFDIR path: ${CMAKE_INSTALL_SYSCONFDIR}")
 message(STATUS "Install MANDIR path: ${CMAKE_INSTALL_MANDIR}")
 
+# We use this flag on Debian upstream builds because we apparently need absolute paths here
+# But for Homebrew we need option to disable it and use relative paths
+# cmake .. -DSET_ABSOLUTE_INSTALL_PATH=OFF
+option(SET_ABSOLUTE_INSTALL_PATH "Enables use of absolute install paths" ON)
+
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" OR ${CMAKE_SYSTEM_NAME} STREQUAL "DragonFly")
     set(CMAKE_INSTALL_BINDIR "bin")
     set(CMAKE_INSTALL_SBINDIR "bin")
     set(CMAKE_INSTALL_SYSCONFDIR "etc")
 elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-    set(CMAKE_INSTALL_BINDIR "/usr/bin")
-    set(CMAKE_INSTALL_SBINDIR "/usr/sbin")
-    set(CMAKE_INSTALL_SYSCONFDIR "/etc")
-    set(CMAKE_INSTALL_MANDIR "/usr/share/man")
+    if (SET_ABSOLUTE_INSTALL_PATH)
+        set(CMAKE_INSTALL_BINDIR "/usr/bin")
+        set(CMAKE_INSTALL_SBINDIR "/usr/sbin")
+        set(CMAKE_INSTALL_SYSCONFDIR "/etc")
+        set(CMAKE_INSTALL_MANDIR "/usr/share/man")
+    endif()
 elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     message(STATUS "We run on Apple platform")
 else()
