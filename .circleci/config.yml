@@ -4,6 +4,13 @@ parameters:
     type: string
     default: "1.2.2"
 jobs:
+  build_windows2022:
+    machine:
+      image: windows-server-2022:stable
+      resource_class: windows.medium
+      shell: bash.exe
+    steps:
+      - run: echo 'Hello from FastNetMon'
   build_macos:
     macos:
       xcode: 12.5.1 
@@ -365,3 +372,5 @@ workflows:
           name: "EPEL 9 RPM"
       - build_macos:
           name: "Build on MacOS"
+      - build_windows2022:
+          name: "Build on Windows Server 2022"
