@@ -24,7 +24,7 @@ class Fastnetmon < Formula
   end
 
  service do
-    run [opt_bin/"fastnetmon", "--config", etc/"fastnetmon.conf", "--log_to_console", "--disable_pid_logic"]
+    run [sbin/"fastnetmon", "--config", etc/"fastnetmon.conf", "--log_to_console", "--disable_pid_logic"]
     keep_alive false
     working_dir HOMEBREW_PREFIX
   end
