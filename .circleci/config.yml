@@ -23,6 +23,7 @@ jobs:
       - run: cp src/packaging/homebrew/fastnetmon.rb /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/fastnetmon.rb
       - run: brew install --build-from-source --verbose --debug fastnetmon
       - run: brew audit --strict fastnetmon
+      - run: brew audit --new-formula fastnetmon
   build_debian_upstream_package:
     machine:
       image: ubuntu-2004:current
