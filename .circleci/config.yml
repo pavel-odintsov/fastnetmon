@@ -4,9 +4,9 @@ parameters:
     type: string
     default: "1.2.2"
 jobs:
-  build_windows2022:
+  build_windows2019:
     machine:
-      image: windows-server-2022:stable
+      image: windows-server-2019:stable
       resource_class: windows.medium
       shell: bash.exe
     steps:
@@ -372,5 +372,5 @@ workflows:
           name: "EPEL 9 RPM"
       - build_macos:
           name: "Build on MacOS"
-      - build_windows2022:
-          name: "Build on Windows Server 2022"
+      - build_windows2019:
+          name: "Build on Windows Server 2019"
