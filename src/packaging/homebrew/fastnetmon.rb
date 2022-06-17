@@ -18,6 +18,7 @@ class Fastnetmon < Formula
 
   on_linux do
     depends_on "gcc"
+    depends_on "libpcap"
   end
 
   fails_with gcc: "5"
