@@ -16,7 +16,7 @@ jobs:
       - run: 'Write-Host "Hello from FastNetMon"'
   build_macos:
     macos:
-      xcode: 12.5.1 
+      xcode: 13.2.1
     steps:
       - checkout
       - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
