@@ -16,12 +16,18 @@ class Fastnetmon < Formula
   depends_on "mongo-c-driver"
   depends_on "openssl@1.1"
 
+  on_linux do
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5"
+
   def install
     system "cmake", "-S", "src", "-B", "build",
       "-DENABLE_CUSTOM_BOOST_BUILD=FALSE",
       "-DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE",
-      "-DCMAKE_SYSTEM_INCLUDE_PATH=/usr/local/opt/openssl\@1/include",
-      "-DCMAKE_SYSTEM_LIBRARY_PATH=/usr/local/opt/openssl\@1/lib", *std_cmake_args
+      "-DCMAKE_SYSTEM_INCLUDE_PATH=#{Formula["openssl@1.1"].include}",
+      "-DCMAKE_SYSTEM_LIBRARY_PATH=#{Formula["openssl@1.1"].lib}", *std_cmake_args
     system "cmake", "--build", "build"
     system "cmake", "--install", "build"
   end
