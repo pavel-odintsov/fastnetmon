@@ -29,9 +29,6 @@ set(GRPC_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/grpc_1_30_2")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} --std=c++20")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} --std=c++20")
 
-set(CMAKE_INSTALL_SYSTEMD_SERVICEDIR "/lib/systemd/system"
-  CACHE PATH "Location for systemd service files")
-
 # With this flag we can enable GoBGP build via console: cmake .. -DENABLE_GOBGP_SUPPORT=ON
 option(ENABLE_GOBGP_SUPPORT "Enable GoBGP support build" ON)
 
@@ -789,10 +786,17 @@ install(FILES networks_whitelist DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}")
 install(FILES man/fastnetmon.8 DESTINATION ${CMAKE_INSTALL_MANDIR}/man8)
 install(FILES man/fastnetmon_client.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
 
-# Generate service files
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    configure_file(fastnetmon.service.in "${CMAKE_CURRENT_BINARY_DIR}/fastnetmon.service" @ONLY)
-    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/fastnetmon.service" DESTINATION ${CMAKE_INSTALL_SYSTEMD_SERVICEDIR})
+if (SET_ABSOLUTE_INSTALL_PATH)
+    # Unfortunately, we have no cross-platform option to install systemd units in current versions of cmake
+    set(CMAKE_INSTALL_SYSTEMD_SERVICEDIR "/lib/systemd/system"  CACHE PATH "Location for systemd service files")
+
+    # Generate unit file
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+        configure_file(fastnetmon.service.in "${CMAKE_CURRENT_BINARY_DIR}/fastnetmon.service" @ONLY)
+        install(FILES "${CMAKE_CURRENT_BINARY_DIR}/fastnetmon.service" DESTINATION ${CMAKE_INSTALL_SYSTEMD_SERVICEDIR})
+    endif()
+else()
+    # We have no relative standard path for installation, skip any actions
 endif()
 
 # For Debian packages build please use our logic from upstream: https://salsa.debian.org/debian/fastnetmon
