@@ -20,6 +20,7 @@ jobs:
     steps:
       - checkout
       - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      - run: cp src/packaging/homebrew/fastnetmon.rb /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/fastnetmon.rb
       - run: brew install --build-from-source --verbose --debug fastnetmon
       - run: brew audit --strict fastnetmon
   build_debian_upstream_package:
