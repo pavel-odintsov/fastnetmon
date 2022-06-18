@@ -37,15 +37,6 @@ class Fastnetmon < Formula
     system "cmake", "--install", "build"
   end
 
-  test do
-    system opt_sbin/"fastnetmon",
-      "--configuration_check",
-      "--configuration_file",
-      etc/"fastnetmon.conf",
-      "--log_to_console",
-      "--disable_pid_logic"
-  end
-
   service do
     run [
       opt_sbin/"fastnetmon",
@@ -56,5 +47,14 @@ class Fastnetmon < Formula
     ]
     keep_alive false
     working_dir HOMEBREW_PREFIX
+  end
+
+  test do
+    system opt_sbin/"fastnetmon",
+      "--configuration_check",
+      "--configuration_file",
+      etc/"fastnetmon.conf",
+      "--log_to_console",
+      "--disable_pid_logic"
   end
 end
