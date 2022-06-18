@@ -50,11 +50,24 @@ class Fastnetmon < Formula
   end
 
   test do
-    system opt_sbin/"fastnetmon",
-      "--configuration_check",
+    fastnetmon_pid = fork do
+      exec opt_sbin/"fastnetmon",
       "--configuration_file",
       etc/"fastnetmon.conf",
       "--log_to_console",
       "--disable_pid_logic"
+    end
+
+    sleep 15
+
+    assert_predicate "/tmp/fastnetmon.dat", :exist?
+
+    ipv4_stats = shell_output("cat /tmp/fastnetmon.dat")
+    assert_match("Incoming traffic", ipv4_output)
+
+    assert_predicate "/tmp/fastnetmon_ipv6.dat", :exist?
+
+    ipv6_stats = shell_output("cat /tmp/fastnetmon_ipv6.dat")
+    assert_match("Incoming traffic", ipv6_output)
   end
 end
