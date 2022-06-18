@@ -62,12 +62,14 @@ class Fastnetmon < Formula
 
     assert_predicate "/tmp/fastnetmon.dat", :exist?
 
-    ipv4_stats = shell_output("cat /tmp/fastnetmon.dat")
-    assert_match("Incoming traffic", ipv4_output)
+    ipv4_stats_output = shell_output("cat /tmp/fastnetmon.dat")
+    assert_match("Incoming traffic", ipv4_stats_output)
 
     assert_predicate "/tmp/fastnetmon_ipv6.dat", :exist?
 
-    ipv6_stats = shell_output("cat /tmp/fastnetmon_ipv6.dat")
-    assert_match("Incoming traffic", ipv6_output)
+    ipv6_stats_output = shell_output("cat /tmp/fastnetmon_ipv6.dat")
+    assert_match("Incoming traffic", ipv6_stats_output)
+  ensure
+    Process.kill "SIGTERM", fastnetmon_pid
   end
 end
