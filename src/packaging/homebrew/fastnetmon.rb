@@ -60,12 +60,12 @@ class Fastnetmon < Formula
 
     sleep 15
 
-    assert_predicate "/tmp/fastnetmon.dat", :exist?
+    assert_path_exists "/tmp/fastnetmon.dat"
 
     ipv4_stats_output = shell_output("cat /tmp/fastnetmon.dat")
     assert_match("Incoming traffic", ipv4_stats_output)
 
-    assert_predicate "/tmp/fastnetmon_ipv6.dat", :exist?
+    assert_path_exists "/tmp/fastnetmon_ipv6.dat"
 
     ipv6_stats_output = shell_output("cat /tmp/fastnetmon_ipv6.dat")
     assert_match("Incoming traffic", ipv6_stats_output)
