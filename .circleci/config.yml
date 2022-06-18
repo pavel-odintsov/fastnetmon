@@ -75,7 +75,7 @@ jobs:
     resource_class: arm.medium
     steps:
      - checkout
-     - run: docker build -t ghcr.io/pavel-odintsov/fastnetmon-community:1.2.1 -t ghcr.io/pavel-odintsov/fastnetmon-community:latest - < src/Dockerfile
+     - run: docker build --build-arg installer_file_name=installer_arm64 -t ghcr.io/pavel-odintsov/fastnetmon-community:1.2.1 -t ghcr.io/pavel-odintsov/fastnetmon-community:latest - < src/Dockerfile
      - run: sudo docker images
   build_fedora_upstream:
     parameters:
