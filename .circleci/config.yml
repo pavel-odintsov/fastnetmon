@@ -59,7 +59,7 @@ jobs:
           command: "sudo docker exec -it linux_priviledged_container pbuilder --create --basetgz /data/debian_base.tgz --distribution << parameters.debian_codename >>"
       - run: ls -la /data
       - run: sudo docker exec -it linux_priviledged_container pbuilder --build --basetgz /data/debian_base.tgz --debbuildopts "-sa" /fastnetmon_$(sudo docker exec -it linux_priviledged_container head -n 1 fastnetmon-debian-salsa/debian/changelog|awk '{print $2}'|sed 's/[()]//g').dsc
-  build_docker:
+  build_docker_x86_64:
     machine:
       image: ubuntu-2004:current
     steps:
@@ -69,6 +69,14 @@ jobs:
      - run: echo $CR_PAT | sudo docker login ghcr.io -u pavel-odintsov --password-stdin
      - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:1.2.1
      - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:latest
+  build_docker_arm64:
+    machine:
+      image: ubuntu-2004:current
+    resource_class: arm.medium
+    steps:
+     - checkout
+     - run: docker build -t ghcr.io/pavel-odintsov/fastnetmon-community:1.2.1 -t ghcr.io/pavel-odintsov/fastnetmon-community:latest - < src/Dockerfile
+     - run: sudo docker images
   build_fedora_upstream:
     parameters:
       docker_image:
@@ -354,7 +362,10 @@ workflows:
           docker_image: "debian:bullseye"
           debian_version: "11"
           name: "debian11"
-      - build_docker
+      - build_docker_x86_64:
+          name: "Build Docker image on x86_64 platform"
+      - build_docker_arm64:
+          name: "Build Docker image on ARM64 platform"
       - build_debian_upstream_package:
           name: "Debian Sid Upstream Build"
           debian_codename: "sid"
