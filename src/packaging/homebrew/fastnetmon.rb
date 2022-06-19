@@ -6,6 +6,7 @@ class Fastnetmon < Formula
   sha256 "ed9376fc193cbd2dd36eb5e80a2d03143f2ab0b6b4d9d74ae3572cc544754b20"
   license "GPL-2.0-only"
 
+  depends_on "abseil"
   depends_on "cmake" => :build
   depends_on "boost"
   depends_on "capnp"
@@ -62,12 +63,12 @@ class Fastnetmon < Formula
 
     assert_path_exists "/tmp/fastnetmon.dat"
 
-    ipv4_stats_output = shell_output("cat /tmp/fastnetmon.dat")
+    ipv4_stats_output = File.read("/tmp/fastnetmon.dat")
     assert_match("Incoming traffic", ipv4_stats_output)
 
     assert_path_exists "/tmp/fastnetmon_ipv6.dat"
 
-    ipv6_stats_output = shell_output("cat /tmp/fastnetmon_ipv6.dat")
+    ipv6_stats_output = File.read("/tmp/fastnetmon_ipv6.dat")
     assert_match("Incoming traffic", ipv6_stats_output)
   ensure
     Process.kill "SIGTERM", fastnetmon_pid
