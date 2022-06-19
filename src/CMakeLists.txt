@@ -741,6 +741,9 @@ if (BUILD_TESTS)
     # Compiled Google Library
     include_directories(${GOOGLE_TEST_INCLUDE_DIRS})
     target_link_libraries(fastnetmon_tests ${GOOGLE_TEST_LIBRARIES})
+
+    add_executable(traffic_structures_tests tests/traffic_structures_performance_tests.cpp)
+    target_link_libraries(traffic_structures_tests ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${LOG4CPP_LIBRARY_PATH} fast_library)
 endif()
 
 # Check default values prepared by CMAKE for us
