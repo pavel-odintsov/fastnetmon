@@ -53,6 +53,10 @@ class Fastnetmon < Formula
   test do
     cp etc/"fastnetmon.conf", testpath
 
+    inreplace testpath/"fastnetmon.conf", "/tmp/fastnetmon.dat", testpath/"fastnetmon.dat"
+
+    inreplace testpath/"fastnetmon.conf", "/tmp/fastnetmon_ipv6.dat", testpath/"fastnetmon_ipv6.dat"
+
     fastnetmon_pid = fork do
       exec opt_sbin/"fastnetmon",
       "--configuration_file",
@@ -63,14 +67,14 @@ class Fastnetmon < Formula
 
     sleep 15
 
-    assert_path_exists "/tmp/fastnetmon.dat"
+    assert_path_exists testpath/"fastnetmon.dat"
 
-    ipv4_stats_output = File.read("/tmp/fastnetmon.dat")
+    ipv4_stats_output = File.read(testpath/"fastnetmon.dat")
     assert_match("Incoming traffic", ipv4_stats_output)
 
-    assert_path_exists "/tmp/fastnetmon_ipv6.dat"
+    assert_path_exists testpath/"fastnetmon_ipv6.dat"
 
-    ipv6_stats_output = File.read("/tmp/fastnetmon_ipv6.dat")
+    ipv6_stats_output = File.read(testpath/"fastnetmon_ipv6.dat")
     assert_match("Incoming traffic", ipv6_stats_output)
   ensure
     Process.kill "SIGTERM", fastnetmon_pid
