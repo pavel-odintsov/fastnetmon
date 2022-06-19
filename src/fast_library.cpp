@@ -1899,3 +1899,114 @@ std::string join_by_comma_and_equal(std::map<std::string, std::string>& data) {
 
     return buffer.str();
 }
+
+// We will store option name as key and value will be memory size in bytes
+bool parse_meminfo_into_map(std::map<std::string, uint64_t>& parsed_meminfo) {
+    extern log4cpp::Category& logger;
+
+    std::ifstream meminfo_file("/proc/meminfo");
+    boost::regex memory_info_pattern("^(.*?):\\s+(\\d+).*$", boost::regex::icase);
+
+    if (!meminfo_file.is_open()) {
+        logger << log4cpp::Priority::ERROR << "Could not open meminfo file";
+        return false;
+    }
+
+    std::string line;
+
+    while (getline(meminfo_file, line)) {
+        // MemTotal:         501912 kB
+        boost::match_results<std::string::const_iterator> regex_results;
+
+        if (boost::regex_match(line, regex_results, memory_info_pattern)) {
+            uint64_t memory_value = 0;
+
+            bool integer_parser_result = read_uint64_from_string(regex_results[2], memory_value);
+
+            if (!integer_parser_result) {
+                logger << log4cpp::Priority::ERROR << "Could not parse " << regex_results[2] << " as unsigned 64 bit integer";
+                return false;
+            }
+
+            parsed_meminfo[regex_results[1]] = memory_value * 1024;
+        }
+    }
+
+
+    return true;
+}
+
+// Reads uint64_t from string with all required safety checks
+bool read_uint64_from_string(const std::string& line, uint64_t& value) {
+    uint64_t temp_value = 0;
+
+    try {
+        // Read value to intermediate variable to avoid interference with argument of function in case of failure
+        // NB! This function does not work very well when we have minus in input sequence as it will accept it
+        // If the minus sign was part of the input sequence, the numeric value calculated from the sequence of digits
+        // is negated as if by unary minus in the result type, which applies unsigned integer wraparound rules.
+        temp_value = std::stoull(line);
+    } catch (...) {
+        return false;
+    }
+
+    value = temp_value;
+
+    return true;
+}
+
+bool read_file_to_string(const std::string& file_path, std::string& file_content) {
+    std::ifstream file_handler;
+
+    file_handler.open(file_path, std::ios::in);
+
+    if (file_handler.is_open()) {
+        std::stringstream str_stream;
+
+        str_stream << file_handler.rdbuf();
+        file_handler.close();
+
+        file_content = str_stream.str();
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool read_integer_from_file(const std::string& file_path, int& value) {
+    std::string file_content_in_string;
+
+    bool read_file_to_string_result = read_file_to_string(file_path, file_content_in_string);
+
+    if (!read_file_to_string_result) {
+        return false;
+    }
+
+    int scanned_value = 0;
+
+    bool read_integer_from_file = convert_string_to_any_integer_safe(file_content_in_string, scanned_value);
+
+    if (!read_integer_from_file) {
+        return false;
+    }
+
+    value = scanned_value;
+    return true;
+}
+
+// Safe way to convert string to any integer
+bool convert_string_to_any_integer_safe(const std::string& line, int& value) {
+    int temp_value = 0;
+
+    try {
+        temp_value = std::stoi(line);
+    } catch (...) {
+        // Could not parse number correctly
+        return false;
+    }
+
+    value = temp_value;
+
+    return true;
+}
+

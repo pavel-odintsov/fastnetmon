@@ -134,3 +134,8 @@ bool write_data_to_influxdb(std::string database,
                             std::string query);
 
 std::string join_by_comma_and_equal(std::map<std::string, std::string>& data);
+bool parse_meminfo_into_map(std::map<std::string, uint64_t>& parsed_meminfo);
+bool read_uint64_from_string(const std::string& line, uint64_t& value);
+bool read_integer_from_file(const std::string& file_path, int& value);
+bool read_file_to_string(const std::string& file_path, std::string& file_content);
+bool convert_string_to_any_integer_safe(const std::string& line, int& value);
