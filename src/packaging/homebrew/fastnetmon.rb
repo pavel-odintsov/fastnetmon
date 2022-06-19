@@ -6,8 +6,8 @@ class Fastnetmon < Formula
   sha256 "ed9376fc193cbd2dd36eb5e80a2d03143f2ab0b6b4d9d74ae3572cc544754b20"
   license "GPL-2.0-only"
 
-  depends_on "abseil"
   depends_on "cmake" => :build
+  depends_on "abseil"
   depends_on "boost"
   depends_on "capnp"
   depends_on "grpc"
