@@ -48,6 +48,8 @@ class Fastnetmon < Formula
     ]
     keep_alive false
     working_dir HOMEBREW_PREFIX
+    log_path var/"log/fastnetmon.log"
+    error_log_path var/"log/fastnetmon.log"
   end
 
   test do
