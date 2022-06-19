@@ -51,10 +51,12 @@ class Fastnetmon < Formula
   end
 
   test do
+    cp etc/"fastnetmon.conf", testpath
+
     fastnetmon_pid = fork do
       exec opt_sbin/"fastnetmon",
       "--configuration_file",
-      etc/"fastnetmon.conf",
+      testpath/"fastnetmon.conf",
       "--log_to_console",
       "--disable_pid_logic"
     end
