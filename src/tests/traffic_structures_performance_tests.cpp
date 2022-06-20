@@ -20,8 +20,6 @@
 
 #include "../fastnetmon_types.h"
 
-#include "../all_logcpp_libraries.h"
-
 #ifdef TEST_TBB_LIBRARY
 
 #ifndef __APPLE__
@@ -33,6 +31,7 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
+#include "../all_logcpp_libraries.h"
 
 // #define ABSEIL
 
@@ -71,6 +70,10 @@ std::unordered_map<uint32_t, subnet_counter_t> DataCounterUnorderedPrecreated;
 
 
 boost::unordered_map<uint32_t, subnet_counter_t> DataCounterBoostUnordered;
+
+boost::unordered_map<uint32_t, subnet_counter_t> DataCounterBoostUnorderedPreallocated;
+
+boost::unordered_map<uint32_t, subnet_counter_t> DataCounterBoostUnorderedPrecreated;
 
 boost::container::flat_map<uint32_t, subnet_counter_t> DataCounterBoostFlatMap;
 
@@ -164,6 +167,34 @@ void packet_collector_thread_boost_unordered_map() {
             data_counter_mutex.lock();
 #endif
             DataCounterBoostUnordered[i].udp_in_bytes++;
+#ifdef enable_mutexes_in_test
+            data_counter_mutex.unlock();
+#endif
+        }
+    }
+}
+
+void packet_collector_thread_boost_unordered_map_preallocated() {
+    for (int iteration = 0; iteration < number_of_retries; iteration++) {
+        for (uint32_t i = 0; i < number_of_ips; i++) {
+#ifdef enable_mutexes_in_test
+            data_counter_mutex.lock();
+#endif
+            DataCounterBoostUnorderedPreallocated[i].udp_in_bytes++;
+#ifdef enable_mutexes_in_test
+            data_counter_mutex.unlock();
+#endif
+        }
+    }
+}
+
+void packet_collector_thread_boost_unordered_map_precreated() {
+    for (int iteration = 0; iteration < number_of_retries; iteration++) {
+        for (uint32_t i = 0; i < number_of_ips; i++) {
+#ifdef enable_mutexes_in_test
+            data_counter_mutex.lock();
+#endif
+            DataCounterBoostUnorderedPrecreated[i].udp_in_bytes++;
 #ifdef enable_mutexes_in_test
             data_counter_mutex.unlock();
 #endif
@@ -312,7 +343,7 @@ void packet_collector_time_calculaitons() {
 }
 
 // We just execute time read here
-void packet_collector_time_calculaitons_monitonic() {
+void packet_collector_time_calculaitons_monotonic() {
     struct timespec current_time;
 
     for (int iteration = 0; iteration < number_of_retries; iteration++) {
@@ -323,7 +354,7 @@ void packet_collector_time_calculaitons_monitonic() {
 }
 
 // We just execute time read here
-void packet_collector_time_calculaitons_monitonic_coarse() {
+void packet_collector_time_calculaitons_monotonic_coarse() {
     struct timespec current_time;
 
     for (int iteration = 0; iteration < number_of_retries; iteration++) {
@@ -345,14 +376,13 @@ void packet_collector_time_calculaitons_gettimeofday() {
 }
 
 
-
 #ifdef TEST_TBB_LIBRARY
 
 #ifndef __APPLE__
 void packet_collector_thread_unordered_concurrent_map() {
     for (int iteration = 0; iteration < number_of_retries; iteration++) {
         for (uint32_t i = 0; i < number_of_ips; i++) {
-            DataCounterUnorderedConcurrent[i].udp.in_bytes++;
+            DataCounterUnorderedConcurrent[i].udp_in_bytes++;
         }
     }
 }
@@ -419,20 +449,24 @@ void init_logging() {
 int main(int argc, char* argv[]) {
     init_logging();
 
-    bool test_monitonic_coarse                 = false;
+    bool test_monotonic_coarse                 = false;
     bool test_gettimeofday                     = false;
     bool test_std_map                          = false;
     bool test_tbb_concurrent_unordered_map     = false;
+    
     bool test_boost_unordered_map              = false;
+    bool test_boost_unordered_map_preallocated = false;
+    bool test_boost_unordered_map_precreated   = false;
+
     bool test_boost_container_flat_map         = false;
     bool test_unordered_map_cpp11              = false;
     bool test_unordered_map_cpp11_preallocated = false;
-    bool test_vector_preallocated              = false;
     bool test_unordered_map_cpp11_precreated   = false;
+
+    bool test_vector_preallocated              = false;
     bool test_std_map_precreated               = false;
     bool test_clock_gettime_realtime           = false;
     bool test_clock_gettime_monotonic          = false;
-    bool test_rdtsc_time                       = false;
     bool test_c_array_preallocated             = false;
     bool test_c_array_huge_pages_preallocated  = false;
 
@@ -445,6 +479,10 @@ int main(int argc, char* argv[]) {
             test_tbb_concurrent_unordered_map = true;
         } else if (first_argument == "test_boost_unordered_map") {
             test_boost_unordered_map = true;
+        } else if (first_argument == "test_boost_unordered_map_preallocated") {
+            test_boost_unordered_map_preallocated = true;
+        } else if (first_argument == "test_boost_unordered_map_precreated") { 
+            test_boost_unordered_map_precreated = true;
         } else if (first_argument == "test_boost_container_flat_map") {
             test_boost_container_flat_map = true;
         } else if (first_argument == "test_unordered_map_cpp11") {
@@ -461,32 +499,35 @@ int main(int argc, char* argv[]) {
             test_clock_gettime_realtime = true;
         } else if (first_argument == "test_clock_gettime_monotonic") {
             test_clock_gettime_monotonic = true;
-        } else if (first_argument == "test_rdtsc_time") {
-            test_rdtsc_time = true;
         } else if (first_argument == "test_gettimeofday") {
             test_gettimeofday = true;
         } else if (first_argument == "test_c_array_preallocated") {
             test_c_array_preallocated = true;
         } else if (first_argument == "test_c_array_huge_pages_preallocated") {
             test_c_array_huge_pages_preallocated = true;
-        } else if (first_argument == "test_monitonic_coarse") {
-            test_monitonic_coarse = true;
+        } else if (first_argument == "test_monotonic_coarse") {
+            test_monotonic_coarse = true;
         }
     } else {
-        test_monitonic_coarse                 = true;
+        test_monotonic_coarse                 = true;
         test_clock_gettime_monotonic          = true;
         test_gettimeofday                     = true;
         test_clock_gettime_realtime           = true;
         test_std_map                          = true;
         test_std_map_precreated               = true;
         test_tbb_concurrent_unordered_map     = true;
+        
         test_boost_unordered_map              = true;
+        test_boost_unordered_map_preallocated = true;
+        test_boost_unordered_map_precreated   = true;
+        
         test_boost_container_flat_map         = true;
+        
         test_unordered_map_cpp11              = true;
         test_unordered_map_cpp11_preallocated = true;
-        test_vector_preallocated              = true;
         test_unordered_map_cpp11_precreated   = true;
-        test_rdtsc_time                       = true;
+
+        test_vector_preallocated              = true;
         test_c_array_preallocated             = true;
         test_c_array_huge_pages_preallocated  = true;
     }
@@ -527,10 +568,29 @@ int main(int argc, char* argv[]) {
     }
 
     if (test_boost_unordered_map) {
-        // Boost unordered map
         std::cout << "boost::unordered_map: ";
         run_tests(packet_collector_thread_boost_unordered_map);
         DataCounterBoostUnordered.clear();
+    }
+
+    if (test_boost_unordered_map_preallocated) {
+        std::cout << "boost::unordered_map with preallocated elements: ";
+        DataCounterBoostUnorderedPreallocated.reserve(number_of_ips);
+        run_tests(packet_collector_thread_boost_unordered_map_preallocated);
+        DataCounterBoostUnorderedPreallocated.clear();
+    }
+
+    if (test_boost_unordered_map_precreated) {
+        std::cout << "boost::unordered_map with precreated elements: ";
+
+        for (uint32_t i = 0; i < number_of_ips; i++) {
+            subnet_counter_t current_map_element;
+
+            DataCounterBoostUnorderedPrecreated.insert(std::make_pair(i, current_map_element));
+        }
+
+        run_tests(packet_collector_thread_boost_unordered_map_precreated);
+        DataCounterBoostUnorderedPrecreated.clear();
     }
 
     if (test_boost_container_flat_map) {
@@ -740,7 +800,7 @@ int main(int argc, char* argv[]) {
 
     if (test_clock_gettime_monotonic) {
         std::cout << "clock_gettime CLOCK_MONOTONIC: ";
-        run_tests(packet_collector_time_calculaitons_monitonic);
+        run_tests(packet_collector_time_calculaitons_monotonic);
     }
 
     // According to https://fossies.org/dox/glibc-2.23/sysdeps_2unix_2clock__gettime_8c_source.html clock_gettime with
@@ -755,8 +815,8 @@ int main(int argc, char* argv[]) {
         run_tests(packet_collector_time_calculaitons_gettimeofday);
     }
 
-    if (test_monitonic_coarse) {
+    if (test_monotonic_coarse) {
         std::cout << "clock_gettime CLOCK_MONOTONIC_COARSE: ";
-        run_tests(packet_collector_time_calculaitons_monitonic_coarse);
+        run_tests(packet_collector_time_calculaitons_monotonic_coarse);
     }
 }
