@@ -10,12 +10,6 @@
 
 #include "../libpatricia/patricia.hpp"
 
-/*
-  How to compile:
-    gcc ../libpatricia/patricia.c -c -opatricia.o
-    gcc patricia_performance_tests.c patricia.o -o patricia_performance_test
-*/
-
 int main() {
     patricia_tree_t* lookup_tree;
     lookup_tree = New_Patricia(32);
@@ -77,7 +71,8 @@ int main() {
     unsigned long total_ops    = i_iter * j_iter;
     float megaops_per_second   = (float)total_ops / (float)used_seconds / 1000000;
 
-    printf("Total time is %d seconds total ops: %d\nMillion of ops per second: %.1f\n", used_seconds, total_ops, megaops_per_second);
+    std::cout << "Total time is " << used_seconds << " seconds total ops: " << total_ops << std::endl;
+    std::cout << "Million of ops per second: " << megaops_per_second << std::endl;
 
     Destroy_Patricia(lookup_tree);
 }
