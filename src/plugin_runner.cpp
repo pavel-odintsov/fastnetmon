@@ -112,7 +112,7 @@ int main(int argc, char* argv[]) {
     for (std::vector<std::string>::iterator ii = network_list_from_config.begin(); ii != network_list_from_config.end(); ++ii) {
         std::string network_address_in_cidr_form = *ii;
 
-        make_and_lookup(lookup_tree, const_cast<char*>(network_address_in_cidr_form.c_str()));
+        make_and_lookup(lookup_tree, network_address_in_cidr_form.c_str());
     }
 #endif
 

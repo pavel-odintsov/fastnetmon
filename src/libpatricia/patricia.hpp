@@ -65,8 +65,8 @@ class patricia_tree_t {
 patricia_tree_t* New_Patricia(int maxbits);
 
 // Add elements to IPv4 tree
-patricia_node_t* make_and_lookup(patricia_tree_t* tree, char* string);
-patricia_node_t* make_and_lookup_with_data(patricia_tree_t* tree, char* string, void* user_data);
+patricia_node_t* make_and_lookup(patricia_tree_t* tree, const char* string);
+patricia_node_t* make_and_lookup_with_data(patricia_tree_t* tree, const char* string, void* user_data);
 
 // Add elements to IPv6 tree
 patricia_node_t* make_and_lookup_ipv6(patricia_tree_t* tree, const char* string);
@@ -92,4 +92,4 @@ void Destroy_Patricia(patricia_tree_t* patricia);
 char* prefix_toa(prefix_t* prefix);
 
 // ASCII to prefix
-prefix_t* ascii2prefix(int family, char* string);
+prefix_t* ascii2prefix(int family, const char* string);

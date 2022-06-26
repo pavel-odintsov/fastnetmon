@@ -222,11 +222,11 @@ prefix_t* New_Prefix(int family, void* dest, int bitlen) {
 }
 
 // Converts string representation of prefix into out prefix_t structure
-prefix_t* ascii2prefix(int family, char* string) {
+prefix_t* ascii2prefix(int family, const char* string) {
     u_long bitlen    = 0;
     u_long maxbitlen = 0;
 
-    char* cp = nullptr;
+    const char* cp = nullptr;
 
     struct in_addr sin {};
     struct in6_addr sin6 {};
@@ -715,8 +715,9 @@ patricia_node_t* patricia_lookup(patricia_tree_t* patricia, prefix_t* prefix) {
     return new_node;
 }
 
-patricia_node_t* make_and_lookup(patricia_tree_t* tree, char* string) {
-    prefix_t* prefix      = ascii2prefix(AF_INET, string);
+patricia_node_t* make_and_lookup(patricia_tree_t* tree, const char* prefix_as_string) {
+    prefix_t* prefix      = ascii2prefix(AF_INET, prefix_as_string);
+
     patricia_node_t* node = patricia_lookup(tree, prefix);
 
     Deref_Prefix(prefix);
@@ -725,8 +726,9 @@ patricia_node_t* make_and_lookup(patricia_tree_t* tree, char* string) {
 }
 
 
-patricia_node_t* make_and_lookup_ipv6(patricia_tree_t* tree, const char* string) {
-    prefix_t* prefix      = ascii2prefix(AF_INET6, (char*)string);
+patricia_node_t* make_and_lookup_ipv6(patricia_tree_t* tree, const char* prefix_as_string) {
+    prefix_t* prefix      = ascii2prefix(AF_INET6, prefix_as_string);
+    
     patricia_node_t* node = patricia_lookup(tree, prefix);
 
     Deref_Prefix(prefix);
@@ -735,8 +737,8 @@ patricia_node_t* make_and_lookup_ipv6(patricia_tree_t* tree, const char* string)
 }
 
 // Add custom pointer to this subnet leaf
-patricia_node_t* make_and_lookup_with_data(patricia_tree_t* tree, char* string, void* user_data) {
-    prefix_t* prefix = ascii2prefix(AF_INET, string);
+patricia_node_t* make_and_lookup_with_data(patricia_tree_t* tree, const char* prefix_as_string, void* user_data) {
+    prefix_t* prefix = ascii2prefix(AF_INET, prefix_as_string);
 
     patricia_node_t* node = patricia_lookup(tree, prefix);
     node->data            = user_data;
@@ -747,8 +749,8 @@ patricia_node_t* make_and_lookup_with_data(patricia_tree_t* tree, char* string, 
 }
 
 // Add custom pointer to subnet leaf for IPv6
-patricia_node_t* make_and_lookup_ipv6_with_data(patricia_tree_t* tree, const char* string, void* user_data) {
-    prefix_t* prefix = ascii2prefix(AF_INET6, (char*)string);
+patricia_node_t* make_and_lookup_ipv6_with_data(patricia_tree_t* tree, const char* prefix_as_string, void* user_data) {
+    prefix_t* prefix = ascii2prefix(AF_INET6, prefix_as_string);
 
     patricia_node_t* node = patricia_lookup(tree, prefix);
 

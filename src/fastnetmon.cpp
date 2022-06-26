@@ -1074,7 +1074,7 @@ bool load_our_networks_list() {
                 continue;
             }
             network_entries++;
-            make_and_lookup(whitelist_tree_ipv4, const_cast<char*>(text_subnet.c_str()));
+            make_and_lookup(whitelist_tree_ipv4, text_subnet.c_str());
         }
 
         logger << log4cpp::Priority::INFO << "We loaded " << network_entries << " networks from whitelist file";
@@ -1197,7 +1197,7 @@ bool load_our_networks_list() {
             network_address_in_cidr_form = new_network_address_as_string;
         }
 
-        make_and_lookup(lookup_tree_ipv4, const_cast<char*>(network_address_in_cidr_form.c_str()));
+        make_and_lookup(lookup_tree_ipv4, network_address_in_cidr_form.c_str());
     }
 
     for (std::vector<std::string>::iterator ii = networks_list_ipv6_as_string.begin();
