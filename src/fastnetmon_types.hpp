@@ -100,17 +100,17 @@ template <typename T> class TrafficComparatorClass {
             }
         } else if (sort_field == PACKETS) {
             if (sort_direction == INCOMING) {
-                return a.second.in_packets > b.second.in_packets;
+                return a.second.total.in_packets > b.second.total.in_packets;
             } else if (sort_direction == OUTGOING) {
-                return a.second.out_packets > b.second.out_packets;
+                return a.second.total.out_packets > b.second.total.out_packets;
             } else {
                 return false;
             }
         } else if (sort_field == BYTES) {
             if (sort_direction == INCOMING) {
-                return a.second.in_bytes > b.second.in_bytes;
+                return a.second.total.in_bytes > b.second.total.in_bytes;
             } else if (sort_direction == OUTGOING) {
-                return a.second.out_bytes > b.second.out_bytes;
+                return a.second.total.out_bytes > b.second.total.out_bytes;
             } else {
                 return false;
             }

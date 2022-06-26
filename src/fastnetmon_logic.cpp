@@ -2024,46 +2024,46 @@ bool fill_attack_information(subnet_counter_t average_speed_element,
     current_attack.attack_power     = pps;
     current_attack.max_attack_power = pps;
 
-    current_attack.in_packets  = in_pps;
-    current_attack.out_packets = out_pps;
+    current_attack.total.in_packets  = in_pps;
+    current_attack.total.out_packets = out_pps;
 
-    current_attack.in_bytes  = in_bps;
-    current_attack.out_bytes = out_bps;
+    current_attack.total.in_bytes  = in_bps;
+    current_attack.total.out_bytes = out_bps;
 
     // pass flow information
     current_attack.in_flows  = in_flows;
     current_attack.out_flows = out_flows;
 
-    current_attack.fragmented_in_packets = average_speed_element.fragmented_in_packets;
-    current_attack.tcp_in_packets        = average_speed_element.tcp_in_packets;
-    current_attack.tcp_syn_in_packets    = average_speed_element.tcp_syn_in_packets;
-    current_attack.udp_in_packets        = average_speed_element.udp_in_packets;
-    current_attack.icmp_in_packets       = average_speed_element.icmp_in_packets;
+    current_attack.fragmented.in_packets = average_speed_element.fragmented.in_packets;
+    current_attack.tcp.in_packets        = average_speed_element.tcp.in_packets;
+    current_attack.tcp_syn.in_packets    = average_speed_element.tcp_syn.in_packets;
+    current_attack.udp.in_packets        = average_speed_element.udp.in_packets;
+    current_attack.icmp.in_packets       = average_speed_element.icmp.in_packets;
 
-    current_attack.fragmented_out_packets = average_speed_element.fragmented_out_packets;
-    current_attack.tcp_out_packets        = average_speed_element.tcp_out_packets;
-    current_attack.tcp_syn_out_packets    = average_speed_element.tcp_syn_out_packets;
-    current_attack.udp_out_packets        = average_speed_element.udp_out_packets;
-    current_attack.icmp_out_packets       = average_speed_element.icmp_out_packets;
+    current_attack.fragmented.out_packets = average_speed_element.fragmented.out_packets;
+    current_attack.tcp.out_packets        = average_speed_element.tcp.out_packets;
+    current_attack.tcp_syn.out_packets    = average_speed_element.tcp_syn.out_packets;
+    current_attack.udp.out_packets        = average_speed_element.udp.out_packets;
+    current_attack.icmp.out_packets       = average_speed_element.icmp.out_packets;
 
-    current_attack.fragmented_out_bytes = average_speed_element.fragmented_out_bytes;
-    current_attack.tcp_out_bytes        = average_speed_element.tcp_out_bytes;
-    current_attack.tcp_syn_out_bytes    = average_speed_element.tcp_syn_out_bytes;
-    current_attack.udp_out_bytes        = average_speed_element.udp_out_bytes;
-    current_attack.icmp_out_bytes       = average_speed_element.icmp_out_bytes;
+    current_attack.fragmented.out_bytes = average_speed_element.fragmented.out_bytes;
+    current_attack.tcp.out_bytes        = average_speed_element.tcp.out_bytes;
+    current_attack.tcp_syn.out_bytes    = average_speed_element.tcp_syn.out_bytes;
+    current_attack.udp.out_bytes        = average_speed_element.udp.out_bytes;
+    current_attack.icmp.out_bytes       = average_speed_element.icmp.out_bytes;
 
-    current_attack.fragmented_in_bytes = average_speed_element.fragmented_in_bytes;
-    current_attack.tcp_in_bytes        = average_speed_element.tcp_in_bytes;
-    current_attack.tcp_syn_in_bytes    = average_speed_element.tcp_syn_in_bytes;
-    current_attack.udp_in_bytes        = average_speed_element.udp_in_bytes;
-    current_attack.icmp_in_bytes       = average_speed_element.icmp_in_bytes;
+    current_attack.fragmented.in_bytes = average_speed_element.fragmented.in_bytes;
+    current_attack.tcp.in_bytes        = average_speed_element.tcp.in_bytes;
+    current_attack.tcp_syn.in_bytes    = average_speed_element.tcp_syn.in_bytes;
+    current_attack.udp.in_bytes        = average_speed_element.udp.in_bytes;
+    current_attack.icmp.in_bytes       = average_speed_element.icmp.in_bytes;
 
-    current_attack.average_in_packets = average_speed_element.in_packets;
-    current_attack.average_in_bytes   = average_speed_element.in_bytes;
+    current_attack.average_in_packets = average_speed_element.total.in_packets;
+    current_attack.average_in_bytes   = average_speed_element.total.in_bytes;
     current_attack.average_in_flows   = average_speed_element.in_flows;
 
-    current_attack.average_out_packets = average_speed_element.out_packets;
-    current_attack.average_out_bytes   = average_speed_element.out_bytes;
+    current_attack.average_out_packets = average_speed_element.total.out_packets;
+    current_attack.average_out_bytes   = average_speed_element.total.out_bytes;
     current_attack.average_out_flows   = average_speed_element.out_flows;
 
     return true;
@@ -2201,11 +2201,11 @@ void recalculate_speed() {
 
             subnet_counter_t new_speed_element;
 
-            new_speed_element.in_packets = uint64_t((double)subnet_traffic->in_packets / speed_calc_period);
-            new_speed_element.in_bytes   = uint64_t((double)subnet_traffic->in_bytes / speed_calc_period);
+            new_speed_element.total.in_packets = uint64_t((double)subnet_traffic->total.in_packets / speed_calc_period);
+            new_speed_element.total.in_bytes   = uint64_t((double)subnet_traffic->total.in_bytes / speed_calc_period);
 
-            new_speed_element.out_packets = uint64_t((double)subnet_traffic->out_packets / speed_calc_period);
-            new_speed_element.out_bytes   = uint64_t((double)subnet_traffic->out_bytes / speed_calc_period);
+            new_speed_element.total.out_packets = uint64_t((double)subnet_traffic->total.out_packets / speed_calc_period);
+            new_speed_element.total.out_bytes   = uint64_t((double)subnet_traffic->total.out_bytes / speed_calc_period);
 
             /* Moving average recalculation for subnets */
             /* http://en.wikipedia.org/wiki/Moving_average#Application_to_measuring_computer_performance */
@@ -2214,21 +2214,21 @@ void recalculate_speed() {
 
             subnet_counter_t* current_average_speed_element = &PerSubnetAverageSpeedMap[current_subnet];
 
-            current_average_speed_element->in_bytes =
-                uint64_t(new_speed_element.in_bytes + exp_value_subnet * ((double)current_average_speed_element->in_bytes -
-                                                                          (double)new_speed_element.in_bytes));
+            current_average_speed_element->total.in_bytes =
+                uint64_t(new_speed_element.total.in_bytes + exp_value_subnet * ((double)current_average_speed_element->total.in_bytes -
+                                                                          (double)new_speed_element.total.in_bytes));
 
-            current_average_speed_element->out_bytes =
-                uint64_t(new_speed_element.out_bytes + exp_value_subnet * ((double)current_average_speed_element->out_bytes -
-                                                                           (double)new_speed_element.out_bytes));
+            current_average_speed_element->total.out_bytes =
+                uint64_t(new_speed_element.total.out_bytes + exp_value_subnet * ((double)current_average_speed_element->total.out_bytes -
+                                                                           (double)new_speed_element.total.out_bytes));
 
-            current_average_speed_element->in_packets =
-                uint64_t(new_speed_element.in_packets + exp_value_subnet * ((double)current_average_speed_element->in_packets -
-                                                                            (double)new_speed_element.in_packets));
+            current_average_speed_element->total.in_packets =
+                uint64_t(new_speed_element.total.in_packets + exp_value_subnet * ((double)current_average_speed_element->total.in_packets -
+                                                                            (double)new_speed_element.total.in_packets));
 
-            current_average_speed_element->out_packets =
-                uint64_t(new_speed_element.out_packets + exp_value_subnet * ((double)current_average_speed_element->out_packets -
-                                                                             (double)new_speed_element.out_packets));
+            current_average_speed_element->total.out_packets =
+                uint64_t(new_speed_element.total.out_packets + exp_value_subnet * ((double)current_average_speed_element->total.out_packets -
+                                                                             (double)new_speed_element.total.out_packets));
 
             // Update speed calculation structure
             PerSubnetSpeedMap[current_subnet] = new_speed_element;
@@ -2471,12 +2471,12 @@ std::string draw_table_ipv6(direction_t sort_direction, bool do_redis_update, so
 
         // Create polymorphic pps, byte and flow counters
         if (sort_direction == INCOMING) {
-            pps   = current_speed_element->in_packets;
-            bps   = current_speed_element->in_bytes;
+            pps   = current_speed_element->total.in_packets;
+            bps   = current_speed_element->total.in_bytes;
             flows = current_speed_element->in_flows;
         } else if (sort_direction == OUTGOING) {
-            pps   = current_speed_element->out_packets;
-            bps   = current_speed_element->out_bytes;
+            pps   = current_speed_element->total.out_packets;
+            bps   = current_speed_element->total.out_bytes;
             flows = current_speed_element->out_flows;
         }
 
@@ -2570,12 +2570,12 @@ std::string draw_table_ipv4(direction_t data_direction, bool do_redis_update, so
 
         // Create polymorphic pps, byte and flow counters
         if (data_direction == INCOMING) {
-            pps   = current_speed_element->in_packets;
-            bps   = current_speed_element->in_bytes;
+            pps   = current_speed_element->total.in_packets;
+            bps   = current_speed_element->total.in_bytes;
             flows = current_speed_element->in_flows;
         } else if (data_direction == OUTGOING) {
-            pps   = current_speed_element->out_packets;
-            bps   = current_speed_element->out_bytes;
+            pps   = current_speed_element->total.out_packets;
+            bps   = current_speed_element->total.out_bytes;
             flows = current_speed_element->out_flows;
         }
 
@@ -2698,11 +2698,11 @@ void process_packet(simple_packet_t& current_packet) {
             subnet_counter_t* counter_ptr = &ipv6_subnet_counters.counter_map[ipv6_cidr_subnet];
 
             if (current_packet.packet_direction == OUTGOING) {
-                counter_ptr->out_packets += sampled_number_of_packets;
-                counter_ptr->out_bytes += sampled_number_of_bytes;
+                counter_ptr->total.out_packets += sampled_number_of_packets;
+                counter_ptr->total.out_bytes += sampled_number_of_bytes;
             } else if (current_packet.packet_direction == INCOMING) {
-                counter_ptr->in_packets += sampled_number_of_packets;
-                counter_ptr->in_bytes += sampled_number_of_bytes;
+                counter_ptr->total.in_packets += sampled_number_of_packets;
+                counter_ptr->total.in_bytes += sampled_number_of_bytes;
             }
         }
 
@@ -2930,29 +2930,29 @@ void increment_outgoing_counters(subnet_counter_t* current_element,
     current_element->last_update_time = current_inaccurate_time;
 
     // Main packet/bytes counter
-    __atomic_add_fetch(&current_element->out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-    __atomic_add_fetch(&current_element->out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+    __atomic_add_fetch(&current_element->total.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
+    __atomic_add_fetch(&current_element->total.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
 
     // Fragmented IP packets
     if (current_packet.ip_fragmented) {
-        __atomic_add_fetch(&current_element->fragmented_out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element->fragmented_out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+        __atomic_add_fetch(&current_element->fragmented.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
+        __atomic_add_fetch(&current_element->fragmented.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
     }
 
     if (current_packet.protocol == IPPROTO_TCP) {
-        __atomic_add_fetch(&current_element->tcp_out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element->tcp_out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+        __atomic_add_fetch(&current_element->tcp.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
+        __atomic_add_fetch(&current_element->tcp.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
 
         if (extract_bit_value(current_packet.flags, TCP_SYN_FLAG_SHIFT)) {
-            __atomic_add_fetch(&current_element->tcp_syn_out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-            __atomic_add_fetch(&current_element->tcp_syn_out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+            __atomic_add_fetch(&current_element->tcp_syn.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
+            __atomic_add_fetch(&current_element->tcp_syn.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
         }    
     } else if (current_packet.protocol == IPPROTO_UDP) {
-        __atomic_add_fetch(&current_element->udp_out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element->udp_out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+        __atomic_add_fetch(&current_element->udp.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
+        __atomic_add_fetch(&current_element->udp.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
     } else if (current_packet.protocol == IPPROTO_ICMP) {
-        __atomic_add_fetch(&current_element->icmp_out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element->icmp_out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+        __atomic_add_fetch(&current_element->icmp.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
+        __atomic_add_fetch(&current_element->icmp.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
         // no flow tracking for icmp
     } else {
     }    
@@ -2968,29 +2968,29 @@ void increment_outgoing_counters(subnet_counter_t* current_element,
     current_element->last_update_time = current_inaccurate_time;
 
     // Main packet/bytes counter
-    __sync_fetch_and_add(&current_element->out_packets, sampled_number_of_packets);
-    __sync_fetch_and_add(&current_element->out_bytes, sampled_number_of_bytes);
+    __sync_fetch_and_add(&current_element->total.out_packets, sampled_number_of_packets);
+    __sync_fetch_and_add(&current_element->total.out_bytes, sampled_number_of_bytes);
 
     // Fragmented IP packets
     if (current_packet.ip_fragmented) {
-        __sync_fetch_and_add(&current_element->fragmented_out_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element->fragmented_out_bytes, sampled_number_of_bytes);
+        __sync_fetch_and_add(&current_element->fragmented.out_packets, sampled_number_of_packets);
+        __sync_fetch_and_add(&current_element->fragmented.out_bytes, sampled_number_of_bytes);
     }
 
     if (current_packet.protocol == IPPROTO_TCP) {
-        __sync_fetch_and_add(&current_element->tcp_out_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element->tcp_out_bytes, sampled_number_of_bytes);
+        __sync_fetch_and_add(&current_element->tcp.out_packets, sampled_number_of_packets);
+        __sync_fetch_and_add(&current_element->tcp.out_bytes, sampled_number_of_bytes);
 
         if (extract_bit_value(current_packet.flags, TCP_SYN_FLAG_SHIFT)) {
-            __sync_fetch_and_add(&current_element->tcp_syn_out_packets, sampled_number_of_packets);
-            __sync_fetch_and_add(&current_element->tcp_syn_out_bytes, sampled_number_of_bytes);
+            __sync_fetch_and_add(&current_element->tcp_syn.out_packets, sampled_number_of_packets);
+            __sync_fetch_and_add(&current_element->tcp_syn.out_bytes, sampled_number_of_bytes);
         }
     } else if (current_packet.protocol == IPPROTO_UDP) {
-        __sync_fetch_and_add(&current_element->udp_out_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element->udp_out_bytes, sampled_number_of_bytes);
+        __sync_fetch_and_add(&current_element->udp.out_packets, sampled_number_of_packets);
+        __sync_fetch_and_add(&current_element->udp.out_bytes, sampled_number_of_bytes);
     } else if (current_packet.protocol == IPPROTO_ICMP) {
-        __sync_fetch_and_add(&current_element->icmp_out_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element->icmp_out_bytes, sampled_number_of_bytes);
+        __sync_fetch_and_add(&current_element->icmp.out_packets, sampled_number_of_packets);
+        __sync_fetch_and_add(&current_element->icmp.out_bytes, sampled_number_of_bytes);
         // no flow tracking for icmp
     } else {
     }
@@ -3009,30 +3009,30 @@ void increment_incoming_counters(subnet_counter_t* current_element,
     current_element->last_update_time = current_inaccurate_time;
 
     // Main packet/bytes counter
-    __atomic_add_fetch(&current_element->in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-    __atomic_add_fetch(&current_element->in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+    __atomic_add_fetch(&current_element->total.in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
+    __atomic_add_fetch(&current_element->total.in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
 
     // Count fragmented IP packets
     if (current_packet.ip_fragmented) {
-        __atomic_add_fetch(&current_element->fragmented_in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element->fragmented_in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+        __atomic_add_fetch(&current_element->fragmented.in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
+        __atomic_add_fetch(&current_element->fragmented.in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
     }
 
     // Count per protocol packets
     if (current_packet.protocol == IPPROTO_TCP) {
-        __atomic_add_fetch(&current_element->tcp_in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element->tcp_in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+        __atomic_add_fetch(&current_element->tcp.in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
+        __atomic_add_fetch(&current_element->tcp.in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
 
         if (extract_bit_value(current_packet.flags, TCP_SYN_FLAG_SHIFT)) {
-            __atomic_add_fetch(&current_element->tcp_syn_in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-            __atomic_add_fetch(&current_element->tcp_syn_in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+            __atomic_add_fetch(&current_element->tcp_syn.in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
+            __atomic_add_fetch(&current_element->tcp_syn.in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
         }
     } else if (current_packet.protocol == IPPROTO_UDP) {
-        __atomic_add_fetch(&current_element->udp_in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element->udp_in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+        __atomic_add_fetch(&current_element->udp.in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
+        __atomic_add_fetch(&current_element->udp.in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
     } else if (current_packet.protocol == IPPROTO_ICMP) {
-        __atomic_add_fetch(&current_element->icmp_in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element->icmp_in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+        __atomic_add_fetch(&current_element->icmp.in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
+        __atomic_add_fetch(&current_element->icmp.in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
     } else {
         // TBD
     }    
@@ -3050,30 +3050,30 @@ void increment_incoming_counters(subnet_counter_t* current_element,
     current_element->last_update_time = current_inaccurate_time;
 
     // Main packet/bytes counter
-    __sync_fetch_and_add(&current_element->in_packets, sampled_number_of_packets);
-    __sync_fetch_and_add(&current_element->in_bytes, sampled_number_of_bytes);
+    __sync_fetch_and_add(&current_element->total.in_packets, sampled_number_of_packets);
+    __sync_fetch_and_add(&current_element->total.in_bytes, sampled_number_of_bytes);
 
     // Count fragmented IP packets
     if (current_packet.ip_fragmented) {
-        __sync_fetch_and_add(&current_element->fragmented_in_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element->fragmented_in_bytes, sampled_number_of_bytes);
+        __sync_fetch_and_add(&current_element->fragmented.in_packets, sampled_number_of_packets);
+        __sync_fetch_and_add(&current_element->fragmented.in_bytes, sampled_number_of_bytes);
     }
 
     // Count per protocol packets
     if (current_packet.protocol == IPPROTO_TCP) {
-        __sync_fetch_and_add(&current_element->tcp_in_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element->tcp_in_bytes, sampled_number_of_bytes);
+        __sync_fetch_and_add(&current_element->tcp.in_packets, sampled_number_of_packets);
+        __sync_fetch_and_add(&current_element->tcp.in_bytes, sampled_number_of_bytes);
 
         if (extract_bit_value(current_packet.flags, TCP_SYN_FLAG_SHIFT)) {
-            __sync_fetch_and_add(&current_element->tcp_syn_in_packets, sampled_number_of_packets);
-            __sync_fetch_and_add(&current_element->tcp_syn_in_bytes, sampled_number_of_bytes);
+            __sync_fetch_and_add(&current_element->tcp_syn.in_packets, sampled_number_of_packets);
+            __sync_fetch_and_add(&current_element->tcp_syn.in_bytes, sampled_number_of_bytes);
         }
     } else if (current_packet.protocol == IPPROTO_UDP) {
-        __sync_fetch_and_add(&current_element->udp_in_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element->udp_in_bytes, sampled_number_of_bytes);
+        __sync_fetch_and_add(&current_element->udp.in_packets, sampled_number_of_packets);
+        __sync_fetch_and_add(&current_element->udp.in_bytes, sampled_number_of_bytes);
     } else if (current_packet.protocol == IPPROTO_ICMP) {
-        __sync_fetch_and_add(&current_element->icmp_in_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element->icmp_in_bytes, sampled_number_of_bytes);
+        __sync_fetch_and_add(&current_element->icmp.in_packets, sampled_number_of_packets);
+        __sync_fetch_and_add(&current_element->icmp.in_bytes, sampled_number_of_bytes);
     } else {
         // TBD
     }
