@@ -20,6 +20,8 @@
 
 #include "../fastnetmon_types.hpp"
 
+#include "../all_logcpp_libraries.hpp"
+
 #ifdef TEST_TBB_LIBRARY
 
 #ifndef __APPLE__
@@ -31,7 +33,6 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
-#include "../all_logcpp_libraries.hpp"
 
 // #define ABSEIL
 
@@ -93,6 +94,7 @@ void packet_collector(T& data_structure) {
 }
 
 
+
 template <typename T>
 void packet_collector_big_endian(T& data_structure) {
     for (int iteration = 0; iteration < number_of_retries; iteration++) {
@@ -109,6 +111,25 @@ void packet_collector_big_endian(T& data_structure) {
         }
     }
 }
+
+// This function only implements conversion to big endian and accumulates result
+template <typename T>
+void packet_collector_big_endian_conversion_only(T& accumulator) {
+    for (int iteration = 0; iteration < number_of_retries; iteration++) {
+        for (uint32_t i = 0; i < number_of_ips; i++) {
+#ifdef enable_mutexes_in_test
+            data_counter_mutex.lock();
+#endif
+            // Explicitly convert data to big endian to emulate our logic closely
+            accumulator += fast_hton(i);
+
+#ifdef enable_mutexes_in_test
+            data_counter_mutex.unlock();
+#endif
+        }
+    }
+}
+
 
 // We just execute time read here
 void packet_collector_time_calculaitons(int) {
@@ -248,7 +269,10 @@ int main(int argc, char* argv[]) {
     bool test_boost_unordered_map_precreated_big_endian   = false;
 
     bool test_boost_container_flat_map         = false;
+    
     bool test_unordered_map_cpp11              = false;
+    bool test_unordered_map_cpp11_big_endian = false;
+
     bool test_unordered_map_cpp11_preallocated = false;
     bool test_unordered_map_cpp11_precreated   = false;
 
@@ -260,6 +284,8 @@ int main(int argc, char* argv[]) {
     bool test_c_array_preallocated             = false;
     bool test_c_array_huge_pages_preallocated  = false;
 
+    bool tests_endian_less_conversion = false;
+
     if (argc > 1) {
         std::string first_argument = argv[1];
 
@@ -267,6 +293,8 @@ int main(int argc, char* argv[]) {
             test_std_map = true;
         } else if (first_argument == "test_std_map_big_endian") {
             test_std_map_big_endian = true;
+        } else if (first_argument == "tests_endian_less_conversion") {
+            tests_endian_less_conversion = true;
         } else if (first_argument == "test_tbb_concurrent_unordered_map") {
             test_tbb_concurrent_unordered_map = true;
         } else if (first_argument == "test_boost_unordered_map") {
@@ -285,6 +313,8 @@ int main(int argc, char* argv[]) {
             test_boost_container_flat_map = true;
         } else if (first_argument == "test_unordered_map_cpp11") {
             test_unordered_map_cpp11 = true;
+        } else if (first_argument == "test_unordered_map_cpp11_big_endian") {
+            test_unordered_map_cpp11_big_endian = true;
         } else if (first_argument == "test_unordered_map_cpp11_preallocated") {
             test_unordered_map_cpp11_preallocated = true;
         } else if (first_argument == "test_vector_preallocated") {
@@ -330,6 +360,8 @@ int main(int argc, char* argv[]) {
         test_boost_container_flat_map         = true;
         
         test_unordered_map_cpp11              = true;
+        test_unordered_map_cpp11_big_endian   = true;
+
         test_unordered_map_cpp11_preallocated = true;
         test_unordered_map_cpp11_precreated   = true;
 
@@ -337,6 +369,8 @@ int main(int argc, char* argv[]) {
         test_rdtsc_time                       = true;
         test_c_array_preallocated             = true;
         test_c_array_huge_pages_preallocated  = false;
+
+        tests_endian_less_conversion = true;
     }
 
     std::cout << "Element size: " << sizeof(subnet_counter_t) << " bytes" << std::endl;
@@ -353,7 +387,7 @@ int main(int argc, char* argv[]) {
     if (test_std_map_big_endian) {
         std::map<uint32_t, subnet_counter_t> DataCounter;
 
-        std::cout << "std::map: ";
+        std::cout << "std::map big endian keys: ";
         run_tests(packet_collector_big_endian<std::map<uint32_t, subnet_counter_t>>, DataCounter);
         DataCounter.clear();
     }
@@ -451,6 +485,14 @@ int main(int argc, char* argv[]) {
 
         std::cout << "std::unordered_map C++11: ";
         run_tests(packet_collector<std::unordered_map<uint32_t, subnet_counter_t> >, DataCounterUnordered);
+        DataCounterUnordered.clear();
+    }
+
+    if (test_unordered_map_cpp11_big_endian) {
+        std::unordered_map<uint32_t, subnet_counter_t> DataCounterUnordered;
+
+        std::cout << "std::unordered_map big endian keys C++11: ";
+        run_tests(packet_collector_big_endian<std::unordered_map<uint32_t, subnet_counter_t> >, DataCounterUnordered);
         DataCounterUnordered.clear();
     }
 
@@ -672,6 +714,14 @@ int main(int argc, char* argv[]) {
         // /proc/meminfo.
         // I'm not sure it's dangerous but will be fine to close all handles properly
         shmctl(shmid, IPC_RMID, NULL);
+    }
+
+    if (tests_endian_less_conversion) {
+        std::cout << "endian-less: ";
+        // To trick compiler not to optimise it
+        uint32_t accumulator = 0;
+
+        run_tests<uint32_t>(packet_collector_big_endian_conversion_only<uint32_t>, accumulator);
     }
 
     // Fake value to make template logic happy
