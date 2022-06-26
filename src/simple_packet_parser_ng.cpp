@@ -1,5 +1,5 @@
-#include "simple_packet_parser_ng.h"
-#include "all_logcpp_libraries.h"
+#include "simple_packet_parser_ng.hpp"
+#include "all_logcpp_libraries.hpp"
 #include "network_data_structures.hpp"
 
 #include <cstring>

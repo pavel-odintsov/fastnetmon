@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 
-#include "fast_library.h"
-#include "fastnetmon_types.h"
+#include "fast_library.hpp"
+#include "fastnetmon_types.hpp"
 
 // Helper for serialization by comma
 template <typename T> std::string serialize_vector_by_string(const std::vector<T> vect, std::string delimiter) {

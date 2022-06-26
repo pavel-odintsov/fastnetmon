@@ -1,12 +1,12 @@
 #include "bgp_protocol.hpp"
-#include "fastnetmon_types.h"
+#include "fastnetmon_types.hpp"
 
 #ifdef REDIS
 #include <hiredis/hiredis.h>
 #endif
 
-#include "all_logcpp_libraries.h"
-#include "packet_bucket.h"
+#include "all_logcpp_libraries.hpp"
+#include "packet_bucket.hpp"
 
 #include "fastnetmon.grpc.pb.h"
 #include <grpc++/grpc++.h>

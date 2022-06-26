@@ -4,16 +4,16 @@
 #include <netinet/in.h> // struct in6_addr
 #include <stdint.h> // uint32_t
 #include <sys/time.h> // struct timeval
-#include <utility> // std::pair
 
+#include <utility> // std::pair
 #include <map>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-#include "packet_storage.h"
+#include "packet_storage.hpp"
 
-#include "fastnetmon_simple_packet.h"
+#include "fastnetmon_simple_packet.hpp"
 
 #include "map_element.hpp"
 

@@ -1,4 +1,4 @@
-#include "fastnetmon_packet_parser.h"
+#include "fastnetmon_packet_parser.hpp"
 
 /* This code is copy & paste from PF_RING user space library licensed under LGPL terms */
 

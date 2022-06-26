@@ -1,10 +1,11 @@
 #pragma once
 
-#include "fastnetmon_pcap_format.h"
+#include "fastnetmon_pcap_format.hpp"
+
 #include <stdlib.h>
 #include <string.h>
 
-#include "fastnetmon_types.h"
+#include "fastnetmon_types.hpp"
 #include "fixed_size_packet_storage.hpp"
 
 // This is dynamically allocated packet storage

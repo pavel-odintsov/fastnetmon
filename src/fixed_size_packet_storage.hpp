@@ -1,5 +1,5 @@
 #pragma once
-#include "fastnetmon_pcap_format.h"
+#include "fastnetmon_pcap_format.hpp"
 
 // We are using this class for storing packet meta information with their payload into fixed size memory region
 class fixed_size_packet_storage_t {

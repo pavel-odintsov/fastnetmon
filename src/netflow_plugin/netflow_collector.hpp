@@ -1,7 +1,7 @@
 #pragma once
 /* netflow plugin header */
 
-#include "../fastnetmon_types.h"
+#include "../fastnetmon_types.hpp"
 
 // For testing
 bool process_netflow_packet(uint8_t* packet, uint32_t len, std::string& client_addres_in_string_format, uint32_t client_ipv4_address);

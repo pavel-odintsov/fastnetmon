@@ -1,6 +1,6 @@
 #include "unified_parser.hpp"
 
-#include "fastnetmon_packet_parser.h"
+#include "fastnetmon_packet_parser.hpp"
 
 bool parse_raw_packet_to_simple_packet(u_char* buffer, int len, simple_packet_t& packet, bool read_packet_length_from_ip_header) {
 

@@ -1,4 +1,4 @@
-#include "fastnetmon_pcap_format.h"
+#include "fastnetmon_pcap_format.hpp"
 #include <errno.h>
 #include <string.h>
 

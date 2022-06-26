@@ -2,9 +2,9 @@
 
 #include <string>
 
-#include "../fast_library.h"
+#include "../fast_library.hpp"
 
-#include "../all_logcpp_libraries.h"
+#include "../all_logcpp_libraries.hpp"
 
 extern bool exabgp_enabled;
 extern std::string exabgp_community;

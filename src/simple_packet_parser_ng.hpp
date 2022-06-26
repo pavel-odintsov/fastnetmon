@@ -1,4 +1,4 @@
-#include "fastnetmon_simple_packet.h"
+#include "fastnetmon_simple_packet.hpp"
 #include "network_data_structures.hpp"
 
 network_data_stuctures::parser_code_t parse_raw_packet_to_simple_packet_full_ng(uint8_t* pointer,

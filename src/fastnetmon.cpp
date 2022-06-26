@@ -24,14 +24,14 @@
 #include <sys/stat.h>
 
 #include "bgp_protocol.hpp"
-#include "fast_library.h"
-#include "fastnetmon_packet_parser.h"
-#include "fastnetmon_types.h"
+#include "fast_library.hpp"
+#include "fastnetmon_packet_parser.hpp"
+#include "fastnetmon_types.hpp"
 #include "libpatricia/patricia.hpp"
-#include "packet_storage.h"
+#include "packet_storage.hpp"
 
 // Here we store variables which differs for different paltforms
-#include "fast_platform.h"
+#include "fast_platform.hpp"
 
 #include "fastnetmon_logic.hpp"
 
@@ -54,24 +54,24 @@
 #endif
 
 // Plugins
-#include "netflow_plugin/netflow_collector.h"
-#include "pcap_plugin/pcap_collector.h"
-#include "sflow_plugin/sflow_collector.h"
+#include "netflow_plugin/netflow_collector.hpp"
+#include "pcap_plugin/pcap_collector.hpp"
+#include "sflow_plugin/sflow_collector.hpp"
 
 #ifdef NETMAP_PLUGIN
-#include "netmap_plugin/netmap_collector.h"
+#include "netmap_plugin/netmap_collector.hpp"
 #endif
 
 #ifdef FASTNETMON_ENABLE_AFPACKET
-#include "afpacket_plugin/afpacket_collector.h"
+#include "afpacket_plugin/afpacket_collector.hpp"
 #endif
 
 #ifdef ENABLE_GOBGP
-#include "actions/gobgp_action.h"
+#include "actions/gobgp_action.hpp"
 #endif
 
 // Yes, maybe it's not an good idea but with this we can guarantee working code in example plugin
-#include "example_plugin/example_collector.h"
+#include "example_plugin/example_collector.hpp"
 
 #include <algorithm>
 #include <fstream>
@@ -88,7 +88,7 @@
 
 #include <boost/program_options.hpp>
 
-#include "all_logcpp_libraries.h"
+#include "all_logcpp_libraries.hpp"
 
 // Boost libs
 #include <boost/algorithm/string.hpp>
@@ -102,7 +102,7 @@
 #include <hiredis/hiredis.h>
 #endif
 
-#include "packet_bucket.h"
+#include "packet_bucket.hpp"
 
 #include "ban_list.hpp"
 

@@ -125,7 +125,7 @@ add_executable(fastnetmon fastnetmon.cpp)
 execute_process(COMMAND git rev-list HEAD COMMAND head -n 1 OUTPUT_VARIABLE GIT_LAST_COMMIT_HASH OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 set(FASTNETMON_APPLICATION_VERSION "${FASTNETMON_VERSION_MAJOR}.${FASTNETMON_VERSION_MINOR}.${FASTNETMON_VERSION_PATCH} master git-${GIT_LAST_COMMIT_HASH}")
-configure_file(fast_platform.h.template "${PROJECT_SOURCE_DIR}/fast_platform.h")
+configure_file(fast_platform.h.template "${PROJECT_SOURCE_DIR}/fast_platform.hpp")
 
 # Use new Memory Model Aware Atomic Operations
 # You could enable it using: cmake .. -DUSE_NEW_ATOMIC_BUILTINS=ON

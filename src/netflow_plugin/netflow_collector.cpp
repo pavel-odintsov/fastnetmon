@@ -13,13 +13,13 @@
 #include <mutex>
 #include <vector>
 
-#include "../fast_library.h"
-#include "../ipfix_rfc.h"
+#include "../fast_library.hpp"
+#include "../ipfix_rfc.hpp"
 
-#include "../all_logcpp_libraries.h"
+#include "../all_logcpp_libraries.hpp"
 
 #include "netflow.hpp"
-#include "netflow_collector.h"
+#include "netflow_collector.hpp"
 
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>
@@ -28,7 +28,7 @@
 #include <boost/archive/xml_oarchive.hpp>
 
 // For Netflow lite parsing
-#include "../simple_packet_parser_ng.h"
+#include "../simple_packet_parser_ng.hpp"
 
 // Get it from main programme
 extern log4cpp::Category& logger;

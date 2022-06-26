@@ -1,7 +1,7 @@
 #ifndef GOBGP_ACTION_H
 #define GOBGP_ACTION_H
 
-#include "../fastnetmon_types.h"
+#include "../fastnetmon_types.hpp"
 #include <string>
 
 void gobgp_action_init();

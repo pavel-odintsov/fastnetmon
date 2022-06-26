@@ -5,33 +5,33 @@
 #include <sstream>
 #include <vector>
 
-#include "all_logcpp_libraries.h"
+#include "all_logcpp_libraries.hpp"
 #include "bgp_protocol.hpp"
-#include "fast_library.h"
-#include "fast_platform.h"
-#include "fastnetmon_packet_parser.h"
+#include "fast_library.hpp"
+#include "fast_platform.hpp"
+#include "fastnetmon_packet_parser.hpp"
 
 // Plugins
-#include "netflow_plugin/netflow_collector.h"
-#include "pcap_plugin/pcap_collector.h"
-#include "sflow_plugin/sflow_collector.h"
+#include "netflow_plugin/netflow_collector.hpp"
+#include "pcap_plugin/pcap_collector.hpp"
+#include "sflow_plugin/sflow_collector.hpp"
 
 #ifdef NETMAP_PLUGIN
-#include "netmap_plugin/netmap_collector.h"
+#include "netmap_plugin/netmap_collector.hpp"
 #endif
 
 #ifdef FASTNETMON_ENABLE_AFPACKET
-#include "afpacket_plugin/afpacket_collector.h"
+#include "afpacket_plugin/afpacket_collector.hpp"
 #endif
 
 #ifdef ENABLE_GOBGP
-#include "actions/gobgp_action.h"
+#include "actions/gobgp_action.hpp"
 #endif
 
 #include "actions/exabgp_action.hpp"
 
 // Yes, maybe it's not an good idea but with this we can guarantee working code in example plugin
-#include "example_plugin/example_collector.h"
+#include "example_plugin/example_collector.hpp"
 
 #ifdef MONGO
 #include <bson.h>
@@ -42,7 +42,7 @@
 
 #include "abstract_subnet_counters.hpp"
 
-#include "packet_bucket.h"
+#include "packet_bucket.hpp"
 
 #include "ban_list.hpp"
 

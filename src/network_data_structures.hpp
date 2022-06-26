@@ -7,8 +7,8 @@
 #include <map>
 #include <sstream>
 
-#include "iana_ethertypes.h"
-#include "iana_ip_protocols.h"
+#include "iana_ethertypes.hpp"
+#include "iana_ip_protocols.hpp"
 
 /*
 

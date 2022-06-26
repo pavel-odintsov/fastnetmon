@@ -5,8 +5,8 @@
 #include <sys/types.h>
 #include <type_traits>
 
-#include "../libsflow/libsflow.h"
-#include "sflow_collector.h"
+#include "../libsflow/libsflow.hpp"
+#include "sflow_collector.hpp"
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -19,13 +19,13 @@
 #include <string.h>
 #include <sys/socket.h>
 
-#include "../fast_library.h"
+#include "../fast_library.hpp"
 
-#include "../all_logcpp_libraries.h"
+#include "../all_logcpp_libraries.hpp"
 
 extern log4cpp::Category& logger;
 
-#include "../simple_packet_parser_ng.h"
+#include "../simple_packet_parser_ng.hpp"
 
 // Global configuration map
 extern std::map<std::string, std::string> configuration_map;

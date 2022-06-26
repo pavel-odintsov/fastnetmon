@@ -18,7 +18,7 @@
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/pool/singleton_pool.hpp>
 
-#include "../fastnetmon_types.h"
+#include "../fastnetmon_types.hpp"
 
 #ifdef TEST_TBB_LIBRARY
 
@@ -31,7 +31,7 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
-#include "../all_logcpp_libraries.h"
+#include "../all_logcpp_libraries.hpp"
 
 // #define ABSEIL
 
@@ -46,7 +46,7 @@
 #include <sparsehash/dense_hash_map>
 #endif
 
-#include "../fast_library.h"
+#include "../fast_library.hpp"
 
 log4cpp::Category& logger = log4cpp::Category::getRoot();
 

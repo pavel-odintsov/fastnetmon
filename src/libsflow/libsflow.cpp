@@ -1,4 +1,4 @@
-#include "libsflow.h"
+#include "libsflow.hpp"
 
 #include <sstream>
 

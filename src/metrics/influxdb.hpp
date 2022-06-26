@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "../fastnetmon_types.h"
+#include "../fastnetmon_types.hpp"
 
 bool push_system_counters_to_influxdb(std::string influx_database,
                                       std::string influx_host,

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../fastnetmon_types.h"
+#include "../fastnetmon_types.hpp"
 #include <stdint.h>
 
 void start_sflow_collection(process_packet_pointer func_ptr);

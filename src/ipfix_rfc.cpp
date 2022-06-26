@@ -1,4 +1,4 @@
-#include "ipfix_rfc.h"
+#include "ipfix_rfc.hpp"
 #include <iostream>
 #include <map>
 

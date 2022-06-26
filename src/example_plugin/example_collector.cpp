@@ -1,4 +1,4 @@
-#include "../all_logcpp_libraries.h"
+#include "../all_logcpp_libraries.hpp"
 
 // For support uint32_t, uint16_t
 #include <sys/types.h>
@@ -12,7 +12,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
-#include "example_collector.h"
+#include "example_collector.hpp"
 
 // Get log4cpp logger from main program
 extern log4cpp::Category& logger;

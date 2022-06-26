@@ -1,6 +1,6 @@
-#include "gobgp_action.h"
-#include "../fastnetmon_actions.h"
-#include "../fastnetmon_types.h"
+#include "gobgp_action.hpp"
+#include "../fastnetmon_actions.hpp"
+#include "../fastnetmon_types.hpp"
 
 #ifdef __GNUC__
 #pragma GCC diagnostic push

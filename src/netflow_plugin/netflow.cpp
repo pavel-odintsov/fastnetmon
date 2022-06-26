@@ -1,6 +1,6 @@
 #include "netflow.hpp"
 
-#include "../ipfix_rfc.h"
+#include "../ipfix_rfc.hpp"
 #include <vector>
 
 extern ipfix_information_database ipfix_db_instance;

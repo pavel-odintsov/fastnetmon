@@ -9,7 +9,7 @@
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
-#include "all_logcpp_libraries.h"
+#include "all_logcpp_libraries.hpp"
 
 // Get log4cpp logger from main programme
 extern log4cpp::Category& logger;

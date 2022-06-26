@@ -1,12 +1,13 @@
 #pragma once
 
-#include "fastnetmon_types.h"
+#include "fastnetmon_types.hpp"
 
 #include <iostream>
 #include <map>
 #include <sstream>
 #include <stdint.h>
 #include <string>
+
 #include <sys/types.h>
 #include <unistd.h>
 #include <utility>

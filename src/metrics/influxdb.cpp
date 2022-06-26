@@ -1,10 +1,10 @@
 #include "influxdb.hpp"
 
 #include "../abstract_subnet_counters.hpp"
-#include "../fast_library.h"
-#include "../fastnetmon_types.h"
+#include "../fast_library.hpp"
+#include "../fastnetmon_types.hpp"
 
-#include "../all_logcpp_libraries.h"
+#include "../all_logcpp_libraries.hpp"
 
 #include <vector>
 

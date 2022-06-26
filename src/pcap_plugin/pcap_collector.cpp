@@ -17,9 +17,9 @@
 #include <netinet/udp.h>
 #include <pcap.h>
 
-#include "../all_logcpp_libraries.h"
+#include "../all_logcpp_libraries.hpp"
 
-#include "pcap_collector.h"
+#include "pcap_collector.hpp"
 
 // Standard shift for type DLT_EN10MB, Ethernet
 unsigned int DATA_SHIFT_VALUE = 14;

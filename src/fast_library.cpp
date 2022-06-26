@@ -1,4 +1,4 @@
-#include "fast_library.h"
+#include "fast_library.hpp"
 #include <arpa/inet.h>
 #include <fstream>
 #include <iostream>
@@ -13,7 +13,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "all_logcpp_libraries.h"
+#include "all_logcpp_libraries.hpp"
 
 #include <boost/asio.hpp>
 

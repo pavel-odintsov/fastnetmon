@@ -1,9 +1,9 @@
-#include "../all_logcpp_libraries.h"
+#include "../all_logcpp_libraries.hpp"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/version.hpp>
 
-#include "../fast_library.h"
+#include "../fast_library.hpp"
 
 // For support uint32_t, uint16_t
 #include <sys/types.h>
@@ -16,14 +16,14 @@
 #include <stdio.h>
 #include <string>
 
-#include "../fastnetmon_packet_parser.h"
+#include "../fastnetmon_packet_parser.hpp"
 
 // For support: IPPROTO_TCP, IPPROTO_ICMP, IPPROTO_UDP
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 
-#include "afpacket_collector.h"
+#include "afpacket_collector.hpp"
 
 #include <arpa/inet.h>
 #include <boost/thread.hpp>

@@ -1,12 +1,12 @@
 #include "graphite.hpp"
 
 
-#include "../fast_library.h"
-#include "../fastnetmon_types.h"
+#include "../fast_library.hpp"
+#include "../fastnetmon_types.hpp"
 
 #include <vector>
 
-#include "../all_logcpp_libraries.h"
+#include "../all_logcpp_libraries.hpp"
 
 extern log4cpp::Category& logger;
 extern struct timeval graphite_thread_execution_time;

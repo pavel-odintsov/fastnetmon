@@ -1,6 +1,6 @@
 #pragma once
 
-#include "fastnetmon_types.h"
+#include "fastnetmon_types.hpp"
 #include <stdint.h>
 #include <sys/types.h>
 
