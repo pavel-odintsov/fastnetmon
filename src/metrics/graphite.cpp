@@ -72,12 +72,12 @@ bool push_hosts_traffic_counters_to_graphite() {
                     // Prepare incoming traffic data
 
                     // We do not store zero data to Graphite
-                    if (current_speed_element->in_packets != 0) {
-                        graphite_data[graphite_current_prefix + ".pps"] = current_speed_element->in_packets;
+                    if (current_speed_element->total.in_packets != 0) {
+                        graphite_data[graphite_current_prefix + ".pps"] = current_speed_element->total.in_packets;
                     }
 
-                    if (current_speed_element->in_bytes != 0) {
-                        graphite_data[graphite_current_prefix + ".bps"] = current_speed_element->in_bytes * 8;
+                    if (current_speed_element->total.in_bytes != 0) {
+                        graphite_data[graphite_current_prefix + ".bps"] = current_speed_element->total.in_bytes * 8;
                     }
 
                     if (current_speed_element->in_flows != 0) {
@@ -88,12 +88,12 @@ bool push_hosts_traffic_counters_to_graphite() {
                     // Prepare outgoing traffic data
 
                     // We do not store zero data to Graphite
-                    if (current_speed_element->out_packets != 0) {
-                        graphite_data[graphite_current_prefix + ".pps"] = current_speed_element->out_packets;
+                    if (current_speed_element->total.out_packets != 0) {
+                        graphite_data[graphite_current_prefix + ".pps"] = current_speed_element->total.out_packets;
                     }
 
-                    if (current_speed_element->out_bytes != 0) {
-                        graphite_data[graphite_current_prefix + ".bps"] = current_speed_element->out_bytes * 8;
+                    if (current_speed_element->total.out_bytes != 0) {
+                        graphite_data[graphite_current_prefix + ".bps"] = current_speed_element->total.out_bytes * 8;
                     }
 
                     if (current_speed_element->out_flows != 0) {
@@ -173,10 +173,10 @@ bool push_network_traffic_counters_to_graphite() {
 
         std::string current_prefix = graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".";
 
-        graphite_data[current_prefix + "incoming.pps"] = speed->in_packets;
-        graphite_data[current_prefix + "outgoing.pps"] = speed->out_packets;
-        graphite_data[current_prefix + "incoming.bps"] = speed->in_bytes * 8;
-        graphite_data[current_prefix + "outgoing.bps"] = speed->out_bytes * 8;
+        graphite_data[current_prefix + "incoming.pps"] = speed->total.in_packets;
+        graphite_data[current_prefix + "outgoing.pps"] = speed->total.out_packets;
+        graphite_data[current_prefix + "incoming.bps"] = speed->total.in_bytes * 8;
+        graphite_data[current_prefix + "outgoing.bps"] = speed->total.out_bytes * 8;
     }
 
 

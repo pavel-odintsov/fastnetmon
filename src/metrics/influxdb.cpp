@@ -392,31 +392,31 @@ bool write_line_of_data_to_influxdb(std::string influx_database,
 // Fills special structure which we use to export metrics into InfluxDB
 void fill_per_protocol_countres_for_influxdb(const subnet_counter_t* current_speed_element,
                                              std::map<std::string, uint64_t>& plain_total_counters_map) {
-    plain_total_counters_map["fragmented_packets_incoming"] = current_speed_element->fragmented_in_packets;
-    plain_total_counters_map["tcp_packets_incoming"]        = current_speed_element->tcp_in_packets;
-    plain_total_counters_map["tcp_syn_packets_incoming"]    = current_speed_element->tcp_syn_in_packets;
-    plain_total_counters_map["udp_packets_incoming"]        = current_speed_element->udp_in_packets;
-    plain_total_counters_map["icmp_packets_incoming"]       = current_speed_element->icmp_in_packets;
+    plain_total_counters_map["fragmented_packets_incoming"] = current_speed_element->fragmented.in_packets;
+    plain_total_counters_map["tcp_packets_incoming"]        = current_speed_element->tcp.in_packets;
+    plain_total_counters_map["tcp_syn_packets_incoming"]    = current_speed_element->tcp_syn.in_packets;
+    plain_total_counters_map["udp_packets_incoming"]        = current_speed_element->udp.in_packets;
+    plain_total_counters_map["icmp_packets_incoming"]       = current_speed_element->icmp.in_packets;
 
-    plain_total_counters_map["fragmented_bits_incoming"] = current_speed_element->fragmented_in_bytes * 8;
-    plain_total_counters_map["tcp_bits_incoming"]        = current_speed_element->tcp_in_bytes * 8;
-    plain_total_counters_map["tcp_syn_bits_incoming"]    = current_speed_element->tcp_syn_in_bytes * 8;
-    plain_total_counters_map["udp_bits_incoming"]        = current_speed_element->udp_in_bytes * 8;
-    plain_total_counters_map["icmp_bits_incoming"]       = current_speed_element->icmp_in_bytes * 8;
+    plain_total_counters_map["fragmented_bits_incoming"] = current_speed_element->fragmented.in_bytes * 8;
+    plain_total_counters_map["tcp_bits_incoming"]        = current_speed_element->tcp.in_bytes * 8;
+    plain_total_counters_map["tcp_syn_bits_incoming"]    = current_speed_element->tcp_syn.in_bytes * 8;
+    plain_total_counters_map["udp_bits_incoming"]        = current_speed_element->udp.in_bytes * 8;
+    plain_total_counters_map["icmp_bits_incoming"]       = current_speed_element->icmp.in_bytes * 8;
 
 
     // Outgoing
-    plain_total_counters_map["fragmented_packets_outgoing"] = current_speed_element->fragmented_out_packets;
-    plain_total_counters_map["tcp_packets_outgoing"]        = current_speed_element->tcp_out_packets;
-    plain_total_counters_map["tcp_syn_packets_outgoing"]    = current_speed_element->tcp_syn_out_packets;
-    plain_total_counters_map["udp_packets_outgoing"]        = current_speed_element->udp_out_packets;
-    plain_total_counters_map["icmp_packets_outgoing"]       = current_speed_element->icmp_out_packets;
+    plain_total_counters_map["fragmented_packets_outgoing"] = current_speed_element->fragmented.out_packets;
+    plain_total_counters_map["tcp_packets_outgoing"]        = current_speed_element->tcp.out_packets;
+    plain_total_counters_map["tcp_syn_packets_outgoing"]    = current_speed_element->tcp_syn.out_packets;
+    plain_total_counters_map["udp_packets_outgoing"]        = current_speed_element->udp.out_packets;
+    plain_total_counters_map["icmp_packets_outgoing"]       = current_speed_element->icmp.out_packets;
 
-    plain_total_counters_map["fragmented_bits_outgoing"] = current_speed_element->fragmented_out_bytes * 8;
-    plain_total_counters_map["tcp_bits_outgoing"]        = current_speed_element->tcp_out_bytes * 8;
-    plain_total_counters_map["tcp_syn_bits_outgoing"]    = current_speed_element->tcp_syn_out_bytes * 8;
-    plain_total_counters_map["udp_bits_outgoing"]        = current_speed_element->udp_out_bytes * 8;
-    plain_total_counters_map["icmp_bits_outgoing"]       = current_speed_element->icmp_out_bytes * 8;
+    plain_total_counters_map["fragmented_bits_outgoing"] = current_speed_element->fragmented.out_bytes * 8;
+    plain_total_counters_map["tcp_bits_outgoing"]        = current_speed_element->tcp.out_bytes * 8;
+    plain_total_counters_map["tcp_syn_bits_outgoing"]    = current_speed_element->tcp_syn.out_bytes * 8;
+    plain_total_counters_map["udp_bits_outgoing"]        = current_speed_element->udp.out_bytes * 8;
+    plain_total_counters_map["icmp_bits_outgoing"]       = current_speed_element->icmp.out_bytes * 8;
 }
 
 // Fills special structure which we use to export metrics into InfluxDB
@@ -424,12 +424,12 @@ void fill_main_counters_for_influxdb(const subnet_counter_t* current_speed_eleme
                                      std::map<std::string, uint64_t>& plain_total_counters_map,
                                      bool populate_flow) {
     // Prepare incoming traffic data
-    plain_total_counters_map["packets_incoming"] = current_speed_element->in_packets;
-    plain_total_counters_map["bits_incoming"]    = current_speed_element->in_bytes * 8;
+    plain_total_counters_map["packets_incoming"] = current_speed_element->total.in_packets;
+    plain_total_counters_map["bits_incoming"]    = current_speed_element->total.in_bytes * 8;
 
     // Outdoing traffic
-    plain_total_counters_map["packets_outgoing"] = current_speed_element->out_packets;
-    plain_total_counters_map["bits_outgoing"]    = current_speed_element->out_bytes * 8;
+    plain_total_counters_map["packets_outgoing"] = current_speed_element->total.out_packets;
+    plain_total_counters_map["bits_outgoing"]    = current_speed_element->total.out_bytes * 8;
 
     if (populate_flow) {
         plain_total_counters_map["flows_incoming"] = current_speed_element->in_flows;

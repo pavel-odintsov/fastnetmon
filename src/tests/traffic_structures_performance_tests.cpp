@@ -136,7 +136,7 @@ void packet_collector_thread_std_map() {
 #ifdef enable_mutexes_in_test
             data_counter_mutex.lock();
 #endif
-            DataCounter[i].udp_in_bytes++;
+            DataCounter[i].udp.in_bytes++;
 
 #ifdef enable_mutexes_in_test
             data_counter_mutex.unlock();
@@ -151,7 +151,7 @@ void packet_collector_thread_std_map_precreated() {
 #ifdef enable_mutexes_in_test
             data_counter_mutex.lock();
 #endif
-            DataCounterPrecreated[i].udp_in_bytes++;
+            DataCounterPrecreated[i].udp.in_bytes++;
 
 #ifdef enable_mutexes_in_test
             data_counter_mutex.unlock();
@@ -166,7 +166,7 @@ void packet_collector_thread_boost_unordered_map() {
 #ifdef enable_mutexes_in_test
             data_counter_mutex.lock();
 #endif
-            DataCounterBoostUnordered[i].udp_in_bytes++;
+            DataCounterBoostUnordered[i].udp.in_bytes++;
 #ifdef enable_mutexes_in_test
             data_counter_mutex.unlock();
 #endif
@@ -180,7 +180,7 @@ void packet_collector_thread_boost_unordered_map_preallocated() {
 #ifdef enable_mutexes_in_test
             data_counter_mutex.lock();
 #endif
-            DataCounterBoostUnorderedPreallocated[i].udp_in_bytes++;
+            DataCounterBoostUnorderedPreallocated[i].udp.in_bytes++;
 #ifdef enable_mutexes_in_test
             data_counter_mutex.unlock();
 #endif
@@ -194,7 +194,7 @@ void packet_collector_thread_boost_unordered_map_precreated() {
 #ifdef enable_mutexes_in_test
             data_counter_mutex.lock();
 #endif
-            DataCounterBoostUnorderedPrecreated[i].udp_in_bytes++;
+            DataCounterBoostUnorderedPrecreated[i].udp.in_bytes++;
 #ifdef enable_mutexes_in_test
             data_counter_mutex.unlock();
 #endif
@@ -208,7 +208,7 @@ void packet_collector_thread_unordered_map() {
 #ifdef enable_mutexes_in_test
             data_counter_mutex.lock();
 #endif
-            DataCounterUnordered[i].udp_in_bytes++;
+            DataCounterUnordered[i].udp.in_bytes++;
 #ifdef enable_mutexes_in_test
             data_counter_mutex.unlock();
 #endif
@@ -223,7 +223,7 @@ void packet_collector_thread_abseil_flat_map() {
 #ifdef enable_mutexes_in_test
             data_counter_mutex.lock();
 #endif
-            DataCounterAbseilFlatHashMap[i].udp_in_bytes++;
+            DataCounterAbseilFlatHashMap[i].udp.in_bytes++;
 #ifdef enable_mutexes_in_test
             data_counter_mutex.unlock();
 #endif
@@ -239,7 +239,7 @@ void packet_collector_thread_google_dense_hash_map_preallocated() {
 #ifdef enable_mutexes_in_test
             data_counter_mutex.lock();
 #endif
-            DataCounterGoogleDensehashMapPreallocated[i].udp_in_bytes++;
+            DataCounterGoogleDensehashMapPreallocated[i].udp.in_bytes++;
 #ifdef enable_mutexes_in_test
             data_counter_mutex.unlock();
 #endif
@@ -255,7 +255,7 @@ void packet_collector_thread_google_dense_hash_map() {
 #ifdef enable_mutexes_in_test
             data_counter_mutex.lock();
 #endif
-            DataCounterGoogleDensehashMap[i].udp_in_bytes++;
+            DataCounterGoogleDensehashMap[i].udp.in_bytes++;
 #ifdef enable_mutexes_in_test
             data_counter_mutex.unlock();
 #endif
@@ -270,7 +270,7 @@ void packet_collector_thread_unordered_map_preallocated() {
 #ifdef enable_mutexes_in_test
             data_counter_mutex.lock();
 #endif
-            DataCounterUnorderedPreallocated[i].udp_in_bytes++;
+            DataCounterUnorderedPreallocated[i].udp.in_bytes++;
 #ifdef enable_mutexes_in_test
             data_counter_mutex.unlock();
 #endif
@@ -284,7 +284,7 @@ void packet_collector_thread_unordered_map_precreated() {
 #ifdef enable_mutexes_in_test
             data_counter_mutex.lock();
 #endif
-            DataCounterUnorderedPrecreated[i].udp_in_bytes++;
+            DataCounterUnorderedPrecreated[i].udp.in_bytes++;
 #ifdef enable_mutexes_in_test
             data_counter_mutex.unlock();
 #endif
@@ -299,7 +299,7 @@ void packet_collector_thread_flat_map_preallocated() {
 #ifdef enable_mutexes_in_test
             data_counter_mutex.lock();
 #endif
-            DataCounterBoostFlatMap[i].udp_in_bytes++;
+            DataCounterBoostFlatMap[i].udp.in_bytes++;
 #ifdef enable_mutexes_in_test
             data_counter_mutex.unlock();
 #endif
@@ -310,7 +310,7 @@ void packet_collector_thread_flat_map_preallocated() {
 void packet_collector_thread_vector() {
     for (int iteration = 0; iteration < number_of_retries; iteration++) {
         for (uint32_t i = 0; i < number_of_ips; i++) {
-            DataCounterVector[i].udp_in_bytes++;
+            DataCounterVector[i].udp.in_bytes++;
         }
     }
 }
@@ -318,7 +318,7 @@ void packet_collector_thread_vector() {
 void packet_collector_thread_c_array() {
     for (int iteration = 0; iteration < number_of_retries; iteration++) {
         for (uint32_t i = 0; i < number_of_ips; i++) {
-            data_counter_c_array_ptr[i].udp_in_bytes++;
+            data_counter_c_array_ptr[i].udp.in_bytes++;
         }
     }
 }
@@ -326,7 +326,7 @@ void packet_collector_thread_c_array() {
 void packet_collector_thread_c_array_huge_tlb() {
     for (int iteration = 0; iteration < number_of_retries; iteration++) {
         for (uint32_t i = 0; i < number_of_ips; i++) {
-            data_counter_c_array_ptr_huge_tlb[i].udp_in_bytes++;
+            data_counter_c_array_ptr_huge_tlb[i].udp.in_bytes++;
         }
     }
 }
@@ -382,7 +382,7 @@ void packet_collector_time_calculaitons_gettimeofday() {
 void packet_collector_thread_unordered_concurrent_map() {
     for (int iteration = 0; iteration < number_of_retries; iteration++) {
         for (uint32_t i = 0; i < number_of_ips; i++) {
-            DataCounterUnorderedConcurrent[i].udp_in_bytes++;
+            DataCounterUnorderedConcurrent[i].udp.in_bytes++;
         }
     }
 }
