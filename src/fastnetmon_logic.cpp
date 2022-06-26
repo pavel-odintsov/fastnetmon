@@ -171,58 +171,58 @@ unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp) {
 
 unsigned int detect_attack_protocol(subnet_counter_t& speed_element, direction_t attack_direction) {
     if (attack_direction == INCOMING) {
-        return get_max_used_protocol(speed_element.tcp_in_packets, speed_element.udp_in_packets, speed_element.icmp_in_packets);
+        return get_max_used_protocol(speed_element.tcp.in_packets, speed_element.udp.in_packets, speed_element.icmp.in_packets);
     } else {
         // OUTGOING
-        return get_max_used_protocol(speed_element.tcp_out_packets, speed_element.udp_out_packets, speed_element.icmp_out_packets);
+        return get_max_used_protocol(speed_element.tcp.out_packets, speed_element.udp.out_packets, speed_element.icmp.out_packets);
     }
 }
 
 // We calculate speed from packet counters here
 void build_speed_counters_from_packet_counters(subnet_counter_t& new_speed_element, subnet_counter_t* vector_itr, double speed_calc_period) {
     // calculate_speed(new_speed_element speed_element, vector_itr* );
-    new_speed_element.in_packets  = uint64_t((double)vector_itr->in_packets / speed_calc_period);
-    new_speed_element.out_packets = uint64_t((double)vector_itr->out_packets / speed_calc_period);
+    new_speed_element.total.in_packets  = uint64_t((double)vector_itr->total.in_packets / speed_calc_period);
+    new_speed_element.total.out_packets = uint64_t((double)vector_itr->total.out_packets / speed_calc_period);
 
-    new_speed_element.in_bytes  = uint64_t((double)vector_itr->in_bytes / speed_calc_period);
-    new_speed_element.out_bytes = uint64_t((double)vector_itr->out_bytes / speed_calc_period);
+    new_speed_element.total.in_bytes  = uint64_t((double)vector_itr->total.in_bytes / speed_calc_period);
+    new_speed_element.total.out_bytes = uint64_t((double)vector_itr->total.out_bytes / speed_calc_period);
 
     // Fragmented
-    new_speed_element.fragmented_in_packets  = uint64_t((double)vector_itr->fragmented_in_packets / speed_calc_period);
-    new_speed_element.fragmented_out_packets = uint64_t((double)vector_itr->fragmented_out_packets / speed_calc_period);
+    new_speed_element.fragmented.in_packets  = uint64_t((double)vector_itr->fragmented.in_packets / speed_calc_period);
+    new_speed_element.fragmented.out_packets = uint64_t((double)vector_itr->fragmented.out_packets / speed_calc_period);
 
-    new_speed_element.fragmented_in_bytes  = uint64_t((double)vector_itr->fragmented_in_bytes / speed_calc_period);
-    new_speed_element.fragmented_out_bytes = uint64_t((double)vector_itr->fragmented_out_bytes / speed_calc_period);
+    new_speed_element.fragmented.in_bytes  = uint64_t((double)vector_itr->fragmented.in_bytes / speed_calc_period);
+    new_speed_element.fragmented.out_bytes = uint64_t((double)vector_itr->fragmented.out_bytes / speed_calc_period);
 
     // By protocol counters
 
     // TCP
-    new_speed_element.tcp_in_packets  = uint64_t((double)vector_itr->tcp_in_packets / speed_calc_period);
-    new_speed_element.tcp_out_packets = uint64_t((double)vector_itr->tcp_out_packets / speed_calc_period);
+    new_speed_element.tcp.in_packets  = uint64_t((double)vector_itr->tcp.in_packets / speed_calc_period);
+    new_speed_element.tcp.out_packets = uint64_t((double)vector_itr->tcp.out_packets / speed_calc_period);
 
-    new_speed_element.tcp_in_bytes  = uint64_t((double)vector_itr->tcp_in_bytes / speed_calc_period);
-    new_speed_element.tcp_out_bytes = uint64_t((double)vector_itr->tcp_out_bytes / speed_calc_period);
+    new_speed_element.tcp.in_bytes  = uint64_t((double)vector_itr->tcp.in_bytes / speed_calc_period);
+    new_speed_element.tcp.out_bytes = uint64_t((double)vector_itr->tcp.out_bytes / speed_calc_period);
 
     // TCP syn
-    new_speed_element.tcp_syn_in_packets  = uint64_t((double)vector_itr->tcp_syn_in_packets / speed_calc_period);
-    new_speed_element.tcp_syn_out_packets = uint64_t((double)vector_itr->tcp_syn_out_packets / speed_calc_period);
+    new_speed_element.tcp_syn.in_packets  = uint64_t((double)vector_itr->tcp_syn.in_packets / speed_calc_period);
+    new_speed_element.tcp_syn.out_packets = uint64_t((double)vector_itr->tcp_syn.out_packets / speed_calc_period);
 
-    new_speed_element.tcp_syn_in_bytes  = uint64_t((double)vector_itr->tcp_syn_in_bytes / speed_calc_period);
-    new_speed_element.tcp_syn_out_bytes = uint64_t((double)vector_itr->tcp_syn_out_bytes / speed_calc_period);
+    new_speed_element.tcp_syn.in_bytes  = uint64_t((double)vector_itr->tcp_syn.in_bytes / speed_calc_period);
+    new_speed_element.tcp_syn.out_bytes = uint64_t((double)vector_itr->tcp_syn.out_bytes / speed_calc_period);
 
     // UDP
-    new_speed_element.udp_in_packets  = uint64_t((double)vector_itr->udp_in_packets / speed_calc_period);
-    new_speed_element.udp_out_packets = uint64_t((double)vector_itr->udp_out_packets / speed_calc_period);
+    new_speed_element.udp.in_packets  = uint64_t((double)vector_itr->udp.in_packets / speed_calc_period);
+    new_speed_element.udp.out_packets = uint64_t((double)vector_itr->udp.out_packets / speed_calc_period);
 
-    new_speed_element.udp_in_bytes  = uint64_t((double)vector_itr->udp_in_bytes / speed_calc_period);
-    new_speed_element.udp_out_bytes = uint64_t((double)vector_itr->udp_out_bytes / speed_calc_period);
+    new_speed_element.udp.in_bytes  = uint64_t((double)vector_itr->udp.in_bytes / speed_calc_period);
+    new_speed_element.udp.out_bytes = uint64_t((double)vector_itr->udp.out_bytes / speed_calc_period);
 
     // ICMP
-    new_speed_element.icmp_in_packets  = uint64_t((double)vector_itr->icmp_in_packets / speed_calc_period);
-    new_speed_element.icmp_out_packets = uint64_t((double)vector_itr->icmp_out_packets / speed_calc_period);
+    new_speed_element.icmp.in_packets  = uint64_t((double)vector_itr->icmp.in_packets / speed_calc_period);
+    new_speed_element.icmp.out_packets = uint64_t((double)vector_itr->icmp.out_packets / speed_calc_period);
 
-    new_speed_element.icmp_in_bytes  = uint64_t((double)vector_itr->icmp_in_bytes / speed_calc_period);
-    new_speed_element.icmp_out_bytes = uint64_t((double)vector_itr->icmp_out_bytes / speed_calc_period);
+    new_speed_element.icmp.in_bytes  = uint64_t((double)vector_itr->icmp.in_bytes / speed_calc_period);
+    new_speed_element.icmp.out_bytes = uint64_t((double)vector_itr->icmp.out_bytes / speed_calc_period);
 }
 
 void build_average_speed_counters_from_speed_counters(subnet_counter_t* current_average_speed_element,
@@ -231,106 +231,106 @@ void build_average_speed_counters_from_speed_counters(subnet_counter_t* current_
                                                       double exp_power) {
 
     // Global bytes counters
-    current_average_speed_element->in_bytes =
-        uint64_t(new_speed_element.in_bytes +
-                 exp_value * ((double)current_average_speed_element->in_bytes - (double)new_speed_element.in_bytes));
+    current_average_speed_element->total.in_bytes =
+        uint64_t(new_speed_element.total.in_bytes +
+                 exp_value * ((double)current_average_speed_element->total.in_bytes - (double)new_speed_element.total.in_bytes));
 
-    current_average_speed_element->out_bytes =
-        uint64_t(new_speed_element.out_bytes +
-                 exp_value * ((double)current_average_speed_element->out_bytes - (double)new_speed_element.out_bytes));
+    current_average_speed_element->total.out_bytes =
+        uint64_t(new_speed_element.total.out_bytes +
+                 exp_value * ((double)current_average_speed_element->total.out_bytes - (double)new_speed_element.total.out_bytes));
 
     // Global packet counters
-    current_average_speed_element->in_packets =
-        uint64_t(new_speed_element.in_packets +
-                 exp_value * ((double)current_average_speed_element->in_packets - (double)new_speed_element.in_packets));
+    current_average_speed_element->total.in_packets =
+        uint64_t(new_speed_element.total.in_packets +
+                 exp_value * ((double)current_average_speed_element->total.in_packets - (double)new_speed_element.total.in_packets));
 
-    current_average_speed_element->out_packets =
-        uint64_t(new_speed_element.out_packets +
-                 exp_value * ((double)current_average_speed_element->out_packets - (double)new_speed_element.out_packets));
+    current_average_speed_element->total.out_packets =
+        uint64_t(new_speed_element.total.out_packets +
+                 exp_value * ((double)current_average_speed_element->total.out_packets - (double)new_speed_element.total.out_packets));
 
     // Per packet type packet counters for in traffic
-    current_average_speed_element->fragmented_in_packets =
-        uint64_t(new_speed_element.fragmented_in_packets + exp_value * ((double)current_average_speed_element->fragmented_in_packets -
-                                                                        (double)new_speed_element.fragmented_in_packets));
+    current_average_speed_element->fragmented.in_packets =
+        uint64_t(new_speed_element.fragmented.in_packets + exp_value * ((double)current_average_speed_element->fragmented.in_packets -
+                                                                        (double)new_speed_element.fragmented.in_packets));
 
-    current_average_speed_element->tcp_in_packets =
-        uint64_t(new_speed_element.tcp_in_packets + exp_value * ((double)current_average_speed_element->tcp_in_packets -
-                                                                 (double)new_speed_element.tcp_in_packets));
+    current_average_speed_element->tcp.in_packets =
+        uint64_t(new_speed_element.tcp.in_packets + exp_value * ((double)current_average_speed_element->tcp.in_packets -
+                                                                 (double)new_speed_element.tcp.in_packets));
 
-    current_average_speed_element->tcp_syn_in_packets =
-        uint64_t(new_speed_element.tcp_syn_in_packets + exp_value * ((double)current_average_speed_element->tcp_syn_in_packets -
-                                                                     (double)new_speed_element.tcp_syn_in_packets));
+    current_average_speed_element->tcp_syn.in_packets =
+        uint64_t(new_speed_element.tcp_syn.in_packets + exp_value * ((double)current_average_speed_element->tcp_syn.in_packets -
+                                                                     (double)new_speed_element.tcp_syn.in_packets));
 
-    current_average_speed_element->udp_in_packets =
-        uint64_t(new_speed_element.udp_in_packets + exp_value * ((double)current_average_speed_element->udp_in_packets -
-                                                                 (double)new_speed_element.udp_in_packets));
+    current_average_speed_element->udp.in_packets =
+        uint64_t(new_speed_element.udp.in_packets + exp_value * ((double)current_average_speed_element->udp.in_packets -
+                                                                 (double)new_speed_element.udp.in_packets));
 
-    current_average_speed_element->icmp_in_packets =
-        uint64_t(new_speed_element.icmp_in_packets + exp_value * ((double)current_average_speed_element->icmp_in_packets -
-                                                                  (double)new_speed_element.icmp_in_packets));
+    current_average_speed_element->icmp.in_packets =
+        uint64_t(new_speed_element.icmp.in_packets + exp_value * ((double)current_average_speed_element->icmp.in_packets -
+                                                                  (double)new_speed_element.icmp.in_packets));
 
     // Per packet type packets counters for out
-    current_average_speed_element->fragmented_out_packets =
-        uint64_t(new_speed_element.fragmented_out_packets + exp_value * ((double)current_average_speed_element->fragmented_out_packets -
-                                                                         (double)new_speed_element.fragmented_out_packets));
+    current_average_speed_element->fragmented.out_packets =
+        uint64_t(new_speed_element.fragmented.out_packets + exp_value * ((double)current_average_speed_element->fragmented.out_packets -
+                                                                         (double)new_speed_element.fragmented.out_packets));
 
-    current_average_speed_element->tcp_out_packets =
-        uint64_t(new_speed_element.tcp_out_packets + exp_value * ((double)current_average_speed_element->tcp_out_packets -
-                                                                  (double)new_speed_element.tcp_out_packets));
+    current_average_speed_element->tcp.out_packets =
+        uint64_t(new_speed_element.tcp.out_packets + exp_value * ((double)current_average_speed_element->tcp.out_packets -
+                                                                  (double)new_speed_element.tcp.out_packets));
 
-    current_average_speed_element->tcp_syn_out_packets =
-        uint64_t(new_speed_element.tcp_syn_out_packets + exp_value * ((double)current_average_speed_element->tcp_syn_out_packets -
-                                                                      (double)new_speed_element.tcp_syn_out_packets));
+    current_average_speed_element->tcp_syn.out_packets =
+        uint64_t(new_speed_element.tcp_syn.out_packets + exp_value * ((double)current_average_speed_element->tcp_syn.out_packets -
+                                                                      (double)new_speed_element.tcp_syn.out_packets));
 
-    current_average_speed_element->udp_out_packets =
-        uint64_t(new_speed_element.udp_out_packets + exp_value * ((double)current_average_speed_element->udp_out_packets -
-                                                                  (double)new_speed_element.udp_out_packets));
+    current_average_speed_element->udp.out_packets =
+        uint64_t(new_speed_element.udp.out_packets + exp_value * ((double)current_average_speed_element->udp.out_packets -
+                                                                  (double)new_speed_element.udp.out_packets));
 
-    current_average_speed_element->icmp_out_packets =
-        uint64_t(new_speed_element.icmp_out_packets + exp_value * ((double)current_average_speed_element->icmp_out_packets -
-                                                                   (double)new_speed_element.icmp_out_packets));
+    current_average_speed_element->icmp.out_packets =
+        uint64_t(new_speed_element.icmp.out_packets + exp_value * ((double)current_average_speed_element->icmp.out_packets -
+                                                                   (double)new_speed_element.icmp.out_packets));
 
     // Per packet type bytes counter for out
-    current_average_speed_element->fragmented_out_bytes =
-        uint64_t(new_speed_element.fragmented_out_bytes + exp_value * ((double)current_average_speed_element->fragmented_out_bytes -
-                                                                       (double)new_speed_element.fragmented_out_bytes));
+    current_average_speed_element->fragmented.out_bytes =
+        uint64_t(new_speed_element.fragmented.out_bytes + exp_value * ((double)current_average_speed_element->fragmented.out_bytes -
+                                                                       (double)new_speed_element.fragmented.out_bytes));
 
-    current_average_speed_element->tcp_out_bytes =
-        uint64_t(new_speed_element.tcp_out_bytes + exp_value * ((double)current_average_speed_element->tcp_out_bytes -
-                                                                (double)new_speed_element.tcp_out_bytes));
+    current_average_speed_element->tcp.out_bytes =
+        uint64_t(new_speed_element.tcp.out_bytes + exp_value * ((double)current_average_speed_element->tcp.out_bytes -
+                                                                (double)new_speed_element.tcp.out_bytes));
 
-    current_average_speed_element->tcp_syn_out_bytes =
-        uint64_t(new_speed_element.tcp_syn_out_bytes + exp_value * ((double)current_average_speed_element->tcp_syn_out_bytes -
-                                                                    (double)new_speed_element.tcp_syn_out_bytes));
+    current_average_speed_element->tcp_syn.out_bytes =
+        uint64_t(new_speed_element.tcp_syn.out_bytes + exp_value * ((double)current_average_speed_element->tcp_syn.out_bytes -
+                                                                    (double)new_speed_element.tcp_syn.out_bytes));
 
-    current_average_speed_element->udp_out_bytes =
-        uint64_t(new_speed_element.udp_out_bytes + exp_value * ((double)current_average_speed_element->udp_out_bytes -
-                                                                (double)new_speed_element.udp_out_bytes));
+    current_average_speed_element->udp.out_bytes =
+        uint64_t(new_speed_element.udp.out_bytes + exp_value * ((double)current_average_speed_element->udp.out_bytes -
+                                                                (double)new_speed_element.udp.out_bytes));
 
-    current_average_speed_element->icmp_out_bytes =
-        uint64_t(new_speed_element.icmp_out_bytes + exp_value * ((double)current_average_speed_element->icmp_out_bytes -
-                                                                 (double)new_speed_element.icmp_out_bytes));
+    current_average_speed_element->icmp.out_bytes =
+        uint64_t(new_speed_element.icmp.out_bytes + exp_value * ((double)current_average_speed_element->icmp.out_bytes -
+                                                                 (double)new_speed_element.icmp.out_bytes));
 
     // Per packet type bytes counter for in
-    current_average_speed_element->fragmented_in_bytes =
-        uint64_t(new_speed_element.fragmented_in_bytes + exp_value * ((double)current_average_speed_element->fragmented_in_bytes -
-                                                                      (double)new_speed_element.fragmented_in_bytes));
+    current_average_speed_element->fragmented.in_bytes =
+        uint64_t(new_speed_element.fragmented.in_bytes + exp_value * ((double)current_average_speed_element->fragmented.in_bytes -
+                                                                      (double)new_speed_element.fragmented.in_bytes));
 
-    current_average_speed_element->tcp_in_bytes =
-        uint64_t(new_speed_element.tcp_in_bytes +
-                 exp_value * ((double)current_average_speed_element->tcp_in_bytes - (double)new_speed_element.tcp_in_bytes));
+    current_average_speed_element->tcp.in_bytes =
+        uint64_t(new_speed_element.tcp.in_bytes +
+                 exp_value * ((double)current_average_speed_element->tcp.in_bytes - (double)new_speed_element.tcp.in_bytes));
 
-    current_average_speed_element->tcp_syn_in_bytes =
-        uint64_t(new_speed_element.tcp_syn_in_bytes + exp_value * ((double)current_average_speed_element->tcp_syn_in_bytes -
-                                                                   (double)new_speed_element.tcp_syn_in_bytes));
+    current_average_speed_element->tcp_syn.in_bytes =
+        uint64_t(new_speed_element.tcp_syn.in_bytes + exp_value * ((double)current_average_speed_element->tcp_syn.in_bytes -
+                                                                   (double)new_speed_element.tcp_syn.in_bytes));
 
-    current_average_speed_element->udp_in_bytes =
-        uint64_t(new_speed_element.udp_in_bytes +
-                 exp_value * ((double)current_average_speed_element->udp_in_bytes - (double)new_speed_element.udp_in_bytes));
+    current_average_speed_element->udp.in_bytes =
+        uint64_t(new_speed_element.udp.in_bytes +
+                 exp_value * ((double)current_average_speed_element->udp.in_bytes - (double)new_speed_element.udp.in_bytes));
 
-    current_average_speed_element->icmp_in_bytes =
-        uint64_t(new_speed_element.icmp_in_bytes + exp_value * ((double)current_average_speed_element->icmp_in_bytes -
-                                                                (double)new_speed_element.icmp_in_bytes));
+    current_average_speed_element->icmp.in_bytes =
+        uint64_t(new_speed_element.icmp.in_bytes + exp_value * ((double)current_average_speed_element->icmp.in_bytes -
+                                                                (double)new_speed_element.icmp.in_bytes));
 }
 
 
@@ -421,9 +421,9 @@ std::string print_subnet_ipv4_load() {
         buffer << std::setw(18) << std::left << subnet_as_string;
 
         buffer << " "
-               << "pps in: " << std::setw(8) << speed->in_packets << " out: " << std::setw(8) << speed->out_packets
-               << " mbps in: " << std::setw(5) << convert_speed_to_mbps(speed->in_bytes) << " out: " << std::setw(5)
-               << convert_speed_to_mbps(speed->out_bytes) << "\n";
+               << "pps in: " << std::setw(8) << speed->total.in_packets << " out: " << std::setw(8) << speed->total.out_packets
+               << " mbps in: " << std::setw(5) << convert_speed_to_mbps(speed->total.in_bytes) << " out: " << std::setw(5)
+               << convert_speed_to_mbps(speed->total.out_bytes) << "\n";
     }
 
     return buffer.str();
@@ -663,14 +663,14 @@ bool we_should_ban_this_entity(subnet_counter_t* average_speed_element,
 
     // we detect overspeed by packets
     if (current_ban_settings.enable_ban_for_pps &&
-        exceed_pps_speed(average_speed_element->in_packets, average_speed_element->out_packets, current_ban_settings.ban_threshold_pps)) {
+        exceed_pps_speed(average_speed_element->total.in_packets, average_speed_element->total.out_packets, current_ban_settings.ban_threshold_pps)) {
 
         attack_detection_source = attack_detection_threshold_type_t::packets_per_second;
         return true;
     }
 
     if (current_ban_settings.enable_ban_for_bandwidth &&
-        exceed_mbps_speed(average_speed_element->in_bytes, average_speed_element->out_bytes, current_ban_settings.ban_threshold_mbps)) {
+        exceed_mbps_speed(average_speed_element->total.in_bytes, average_speed_element->total.out_bytes, current_ban_settings.ban_threshold_mbps)) {
 
         attack_detection_source = attack_detection_threshold_type_t::bytes_per_second;
         return true;
@@ -687,7 +687,7 @@ bool we_should_ban_this_entity(subnet_counter_t* average_speed_element,
 
     // Per protocol pps thresholds
     if (current_ban_settings.enable_ban_for_tcp_pps &&
-        exceed_pps_speed(average_speed_element->tcp_in_packets, average_speed_element->tcp_out_packets,
+        exceed_pps_speed(average_speed_element->tcp.in_packets, average_speed_element->tcp.out_packets,
                          current_ban_settings.ban_threshold_tcp_pps)) {
         attack_detection_source = attack_detection_threshold_type_t::tcp_packets_per_second;
 
@@ -695,7 +695,7 @@ bool we_should_ban_this_entity(subnet_counter_t* average_speed_element,
     }
 
     if (current_ban_settings.enable_ban_for_udp_pps &&
-        exceed_pps_speed(average_speed_element->udp_in_packets, average_speed_element->udp_out_packets,
+        exceed_pps_speed(average_speed_element->udp.in_packets, average_speed_element->udp.out_packets,
                          current_ban_settings.ban_threshold_udp_pps)) {
 
         attack_detection_source = attack_detection_threshold_type_t::udp_packets_per_second;
@@ -703,7 +703,7 @@ bool we_should_ban_this_entity(subnet_counter_t* average_speed_element,
     }
 
     if (current_ban_settings.enable_ban_for_icmp_pps &&
-        exceed_pps_speed(average_speed_element->icmp_in_packets, average_speed_element->icmp_out_packets,
+        exceed_pps_speed(average_speed_element->icmp.in_packets, average_speed_element->icmp.out_packets,
                          current_ban_settings.ban_threshold_icmp_pps)) {
         attack_detection_source = attack_detection_threshold_type_t::icmp_packets_per_second;
         return true;
@@ -711,7 +711,7 @@ bool we_should_ban_this_entity(subnet_counter_t* average_speed_element,
 
     // Per protocol bandwidth thresholds
     if (current_ban_settings.enable_ban_for_tcp_bandwidth &&
-        exceed_mbps_speed(average_speed_element->tcp_in_bytes, average_speed_element->tcp_out_bytes,
+        exceed_mbps_speed(average_speed_element->tcp.in_bytes, average_speed_element->tcp.out_bytes,
                           current_ban_settings.ban_threshold_tcp_mbps)) {
         attack_detection_source = attack_detection_threshold_type_t::tcp_bytes_per_second;
         ;
@@ -719,14 +719,14 @@ bool we_should_ban_this_entity(subnet_counter_t* average_speed_element,
     }
 
     if (current_ban_settings.enable_ban_for_udp_bandwidth &&
-        exceed_mbps_speed(average_speed_element->udp_in_bytes, average_speed_element->udp_out_bytes,
+        exceed_mbps_speed(average_speed_element->udp.in_bytes, average_speed_element->udp.out_bytes,
                           current_ban_settings.ban_threshold_udp_mbps)) {
         attack_detection_source = attack_detection_threshold_type_t::udp_bytes_per_second;
         return true;
     }
 
     if (current_ban_settings.enable_ban_for_icmp_bandwidth &&
-        exceed_mbps_speed(average_speed_element->icmp_in_bytes, average_speed_element->icmp_out_bytes,
+        exceed_mbps_speed(average_speed_element->icmp.in_bytes, average_speed_element->icmp.out_bytes,
                           current_ban_settings.ban_threshold_icmp_mbps)) {
         attack_detection_source = attack_detection_threshold_type_t::icmp_bytes_per_second;
         return true;
@@ -1389,10 +1389,10 @@ void execute_ip_ban(uint32_t client_ip, subnet_counter_t average_speed_element, 
     attack_details_t current_attack;
     uint64_t pps = 0;
 
-    uint64_t in_pps    = average_speed_element.in_packets;
-    uint64_t out_pps   = average_speed_element.out_packets;
-    uint64_t in_bps    = average_speed_element.in_bytes;
-    uint64_t out_bps   = average_speed_element.out_bytes;
+    uint64_t in_pps    = average_speed_element.total.in_packets;
+    uint64_t out_pps   = average_speed_element.total.out_packets;
+    uint64_t in_bps    = average_speed_element.total.in_bytes;
+    uint64_t out_bps   = average_speed_element.total.out_bytes;
     uint64_t in_flows  = average_speed_element.in_flows;
     uint64_t out_flows = average_speed_element.out_flows;
 
@@ -1477,46 +1477,46 @@ void execute_ip_ban(uint32_t client_ip, subnet_counter_t average_speed_element, 
     current_attack.attack_power     = pps;
     current_attack.max_attack_power = pps;
 
-    current_attack.in_packets  = in_pps;
-    current_attack.out_packets = out_pps;
+    current_attack.total.in_packets  = in_pps;
+    current_attack.total.out_packets = out_pps;
 
-    current_attack.in_bytes  = in_bps;
-    current_attack.out_bytes = out_bps;
+    current_attack.total.in_bytes  = in_bps;
+    current_attack.total.out_bytes = out_bps;
 
     // pass flow information
     current_attack.in_flows  = in_flows;
     current_attack.out_flows = out_flows;
 
-    current_attack.fragmented_in_packets = average_speed_element.fragmented_in_packets;
-    current_attack.tcp_in_packets        = average_speed_element.tcp_in_packets;
-    current_attack.tcp_syn_in_packets    = average_speed_element.tcp_syn_in_packets;
-    current_attack.udp_in_packets        = average_speed_element.udp_in_packets;
-    current_attack.icmp_in_packets       = average_speed_element.icmp_in_packets;
+    current_attack.fragmented.in_packets = average_speed_element.fragmented.in_packets;
+    current_attack.tcp.in_packets        = average_speed_element.tcp.in_packets;
+    current_attack.tcp_syn.in_packets    = average_speed_element.tcp_syn.in_packets;
+    current_attack.udp.in_packets        = average_speed_element.udp.in_packets;
+    current_attack.icmp.in_packets       = average_speed_element.icmp.in_packets;
 
-    current_attack.fragmented_out_packets = average_speed_element.fragmented_out_packets;
-    current_attack.tcp_out_packets        = average_speed_element.tcp_out_packets;
-    current_attack.tcp_syn_out_packets    = average_speed_element.tcp_syn_out_packets;
-    current_attack.udp_out_packets        = average_speed_element.udp_out_packets;
-    current_attack.icmp_out_packets       = average_speed_element.icmp_out_packets;
+    current_attack.fragmented.out_packets = average_speed_element.fragmented.out_packets;
+    current_attack.tcp.out_packets        = average_speed_element.tcp.out_packets;
+    current_attack.tcp_syn.out_packets    = average_speed_element.tcp_syn.out_packets;
+    current_attack.udp.out_packets        = average_speed_element.udp.out_packets;
+    current_attack.icmp.out_packets       = average_speed_element.icmp.out_packets;
 
-    current_attack.fragmented_out_bytes = average_speed_element.fragmented_out_bytes;
-    current_attack.tcp_out_bytes        = average_speed_element.tcp_out_bytes;
-    current_attack.tcp_syn_out_bytes    = average_speed_element.tcp_syn_out_bytes;
-    current_attack.udp_out_bytes        = average_speed_element.udp_out_bytes;
-    current_attack.icmp_out_bytes       = average_speed_element.icmp_out_bytes;
+    current_attack.fragmented.out_bytes = average_speed_element.fragmented.out_bytes;
+    current_attack.tcp.out_bytes        = average_speed_element.tcp.out_bytes;
+    current_attack.tcp_syn.out_bytes    = average_speed_element.tcp_syn.out_bytes;
+    current_attack.udp.out_bytes        = average_speed_element.udp.out_bytes;
+    current_attack.icmp.out_bytes       = average_speed_element.icmp.out_bytes;
 
-    current_attack.fragmented_in_bytes = average_speed_element.fragmented_in_bytes;
-    current_attack.tcp_in_bytes        = average_speed_element.tcp_in_bytes;
-    current_attack.tcp_syn_in_bytes    = average_speed_element.tcp_syn_in_bytes;
-    current_attack.udp_in_bytes        = average_speed_element.udp_in_bytes;
-    current_attack.icmp_in_bytes       = average_speed_element.icmp_in_bytes;
+    current_attack.fragmented.in_bytes = average_speed_element.fragmented.in_bytes;
+    current_attack.tcp.in_bytes        = average_speed_element.tcp.in_bytes;
+    current_attack.tcp_syn.in_bytes    = average_speed_element.tcp_syn.in_bytes;
+    current_attack.udp.in_bytes        = average_speed_element.udp.in_bytes;
+    current_attack.icmp.in_bytes       = average_speed_element.icmp.in_bytes;
 
-    current_attack.average_in_packets = average_speed_element.in_packets;
-    current_attack.average_in_bytes   = average_speed_element.in_bytes;
+    current_attack.average_in_packets = average_speed_element.total.in_packets;
+    current_attack.average_in_bytes   = average_speed_element.total.in_bytes;
     current_attack.average_in_flows   = average_speed_element.in_flows;
 
-    current_attack.average_out_packets = average_speed_element.out_packets;
-    current_attack.average_out_bytes   = average_speed_element.out_bytes;
+    current_attack.average_out_packets = average_speed_element.total.out_packets;
+    current_attack.average_out_bytes   = average_speed_element.total.out_bytes;
     current_attack.average_out_flows   = average_speed_element.out_flows;
 
     if (collect_attack_pcap_dumps) {
@@ -1837,9 +1837,9 @@ std::string print_subnet_ipv6_load() {
         buffer << std::setw(42) << std::left << subnet_as_string;
 
         buffer << " "
-               << "pps in: " << std::setw(8) << speed->in_packets << " out: " << std::setw(8) << speed->out_packets
-               << " mbps in: " << std::setw(5) << convert_speed_to_mbps(speed->in_bytes) << " out: " << std::setw(5)
-               << convert_speed_to_mbps(speed->out_bytes) << "\n";
+               << "pps in: " << std::setw(8) << speed->total.in_packets << " out: " << std::setw(8) << speed->total.out_packets
+               << " mbps in: " << std::setw(5) << convert_speed_to_mbps(speed->total.in_bytes) << " out: " << std::setw(5)
+               << convert_speed_to_mbps(speed->total.out_bytes) << "\n";
     }
 
     return buffer.str();
@@ -1968,10 +1968,10 @@ bool fill_attack_information(subnet_counter_t average_speed_element,
                              int ban_time) {
     uint64_t pps = 0;
 
-    uint64_t in_pps    = average_speed_element.in_packets;
-    uint64_t out_pps   = average_speed_element.out_packets;
-    uint64_t in_bps    = average_speed_element.in_bytes;
-    uint64_t out_bps   = average_speed_element.out_bytes;
+    uint64_t in_pps    = average_speed_element.total.in_packets;
+    uint64_t out_pps   = average_speed_element.total.out_packets;
+    uint64_t in_bps    = average_speed_element.total.in_bytes;
+    uint64_t out_bps   = average_speed_element.total.out_bytes;
     uint64_t in_flows  = average_speed_element.in_flows;
     uint64_t out_flows = average_speed_element.out_flows;
 
