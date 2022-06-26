@@ -463,7 +463,7 @@ int main(int argc, char* argv[]) {
         for (uint32_t i = 0; i < number_of_ips; i++) {
             subnet_counter_t current_map_element;
 
-            DataCounterBoostUnorderedPrecreated.insert(std::make_pair(i, current_map_element));
+            DataCounterBoostUnorderedPrecreated.insert(std::make_pair(fast_hton(i), current_map_element));
         }
 
         run_tests(packet_collector_big_endian<boost::unordered_map<uint32_t, subnet_counter_t>>, DataCounterBoostUnorderedPrecreated);
