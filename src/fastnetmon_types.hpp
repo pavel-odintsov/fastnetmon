@@ -15,7 +15,7 @@
 
 #include "fastnetmon_simple_packet.hpp"
 
-#include "map_element.hpp"
+#include "subnet_counter.hpp"
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
