@@ -264,7 +264,7 @@ add_library(ipfix_rfc STATIC ipfix_rfc.cpp)
 add_library(bgp_protocol STATIC bgp_protocol.cpp)
 
 # Our packet parser
-add_library(fastnetmon_packet_parser STATIC fastnetmon_packet_parser.c)
+add_library(fastnetmon_packet_parser STATIC fastnetmon_packet_parser.cpp)
 
 # Our logic library
 add_library(fastnetmon_logic STATIC fastnetmon_logic.cpp)

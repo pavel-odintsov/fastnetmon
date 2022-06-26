@@ -191,7 +191,7 @@ char* etheraddr2string(const u_char* ep, char* buf);
 char* intoa(unsigned int addr);
 char* _intoa(unsigned int addr, char* buf, u_short bufLen);
 static char* in6toa(struct in6_addr addr6);
-char* proto2str(u_short proto);
+const char* proto2str(u_short proto);
 
 #if defined(__FreeBSD__) || defined(__APPLE__) || defined(__DragonFly__) || defined(__OpenBSD__)
 /* This code from /usr/includes/linux/if_ether.h Linus file */
@@ -696,7 +696,7 @@ int fastnetmon_print_parsed_pkt(char* buff, u_int buff_len, const u_char* p, con
 }
 
 char* etheraddr2string(const u_char* ep, char* buf) {
-    char* hex = "0123456789ABCDEF";
+    const char* hex = "0123456789ABCDEF";
     u_int i, j;
     char* cp;
 
@@ -766,7 +766,7 @@ static char* in6toa(struct in6_addr addr6) {
     return (ret);
 }
 
-char* proto2str(u_short proto) {
+const char* proto2str(u_short proto) {
     static char protoName[8];
 
     switch (proto) {
