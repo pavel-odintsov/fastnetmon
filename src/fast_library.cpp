@@ -504,11 +504,15 @@ std::string get_protocol_name_by_number(unsigned int proto_number) {
 }
 
 // exec command in shell
-std::vector<std::string> exec(std::string cmd) {
+std::vector<std::string> exec(const std::string& cmd, std::string& error_text) {
     std::vector<std::string> output_list;
 
     FILE* pipe = popen(cmd.c_str(), "r");
-    if (!pipe) return output_list;
+    if (!pipe) {
+        // We need more details in case of failure
+        error_text = "error code: " + std::to_string(errno) + " error text: " + strerror(errno);
+        return output_list;
+    }
 
     char buffer[256];
     while (!feof(pipe)) {
@@ -614,7 +618,8 @@ interfaces_list_t get_interfaces_list() {
     // Format: 1: eth0: < ....
     boost::regex interface_name_pattern("^\\d+:\\s+(\\w+):.*?$");
 
-    std::vector<std::string> output_list = exec("ip -o link show");
+    std::string error_text;
+    std::vector<std::string> output_list = exec("ip -o link show", error_text);
 
     if (output_list.empty()) {
         return interfaces_list;
@@ -636,7 +641,8 @@ interfaces_list_t get_interfaces_list() {
 ip_addresses_list_t get_ip_list_for_interface(std::string interface) {
     ip_addresses_list_t ip_list;
 
-    std::vector<std::string> output_list = exec("ip address show dev " + interface);
+    std::string error_text;
+    std::vector<std::string> output_list = exec("ip address show dev " + interface, error_text);
 
     if (output_list.empty()) {
         return ip_list;
@@ -2008,5 +2014,12 @@ bool convert_string_to_any_integer_safe(const std::string& line, int& value) {
     value = temp_value;
 
     return true;
+}
+
+// This function is useful when we start it from thread and detach and so we are not interested in error text and we need to discard it
+std::vector<std::string> exec_no_error_check(const std::string& cmd) {
+    std::string error_text;
+
+    return exec(cmd, error_text);
 }
 

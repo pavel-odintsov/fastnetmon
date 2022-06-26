@@ -1010,7 +1010,7 @@ void call_unban_handlers(uint32_t client_ip,
 
         // We should execute external script in separate thread because any lag in this
         // code will be very distructive
-        boost::thread exec_thread(exec, script_call_params);
+        boost::thread exec_thread(exec_no_error_check, script_call_params);
         exec_thread.detach();
 
         logger << log4cpp::Priority::INFO << "Script for unban client is finished: " << client_ip_as_string;
@@ -1595,7 +1595,7 @@ void call_ban_handlers(uint32_t client_ip,
             exec_thread.detach();
         } else {
             // Do not pass anything to script
-            boost::thread exec_thread(exec, script_call_params);
+            boost::thread exec_thread(exec_no_error_check, script_call_params);
             exec_thread.detach();
         }
 

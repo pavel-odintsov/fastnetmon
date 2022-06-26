@@ -695,7 +695,8 @@ int main(int argc, char* argv[]) {
             std::string allocate_required_number_of_huge_pages =
                 "echo " + std::to_string(required_number_of_hugetlb_pages) + "> /proc/sys/vm/nr_hugepages";
 
-            exec(allocate_required_number_of_huge_pages);
+            std::string error_text;
+            exec(allocate_required_number_of_huge_pages, error_text);
         }
 
 
@@ -719,8 +720,9 @@ int main(int argc, char* argv[]) {
         std::string increase_shm_all_command = "echo " + std::to_string(required_number_of_bytes) + " > /proc/sys/kernel/shmall";
         std::string increase_shm_max_command = "echo " + std::to_string(required_number_of_bytes) + " > /proc/sys/kernel/shmmax";
 
-        exec(increase_shm_all_command);
-        exec(increase_shm_max_command);
+        std::string error_text;
+        exec(increase_shm_all_command, error_text);
+        exec(increase_shm_max_command, error_text);
 
         // Let's check new values right now!
 
