@@ -8,18 +8,18 @@
 // error: there are no arguments to ‘increment_outgoing_counters’ that depend on a template parameter, so a declaration
 // of ‘increment_outgoing_counters’ must be available [-fpermissive]
 //  increment_outgoing_counters(counter_ptr, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
-void increment_incoming_counters(map_element_t* current_element,
+void increment_incoming_counters(subnet_counter_t* current_element,
                                  simple_packet_t& current_packet,
                                  uint64_t sampled_number_of_packets,
                                  uint64_t sampled_number_of_bytes);
 
-void build_speed_counters_from_packet_counters(map_element_t& new_speed_element, map_element_t* vector_itr, double speed_calc_period);
-void increment_outgoing_counters(map_element_t* current_element,
+void build_speed_counters_from_packet_counters(subnet_counter_t& new_speed_element, subnet_counter_t* vector_itr, double speed_calc_period);
+void increment_outgoing_counters(subnet_counter_t* current_element,
                                  simple_packet_t& current_packet,
                                  uint64_t sampled_number_of_packets,
                                  uint64_t sampled_number_of_bytes);
-void build_average_speed_counters_from_speed_counters(map_element_t* current_average_speed_element,
-                                                      map_element_t& new_speed_element,
+void build_average_speed_counters_from_speed_counters(subnet_counter_t* current_average_speed_element,
+                                                      subnet_counter_t& new_speed_element,
                                                       double exp_value,
                                                       double exp_power);
 
@@ -76,7 +76,7 @@ template <typename T> class abstract_subnet_counters_t {
 
     void recalculate_speed(double speed_calc_period,
                            double average_calculation_time_for_subnets,
-                           std::function<void(T*, map_element_t*)> speed_check_callback) {
+                           std::function<void(T*, subnet_counter_t*)> speed_check_callback) {
         std::lock_guard<std::mutex> lock_guard(this->counter_map_mutex);
 
         for (auto itr = this->counter_map.begin(); itr != this->counter_map.end(); ++itr) {
@@ -93,7 +93,7 @@ template <typename T> class abstract_subnet_counters_t {
             double exp_power_subnet = -speed_calc_period / average_calculation_time_for_subnets;
             double exp_value_subnet = exp(exp_power_subnet);
 
-            map_element_t* current_average_speed_element = &average_speed_map[current_key];
+            subnet_counter_t* current_average_speed_element = &average_speed_map[current_key];
 
             build_average_speed_counters_from_speed_counters(current_average_speed_element, new_speed_element,
                                                              exp_value_subnet, exp_power_subnet);
@@ -131,7 +131,7 @@ template <typename T> class abstract_subnet_counters_t {
     }
 
     // Retrieves average speed for specified key with all locks
-    bool get_average_speed_subnet(T key, map_element_t& average_speed_element) {
+    bool get_average_speed_subnet(T key, subnet_counter_t& average_speed_element) {
         std::lock_guard<std::mutex> lock_guard(this->counter_map_mutex);
 
         auto average_speed_itr = this->average_speed_map.find(key);

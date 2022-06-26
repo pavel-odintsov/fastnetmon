@@ -3,7 +3,7 @@
 #include <boost/serialization/nvp.hpp>
 
 // main data structure for storing traffic and speed data for all our IPs
-class map_element_t {
+class subnet_counter_t {
     public:
     // We use inaccurate time source for it becasue we do not care about precise time in this case
     time_t last_update_time = 0;

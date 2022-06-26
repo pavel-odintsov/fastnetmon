@@ -274,7 +274,7 @@ bool push_hosts_traffic_counters_to_influxdb(std::string influx_database,
             std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
 
             // Here we could have average or instantaneous speed
-            map_element_t* current_speed_element = &*vector_itr;
+            subnet_counter_t* current_speed_element = &*vector_itr;
 
             // Skip elements with zero speed
             if (current_speed_element->is_zero()) {
@@ -345,7 +345,7 @@ bool push_network_traffic_counters_to_influxdb(std::string influx_database,
     for (map_for_subnet_counters_t::iterator itr = PerSubnetAverageSpeedMap.begin(); itr != PerSubnetAverageSpeedMap.end(); ++itr) {
         std::map<std::string, uint64_t> plain_total_counters_map;
 
-        map_element_t* speed         = &itr->second;
+        subnet_counter_t* speed         = &itr->second;
         std::string subnet_as_string = convert_subnet_to_string(itr->first);
 
         fill_main_counters_for_influxdb(speed, plain_total_counters_map, false);
@@ -390,7 +390,7 @@ bool write_line_of_data_to_influxdb(std::string influx_database,
 }
 
 // Fills special structure which we use to export metrics into InfluxDB
-void fill_per_protocol_countres_for_influxdb(const map_element_t* current_speed_element,
+void fill_per_protocol_countres_for_influxdb(const subnet_counter_t* current_speed_element,
                                              std::map<std::string, uint64_t>& plain_total_counters_map) {
     plain_total_counters_map["fragmented_packets_incoming"] = current_speed_element->fragmented_in_packets;
     plain_total_counters_map["tcp_packets_incoming"]        = current_speed_element->tcp_in_packets;
@@ -420,7 +420,7 @@ void fill_per_protocol_countres_for_influxdb(const map_element_t* current_speed_
 }
 
 // Fills special structure which we use to export metrics into InfluxDB
-void fill_main_counters_for_influxdb(const map_element_t* current_speed_element,
+void fill_main_counters_for_influxdb(const subnet_counter_t* current_speed_element,
                                      std::map<std::string, uint64_t>& plain_total_counters_map,
                                      bool populate_flow) {
     // Prepare incoming traffic data

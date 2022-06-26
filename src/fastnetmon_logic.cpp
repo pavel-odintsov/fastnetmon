@@ -169,7 +169,7 @@ unsigned int get_max_used_protocol(uint64_t tcp, uint64_t udp, uint64_t icmp) {
     return 0;
 }
 
-unsigned int detect_attack_protocol(map_element_t& speed_element, direction_t attack_direction) {
+unsigned int detect_attack_protocol(subnet_counter_t& speed_element, direction_t attack_direction) {
     if (attack_direction == INCOMING) {
         return get_max_used_protocol(speed_element.tcp_in_packets, speed_element.udp_in_packets, speed_element.icmp_in_packets);
     } else {
@@ -179,7 +179,7 @@ unsigned int detect_attack_protocol(map_element_t& speed_element, direction_t at
 }
 
 // We calculate speed from packet counters here
-void build_speed_counters_from_packet_counters(map_element_t& new_speed_element, map_element_t* vector_itr, double speed_calc_period) {
+void build_speed_counters_from_packet_counters(subnet_counter_t& new_speed_element, subnet_counter_t* vector_itr, double speed_calc_period) {
     // calculate_speed(new_speed_element speed_element, vector_itr* );
     new_speed_element.in_packets  = uint64_t((double)vector_itr->in_packets / speed_calc_period);
     new_speed_element.out_packets = uint64_t((double)vector_itr->out_packets / speed_calc_period);
@@ -225,8 +225,8 @@ void build_speed_counters_from_packet_counters(map_element_t& new_speed_element,
     new_speed_element.icmp_out_bytes = uint64_t((double)vector_itr->icmp_out_bytes / speed_calc_period);
 }
 
-void build_average_speed_counters_from_speed_counters(map_element_t* current_average_speed_element,
-                                                      map_element_t& new_speed_element,
+void build_average_speed_counters_from_speed_counters(subnet_counter_t* current_average_speed_element,
+                                                      subnet_counter_t& new_speed_element,
                                                       double exp_value,
                                                       double exp_power) {
 
@@ -415,7 +415,7 @@ std::string print_subnet_ipv4_load() {
 
     for (std::vector<pair_of_map_for_subnet_counters_elements_t>::iterator itr = vector_for_sort.begin();
          itr != vector_for_sort.end(); ++itr) {
-        map_element_t* speed         = &itr->second;
+        subnet_counter_t* speed         = &itr->second;
         std::string subnet_as_string = convert_subnet_to_string(itr->first);
 
         buffer << std::setw(18) << std::left << subnet_as_string;
@@ -652,7 +652,7 @@ bool exceed_mbps_speed(uint64_t in_counter, uint64_t out_counter, unsigned int t
 }
 
 // Return true when we should ban this entity
-bool we_should_ban_this_entity(map_element_t* average_speed_element,
+bool we_should_ban_this_entity(subnet_counter_t* average_speed_element,
                                ban_settings_t& current_ban_settings,
                                attack_detection_threshold_type_t& attack_detection_source,
                                attack_detection_direction_type_t& attack_detection_direction) {
@@ -940,7 +940,7 @@ void cleanup_ban_list() {
                     continue;
                 }
 
-                map_element_t* average_speed_element = &itr_average_speed->second[shift_in_vector];
+                subnet_counter_t* average_speed_element = &itr_average_speed->second[shift_in_vector];
 
                 // We get ban settings from host subnet
                 std::string host_group_name;
@@ -1066,8 +1066,8 @@ std::string get_attack_description(uint32_t client_ip, attack_details_t& current
     if (enable_subnet_counters) {
         // Got subnet tracking structure
         // TODO: we suppose case "no key exists" is not possible
-        map_element_t network_speed_meter         = PerSubnetSpeedMap[current_attack.customer_network];
-        map_element_t average_network_speed_meter = PerSubnetAverageSpeedMap[current_attack.customer_network];
+        subnet_counter_t network_speed_meter         = PerSubnetSpeedMap[current_attack.customer_network];
+        subnet_counter_t average_network_speed_meter = PerSubnetAverageSpeedMap[current_attack.customer_network];
 
         attack_description << "Network: " << convert_subnet_to_string(current_attack.customer_network) << "\n";
 
@@ -1087,8 +1087,8 @@ std::string get_attack_description_in_json(uint32_t client_ip, attack_details_t&
     json_object_object_add(jobj, "attack_details", serialize_attack_description_to_json(current_attack));
 
     if (enable_subnet_counters) {
-        map_element_t network_speed_meter         = PerSubnetSpeedMap[current_attack.customer_network];
-        map_element_t average_network_speed_meter = PerSubnetAverageSpeedMap[current_attack.customer_network];
+        subnet_counter_t network_speed_meter         = PerSubnetSpeedMap[current_attack.customer_network];
+        subnet_counter_t average_network_speed_meter = PerSubnetAverageSpeedMap[current_attack.customer_network];
 
         json_object_object_add(jobj, "network_load", serialize_network_load_to_json(network_speed_meter));
         json_object_object_add(jobj, "network_average_load", serialize_network_load_to_json(average_network_speed_meter));
@@ -1385,7 +1385,7 @@ redisContext* redis_init_connection() {
 #endif
 
 
-void execute_ip_ban(uint32_t client_ip, map_element_t average_speed_element, std::string flow_attack_details, subnet_cidr_mask_t customer_subnet) {
+void execute_ip_ban(uint32_t client_ip, subnet_counter_t average_speed_element, std::string flow_attack_details, subnet_cidr_mask_t customer_subnet) {
     attack_details_t current_attack;
     uint64_t pps = 0;
 
@@ -1831,7 +1831,7 @@ std::string print_subnet_ipv6_load() {
 
     for (std::vector<pair_of_map_for_ipv6_subnet_counters_elements_t>::iterator itr = vector_for_sort.begin();
          itr != vector_for_sort.end(); ++itr) {
-        map_element_t* speed         = &itr->second;
+        subnet_counter_t* speed         = &itr->second;
         std::string subnet_as_string = print_ipv6_cidr_subnet(itr->first);
 
         buffer << std::setw(42) << std::left << subnet_as_string;
@@ -1960,7 +1960,7 @@ std::string get_human_readable_threshold_type(attack_detection_threshold_type_t 
 
 
 // This function fills attack information from different information sources
-bool fill_attack_information(map_element_t average_speed_element,
+bool fill_attack_information(subnet_counter_t average_speed_element,
                              attack_details_t& current_attack,
                              std::string& host_group_name,
                              std::string& parent_host_group_name,
@@ -2071,7 +2071,7 @@ bool fill_attack_information(map_element_t average_speed_element,
 
 
 // Speed recalculation function for IPv6 hosts calls it for each host during speed recalculation
-void speed_callback_ipv6(subnet_ipv6_cidr_mask_t* current_subnet, map_element_t* current_average_speed_element) {
+void speed_callback_ipv6(subnet_ipv6_cidr_mask_t* current_subnet, subnet_counter_t* current_average_speed_element) {
     // We should check thresholds only for per host counters for IPv6 and only when any ban actions for IPv6 traffic were enabled
     if (!global_ban_settings.enable_ban_ipv6) {
         return;
@@ -2138,7 +2138,7 @@ void speed_callback_ipv6(subnet_ipv6_cidr_mask_t* current_subnet, map_element_t*
 
 // Speed recalculation function for IPv6 networks
 // It's just stub, we do not execute any actions for it
-void speed_callback_subnet_ipv6(subnet_ipv6_cidr_mask_t* subnet, map_element_t* speed_element) {
+void speed_callback_subnet_ipv6(subnet_ipv6_cidr_mask_t* subnet, subnet_counter_t* speed_element) {
     return;
 }
 
@@ -2181,7 +2181,7 @@ void recalculate_speed() {
         speed_calc_period = time_difference;
     }
 
-    map_element_t zero_map_element{};
+    subnet_counter_t zero_map_element{};
 
     uint64_t incoming_total_flows = 0;
     uint64_t outgoing_total_flows = 0;
@@ -2212,7 +2212,7 @@ void recalculate_speed() {
             double exp_power_subnet = -speed_calc_period / average_calculation_amount_for_subnets;
             double exp_value_subnet = exp(exp_power_subnet);
 
-            map_element_t* current_average_speed_element = &PerSubnetAverageSpeedMap[current_subnet];
+            subnet_counter_t* current_average_speed_element = &PerSubnetAverageSpeedMap[current_subnet];
 
             current_average_speed_element->in_bytes =
                 uint64_t(new_speed_element.in_bytes + exp_value_subnet * ((double)current_average_speed_element->in_bytes -
@@ -2244,7 +2244,7 @@ void recalculate_speed() {
             int current_index = vector_itr - itr->second.begin();
 
             // New element
-            map_element_t new_speed_element;
+            subnet_counter_t new_speed_element;
 
             // convert to host order for math operations
             uint32_t subnet_ip                     = ntohl(itr->first.subnet_address);
@@ -2286,7 +2286,7 @@ void recalculate_speed() {
             double exp_power = -speed_calc_period / average_calculation_amount;
             double exp_value = exp(exp_power);
 
-            map_element_t* current_average_speed_element = &SubnetVectorMapSpeedAverage[itr->first][current_index];
+            subnet_counter_t* current_average_speed_element = &SubnetVectorMapSpeedAverage[itr->first][current_index];
 
             // Calculate average speed from per-second speed
             build_average_speed_counters_from_speed_counters(current_average_speed_element, new_speed_element, exp_value, exp_power);
@@ -2467,7 +2467,7 @@ std::string draw_table_ipv6(direction_t sort_direction, bool do_redis_update, so
         uint64_t flows = 0;
 
         // Here we could have average or instantaneous speed
-        map_element_t* current_speed_element = &ii->second;
+        subnet_counter_t* current_speed_element = &ii->second;
 
         // Create polymorphic pps, byte and flow counters
         if (sort_direction == INCOMING) {
@@ -2508,7 +2508,7 @@ std::string draw_table_ipv4(direction_t data_direction, bool do_redis_update, so
 
     map_of_vector_counters_t* current_speed_map = &SubnetVectorMapSpeedAverage;
 
-    map_element_t zero_map_element{};
+    subnet_counter_t zero_map_element{};
 
     unsigned int count_of_zero_speed_packets = 0;
     for (map_of_vector_counters_t::iterator itr = current_speed_map->begin(); itr != current_speed_map->end(); ++itr) {
@@ -2523,7 +2523,7 @@ std::string draw_table_ipv4(direction_t data_direction, bool do_redis_update, so
             uint32_t client_ip = htonl(client_ip_in_host_bytes_order);
 
             // Do not add zero speed packets to sort list
-            if (memcmp((void*)&zero_map_element, &*vector_itr, sizeof(map_element_t)) != 0) {
+            if (memcmp((void*)&zero_map_element, &*vector_itr, sizeof(subnet_counter_t)) != 0) {
                 vector_for_sort.push_back(std::make_pair(client_ip, *vector_itr));
             } else {
                 count_of_zero_speed_packets++;
@@ -2566,7 +2566,7 @@ std::string draw_table_ipv4(direction_t data_direction, bool do_redis_update, so
         uint64_t flows = 0;
 
         // Here we could have average or instantaneous speed
-        map_element_t* current_speed_element = &ii->second;
+        subnet_counter_t* current_speed_element = &ii->second;
 
         // Create polymorphic pps, byte and flow counters
         if (data_direction == INCOMING) {
@@ -2842,7 +2842,7 @@ void process_packet(simple_packet_t& current_packet) {
             return;
         }
 
-        map_element_t* current_element = &itr->second[shift_in_vector];
+        subnet_counter_t* current_element = &itr->second[shift_in_vector];
 
         increment_outgoing_counters(current_element, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
 
@@ -2863,7 +2863,7 @@ void process_packet(simple_packet_t& current_packet) {
             return;
         }
 
-        map_element_t* current_element = &itr->second[shift_in_vector];
+        subnet_counter_t* current_element = &itr->second[shift_in_vector];
 
         increment_incoming_counters(current_element, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
 
@@ -2921,7 +2921,7 @@ void process_packet(simple_packet_t& current_packet) {
 
 #ifdef USE_NEW_ATOMIC_BUILTINS
 // Increment fields using data from specified packet
-void increment_outgoing_counters(map_element_t* current_element,
+void increment_outgoing_counters(subnet_counter_t* current_element,
                                  simple_packet_t& current_packet,
                                  uint64_t sampled_number_of_packets,
                                  uint64_t sampled_number_of_bytes) {
@@ -2959,7 +2959,7 @@ void increment_outgoing_counters(map_element_t* current_element,
 }
 #else
 // Increment fields using data from specified packet
-void increment_outgoing_counters(map_element_t* current_element,
+void increment_outgoing_counters(subnet_counter_t* current_element,
                                  simple_packet_t& current_packet,
                                  uint64_t sampled_number_of_packets,
                                  uint64_t sampled_number_of_bytes) {
@@ -3000,7 +3000,7 @@ void increment_outgoing_counters(map_element_t* current_element,
 #ifdef USE_NEW_ATOMIC_BUILTINS
 
 // This function increments all our accumulators according to data from packet
-void increment_incoming_counters(map_element_t* current_element,
+void increment_incoming_counters(subnet_counter_t* current_element,
                                  simple_packet_t& current_packet,
                                  uint64_t sampled_number_of_packets,
                                  uint64_t sampled_number_of_bytes) {
@@ -3041,7 +3041,7 @@ void increment_incoming_counters(map_element_t* current_element,
 #else
 
 // This function increments all our accumulators according to data from packet
-void increment_incoming_counters(map_element_t* current_element,
+void increment_incoming_counters(subnet_counter_t* current_element,
                                  simple_packet_t& current_packet,
                                  uint64_t sampled_number_of_packets,
                                  uint64_t sampled_number_of_bytes) {

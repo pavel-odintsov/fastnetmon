@@ -1024,7 +1024,7 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
 
     subnet_cidr_mask_t current_subnet(subnet_as_integer, bitlen);
 
-    map_element_t zero_map_element{};
+    subnet_counter_t zero_map_element{};
 
     // Initilize our counters with fill constructor
     try {
@@ -1048,7 +1048,7 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
 }
 
 void zeroify_all_counters() {
-    map_element_t zero_map_element{};
+    subnet_counter_t zero_map_element{};
 
     for (map_of_vector_counters_t::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); ++itr) {
         // logger<< log4cpp::Priority::INFO<<"Zeroify "<<itr->first;
@@ -1211,7 +1211,7 @@ bool load_our_networks_list() {
            << "Total number of monitored hosts (total size of all networks): " << total_number_of_hosts_in_our_networks;
 
     // 3 - speed counter, average speed counter and data counter
-    uint64_t memory_requirements = 3 * sizeof(map_element_t) * total_number_of_hosts_in_our_networks / 1024 / 1024;
+    uint64_t memory_requirements = 3 * sizeof(subnet_counter_t) * total_number_of_hosts_in_our_networks / 1024 / 1024;
 
     logger << log4cpp::Priority::INFO << "We need " << memory_requirements << " MB of memory for storing counters for your networks";
 

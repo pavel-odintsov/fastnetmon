@@ -25,7 +25,7 @@
 
 enum attack_severity_t { ATTACK_SEVERITY_LOW, ATTACK_SEVERITY_MIDDLE, ATTACK_SEVERITY_HIGH };
 
-typedef std::vector<map_element_t> vector_of_counters_t;
+typedef std::vector<subnet_counter_t> vector_of_counters_t;
 
 typedef std::map<std::string, std::string> configuration_map_t;
 typedef std::map<std::string, uint64_t> graphite_data_t;
@@ -176,7 +176,7 @@ class total_counter_element_t {
 };
 
 // structure with attack details
-class attack_details_t : public map_element_t {
+class attack_details_t : public subnet_counter_t {
     public:
     // This operation is very heavy, it may crash in case of entropy shortage and it actually happened to our customer
     bool generate_uuid() {
@@ -280,8 +280,8 @@ class conntrack_main_struct_t {
     contrack_map_type out_other;
 };
 
-typedef std::map<uint32_t, map_element_t> map_for_counters;
-typedef std::vector<map_element_t> vector_of_counters;
+typedef std::map<uint32_t, subnet_counter_t> map_for_counters;
+typedef std::vector<subnet_counter_t> vector_of_counters;
 
 typedef std::map<subnet_cidr_mask_t, vector_of_counters> map_of_vector_counters_t;
 
@@ -290,7 +290,7 @@ typedef std::vector<conntrack_main_struct_t> vector_of_flow_counters_t;
 typedef std::map<subnet_cidr_mask_t, vector_of_flow_counters_t> map_of_vector_counters_for_flow_t;
 
 
-typedef map_element_t subnet_counter_t;
+typedef subnet_counter_t subnet_counter_t;
 typedef std::pair<subnet_cidr_mask_t, subnet_counter_t> pair_of_map_for_subnet_counters_elements_t;
 typedef std::map<subnet_cidr_mask_t, subnet_counter_t> map_for_subnet_counters_t;
 
@@ -354,7 +354,7 @@ class ban_settings_t {
 typedef std::map<std::string, ban_settings_t> host_group_ban_settings_map_t;
 
 // data structure for storing data in Vector
-typedef std::pair<uint32_t, map_element_t> pair_of_map_elements;
+typedef std::pair<uint32_t, subnet_counter_t> pair_of_map_elements;
 
 
 #endif

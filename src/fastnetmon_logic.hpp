@@ -13,17 +13,17 @@
 
 typedef std::map<std::string, uint32_t> active_flow_spec_announces_t;
 
-void build_speed_counters_from_packet_counters(map_element_t& new_speed_element, map_element_t* vector_itr, double speed_calc_period);
+void build_speed_counters_from_packet_counters(subnet_counter_t& new_speed_element, subnet_counter_t* vector_itr, double speed_calc_period);
 
-void build_average_speed_counters_from_speed_counters(map_element_t* current_average_speed_element,
-                                                      map_element_t& new_speed_element,
+void build_average_speed_counters_from_speed_counters(subnet_counter_t* current_average_speed_element,
+                                                      subnet_counter_t& new_speed_element,
                                                       double exp_value,
                                                       double exp_power);
 
 std::string get_amplification_attack_type(amplification_attack_type_t attack_type);
 std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type, std::string destination_ip);
 
-bool we_should_ban_this_entity(map_element_t* average_speed_element,
+bool we_should_ban_this_entity(subnet_counter_t* average_speed_element,
                                ban_settings_t& current_ban_settings,
                                attack_detection_threshold_type_t& attack_detection_source,
                                attack_detection_direction_type_t& attack_detection_direction);
@@ -75,7 +75,7 @@ void store_data_in_redis(std::string key_name, std::string attack_details);
 redisContext* redis_init_connection();
 #endif
 
-void execute_ip_ban(uint32_t client_ip, map_element_t average_speed_element, std::string flow_attack_details, subnet_cidr_mask_t customer_subnet);
+void execute_ip_ban(uint32_t client_ip, subnet_counter_t average_speed_element, std::string flow_attack_details, subnet_cidr_mask_t customer_subnet);
 
 void call_ban_handlers(uint32_t client_ip,
                        subnet_ipv6_cidr_mask_t client_ipv6,
@@ -100,24 +100,24 @@ void print_screen_contents_into_file(std::string screen_data_stats_param, std::s
 void zeroify_all_flow_counters();
 void process_packet(simple_packet_t& current_packet);
 
-void increment_outgoing_counters(map_element_t* current_element,
+void increment_outgoing_counters(subnet_counter_t* current_element,
                                  simple_packet_t& current_packet,
                                  uint64_t sampled_number_of_packets,
                                  uint64_t sampled_number_of_bytes);
 
-void increment_incoming_counters(map_element_t* current_element,
+void increment_incoming_counters(subnet_counter_t* current_element,
                                  simple_packet_t& current_packet,
                                  uint64_t sampled_number_of_packets,
                                  uint64_t sampled_number_of_bytes);
 
 void system_counters_speed_thread_handler();
 
-void increment_outgoing_counters(map_element_t* current_element,
+void increment_outgoing_counters(subnet_counter_t* current_element,
                                  simple_packet_t& current_packet,
                                  uint64_t sampled_number_of_packets,
                                  uint64_t sampled_number_of_bytes);
 
-void increment_incoming_counters(map_element_t* current_element,
+void increment_incoming_counters(subnet_counter_t* current_element,
                                  simple_packet_t& current_packet,
                                  uint64_t sampled_number_of_packets,
                                  uint64_t sampled_number_of_bytes);

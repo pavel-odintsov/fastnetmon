@@ -77,10 +77,10 @@ bool write_line_of_data_to_influxdb(std::string influx_database,
                                     std::map<std::string, std::string>& tags,
                                     std::map<std::string, uint64_t>& plain_total_counters_map);
 
-void fill_per_protocol_countres_for_influxdb(const map_element_t* current_speed_element,
+void fill_per_protocol_countres_for_influxdb(const subnet_counter_t* current_speed_element,
                                              std::map<std::string, uint64_t>& plain_total_counters_map);
 
-void fill_main_counters_for_influxdb(const map_element_t* current_speed_element,
+void fill_main_counters_for_influxdb(const subnet_counter_t* current_speed_element,
                                      std::map<std::string, uint64_t>& plain_total_counters_map,
                                      bool populate_flow);
 

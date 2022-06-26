@@ -52,7 +52,7 @@ bool push_hosts_traffic_counters_to_graphite() {
             std::replace(ip_as_string_with_dash_delimiters.begin(), ip_as_string_with_dash_delimiters.end(), '.', '_');
 
             // Here we could have average or instantaneous speed
-            map_element_t* current_speed_element = &*vector_itr;
+            subnet_counter_t* current_speed_element = &*vector_itr;
 
             for (auto data_direction : processed_directions) {
                 std::string direction_as_string;
@@ -161,7 +161,7 @@ bool push_network_traffic_counters_to_graphite() {
     graphite_data_t graphite_data;
 
     for (map_for_subnet_counters_t::iterator itr = PerSubnetAverageSpeedMap.begin(); itr != PerSubnetAverageSpeedMap.end(); ++itr) {
-        map_element_t* speed                            = &itr->second;
+        subnet_counter_t* speed                            = &itr->second;
         std::string subnet_as_string_as_dash_delimiters = convert_subnet_to_string(itr->first);
         ;
 
