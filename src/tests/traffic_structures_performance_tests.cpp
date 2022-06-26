@@ -49,58 +49,13 @@
 #include "../fast_library.hpp"
 
 log4cpp::Category& logger = log4cpp::Category::getRoot();
-
-
-// No speed benefits
-// std::map<uint32_t, subnet_counter_t, std::less<uint32_t>,
-// boost::fast_pool_allocator<std::pair<const
-// uint32_t, map_element>>
-std::map<uint32_t, subnet_counter_t> DataCounter;
-
-std::map<uint32_t, subnet_counter_t> DataCounterPrecreated;
-
-
 std::mutex data_counter_mutex;
-
-std::unordered_map<uint32_t, subnet_counter_t> DataCounterUnordered;
-
-std::unordered_map<uint32_t, subnet_counter_t> DataCounterUnorderedPreallocated;
-
-std::unordered_map<uint32_t, subnet_counter_t> DataCounterUnorderedPrecreated;
-
-
-boost::unordered_map<uint32_t, subnet_counter_t> DataCounterBoostUnordered;
-
-boost::unordered_map<uint32_t, subnet_counter_t> DataCounterBoostUnorderedPreallocated;
-
-boost::unordered_map<uint32_t, subnet_counter_t> DataCounterBoostUnorderedPrecreated;
-
-boost::container::flat_map<uint32_t, subnet_counter_t> DataCounterBoostFlatMap;
 
 struct eqint {
     bool operator()(uint32_t a, uint32_t b) const {
         return a == b;
     }
 };
-
-#ifdef TEST_SPARSE_HASH
-google::dense_hash_map<uint32_t, subnet_counter_t, std::hash<uint32_t>, eqint, google::libc_allocator_with_realloc<std::pair<const uint32_t, subnet_counter_t>>> DataCounterGoogleDensehashMapPreallocated;
-
-google::dense_hash_map<uint32_t, subnet_counter_t, std::hash<uint32_t>, eqint, google::libc_allocator_with_realloc<std::pair<const uint32_t, subnet_counter_t>>> DataCounterGoogleDensehashMap;
-#endif
-
-#ifdef ABSEIL
-absl::flat_hash_map<uint32_t, subnet_counter_t> DataCounterAbseilFlatHashMap;
-#endif
-
-#ifdef TEST_TBB_LIBRARY
-
-#ifndef __APPLE__
-tbb::concurrent_unordered_map<uint32_t, subnet_counter_t> DataCounterUnorderedConcurrent;
-#endif
-
-#endif
-
 
 using namespace std;
 
@@ -109,13 +64,6 @@ int number_of_retries = 1;
 
 // #define enable_mutexes_in_test
 unsigned int number_of_threads = 1;
-
-// Preallocate vector
-std::vector<subnet_counter_t> DataCounterVector(number_of_ips);
-subnet_counter_t* data_counter_c_array_ptr = nullptr;
-
-subnet_counter_t* data_counter_c_array_ptr_huge_tlb = nullptr;
-
 
 key_t generate_ipc_key() {
     // 121 is unique project id
@@ -128,15 +76,14 @@ key_t generate_ipc_key() {
     return ipc_key;
 }
 
-// 83 seconds
-// without mutexes segmentation fault
-void packet_collector_thread_std_map() {
+template <typename T>
+void packet_collector(T& data_structure) {
     for (int iteration = 0; iteration < number_of_retries; iteration++) {
         for (uint32_t i = 0; i < number_of_ips; i++) {
 #ifdef enable_mutexes_in_test
             data_counter_mutex.lock();
 #endif
-            DataCounter[i].udp.in_bytes++;
+            data_structure[i].udp.in_bytes++;
 
 #ifdef enable_mutexes_in_test
             data_counter_mutex.unlock();
@@ -145,194 +92,26 @@ void packet_collector_thread_std_map() {
     }
 }
 
-void packet_collector_thread_std_map_precreated() {
+
+template <typename T>
+void packet_collector_big_endian(T& data_structure) {
     for (int iteration = 0; iteration < number_of_retries; iteration++) {
         for (uint32_t i = 0; i < number_of_ips; i++) {
 #ifdef enable_mutexes_in_test
             data_counter_mutex.lock();
 #endif
-            DataCounterPrecreated[i].udp.in_bytes++;
+            // Explicitly convert data to big endian to emulate our logic closely
+            data_structure[fast_hton(i)].udp.in_bytes++;
 
 #ifdef enable_mutexes_in_test
             data_counter_mutex.unlock();
 #endif
-        }
-    }
-}
-
-void packet_collector_thread_boost_unordered_map() {
-    for (int iteration = 0; iteration < number_of_retries; iteration++) {
-        for (uint32_t i = 0; i < number_of_ips; i++) {
-#ifdef enable_mutexes_in_test
-            data_counter_mutex.lock();
-#endif
-            DataCounterBoostUnordered[i].udp.in_bytes++;
-#ifdef enable_mutexes_in_test
-            data_counter_mutex.unlock();
-#endif
-        }
-    }
-}
-
-void packet_collector_thread_boost_unordered_map_preallocated() {
-    for (int iteration = 0; iteration < number_of_retries; iteration++) {
-        for (uint32_t i = 0; i < number_of_ips; i++) {
-#ifdef enable_mutexes_in_test
-            data_counter_mutex.lock();
-#endif
-            DataCounterBoostUnorderedPreallocated[i].udp.in_bytes++;
-#ifdef enable_mutexes_in_test
-            data_counter_mutex.unlock();
-#endif
-        }
-    }
-}
-
-void packet_collector_thread_boost_unordered_map_precreated() {
-    for (int iteration = 0; iteration < number_of_retries; iteration++) {
-        for (uint32_t i = 0; i < number_of_ips; i++) {
-#ifdef enable_mutexes_in_test
-            data_counter_mutex.lock();
-#endif
-            DataCounterBoostUnorderedPrecreated[i].udp.in_bytes++;
-#ifdef enable_mutexes_in_test
-            data_counter_mutex.unlock();
-#endif
-        }
-    }
-}
-
-void packet_collector_thread_unordered_map() {
-    for (int iteration = 0; iteration < number_of_retries; iteration++) {
-        for (uint32_t i = 0; i < number_of_ips; i++) {
-#ifdef enable_mutexes_in_test
-            data_counter_mutex.lock();
-#endif
-            DataCounterUnordered[i].udp.in_bytes++;
-#ifdef enable_mutexes_in_test
-            data_counter_mutex.unlock();
-#endif
-        }
-    }
-}
-
-#ifdef ABSEIL
-void packet_collector_thread_abseil_flat_map() {
-    for (int iteration = 0; iteration < number_of_retries; iteration++) {
-        for (uint32_t i = 0; i < number_of_ips; i++) {
-#ifdef enable_mutexes_in_test
-            data_counter_mutex.lock();
-#endif
-            DataCounterAbseilFlatHashMap[i].udp.in_bytes++;
-#ifdef enable_mutexes_in_test
-            data_counter_mutex.unlock();
-#endif
-        }
-    }
-}
-#endif
-
-#ifdef TEST_SPARSE_HASH
-void packet_collector_thread_google_dense_hash_map_preallocated() {
-    for (int iteration = 0; iteration < number_of_retries; iteration++) {
-        for (uint32_t i = 0; i < number_of_ips; i++) {
-#ifdef enable_mutexes_in_test
-            data_counter_mutex.lock();
-#endif
-            DataCounterGoogleDensehashMapPreallocated[i].udp.in_bytes++;
-#ifdef enable_mutexes_in_test
-            data_counter_mutex.unlock();
-#endif
-        }
-    }
-}
-#endif
-
-#ifdef TEST_SPARSE_HASH
-void packet_collector_thread_google_dense_hash_map() {
-    for (int iteration = 0; iteration < number_of_retries; iteration++) {
-        for (uint32_t i = 0; i < number_of_ips; i++) {
-#ifdef enable_mutexes_in_test
-            data_counter_mutex.lock();
-#endif
-            DataCounterGoogleDensehashMap[i].udp.in_bytes++;
-#ifdef enable_mutexes_in_test
-            data_counter_mutex.unlock();
-#endif
-        }
-    }
-}
-#endif
-
-void packet_collector_thread_unordered_map_preallocated() {
-    for (int iteration = 0; iteration < number_of_retries; iteration++) {
-        for (uint32_t i = 0; i < number_of_ips; i++) {
-#ifdef enable_mutexes_in_test
-            data_counter_mutex.lock();
-#endif
-            DataCounterUnorderedPreallocated[i].udp.in_bytes++;
-#ifdef enable_mutexes_in_test
-            data_counter_mutex.unlock();
-#endif
-        }
-    }
-}
-
-void packet_collector_thread_unordered_map_precreated() {
-    for (int iteration = 0; iteration < number_of_retries; iteration++) {
-        for (uint32_t i = 0; i < number_of_ips; i++) {
-#ifdef enable_mutexes_in_test
-            data_counter_mutex.lock();
-#endif
-            DataCounterUnorderedPrecreated[i].udp.in_bytes++;
-#ifdef enable_mutexes_in_test
-            data_counter_mutex.unlock();
-#endif
-        }
-    }
-}
-
-
-void packet_collector_thread_flat_map_preallocated() {
-    for (int iteration = 0; iteration < number_of_retries; iteration++) {
-        for (uint32_t i = 0; i < number_of_ips; i++) {
-#ifdef enable_mutexes_in_test
-            data_counter_mutex.lock();
-#endif
-            DataCounterBoostFlatMap[i].udp.in_bytes++;
-#ifdef enable_mutexes_in_test
-            data_counter_mutex.unlock();
-#endif
-        }
-    }
-}
-
-void packet_collector_thread_vector() {
-    for (int iteration = 0; iteration < number_of_retries; iteration++) {
-        for (uint32_t i = 0; i < number_of_ips; i++) {
-            DataCounterVector[i].udp.in_bytes++;
-        }
-    }
-}
-
-void packet_collector_thread_c_array() {
-    for (int iteration = 0; iteration < number_of_retries; iteration++) {
-        for (uint32_t i = 0; i < number_of_ips; i++) {
-            data_counter_c_array_ptr[i].udp.in_bytes++;
-        }
-    }
-}
-
-void packet_collector_thread_c_array_huge_tlb() {
-    for (int iteration = 0; iteration < number_of_retries; iteration++) {
-        for (uint32_t i = 0; i < number_of_ips; i++) {
-            data_counter_c_array_ptr_huge_tlb[i].udp.in_bytes++;
         }
     }
 }
 
 // We just execute time read here
-void packet_collector_time_calculaitons() {
+void packet_collector_time_calculaitons(int) {
     struct timespec current_time;
 
     for (int iteration = 0; iteration < number_of_retries; iteration++) {
@@ -343,7 +122,7 @@ void packet_collector_time_calculaitons() {
 }
 
 // We just execute time read here
-void packet_collector_time_calculaitons_monotonic() {
+void packet_collector_time_calculaitons_monotonic(int) {
     struct timespec current_time;
 
     for (int iteration = 0; iteration < number_of_retries; iteration++) {
@@ -354,7 +133,7 @@ void packet_collector_time_calculaitons_monotonic() {
 }
 
 // We just execute time read here
-void packet_collector_time_calculaitons_monotonic_coarse() {
+void packet_collector_time_calculaitons_monotonic_coarse(int) {
     struct timespec current_time;
 
     for (int iteration = 0; iteration < number_of_retries; iteration++) {
@@ -365,7 +144,7 @@ void packet_collector_time_calculaitons_monotonic_coarse() {
 }
 
 // We just execute time read here
-void packet_collector_time_calculaitons_gettimeofday() {
+void packet_collector_time_calculaitons_gettimeofday(int) {
     struct timeval current_time;
 
     for (int iteration = 0; iteration < number_of_retries; iteration++) {
@@ -376,28 +155,31 @@ void packet_collector_time_calculaitons_gettimeofday() {
 }
 
 
-#ifdef TEST_TBB_LIBRARY
+// We just execute time read here
+/*
+void packet_collector_time_calculaitons_rdtsc(int) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+    uint64_t current_time;
 
-#ifndef __APPLE__
-void packet_collector_thread_unordered_concurrent_map() {
     for (int iteration = 0; iteration < number_of_retries; iteration++) {
         for (uint32_t i = 0; i < number_of_ips; i++) {
-            DataCounterUnorderedConcurrent[i].udp.in_bytes++;
+            current_time = read_tsc_cpu_register();
         }
     }
+#pragma GCC diagnostic pop
 }
-#endif
+*/
 
-#endif
-
-int run_tests(std::function<void()> tested_function) {
+template <typename T>
+int run_tests(std::function<void(T&)> tested_function, T& value) {
     timeval start_time;
     gettimeofday(&start_time, NULL);
 
     // std::cout << "Run "<< number_of_threads <<" threads" << endl;
     boost::thread* threads[number_of_threads];
     for (int i = 0; i < number_of_threads; i++) {
-        threads[i] = new boost::thread(tested_function);
+        threads[i] = new boost::thread(tested_function, boost::ref(value));
     }
 
     // std::cout << "All threads started" << endl;
@@ -426,7 +208,6 @@ int run_tests(std::function<void()> tested_function) {
     // printf("We spent %f seconds\n", used_time);
 
     double ops_per_second = total_operations / used_time;
-    ;
     double mega_ops_per_second = ops_per_second / 1000 / 1000;
 
     printf("%'.1f mega ops per second\n", mega_ops_per_second);
@@ -451,12 +232,20 @@ int main(int argc, char* argv[]) {
 
     bool test_monotonic_coarse                 = false;
     bool test_gettimeofday                     = false;
+
     bool test_std_map                          = false;
+    bool test_std_map_big_endian = false;
+
     bool test_tbb_concurrent_unordered_map     = false;
     
     bool test_boost_unordered_map              = false;
+    bool test_boost_unordered_map_big_endian   = false;
+    
     bool test_boost_unordered_map_preallocated = false;
+    bool test_boost_unordered_map_preallocated_big_endian = false;
+
     bool test_boost_unordered_map_precreated   = false;
+    bool test_boost_unordered_map_precreated_big_endian   = false;
 
     bool test_boost_container_flat_map         = false;
     bool test_unordered_map_cpp11              = false;
@@ -467,6 +256,7 @@ int main(int argc, char* argv[]) {
     bool test_std_map_precreated               = false;
     bool test_clock_gettime_realtime           = false;
     bool test_clock_gettime_monotonic          = false;
+    bool test_rdtsc_time                       = false;
     bool test_c_array_preallocated             = false;
     bool test_c_array_huge_pages_preallocated  = false;
 
@@ -475,14 +265,22 @@ int main(int argc, char* argv[]) {
 
         if (first_argument == "test_std_map") {
             test_std_map = true;
+        } else if (first_argument == "test_std_map_big_endian") {
+            test_std_map_big_endian = true;
         } else if (first_argument == "test_tbb_concurrent_unordered_map") {
             test_tbb_concurrent_unordered_map = true;
         } else if (first_argument == "test_boost_unordered_map") {
             test_boost_unordered_map = true;
+        } else if (first_argument == "test_boost_unordered_map_big_endian") {
+            test_boost_unordered_map_big_endian = true;
         } else if (first_argument == "test_boost_unordered_map_preallocated") {
             test_boost_unordered_map_preallocated = true;
+        } else if (first_argument == "test_boost_unordered_map_preallocated_big_endian") {
+            test_boost_unordered_map_preallocated_big_endian = true;
         } else if (first_argument == "test_boost_unordered_map_precreated") { 
             test_boost_unordered_map_precreated = true;
+        } else if (first_argument == "test_boost_unordered_map_precreated_big_endian") {
+            test_boost_unordered_map_precreated_big_endian = true;
         } else if (first_argument == "test_boost_container_flat_map") {
             test_boost_container_flat_map = true;
         } else if (first_argument == "test_unordered_map_cpp11") {
@@ -499,6 +297,8 @@ int main(int argc, char* argv[]) {
             test_clock_gettime_realtime = true;
         } else if (first_argument == "test_clock_gettime_monotonic") {
             test_clock_gettime_monotonic = true;
+        } else if (first_argument == "test_rdtsc_time") {
+            test_rdtsc_time = true;
         } else if (first_argument == "test_gettimeofday") {
             test_gettimeofday = true;
         } else if (first_argument == "test_c_array_preallocated") {
@@ -514,13 +314,19 @@ int main(int argc, char* argv[]) {
         test_gettimeofday                     = true;
         test_clock_gettime_realtime           = true;
         test_std_map                          = true;
+        test_std_map_big_endian = true;
         test_std_map_precreated               = true;
         test_tbb_concurrent_unordered_map     = true;
         
         test_boost_unordered_map              = true;
-        test_boost_unordered_map_preallocated = true;
-        test_boost_unordered_map_precreated   = true;
+        test_boost_unordered_map_big_endian   = true;
         
+        test_boost_unordered_map_preallocated = true;
+        test_boost_unordered_map_preallocated_big_endian = true;
+
+        test_boost_unordered_map_precreated   = true;
+        test_boost_unordered_map_precreated_big_endian = true;
+
         test_boost_container_flat_map         = true;
         
         test_unordered_map_cpp11              = true;
@@ -528,20 +334,32 @@ int main(int argc, char* argv[]) {
         test_unordered_map_cpp11_precreated   = true;
 
         test_vector_preallocated              = true;
+        test_rdtsc_time                       = true;
         test_c_array_preallocated             = true;
-        test_c_array_huge_pages_preallocated  = true;
+        test_c_array_huge_pages_preallocated  = false;
     }
 
     std::cout << "Element size: " << sizeof(subnet_counter_t) << " bytes" << std::endl;
     std::cout << "Total structure size: " << sizeof(subnet_counter_t) * number_of_ips / 1024 / 1024 << " Mbytes" << std::endl;
 
     if (test_std_map) {
+        std::map<uint32_t, subnet_counter_t> DataCounter;
+
         std::cout << "std::map: ";
-        run_tests(packet_collector_thread_std_map);
+        run_tests(packet_collector<std::map<uint32_t, subnet_counter_t>>, DataCounter);
+        DataCounter.clear();
+    }
+
+    if (test_std_map_big_endian) {
+        std::map<uint32_t, subnet_counter_t> DataCounter;
+
+        std::cout << "std::map: ";
+        run_tests(packet_collector_big_endian<std::map<uint32_t, subnet_counter_t>>, DataCounter);
         DataCounter.clear();
     }
 
     if (test_std_map_precreated) {
+        std::map<uint32_t, subnet_counter_t> DataCounterPrecreated; 
         // Precreate all elements
         for (uint32_t i = 0; i < number_of_ips; i++) {
             subnet_counter_t current_map_element;
@@ -550,38 +368,48 @@ int main(int argc, char* argv[]) {
         }
 
         std::cout << "std::map precreated: ";
-        run_tests(packet_collector_thread_std_map_precreated);
+        run_tests(packet_collector<std::map<uint32_t, subnet_counter_t>>, DataCounterPrecreated);
         DataCounterPrecreated.clear();
     }
 
+    if (test_boost_unordered_map) {
+        boost::unordered_map<uint32_t, subnet_counter_t> DataCounterBoostUnordered;
 
-    if (test_tbb_concurrent_unordered_map) {
-#ifdef TEST_TBB_LIBRARY
-
-#ifndef __APPLE__
-        std::cout << "tbb::concurrent_unordered_map: ";
-        run_tests(packet_collector_thread_unordered_concurrent_map);
-        DataCounterUnorderedConcurrent.clear();
-#endif
-
-#endif
+        std::cout << "boost::unordered_map: ";
+        run_tests(packet_collector<boost::unordered_map<uint32_t, subnet_counter_t>>, DataCounterBoostUnordered);
+        DataCounterBoostUnordered.clear();
     }
 
-    if (test_boost_unordered_map) {
-        std::cout << "boost::unordered_map: ";
-        run_tests(packet_collector_thread_boost_unordered_map);
+    if (test_boost_unordered_map_big_endian) {
+        boost::unordered_map<uint32_t, subnet_counter_t> DataCounterBoostUnordered;
+
+        std::cout << "boost::unordered_map big endian keys: ";
+        run_tests(packet_collector_big_endian<boost::unordered_map<uint32_t, subnet_counter_t>>, DataCounterBoostUnordered);
         DataCounterBoostUnordered.clear();
     }
 
     if (test_boost_unordered_map_preallocated) {
+        boost::unordered_map<uint32_t, subnet_counter_t> DataCounterBoostUnorderedPreallocated;
+
         std::cout << "boost::unordered_map with preallocated elements: ";
         DataCounterBoostUnorderedPreallocated.reserve(number_of_ips);
-        run_tests(packet_collector_thread_boost_unordered_map_preallocated);
+        run_tests(packet_collector<boost::unordered_map<uint32_t, subnet_counter_t>>, DataCounterBoostUnorderedPreallocated);
+        DataCounterBoostUnorderedPreallocated.clear();
+    }
+
+    if (test_boost_unordered_map_preallocated_big_endian) {
+        boost::unordered_map<uint32_t, subnet_counter_t> DataCounterBoostUnorderedPreallocated;
+
+        std::cout << "boost::unordered_map big endian keys with preallocated elements: ";
+        DataCounterBoostUnorderedPreallocated.reserve(number_of_ips);
+        run_tests(packet_collector_big_endian<boost::unordered_map<uint32_t, subnet_counter_t>>, DataCounterBoostUnorderedPreallocated);
         DataCounterBoostUnorderedPreallocated.clear();
     }
 
     if (test_boost_unordered_map_precreated) {
-        std::cout << "boost::unordered_map with precreated elements: ";
+        boost::unordered_map<uint32_t, subnet_counter_t> DataCounterBoostUnorderedPrecreated;
+
+        std::cout << "boost::unordered_map with pre-created elements: ";
 
         for (uint32_t i = 0; i < number_of_ips; i++) {
             subnet_counter_t current_map_element;
@@ -589,40 +417,61 @@ int main(int argc, char* argv[]) {
             DataCounterBoostUnorderedPrecreated.insert(std::make_pair(i, current_map_element));
         }
 
-        run_tests(packet_collector_thread_boost_unordered_map_precreated);
+        run_tests(packet_collector<boost::unordered_map<uint32_t, subnet_counter_t>>, DataCounterBoostUnorderedPrecreated);
+        DataCounterBoostUnorderedPrecreated.clear();
+    }
+
+    if (test_boost_unordered_map_precreated_big_endian) {
+        boost::unordered_map<uint32_t, subnet_counter_t> DataCounterBoostUnorderedPrecreated;
+
+        std::cout << "boost::unordered_map big endian keys with pre-created elements: ";
+
+        for (uint32_t i = 0; i < number_of_ips; i++) {
+            subnet_counter_t current_map_element;
+
+            DataCounterBoostUnorderedPrecreated.insert(std::make_pair(i, current_map_element));
+        }
+
+        run_tests(packet_collector_big_endian<boost::unordered_map<uint32_t, subnet_counter_t>>, DataCounterBoostUnorderedPrecreated);
         DataCounterBoostUnorderedPrecreated.clear();
     }
 
     if (test_boost_container_flat_map) {
+        boost::container::flat_map<uint32_t, subnet_counter_t> DataCounterBoostFlatMap;
+
         // Boost flat_map
         DataCounterBoostFlatMap.reserve(number_of_ips);
         std::cout << "boost::container::flat_map with preallocated elements: ";
-        run_tests(packet_collector_thread_flat_map_preallocated);
+        run_tests(packet_collector<boost::container::flat_map<uint32_t, subnet_counter_t>>, DataCounterBoostFlatMap);
         DataCounterBoostFlatMap.clear();
     }
 
     if (test_unordered_map_cpp11) {
+        std::unordered_map<uint32_t, subnet_counter_t> DataCounterUnordered;
+
         std::cout << "std::unordered_map C++11: ";
-        run_tests(packet_collector_thread_unordered_map);
+        run_tests(packet_collector<std::unordered_map<uint32_t, subnet_counter_t> >, DataCounterUnordered);
         DataCounterUnordered.clear();
     }
 
     if (test_unordered_map_cpp11_preallocated) {
+        std::unordered_map<uint32_t, subnet_counter_t> DataCounterUnorderedPreallocated;
+
         // Preallocate hash buckets
         DataCounterUnorderedPreallocated.reserve(number_of_ips);
         std::cout << "std::unordered_map C++11 preallocated buckets: ";
-        run_tests(packet_collector_thread_unordered_map_preallocated);
+        run_tests(packet_collector<std::unordered_map<uint32_t, subnet_counter_t> >, DataCounterUnorderedPreallocated);
 
-        /*
-        std::cout << "Number of buckets: " << DataCounterUnorderedPreallocated.bucket_count() << std::endl;
-        std::cout << "Number of IP's: " << DataCounterUnorderedPreallocated.size() << std::endl;
-        std::cout << "Load factor: " << DataCounterUnorderedPreallocated.load_factor() << std::endl;
-        */
+        // std::cout << "Number of buckets: " << DataCounterUnorderedPreallocated.bucket_count() << std::endl;
+        // std::cout << "Number of IP's: " << DataCounterUnorderedPreallocated.size() << std::endl;
+        // std::cout << "Load factor: " << DataCounterUnorderedPreallocated.load_factor() << std::endl;
         DataCounterUnorderedPreallocated.clear();
     }
 
     if (test_unordered_map_cpp11_precreated) {
-        // Precreate all elements in hash
+        std::unordered_map<uint32_t, subnet_counter_t> DataCounterUnorderedPrecreated;
+
+        // Pre-create all elements in hash
         for (uint32_t i = 0; i < number_of_ips; i++) {
             subnet_counter_t current_map_element;
 
@@ -630,41 +479,68 @@ int main(int argc, char* argv[]) {
         }
 
         std::cout << "std::unordered_map C++11 precreated elements: ";
-        run_tests(packet_collector_thread_unordered_map_precreated);
+        run_tests(packet_collector<std::unordered_map<uint32_t, subnet_counter_t>>, DataCounterUnorderedPrecreated);
         DataCounterUnorderedPrecreated.clear();
     }
 
 #ifdef ABSEIL
+    absl::flat_hash_map<uint32_t, subnet_counter_t> DataCounterAbseilFlatHashMap;
+
     std::cout << "abesil::flat_hash_map: ";
-    run_tests(packet_collector_thread_abseil_flat_map);
+    run_tests(packet_collector<absl::flat_hash_map<uint32_t, subnet_counter_t> >, DataCounterAbseilFlatHashMap);
 #endif
 
 #ifdef TEST_SPARSE_HASH
+    google::dense_hash_map<uint32_t, subnet_counter_t, std::hash<uint32_t>, eqint, google::libc_allocator_with_realloc<std::pair<const uint32_t, subnet_counter_t>>> DataCounterGoogleDensehashMap;
+
     std::cout << "google:dense_hashmap without preallocation: ";
     DataCounterGoogleDensehashMap.set_empty_key(UINT32_MAX); // We will got assert without it!
-    run_tests(packet_collector_thread_google_dense_hash_map);
+    run_tests(packet_collector<google::dense_hash_map<uint32_t, subnet_counter_t, std::hash<uint32_t>, eqint, google::libc_allocator_with_realloc<std::pair<const uint32_t, subnet_counter_t>>> >, DataCounterGoogleDensehashMap);
     DataCounterGoogleDensehashMap.clear();
 #endif
 
 #ifdef TEST_SPARSE_HASH
+    google::dense_hash_map<uint32_t, subnet_counter_t, std::hash<uint32_t>, eqint, google::libc_allocator_with_realloc<std::pair<const uint32_t, subnet_counter_t>>> DataCounterGoogleDensehashMapPreallocated;
+
     std::cout << "google:dense_hashmap preallocated buckets: ";
     // We use UINT32_MAX as "empty" here, not a good idea but OK for tests
     DataCounterGoogleDensehashMapPreallocated.set_empty_key(UINT32_MAX); // We will got assert without it!
     DataCounterGoogleDensehashMapPreallocated.resize(number_of_ips);
-    run_tests(packet_collector_thread_google_dense_hash_map_preallocated);
+
+    run_tests(packet_collector<google::dense_hash_map<uint32_t, subnet_counter_t, std::hash<uint32_t>, eqint, google::libc_allocator_with_realloc<std::pair<const uint32_t, subnet_counter_t>>>>, DataCounterGoogleDensehashMapPreallocated);
+    
     DataCounterGoogleDensehashMapPreallocated.clear();
 #endif
 
+    if (test_tbb_concurrent_unordered_map) {
+#ifdef TEST_TBB_LIBRARY
+
+#ifndef __APPLE_
+        tbb::concurrent_unordered_map<uint32_t, subnet_counter_t> DataCounterUnorderedConcurrent;
+        std::cout << "tbb::concurrent_unordered_map: ";
+        run_tests(packet_collector<tbb::concurrent_unordered_map<uint32_t, subnet_counter_t>>, DataCounterUnorderedConcurrent);
+        DataCounterUnorderedConcurrent.clear();
+#endif
+
+#endif
+    }
+
     if (test_vector_preallocated) {
+        std::vector<subnet_counter_t> DataCounterVector(number_of_ips);
+
         std::cout << "std::vector preallocated: ";
-        run_tests(packet_collector_thread_vector);
+        run_tests(packet_collector<std::vector<subnet_counter_t>>, DataCounterVector);
         DataCounterVector.clear();
     }
 
     if (test_c_array_preallocated) {
+        subnet_counter_t* data_counter_c_array_ptr = nullptr;
+
         data_counter_c_array_ptr = new subnet_counter_t[number_of_ips];
         std::cout << "C array preallocated: ";
-        run_tests(packet_collector_thread_c_array);
+
+        run_tests(packet_collector<subnet_counter_t*>, data_counter_c_array_ptr);
+        
         delete[] data_counter_c_array_ptr;
         data_counter_c_array_ptr = NULL;
     }
@@ -752,10 +628,8 @@ int main(int argc, char* argv[]) {
             exit(1);
         }
 
-        /*
-        In 3.8 or more recent we could use SHM_HUGE_2MB and SHM_HUGE_1GB flag options! But unfortunately on Ubuntu 14.04
-        we haven't this
-        */
+        // In 3.8 or more recent we could use SHM_HUGE_2MB and SHM_HUGE_1GB flag options! But unfortunately on Ubuntu 14.04
+        // we haven't this
         auto ipc_key = generate_ipc_key();
 
         if (ipc_key == 0) {
@@ -774,6 +648,7 @@ int main(int argc, char* argv[]) {
 
         // std::cerr << "Correctly allocated hugetlb" << std::endl;
 
+        subnet_counter_t* data_counter_c_array_ptr_huge_tlb = nullptr;
         data_counter_c_array_ptr_huge_tlb = (subnet_counter_t*)shmat(shmid, 0, 0);
 
         if (data_counter_c_array_ptr_huge_tlb == (subnet_counter_t*)-1) {
@@ -789,7 +664,7 @@ int main(int argc, char* argv[]) {
         }
 
         std::cout << "C array preallocated with huge tlb: ";
-        run_tests(packet_collector_thread_c_array_huge_tlb);
+        run_tests(packet_collector<subnet_counter_t*>, data_counter_c_array_ptr_huge_tlb);
 
         // std::cerr << "Deallocate tlb" << std::endl;
 
@@ -799,26 +674,33 @@ int main(int argc, char* argv[]) {
         shmctl(shmid, IPC_RMID, NULL);
     }
 
+    // Fake value to make template logic happy
+    int fake_int = 0;
 
     if (test_clock_gettime_monotonic) {
         std::cout << "clock_gettime CLOCK_MONOTONIC: ";
-        run_tests(packet_collector_time_calculaitons_monotonic);
+        run_tests<int>(packet_collector_time_calculaitons_monotonic, fake_int);
     }
 
     // According to https://fossies.org/dox/glibc-2.23/sysdeps_2unix_2clock__gettime_8c_source.html clock_gettime with
     // CLOCK_REALTIME is a just shortcut for gettimeofday
     if (test_clock_gettime_realtime) {
         std::cout << "clock_gettime CLOCK_REALTIME: ";
-        run_tests(packet_collector_time_calculaitons);
+        run_tests<int>(packet_collector_time_calculaitons, fake_int);
     }
+
+    //if (test_rdtsc_time) {
+    //    std::cout << "rdtsc assembler instruction: ";
+    //    run_tests<int>(packet_collector_time_calculaitons_rdtsc, fake_int);
+    //}
 
     if (test_gettimeofday) {
         std::cout << "gettimeofday: ";
-        run_tests(packet_collector_time_calculaitons_gettimeofday);
+        run_tests<int>(packet_collector_time_calculaitons_gettimeofday, fake_int);
     }
 
     if (test_monotonic_coarse) {
         std::cout << "clock_gettime CLOCK_MONOTONIC_COARSE: ";
-        run_tests(packet_collector_time_calculaitons_monotonic_coarse);
+        run_tests<int>(packet_collector_time_calculaitons_monotonic_coarse, fake_int);
     }
 }
