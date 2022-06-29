@@ -746,7 +746,7 @@ if (BUILD_TESTS)
     target_link_libraries(traffic_structures_tests ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${LOG4CPP_LIBRARY_PATH} fast_library)
 
     add_executable(patricia_performance_tests tests/patricia_performance_tests.cpp)
-    target_link_libraries(patricia_performance_tests patricia fast_library)
+    target_link_libraries(patricia_performance_tests patricia fast_library ${LOG4CPP_LIBRARY_PATH})
 endif()
 
 # Check default values prepared by CMAKE for us
