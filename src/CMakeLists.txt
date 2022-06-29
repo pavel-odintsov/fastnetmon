@@ -745,6 +745,9 @@ if (BUILD_TESTS)
     add_executable(traffic_structures_tests tests/traffic_structures_performance_tests.cpp)
     target_link_libraries(traffic_structures_tests ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${LOG4CPP_LIBRARY_PATH} fast_library)
 
+    add_executable(traffic_structures_tests_real_traffic tests/traffic_structures_performance_tests_real_traffic.cpp)
+    target_link_libraries(traffic_structures_tests_real_traffic ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${LOG4CPP_LIBRARY_PATH} fast_library)
+
     add_executable(patricia_performance_tests tests/patricia_performance_tests.cpp)
     target_link_libraries(patricia_performance_tests patricia fast_library ${LOG4CPP_LIBRARY_PATH})
 endif()
