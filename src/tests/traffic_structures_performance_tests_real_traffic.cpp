@@ -121,11 +121,13 @@ int main() {
     host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
 #endif
 
+    std::string file_path = "/home/odintsov/cable_isp_ip_addresses_non_unique.txt";
+
     std::string line;
-    std::ifstream myfile("/home/odintsov/cable_isp_ip_addresses_non_unique.txt");
+    std::ifstream myfile(file_path);
 
     if (!myfile.is_open()) {
-        std::cerr << "Could not open file with IP list" << std::endl;
+        std::cerr << "Could not open file with IP list: " << file_path << std::endl;
         return 1;
     }
 
@@ -167,6 +169,8 @@ int main() {
         run_tests(our_ips_big_endian, std_map);
         run_scan_tests(std_map, accumulator);
         std_map.clear();
+
+        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator;
     }
 
 
@@ -178,6 +182,8 @@ int main() {
         run_tests(our_ips_little_endian, std_map);
         run_scan_tests(std_map, accumulator);
         std_map.clear();
+
+        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator;
     }
 
 
@@ -189,6 +195,8 @@ int main() {
         run_tests(our_ips_big_endian, std_unordered);
         run_scan_tests(std_unordered, accumulator);
         std_unordered.clear();
+
+        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator;
     }
 
     {
@@ -199,6 +207,8 @@ int main() {
         run_tests(our_ips_little_endian, std_unordered);
         run_scan_tests(std_unordered, accumulator);
         std_unordered.clear();
+
+        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator;
     }
 
 
@@ -210,6 +220,8 @@ int main() {
         run_tests(our_ips_big_endian, boost_unordered);
         run_scan_tests(boost_unordered, accumulator);
         boost_unordered.clear();
+
+        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator;
     }
 
     {
@@ -220,6 +232,8 @@ int main() {
         run_tests(our_ips_little_endian, boost_unordered);
         run_scan_tests(boost_unordered, accumulator);
         boost_unordered.clear();
+
+        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator;
     }
 
 }
