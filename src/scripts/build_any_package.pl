@@ -48,14 +48,10 @@ Description=FastNetMon - DoS/DDoS analyzer with sFlow/Netflow/mirror support
 After=network.target remote-fs.target
  
 [Service]
-Type=forking
-ExecStart=/opt/fastnetmon-community/app/bin/fastnetmon --daemonize
-PIDFile=/run/fastnetmon.pid
+Type=simple
+ExecStart=/opt/fastnetmon-community/app/bin/fastnetmon --disable_pid_logic
 LimitNOFILE=65535
 
-#ExecReload=/bin/kill -s HUP $MAINPID
-#ExecStop=/bin/kill -s QUIT $MAINPID
- 
 [Install]
 WantedBy=multi-user.target
 DOC
@@ -288,13 +284,12 @@ sub build_deb_package {
 
     my $fastnetmon_systemd_unit = <<'DOC';
 [Unit]
-Description=FastNetMon - DoS/DDoS analyzer with sFlow/netflow/mirror support
+Description=FastNetMon - DoS/DDoS analyzer with sFlow/Netflow/mirror support
 After=network.target remote-fs.target
  
 [Service]
-Type=forking
-ExecStart=/opt/fastnetmon-community/app/bin/fastnetmon --daemonize
-PIDFile=/run/fastnetmon.pid
+Type=simple
+ExecStart=/opt/fastnetmon-community/app/bin/fastnetmon --disable_pid_logic
 LimitNOFILE=65535
 
 [Install]
