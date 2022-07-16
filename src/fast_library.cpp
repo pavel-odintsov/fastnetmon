@@ -1119,17 +1119,6 @@ std::string serialize_network_load_to_text(subnet_counter_t& network_speed_meter
     return buffer.str();
 }
 
-json_object* serialize_network_load_to_json(subnet_counter_t& network_speed_meter) {
-    json_object* jobj = json_object_new_object();
-
-    json_object_object_add(jobj, "incoming traffic", json_object_new_int(network_speed_meter.total.in_bytes));
-    json_object_object_add(jobj, "outgoing traffic", json_object_new_int(network_speed_meter.total.out_bytes));
-    json_object_object_add(jobj, "incoming pps", json_object_new_int(network_speed_meter.total.in_packets));
-    json_object_object_add(jobj, "outgoing pps", json_object_new_int(network_speed_meter.total.out_packets));
-
-    return jobj;
-}
-
 std::string serialize_statistic_counters_about_attack(attack_details_t& current_attack) {
     std::stringstream attack_description;
 
