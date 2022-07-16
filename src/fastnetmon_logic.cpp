@@ -1080,18 +1080,128 @@ std::string get_attack_description(uint32_t client_ip, attack_details_t& current
     return attack_description.str();
 }
 
-std::string get_attack_description_in_json(uint32_t client_ip, attack_details_t& current_attack) {
-    json_object* jobj = json_object_new_object();
+// Serialises traffic counters to JSON
+bool serialize_traffic_counters_to_json(const attack_details_t& traffic_counters, nlohmann::json& json_details) {
+    try {
+        json_details["total_incoming_traffic"]      = traffic_counters.total.in_bytes;
+        json_details["total_incoming_traffic_bits"] = traffic_counters.total.in_bytes * 8;
 
-    json_object_object_add(jobj, "ip", json_object_new_string(convert_ip_as_uint_to_string(client_ip).c_str()));
-    json_object_object_add(jobj, "attack_details", serialize_attack_description_to_json(current_attack));
+        json_details["total_outgoing_traffic"]      = traffic_counters.total.out_bytes;
+        json_details["total_outgoing_traffic_bits"] = traffic_counters.total.out_bytes * 8;
 
-    // So we haven't statistic_counters here but from my point of view they are useless
+        json_details["total_incoming_pps"]   = traffic_counters.total.in_packets;
+        json_details["total_outgoing_pps"]   = traffic_counters.total.out_packets;
+        json_details["total_incoming_flows"] = traffic_counters.in_flows;
+        json_details["total_outgoing_flows"] =traffic_counters.out_flows;
 
-    std::string json_as_text = json_object_to_json_string(jobj);
+        json_details["incoming_dropped_traffic"]      = traffic_counters.dropped.in_bytes;
+        json_details["incoming_dropped_traffic_bits"] = traffic_counters.dropped.in_bytes * 8;
 
-    // Free memory
-    json_object_put(jobj);
+        json_details["outgoing_dropped_traffic"]      =traffic_counters.dropped.out_bytes;
+        json_details["outgoing_dropped_traffic_bits"] = traffic_counters.dropped.out_bytes * 8;
+
+        json_details["incoming_dropped_pps"] = traffic_counters.dropped.in_packets;
+        json_details["outgoing_dropped_pps"] = traffic_counters.dropped.out_packets;
+
+        json_details["incoming_ip_fragmented_traffic"] = traffic_counters.fragmented.in_bytes;
+
+        json_details["incoming_ip_fragmented_traffic_bits"] = traffic_counters.fragmented.in_bytes * 8;
+
+        json_details["outgoing_ip_fragmented_traffic"] = traffic_counters.fragmented.out_bytes;
+
+        json_details["outgoing_ip_fragmented_traffic_bits"] = traffic_counters.fragmented.out_bytes * 8;
+
+        json_details["incoming_ip_fragmented_pps"] = traffic_counters.fragmented.in_packets;
+        json_details["outgoing_ip_fragmented_pps"] = traffic_counters.fragmented.out_packets;
+
+        json_details["incoming_tcp_traffic"]      = traffic_counters.tcp.in_bytes;
+        json_details["incoming_tcp_traffic_bits"] = traffic_counters.tcp.in_bytes * 8;
+
+        json_details["outgoing_tcp_traffic"]      = traffic_counters.tcp.out_bytes;
+        json_details["outgoing_tcp_traffic_bits"] = traffic_counters.tcp.out_bytes * 8;
+
+        json_details["incoming_tcp_pps"] = traffic_counters.tcp.in_packets;
+        json_details["outgoing_tcp_pps"] = traffic_counters.tcp.out_packets;
+
+        json_details["incoming_syn_tcp_traffic"]      = traffic_counters.tcp_syn.in_bytes;
+        json_details["incoming_syn_tcp_traffic_bits"] = traffic_counters.tcp_syn.in_bytes * 8;
+
+        json_details["outgoing_syn_tcp_traffic"]      = traffic_counters.tcp_syn.out_bytes;
+        json_details["outgoing_syn_tcp_traffic_bits"] = traffic_counters.tcp_syn.out_bytes * 8;
+
+        json_details["incoming_syn_tcp_pps"] = traffic_counters.tcp_syn.in_packets;
+        json_details["outgoing_syn_tcp_pps"] = traffic_counters.tcp_syn.out_packets;
+
+        json_details["incoming_udp_traffic"]      = traffic_counters.udp.in_bytes;
+        json_details["incoming_udp_traffic_bits"] =traffic_counters.udp.in_bytes * 8;
+
+        json_details["outgoing_udp_traffic"]      =traffic_counters.udp.out_bytes;
+        json_details["outgoing_udp_traffic_bits"] = traffic_counters.udp.out_bytes * 8;
+
+        json_details["incoming_udp_pps"] = traffic_counters.udp.in_packets;
+        json_details["outgoing_udp_pps"] = traffic_counters.udp.out_packets;
+
+        json_details["incoming_icmp_traffic"]      =traffic_counters.icmp.in_bytes;
+        json_details["incoming_icmp_traffic_bits"] = traffic_counters.icmp.in_bytes * 8;
+
+        json_details["outgoing_icmp_traffic"]      = traffic_counters.icmp.out_bytes;
+        json_details["outgoing_icmp_traffic_bits"] = traffic_counters.icmp.out_bytes * 8;
+
+        json_details["incoming_icmp_pps"] = traffic_counters.icmp.in_packets;
+        json_details["outgoing_icmp_pps"] = traffic_counters.icmp.out_packets;
+
+    } catch (...) {
+        logger << log4cpp::Priority::ERROR << "Exception was triggered in attack details JSON encoder";
+        return false;
+    }
+
+    return true;
+}
+
+bool serialize_attack_description_to_json(const attack_details_t& current_attack, nlohmann::json& json_details) {
+    // We need to catch exceptions as code may raise them here
+    try {
+        json_details["attack_uuid"]     = current_attack.get_attack_uuid_as_string();
+        json_details["host_group"]        = current_attack.host_group;
+        json_details["protocol_version"]     = current_attack.get_protocol_name();
+    } catch (...) {
+        logger << log4cpp::Priority::ERROR << "Exception was triggered in attack details JSON encoder";
+        return false;
+    }
+
+    if (!serialize_traffic_counters_to_json(current_attack, json_details)) {
+        logger << log4cpp::Priority::ERROR << "Cannot add traffic counters to JSON document";
+        return false;
+    }
+
+    return true;
+}
+
+std::string get_attack_description_in_json_for_web_hooks(uint32_t client_ip, const subnet_ipv6_cidr_mask_t& client_ipv6, bool ipv6, const std::string& action_type, const attack_details_t& current_attack) {
+    nlohmann::json callback_info;
+
+    callback_info["alert_scope"] = "host";
+
+    if (ipv6) {
+        callback_info["ip"] = print_ipv6_address(client_ipv6.subnet_address);
+    } else {
+        callback_info["ip"] = convert_ip_as_uint_to_string(client_ip);
+    }
+
+    callback_info["action"] = action_type;
+
+    nlohmann::json attack_details;
+
+    bool attack_details_result = serialize_attack_description_to_json(current_attack, attack_details);
+
+    if (attack_details_result) {
+        callback_info["attack_details"] = attack_details;
+    } else {
+        logger << log4cpp::Priority::ERROR << "Cannot generate attack details for get_attack_description_in_json_for_web_hooks";
+    }
+
+
+    std::string json_as_text = callback_info.dump();
 
     return json_as_text;
 }
@@ -1565,7 +1675,7 @@ void call_ban_handlers(uint32_t client_ip,
 
     std::string basic_attack_information = get_attack_description(client_ip, current_attack);
 
-    std::string basic_attack_information_in_json = get_attack_description_in_json(client_ip, current_attack);
+    std::string basic_attack_information_in_json = get_attack_description_in_json_for_web_hooks(client_ip, subnet_ipv6_cidr_mask_t{}, false, "ban", current_attack);
 
     std::string full_attack_description = basic_attack_information + flow_attack_details;
 

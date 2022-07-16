@@ -323,8 +323,6 @@ sub main {
     }
 
     if ($build_dependencies_only) {
-        install_json_c();
-
         install_openssl();
 
         install_capnproto();
@@ -461,40 +459,6 @@ sub download_file {
     } else {
         return 1;
     }     
-}
-
-sub install_json_c {
-    my $archive_name  = 'json-c-0.13.1-20180305.tar.gz';
-    my $install_path = "$library_install_folder/json-c-0.13";
-
-    if (-e $install_path) {
-	    print "json-c was already installed\n";
-	    return 1;
-    }
-
-    print "Install json library\n";
-
-    chdir $temp_folder_for_building_project;
-
-    print "Download archive\n";
-
-    my $json_c_download_result = download_file("https://github.com/json-c/json-c/archive/$archive_name",
-        $archive_name,
-        'd4c667ab94e7051b1e78aa727f0d937caba971e9');
-
-    unless ($json_c_download_result) {
-        fast_die("Can't download json-c sources");
-    }
-
-    print "Uncompress it\n";
-    exec_command("tar -xf $archive_name");
-    chdir "json-c-json-c-0.13.1-20180305";
-
-    print "Build it\n";
-    exec_command("$configure_options ./configure --prefix=$install_path");
-
-    print "Install it\n";
-    exec_command("make $make_options install");
 }
 
 sub install_log4cpp {
