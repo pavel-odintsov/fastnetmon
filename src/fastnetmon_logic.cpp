@@ -52,7 +52,7 @@ extern uint64_t influxdb_writes_failed;
 extern packet_buckets_storage_t<subnet_ipv6_cidr_mask_t> packet_buckets_ipv6_storage;
 extern std::string cli_stats_file_path;
 extern unsigned int total_number_of_hosts_in_our_networks;
-extern map_for_subnet_counters_t PerSubnetCountersMap;
+extern abstract_subnet_counters_t<subnet_cidr_mask_t> ipv4_network_counters;
 extern unsigned int recalculate_speed_timeout;
 extern map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
 extern bool DEBUG_DUMP_ALL_PACKETS;
@@ -127,7 +127,6 @@ extern unsigned int number_of_packets_for_pcap_attack_dump;
 extern patricia_tree_t *lookup_tree_ipv4, *whitelist_tree_ipv4;
 extern patricia_tree_t *lookup_tree_ipv6, *whitelist_tree_ipv6;
 extern std::map<uint32_t, std::vector<simple_packet_t>> ban_list_details;
-extern map_for_subnet_counters_t PerSubnetAverageSpeedMap;
 extern bool enable_subnet_counters;
 extern ban_settings_t global_ban_settings;
 extern bool exabgp_enabled;
@@ -148,7 +147,6 @@ extern std::string graphite_host;
 extern unsigned short int graphite_port;
 extern std::string sort_parameter;
 extern std::string graphite_prefix;
-extern map_for_subnet_counters_t PerSubnetSpeedMap;
 extern unsigned int ban_details_records_count;
 extern FastnetmonPlatformConfigurtion fastnetmon_platform_configuration;
 
@@ -403,18 +401,11 @@ std::string print_subnet_ipv4_load() {
         sorter = PACKETS;
     }
 
-    std::vector<pair_of_map_for_subnet_counters_elements_t> vector_for_sort;
-    vector_for_sort.reserve(PerSubnetSpeedMap.size());
+    std::vector<std::pair<subnet_cidr_mask_t, subnet_counter_t>> vector_for_sort;
 
-    for (map_for_subnet_counters_t::iterator itr = PerSubnetSpeedMap.begin(); itr != PerSubnetSpeedMap.end(); ++itr) {
-        vector_for_sort.push_back(std::make_pair(itr->first, itr->second));
-    }
+    ipv4_network_counters.get_sorted_average_speed(vector_for_sort, sorter, INCOMING);
 
-    std::sort(vector_for_sort.begin(), vector_for_sort.end(),
-              TrafficComparatorClass<pair_of_map_for_subnet_counters_elements_t>(INCOMING, sorter));
-
-    for (std::vector<pair_of_map_for_subnet_counters_elements_t>::iterator itr = vector_for_sort.begin();
-         itr != vector_for_sort.end(); ++itr) {
+    for (auto itr = vector_for_sort.begin(); itr != vector_for_sort.end(); ++itr) {
         subnet_counter_t* speed         = &itr->second;
         std::string subnet_as_string = convert_subnet_to_string(itr->first);
 
@@ -2277,56 +2268,9 @@ void recalculate_speed() {
     uint64_t outgoing_total_flows = 0;
 
     if (enable_subnet_counters) {
-        for (map_for_subnet_counters_t::iterator itr = PerSubnetSpeedMap.begin(); itr != PerSubnetSpeedMap.end(); ++itr) {
-            subnet_cidr_mask_t current_subnet = itr->first;
+        ipv4_network_counters.recalculate_speed(speed_calc_period,
+                                            (double)average_calculation_amount_for_subnets, nullptr);
 
-            map_for_subnet_counters_t::iterator iter_subnet = PerSubnetCountersMap.find(current_subnet);
-
-            if (iter_subnet == PerSubnetCountersMap.end()) {
-                logger << log4cpp::Priority::INFO << "Can't find traffic counters for subnet";
-                break;
-            }
-
-            subnet_counter_t* subnet_traffic = &iter_subnet->second;
-
-            subnet_counter_t new_speed_element;
-
-            new_speed_element.total.in_packets = uint64_t((double)subnet_traffic->total.in_packets / speed_calc_period);
-            new_speed_element.total.in_bytes   = uint64_t((double)subnet_traffic->total.in_bytes / speed_calc_period);
-
-            new_speed_element.total.out_packets = uint64_t((double)subnet_traffic->total.out_packets / speed_calc_period);
-            new_speed_element.total.out_bytes   = uint64_t((double)subnet_traffic->total.out_bytes / speed_calc_period);
-
-            /* Moving average recalculation for subnets */
-            /* http://en.wikipedia.org/wiki/Moving_average#Application_to_measuring_computer_performance */
-            double exp_power_subnet = -speed_calc_period / average_calculation_amount_for_subnets;
-            double exp_value_subnet = exp(exp_power_subnet);
-
-            subnet_counter_t* current_average_speed_element = &PerSubnetAverageSpeedMap[current_subnet];
-
-            current_average_speed_element->total.in_bytes =
-                uint64_t(new_speed_element.total.in_bytes + exp_value_subnet * ((double)current_average_speed_element->total.in_bytes -
-                                                                          (double)new_speed_element.total.in_bytes));
-
-            current_average_speed_element->total.out_bytes =
-                uint64_t(new_speed_element.total.out_bytes + exp_value_subnet * ((double)current_average_speed_element->total.out_bytes -
-                                                                           (double)new_speed_element.total.out_bytes));
-
-            current_average_speed_element->total.in_packets =
-                uint64_t(new_speed_element.total.in_packets + exp_value_subnet * ((double)current_average_speed_element->total.in_packets -
-                                                                            (double)new_speed_element.total.in_packets));
-
-            current_average_speed_element->total.out_packets =
-                uint64_t(new_speed_element.total.out_packets + exp_value_subnet * ((double)current_average_speed_element->total.out_packets -
-                                                                             (double)new_speed_element.total.out_packets));
-
-            // Update speed calculation structure
-            PerSubnetSpeedMap[current_subnet] = new_speed_element;
-            *subnet_traffic                   = zero_map_element;
-
-            // logger << log4cpp::Priority::INFO<<convert_subnet_to_string(current_subnet)
-            //    << "in pps: " << new_speed_element.in_packets << " out pps: " << new_speed_element.out_packets;
-        }
     }
 
     for (map_of_vector_counters_t::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); ++itr) {
@@ -2419,7 +2363,7 @@ void recalculate_speed() {
         }
     }
 
-    // Calculate IPv6 trafffic
+    // Calculate IPv6 per network traffic
     if (enable_subnet_counters) {
         ipv6_subnet_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount_for_subnets,
                                                speed_callback_subnet_ipv6);
@@ -2855,24 +2799,16 @@ void process_packet(simple_packet_t& current_packet) {
     }
 
     if (enable_subnet_counters && (current_packet.packet_direction == OUTGOING or current_packet.packet_direction == INCOMING)) {
-        map_for_subnet_counters_t::iterator subnet_iterator;
+        std::lock_guard<std::mutex> lock_guard(ipv4_network_counters.counter_map_mutex);
 
-        // Find element in map of subnet counters
-        subnet_iterator = PerSubnetCountersMap.find(current_subnet);
+        // We will create keys for new subnet here on demand
+        subnet_counter_t& counters = ipv4_network_counters.counter_map[current_subnet];
 
-        if (subnet_iterator == PerSubnetCountersMap.end()) {
-            logger << log4cpp::Priority::ERROR << "Can't find counter structure for subnet";
-            return;
-        }
-
-        subnet_counter_t* subnet_counter = &subnet_iterator->second;
-
-        // Increment countres for each subnet
         if (current_packet.packet_direction == OUTGOING) {
-            increment_outgoing_counters(subnet_counter, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
+            increment_outgoing_counters(&counters, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
         } else if (current_packet.packet_direction == INCOMING) {
-            increment_incoming_counters(subnet_counter, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
-        }
+            increment_incoming_counters(&counters, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
+        } 
     }
 
     map_of_vector_counters_for_flow_t::iterator itr_flow;

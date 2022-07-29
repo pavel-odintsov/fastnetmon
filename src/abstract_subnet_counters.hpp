@@ -103,7 +103,9 @@ template <typename T> class abstract_subnet_counters_t {
             subnet_traffic->zeroify();
 
             // Check thresholds
-            speed_check_callback(&current_key, current_average_speed_element);
+            if (speed_check_callback != nullptr) {
+                speed_check_callback(&current_key, current_average_speed_element);
+            }
         }
     }
 

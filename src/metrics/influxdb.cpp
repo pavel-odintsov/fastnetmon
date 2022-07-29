@@ -6,6 +6,8 @@
 
 #include "../all_logcpp_libraries.hpp"
 
+#include "../abstract_subnet_counters.hpp"
+
 #include <vector>
 
 extern struct timeval graphite_thread_execution_time;
@@ -14,7 +16,7 @@ extern map_of_vector_counters_t SubnetVectorMapSpeed;
 extern map_of_vector_counters_t SubnetVectorMapSpeedAverage;
 extern uint64_t incoming_total_flows_speed;
 extern uint64_t outgoing_total_flows_speed;
-extern map_for_subnet_counters_t PerSubnetAverageSpeedMap;
+extern abstract_subnet_counters_t<subnet_cidr_mask_t> ipv4_network_counters;
 extern uint64_t influxdb_writes_total;
 extern uint64_t influxdb_writes_failed;
 extern total_counter_element_t total_speed_average_counters_ipv6[4];
@@ -342,11 +344,15 @@ bool push_network_traffic_counters_to_influxdb(std::string influx_database,
                                                bool enable_auth,
                                                std::string influx_user,
                                                std::string influx_password) {
-    for (map_for_subnet_counters_t::iterator itr = PerSubnetAverageSpeedMap.begin(); itr != PerSubnetAverageSpeedMap.end(); ++itr) {
+
+    std::vector<std::pair<subnet_cidr_mask_t, subnet_counter_t>> speed_elements;
+    ipv4_network_counters.get_all_non_zero_average_speed_elements_as_pairs(speed_elements);
+
+    for (const auto& itr: speed_elements) {
         std::map<std::string, uint64_t> plain_total_counters_map;
 
-        subnet_counter_t* speed         = &itr->second;
-        std::string subnet_as_string = convert_subnet_to_string(itr->first);
+        const subnet_counter_t* speed         = &itr.second;
+        std::string subnet_as_string = convert_subnet_to_string(itr.first);
 
         fill_main_counters_for_influxdb(speed, plain_total_counters_map, false);
 

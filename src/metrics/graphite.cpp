@@ -8,6 +8,8 @@
 
 #include "../all_logcpp_libraries.hpp"
 
+#include "../abstract_subnet_counters.hpp"
+
 extern log4cpp::Category& logger;
 extern struct timeval graphite_thread_execution_time;
 extern total_counter_element_t total_speed_average_counters[4];
@@ -15,7 +17,7 @@ extern map_of_vector_counters_t SubnetVectorMapSpeed;
 extern map_of_vector_counters_t SubnetVectorMapSpeedAverage;
 extern uint64_t incoming_total_flows_speed;
 extern uint64_t outgoing_total_flows_speed;
-extern map_for_subnet_counters_t PerSubnetAverageSpeedMap;
+extern abstract_subnet_counters_t<subnet_cidr_mask_t> ipv4_network_counters;
 
 extern bool graphite_enabled;
 extern std::string graphite_host;
@@ -42,7 +44,7 @@ bool push_hosts_traffic_counters_to_graphite() {
             uint32_t subnet_ip                     = ntohl(itr->first.subnet_address);
             uint32_t client_ip_in_host_bytes_order = subnet_ip + current_index;
 
-            // covnert to our standard network byte order
+            // convert to our standard network byte order
             uint32_t client_ip = htonl(client_ip_in_host_bytes_order);
 
             std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
@@ -160,10 +162,12 @@ bool push_total_traffic_counters_to_graphite() {
 bool push_network_traffic_counters_to_graphite() {
     graphite_data_t graphite_data;
 
-    for (map_for_subnet_counters_t::iterator itr = PerSubnetAverageSpeedMap.begin(); itr != PerSubnetAverageSpeedMap.end(); ++itr) {
-        subnet_counter_t* speed                            = &itr->second;
-        std::string subnet_as_string_as_dash_delimiters = convert_subnet_to_string(itr->first);
-        ;
+    std::vector<std::pair<subnet_cidr_mask_t, subnet_counter_t>> speed_elements;
+    ipv4_network_counters.get_all_non_zero_average_speed_elements_as_pairs(speed_elements);
+
+    for (const auto& itr: speed_elements) {
+        const subnet_counter_t* speed                            = &itr.second;
+        std::string subnet_as_string_as_dash_delimiters = convert_subnet_to_string(itr.first);
 
         // Replace dots by dashes
         std::replace(subnet_as_string_as_dash_delimiters.begin(), subnet_as_string_as_dash_delimiters.end(), '.', '_');

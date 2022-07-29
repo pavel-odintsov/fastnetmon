@@ -358,14 +358,8 @@ abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t> ipv6_subnet_counters;
 // Host counters for IPv6
 abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t> ipv6_host_counters;
 
-// Here we store taffic per subnet
-map_for_subnet_counters_t PerSubnetCountersMap;
-
-// Here we store traffic speed per subnet
-map_for_subnet_counters_t PerSubnetSpeedMap;
-
-// Here we store average speed per subnet
-map_for_subnet_counters_t PerSubnetAverageSpeedMap;
+// Here we store traffic per subnet
+abstract_subnet_counters_t<subnet_cidr_mask_t> ipv4_network_counters;
 
 // Flow tracking structures
 map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
@@ -1039,12 +1033,9 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
     // Initilize map element
     SubnetVectorMapFlow[current_subnet] = vector_of_flow_counters_t(network_size_in_ips);
 
-    // On creating it initilizes by zeros
+    // On creating it initializes by zeros
     conntrack_main_struct_t zero_conntrack_main_struct;
     std::fill(SubnetVectorMapFlow[current_subnet].begin(), SubnetVectorMapFlow[current_subnet].end(), zero_conntrack_main_struct);
-
-    PerSubnetCountersMap[current_subnet] = zero_map_element;
-    PerSubnetSpeedMap[current_subnet]    = zero_map_element;
 }
 
 void zeroify_all_counters() {
