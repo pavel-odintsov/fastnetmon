@@ -1062,18 +1062,6 @@ std::string get_attack_description(uint32_t client_ip, attack_details_t& current
     attack_description << "IP: " << convert_ip_as_uint_to_string(client_ip) << "\n";
     attack_description << serialize_attack_description(current_attack) << "\n";
 
-    if (enable_subnet_counters) {
-        // Got subnet tracking structure
-        // TODO: we suppose case "no key exists" is not possible
-        subnet_counter_t network_speed_meter         = PerSubnetSpeedMap[current_attack.customer_network];
-        subnet_counter_t average_network_speed_meter = PerSubnetAverageSpeedMap[current_attack.customer_network];
-
-        attack_description << "Network: " << convert_subnet_to_string(current_attack.customer_network) << "\n";
-
-        attack_description << serialize_network_load_to_text(network_speed_meter, false);
-        attack_description << serialize_network_load_to_text(average_network_speed_meter, true);
-    }
-
     attack_description << serialize_statistic_counters_about_attack(current_attack);
 
     return attack_description.str();
