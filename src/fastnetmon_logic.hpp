@@ -11,8 +11,6 @@
 #include "fastnetmon.grpc.pb.h"
 #include <grpc++/grpc++.h>
 
-typedef std::map<std::string, uint32_t> active_flow_spec_announces_t;
-
 void build_speed_counters_from_packet_counters(subnet_counter_t& new_speed_element, subnet_counter_t* vector_itr, double speed_calc_period);
 
 void build_average_speed_counters_from_speed_counters(subnet_counter_t* current_average_speed_element,
@@ -61,7 +59,6 @@ std::string generate_simple_packets_dump(std::vector<simple_packet_t>& ban_list_
 
 void send_attack_details(uint32_t client_ip, attack_details_t current_attack_details);
 
-void launch_bgp_flow_spec_rule(amplification_attack_type_t attack_type, std::string client_ip_as_string);
 void call_attack_details_handlers(uint32_t client_ip, attack_details_t& current_attack, std::string attack_fingerprint);
 uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash_t* struct_value);
 bool process_flow_tracking_table(conntrack_main_struct_t& conntrack_element, std::string client_ip);

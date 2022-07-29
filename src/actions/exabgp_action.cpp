@@ -65,33 +65,3 @@ void exabgp_ban_manage(std::string action, std::string ip_as_string, attack_deta
     }
 }
 
-
-bool exabgp_flow_spec_ban_manage(std::string action, std::string flow_spec_rule_as_text) {
-    std::string announce_action;
-
-    if (action == "ban") {
-        announce_action = "announce";
-    } else {
-        announce_action = "withdraw";
-    }
-
-    // Trailing \n is very important!
-    std::string bgp_message = announce_action + " " + flow_spec_rule_as_text + "\n";
-
-    int exabgp_pipe = open(exabgp_command_pipe.c_str(), O_WRONLY);
-
-    if (exabgp_pipe <= 0) {
-        logger << log4cpp::Priority::ERROR << "Can't open ExaBGP pipe for flow spec announce " << exabgp_command_pipe;
-        return false;
-    }
-
-    int wrote_bytes = write(exabgp_pipe, bgp_message.c_str(), bgp_message.size());
-
-    if (wrote_bytes != bgp_message.size()) {
-        logger << log4cpp::Priority::ERROR << "Can't write message to ExaBGP pipe";
-        return false;
-    }
-
-    close(exabgp_pipe);
-    return true;
-}

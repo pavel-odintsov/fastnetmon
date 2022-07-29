@@ -294,9 +294,6 @@ int global_ban_time = 1800;
 // We calc average pps/bps for this time
 double average_calculation_amount = 15;
 
-// We calc average pps/bps for subnets with this time, we use longer value for calculation average network traffic
-double average_calculation_amount_for_subnets = 30;
-
 // Key used for sorting clients in output.  Allowed sort params: packets/bytes/flows
 std::string sort_parameter = "bytes";
 
@@ -311,9 +308,6 @@ unsigned int number_of_packets_for_pcap_attack_dump = 500;
 
 // log file
 log4cpp::Category& logger = log4cpp::Category::getRoot();
-
-// We store all active BGP Flow Spec announces here
-active_flow_spec_announces_t active_flow_spec_announces;
 
 /* Configuration block ends */
 
@@ -445,7 +439,6 @@ bool process_outgoing_traffic = true;
 
 logging_configuration_t read_logging_settings(configuration_map_t configuration_map);
 std::string get_amplification_attack_type(amplification_attack_type_t attack_type);
-std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type, std::string destination_ip);
 ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::string host_group_name = "");
 bool load_configuration_file();
 void free_up_all_resources();
@@ -655,11 +648,6 @@ bool load_configuration_file() {
 
     if (configuration_map.count("average_calculation_time") != 0) {
         average_calculation_amount = convert_string_to_integer(configuration_map["average_calculation_time"]);
-    }
-
-    if (configuration_map.count("average_calculation_time_for_subnets") != 0) {
-        average_calculation_amount_for_subnets =
-            convert_string_to_integer(configuration_map["average_calculation_time_for_subnets"]);
     }
 
     if (configuration_map.count("speed_calculation_delay") != 0) {

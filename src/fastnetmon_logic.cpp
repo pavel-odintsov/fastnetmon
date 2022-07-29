@@ -62,7 +62,6 @@ extern blackhole_ban_list_t<subnet_ipv6_cidr_mask_t> ban_list_ipv6_ng;
 extern uint64_t total_ipv6_packets;
 extern map_of_vector_counters_t SubnetVectorMapSpeed;
 extern double average_calculation_amount;
-extern double average_calculation_amount_for_subnets;
 extern bool print_configuration_params_on_the_screen;
 extern uint64_t our_ipv6_packets;
 extern map_of_vector_counters_t SubnetVectorMap;
@@ -100,7 +99,6 @@ extern total_counter_element_t total_speed_average_counters_ipv6[4];
 extern host_group_ban_settings_map_t host_group_ban_settings_map;
 extern bool exabgp_announce_whole_subnet;
 extern subnet_to_host_group_map_t subnet_to_host_groups;
-extern active_flow_spec_announces_t active_flow_spec_announces;
 extern bool collect_attack_pcap_dumps;
 
 extern std::mutex ban_list_details_mutex;
@@ -726,39 +724,6 @@ bool we_should_ban_this_entity(subnet_counter_t* average_speed_element,
     return false;
 }
 
-std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type,
-                                                        std::string destination_ip) {
-    exabgp_flow_spec_rule_t exabgp_rule;
-
-    bgp_flow_spec_action_t my_action;
-
-    // We drop all traffic by default
-    my_action.set_type(FLOW_SPEC_ACTION_DISCARD);
-
-    // Assign action to the rule
-    exabgp_rule.set_action(my_action);
-
-    // TODO: rewrite!
-    exabgp_rule.set_destination_subnet(convert_subnet_from_string_to_binary_with_cidr_format(destination_ip + "/32"));
-
-    // We use only UDP here
-    exabgp_rule.add_protocol(FLOW_SPEC_PROTOCOL_UDP);
-
-    if (amplification_attack_type == AMPLIFICATION_ATTACK_DNS) {
-        exabgp_rule.add_source_port(53);
-    } else if (amplification_attack_type == AMPLIFICATION_ATTACK_NTP) {
-        exabgp_rule.add_source_port(123);
-    } else if (amplification_attack_type == AMPLIFICATION_ATTACK_SSDP) {
-        exabgp_rule.add_source_port(1900);
-    } else if (amplification_attack_type == AMPLIFICATION_ATTACK_SNMP) {
-        exabgp_rule.add_source_port(161);
-    } else if (amplification_attack_type == AMPLIFICATION_ATTACK_CHARGEN) {
-        exabgp_rule.add_source_port(19);
-    }
-
-    return exabgp_rule.serialize_single_line_exabgp_v4_configuration();
-}
-
 std::string get_amplification_attack_type(amplification_attack_type_t attack_type) {
     if (attack_type == AMPLIFICATION_ATTACK_UNKNOWN) {
         return "unknown";
@@ -1224,35 +1189,6 @@ void send_attack_details(uint32_t client_ip, attack_details_t current_attack_det
         // Remove key and prevent collection new data about this attack
         std::lock_guard<std::mutex> lock_guard(ban_list_details_mutex);
         ban_list_details.erase(client_ip);
-    }
-}
-
-// Run flow spec mitigation rule
-void launch_bgp_flow_spec_rule(amplification_attack_type_t attack_type, std::string client_ip_as_string) {
-    logger << log4cpp::Priority::INFO << "We detected this attack as: " << get_amplification_attack_type(attack_type);
-
-    std::string flow_spec_rule_text = generate_flow_spec_for_amplification_attack(attack_type, client_ip_as_string);
-
-    logger << log4cpp::Priority::INFO << "We have generated BGP Flow Spec rule for this attack: " << flow_spec_rule_text;
-
-    if (exabgp_flow_spec_announces) {
-        active_flow_spec_announces_t::iterator itr = active_flow_spec_announces.find(flow_spec_rule_text);
-
-        if (itr == active_flow_spec_announces.end()) {
-            // We havent this flow spec rule active yet
-
-            logger << log4cpp::Priority::INFO << "We will publish flow spec announce about this attack";
-            bool exabgp_publish_result = exabgp_flow_spec_ban_manage("ban", flow_spec_rule_text);
-
-            if (exabgp_publish_result) {
-                active_flow_spec_announces[flow_spec_rule_text] = 1;
-            }
-        } else {
-            // We have already blocked this attack
-            logger << log4cpp::Priority::INFO << "The same rule was already sent to ExaBGP previously";
-        }
-    } else {
-        logger << log4cpp::Priority::INFO << "exabgp_flow_spec_announces disabled. We will not talk to ExaBGP";
     }
 }
 
@@ -2269,7 +2205,7 @@ void recalculate_speed() {
 
     if (enable_subnet_counters) {
         ipv4_network_counters.recalculate_speed(speed_calc_period,
-                                            (double)average_calculation_amount_for_subnets, nullptr);
+                                            (double)average_calculation_amount, nullptr);
 
     }
 
@@ -2365,7 +2301,7 @@ void recalculate_speed() {
 
     // Calculate IPv6 per network traffic
     if (enable_subnet_counters) {
-        ipv6_subnet_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount_for_subnets,
+        ipv6_subnet_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount,
                                                speed_callback_subnet_ipv6);
     }
 
