@@ -371,8 +371,8 @@ map_for_subnet_counters_t PerSubnetAverageSpeedMap;
 map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
 
 /* End of our data structs */
-boost::mutex ban_list_details_mutex;
-boost::mutex ban_list_mutex;
+std::mutex ban_list_details_mutex;
+std::mutex ban_list_mutex;
 std::mutex flow_counter;
 
 // map for flows

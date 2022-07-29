@@ -103,8 +103,8 @@ extern subnet_to_host_group_map_t subnet_to_host_groups;
 extern active_flow_spec_announces_t active_flow_spec_announces;
 extern bool collect_attack_pcap_dumps;
 
-extern boost::mutex ban_list_details_mutex;
-extern boost::mutex ban_list_mutex;
+extern std::mutex ban_list_details_mutex;
+extern std::mutex ban_list_mutex;
 extern std::mutex flow_counter;
 
 #ifdef REDIS
@@ -971,9 +971,8 @@ void cleanup_ban_list() {
 
         // Remove all unbanned hosts from the ban list
         for (std::vector<uint32_t>::iterator itr = ban_list_items_for_erase.begin(); itr != ban_list_items_for_erase.end(); ++itr) {
-            ban_list_mutex.lock();
+            std::lock_guard<std::mutex> lock_guard(ban_list_mutex);
             ban_list.erase(*itr);
-            ban_list_mutex.unlock();
         }
 
         // Unban IPv6 bans
@@ -1244,9 +1243,8 @@ void send_attack_details(uint32_t client_ip, attack_details_t current_attack_det
         // TODO: here we have definitely RACE CONDITION!!! FIX IT
 
         // Remove key and prevent collection new data about this attack
-        ban_list_details_mutex.lock();
+        std::lock_guard<std::mutex> lock_guard(ban_list_details_mutex);
         ban_list_details.erase(client_ip);
-        ban_list_details_mutex.unlock();
     }
 }
 
@@ -1630,13 +1628,15 @@ void execute_ip_ban(uint32_t client_ip, subnet_counter_t average_speed_element, 
         }
     }
 
-    ban_list_mutex.lock();
-    ban_list[client_ip] = current_attack;
-    ban_list_mutex.unlock();
+    { 
+        std::lock_guard<std::mutex> lock_guard(ban_list_mutex);
+        ban_list[client_ip] = current_attack;
+    }
 
-    ban_list_details_mutex.lock();
-    ban_list_details[client_ip] = std::vector<simple_packet_t>();
-    ban_list_details_mutex.unlock();
+    {
+        std::lock_guard<std::mutex> lock_guard(ban_list_details_mutex);
+        ban_list_details[client_ip] = std::vector<simple_packet_t>();
+    }
 
     logger << log4cpp::Priority::INFO << "Attack with direction: " << data_direction_as_string
            << " IP: " << client_ip_as_string << " Power: " << pps_as_string;
@@ -2447,9 +2447,8 @@ void recalculate_speed() {
 
     if (enable_connection_tracking) {
         // Clean Flow Counter
-        flow_counter.lock();
+        std::lock_guard<std::mutex> lock_guard(flow_counter);
         zeroify_all_flow_counters();
-        flow_counter.unlock();
     }
 
     total_unparsed_packets_speed = uint64_t((double)total_unparsed_packets / (double)speed_calc_period);
@@ -2982,7 +2981,7 @@ void process_packet(simple_packet_t& current_packet) {
         if (ban_details_records_count != 0 && !ban_list_details.empty() && ban_list_details.count(current_packet.src_ip) > 0 &&
             ban_list_details[current_packet.src_ip].size() < ban_details_records_count) {
 
-            ban_list_details_mutex.lock();
+            std::lock_guard<std::mutex> lock_guard(ban_list_details_mutex);
 
             if (collect_attack_pcap_dumps) {
                 // this code SHOULD NOT be called without mutex!
@@ -2994,7 +2993,6 @@ void process_packet(simple_packet_t& current_packet) {
             }
 
             ban_list_details[current_packet.src_ip].push_back(current_packet);
-            ban_list_details_mutex.unlock();
         }
     }
 
@@ -3004,7 +3002,7 @@ void process_packet(simple_packet_t& current_packet) {
         if (ban_details_records_count != 0 && !ban_list_details.empty() && ban_list_details.count(current_packet.dst_ip) > 0 &&
             ban_list_details[current_packet.dst_ip].size() < ban_details_records_count) {
 
-            ban_list_details_mutex.lock();
+            std::lock_guard<std::mutex> lock_guard(ban_list_details_mutex);
 
             if (collect_attack_pcap_dumps) {
                 // this code SHOULD NOT be called without mutex!
@@ -3016,7 +3014,6 @@ void process_packet(simple_packet_t& current_packet) {
             }
 
             ban_list_details[current_packet.dst_ip].push_back(current_packet);
-            ban_list_details_mutex.unlock();
         }
     }
 }

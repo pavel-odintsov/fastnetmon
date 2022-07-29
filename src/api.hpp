@@ -62,13 +62,15 @@ Status FastnetmonApiServiceImpl::ExecuteBan(ServerContext* context,
     if (ipv4) {
         client_ip = convert_ip_as_string_to_uint(request->ip_address());
 
-        ban_list_mutex.lock();
-        ban_list[client_ip] = current_attack;
-        ban_list_mutex.unlock();
+        {
+            std::lock_guard<std::mutex> lock_guard(ban_list_mutex);
+            ban_list[client_ip] = current_attack;
+        }
 
-        ban_list_details_mutex.lock();
-        ban_list_details[client_ip] = std::vector<simple_packet_t>();
-        ban_list_details_mutex.unlock();
+        {
+            std::lock_guard<std::mutex> lock_guard(ban_list_details_mutex);
+            ban_list_details[client_ip] = std::vector<simple_packet_t>();
+        }
     } else {
         bool parsed_ipv6 = read_ipv6_host_from_string(request->ip_address(), ipv6_address.subnet_address);
 
@@ -135,9 +137,10 @@ Status FastnetmonApiServiceImpl::ExecuteUnBan(ServerContext* context,
 
         logger << log4cpp::Priority::INFO << "API: remove IP from ban list";
 
-        ban_list_mutex.lock();
-        ban_list.erase(client_ip);
-        ban_list_mutex.unlock();
+        {
+            std::lock_guard<std::mutex> lock_guard(ban_list_mutex);;
+            ban_list.erase(client_ip);
+        }
     } else {
         bool parsed_ipv6 = read_ipv6_host_from_string(request->ip_address(), ipv6_address.subnet_address);
 
