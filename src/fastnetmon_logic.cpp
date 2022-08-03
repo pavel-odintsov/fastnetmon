@@ -124,7 +124,6 @@ extern unsigned int number_of_packets_for_pcap_attack_dump;
 extern patricia_tree_t *lookup_tree_ipv4, *whitelist_tree_ipv4;
 extern patricia_tree_t *lookup_tree_ipv6, *whitelist_tree_ipv6;
 extern std::map<uint32_t, std::vector<simple_packet_t>> ban_list_details;
-extern bool enable_subnet_counters;
 extern ban_settings_t global_ban_settings;
 extern bool exabgp_enabled;
 extern bool exabgp_flow_spec_announces;
@@ -1809,11 +1808,6 @@ void traffic_draw_ipv6_program() {
 
     output_buffer << std::endl;
 
-    if (enable_subnet_counters) {
-        output_buffer << std::endl << "Subnet load:" << std::endl;
-        output_buffer << print_subnet_ipv6_load() << "\n";
-    }
-
     // Print screen contents into file
     print_screen_contents_into_file(output_buffer.str(), cli_stats_ipv6_file_path);
 }
@@ -1922,11 +1916,6 @@ void traffic_draw_ipv4_program() {
     if (!ban_list.empty()) {
         output_buffer << std::endl << "Ban list:" << std::endl;
         output_buffer << print_ddos_attack_details();
-    }
-
-    if (enable_subnet_counters) {
-        output_buffer << std::endl << "Subnet load:" << std::endl;
-        output_buffer << print_subnet_ipv4_load() << "\n";
     }
 
     // Print screen contents into file
@@ -2196,11 +2185,9 @@ void recalculate_speed() {
     uint64_t incoming_total_flows = 0;
     uint64_t outgoing_total_flows = 0;
 
-    if (enable_subnet_counters) {
-        ipv4_network_counters.recalculate_speed(speed_calc_period,
-                                            (double)average_calculation_amount, nullptr);
+    ipv4_network_counters.recalculate_speed(speed_calc_period,
+                                        (double)average_calculation_amount, nullptr);
 
-    }
 
     for (map_of_vector_counters_t::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); ++itr) {
         for (vector_of_counters::iterator vector_itr = itr->second.begin(); vector_itr != itr->second.end(); ++vector_itr) {
@@ -2293,10 +2280,8 @@ void recalculate_speed() {
     }
 
     // Calculate IPv6 per network traffic
-    if (enable_subnet_counters) {
-        ipv6_subnet_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount,
-                                               speed_callback_subnet_ipv6);
-    }
+    ipv6_subnet_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount,
+                                           speed_callback_subnet_ipv6);
 
     // Recalculate traffic for hosts
     ipv6_host_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, speed_callback_ipv6);
@@ -2653,7 +2638,7 @@ void process_packet(simple_packet_t& current_packet) {
         __sync_fetch_and_add(&total_ipv6_packets, 1);
 #endif
 
-        if (enable_subnet_counters) {
+        {
             std::lock_guard<std::mutex> lock_guard(ipv6_subnet_counters.counter_map_mutex);
 
             // We will create keys for new subnet here on demand
@@ -2727,7 +2712,7 @@ void process_packet(simple_packet_t& current_packet) {
         subnet_in_host_byte_order = ntohl(current_subnet.subnet_address);
     }
 
-    if (enable_subnet_counters && (current_packet.packet_direction == OUTGOING or current_packet.packet_direction == INCOMING)) {
+    if (current_packet.packet_direction == OUTGOING or current_packet.packet_direction == INCOMING) {
         std::lock_guard<std::mutex> lock_guard(ipv4_network_counters.counter_map_mutex);
 
         // We will create keys for new subnet here on demand

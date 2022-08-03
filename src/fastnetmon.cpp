@@ -195,9 +195,6 @@ bool monitor_local_ip_addresses = true;
 // Enable monitoring for OpenVZ VPS IP addresses by reading their list from kernel
 bool monitor_openvz_vps_ip_addresses = false;
 
-// Trigger for enable or disable traffic counting for whole subnets
-bool enable_subnet_counters = false;
-
 // We will announce whole subnet instead single IP with BGP if this flag enabled
 bool exabgp_announce_whole_subnet = false;
 
@@ -765,10 +762,6 @@ bool load_configuration_file() {
 
     if (configuration_map.count("exabgp_announce_host") != 0) {
         exabgp_announce_host = configuration_map["exabgp_announce_host"] == "on" ? true : false;
-    }
-
-    if (configuration_map.count("enable_subnet_counters") != 0) {
-        enable_subnet_counters = configuration_map["enable_subnet_counters"] == "on" ? true : false;
     }
 
     // Graphite
