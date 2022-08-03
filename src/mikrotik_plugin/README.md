@@ -43,11 +43,6 @@ sudo fcli set main notify_script_path /etc/fastnetmon/scripts/notify_about_attac
 sudo fcli set main notify_script_format text
 sudo fcli commit
 ```
-And disable passing details to this script:
-```
-sudo fcli set main notify_script_pass_details disable
-sudo fcli commit
-```
 
 Changelog
 ---------

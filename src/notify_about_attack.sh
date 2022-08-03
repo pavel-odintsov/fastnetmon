@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Hello, lovely FastNetMon customer! I'm really happy to see you here!
+# Hello, lovely FastNetMon customer. I'm really happy to see you here
 #  Pavel Odintsov, author
 #
 
@@ -14,7 +14,7 @@
 email_notify="root,please_fix_this_email@domain.ru"
 
 #
-# Please be careful ! You should not remove cat >
+# Please be careful. You should not remove cat >
 #
 
 if [ "$4" = "unban" ]; then
@@ -26,20 +26,17 @@ fi
 
 #
 # For ban and attack_details actions we will receive attack details to stdin
-# if option notify_script_pass_details enabled in FastNetMon's configuration file
-#
-# If you do not need this details, please set option notify_script_pass_details to "no".
-#
-# Please do not remove "cat" command if you have notify_script_pass_details enabled, because
-# FastNetMon will crash in this case (it expect read of data from script side).
+# Please do not remove "cat" command because
+# FastNetMon will crash in this case as it expects read of data from script side
 #
 
 if [ "$4" = "ban" ]; then
     cat | mail -s "FastNetMon Guard: IP $1 blocked because $2 attack with power $3 pps" $email_notify;
-    # You can add ban code here!
+    # You can add ban code here
     exit 0
 fi
 
+# Advanced edition does not use this action and passes all details in ban action
 if [ "$4" == "attack_details" ]; then
     cat | mail -s "FastNetMon Guard: IP $1 blocked because $2 attack with power $3 pps" $email_notify;
 

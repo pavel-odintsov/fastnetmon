@@ -23,11 +23,7 @@
 
 #
 # For ban and attack_details actions we will receive attack details to stdin
-# if option notify_script_pass_details enabled in FastNetMon's configuration file
-#
-# If you do not need this details, please set option notify_script_pass_details to "no".
-#
-# Please do not remove the following command if you have notify_script_pass_details enabled, because
+# Please do not remove the following command because
 # FastNetMon will crash in this case (it expect read of data from script side).
 #
 

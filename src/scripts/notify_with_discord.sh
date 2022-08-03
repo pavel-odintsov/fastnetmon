@@ -5,7 +5,6 @@
 # - Copy this script to /usr/local/bin/
 # - Edit /etc/fastnetmon.conf and set:
 #   notify_script_path = /usr/local/bin/notify_with_discord.sh
-#   notify_script_pass_details = no
 # - Add your Discord channel webhook to discord_url.
 #
 # Notes:
@@ -29,8 +28,12 @@ if [ -z "$fastnetmon_ip" ] || [ -z "$webhook_url" ]; then
 fi
 
 if [ "$fastnetmon_action" = "ban" ]; then
+    # Read data from stdin
+    cat > /dev/null
     color="14425373"
 elif [ "$fastnetmon_action" = "attack_details" ]; then
+    # Read data from stdin
+    cat > /dev/null
     color="16765184"
 elif [ "$fastnetmon_action" = "unban" ]; then
     color="3857437"

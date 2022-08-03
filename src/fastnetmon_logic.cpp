@@ -120,7 +120,6 @@ extern bool mongodb_enabled;
 extern std::string mongodb_database_name;
 #endif
 
-extern bool notify_script_pass_details;
 extern unsigned int number_of_packets_for_pcap_attack_dump;
 extern patricia_tree_t *lookup_tree_ipv4, *whitelist_tree_ipv4;
 extern patricia_tree_t *lookup_tree_ipv6, *whitelist_tree_ipv6;
@@ -1230,7 +1229,7 @@ void call_attack_details_handlers(uint32_t client_ip, attack_details_t& current_
                                     " " + attack_direction + " " + pps_as_string + " attack_details";
 
         // We should execute external script in separate thread because any lag in this code
-        // will be very distructive
+        // will be very destructive
         boost::thread exec_with_params_thread(exec_with_stdin_params, script_params, attack_fingerprint);
         exec_with_params_thread.detach();
 
@@ -1604,17 +1603,11 @@ void call_ban_handlers(uint32_t client_ip,
         logger << log4cpp::Priority::INFO << "Call script for ban client: " << client_ip_as_string;
 
         // We should execute external script in separate thread because any lag in this code will be
-        // very distructive
+        // very destructive
 
-        if (notify_script_pass_details) {
-            // We will pass attack details over stdin
-            boost::thread exec_thread(exec_with_stdin_params, script_call_params, full_attack_description);
-            exec_thread.detach();
-        } else {
-            // Do not pass anything to script
-            boost::thread exec_thread(exec_no_error_check, script_call_params);
-            exec_thread.detach();
-        }
+        // We will pass attack details over stdin
+        boost::thread exec_thread(exec_with_stdin_params, script_call_params, full_attack_description);
+        exec_thread.detach();
 
         logger << log4cpp::Priority::INFO << "Script for ban client is finished: " << client_ip_as_string;
     }

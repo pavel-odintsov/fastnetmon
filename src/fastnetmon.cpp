@@ -148,9 +148,6 @@ unsigned int maximum_time_since_bucket_start_to_remove = 120;
 
 FastnetmonPlatformConfigurtion fastnetmon_platform_configuration;
 
-// Send or not any details about attack for ban script call over stdin
-bool notify_script_pass_details = true;
-
 bool notify_script_enabled = true;
 
 // We could collect attack dumps in pcap format
@@ -481,8 +478,7 @@ void RunApiServer() {
 
 void sigpipe_handler_for_popen(int signo) {
     logger << log4cpp::Priority::ERROR << "Sorry but we experienced error with popen. "
-           << "Please check your scripts. They should receive data on stdin! Optionally you could disable "
-              "passing any details with configuration param: notify_script_pass_details = no";
+           << "Please check your scripts. They must receive data on stdin";
 
     // Well, we do not need exit here because we have another options to notifying about atatck
     // exit(1);
@@ -957,10 +953,6 @@ bool load_configuration_file() {
 
     if (configuration_map.count("notify_script_path") != 0) {
         fastnetmon_platform_configuration.notify_script_path = configuration_map["notify_script_path"];
-    }
-
-    if (configuration_map.count("notify_script_pass_details") != 0) {
-        notify_script_pass_details = configuration_map["notify_script_pass_details"] == "on" ? true : false;
     }
 
     if (file_exists(fastnetmon_platform_configuration.notify_script_path)) {
