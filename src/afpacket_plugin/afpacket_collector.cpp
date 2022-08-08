@@ -53,6 +53,24 @@ extern std::map<std::string, std::string> configuration_map;
 // This variable name should be uniq for every plugin!
 process_packet_pointer afpacket_process_func_ptr = NULL;
 
+std::string socket_received_packets_desc = "Number of received packets";
+uint64_t socket_received_packets = 0;
+
+std::string socket_dropped_packets_desc = "Number of dropped packets";
+uint64_t socket_dropped_packets  = 0;
+
+std::string blocks_read_desc = "Number of blocks we read from kernel, each block has multiple packets";
+uint64_t blocks_read = 0;
+
+std::string af_packet_packets_raw_desc = "Number of packets read by AF_PACKET before parsing";
+uint64_t af_packet_packets_raw = 0;
+
+std::string af_packet_packets_parsed_desc = "Number of parsed packets";
+uint64_t af_packet_packets_parsed = 0;
+
+std::string af_packet_packets_unparsed_desc = "Number of not parsed packets";
+uint64_t af_packet_packets_unparsed = 0;
+
 // Default sampling rate
 uint32_t mirror_af_packet_custom_sampling_rate = 1;
 
@@ -130,25 +148,23 @@ void walk_block(struct block_desc* pbd, const int block_num) {
         u_char* data_pointer = (u_char*)((uint8_t*)ppd + ppd->tp_mac);
 
         simple_packet_t packet;
-        int parser_result = parse_raw_packet_to_simple_packet((u_char*)data_pointer, ppd->tp_snaplen, packet,
-                                                              afpacket_read_packet_length_from_ip_header);
 
         // Override default sample rate by rate specified in configuration
         if (mirror_af_packet_custom_sampling_rate > 1) {
             packet.sample_ratio = mirror_af_packet_custom_sampling_rate;
         }
 
-        // char print_buffer[512];
-        // fastnetmon_print_parsed_pkt(print_buffer, 512, data_pointer, &packet_header);
-        // printf("%s\n", print_buffer);
-
-        ppd = (struct tpacket3_hdr*)((uint8_t*)ppd + ppd->tp_next_offset);
+        int parser_result = parse_raw_packet_to_simple_packet((u_char*)data_pointer, ppd->tp_snaplen, packet,
+                                                              afpacket_read_packet_length_from_ip_header);
 
         if (parser_result) {
             afpacket_process_func_ptr(packet);
         } else {
             total_unparsed_packets++;
         }
+
+        // Move pointer to next packet
+        ppd = (struct tpacket3_hdr*)((uint8_t*)ppd + ppd->tp_next_offset);
     }
 }
 
