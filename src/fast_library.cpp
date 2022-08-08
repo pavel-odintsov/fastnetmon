@@ -308,11 +308,6 @@ std::string print_tcp_flags(uint8_t flag_value) {
         return "-";
     }
 
-    // cod from pfring.h
-    // (tcp->fin * TH_FIN_MULTIPLIER) + (tcp->syn * TH_SYN_MULTIPLIER) +
-    // (tcp->rst * TH_RST_MULTIPLIER) + (tcp->psh * TH_PUSH_MULTIPLIER) +
-    // (tcp->ack * TH_ACK_MULTIPLIER) + (tcp->urg * TH_URG_MULTIPLIER);
-
     /*
         // Required for decoding tcp flags
         #define TH_FIN_MULTIPLIER   0x01
