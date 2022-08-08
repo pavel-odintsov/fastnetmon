@@ -987,8 +987,10 @@ int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data,
             full_packet_length = flow_meta.data_link_frame_size;
         }
 
+        bool unpack_gre = false;
+
         auto result = parse_raw_packet_to_simple_packet_full_ng((u_char*)(data), full_packet_length, record_length,
-                                                                flow_meta.nested_packet, read_packet_length_from_ip_header);
+                                                                flow_meta.nested_packet, unpack_gre, read_packet_length_from_ip_header);
 
         if (result != network_data_stuctures::parser_code_t::success) {
             // Cannot decode data

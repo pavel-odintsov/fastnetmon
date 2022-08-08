@@ -354,10 +354,13 @@ bool process_sflow_flow_sample(uint8_t* data_pointer,
 
             if (sflow_raw_protocol_header.header_protocol == SFLOW_HEADER_PROTOCOL_ETHERNET) {
 
+                bool unpack_gre = false;
+
                 // We could enable this new parser for testing purpose
                 auto result = parse_raw_packet_to_simple_packet_full_ng(header_payload_pointer,
                                                                         sflow_raw_protocol_header.frame_length_before_sampling,
                                                                         sflow_raw_protocol_header.header_size, packet,
+                                                                        unpack_gre,
                                                                         sflow_read_packet_length_from_ip_header);
 
                 if (result != network_data_stuctures::parser_code_t::success) {
