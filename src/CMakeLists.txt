@@ -258,9 +258,6 @@ add_library(ipfix_rfc STATIC ipfix_rfc.cpp)
 
 add_library(bgp_protocol STATIC bgp_protocol.cpp)
 
-# Our packet parser
-add_library(fastnetmon_packet_parser STATIC fastnetmon_packet_parser.cpp)
-
 # Our logic library
 add_library(fastnetmon_logic STATIC fastnetmon_logic.cpp)
 
@@ -468,7 +465,6 @@ if (ENABLE_NETMAP_SUPPORT)
     set(NETMAP_INCLUDE_DIRS "netmap_plugin/netmap_includes")
     include_directories(${NETMAP_INCLUDE_DIRS})
     add_library(netmap_plugin STATIC netmap_plugin/netmap_collector.cpp)
-    target_link_libraries(netmap_plugin fastnetmon_packet_parser)
 endif()
 
 # Client tool
@@ -694,7 +690,6 @@ endif()
 if (BUILD_PCAP_READER)
     add_executable(fastnetmon_pcap_reader pcap_reader.cpp)
 
-    target_link_libraries(fastnetmon_pcap_reader fastnetmon_packet_parser)
     target_link_libraries(fastnetmon_pcap_reader patricia)
     target_link_libraries(fastnetmon_pcap_reader fastnetmon_pcap_format)
 

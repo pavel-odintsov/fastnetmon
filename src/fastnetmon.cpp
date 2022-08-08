@@ -25,7 +25,6 @@
 
 #include "bgp_protocol.hpp"
 #include "fast_library.hpp"
-#include "fastnetmon_packet_parser.hpp"
 #include "fastnetmon_types.hpp"
 #include "libpatricia/patricia.hpp"
 #include "packet_storage.hpp"

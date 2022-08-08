@@ -9,7 +9,6 @@
 #include "bgp_protocol.hpp"
 #include "fast_library.hpp"
 #include "fast_platform.hpp"
-#include "fastnetmon_packet_parser.hpp"
 
 // Plugins
 #include "netflow_plugin/netflow_collector.hpp"
