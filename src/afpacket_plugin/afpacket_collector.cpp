@@ -16,8 +16,6 @@
 #include <stdio.h>
 #include <string>
 
-#include "../fastnetmon_packet_parser.hpp"
-
 #include "../simple_packet_parser_ng.hpp"
 
 // For support: IPPROTO_TCP, IPPROTO_ICMP, IPPROTO_UDP
@@ -38,8 +36,6 @@
 #include <sys/socket.h>
 
 #include <linux/filter.h> // for struct sock_filter
-
-#include "../unified_parser.hpp"
 
 bool afpacket_read_packet_length_from_ip_header = false;
 
@@ -141,11 +137,6 @@ void walk_block(struct block_desc* pbd, const int block_num) {
 
         // struct ethhdr *eth = (struct ethhdr *) ((uint8_t *) ppd + ppd->tp_mac);
         // Print packets
-
-        struct pfring_pkthdr packet_header;
-        memset(&packet_header, 0, sizeof(packet_header));
-        packet_header.len    = ppd->tp_snaplen;
-        packet_header.caplen = ppd->tp_snaplen;
 
         u_char* data_pointer = (u_char*)((uint8_t*)ppd + ppd->tp_mac);
 

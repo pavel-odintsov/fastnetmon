@@ -23,7 +23,6 @@
 #include "sflow_plugin/sflow_data.h"
 
 #include "fast_library.h"
-#include "fastnetmon_packet_parser.h"
 #include "fastnetmon_types.h"
 
 #include "log4cpp/Appender.hh"
@@ -35,7 +34,7 @@
 #include "log4cpp/PatternLayout.hh"
 #include "log4cpp/Priority.hh"
 
-#include "unified_parser.hpp"
+#include "../simple_packet_parser_ng.hpp"
 
 // Fake config
 std::map<std::string, std::string> configuration_map;
@@ -141,7 +140,9 @@ void pcap_parse_packet(char* buffer, uint32_t len, uint32_t snap_len) {
 
         simple_packet_t packet;
         // TODO: add support for caplen here!
-        if (parse_raw_packet_to_simple_packet((u_char*)buffer, len, packet, false)) {
+        auto result = parse_raw_packet_to_simple_packet_full_ng((u_char*)buffer, len, len, packet, false, false);
+
+        if (result == network_data_stuctures::parser_code_t::success) {
             std::cout << "High level parser: " << print_simple_packet(packet) << std::endl;
         } else {
             printf("High level parser failed\n");
