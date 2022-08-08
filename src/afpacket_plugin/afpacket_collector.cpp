@@ -18,6 +18,8 @@
 
 #include "../fastnetmon_packet_parser.hpp"
 
+#include "../simple_packet_parser_ng.hpp"
+
 // For support: IPPROTO_TCP, IPPROTO_ICMP, IPPROTO_UDP
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -154,13 +156,23 @@ void walk_block(struct block_desc* pbd, const int block_num) {
             packet.sample_ratio = mirror_af_packet_custom_sampling_rate;
         }
 
-        int parser_result = parse_raw_packet_to_simple_packet((u_char*)data_pointer, ppd->tp_snaplen, packet,
-                                                              afpacket_read_packet_length_from_ip_header);
+        // Not enabled by default
+        bool af_packet_extract_tunnel_traffic = false;
 
-        if (parser_result) {
-            afpacket_process_func_ptr(packet);
-        } else {
+        auto result =
+            parse_raw_packet_to_simple_packet_full_ng((u_char*)data_pointer, ppd->tp_snaplen, ppd->tp_snaplen, packet,
+                                                      af_packet_extract_tunnel_traffic,
+                                                      afpacket_read_packet_length_from_ip_header);
+
+        if (result != network_data_stuctures::parser_code_t::success) {
+            // This counter resets for speed calculation every second
             total_unparsed_packets++;
+            af_packet_packets_unparsed++;
+
+            logger << log4cpp::Priority::DEBUG << "Cannot parse packet using ng parser: " << parser_code_to_string(result);
+        } else {
+            af_packet_packets_parsed++;
+            afpacket_process_func_ptr(packet);
         }
 
         // Move pointer to next packet
