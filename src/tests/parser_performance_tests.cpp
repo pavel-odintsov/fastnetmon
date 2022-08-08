@@ -1,4 +1,3 @@
-#include "../fastnetmon_packet_parser.h"
 #include <iostream>
 #include <pthread.h>
 #include <stdio.h>
@@ -123,21 +122,5 @@ void call_tins_parser(void* ptr, int length) {
 void call_fastnetmon_parser(void* ptr, int length) {
     __sync_fetch_and_add(&received_packets, 1);
 
-    struct pfring_pkthdr packet_header;
-    memset(&packet_header, 0, sizeof(struct pfring_pkthdr));
-
-    packet_header.len    = length;
-    packet_header.caplen = length;
-
-    u_int8_t timestamp = 0;
-    u_int8_t add_hash  = 0;
-
-    fastnetmon_parse_pkt((u_char*)ptr, &packet_header, 4, 0, 0);
-
-    /*
-    char print_buffer[512];
-    fastnetmon_print_parsed_pkt(print_buffer, 512, (u_char*)ptr, &packet_header);
-    printf("packet: %s\n", print_buffer);
-
-    */
+    // Call ng parser here
 }
