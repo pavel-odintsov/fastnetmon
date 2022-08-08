@@ -253,10 +253,6 @@ add_library(fastnetmon_pcap_format STATIC fastnetmon_pcap_format.cpp)
 # Our tools library
 add_library(fast_library STATIC fast_library.cpp)
 
-# Our parser
-add_library(unified_parser STATIC unified_parser.cpp)
-target_link_libraries(unified_parser fastnetmon_packet_parser)
-
 # Our ipfix database library
 add_library(ipfix_rfc STATIC ipfix_rfc.cpp)
 
@@ -287,7 +283,6 @@ endif()
 if (ENABLE_AFPACKET_SUPPORT)
    add_definitions(-DFASTNETMON_ENABLE_AFPACKET) 
    add_library(afpacket_plugin STATIC afpacket_plugin/afpacket_collector.cpp)
-   target_link_libraries(afpacket_plugin unified_parser)
 endif()
 
 # Library with data types for parsing network structures
@@ -474,7 +469,6 @@ if (ENABLE_NETMAP_SUPPORT)
     include_directories(${NETMAP_INCLUDE_DIRS})
     add_library(netmap_plugin STATIC netmap_plugin/netmap_collector.cpp)
     target_link_libraries(netmap_plugin fastnetmon_packet_parser)
-    target_link_libraries(netmap_plugin unified_parser)
 endif()
 
 # Client tool
@@ -646,8 +640,6 @@ target_link_libraries(fastnetmon_logic bgp_protocol exabgp_action)
 target_link_libraries(fastnetmon fast_library)
 
 # link to our unified parser
-target_link_libraries(fastnetmon unified_parser)
-
 target_link_libraries(fastnetmon ${OPENSSL_LIBRARY_PATH})
 target_link_libraries(fastnetmon ${OPENSSL_CRYPTO_LIBRARY_PATH})
 
