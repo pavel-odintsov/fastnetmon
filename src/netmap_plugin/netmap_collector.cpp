@@ -30,9 +30,7 @@
 typedef cpuset_t cpu_set_t;
 #endif
 
-#include "../fastnetmon_packet_parser.hpp"
-
-#include "../unified_parser.hpp"
+#include "../simple_packet_parser_ng.hpp"
 
 // For pooling operations
 #include <poll.h>
@@ -98,9 +96,13 @@ void consume_pkt(u_char* buffer, int len, int thread_number) {
 
     packet.sample_ratio = netmap_sampling_ratio;
 
-    if (!parse_raw_packet_to_simple_packet(buffer, len, packet, netmap_read_packet_length_from_ip_header)) {
-        total_unparsed_packets++;
+    bool netmap_extract_tunnel_traffic = false;
 
+    auto result = parse_raw_packet_to_simple_packet_full_ng((u_char*)buffer, len, len, packet, netmap_extract_tunnel_traffic, netmap_read_packet_length_from_ip_header);
+
+    if (result != network_data_stuctures::parser_code_t::success) {
+        total_unparsed_packets++;
+        
         return;
     }
 
