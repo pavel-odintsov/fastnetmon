@@ -7,6 +7,8 @@
 #include <map>
 #include <sstream>
 
+#include "fast_endianless.hpp"
+
 #include "iana_ethertypes.hpp"
 #include "iana_ip_protocols.hpp"
 
@@ -120,8 +122,9 @@ class __attribute__((__packed__)) ethernet_vlan_header_t {
 
         buffer << "priority: " << uint32_t(priority) << " "
                << "cfi: " << uint32_t(cfi) << " "
-               << "vlan_id: " << uint32_t(vlan_id) << " "
-               << "ethertype: " << ethertype;
+               << "vlan_id: " << uint32_t(vlan_id) << " ";
+
+        buffer << "ethertype: 0x" << std::setfill('0') << std::setw(4) << std::hex << ethertype;
 
         return buffer.str();
     }
@@ -142,7 +145,9 @@ class __attribute__((__packed__)) ethernet_header_t {
     std::string print() {
         std::stringstream buffer;
 
-        buffer << "ethertype: 0x" << std::setfill('0') << std::setw(4) << std::hex << ethertype << " "
+        buffer << "ethertype: 0x" << std::setfill('0') << std::setw(4) << std::hex << ethertype;
+
+        buffer << " "
                << "source mac: " << convert_mac_to_string(source_mac) << " "
                << "destination mac: " << convert_mac_to_string(destination_mac);
 
@@ -382,13 +387,13 @@ typedef uint8_t ipv6_address[16];
 // Custom type for pretty printing
 typedef uint16_t ipv6_address_16bit_blocks[8];
 
-inline std::string convert_ipv6_in_big_endian_to_string(uint8_t (&v6_address)[16]) {
+inline std::string convert_ipv6_in_byte_array_to_string(uint8_t (&v6_address)[16]) {
     std::stringstream buffer;
 
     uint16_t* pretty_print = (uint16_t*)v6_address;
 
     for (int i = 0; i < 8; i++) {
-        buffer << std::hex << ntohs(pretty_print[i]);
+        buffer << std::hex << fast_ntoh(pretty_print[i]);
 
         if (i != 7) {
             buffer << ":";
@@ -456,11 +461,13 @@ class __attribute__((__packed__)) ipv6_header_t {
 
         uint32_t version_and_traffic_class_as_integer = 0;
     };
+    
     uint16_t payload_length = 0;
     uint8_t next_header     = 0;
     uint8_t hop_limit       = 0;
-    ipv6_address source_address;
-    ipv6_address destination_address;
+
+    ipv6_address source_address{};
+    ipv6_address destination_address{};
 
     void convert() {
         payload_length                       = ntohs(payload_length);
@@ -476,8 +483,8 @@ class __attribute__((__packed__)) ipv6_header_t {
                << "payload_length: " << uint32_t(payload_length) << " "
                << "next_header: " << uint32_t(next_header) << " "
                << "hop_limit: " << uint32_t(hop_limit) << " "
-               << "source_address: " << convert_ipv6_in_big_endian_to_string(source_address) << " "
-               << "destination_address: " << convert_ipv6_in_big_endian_to_string(destination_address);
+               << "source_address: " << convert_ipv6_in_byte_array_to_string(source_address) << " "
+               << "destination_address: " << convert_ipv6_in_byte_array_to_string(destination_address);
 
         return buffer.str();
     }
@@ -606,7 +613,7 @@ class __attribute__((__packed__)) ipv4_header_t {
                << "more_fragments_flag: " << uint32_t(more_fragments_flag) << " "
                << "ttl: " << uint32_t(ttl) << " "
                << "protocol: " << uint32_t(protocol) << " "
-               << "cheksum: " << uint32_t(checksum) << " "
+               << "checksum: " << uint32_t(checksum) << " "
                << "source_ip: " << convert_ip_as_little_endian_to_string(source_ip) << " "
                << "destination_ip: " << convert_ip_as_little_endian_to_string(destination_ip);
 
@@ -616,7 +623,7 @@ class __attribute__((__packed__)) ipv4_header_t {
 
 static_assert(sizeof(ipv4_header_t) == 20, "Bad size for ipv4_header_t");
 
-enum class parser_code_t { memory_violation, not_ipv4, success, broken_gre, no_ipv6_support, unknown_ethertype, arp };
+enum class parser_code_t { memory_violation, not_ipv4, success, broken_gre, no_ipv6_support, no_ipv6_options_support, unknown_ethertype, arp };
 
 std::string parser_code_to_string(parser_code_t code);
 } // namespace network_data_stuctures
