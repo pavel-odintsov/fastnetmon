@@ -1,9 +1,9 @@
-#include "../all_logcpp_libraries.h"
+#include "../all_logcpp_libraries.hpp"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/version.hpp>
 
-#include "../fast_library.h"
+#include "../fast_library.hpp"
 
 // For support uint32_t, uint16_t
 #include <sys/types.h>
@@ -30,7 +30,7 @@
 typedef cpuset_t cpu_set_t;
 #endif
 
-#include "../fastnetmon_packet_parser.h"
+#include "../fastnetmon_packet_parser.hpp"
 
 #include "../unified_parser.hpp"
 
@@ -42,7 +42,7 @@ typedef cpuset_t cpu_set_t;
 #include <sys/socket.h>
 #include <sys/types.h>
 
-#include "netmap_collector.h"
+#include "netmap_collector.hpp"
 
 // By default we read packet size from link layer
 // But in case of Juniper we could crop first X bytes from packet:
