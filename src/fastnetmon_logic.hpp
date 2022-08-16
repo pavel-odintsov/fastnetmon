@@ -65,7 +65,6 @@ bool process_flow_tracking_table(conntrack_main_struct_t& conntrack_element, std
 bool exec_with_stdin_params(std::string cmd, std::string params);
 ban_settings_t get_ban_settings_for_this_subnet(subnet_cidr_mask_t subnet, std::string& host_group_name);
 void exabgp_prefix_ban_manage(std::string action, std::string prefix_as_string_with_mask, std::string exabgp_next_hop, std::string exabgp_community);
-bool exabgp_flow_spec_ban_manage(std::string action, std::string flow_spec_rule_as_text);
 
 #ifdef REDIS
 void store_data_in_redis(std::string key_name, std::string attack_details);

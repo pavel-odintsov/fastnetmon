@@ -125,7 +125,6 @@ extern patricia_tree_t *lookup_tree_ipv6, *whitelist_tree_ipv6;
 extern std::map<uint32_t, std::vector<simple_packet_t>> ban_list_details;
 extern ban_settings_t global_ban_settings;
 extern bool exabgp_enabled;
-extern bool exabgp_flow_spec_announces;
 extern bool gobgp_enabled;
 extern map_of_vector_counters_t SubnetVectorMapSpeedAverage;
 extern int global_ban_time;

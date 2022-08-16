@@ -13,7 +13,6 @@ extern std::string exabgp_community_host;
 extern std::string exabgp_command_pipe;
 extern std::string exabgp_next_hop;
 extern bool exabgp_announce_host;
-extern bool exabgp_flow_spec_announces;
 extern bool exabgp_announce_whole_subnet;
 
 extern log4cpp::Category& logger;

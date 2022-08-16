@@ -200,9 +200,6 @@ bool exabgp_announce_whole_subnet = false;
 // We will announce only /32 host
 bool exabgp_announce_host = false;
 
-// With this flag we will announce more specfic then whole block Flow Spec announces
-bool exabgp_flow_spec_announces = false;
-
 ban_settings_t global_ban_settings;
 
 void init_global_ban_settings() {
@@ -728,10 +725,6 @@ bool load_configuration_file() {
             logger << log4cpp::Priority::ERROR << "You enabled exabgp but not specified exabgp_next_hop, so we disable exabgp support";
 
             exabgp_enabled = false;
-        }
-
-        if (configuration_map.count("exabgp_flow_spec_announces") != 0) {
-            exabgp_flow_spec_announces = configuration_map["exabgp_flow_spec_announces"] == "on";
         }
 
         if (exabgp_enabled) {
