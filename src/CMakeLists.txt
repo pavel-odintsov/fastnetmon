@@ -284,8 +284,21 @@ if (ENABLE_AFPACKET_SUPPORT)
    add_library(afpacket_plugin STATIC afpacket_plugin/afpacket_collector.cpp)
 endif()
 
-# You can disable it if needed: -DENABLE_AF_XDP_SUPPORT=OFF
-option(ENABLE_AF_XDP_SUPPORT "Enables use AF_XDP" ON)
+CHECK_CXX_SOURCE_COMPILES("
+#include <linux/if_xdp.h> 
+int main() {
+    return 1;
+}
+" HAVE_AF_XDP)
+
+
+if (${HAVE_AF_XDP})
+    message(STATUS "Your system has support for AF_XDP")
+    set (ENABLE_AF_XDP_SUPPORT ON) 
+else()
+    message(STATUS "Your system does not support AF_XDP, disabled it")
+endif()
+
 
 if (ENABLE_AF_XDP_SUPPORT)
     add_definitions(-DFASTNETMON_ENABLE_AF_XDP)
