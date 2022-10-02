@@ -282,6 +282,12 @@ if (ENABLE_AFPACKET_SUPPORT)
    add_library(afpacket_plugin STATIC afpacket_plugin/afpacket_collector.cpp)
 endif()
 
+# We do not enable it by default but it can be enabled manually on some platforms:
+# -DENABLE_AF_XDP_SUPPORT=ON
+if (ENABLE_AF_XDP_SUPPORT)
+    add_library(xdp_plugin STATIC xdp_plugin/xdp_collector.cpp)
+endif()
+
 # Library with data types for parsing network structures
 add_library(network_data_structures STATIC network_data_structures.cpp)
 
