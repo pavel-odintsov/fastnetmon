@@ -138,3 +138,9 @@ bool read_file_to_string(const std::string& file_path, std::string& file_content
 bool convert_string_to_any_integer_safe(const std::string& line, int& value);
 void exec_no_error_check(const std::string& cmd);
 bool parse_os_release_into_map(std::map<std::string, std::string>& parsed_os_release);
+unsigned int get_logical_cpus_number();
+std::string get_virtualisation_method();
+bool get_cpu_flags(std::vector<std::string>& flags);
+bool get_linux_distro_name(std::string& distro_name);
+bool get_linux_distro_version(std::string& distro_name);
+bool get_kernel_version(std::string& kernel_version);

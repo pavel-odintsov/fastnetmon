@@ -2167,3 +2167,30 @@ bool get_kernel_version(std::string& kernel_version) {
     return true;
 }
 
+// Returns all CPU flags in vector
+bool get_cpu_flags(std::vector<std::string>& flags) {
+    extern log4cpp::Category& logger;
+
+    std::ifstream cpuinfo_file("/proc/cpuinfo");
+    boost::regex processor_flags_pattern("^flags\\s+:\\s(.*?)$");
+
+    if (!cpuinfo_file.is_open()) {
+        logger << log4cpp::Priority::ERROR << "Could not open cpuinfo";
+        return false;
+    }
+
+    std::string line;
+    while (getline(cpuinfo_file, line)) {
+        boost::match_results<std::string::const_iterator> regex_results;
+
+        if (boost::regex_match(line, regex_results, processor_flags_pattern)) {
+            // Split all flags by space
+            split(flags, regex_results[1], boost::is_any_of(" "), boost::token_compress_on);
+            return true;
+        }
+    }
+
+    logger << log4cpp::Priority::ERROR << "Cannot find any flags in cpuinfo";
+    return false;
+}
+
