@@ -1712,7 +1712,17 @@ bool execute_web_request(std::string address,
             req.body() = post_data;
         }
 
-        req.set(boost::beast::http::field::content_type, "application/x-www-form-urlencoded");
+        std::string content_type = "application/x-www-form-urlencoded";
+    
+        // We can override Content Type from headers
+        auto header_itr = headers.find("Content-Type");
+
+        if (header_itr != headers.end()) {
+            content_type = header_itr->second;
+        }
+
+        req.set(boost::beast::http::field::content_type, content_type);
+
         req.set(boost::beast::http::field::host, host + ":" + std::to_string(sock.remote_endpoint().port()));
         req.set(boost::beast::http::field::user_agent, "FastNetMon");
 
@@ -1751,6 +1761,9 @@ bool execute_web_request(std::string address,
     } catch (std::exception& e) {
         error_text = "execute_web_request failed with error: ";
         error_text += e.what();
+        return false;
+    } catch (...) {
+        error_text = "execute_web_request failed with unknown error";
         return false;
     }
 
