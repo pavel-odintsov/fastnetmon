@@ -22,11 +22,12 @@ Project
 
 Supported packet capture engines
 --------------------------------
-- NetFlow v5, v9, v9 lite (dev branch)
+- NetFlow v5, v9, v9 Lite
 - IPFIX
 - ![sFlow](http://sflow.org/images/sflowlogo.gif) v5
 - PCAP
 - AF_PACKET (recommended)
+- AF_XDP (developer branch only, XDP based capture)
 - Netmap (deprecated)
 - PF_RING / PF_RING ZC (deprecated, available only for CentOS 6 in 1.2.0)
 
