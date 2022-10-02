@@ -6,11 +6,11 @@
 // For support uint32_t, uint16_t
 #include <sys/types.h>
 
-#include "all_logcpp_libraries.h"
+#include "all_logcpp_libraries.hpp"
 
-#include "fast_library.h"
+#include "fast_library.hpp"
 
-#include "fast_platform.h"
+#include "fast_platform.hpp"
 
 // Get log4cpp logger from main programme
 extern log4cpp::Category& logger;
