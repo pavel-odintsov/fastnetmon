@@ -3020,12 +3020,21 @@ void system_counters_speed_thread_handler() {
     while (true) {
         // We recalculate it each second to avoid confusion
         boost::this_thread::sleep(boost::posix_time::seconds(1));
+    }
+}
+
+// Generates inaccurate time for fast time operations
+void inaccurate_time_generator() {
+    extern time_t current_inaccurate_time;
+
+    while (true) {
+        boost::this_thread::sleep(boost::posix_time::seconds(1));
 
         // We use this thread to update time each second
         time_t current_time = 0;
         time(&current_time);
 
-        // Update global time, yes, it may became inaccurate due to thread syncronization but that's OK for our purposes
+        // Update global time, yes, it may became inaccurate due to thread sync but that's OK for our purposes
         current_inaccurate_time = current_time;
     }
 }

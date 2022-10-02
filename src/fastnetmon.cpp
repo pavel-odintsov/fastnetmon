@@ -1626,6 +1626,10 @@ int main(int argc, char** argv) {
     // Start system speed recalculation thread
     service_thread_group.add_thread(new boost::thread(system_counters_speed_thread_handler));
 
+    auto inaccurate_time_generator_thread = new boost::thread(inaccurate_time_generator);
+    set_boost_process_name(inaccurate_time_generator_thread, "fast_time");
+    service_thread_group.add_thread(inaccurate_time_generator_thread);
+
     // Run screen draw thread for IPv4
     service_thread_group.add_thread(new boost::thread(screen_draw_ipv4_thread));
 

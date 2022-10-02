@@ -137,7 +137,7 @@ void check_traffic_buckets();
 void process_filled_buckets_ipv6();
 template <typename TemplatedKeyType>
 bool should_remove_orphaned_bucket(const std::pair<TemplatedKeyType, packet_bucket_t>& pair);
-
+void inaccurate_time_generator();
 
 // API declaration
 using fastmitigation::BanListReply;
