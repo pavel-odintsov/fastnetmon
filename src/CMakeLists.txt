@@ -323,7 +323,7 @@ endif()
 
 
 if (ENABLE_AF_XDP_SUPPORT)
-    target_link_libraries(xdp_plugin ${LIBBPF_LIBRARY_PATH})
+    target_link_libraries(xdp_plugin ${LIBBPF_LIBRARY_PATH} ${LIBELF_LIBRARY_PATH})
 endif()
 
 # Library with data types for parsing network structures
