@@ -111,6 +111,11 @@ extern std::string redis_prefix;
 extern bool redis_enabled;
 #endif
 
+extern int64_t netflow_ipfix_all_protocols_total_flows_speed;
+extern int64_t sflow_raw_packet_headers_total_speed;
+
+extern uint64_t netflow_ipfix_all_protocols_total_flows;
+extern uint64_t sflow_raw_packet_headers_total;
 
 #ifdef MONGO
 extern std::string mongodb_host;
@@ -3018,8 +3023,17 @@ void increment_incoming_counters(subnet_counter_t* current_element,
 
 void system_counters_speed_thread_handler() {
     while (true) {
+        auto netflow_ipfix_all_protocols_total_flows_previous = netflow_ipfix_all_protocols_total_flows;
+        auto sflow_raw_packet_headers_total_previous          = sflow_raw_packet_headers_total;
+
         // We recalculate it each second to avoid confusion
         boost::this_thread::sleep(boost::posix_time::seconds(1));
+
+        netflow_ipfix_all_protocols_total_flows_speed =
+            int64_t((float)netflow_ipfix_all_protocols_total_flows - (float)netflow_ipfix_all_protocols_total_flows_previous);
+
+        sflow_raw_packet_headers_total_speed =
+            int64_t((float)sflow_raw_packet_headers_total - (float)sflow_raw_packet_headers_total_previous);
     }
 }
 

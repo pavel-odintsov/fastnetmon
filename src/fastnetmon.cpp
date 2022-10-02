@@ -348,6 +348,12 @@ abstract_subnet_counters_t<subnet_cidr_mask_t> ipv4_network_counters;
 // Flow tracking structures
 map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
 
+std::string netflow_ipfix_all_protocols_total_flows_speed_desc = "Number of IPFIX and Netflow per second";
+int64_t netflow_ipfix_all_protocols_total_flows_speed          = 0;
+
+std::string sflow_raw_packet_headers_total_speed_desc = "Number of sFlow headers per second";
+int64_t sflow_raw_packet_headers_total_speed          = 0;
+
 /* End of our data structs */
 std::mutex ban_list_details_mutex;
 std::mutex ban_list_mutex;
@@ -1623,8 +1629,11 @@ int main(int argc, char** argv) {
     // Set inaccurate time value which will be used in process_packet() from capture backends
     time(&current_inaccurate_time);
 
-    // Start system speed recalculation thread
-    service_thread_group.add_thread(new boost::thread(system_counters_speed_thread_handler));
+    // start thread which pre-calculates speed for system counters
+    auto system_counters_speed_thread = new boost::thread(system_counters_speed_thread_handler);
+    set_boost_process_name(system_counters_speed_thread, "metrics_speed");
+    service_thread_group.add_thread(system_counters_speed_thread);
+
 
     auto inaccurate_time_generator_thread = new boost::thread(inaccurate_time_generator);
     set_boost_process_name(inaccurate_time_generator_thread, "fast_time");

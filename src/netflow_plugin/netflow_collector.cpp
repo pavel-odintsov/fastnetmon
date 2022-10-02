@@ -67,8 +67,9 @@ uint64_t netflow_v9_total_ipv6_packets = 0;
 
 uint64_t netflow_ipfix_total_packets = 0;
 
-// Total number of flows summarized for all kinds of Netflow and IPFIX
-uint64_t netflow_all_protocols_total_flows = 0;
+std::string netflow_ipfix_all_protocols_total_flows_desc =
+    "Total number of flows summarized for all kinds of Netflow and IPFIX";
+uint64_t netflow_ipfix_all_protocols_total_flows = 0; 
 
 // Multiple in each UDP packet
 uint64_t netflow_ipfix_total_flows        = 0;
@@ -215,7 +216,7 @@ std::vector<system_counter_t> get_netflow_stats() {
     system_counter.push_back(system_counter_t("netflow_ipfix_total_ipv4_packets", netflow_ipfix_total_ipv4_packets));
     system_counter.push_back(system_counter_t("netflow_ipfix_total_ipv6_packets", netflow_ipfix_total_ipv6_packets));
 
-    system_counter.push_back(system_counter_t("netflow_all_protocols_total_flows", netflow_all_protocols_total_flows));
+    system_counter.push_back(system_counter_t("netflow_ipfix_all_protocols_total_flows", netflow_ipfix_all_protocols_total_flows));
 
     system_counter.push_back(system_counter_t("netflow_broken_packets", netflow_broken_packets));
     system_counter.push_back(system_counter_t("template_updates_number_due_to_real_changes", template_updates_number_due_to_real_changes));
@@ -1312,7 +1313,7 @@ void nf10_flowset_to_store(uint8_t* pkt,
         offset += record_length;
     }
 
-    netflow_all_protocols_total_flows++;
+    netflow_ipfix_all_protocols_total_flows++;
 
     netflow_ipfix_total_flows++;
 
@@ -1602,7 +1603,7 @@ void nf9_flowset_to_store(uint8_t* pkt,
     // Total number of Netflow v9 flows
     netflow_v9_total_flows++;
 
-    netflow_all_protocols_total_flows++;
+    netflow_ipfix_all_protocols_total_flows++;
 
     if (packet.ip_protocol_version == 4) {
         netflow_v9_total_ipv4_packets++;
@@ -2042,7 +2043,7 @@ bool process_netflow_packet_v5(uint8_t* packet, uint32_t len, std::string& clien
             return false;
         }
 
-        netflow_all_protocols_total_flows++;
+        netflow_ipfix_all_protocols_total_flows++;
         netflow_v5_total_flows++;
 
         /* Decode to host encoding */
