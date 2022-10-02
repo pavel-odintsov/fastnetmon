@@ -338,6 +338,10 @@ sub main {
         install_boost_dependencies();
         install_boost();
 
+        install_libelf();
+
+        install_libbpf();
+
         if ($we_have_hiredis_support) {
            install_hiredis();
         }
@@ -1352,6 +1356,80 @@ sub install_boost_dependencies {
         yum("bzip2");
     }
 }
+
+sub install_libelf {
+    if (-e "$library_install_folder/elfutils_0_186") {
+        warn "elfutils already exists\n";
+        return 1;
+    }
+
+    if ($distro_type eq 'ubuntu') {
+        apt_get(('zlib1g-dev'));
+    } elsif ($distro_type eq 'centos') {
+        yum('zlib-devel', 'm4');
+    }
+
+    my $res = install_configure_based_software("https://sourceware.org/pub/elfutils/0.186/elfutils-0.186.tar.bz2", "650d52024be684dabf18a5261a69836a16f84f72", "$library_install_folder/elfutils_0_186", '--disable-debuginfod --disable-libdebuginfod');
+
+    unless ($res) {
+        die "Cannot install elfutils\n";
+    }
+
+    return 1;
+}
+
+
+sub install_libbpf {
+    # TODO: use our own libbpf source for compilation
+    # Well, it's easy to say: https://github.com/libbpf/libbpf
+
+    if ($distro_type eq 'ubuntu') {
+        my @dependency_list = ('libelf-dev');
+        apt_get(@dependency_list);
+    } elsif ($distro_type eq 'centos') {
+        yum('elfutils-libelf-devel');
+    }
+
+    # 5_16
+    my $libbpf_package_install_path = "$library_install_folder/libbpf_4_19";
+
+    if (-e $libbpf_package_install_path) {
+    warn "libbpf is installed, skip build\n";
+    return 1;
+    }
+
+    # linux-5.16.tar.xz
+    my $archive_file_name = 'linux-4.19.tar.xz';
+
+    print "Download Linux kernel\n";
+    chdir $temp_folder_for_building_project;
+
+    # //cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.16.tar.xz
+    # fd1d61124af4f76980eeef7257f625c0366eb70a
+    my $linux_kernel_download_result = download_file("https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.19.tar.xz",  $archive_file_name, '40f3e72192d59c0b7a4638cebd0ea55d35a782bb');
+
+    unless ($linux_kernel_download_result) {
+        die "Cannot download linux kernel\n";
+    }
+
+    print "Unpack kernel\n";
+    system("tar -xf $archive_file_name");
+
+    # 5.16
+    chdir "linux-4.19";
+
+    chdir "tools/lib/bpf";
+    system("make");
+
+    system("mkdir -p $libbpf_package_install_path");
+    system("cp libbpf.so libbpf.a $libbpf_package_install_path");
+
+    system("mkdir -p $libbpf_package_install_path/include/bpf");
+    system("cp bpf.h libbpf.h $libbpf_package_install_path/include/bpf");
+
+    return 1;
+}
+
 
 sub install_boost {
     my $boost_install_path = "$library_install_folder/boost_1_78_0";
