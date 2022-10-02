@@ -284,8 +284,6 @@ if (ENABLE_AFPACKET_SUPPORT)
    add_library(afpacket_plugin STATIC afpacket_plugin/afpacket_collector.cpp)
 endif()
 
-set(ENABLE_AF_XDP_SUPPORT TRUE)
-
 # You can disable it if needed: -DENABLE_AF_XDP_SUPPORT=OFF
 option(ENABLE_AF_XDP_SUPPORT "Enables use AF_XDP" ON)
 
