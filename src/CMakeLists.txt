@@ -25,6 +25,7 @@ set(CAPNP_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/capnproto_0_8
 set(OPENSSL_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/openssl_1_0_2d")
 set(GRPC_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/grpc_1_30_2")
 set(LIBBPF_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libbpf_4_19")
+set(LIBELF_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/elfutils_0_186")
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} --std=c++2a")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} --std=c++2a")
@@ -88,7 +89,7 @@ if (DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
     # Create builds in current folder with install RPATH
     SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
-    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libhiredis_0_13/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/log4cpp1.1.3/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/json-c-0.13/lib;${MONGO_C_CUSTOM_INSTALL_PATH}/lib;${MONGO_C_CUSTOM_INSTALL_PATH}/lib64;${GRPC_CUSTOM_INSTALL_PATH}/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/protobuf_3.11.4/lib;${CAPNP_CUSTOM_INSTALL_PATH}/lib;${OPENSSL_CUSTOM_INSTALL_PATH}/lib")
+    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libhiredis_0_13/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/log4cpp1.1.3/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/json-c-0.13/lib;${MONGO_C_CUSTOM_INSTALL_PATH}/lib;${MONGO_C_CUSTOM_INSTALL_PATH}/lib64;${GRPC_CUSTOM_INSTALL_PATH}/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/protobuf_3.11.4/lib;${CAPNP_CUSTOM_INSTALL_PATH}/lib;${OPENSSL_CUSTOM_INSTALL_PATH}/lib;${LIBBPF_CUSTOM_INSTALL_PATH}/lib;${LIBELF_CUSTOM_INSTALL_PATH}/lib")
 
 else()
    # We do not need any RPATH alterations when we want to link with system libraries (i.e. upstream builds for Debian or RedHat family)
@@ -283,12 +284,29 @@ if (ENABLE_AFPACKET_SUPPORT)
    add_library(afpacket_plugin STATIC afpacket_plugin/afpacket_collector.cpp)
 endif()
 
-# We do not enable it by default but it can be enabled manually on some platforms:
-# -DENABLE_AF_XDP_SUPPORT=ON
+set(ENABLE_AF_XDP_SUPPORT TRUE)
+
+# You can disable it if needed: -DENABLE_AF_XDP_SUPPORT=OFF
+option(ENABLE_AF_XDP_SUPPORT "Enables use AF_XDP" ON)
+
 if (ENABLE_AF_XDP_SUPPORT)
     add_definitions(-DFASTNETMON_ENABLE_AF_XDP)
     add_library(xdp_plugin STATIC xdp_plugin/xdp_collector.cpp)
     set(ENABLE_LIBBPF_SUPPORT TRUE)
+    set(ENABLE_LIBELF_SUPPORT TRUE)
+endif()
+
+if (ENABLE_LIBELF_SUPPORT) 
+    # We do not use it directly but we need it as dependency for libbpf
+    # include_directories("${LIBELF_CUSTOM_INSTALL_PATH/include") 
+
+    find_library(LIBELF_LIBRARY_PATH names "elf" PATHS "${LIBELF_CUSTOM_INSTALL_PATH}/lib" )
+
+    if (NOT LIBELF_LIBRARY_PATH)
+        message(FATAL_ERROR "Could not find libelf library")
+    else()
+        message(STATUS "Will use libelf library from ${LIBELF_LIBRARY_PATH}")
+    endif()
 endif()
 
 if (ENABLE_LIBBPF_SUPPORT) 
@@ -303,6 +321,8 @@ if (ENABLE_LIBBPF_SUPPORT)
     endif()
 
 endif()
+
+
 
 if (ENABLE_AF_XDP_SUPPORT)
     target_link_libraries(xdp_plugin ${LIBBPF_LIBRARY_PATH})
