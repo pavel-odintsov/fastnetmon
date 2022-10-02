@@ -33,6 +33,7 @@ BuildRequires:     abseil-cpp-devel
 BuildRequires:     grpc-plugins
 BuildRequires:     mongo-c-driver-devel
 BuildRequires:     json-c-devel
+BuildRequires:     libbpf-devel
 BuildRequires:     systemd
 BuildRequires:     systemd-rpm-macros
 
