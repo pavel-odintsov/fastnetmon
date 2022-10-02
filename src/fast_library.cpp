@@ -13,6 +13,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+// For uname function
+#include <sys/utsname.h>
+
 #include "all_logcpp_libraries.hpp"
 
 #include <boost/asio.hpp>
@@ -498,18 +501,18 @@ std::string get_protocol_name_by_number(unsigned int proto_number) {
     return proto_name;
 }
 
-// exec command in shell
-std::vector<std::string> exec(const std::string& cmd, std::string& error_text) {
-    std::vector<std::string> output_list;
-
+// Exec command in shell and capture output
+bool exec(const std::string& cmd, std::vector<std::string>& output_list,  std::string& error_text) {
     FILE* pipe = popen(cmd.c_str(), "r");
+
     if (!pipe) {
         // We need more details in case of failure
         error_text = "error code: " + std::to_string(errno) + " error text: " + strerror(errno);
-        return output_list;
+        return false;
     }
 
     char buffer[256];
+
     while (!feof(pipe)) {
         if (fgets(buffer, 256, pipe) != NULL) {
             size_t newbuflen = strlen(buffer);
@@ -524,7 +527,7 @@ std::vector<std::string> exec(const std::string& cmd, std::string& error_text) {
     }
 
     pclose(pipe);
-    return output_list;
+    return true;
 }
 
 bool print_pid_to_file(pid_t pid, std::string pid_path) {
@@ -614,7 +617,13 @@ interfaces_list_t get_interfaces_list() {
     boost::regex interface_name_pattern("^\\d+:\\s+(\\w+):.*?$");
 
     std::string error_text;
-    std::vector<std::string> output_list = exec("ip -o link show", error_text);
+    std::vector<std::string> output_list;
+
+    bool exec_result = exec("ip -o link show", output_list, error_text);
+
+    if (!exec_result) {
+        return interfaces_list;
+    }
 
     if (output_list.empty()) {
         return interfaces_list;
@@ -637,7 +646,13 @@ ip_addresses_list_t get_ip_list_for_interface(std::string interface) {
     ip_addresses_list_t ip_list;
 
     std::string error_text;
-    std::vector<std::string> output_list = exec("ip address show dev " + interface, error_text);
+    std::vector<std::string> output_list;
+
+    bool exec_result = exec("ip address show dev " + interface, output_list, error_text);
+
+    if (!exec_result) {
+        return ip_list;
+    }
 
     if (output_list.empty()) {
         return ip_list;
@@ -1960,9 +1975,195 @@ bool convert_string_to_any_integer_safe(const std::string& line, int& value) {
 }
 
 // This function is useful when we start it from thread and detach and so we are not interested in error text and we need to discard it
-std::vector<std::string> exec_no_error_check(const std::string& cmd) {
+void exec_no_error_check(const std::string& cmd) {
     std::string error_text;
+    std::vector<std::string> output_list;
 
-    return exec(cmd, error_text);
+    exec(cmd, output_list, error_text);
+    return;
+}
+
+unsigned int get_logical_cpus_number() {
+    extern log4cpp::Category& logger;
+
+    std::ifstream cpuinfo_file("/proc/cpuinfo");
+    boost::regex processor_pattern("^processor.*?$");
+
+    if (!cpuinfo_file.is_open()) {
+        logger << log4cpp::Priority::ERROR << "License: could not open cpuinfo";
+        return 0;
+    }
+
+    std::string line;
+    unsigned int logical_cpus_number = 0;
+
+    while (getline(cpuinfo_file, line)) {
+        boost::cmatch what;
+
+        if (regex_match(line.c_str(), what, processor_pattern)) {
+            logical_cpus_number++;
+        }
+    }
+
+    return logical_cpus_number;
+}
+
+// Get server's total memory in megabytes
+unsigned int get_total_memory() {
+    extern log4cpp::Category& logger;
+
+    std::ifstream meminfo_file("/proc/meminfo");
+    boost::regex memory_info_pattern("^(.*?):\\s+(\\d+).*$", boost::regex::icase);
+
+    if (!meminfo_file.is_open()) {
+        logger << log4cpp::Priority::ERROR << "License: could not open meminfo file";
+        return 0;
+    }
+
+    std::string line;
+
+    while (getline(meminfo_file, line)) {
+        // MemTotal:         501912 kB
+        boost::match_results<std::string::const_iterator> regex_results;
+
+        if (boost::regex_match(line, regex_results, memory_info_pattern)) {
+            if (regex_results[1] == "MemTotal") {
+                int memory_amount = 0;
+
+                bool conversion_result = convert_string_to_any_integer_safe(regex_results[2], memory_amount);
+
+                if (!conversion_result) {
+                    logger << log4cpp::Priority::ERROR << "Could not parse integer value";
+                    return 0;
+                }
+
+                return unsigned(memory_amount / 1024);
+            }
+        } else {
+            logger << log4cpp::Priority::ERROR << "Could not parse line in /proc/meminfo: " << line;
+            return 0;
+        }
+    }
+
+    return 0;
+}
+
+// Return code name of Linux distro:
+// ID=debian
+// ID="centos"
+// ID=ubuntu
+bool get_linux_distro_name(std::string& distro_name) {
+    std::map<std::string, std::string> parsed_file;
+
+    if (!parse_os_release_into_map(parsed_file)) {
+        return false;
+    }
+
+    auto itr = parsed_file.find("ID");
+
+    if (itr == parsed_file.end()) {
+        return false;
+    }
+
+    distro_name = itr->second;
+    return true;
+}
+
+
+
+// Returns Linux distro version
+// VERSION_ID="11"
+// VERSION_ID="8"
+// VERSION_ID="7"
+// VERSION_ID="16.04"
+bool get_linux_distro_version(std::string& distro_version) {
+    std::map<std::string, std::string> parsed_file;
+
+    if (!parse_os_release_into_map(parsed_file)) {
+        return false;
+    }
+
+    auto itr = parsed_file.find("VERSION_ID");
+
+    if (itr == parsed_file.end()) {
+        return false;
+    }
+
+    distro_version = itr->second;
+    return true;
+}
+
+
+// We will store option name as key and value will be value
+bool parse_os_release_into_map(std::map<std::string, std::string>& parsed_os_release) {
+    extern log4cpp::Category& logger;
+
+    // Format: https://www.freedesktop.org/software/systemd/man/os-release.html
+    std::ifstream os_release_file("/etc/os-release");
+
+    // Split line like:
+    // ID="centos"
+    boost::regex os_release_pattern("^(.*?)=\"?(.*?)\"?$", boost::regex::icase);
+
+    if (!os_release_file.is_open()) {
+        logger << log4cpp::Priority::ERROR << "Could not open /etc/os-release file";
+        return false;
+    }
+
+    std::string line;
+
+    while (getline(os_release_file, line)) {
+        // ID="centos"
+        // VERSION_ID="7"
+
+        boost::match_results<std::string::const_iterator> regex_results;
+
+        if (boost::regex_match(line, regex_results, os_release_pattern)) {
+            std::string value = regex_results[2];
+
+            // We may have or may not have quotes for value, strip them
+            boost::replace_all(value, "\"", "");
+
+            parsed_os_release[regex_results[1]] = value;
+        }
+    }
+
+    return true;
+}
+
+// Returns virtualisation method or "unknown"
+// It may have dash in value like "vm-other" or "lxc-libvirt" but no other symbols are expected
+std::string get_virtualisation_method() {
+    std::string error_text;
+    std::vector<std::string> output;
+
+    bool exec_result = exec("systemd-detect-virt --vm", output, error_text);
+
+    if (!exec_result) {
+        return "unknown";
+    }
+
+    if (output.empty()) {
+        return "unknown";
+    }
+
+    // Return first element
+    return boost::algorithm::to_lower_copy(output[0]);
+}
+
+// Get linux kernel version in form: 3.19.0-25-generic
+bool get_kernel_version(std::string& kernel_version) {
+    struct utsname current_utsname;
+
+    int uname_result = uname(&current_utsname);
+
+    if (uname_result != 0) {
+        return false;
+    }
+
+    // Release field is a char array (char release[], http://man7.org/linux/man-pages/man2/uname.2.html) and we do not need NULL check here
+    kernel_version = std::string(current_utsname.release);
+
+    return true;
 }
 
