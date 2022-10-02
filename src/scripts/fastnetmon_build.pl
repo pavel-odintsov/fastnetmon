@@ -1363,7 +1363,7 @@ sub install_libelf {
         return 1;
     }
 
-    if ($distro_type eq 'ubuntu') {
+    if ($distro_type eq 'ubuntu' || $distro_type eq 'debian') {
         apt_get(('zlib1g-dev'));
     } elsif ($distro_type eq 'centos') {
         yum('zlib-devel', 'm4');
@@ -1383,7 +1383,7 @@ sub install_libbpf {
     # TODO: use our own libbpf source for compilation
     # Well, it's easy to say: https://github.com/libbpf/libbpf
 
-    if ($distro_type eq 'ubuntu') {
+    if ($distro_type eq 'ubuntu' || $distro_type eq 'debian') {
         my @dependency_list = ('libelf-dev');
         apt_get(@dependency_list);
     } elsif ($distro_type eq 'centos') {
