@@ -64,6 +64,9 @@ enum class attack_detection_threshold_type_t {
     tcp_syn_bytes_per_second,
 };
 
+// Types of metrics as in Prometheus:
+// https://prometheus.io/docs/concepts/metric_types/
+enum class metric_type_t { counter, gauge };
 
 // Here we store different counters
 class system_counter_t {
