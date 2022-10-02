@@ -24,6 +24,7 @@ set(MONGO_C_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/mongo_c_dri
 set(CAPNP_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/capnproto_0_8_0")
 set(OPENSSL_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/openssl_1_0_2d")
 set(GRPC_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/grpc_1_30_2")
+set(LIBBPF_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libbpf_4_19")
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} --std=c++2a")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} --std=c++2a")
@@ -285,7 +286,26 @@ endif()
 # We do not enable it by default but it can be enabled manually on some platforms:
 # -DENABLE_AF_XDP_SUPPORT=ON
 if (ENABLE_AF_XDP_SUPPORT)
+    add_definitions(-DFASTNETMON_ENABLE_AF_XDP)
     add_library(xdp_plugin STATIC xdp_plugin/xdp_collector.cpp)
+    set(ENABLE_LIBBPF_SUPPORT TRUE)
+endif()
+
+if (ENABLE_LIBBPF_SUPPORT) 
+    include_directories("${LIBBPF_CUSTOM_INSTALL_PATH}/include")
+
+    find_library(LIBBPF_LIBRARY_PATH NAMES "bpf" PATHS "${LIBBPF_CUSTOM_INSTALL_PATH}" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
+
+    if (NOT LIBBPF_LIBRARY_PATH)
+        message(FATAL_ERROR "Could not find libbpf library")
+    else()
+        message(STATUS "Will use libbpf from ${LIBBPF_LIBRARY_PATH}")
+    endif()
+
+endif()
+
+if (ENABLE_AF_XDP_SUPPORT)
+    target_link_libraries(xdp_plugin ${LIBBPF_LIBRARY_PATH})
 endif()
 
 # Library with data types for parsing network structures
@@ -653,6 +673,10 @@ target_link_libraries(fastnetmon exabgp_action)
 
 if (ENABLE_AFPACKET_SUPPORT)
     target_link_libraries(fastnetmon afpacket_plugin)
+endif()
+
+if (ENABLE_AF_XDP_SUPPORT) 
+    target_link_libraries(fastnetmon xdp_plugin)
 endif()
 
 target_link_libraries(fastnetmon sflow_plugin netflow_plugin pcap_plugin example_plugin)

@@ -61,6 +61,10 @@
 #include "netmap_plugin/netmap_collector.hpp"
 #endif
 
+#ifdef FASTNETMON_ENABLE_AF_XDP
+#include "xdp_plugin/xdp_collector.hpp"
+#endif
+
 #ifdef FASTNETMON_ENABLE_AFPACKET
 #include "afpacket_plugin/afpacket_collector.hpp"
 #endif
@@ -234,6 +238,7 @@ void init_global_ban_settings() {
 bool enable_connection_tracking = true;
 
 bool enable_afpacket_collection         = false;
+bool enable_af_xdp_collection = false;
 bool enable_data_collection_from_mirror = true;
 bool enable_netmap_collection           = false;
 bool enable_sflow_collection            = false;
@@ -828,6 +833,14 @@ bool load_configuration_file() {
         }
     }
 
+    if (configuration_map.count("mirror_afxdp") != 0) { 
+        if (configuration_map["mirror_afxdp"] == "on") {
+            enable_af_xdp_collection = true;
+        } else {
+            enable_af_xdp_collection = false;
+        }    
+    } 
+
     if (configuration_map.count("mirror_netmap") != 0) {
         if (configuration_map["mirror_netmap"] == "on") {
             enable_netmap_collection = true;
@@ -838,6 +851,11 @@ bool load_configuration_file() {
 
     if (configuration_map.count("mirror_afpacket") != 0) {
         enable_afpacket_collection = configuration_map["mirror_afpacket"] == "on";
+    }
+
+    if (enable_afpacket_collection && enable_af_xdp_collection) {
+        logger << log4cpp::Priority::ERROR << "You cannot use AF_XDP and AF_PACKET in same time, select one";
+        exit(1);
     }
 
     if (enable_netmap_collection && enable_data_collection_from_mirror) {
@@ -1678,6 +1696,14 @@ int main(int argc, char** argv) {
 #ifdef FASTNETMON_ENABLE_AFPACKET
     if (enable_afpacket_collection) {
         packet_capture_plugin_thread_group.add_thread(new boost::thread(start_afpacket_collection, process_packet));
+    }
+#endif
+
+#ifdef FASTNETMON_ENABLE_AF_XDP
+    if (enable_af_xdp_collection) {
+        auto xdp_thread = new boost::thread(start_xdp_collection, process_packet);
+        set_boost_process_name(xdp_thread, "xdp");
+        packet_capture_plugin_thread_group.add_thread(xdp_thread);
     }
 #endif
 
