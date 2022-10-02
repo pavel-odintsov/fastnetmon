@@ -1526,7 +1526,7 @@ bool execute_web_request_secure(std::string address,
             return false;
         }
 
-        logger << log4cpp::Priority::INFO << "Resolved domain to " << end_point.size() << " IP addresses";
+        logger << log4cpp::Priority::DEBUG << "Resolved host " <<  host << " to " << end_point.size() << " IP addresses";
 
         boost::asio::connect(stream.next_layer(), end_point.begin(), end_point.end(), ec);
 
@@ -1565,7 +1565,16 @@ bool execute_web_request_secure(std::string address,
             req.body() = post_data;
         }
 
-        req.set(boost::beast::http::field::content_type, "application/x-www-form-urlencoded");
+        std::string content_type = "application/x-www-form-urlencoded";
+
+        // We can override Content Type from headers
+        auto header_itr = headers.find("Content-Type");
+        
+        if (header_itr != headers.end()) {
+            content_type = header_itr->second;
+        }
+
+        req.set(boost::beast::http::field::content_type, content_type);
 
         // We must specify port explicitly if we use non standard one
         std::string full_host = host + ":" + std::to_string(stream.next_layer().remote_endpoint().port());
@@ -1619,6 +1628,9 @@ bool execute_web_request_secure(std::string address,
         return true;
     } catch (std::exception& e) {
         logger << log4cpp::Priority::ERROR << "execute_web_request failed with error: " << e.what();
+        return false;
+    } catch (...) {
+        logger << log4cpp::Priority::ERROR << "execute_web_request failed with unknown error";
         return false;
     }
 
