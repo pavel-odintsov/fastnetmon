@@ -12,12 +12,13 @@
 
 extern log4cpp::Category& logger;
 extern struct timeval graphite_thread_execution_time;
-extern total_counter_element_t total_speed_average_counters[4];
 extern map_of_vector_counters_t SubnetVectorMapSpeed;
 extern map_of_vector_counters_t SubnetVectorMapSpeedAverage;
 extern uint64_t incoming_total_flows_speed;
 extern uint64_t outgoing_total_flows_speed;
 extern abstract_subnet_counters_t<subnet_cidr_mask_t> ipv4_network_counters;
+extern total_speed_counters_t total_counters_ipv4;
+extern total_speed_counters_t total_counters_ipv6;
 
 extern bool graphite_enabled;
 extern std::string graphite_host;
@@ -122,8 +123,8 @@ bool push_total_traffic_counters_to_graphite() {
     std::vector<direction_t> directions = { INCOMING, OUTGOING, INTERNAL, OTHER };
 
     for (auto packet_direction : directions) {
-        uint64_t speed_in_pps = total_speed_average_counters[packet_direction].packets;
-        uint64_t speed_in_bps = total_speed_average_counters[packet_direction].bytes;
+        uint64_t speed_in_pps = total_counters_ipv4.total_speed_average_counters[packet_direction].packets;
+        uint64_t speed_in_bps = total_counters_ipv4.total_speed_average_counters[packet_direction].bytes;
 
         graphite_data_t graphite_data;
 

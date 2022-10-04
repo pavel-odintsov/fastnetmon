@@ -11,7 +11,6 @@
 #include <vector>
 
 extern struct timeval graphite_thread_execution_time;
-extern total_counter_element_t total_speed_average_counters[4];
 extern map_of_vector_counters_t SubnetVectorMapSpeed;
 extern map_of_vector_counters_t SubnetVectorMapSpeedAverage;
 extern uint64_t incoming_total_flows_speed;
@@ -19,7 +18,6 @@ extern uint64_t outgoing_total_flows_speed;
 extern abstract_subnet_counters_t<subnet_cidr_mask_t> ipv4_network_counters;
 extern uint64_t influxdb_writes_total;
 extern uint64_t influxdb_writes_failed;
-extern total_counter_element_t total_speed_average_counters_ipv6[4];
 extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t> ipv6_host_counters;
 extern abstract_subnet_counters_t<subnet_cidr_mask_t> ipv4_host_counters;
 extern abstract_subnet_counters_t<subnet_cidr_mask_t> ipv4_remote_host_counters;
@@ -27,6 +25,9 @@ extern std::vector<ban_settings_t> hostgroup_list_total_calculation;
 extern std::mutex hostgroup_list_total_calculation_mutex;
 extern abstract_subnet_counters_t<int64_t> per_hostgroup_total_counters;
 extern log4cpp::Category& logger;
+extern total_speed_counters_t total_counters_ipv4;
+extern total_speed_counters_t total_counters_ipv6;
+
 
 extern std::string influxdb_database;
 extern std::string influxdb_host;
@@ -172,7 +173,7 @@ void influxdb_push_thread() {
         // First of all push total counters to InfluxDB
         push_total_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address,
                                                 std::to_string(influxdb_port), influxdb_auth, influxdb_user,
-                                                influxdb_password, "total_traffic", total_speed_average_counters, false);
+                                                influxdb_password, "total_traffic", total_counters_ipv4.total_speed_average_counters, false);
 
         // Push per subnet counters to InfluxDB
         push_network_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
@@ -192,7 +193,7 @@ void influxdb_push_thread() {
         // Push total IPv6 counters
         push_total_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address,
                                                 std::to_string(influxdb_port), influxdb_auth, influxdb_user, influxdb_password,
-                                                "total_traffic_ipv6", total_speed_average_counters_ipv6, true);
+                                                "total_traffic_ipv6", total_counters_ipv6.total_speed_average_counters, true);
     }
 }
 
