@@ -178,6 +178,21 @@ class total_counter_element_t {
     }
 };
 
+// Set of structures for calculating total traffic counters
+class total_speed_counters_t {
+    public:
+    total_counter_element_t total_counters[4];
+    total_counter_element_t total_speed_counters[4];
+    total_counter_element_t total_speed_average_counters[4];
+
+    template <class Archive> void serialize(Archive& ar, [[maybe_unused]] const unsigned int version) {
+        ar& BOOST_SERIALIZATION_NVP(total_counters);
+        ar& BOOST_SERIALIZATION_NVP(total_speed_counters);
+        ar& BOOST_SERIALIZATION_NVP(total_speed_average_counters);
+    }   
+};
+
+
 // structure with attack details
 class attack_details_t : public subnet_counter_t {
     public:

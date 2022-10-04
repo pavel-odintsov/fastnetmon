@@ -144,3 +144,13 @@ bool get_cpu_flags(std::vector<std::string>& flags);
 bool get_linux_distro_name(std::string& distro_name);
 bool get_linux_distro_version(std::string& distro_name);
 bool get_kernel_version(std::string& kernel_version);
+bool execute_web_request(const std::string& address_param,
+                         const std::string& request_type,
+                         const std::string& post_data,
+                         uint32_t& response_code,
+                         std::string& response_body,
+                         const std::map<std::string, std::string>& headers,
+                         std::string& error_text);
+unsigned int get_total_memory();
+std::string get_cpu_model();
+

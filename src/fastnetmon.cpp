@@ -307,15 +307,8 @@ log4cpp::Category& logger = log4cpp::Category::getRoot();
 /* Configuration block ends */
 
 // We count total number of incoming/outgoing/internal and other traffic type packets/bytes
-// And initilize by 0 all fields
-total_counter_element_t total_counters[4];
-total_counter_element_t total_speed_counters[4];
-total_counter_element_t total_speed_average_counters[4];
-
-// IPv6 versions of total counters
-total_counter_element_t total_counters_ipv6[4];
-total_counter_element_t total_speed_counters_ipv6[4];
-total_counter_element_t total_speed_average_counters_ipv6[4];
+total_speed_counters_t total_counters_ipv4;
+total_speed_counters_t total_counters_ipv6;
 
 // Total amount of non parsed packets
 uint64_t total_unparsed_packets       = 0;
@@ -1566,18 +1559,6 @@ int main(int argc, char** argv) {
 
     lookup_tree_ipv6    = New_Patricia(128);
     whitelist_tree_ipv6 = New_Patricia(128);
-
-    // nullify total counters
-    for (int index = 0; index < 4; index++) {
-        total_counters[index].bytes   = 0;
-        total_counters[index].packets = 0;
-
-        total_speed_counters[index].bytes   = 0;
-        total_speed_counters[index].packets = 0;
-
-        total_speed_average_counters[index].bytes   = 0;
-        total_speed_average_counters[index].packets = 0;
-    }
 
     /* Create folder for attack details */
     if (!folder_exists(fastnetmon_platform_configuration.attack_details_folder)) {
