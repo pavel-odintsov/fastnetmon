@@ -1517,7 +1517,7 @@ bool execute_web_request_secure(std::string address,
         boost::asio::io_context ioc;
 
         // The SSL context is required, and holds certificates
-        boost::asio::ssl::context ctx{ boost::asio::ssl::context::sslv23_client };
+        boost::asio::ssl::context ctx{ boost::asio::ssl::context::tls_client };
 
         // Load default CA certificates
         ctx.set_default_verify_paths();
