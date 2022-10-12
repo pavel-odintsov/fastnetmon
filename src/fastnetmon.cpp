@@ -134,6 +134,8 @@ std::string cli_stats_ipv6_file_path = "/tmp/fastnetmon_ipv6.dat";
 unsigned int stats_thread_sleep_time         = 3600;
 unsigned int stats_thread_initial_call_delay = 30;
 
+std::string reporting_server = "community-stats.fastnetmon.com";
+
 // Each this seconds we will check about available data in bucket
 unsigned int check_for_availible_for_processing_packets_buckets = 1;
 

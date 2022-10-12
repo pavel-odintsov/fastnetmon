@@ -1476,7 +1476,8 @@ bool execute_web_request_secure(std::string address,
                                 std::string post_data,
                                 uint32_t& response_code,
                                 std::string& response_body,
-                                std::map<std::string, std::string>& headers) {
+                                std::map<std::string, std::string>& headers,
+                                std::string& error_text) {
 
     extern log4cpp::Category& logger;
 
@@ -1661,7 +1662,7 @@ bool execute_web_request(std::string address,
     std::string port = "http";
 
     if (address.find("https://") != std::string::npos) {
-        return execute_web_request_secure(address, request_type, post_data, response_code, response_body, headers);
+        return execute_web_request_secure(address, request_type, post_data, response_code, response_body, headers, error_text);
     }
 
     if (address.find("http://") == std::string::npos) {
@@ -2188,5 +2189,68 @@ bool get_cpu_flags(std::vector<std::string>& flags) {
 
     logger << log4cpp::Priority::ERROR << "Cannot find any flags in cpuinfo";
     return false;
+}
+
+std::string get_cpu_model() {
+    extern log4cpp::Category& logger;
+
+    std::ifstream cpuinfo_file("/proc/cpuinfo");
+    boost::regex processor_model_pattern("^model name\\s+:\\s(.*?)$");
+
+    if (!cpuinfo_file.is_open()) {
+        logger << log4cpp::Priority::ERROR << "License: could not open cpuinfo";
+        return "";
+    }
+
+    std::string line;
+    while (getline(cpuinfo_file, line)) {
+        boost::match_results<std::string::const_iterator> regex_results;
+
+        if (boost::regex_match(line, regex_results, processor_model_pattern)) {
+            return regex_results[1];
+        }
+    }
+
+    // For new ARMs (Cavium Thunder X for example) we do not have model name in 4.10 kernel
+#ifdef __aarch64__
+    std::string implementer;
+    std::string part;
+    std::string revision;
+
+    boost::regex implementer_pattern("^CPU implementer\\s+:\\s(.*?)$");
+    boost::regex part_pattern("^CPU part\\s+:\\s(.*?)$");
+    boost::regex revision_pattern("^CPU revision\\s+:\\s(.*?)$");
+
+    // Reset to start of file
+    cpuinfo_file.clear();
+    cpuinfo_file.seekg(0, std::ios::beg);
+
+    while (getline(cpuinfo_file, line)) {
+        boost::match_results<std::string::const_iterator> regex_results_implementer;
+        boost::match_results<std::string::const_iterator> regex_results_part;
+        boost::match_results<std::string::const_iterator> regex_results_revision;
+
+        if (boost::regex_match(line, regex_results_implementer, implementer_pattern)) {
+            implementer = regex_results_implementer[1];
+        }
+
+        if (boost::regex_match(line, regex_results_part, part_pattern)) {
+            part = regex_results_part[1];
+        }
+
+        if (boost::regex_match(line, regex_results_revision, revision_pattern)) {
+            revision = regex_results_revision[1];
+        }
+    }
+
+    // If we fould all of them, use these fields as model
+    if (implementer.size() > 0 && part.size() > 0 && revision.size() > 0) {
+        return "implementer: " + implementer + " part: " + part + " revision: " + revision;
+    } else {
+        // logger << log4cpp::Priority::ERROR << "implementer: " << implementer << " part: " << part << " revision: " << revision;
+    }
+#endif
+
+    return "";
 }
 

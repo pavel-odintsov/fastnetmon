@@ -3353,3 +3353,165 @@ bool get_statistics(std::vector<system_counter_t>& system_counters) {
 
     return true;
 }
+
+// Generates human readable comma separated list of enabled traffic capture plugins
+std::vector<std::string> generate_list_of_enabled_capture_engines() {
+    std::vector<std::string> list;
+
+    if (configuration_map.count("sflow") != 0 && configuration_map["sflow"] == "on") {
+        list.push_back("sflow");
+    }
+
+    if (configuration_map.count("netflow") != 0 && configuration_map["netflow"] == "on") {
+        list.push_back("netflow");
+    }
+
+    if (configuration_map.count("mirror_afpacket") != 0 && configuration_map["mirror_afpacket"] == "on") {
+        list.push_back("af_packet");
+    }
+
+    if (configuration_map.count("mirror_afxdp") != 0 && configuration_map["mirror_afxdp"] == "on") {
+        list.push_back("af_xdp");
+    }
+
+    return list;
+}
+
+
+void send_usage_data_to_reporting_server() {
+    extern std::string reporting_server;
+    extern total_speed_counters_t total_counters_ipv4;
+
+    // Build query
+    std::stringstream request_stream;
+
+    request_stream << "https://" << reporting_server
+                   << "/stats_v1";
+
+
+    std::string stats_json_string;
+
+    try {
+        nlohmann::json stats;
+
+        stats["incoming_traffic_speed"] = total_counters_ipv4.total_speed_average_counters[INCOMING].bytes;
+        stats["outgoing_traffic_speed"] = total_counters_ipv4.total_speed_average_counters[OUTGOING].bytes;
+        stats["flows_speed"] = netflow_ipfix_all_protocols_total_flows_speed;
+        stats["headers_speed"] = sflow_raw_packet_headers_total_speed;
+        stats["total_hosts"] = total_number_of_hosts_in_our_networks;
+        stats["cap_plugins"] = generate_list_of_enabled_capture_engines();
+        stats["speed_calc_time"] = speed_calculation_time.tv_sec;
+        stats["version"] = fastnetmon_platform_configuration.fastnetmon_version;
+        stats["virt_method"] = get_virtualisation_method();
+
+        // We use statically allocated counters in that case
+        stats["hosts_hash_ipv4"] = total_number_of_hosts_in_our_networks;
+
+        ssize_t hosts_hash_size_ipv6 = 0;
+
+        {
+            std::lock_guard<std::mutex> lock_guard(ipv6_host_counters.counter_map_mutex);
+            hosts_hash_size_ipv6 = ipv6_host_counters.average_speed_map.size();
+        }
+
+        stats["hosts_hash_ipv6"] = hosts_hash_size_ipv6;
+
+        bool gobgp = false;
+
+        if (configuration_map.count("gobgp") != 0 && configuration_map["gobgp"] == "on") {
+            gobgp = true;
+        }
+
+        stats["bgp"] = gobgp;
+        
+        stats["bgp_flow_spec"] = false;
+
+        bool influxdb = false;
+
+        if (configuration_map.count("influxdb") != 0 && configuration_map["influxdb"] == "on") {
+            influxdb = true;
+        }
+
+        stats["influxdb"] = influxdb;
+        
+        stats["clickhouse_metrics"] = false;
+        stats["traffic_db"] = false;
+        stats["prometheus"] = false;
+
+        stats["cpu_model"] = get_cpu_model();
+        stats["cpu_logical_cores"] = get_logical_cpus_number();
+
+        // Mbytes
+        stats["memory_size"] = get_total_memory();
+
+        std::string kernel_version = "unknown";
+
+        if (!get_kernel_version(kernel_version)) {
+            logger << log4cpp::Priority::ERROR << "Cannot get Linux kernel version";
+        }
+
+        stats["kernel_version"] = kernel_version;
+
+        std::vector<std::string> cpu_flags;
+
+        if (!get_cpu_flags(cpu_flags)) {
+            logger << log4cpp::Priority::ERROR << "Cannot get CPU flags";
+        }
+
+        stats["cpu_flags"] = cpu_flags;
+
+        std::string linux_distro_name = "unknown";
+
+        if (!get_linux_distro_name(linux_distro_name)) {
+            logger << log4cpp::Priority::ERROR << "Cannot get Linux distro name";
+        }
+
+        stats["linux_distro_name"] = linux_distro_name;
+
+        std::string linux_distro_version = "unknown";
+
+        if (!get_linux_distro_version(linux_distro_version)) {
+            logger << log4cpp::Priority::ERROR << "Cannot get Linux distro version";
+        }
+
+        stats["linux_distro_version"] = linux_distro_version;
+
+        stats_json_string = stats.dump();
+    }  catch (...) {
+        logger << log4cpp::Priority::ERROR << "Failed to serialise stats";
+        return;
+    }
+
+    // It's fair to show but we will expose our delay. We need to make delay random first
+    // logger << log4cpp::Priority::DEBUG << "Preparing to send following information to telemetry server " << request_stream.str();
+
+    uint32_t response_code = 0;
+    std::string response_body;
+    std::string error_text;
+
+    std::map<std::string, std::string> headers;
+
+    // I think we need to do it to make clear about format for remote app
+    headers["Content-Type"] = "application/json";
+
+    // Just do it to know about DNS issues, execute_web_request can do DNS resolution on it's own 
+    std::string reporting_server_ip_address = dns_lookup(reporting_server);
+
+    if (reporting_server_ip_address.empty()) {
+        logger << log4cpp::Priority::DEBUG << "Stats server resolver failed, please check your DNS";
+        return;
+    }
+
+    bool result = execute_web_request_secure(request_stream.str(), "post", stats_json_string, response_code, response_body, headers, error_text);
+
+    if (!result) {
+        logger << log4cpp::Priority::DEBUG << "Can't collect stats data";
+        return;
+    }
+
+    if (response_code != 200) {
+        logger << log4cpp::Priority::DEBUG << "Got code " << response_code << " from stats server instead of 200";
+        return;
+    }
+}
+

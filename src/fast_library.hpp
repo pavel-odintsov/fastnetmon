@@ -153,4 +153,10 @@ bool execute_web_request(const std::string& address_param,
                          std::string& error_text);
 unsigned int get_total_memory();
 std::string get_cpu_model();
-
+bool execute_web_request_secure(std::string address,
+                                std::string request_type,
+                                std::string post_data,
+                                uint32_t& response_code,
+                                std::string& response_body,
+                                std::map<std::string, std::string>& headers,
+                                std::string& error_text);
