@@ -42,6 +42,9 @@ my $distro_architecture = '';
 
 my $gcc_version = '12.1.0';
 
+# We need it for all OpenSSL dependencies
+my $openssl_folder_name = "openssl_1_1_1q";
+
 my $user_email = '';
 
 my $install_log_path = "/tmp/fastnetmon_install_$$.log";
@@ -545,7 +548,7 @@ sub install_grpc {
 
     print "Build gRPC\n";
     # We need to specify PKG config path to pick up our custom OpenSSL instead of system one
-    my $make_result = exec_command("$ld_library_path_for_make PKG_CONFIG_PATH=$library_install_folder/openssl_1_0_2d/lib/pkgconfig make $make_options");
+    my $make_result = exec_command("$ld_library_path_for_make PKG_CONFIG_PATH=$library_install_folder/openssl_1_1_1q/lib/pkgconfig make $make_options");
 
     unless ($make_result) {
         fast_die( "Could not build gRPC: make failed\n");
@@ -727,12 +730,14 @@ sub install_mongo_client {
         return 1;
     }    
 
+    my $openssl_path = "$library_install_folder/$openssl_folder_name";
+
     # OpenSSL is mandatory for SCRAM-SHA-1 auth mode
     # I also use flag ENABLE_ICU=OFF to disable linking against icu system library. I do no think that we really need it
     my $res = install_cmake_based_software("https://github.com/mongodb/mongo-c-driver/releases/download/1.16.1/mongo-c-driver-1.16.1.tar.gz",
         "f9bd005195895538af821708112bf861090da354",
     $install_path,
-    "$ld_library_path_for_make $cmake_path -DENABLE_AUTOMATIC_INIT_AND_CLEANUP=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:STRING=$library_install_folder/mongo_c_driver_1_16_1 -DCMAKE_C_COMPILER=$default_c_compiler_path -DOPENSSL_ROOT_DIR=$library_install_folder/openssl_1_0_2d -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DENABLE_ICU=OFF ..", $ld_library_path_for_make);
+    "$ld_library_path_for_make $cmake_path -DENABLE_AUTOMATIC_INIT_AND_CLEANUP=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:STRING=$library_install_folder/mongo_c_driver_1_16_1 -DCMAKE_C_COMPILER=$default_c_compiler_path -DOPENSSL_ROOT_DIR=$openssl_path -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DENABLE_ICU=OFF ..", $ld_library_path_for_make);
 
     if (!$res) {
         die "Could not install mongo c client\n";
@@ -1102,8 +1107,8 @@ sub install_capnproto {
 }
 
 sub install_openssl {
-    my $distro_file_name = 'openssl-1.0.2d.tar.gz';
-    my $openssl_install_path = "$library_install_folder/openssl_1_0_2d";
+    my $distro_file_name = 'openssl-1.1.1q.tar.gz';
+    my $openssl_install_path = "$library_install_folder/openssl_1_1_1q";
  
     if (-e $openssl_install_path) {
         warn "We found already installed openssl in folder $openssl_install_path Skip compilation\n";
@@ -1112,15 +1117,15 @@ sub install_openssl {
 
     chdir $temp_folder_for_building_project;
    
-    my $openssl_download_result = download_file("https://www.openssl.org/source/old/1.0.2/$distro_file_name", 
-        $distro_file_name, 'd01d17b44663e8ffa6a33a5a30053779d9593c3d');
+    my $openssl_download_result = download_file("https://www.openssl.org/source/$distro_file_name", 
+        $distro_file_name, '79511a8f46f267c533efd32f22ad3bf89a92d8e5');
 
     unless ($openssl_download_result) {    
         die "Could not download openssl";
     }    
 
     exec_command("tar -xf $distro_file_name");
-    chdir "openssl-1.0.2d";
+    chdir "openssl-1.1.1q";
 
     exec_command("./config shared --prefix=$openssl_install_path");
     exec_command("make -j $make_options");
@@ -1135,11 +1140,13 @@ sub install_poco {
          return 1;
     }    
 
+    my $openssl_path = "$library_install_folder/$openssl_folder_name";
+
     # Actually it's not standard "configure". That is custom bash based script! And it's not handling options suitable for
     # configure (i.e. CC and other)
     my $res = install_configure_based_software("https://github.com/pocoproject/poco/archive/poco-1.10.0-release.tar.gz",
         'cc75c9ca9d21422683ee7d71c5a98aaf72b45bcc', "$library_install_folder/poco_1_10_0",
-        "--minimal --shared --no-samples --no-tests --include-path=$library_install_folder/openssl_1_0_2d/include --library-path=$library_install_folder/openssl_1_0_2d/lib --cflags=\"-std=c++11\"");
+        "--minimal --shared --no-samples --no-tests --include-path=$openssl_path/include --library-path=$openssl_path/lib --cflags=\"-std=c++11\"");
 
     unless ($res) {
         die "Could not install poco";
