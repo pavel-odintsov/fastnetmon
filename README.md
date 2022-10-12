@@ -19,6 +19,7 @@ Project
 - [FastNetMon Advanced, Commercial Edition](https://fastnetmon.com/fastnetmon-advanced/), [order free one month trial](https://fastnetmon.com/trial/)
 - [FastNetMon Advanced and Community difference table](https://fastnetmon.com/compare-community-and-advanced/)
 - Detailed reference: [link](https://translate.google.com/translate?sl=auto&tl=en&u=https%3A%2F%2Ffastnetmon.com%2Fwp-content%2Fuploads%2F2017%2F07%2FFastNetMon_Reference_Russian.pdf)
+- [Privacy policy](https://fastnetmon.com/privacy-policy/)
 
 Supported packet capture engines
 --------------------------------
