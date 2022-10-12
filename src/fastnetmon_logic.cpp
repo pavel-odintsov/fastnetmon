@@ -3515,3 +3515,15 @@ void send_usage_data_to_reporting_server() {
     }
 }
 
+void collect_stats() {
+    extern unsigned int stats_thread_initial_call_delay;
+    extern unsigned int stats_thread_sleep_time;
+
+    boost::this_thread::sleep(boost::posix_time::seconds(stats_thread_initial_call_delay));
+
+    while (true) {
+        send_usage_data_to_reporting_server();
+        boost::this_thread::sleep(boost::posix_time::seconds(stats_thread_sleep_time));
+    }
+}
+
