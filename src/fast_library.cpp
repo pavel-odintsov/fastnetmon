@@ -1623,27 +1623,18 @@ bool execute_web_request_secure(std::string address,
         // Return response body to caller
         response_body = resp.body();
 
-        // logger << log4cpp::Priority::INFO << "Response code: " << response_code;
+        logger << log4cpp::Priority::DEBUG << "Response code: " << response_code;
 
-        // 
-        // Here we need to do proper TLS session shutdown using stream.shutdown() but we explicitly decided to skip it
-        // Internally, this logic calls SSL_shutdown https://www.openssl.org/docs/man3.0/man3/SSL_shutdown.html
-        // which may hang indefinitely when server does not implement TLS session termination properly
-        // And it's definitely a case with Fastly, our CDN provider
-        // Unfortunately, it's quite popular among cloud providers and I think we need to skip it and just close underlying TCP socket
-        // 
-        // The better way to implement it is async HTTP client with timeout logic which closes TCP socket 
-        //
+        logger << log4cpp::Priority::DEBUG << "Prepare to shutdown TLS";
 
-        // We need to close TCP connection
-        stream.next_layer().shutdown( boost::asio::socket_base::shutdown_both, ec);
-
-        if (ec) {
-            logger << log4cpp::Priority::ERROR << "Can't shutdown TCP connection gracefully: " << ec.message();
-            // we do not consider it as error and do not report it
+        stream.shutdown(ec);
+        if (ec == boost::asio::error::eof) {
+            // Rationale:
+            // http://stackoverflow.com/questions/25587403/boost-asio-ssl-async-shutdown-always-finishes-with-an-error
+            ec.assign(0, ec.category());
         }
 
-        logger << log4cpp::Priority::DEBUG << "TCP connection was successfully closed";
+        logger << log4cpp::Priority::DEBUG << "Successfully closed TLS";
 
         return true;
     } catch (std::exception& e) {
