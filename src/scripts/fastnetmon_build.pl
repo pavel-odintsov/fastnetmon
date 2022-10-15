@@ -1268,7 +1268,7 @@ sub install_boost_builder {
     print "Unpack boost builder\n";
     exec_command("tar -xf $archive_file_name");
 
-    unless (chdir "build-4.9.2") {
+    unless (chdir "b2-4.9.2") {
         fast_die("Cannot do chdir to build boost folder\n");
     }
 
