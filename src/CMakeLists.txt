@@ -681,6 +681,10 @@ target_link_libraries(fastnetmon ${LOG4CPP_LIBRARY_PATH})
 
 target_link_libraries(fastnetmon ${CMAKE_THREAD_LIBS_INIT})
 
+# We need it for boost::stacktrace
+# To address undefined reference to symbol 'dladdr@@GLIBC_2.2.5
+target_link_libraries(fastnetmon ${CMAKE_DL_LIBS})
+
 # Our libs
 target_link_libraries(fastnetmon patricia)
 target_link_libraries(fastnetmon fastnetmon_pcap_format)
