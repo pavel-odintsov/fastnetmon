@@ -84,6 +84,7 @@
 #include <sstream>
 #include <utility>
 #include <vector>
+#include <filesystem>
 
 #include <boost/regex.hpp>
 #include <boost/thread.hpp>
@@ -96,6 +97,8 @@
 // Boost libs
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/trim.hpp>
+
+#include <boost/stacktrace.hpp>
 
 #ifdef GEOIP
 #include "GeoIP.h"
@@ -138,6 +141,9 @@ unsigned int stats_thread_sleep_time         = 3600;
 unsigned int stats_thread_initial_call_delay = 30;
 
 std::string reporting_server = "community-stats.fastnetmon.com";
+
+// Path to temporarily store backtrace when fatal failure happened
+std::string backtrace_path = "/var/log/fastnetmon_backtrace.dump";
 
 // Each this seconds we will check about available data in bucket
 unsigned int check_for_availible_for_processing_packets_buckets = 1;
@@ -1412,6 +1418,13 @@ void redirect_fds() {
 #pragma GCC diagnostic pop
 }
 
+// Handles fatal failure of FastNetMon's daemon
+void fatal_signal_handler(int signum) {
+    ::signal(signum, SIG_DFL);
+    boost::stacktrace::safe_dump_to(backtrace_path.c_str());
+    ::raise(SIGABRT);
+}
+
 int main(int argc, char** argv) {
     bool daemonize                = false;
     bool only_configuration_check = false;
@@ -1518,7 +1531,24 @@ int main(int argc, char** argv) {
     // enable core dumps
     enable_core_dumps();
 
+    // Setup fatal signal handlers to gracefully capture them
+    ::signal(SIGSEGV, &fatal_signal_handler);
+    ::signal(SIGABRT, &fatal_signal_handler);
+
     init_logging(log_to_console);
+
+    if (std::filesystem::exists(backtrace_path)) {
+        // there is a backtrace
+        std::ifstream ifs(backtrace_path);
+
+        boost::stacktrace::stacktrace st = boost::stacktrace::stacktrace::from_dump(ifs);
+        logger << log4cpp::Priority::ERROR << "Previous run crashed, you can find stack trace below";
+        logger << log4cpp::Priority::ERROR << st;
+
+        // cleaning up
+        ifs.close();
+        std::filesystem::remove(backtrace_path);
+    }
 
 #ifdef FASTNETMON_API
     gpr_set_log_function(silent_logging_function);
