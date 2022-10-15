@@ -51,6 +51,9 @@ After=network.target remote-fs.target
 Type=simple
 ExecStart=/opt/fastnetmon-community/app/bin/fastnetmon --disable_pid_logic
 LimitNOFILE=65535
+# Restart service when it fails due to any reasons, we need to keep processing traffic no matter what happened
+Restart=on-failure
+RestartSec=5s
 
 [Install]
 WantedBy=multi-user.target
@@ -291,6 +294,9 @@ After=network.target remote-fs.target
 Type=simple
 ExecStart=/opt/fastnetmon-community/app/bin/fastnetmon --disable_pid_logic
 LimitNOFILE=65535
+# Restart service when it fails due to any reasons, we need to keep processing traffic no matter what happened
+Restart=on-failure
+RestartSec=5s
 
 [Install]
 WantedBy=multi-user.target
