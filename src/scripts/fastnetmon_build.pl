@@ -1248,9 +1248,9 @@ sub install_boost_builder {
     chdir $temp_folder_for_building_project;
 
     # We use another name because it uses same name as boost distribution
-    my $archive_file_name = '4.3.0.tar.gz';
+    my $archive_file_name = '4.9.2.tar.gz';
 
-    my $boost_builder_install_folder = "$library_install_folder/boost_build_4_3_0";
+    my $boost_builder_install_folder = "$library_install_folder/boost_build_4_9_2";
 
     if (-e $boost_builder_install_folder) {
         warn "Found installed Boost builder at $boost_builder_install_folder\n";
@@ -1258,8 +1258,8 @@ sub install_boost_builder {
     }
 
     print "Download boost builder\n";
-    my $boost_build_result = download_file("https://github.com/boostorg/build/archive/$archive_file_name", $archive_file_name,
-        '');
+    my $boost_build_result = download_file("https://github.com/bfgroup/build/archive/$archive_file_name", $archive_file_name,
+        '1c77d3fda9425fd89b783db8f7bd8ebecdf8f916');
 
     unless ($boost_build_result) {
         fast_die("Can't download boost builder\n");
@@ -1268,7 +1268,7 @@ sub install_boost_builder {
     print "Unpack boost builder\n";
     exec_command("tar -xf $archive_file_name");
 
-    unless (chdir "build-4.3.0") {
+    unless (chdir "build-4.9.2") {
         fast_die("Cannot do chdir to build boost folder\n");
     }
 
@@ -1486,7 +1486,7 @@ sub install_boost {
     print "Build Boost\n";
     # We have troubles when run this code with vzctl exec so we should add custom compiler in path 
     # linkflags is required to specify custom path to libicu from regexp library
-    my $b2_build_result = exec_command("$ld_library_path_for_make $library_install_folder/boost_build_4_3_0/bin/b2 -j $boost_build_threads -sICU_PATH=$library_install_folder/libicu_65_1 linkflags=\"-Wl,-rpath,$library_install_folder/libicu_65_1/lib\" --build-dir=$temp_folder_for_building_project/boost_build_temp_directory_1_7_8 link=shared --without-test --without-python --without-wave --without-log --without-mpi");
+    my $b2_build_result = exec_command("$ld_library_path_for_make $library_install_folder/boost_build_4_9_2/bin/b2 -j $boost_build_threads -sICU_PATH=$library_install_folder/libicu_65_1 linkflags=\"-Wl,-rpath,$library_install_folder/libicu_65_1/lib\" --build-dir=$temp_folder_for_building_project/boost_build_temp_directory_1_7_8 link=shared --without-test --without-python --without-wave --without-log --without-mpi");
 
     unless ($b2_build_result) {
         die "Can't execute b2 build correctly\n";
