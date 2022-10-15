@@ -1439,7 +1439,7 @@ sub install_libbpf {
 
 
 sub install_boost {
-    my $boost_install_path = "$library_install_folder/boost_1_78_0";
+    my $boost_install_path = "$library_install_folder/boost_1_80_0";
 
     if (-e $boost_install_path) {
         warn "Boost libraries already exist in $boost_install_path. Skip build process\n";
@@ -1447,14 +1447,14 @@ sub install_boost {
     }
 
     chdir $library_install_folder;
-    my $archive_file_name = 'boost_1_78_0.tar.gz';
+    my $archive_file_name = 'boost_1_80_0.tar.gz';
 
     print "Install Boost dependencies\n";
    
-    my $url_boost = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.bz2";
+    my $url_boost = "https://boostorg.jfrog.io/artifactory/main/release/1.80.0/source/boost_1_80_0.tar.bz2";
 
     print "Download Boost source code\n";
-    my $boost_download_result = download_file($url_boost, $archive_file_name, '7ccc47e82926be693810a687015ddc490b49296d');
+    my $boost_download_result = download_file($url_boost, $archive_file_name, '690a2a2ed6861129828984b1d52a473d2c8393d1');
 
     unless ($boost_download_result) {
         fast_die("Can't download Boost source code\n");
@@ -1463,7 +1463,7 @@ sub install_boost {
     print "Unpack Boost source code\n";
     exec_command("tar -xf $archive_file_name");
 
-    my $folder_name_inside_archive = 'boost_1_78_0';
+    my $folder_name_inside_archive = 'boost_1_80_0';
 
     print "Fix permissions\n";
     # Fix permissions because they are broken inside official archive
