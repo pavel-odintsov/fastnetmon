@@ -480,21 +480,25 @@ void print_attack_details_to_file(std::string details, std::string client_ip_as_
 logging_configuration_t read_logging_settings(configuration_map_t configuration_map) {
     logging_configuration_t logging_configuration_temp;
 
+    if (configuration_map.count("logging_level") != 0) {
+        logging_configuration_temp.logging_level = configuration_map["logging_level"];
+    }
+
     if (configuration_map.count("logging_local_syslog_logging") != 0) {
-        logging_configuration_temp.local_syslog_logging = configuration_map["logging:local_syslog_logging"] == "on";
+        logging_configuration_temp.local_syslog_logging = configuration_map["logging_local_syslog_logging"] == "on";
     }
 
     if (configuration_map.count("logging_remote_syslog_logging") != 0) {
-        logging_configuration_temp.remote_syslog_logging = configuration_map["logging:remote_syslog_logging"] == "on";
+        logging_configuration_temp.remote_syslog_logging = configuration_map["logging_remote_syslog_logging"] == "on";
     }
 
     if (configuration_map.count("logging_remote_syslog_server") != 0) {
-        logging_configuration_temp.remote_syslog_server = configuration_map["logging:remote_syslog_server"];
+        logging_configuration_temp.remote_syslog_server = configuration_map["logging_remote_syslog_server"];
     }
 
     if (configuration_map.count("logging_remote_syslog_port") != 0) {
         logging_configuration_temp.remote_syslog_port =
-            convert_string_to_integer(configuration_map["logging:remote_syslog_port"]);
+            convert_string_to_integer(configuration_map["logging_remote_syslog_port"]);
     }
 
     if (logging_configuration_temp.remote_syslog_logging) {
@@ -507,7 +511,7 @@ logging_configuration_t read_logging_settings(configuration_map_t configuration_
     }
 
     if (logging_configuration_temp.local_syslog_logging) {
-        logger << log4cpp::Priority::INFO << "We have configured local syslog logging corectly";
+        logger << log4cpp::Priority::INFO << "We have configured local syslog logging correctly";
     }
 
     return logging_configuration_temp;

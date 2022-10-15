@@ -1324,6 +1324,24 @@ void init_logging(bool log_to_console) {
     logger << log4cpp::Priority::INFO << "Logger initialized!";
 }
 
+void reconfigure_logging_level(const std::string& logging_level) {
+    // Configure logging level
+    log4cpp::Priority::Value priority = log4cpp::Priority::INFO;
+
+    if (logging_level == "debug") {
+        priority = log4cpp::Priority::DEBUG;
+        logger << log4cpp::Priority::DEBUG << "Setting logging level to debug";
+    } else if (logging_level == "info" || logging_level == "") {
+        // It may be set to empty value in old versions before we introduced this flag
+        logger << log4cpp::Priority::DEBUG << "Setting logging level to info";
+        priority = log4cpp::Priority::INFO;
+    } else {
+        logger << log4cpp::Priority::ERROR << "Unknown logging level: " << logging_level;
+    }
+
+    logger.setPriority(priority);
+}
+
 void reconfigure_logging() {
     log4cpp::PatternLayout* layout = new log4cpp::PatternLayout();
     layout->setConversionPattern("[%p] %m%n");
@@ -1344,8 +1362,10 @@ void reconfigure_logging() {
         remote_syslog_appender->setLayout(layout);
         logger.addAppender(remote_syslog_appender);
 
-        logger << log4cpp::Priority::INFO << "We start remote syslog logging corectly";
+        logger << log4cpp::Priority::INFO << "We start remote syslog logging correctly";
     }
+
+    reconfigure_logging_level(logging_configuration.logging_level);
 }
 
 // Call fork function

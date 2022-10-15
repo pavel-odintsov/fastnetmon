@@ -137,6 +137,7 @@ class logging_configuration_t {
     bool remote_syslog_logging;
     std::string remote_syslog_server;
     unsigned int remote_syslog_port;
+    std::string logging_level = "info";
 };
 
 typedef std::vector<subnet_cidr_mask_t> subnet_vector_t;
