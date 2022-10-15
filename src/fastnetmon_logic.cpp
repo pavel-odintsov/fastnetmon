@@ -480,19 +480,19 @@ void print_attack_details_to_file(std::string details, std::string client_ip_as_
 logging_configuration_t read_logging_settings(configuration_map_t configuration_map) {
     logging_configuration_t logging_configuration_temp;
 
-    if (configuration_map.count("logging:local_syslog_logging") != 0) {
+    if (configuration_map.count("logging_local_syslog_logging") != 0) {
         logging_configuration_temp.local_syslog_logging = configuration_map["logging:local_syslog_logging"] == "on";
     }
 
-    if (configuration_map.count("logging:remote_syslog_logging") != 0) {
+    if (configuration_map.count("logging_remote_syslog_logging") != 0) {
         logging_configuration_temp.remote_syslog_logging = configuration_map["logging:remote_syslog_logging"] == "on";
     }
 
-    if (configuration_map.count("logging:remote_syslog_server") != 0) {
+    if (configuration_map.count("logging_remote_syslog_server") != 0) {
         logging_configuration_temp.remote_syslog_server = configuration_map["logging:remote_syslog_server"];
     }
 
-    if (configuration_map.count("logging:remote_syslog_port") != 0) {
+    if (configuration_map.count("logging_remote_syslog_port") != 0) {
         logging_configuration_temp.remote_syslog_port =
             convert_string_to_integer(configuration_map["logging:remote_syslog_port"]);
     }
