@@ -2,7 +2,7 @@ version: 2.1
 parameters:
   fastnetmon_build_version:
     type: string
-    default: "1.2.3"
+    default: "1.2.4"
 orbs:
   win: circleci/windows@4.1
 jobs:
