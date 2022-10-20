@@ -36,7 +36,7 @@ You can check out the [comparison table](https://fastnetmon.com/docs/capture_bac
 
 Official support groups:
 -------
-- [Mailing list](https://groups.google.com/forum/#!forum/fastnetmon)
+- [Mailing list](https://groups.google.com/g/fastnetmon)
 - [Slack](https://slack.fastnetmon.com)
 - IRC: #fastnetmon at irc.libera.chat:6697 (TLS) [web client](https://web.libera.chat/?channels=#fastnetmon)
 - Telegram: [fastnetmon](https://t.me/fastnetmon)
