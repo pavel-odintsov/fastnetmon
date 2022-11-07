@@ -591,7 +591,7 @@ void start_xdp_collection(process_packet_pointer func_ptr) {
         logger << log4cpp::Priority::INFO << "Will use copy/generic XDP mode";
     }
 
-    int set_link_xdp_res = bpf_set_link_xdp_fd(ifindex, prog_fd, opt_xdp_flags);
+    int set_link_xdp_res = bpf_xdp_attach(ifindex, prog_fd, opt_xdp_flags, NULL);
 
     if (set_link_xdp_res < 0) {
         // Get human friendly code
