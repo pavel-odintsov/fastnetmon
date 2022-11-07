@@ -1387,9 +1387,6 @@ sub install_libelf {
 
 
 sub install_libbpf {
-    # TODO: use our own libbpf source for compilation
-    # Well, it's easy to say: https://github.com/libbpf/libbpf
-
     if ($distro_type eq 'ubuntu' || $distro_type eq 'debian') {
         my @dependency_list = ('libelf-dev');
         apt_get(@dependency_list);
@@ -1397,35 +1394,29 @@ sub install_libbpf {
         yum('elfutils-libelf-devel');
     }
 
-    # 5_16
-    my $libbpf_package_install_path = "$library_install_folder/libbpf_4_19";
+    my $libbpf_package_install_path = "$library_install_folder/libbpf_1_0_1";
 
     if (-e $libbpf_package_install_path) {
-    warn "libbpf is installed, skip build\n";
-    return 1;
+        warn "libbpf is installed, skip build\n";
+        return 1;
     }
 
-    # linux-5.16.tar.xz
-    my $archive_file_name = 'linux-4.19.tar.xz';
+    my $archive_file_name = 'v1.0.1.tar.gz ';
 
-    print "Download Linux kernel\n";
+    print "Download libbpf\n";
     chdir $temp_folder_for_building_project;
 
-    # //cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.16.tar.xz
-    # fd1d61124af4f76980eeef7257f625c0366eb70a
-    my $linux_kernel_download_result = download_file("https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.19.tar.xz",  $archive_file_name, '40f3e72192d59c0b7a4638cebd0ea55d35a782bb');
+    my $lib_bpf_download_result = download_file("https://github.com/libbpf/libbpf/archive/refs/tags/v1.0.1.tar.gz",  $archive_file_name, '9350f196150892f544e0681cc6c1f78e603b5d95');
 
-    unless ($linux_kernel_download_result) {
+    unless ($lib_bpf_download_result) {
         die "Cannot download linux kernel\n";
     }
 
-    print "Unpack kernel\n";
+    print "Unpack libbpf\n";
     system("tar -xf $archive_file_name");
 
-    # 5.16
-    chdir "linux-4.19";
+    chdir "libbpf-1.0.1/src";
 
-    chdir "tools/lib/bpf";
     system("make");
 
     system("mkdir -p $libbpf_package_install_path");
