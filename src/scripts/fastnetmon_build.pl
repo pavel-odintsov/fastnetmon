@@ -1420,7 +1420,7 @@ sub install_libbpf {
     system("make");
 
     system("mkdir -p $libbpf_package_install_path");
-    system("cp libbpf.so libbpf.a $libbpf_package_install_path");
+    system("cp libbpf.a libbpf.so libbpf.so.1 libbpf.so.1.0.1 $libbpf_package_install_path");
 
     system("mkdir -p $libbpf_package_install_path/include/bpf");
     system("cp bpf.h libbpf.h libbpf_common.h libbpf_version.h libbpf_legacy.h $libbpf_package_install_path/include/bpf");
