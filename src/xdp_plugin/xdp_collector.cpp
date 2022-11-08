@@ -12,7 +12,7 @@
 
 extern "C" {
 #include <bpf/bpf.h>
-#include <bpf/libbpf.h> // bpf_prog_load_attr
+#include <bpf/libbpf.h>
 }
 
 #include <sys/resource.h> // RLIM_INFINITY
@@ -519,19 +519,24 @@ void start_xdp_collection(process_packet_pointer func_ptr) {
         return;
     }
 
-    bpf_prog_load_attr prog_load_attr;
-    prog_load_attr.prog_type = BPF_PROG_TYPE_XDP;
-    prog_load_attr.file      = bpf_microcode_path.c_str();
+    bpf_object* obj = bpf_object__open_file(bpf_microcode_path.c_str(), NULL);
 
-    bpf_object* obj = nullptr;
-    int prog_fd     = 0;
+    if (libbpf_get_error(obj)) {
+        logger << log4cpp::Priority::ERROR << "Cannot open BPF file: " << bpf_microcode_path;
+        return;
+    }
 
-    int bpf_load_res = bpf_prog_load_xattr(&prog_load_attr, &obj, &prog_fd);
+    bpf_program* prog = bpf_object__next_program(obj, NULL);
+    bpf_program__set_type(prog, BPF_PROG_TYPE_XDP);
+
+    int bpf_load_res = bpf_object__load(obj);
 
     if (bpf_load_res != 0) {
         logger << log4cpp::Priority::ERROR << "Cannot load BPF microcode code: " << bpf_load_res;
         return;
     }
+
+    int prog_fd = bpf_program__fd(prog);
 
     if (prog_fd < 0) {
         logger << log4cpp::Priority::ERROR << "No BPF program found";
