@@ -11,6 +11,7 @@
 // TODO: add support for multiple interfaces
 
 extern "C" {
+#include <bpf/bpf.h>
 #include <bpf/libbpf.h>
 }
 
