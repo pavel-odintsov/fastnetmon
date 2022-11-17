@@ -2,12 +2,12 @@
 
 Community Edition
 ===========
-FastNetMon - A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFlow, AF_PACKET, Netmap, PCAP).
+FastNetMon - A high performance DDoS detector / sensor built on top of multiple packet capture engines: NetFlow, IPFIX, sFlow, AF_PACKET (port mirror).
 
 What do we do?
 --------------
-We detect hosts in the deployed network sending or receiving large volumes of traffic, packets/bytes/flows, per second and
-perform a configurable action to handle that event. These configurable actions include notifying you, switching off the server, or blackholing the client.
+We detect hosts in the deployed network sending or receiving large volumes of traffic, packets/bytes/flows per second and
+perform a configurable action to handle that event. These configurable actions include notifying you, calling script or making BGP announces. 
 
 Flow is one or more ICMP, UDP, or TCP packets which can be identified via their unique src IP, dst IP, src port, dst port, and protocol fields.
 
@@ -29,7 +29,7 @@ Supported packet capture engines
 - PCAP
 - AF_PACKET (recommended)
 - AF_XDP (developer branch only, XDP based capture)
-- Netmap (deprecated)
+- Netmap (deprecated, stil supported only for FreeBSD)
 - PF_RING / PF_RING ZC (deprecated, available only for CentOS 6 in 1.2.0)
 
 You can check out the [comparison table](https://fastnetmon.com/docs/capture_backends/) for all available packet capture engines.
@@ -64,14 +64,12 @@ Features
 - [Email notifications](https://fastnetmon.com/docs/attack_report_example/) about detected attack
 - Complete IPv6 support
 - Announce blocked IPs via BGP to routers with [ExaBGP](https://fastnetmon.com/docs/exabgp_integration/) or [GoBGP](https://fastnetmon.com/docs/gobgp-integration/) (recommended)
-- Full integration with [Graphite](https://fastnetmon.com/docs/graphite_integration/) and [InfluxDB](https://fastnetmon.com/docs/influxdb_integration/)
+- Full integration with [InfluxDB](https://fastnetmon.com/docs/influxdb_integration/) and [Graphite](https://fastnetmon.com/docs/graphite_integration/)
 - [API](https://fastnetmon.com/docs/fastnetmon-community-api/)
 - [Redis](https://fastnetmon.com/docs/redis/) integration
 - [MongoDB](https://fastnetmon.com/docs/mongodb/) integration
-- Supports L2TP decapsulation, VLAN untagging in mirror mode 
-- Complete plug-in support
+- VLAN untagging in mirror and sFlow modes
 - Capture attack fingerprints in PCAP format
-- Experimental [BGP Flow Spec support](https://fastnetmon.com/docs/bgp_flow_spec/), RFC 5575
 
 Running FastNetMon
 ------------------
