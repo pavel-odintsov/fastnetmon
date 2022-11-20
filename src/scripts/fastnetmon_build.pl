@@ -1397,8 +1397,8 @@ sub install_libbpf {
     my $libbpf_package_install_path = "$library_install_folder/libbpf_1_0_1";
 
     if (-e $libbpf_package_install_path) {
-        # warn "libbpf is installed, skip build\n";
-        # return 1;
+        warn "libbpf is installed, skip build\n";
+        return 1;
     }
 
     my $archive_file_name = 'v1.0.1.tar.gz ';
