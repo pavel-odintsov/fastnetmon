@@ -98,6 +98,9 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/trim.hpp>
 
+#if defined(__APPLE__)
+#define _GNU_SOURCE
+#endif
 #include <boost/stacktrace.hpp>
 
 #ifdef GEOIP
@@ -134,7 +137,7 @@ std::string cli_stats_file_path = "/tmp/fastnetmon.dat";
 
 std::string cli_stats_ipv6_file_path = "/tmp/fastnetmon_ipv6.dat";
 
-// How often we send usage data 
+// How often we send usage data
 unsigned int stats_thread_sleep_time         = 3600;
 
 // Delay before we send first report about usage
@@ -837,13 +840,13 @@ bool load_configuration_file() {
         }
     }
 
-    if (configuration_map.count("mirror_afxdp") != 0) { 
+    if (configuration_map.count("mirror_afxdp") != 0) {
         if (configuration_map["mirror_afxdp"] == "on") {
             enable_af_xdp_collection = true;
         } else {
             enable_af_xdp_collection = false;
-        }    
-    } 
+        }
+    }
 
     if (configuration_map.count("mirror_netmap") != 0) {
         if (configuration_map["mirror_netmap"] == "on") {
@@ -1303,7 +1306,7 @@ void init_logging(bool log_to_console) {
     // In this case we log everything to console
     if (log_to_console) {
         log4cpp::PatternLayout* layout = new log4cpp::PatternLayout();
-        layout->setConversionPattern("[%p] %m%n");        
+        layout->setConversionPattern("[%p] %m%n");
 
         // We duplicate stdout because it will be closed by log4cpp on object termination and we do not need it
         log4cpp::Appender* console_appender = new log4cpp::FileAppender("stdout", ::dup(fileno(stdout)));
@@ -1324,8 +1327,8 @@ void init_logging(bool log_to_console) {
 
         log4cpp::Appender* appender = new log4cpp::FileAppender("default", fastnetmon_platform_configuration.log_file_path);
         appender->setLayout(layout);
-        logger.addAppender(appender); 
-    }  
+        logger.addAppender(appender);
+    }
 
     logger << log4cpp::Priority::INFO << "Logger initialized!";
 }
@@ -1432,7 +1435,7 @@ int main(int argc, char** argv) {
     namespace po = boost::program_options;
 
     // Switch logging to console
-    bool log_to_console = false;    
+    bool log_to_console = false;
 
     // By default we do PID checks
     bool do_pid_checks = true;
