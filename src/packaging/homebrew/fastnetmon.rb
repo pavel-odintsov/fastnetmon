@@ -1,8 +1,8 @@
 class Fastnetmon < Formula
   desc "DDoS detection tool with sFlow, Netflow, IPFIX and port mirror support"
   homepage "https://github.com/pavel-odintsov/fastnetmon/"
-  head "https://github.com/pavel-odintsov/fastnetmon.git"
   license "GPL-2.0-only"
+  head "https://github.com/pavel-odintsov/fastnetmon.git"
 
   depends_on "cmake" => :build
   depends_on "abseil"
