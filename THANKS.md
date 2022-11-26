@@ -4,11 +4,12 @@ For all people who helped this project:
 - Patrick Matthäi for maintaining our Debian packages from 1.1.2 to current
 - Benjamin Drung for maintaining our Debian packages from 1.1.3 to 1.1.5
 - Vitaly Zaitsev for mentorship with Fedora packages
+- [Rui Chen](https://github.com/chenrui333) for maintaining our macOS formula in HomeBrew
 - Luke Gorrie for SnabbSwitch and help with lightning speed packet processing
 - Vicente De Luca for redis_prefix and InfluxDB optimization
 - Ronan Daly for Slack integration script
 - Andrei Ziltsov / FastVPS Eesti OU for testing and patience. And for syncing GoBGP's gRPC integration with upstream. 
-- Luca Deri for PF_RING toolkit!
+- Luca Deri for PF_RING toolkit
 - Max Dobladez for Mikritik API support in notify script handler. 
 - Eric Chou and Rich Groves for A10 Networks Thunder TPS Appliance integration plugin
 - Elliot Morales Solé for improvements for ExaBGP integration 
