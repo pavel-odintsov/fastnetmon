@@ -19,6 +19,8 @@ class Fastnetmon < Formula
 
   on_linux do
     depends_on "gcc"
+    depends_on "libbpf"
+    depends_on "libelf"
     depends_on "libpcap"
     depends_on "ncurses"
   end
