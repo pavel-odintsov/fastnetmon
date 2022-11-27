@@ -284,6 +284,43 @@ if (ENABLE_AFPACKET_SUPPORT)
    add_library(afpacket_plugin STATIC afpacket_plugin/afpacket_collector.cpp)
 endif()
 
+# We need to check that kernel headers actually support it as it's relatively new thing
+
+CHECK_CXX_SOURCE_COMPILES("
+#include <linux/bpf.h> 
+int main() {
+    bpf_stats_type my_bpf_type;
+    return 1;
+}
+" HAVE_BPF_STATS_TYPE)
+
+
+if (${HAVE_BPF_STATS_TYPE})
+    message(STATUS "Kernel has enum bpf_stats_type declared")
+else()
+    message(STATUS "Kernel does not have enum bpf_stats_type declared. Try to declare our own to address libbpf issue: https://github.com/libbpf/libbpf/issues/249")
+    add_definitions(-DDECLARE_FAKE_BPF_STATS)
+endif()
+
+# We need to check that kernel headers actually include it
+
+
+CHECK_CXX_SOURCE_COMPILES("
+#include <linux/bpf.h>
+int main() {
+    bpf_link_type my_bpf_type;
+    return 1;
+}
+" HAVE_BPF_LINK_TYPE)
+
+if (${HAVE_BPF_LINK_TYPE})
+    message(STATUS "Kernel has enum bpf_link_type declared")
+else()
+    message(STATUS "Kernel does not have enum bpf_link_type declared. Try to declare our own to address libbpf issue: https://github.com/libbpf/libbpf/issues/249")
+    add_definitions(-DDECLARE_FAKE_BPF_LINK_TYPE)
+endif()
+
+
 CHECK_CXX_SOURCE_COMPILES("
 #include <linux/if_xdp.h> 
 int main() {

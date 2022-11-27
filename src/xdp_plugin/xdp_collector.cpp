@@ -10,6 +10,35 @@
 
 // TODO: add support for multiple interfaces
 
+// Only relatively fresh kernels have this type and we need to declare this type on older kernels to be able to compile libbpf
+// On Ubuntu 20.04 and Debian 11
+#ifdef DECLARE_FAKE_BPF_STATS
+
+/* type for BPF_ENABLE_STATS */
+enum bpf_stats_type {
+    /* enabled run_time_ns and run_cnt */
+    BPF_STATS_RUN_TIME = 0,
+};
+
+#endif
+
+#ifdef DECLARE_FAKE_BPF_LINK_TYPE 
+
+enum bpf_link_type {
+    BPF_LINK_TYPE_UNSPEC = 0,
+    BPF_LINK_TYPE_RAW_TRACEPOINT = 1,
+    BPF_LINK_TYPE_TRACING = 2,
+    BPF_LINK_TYPE_CGROUP = 3,
+    BPF_LINK_TYPE_ITER = 4,
+    BPF_LINK_TYPE_NETNS = 5,
+    BPF_LINK_TYPE_XDP = 6,
+    BPF_LINK_TYPE_PERF_EVENT = 7,
+
+    MAX_BPF_LINK_TYPE,
+};
+
+#endif
+
 extern "C" {
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
