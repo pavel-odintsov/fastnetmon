@@ -361,6 +361,10 @@ workflows:
           docker_image: "debian:bullseye"
           debian_version: "11"
           name: "debian11"
+      - build_debian:
+          docker_image: "debian:bookworm"
+          debian_version: "12"
+          name: "debian12"
       - build_docker_x86_64:
           name: "Build Docker image on x86_64 platform"
       - build_docker_arm64:
@@ -380,6 +384,9 @@ workflows:
       - build_fedora_upstream:
           name: "Fedora 37 Upstream RPM"
           docker_image: fedora:37
+      - build_fedora_upstream:
+          name: "Fedora 38 Upstream RPM"
+          docker_image: fedora:38
       - build_epel9_upstream:
           name: "EPEL 9 RPM"
       - build_macos:
