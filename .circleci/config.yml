@@ -206,9 +206,12 @@ jobs:
         type: string
       debian_version:
         type: string
+      resource_class:
+        type: string
+        default: "large"
     docker:
       - image: << parameters.docker_image >>
-    resource_class: large
+    resource_class: << parameters.resource_class >>
     steps:
       - checkout
       - run: apt-get update; true
@@ -365,6 +368,26 @@ workflows:
           docker_image: "debian:bookworm"
           debian_version: "12"
           name: "debian12"
+      - build_debian:
+          docker_image: "debian:stretch"
+          debian_version: "9"
+          name: "debian9arm64"
+          resource_class: "arm.medium"
+      - build_debian:
+          docker_image: "debian:buster"
+          debian_version: "10"
+          name: "debian10arm64"
+          resource_class: "arm.medium"
+      - build_debian:
+          docker_image: "debian:bullseye"
+          debian_version: "11"
+          name: "debian11arm64"
+          resource_class: "arm.medium"
+      - build_debian:
+          docker_image: "debian:bookworm"
+          debian_version: "12"
+          name: "debian12arm64"
+          resource_class: "arm.medium"
       - build_docker_x86_64:
           name: "Build Docker image on x86_64 platform"
       - build_docker_arm64:
