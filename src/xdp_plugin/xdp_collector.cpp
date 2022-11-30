@@ -625,7 +625,13 @@ void start_xdp_collection(process_packet_pointer func_ptr) {
         logger << log4cpp::Priority::INFO << "Will use copy/generic XDP mode";
     }
 
+    // In version 1.x they've removed old interface completely
+    // We keep this code only for EPEL 9 compatibility
+#if LIBBPF_MAJOR_VERSION > 0
     int set_link_xdp_res = bpf_xdp_attach(ifindex, prog_fd, opt_xdp_flags, NULL);
+#else 
+    int set_link_xdp_res = bpf_set_link_xdp_fd(ifindex, prog_fd, opt_xdp_flags);
+#endif
 
     if (set_link_xdp_res < 0) {
         // Get human friendly code
