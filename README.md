@@ -16,7 +16,7 @@ Flow is one or more ICMP, UDP, or TCP packets which can be identified via their 
 Project 
 -------
 🌏️ [Official site](https://fastnetmon.com)  
-⭐️ [FastNetMon Advanced, Commercial Edition](https://fastnetmon.com/fastnetmon-advanced/)  
+⭐️ [FastNetMon Advanced, Commercial Edition](https://fastnetmon.com/product-overview/)  
 🌟️ [FastNetMon Advanced, free one month trial](https://fastnetmon.com/trial/)  
 📜️ [FastNetMon Advanced and Community difference table](https://fastnetmon.com/compare-community-and-advanced/)  
 📘️ [Detailed reference](https://translate.google.com/translate?sl=auto&tl=en&u=https%3A%2F%2Ffastnetmon.com%2Fwp-content%2Fuploads%2F2017%2F07%2FFastNetMon_Reference_Russian.pdf)  
@@ -29,7 +29,7 @@ Supported packet capture engines
 - ![sFlow](http://sflow.org/images/sflowlogo.gif) v5
 - PCAP
 - AF_PACKET (recommended)
-- AF_XDP (developer branch only, XDP based capture)
+- AF_XDP (XDP based capture)
 - Netmap (deprecated, stil supported only for FreeBSD)
 - PF_RING / PF_RING ZC (deprecated, available only for CentOS 6 in 1.2.0)
 
