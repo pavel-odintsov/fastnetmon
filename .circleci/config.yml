@@ -153,12 +153,8 @@ jobs:
     steps:
       - checkout
       - run: apt-get update; true
-      - run: apt-get install -y perl wget python3-pip libdatetime-perl
+      - run: apt-get install -y perl wget python3-pip
       - run: pip3 install s3cmd
-      - run:
-          name: install_required_packages
-          no_output_timeout: 20m
-          command: perl src/scripts/build_all_fastnetmon_dependencies.pl
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_02_12_2022"
@@ -176,7 +172,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 180m
-          command: perl src/scripts/fastnetmon_build.pl --build_dependencies_only
+          command: perl src/scripts/build_all_fastnetmon_dependencies.pl
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -215,12 +211,8 @@ jobs:
     steps:
       - checkout
       - run: apt-get update; true
-      - run: apt-get install -y perl wget python3-pip libdatetime-perl
+      - run: apt-get install -y perl wget python3-pip
       - run: pip3 install s3cmd
-      - run:
-          name: install_required_packages
-          no_output_timeout: 20m 
-          command: perl src/scripts/build_all_fastnetmon_dependencies.pl
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_02_12_2022"
@@ -238,7 +230,7 @@ jobs:
       - run:
           name: install_dependencies
           no_output_timeout: 180m 
-          command: perl src/scripts/fastnetmon_build.pl --build_dependencies_only
+          command: perl src/scripts/build_all_fastnetmon_dependencies.pl
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -275,10 +267,6 @@ jobs:
       - checkout
       - run: yum install -y perl wget python3-pip perl-Archive-Tar perl-Env
       - run: pip3 install s3cmd
-      - run:
-          name: install_required_packages
-          no_output_timeout: 20m 
-          command: perl src/scripts/build_all_fastnetmon_dependencies.pl
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_02_12_2022"
@@ -295,8 +283,8 @@ jobs:
             - /opt/fastnetmon-community/libraries/gcc1210
       - run:
           name: install_dependencies
-          no_output_timeout: 180m 
-          command: perl src/scripts/fastnetmon_build.pl --build_dependencies_only
+          no_output_timeout: 180m
+          command: perl src/scripts/build_all_fastnetmon_dependencies.pl
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
