@@ -370,7 +370,7 @@ sub install_libbpf {
 
     chdir "libbpf-1.0.1/src";
 
-    system("make");
+    system("$ld_library_path_for_make make");
 
     system("mkdir -p $libbpf_package_install_path");
     system("cp libbpf.a libbpf.so libbpf.so.1 libbpf.so.1.0.1 $libbpf_package_install_path");
@@ -603,10 +603,10 @@ sub install_log4cpp {
         exec_command("./configure --prefix=$log4cpp_install_path");
     }    
 
-    my $make_result = exec_command("make $make_options install"); 
+    my $make_result = exec_command("$ld_library_path_for_make make $make_options install"); 
 
     if (!$make_result) {
-        print "Make for log4cpp failed\n";
+        print "make for log4cpp failed\n";
     }
     1;
 }
@@ -922,8 +922,8 @@ sub install_openssl {
     chdir "openssl-1.1.1q";
 
     exec_command("CC=$default_c_compiler_path ./config shared --prefix=$openssl_install_path");
-    exec_command("make -j $make_options");
-    exec_command("make install");
+    exec_command("$ld_library_path_for_make make -j $make_options");
+    exec_command("$ld_library_path_for_make make install");
     1;
 }
 
