@@ -81,13 +81,14 @@ sub main {
         $make_options = "-j $cpus_number";
     }
 
-    # Refresh information about packages
+    # Install packages required for build
     if ($distro_type eq 'ubuntu') {
         print "Update package manager cache\n";
         exec_command("apt-get update");
         apt_get('make', 'wget');
     } elsif ( $distro_type eq 'centos') {
-        yum('make', 'wget'); 
+        # We need libmpc for our custom built gcc
+        yum('make', 'wget', 'libmpc'); 
     }
 
     # Init environment
