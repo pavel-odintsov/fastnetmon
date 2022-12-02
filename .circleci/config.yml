@@ -158,7 +158,7 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m
-          command: perl src/scripts/fastnetmon_build.pl --install_dependency_packages_only
+          command: perl src/scripts/build_all_fastnetmon_dependencies
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_15_10_2022"
@@ -220,7 +220,7 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m 
-          command: perl src/scripts/fastnetmon_build.pl --install_dependency_packages_only
+          command: perl src/scripts/build_all_fastnetmon_dependencies
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_15_10_2022"
@@ -278,7 +278,7 @@ jobs:
       - run:
           name: install_required_packages
           no_output_timeout: 20m 
-          command: perl src/scripts/fastnetmon_build.pl --install_dependency_packages_only
+          command: perl src/scripts/build_all_fastnetmon_dependencies
       - restore_cache:
           keys:
             - "{{ .Environment.CIRCLE_JOB }}_dependencies_15_10_2022"
