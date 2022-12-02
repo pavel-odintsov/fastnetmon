@@ -1088,7 +1088,7 @@ sub install_cmake_based_software {
     } 
 
     print "Install project to target directory\n";
-    my $install_result = exec_command("make install");
+    my $install_result = exec_command("$ld_library_path_for_make make install");
 
     unless ($install_result) {
         die "Install failed";
