@@ -473,6 +473,8 @@ sub install_boost {
 
     chdir $folder_name_inside_archive;
 
+    my $boost_build_threads = $cpus_number;
+
     # Boost compilation needs lots of memory, we need to reduce number of threads on CircleCI
     # Limit it by number of threads available on our plan: https://circleci.com/product/features/resource-classes/
     if (defined($ENV{'CI'}) && $ENV{'CI'}) {
