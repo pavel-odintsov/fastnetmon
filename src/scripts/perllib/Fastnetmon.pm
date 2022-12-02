@@ -473,10 +473,16 @@ sub install_boost {
 
     chdir $folder_name_inside_archive;
 
+    # Boost compilation needs lots of memory, we need to reduce number of threads on CircleCI
+    # Limit it by number of threads available on our plan: https://circleci.com/product/features/resource-classes/
+    if (defined($ENV{'CI'}) && $ENV{'CI'}) {
+        $boost_build_threads = 4;
+    }
+
     print "Build Boost\n";
     # We have troubles when run this code with vzctl exec so we should add custom compiler in path 
     # So without HOME=/root nothing worked correctly due to another "openvz" feature
-    my $b2_build_result = exec_command("HOME=/root PATH=\$PATH:$library_install_folder/gcc1120/bin $library_install_folder/boost_build1.72.0/bin/b2 -j$cpus_number -sICU_PATH=$library_install_folder/libicu_65_1 --build-dir=$temp_folder_for_building_project/boost_build_temp_directory_$boost_version_with_underscore toolset=gcc-$gcc_version_only_major link=shared --without-test --without-python --without-wave --without-log --without-mpi"); 
+    my $b2_build_result = exec_command("$ld_library_path_for_make $library_install_folder/boost_build_4_9_2/bin/b2 -j $boost_build_threads -sICU_PATH=$library_install_folder/libicu_65_1 linkflags=\"-Wl,-rpath,$library_install_folder/libicu_65_1/lib\" --build-dir=$temp_folder_for_building_project/boost_build_temp_directory_1_7_8 link=shared --without-test --without-python --without-wave --without-log --without-mpi");
 
     # We should not do this check because b2 build return bad return code even in success case... when it can't build few non important targets
     unless ($b2_build_result) {
@@ -486,13 +492,13 @@ sub install_boost {
     1;
 }
 
-sub install_boost_builder { 
+sub install_boost_builder {
     chdir $temp_folder_for_building_project;
 
     # We use another name because it uses same name as boost distribution
-    my $archive_file_name = 'boost-1.72.0.tar.gz';
+    my $archive_file_name = '4.9.2.tar.gz';
 
-    my $boost_builder_install_folder = "$library_install_folder/boost_build1.72.0";
+    my $boost_builder_install_folder = "$library_install_folder/boost_build_4_9_2";
 
     if (-e $boost_builder_install_folder) {
         warn "Found installed Boost builder at $boost_builder_install_folder\n";
@@ -500,34 +506,32 @@ sub install_boost_builder {
     }
 
     print "Download boost builder\n";
-    my $boost_build_result = download_file("https://github.com/boostorg/build/archive/boost-1.72.0.tar.gz", $archive_file_name,
-        '8d4aede249cc414f5f375423e26feca99f1c1088');
+    my $boost_build_result = download_file("https://github.com/bfgroup/build/archive/$archive_file_name", $archive_file_name,
+        '1c77d3fda9425fd89b783db8f7bd8ebecdf8f916');
 
     unless ($boost_build_result) {
-        die "Can't download boost builder\n";
+        fast_die("Can't download boost builder\n");
     }
 
     print "Unpack boost builder\n";
     exec_command("tar -xf $archive_file_name");
 
-    unless (chdir "build-boost-1.72.0") {
-        die "Cannot do chdir to build boost folder\n";
+    unless (chdir "b2-4.9.2") {
+        fast_die("Cannot do chdir to build boost folder\n");
     }
 
     print "Build Boost builder\n";
-    # We haven't system compiler here and we will use custom gcc for compilation here
-    my $bootstrap_result = exec_command("CC=$default_c_compiler_path CXX=$default_cpp_compiler_path ./bootstrap.sh --with-toolset=gcc");
+    my $bootstrap_result = exec_command("CC=$default_c_compiler_path CXX=$default_cpp_compiler_path  ./bootstrap.sh --with-toolset=gcc");
 
     unless ($bootstrap_result) {
-        die "bootstrap of Boost Builder failed, please check logs\n";
+        fast_die("bootstrap of Boost Builder failed, please check logs\n");
     }
 
     # We should specify toolset here if we want to do build with custom compiler
-    # We have troubles when run this code with vzctl exec so we should add custom compiler in path 
-    my $b2_install_result = exec_command("./b2 install --prefix=$boost_builder_install_folder");
-    
+    my $b2_install_result = exec_command("$ld_library_path_for_make ./b2 install --prefix=$boost_builder_install_folder");
+
     unless ($b2_install_result) {
-        die "Can't execute b2 install\n";
+        fast_die("Can't execute b2 install\n");
     }
 
     1;
