@@ -273,7 +273,7 @@ jobs:
     resource_class: large
     steps:
       - checkout
-      - run: yum install -y perl wget python3-pip perl-Archive-Tar perl-Env libdatetime-perl
+      - run: yum install -y perl wget python3-pip perl-Archive-Tar perl-Env perl-DateTime
       - run: pip3 install s3cmd
       - run:
           name: install_required_packages
