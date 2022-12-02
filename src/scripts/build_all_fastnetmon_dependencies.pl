@@ -88,7 +88,7 @@ sub main {
         apt_get('make', 'wget');
     } elsif ( $distro_type eq 'centos') {
         # We need libmpc for our custom built gcc
-        yum('make', 'wget', 'libmpc'); 
+        yum('make', 'wget', 'libmpc', 'glibc-devel'); 
     }
 
     # Init environment
