@@ -370,8 +370,6 @@ workflows:
           name: "debian12"
       - build_docker_x86_64:
           name: "Build Docker image on x86_64 platform"
-      - build_docker_arm64:
-          name: "Build Docker image on ARM64 platform"
       - build_debian_upstream_package:
           name: "Debian Sid Upstream Build"
           debian_codename: "sid"
