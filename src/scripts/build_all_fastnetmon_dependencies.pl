@@ -113,7 +113,7 @@ sub main {
     init_compiler();
 
     my @required_packages = (
-        'gcc',
+        # 'gcc', # we build it separately as it requires excessive amount of time
         'openssl',
         'cmake',
         'boost_builder',
