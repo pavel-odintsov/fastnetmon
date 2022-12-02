@@ -164,7 +164,7 @@ jobs:
       - run:
           name: install_gcc
           no_output_timeout: 120m 
-          command: perl src/scripts/fastnetmon_build.pl --build_gcc_only
+          command: perl src/scripts/package_installer.pl gcc
       - save_cache:
           key: "{{ .Environment.CIRCLE_JOB }}_gcc_30_05_2022"
           paths:
@@ -222,7 +222,7 @@ jobs:
       - run:
           name: install_gcc
           no_output_timeout: 120m 
-          command: perl src/scripts/fastnetmon_build.pl --build_gcc_only
+          command: perl src/scripts/package_installer.pl gcc
       - save_cache:
           key: "{{ .Environment.CIRCLE_JOB }}_gcc_30_05_2022"
           paths:
@@ -276,7 +276,7 @@ jobs:
       - run:
           name: install_gcc
           no_output_timeout: 120m 
-          command: perl src/scripts/fastnetmon_build.pl --build_gcc_only
+          command: perl src/scripts/package_installer.pl gcc
       - save_cache:
           key: "{{ .Environment.CIRCLE_JOB }}_gcc_30_05_2022"
           paths:

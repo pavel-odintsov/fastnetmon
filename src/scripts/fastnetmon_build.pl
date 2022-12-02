@@ -96,26 +96,20 @@ my $show_help = '';
 
 my $build_fastnetmon_only = '';
 
-my $build_gcc_only = '';
-
 # Get options from command line
 GetOptions(
     'use-mirror' => \$use_mirror,
     'build_fastnetmon_only' => \$build_fastnetmon_only,
     'help' => \$show_help,
-    'build_gcc_only' => \$build_gcc_only
 );
 
 if ($show_help) {
     print "We have following options:\n" .
-        "--use-git-master\n" .
         "--use-mirror\n" .
-        "--build_fastnetmon_only\n" . 
-        "--build_gcc_only\n--help\n";
+        "--build_fastnetmon_only\n"; 
     exit (0);
 }
 
-welcome_message();
 
 main();
 
@@ -247,13 +241,6 @@ sub main {
         exec_command("mkdir -p $library_install_folder");
     }
 
-
-    if ($build_gcc_only) {
-        install_gcc_dependencies();
-        install_gcc();
-        exit(0);
-    }
-
     # For all platforms we use custom compiler
     init_compiler();
     
@@ -317,38 +304,6 @@ sub get_sha1_sum {
     my ($sha1) = ($output =~ m/^(\w+)\s+/);
 
     return $sha1;
-}
-
-sub download_file {
-    my ($url, $path, $expected_sha1_checksumm) = @_;
-
-    # We use pretty strange format for $path and need to sue special function to extract it
-    my ($path_filename, $path_dirs, $path_suffix) = fileparse($path);
-
-    # $path_filename
-    if ($use_mirror) {
-        $url = $mirror_url . "/" . $path_filename;
-    }
-
-    `wget --no-check-certificate --quiet '$url' -O$path`;
-
-    if ($? != 0) {
-        print "We can't download archive $url correctly\n";
-        return '';
-    }
-
-    if ($expected_sha1_checksumm) {
-        my $calculated_checksumm = get_sha1_sum($path);
-
-        if ($calculated_checksumm eq $expected_sha1_checksumm) {
-            return 1;
-        } else {
-            print "Downloaded archive has incorrect sha1: $calculated_checksumm expected: $expected_sha1_checksumm\n";
-            return '';
-        }      
-    } else {
-        return 1;
-    }     
 }
 
 sub init_package_manager { 
@@ -562,172 +517,6 @@ sub get_folder_name_inside_archive {
     }
 
     return '';
-}
-
-# Extract file name from URL
-# https://github.com/mongodb/mongo-cxx-driver/archive/r3.0.0-rc0.tar.gz => r3.0.0-rc0.tar.gz
-sub get_file_name_from_url {
-    my $url = shift;
-
-    # Remove prefix
-    $url =~ s#https?://##;
-    my @components = split '/', $url;
-
-    return $components[-1];
-}
-
-sub install_configure_based_software {
-    my ($url_to_archive, $sha1_summ_for_archive, $library_install_path, $configure_options) = @_;
-
-    unless ($url_to_archive && $sha1_summ_for_archive && $library_install_path) {
-        warn "You haven't specified all mandatory arguments for install_configure_based_software\n";
-        return '';
-    }
-
-    unless (defined($configure_options)) {
-        $configure_options = '';
-    }
-
-    chdir $temp_folder_for_building_project;
-
-    my $file_name = get_file_name_from_url($url_to_archive);
-
-    unless ($file_name) {
-        die "Could not extract file name from URL $url_to_archive";
-    }
-
-    print "Download archive\n";
-    my $archive_download_result = download_file($url_to_archive, $file_name, $sha1_summ_for_archive);
-
-    unless ($archive_download_result) {
-        die "Could not download URL $url_to_archive";
-    }
-
-    unless (-e $file_name) {
-        die "Could not find downloaded file in current folder";
-    }
-
-    print "Read file list inside archive\n";
-    my $folder_name_inside_archive = get_folder_name_inside_archive("$temp_folder_for_building_project/$file_name");
-
-    unless ($folder_name_inside_archive) {
-        die "We could not extract folder name from tar archive '$temp_folder_for_building_project/$file_name'\n";
-    }
-
-    print "Unpack archive\n";
-    my $unpack_result = exec_command("tar -xf $file_name");
-
-    unless ($unpack_result) {
-        die "Unpack failed";
-    }
-
-    chdir $folder_name_inside_archive;
-
-    unless (-e "configure") {
-        die "We haven't configure script here";
-    }
-
-    print "Execute configure\n";
-    my $configure_command = "CC=$default_c_compiler_path CXX=$default_cpp_compiler_path ./configure --prefix=$library_install_path $configure_options";
-
-    my $configure_result = exec_command($configure_command);
-
-    unless ($configure_result) {
-        die "Configure failed";
-    }
-
-    ### TODO: this is ugly thing! But here you could find hack for poco libraries
-    if ($url_to_archive =~ m/Poco/i) {
-        exec_command("sed -i 's#^CC .*#CC = $default_c_compiler_path#' build/config/Linux");
-        exec_command("sed -i 's#^CXX .*#CXX = $default_cpp_compiler_path#' build/config/Linux");
-
-        #print `cat build/config/Linux`;
-    }
-
-    # librdkafka does not like make+make install approach, we should use them one by one
-    print "Execute make\n";
-
-    my $make_result = exec_command("$ld_library_path_for_make make $make_options");
-
-    unless ($make_result) {
-        die "Make failed";
-    }
-
-    print "Execute make install\n";
-    # We explicitly added path to library folders from our custom compiler here
-    my $make_install_result = exec_command("$ld_library_path_for_make make install");
-
-    unless ($make_install_result) {
-        die "Make install failed";
-    }
-
-    return 1;
-}
-
-sub install_gcc_dependencies {
-    if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
-        my @dependency_list = ('libmpfr-dev', 'libmpc-dev', 'libgmp-dev');
-        apt_get(@dependency_list);
-    } elsif ($distro_type eq 'centos') {
-        yum('gmp-devel', 'mpfr-devel', 'libmpc-devel', 'diffutils');
-    }
-}
-
-sub install_gcc {
-    # 530 instead of 5.3.0
-    my $gcc_version_for_path = $gcc_version;
-    $gcc_version_for_path =~ s/\.//g;
-
-    my $gcc_package_install_path = "$library_install_folder/gcc$gcc_version_for_path";
-
-    if (-e $gcc_package_install_path) {
-        warn "Found already installed gcc in $gcc_package_install_path. Skip compilation\n";
-        return '1'; 
-    }    
-
-    print "Download gcc archive\n";
-    chdir $temp_folder_for_building_project;
- 
-    my $archive_file_name = "gcc-$gcc_version.tar.gz";
-    my $gcc_download_result = download_file("ftp://ftp.mpi-sb.mpg.de/pub/gnu/mirror/gcc.gnu.org/pub/gcc/releases/gcc-$gcc_version/$archive_file_name", $archive_file_name, '7e79c695a0380ac838fa7c876a121cd28a73a9f5');
-
-    unless ($gcc_download_result) {
-        die "Can't download gcc sources\n";
-    }    
-
-    print "Unpack archive\n";
-    unless (exec_command("tar -xf $archive_file_name")) {
-        die "Cannot unpack gcc";
-    }
-
-    # Remove source archive
-    unlink "$archive_file_name";
-    
-    unless (exec_command("mkdir $temp_folder_for_building_project/gcc-$gcc_version-objdir")) {
-        die "Cannot crete objdir";
-    }
-
-    chdir "$temp_folder_for_building_project/gcc-$gcc_version-objdir";
-
-    print "Configure build system\n";
-    # We are using  --enable-host-shared because we should build gcc as dynamic library for jit compiler purposes
-    unless (exec_command("$temp_folder_for_building_project/gcc-$gcc_version/configure --prefix=$gcc_package_install_path --enable-languages=c,c++,jit  --enable-host-shared --disable-multilib")) {
-        die "Cannot configure gcc";
-    }
-
-    print "Build gcc\n";
-
-    unless( exec_command("make $make_options")) {
-        die "Cannot make gcc";
-    }
-
-    print "Install gcc\n";
-
-    unless (exec_command("make $make_options install")) {
-        die "Cannot make install";
-    }
-
-    return 1;
 }
 
 sub install_fastnetmon {
