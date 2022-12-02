@@ -1070,7 +1070,7 @@ sub install_cmake_based_software {
 
     print "Build project with make\n";
 
-    my $make_command = "make $make_options";
+    my $make_command = "$ld_library_path_for_make make $make_options";
     my $make_result = exec_command($make_command);
 
     unless ($make_result) {
