@@ -531,6 +531,17 @@ sub install_boost_builder {
         die("Cannot do chdir to build boost folder\n");
     }
 
+    # Due to this bug:
+    # https://github.com/boostorg/build/issues/705
+    # I do not think that it actually fixed
+    # We need to install system compiler
+    
+    if ($distro_type eq 'ubuntu' || $distro_type eq 'debian') {
+        apt_get('g++');
+    } elsif ($distro_type eq 'centos') {
+        yum('gcc-c++');
+    }
+
     print "Build Boost builder\n";
     my $bootstrap_result = exec_command("$ld_library_path_for_make CC=$default_c_compiler_path CXX=$default_cpp_compiler_path  ./bootstrap.sh --with-toolset=gcc");
 
@@ -538,7 +549,6 @@ sub install_boost_builder {
         die("bootstrap of Boost Builder failed, please check logs\n");
     }
 
-    # We should specify toolset here if we want to do build with custom compiler
     my $b2_install_result = exec_command("$ld_library_path_for_make ./b2 install --prefix=$boost_builder_install_folder");
 
     unless ($b2_install_result) {
