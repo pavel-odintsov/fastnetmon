@@ -532,7 +532,7 @@ sub install_boost_builder {
     }
 
     print "Build Boost builder\n";
-    my $bootstrap_result = exec_command("CC=$default_c_compiler_path CXX=$default_cpp_compiler_path  ./bootstrap.sh --with-toolset=gcc");
+    my $bootstrap_result = exec_command("$ld_library_path_for_make CC=$default_c_compiler_path CXX=$default_cpp_compiler_path  ./bootstrap.sh --with-toolset=gcc");
 
     unless ($bootstrap_result) {
         fast_die("bootstrap of Boost Builder failed, please check logs\n");
