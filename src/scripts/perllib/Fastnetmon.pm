@@ -902,7 +902,7 @@ sub install_openssl {
     exec_command("tar -xf $distro_file_name");
     chdir "openssl-1.1.1q";
 
-    exec_command("./config shared --prefix=$openssl_install_path");
+    exec_command("CC=$default_c_compiler_path ./config shared --prefix=$openssl_install_path");
     exec_command("make -j $make_options");
     exec_command("make install");
     1;
