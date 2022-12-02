@@ -228,11 +228,11 @@ sub main {
 
     # Install standard tools for building packages
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
-        my @debian_packages_for_build = ('build-essential', 'make', 'tar', 'wget');
+        my @debian_packages_for_build = ('build-essential', 'make', 'tar', 'wget', 'git');
 
         apt_get(@debian_packages_for_build);
     } elsif ($distro_type eq 'centos') {
-        my @centos_dependency_packages = ('make', 'gcc', 'gcc-c++');
+        my @centos_dependency_packages = ('make', 'gcc', 'gcc-c++', 'git');
 
         yum(@centos_dependency_packages);
     }
