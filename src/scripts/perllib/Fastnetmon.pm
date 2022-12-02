@@ -451,7 +451,7 @@ sub install_boost {
     }
 
     print "Download Boost source code\n";
-    my $boost_download_result = download_file("https://boostorg.jfrog.io/artifactory/main/release/$boost_version/source/boost_${boost_version_with_underscore}.tar.bz2", $archive_file_name, '31209dcff292bd6a64e5e08ceb3ce44a33615dc0');
+    my $boost_download_result = download_file("https://boostorg.jfrog.io/artifactory/main/release/$boost_version/source/boost_${boost_version_with_underscore}.tar.bz2", $archive_file_name, '690a2a2ed6861129828984b1d52a473d2c8393d1');
         
     unless ($boost_download_result) {
         die "Can't download Boost source code\n";
