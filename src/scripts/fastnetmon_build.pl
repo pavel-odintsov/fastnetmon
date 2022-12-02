@@ -52,7 +52,7 @@ if (defined($ENV{'CI'}) && $ENV{'CI'}) {
 }
 
 # For all libs build we use custom cmake
-my $cmake_path = "$library_install_folder/cmake-3.18.4/bin/cmake";
+my $cmake_path = "$library_install_folder/cmake-3_23_4/bin/cmake";
 
 # die wrapper to send message to tracking server
 sub fast_die {

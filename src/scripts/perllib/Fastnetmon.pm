@@ -976,7 +976,7 @@ sub install_cmake {
     my $openssl_path = "$library_install_folder/$openssl_folder_name";
 
     print "Execute bootstrap, it will need time\n";
-    my $boostrap_result = exec_command("CC=$default_c_compiler_path CXX=$default_cpp_compiler_path ./bootstrap --prefix=$cmake_install_path --parallel=$cpus_number -- -DOPENSSL_ROOT_DIR=$openssl_path");
+    my $boostrap_result = exec_command("$ld_library_path_for_make CC=$default_c_compiler_path CXX=$default_cpp_compiler_path ./bootstrap --prefix=$cmake_install_path --parallel=$cpus_number -- -DOPENSSL_ROOT_DIR=$openssl_path");
 
     unless ($boostrap_result) {
         die("Cannot run bootstrap\n");
