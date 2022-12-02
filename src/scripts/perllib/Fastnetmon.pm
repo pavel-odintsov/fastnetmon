@@ -324,10 +324,19 @@ sub init_compiler {
     # Also we should tune number of threads for make
     $cpus_number = get_logical_cpus_number();
 
+    # Boost and cmake compilation needs lots of memory, we need to reduce number of threads on CircleCI as it expose 32 threads but it's not real
+    # Limit it by number of threads available on our plan: https://circleci.com/product/features/resource-classes/
+    if (defined($ENV{'CI'}) && $ENV{'CI'}) {
+        if ($cpus_number > 4) {
+            $cpus_number = 4;
+        }
+    }
+
     # We could get huge speed benefits with this option
     if ($cpus_number > 1) {
         $make_options = "-j $cpus_number";
     }
+
 }
 
 sub install_libbpf {
@@ -967,7 +976,7 @@ sub install_cmake {
     my $openssl_path = "$library_install_folder/$openssl_folder_name";
 
     print "Execute bootstrap, it will need time\n";
-    my $boostrap_result = exec_command("CC=$default_c_compiler_path ./bootstrap --prefix=$cmake_install_path --parallel=$cpus_number -- -DOPENSSL_ROOT_DIR=$openssl_path");
+    my $boostrap_result = exec_command("CC=$default_c_compiler_path CXX=$default_cpp_compiler_path ./bootstrap --prefix=$cmake_install_path --parallel=$cpus_number -- -DOPENSSL_ROOT_DIR=$openssl_path");
 
     unless ($boostrap_result) {
         die("Cannot run bootstrap\n");
