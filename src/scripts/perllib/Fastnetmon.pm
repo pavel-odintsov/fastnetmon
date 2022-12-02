@@ -521,28 +521,28 @@ sub install_boost_builder {
         '1c77d3fda9425fd89b783db8f7bd8ebecdf8f916');
 
     unless ($boost_build_result) {
-        fast_die("Can't download boost builder\n");
+        die("Can't download boost builder\n");
     }
 
     print "Unpack boost builder\n";
     exec_command("tar -xf $archive_file_name");
 
     unless (chdir "b2-4.9.2") {
-        fast_die("Cannot do chdir to build boost folder\n");
+        die("Cannot do chdir to build boost folder\n");
     }
 
     print "Build Boost builder\n";
     my $bootstrap_result = exec_command("$ld_library_path_for_make CC=$default_c_compiler_path CXX=$default_cpp_compiler_path  ./bootstrap.sh --with-toolset=gcc");
 
     unless ($bootstrap_result) {
-        fast_die("bootstrap of Boost Builder failed, please check logs\n");
+        die("bootstrap of Boost Builder failed, please check logs\n");
     }
 
     # We should specify toolset here if we want to do build with custom compiler
     my $b2_install_result = exec_command("$ld_library_path_for_make ./b2 install --prefix=$boost_builder_install_folder");
 
     unless ($b2_install_result) {
-        fast_die("Can't execute b2 install\n");
+        die("Can't execute b2 install\n");
     }
 
     1;
