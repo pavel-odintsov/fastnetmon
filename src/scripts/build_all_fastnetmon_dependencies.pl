@@ -15,28 +15,9 @@ use lib "$FindBin::Bin/perllib";
 use Fastnetmon;
 use Getopt::Long;
 
-# Retrieve all required modules
-BEGIN {
-
-eval { require DateTime; };
-
-if ($@) {
-    die "DateTime is not installed, install it:\nsudo apt install -y libdatetime-perl\nor\nsudo yum install perl-DateTime\n";   
-}
-
-}
-
-
-use DateTime;
-
-# Install:
 #
-# Debian:
-# 
-# sudo apt-get install -y libdatetime-perl perl
-# 
 # CentOS
-# sudo yum install perl perl-Archive-Tar perl-DateTime perl-Env
+# sudo yum install perl perl-Archive-Tar
 #
 
 my $library_install_folder = '/opt/fastnetmon-community/libraries';
@@ -132,17 +113,17 @@ sub main {
  
     for my $package (@required_packages) {
        print "Install package $package\n";
-       my $start_time = DateTime->now(); 
+       my $package_install_start_time = time();
 
        my $install_res = Fastnetmon::install_package_by_name($package);
   
-       my $finished_time = DateTime->now();
+       my $elapse = time() - $package_install_start_time;
 
-       my $elapse = $finished_time - $start_time;
+       my $build_time_minutes = sprintf("%.2f", $elapse / 60);
 
-       # No reasons to print time for fast builds
-       if ($elapse->in_units('minutes') > 0) {
-           print "Package build time: " . $elapse->in_units('minutes') . " Minutes\n";
+       # Build only long time
+       if ($build_time_minutes > 1) {
+           print "Package build time: " . int($build_time_minutes) . " Minutes\n";
        }
 
        unless ($install_res) {

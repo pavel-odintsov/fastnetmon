@@ -273,11 +273,7 @@ jobs:
     resource_class: large
     steps:
       - checkout
-      - run: yum install -y epel-release
-      - run: yum install -y dnf-plugins-core; true
-      - run: dnf config-manager --set-enabled powertools; true;
-      - run: dnf config-manager --set-enabled crb; true
-      - run: yum install -y perl wget python3-pip perl-Archive-Tar perl-Env perl-DateTime
+      - run: yum install -y perl wget python3-pip perl-Archive-Tar perl-Env
       - run: pip3 install s3cmd
       - run:
           name: install_required_packages
