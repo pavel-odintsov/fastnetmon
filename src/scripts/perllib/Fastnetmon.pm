@@ -990,7 +990,8 @@ sub install_cmake {
         die "Make command '$make_command' failed\n";
     }
 
-    exec_command("make install");
+    print "Make install it\n";
+    exec_command("$ld_library_path_for_make make install");
 
     return 1;
 }
