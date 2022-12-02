@@ -519,7 +519,32 @@ sub get_folder_name_inside_archive {
     return '';
 }
 
+sub install_fastnetmon_dependencies {
+    print "Install FastNetMon dependency list\n";
+
+    if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
+        my @fastnetmon_deps = ("git", "g++", "gcc", "libgpm-dev", "libncurses5-dev",
+            "liblog4cpp5-dev", "libnuma-dev", "libpcap-dev", "cmake", "pkg-config",
+        );
+
+        apt_get(@fastnetmon_deps);
+    } elsif ($distro_type eq 'centos') {
+        my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++',
+            'ncurses-devel', 'libpcap-devel',
+            'gpm-devel', 'cmake', 'pkgconfig',
+        );
+
+        if ($distro_type eq 'centos' && int($distro_version) == 7) {
+            push @fastnetmon_deps, 'net-tools';
+        }
+
+        yum(@fastnetmon_deps);
+    }
+}
+
 sub install_fastnetmon {
+    install_fastnetmon_dependencies();
+
     print "Clone FastNetMon repo\n";
     chdir $temp_folder_for_building_project;
 
