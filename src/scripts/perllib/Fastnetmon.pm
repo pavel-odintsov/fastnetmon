@@ -1472,7 +1472,7 @@ sub detect_distribution {
                 # We will try transform it to decimal number
                 if ($distro_version =~ /^(\d+)\.\d+\.\d+$/) {
                     $distro_version = $1;
-                } elsif ($distro_version =~ /^(\d+)\.\d+\$/) {
+                } elsif ($distro_version =~ /^(\d+)\.\d+$/) {
                     # Examples: 9.13, 10.13, 11.5
                     $distro_version = $1;
                 }
