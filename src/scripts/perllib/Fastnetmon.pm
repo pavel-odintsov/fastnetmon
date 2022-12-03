@@ -149,7 +149,7 @@ sub get_library_binary_build_from_google_storage {
 
     system("mkdir -p /opt/$library_install_folder");
 
-    my $unpack_res = system("tar -xf -C $library_install_folder /tmp/$dependency_archive_name");
+    my $unpack_res = system("tar -xf /tmp/$dependency_archive_name -C $library_install_folder");
 
     if ($unpack_res != 0) {
         print "Cannot unpack file\n";
@@ -426,10 +426,10 @@ sub install_libbpf {
 
     if ($get_from_cache) {
         print "Got depency from cache\n";
-        print 1;
-    } else {
-        warn "Cannot get dependency from cache, do manual build\n";
-    }
+        return 1;
+    } 
+        
+    warn "Cannot get dependency from cache, do manual build\n";
 
     if ($distro_type eq 'ubuntu' || $distro_type eq 'debian') {
         my @dependency_list = ('libelf-dev');
@@ -484,6 +484,15 @@ sub install_gcc {
         warn "Found already installed gcc in $gcc_package_install_path. Skip compilation\n";
         return '1';
     }
+
+    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
+
+    if ($get_from_cache) {
+        print "Got depency from cache\n";
+        return 1;
+    }
+
+    warn "Cannot get dependency from cache, do manual build\n";
 
     if ($distro_type eq 'ubuntu' || $distro_type eq 'debian') {
         my @dependency_list = ('libmpfr-dev', 'libmpc-dev', 'libgmp-dev', 'gcc', 'g++');
@@ -548,6 +557,15 @@ sub install_boost {
         warn "Boost libraries already exist in $boost_install_path Skip build process\n";
         return 1;
     }
+
+    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
+
+    if ($get_from_cache) {
+        print "Got depency from cache\n";
+        return 1;
+    }
+
+    warn "Cannot get dependency from cache, do manual build\n";
 
     chdir $library_install_folder;
     my $archive_file_name = "boost_${boost_version_with_underscore}.tar.gz";
@@ -624,6 +642,15 @@ sub install_boost_builder {
         return 1;
     }
 
+    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
+
+    if ($get_from_cache) {
+        print "Got depency from cache\n";
+        return 1;
+    }
+    
+    warn "Cannot get dependency from cache, do manual build\n";
+
     print "Download boost builder\n";
     my $boost_build_result = download_file("https://github.com/bfgroup/build/archive/$archive_file_name", $archive_file_name,
         '1c77d3fda9425fd89b783db8f7bd8ebecdf8f916');
@@ -680,9 +707,18 @@ sub install_log4cpp {
     my $log4cpp_install_path = "$library_install_folder/$folder_name";
 
     if (-e $log4cpp_install_path) {
-	warn "We have log4cpp already, skip build\n";
-	return 1;
+	    warn "We have log4cpp already, skip build\n";
+	    return 1;
     }
+
+    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
+
+    if ($get_from_cache) {
+        print "Got depency from cache\n";
+        return 1;
+    }
+     
+    warn "Cannot get dependency from cache, do manual build\n";
 
     my $distro_file_name = "log4cpp-$log_cpp_version_short.tar.gz";
     my $log4cpp_url = "https://sourceforge.net/projects/log4cpp/files/log4cpp-1.1.x%20%28new%29/log4cpp-1.1/log4cpp-$log_cpp_version_short.tar.gz/download";
@@ -745,6 +781,15 @@ sub install_grpc {
          print "gRPC is already installed, skip compilation\n";
          return 1;
     }
+
+    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
+
+    if ($get_from_cache) {
+        print "Got depency from cache\n";
+        return 1;
+    }
+    
+    warn "Cannot get dependency from cache, do manual build\n";
 
     chdir $temp_folder_for_building_project;
  
@@ -848,6 +893,15 @@ sub install_protobuf {
         return 1;
     }
 
+    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
+
+    if ($get_from_cache) {
+        print "Got depency from cache\n";
+        return 1;
+    }
+        
+    warn "Cannot get dependency from cache, do manual build\n";
+
     if ($distro_type eq 'ubuntu' || $distro_type eq 'debian') {
         apt_get('make', 'autoconf', 'automake', 'git', 'libtool', 'curl');
     } elsif ($distro_type eq 'centos') {
@@ -898,6 +952,15 @@ sub install_libelf {
         return 1;
     }
 
+    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
+
+    if ($get_from_cache) {
+        print "Got depency from cache\n";
+        return 1;
+    }
+
+    warn "Cannot get dependency from cache, do manual build\n";
+
     if ($distro_type eq 'ubuntu' || $distro_type eq 'debian') {
         apt_get(('zlib1g-dev'));
     } elsif ($distro_type eq 'centos') {
@@ -929,6 +992,15 @@ sub install_capnproto {
         return 1;
     }   
 
+    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
+
+    if ($get_from_cache) {
+        print "Got depency from cache\n";
+        return 1;
+    }
+
+    warn "Cannot get dependency from cache, do manual build\n";
+
     my $res = install_configure_based_software("https://capnproto.org/capnproto-c++-0.8.0.tar.gz", 
         "fbc1c65b32748029f1a09783d3ebe9d496d5fcc4", $capnp_install_path, 
         '');
@@ -952,9 +1024,18 @@ sub install_mongo_client {
     my $install_path = "$library_install_folder/$folder_name";
     
     if (-e $install_path) {
-	warn "mongo_c_driver is already installed, skip build";
+	    warn "mongo_c_driver is already installed, skip build";
         return 1;
     } 
+
+    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
+
+    if ($get_from_cache) {
+        print "Got depency from cache\n";
+        return 1;
+    }
+        
+    warn "Cannot get dependency from cache, do manual build\n";
 
     my $openssl_path = "$library_install_folder/$openssl_folder_name";
 
@@ -1077,6 +1158,15 @@ sub install_openssl {
         return 1;
     }
 
+    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
+
+    if ($get_from_cache) {
+        print "Got depency from cache\n";
+        return 1;
+    }
+
+    warn "Cannot get dependency from cache, do manual build\n";
+
     chdir $temp_folder_for_building_project;
    
     my $openssl_download_result = download_file("https://www.openssl.org/source/$distro_file_name", 
@@ -1116,6 +1206,15 @@ sub install_icu {
         return 1;
     }
 
+    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
+
+    if ($get_from_cache) {
+        print "Got depency from cache\n";
+        return 1;
+    }
+
+    warn "Cannot get dependency from cache, do manual build\n";
+
     print "Download icu\n";
     my $icu_download_result = download_file("https://github.com/unicode-org/icu/releases/download/release-65-1/$distro_file_name",
         $distro_file_name, 'd1e6b58aea606894cfb2495b6eb1ad533ccd2a25');
@@ -1154,6 +1253,15 @@ sub install_cmake {
         return 1;
     }
 
+    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
+
+    if ($get_from_cache) {
+        print "Got depency from cache\n";
+        return 1;
+    }
+    
+    warn "Cannot get dependency from cache, do manual build\n";
+    
     my $distro_file_name = "cmake-3.23.4.tar.gz"; 
 
     chdir $temp_folder_for_building_project;
@@ -1326,9 +1434,18 @@ sub install_hiredis {
     my $hiredis_install_path = "$library_install_folder/$folder_name";
 
     if (-e $hiredis_install_path) {
-	warn "hiredis is found at $hiredis_install_path skip build\n";
+    	warn "hiredis is found at $hiredis_install_path skip build\n";
         return 1;
     }
+
+    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
+
+    if ($get_from_cache) {
+        print "Got depency from cache\n";
+        return 1;
+    }
+    
+    warn "Cannot get dependency from cache, do manual build\n";
 
     chdir $temp_folder_for_building_project;
 
