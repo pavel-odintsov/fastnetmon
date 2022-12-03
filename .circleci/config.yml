@@ -141,11 +141,13 @@ jobs:
       - store_artifacts:
           path: /root/rpmbuild/RPMS/x86_64
 
-  build_ubuntu:
+  build_debian:
     parameters:
       docker_image:
         type: string
-      ubuntu_version:
+      distro_version:
+        type: string
+      distro_name: 
         type: string
     docker:
       - image: << parameters.docker_image >>
@@ -187,68 +189,10 @@ jobs:
           path: /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
           path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> ubuntu << parameters.ubuntu_version >>
+      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> << parameters.distro_name >> << parameters.distro_version >>
       - store_artifacts:
           path: /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
-      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/ubuntu/<< parameters.ubuntu_version >>/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
-      - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
-      - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon
-      - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon_client
-      - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon_api_client
-      - run: /opt/fastnetmon-community/app/bin/fastnetmon --configuration_check
-  build_debian:
-    parameters:
-      docker_image:
-        type: string
-      debian_version:
-        type: string
-      resource_class:
-        type: string
-        default: "large"
-    docker:
-      - image: << parameters.docker_image >>
-    resource_class: << parameters.resource_class >>
-    steps:
-      - checkout
-      - run: apt-get update; true
-      - run: apt-get install -y perl wget python3-pip
-      - run: pip3 install s3cmd
-      - restore_cache:
-          keys:
-            - "{{ .Environment.CIRCLE_JOB }}_dependencies_02_12_2022"
-      - restore_cache:
-          keys:
-            - "{{ .Environment.CIRCLE_JOB }}_gcc_30_05_2022"
-      - run:
-          name: install_gcc
-          no_output_timeout: 120m 
-          command: perl src/scripts/package_installer.pl gcc
-      - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_gcc_30_05_2022"
-          paths:
-            - /opt/fastnetmon-community/libraries/gcc1210
-      - run:
-          name: install_dependencies
-          no_output_timeout: 180m 
-          command: perl src/scripts/build_all_fastnetmon_dependencies.pl
-      - run:
-          name: collect_debug
-          command: cat /tmp/fastnetmon_install.log
-          when: on_fail
-      - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}_dependencies_02_12_2022"
-          paths:
-            - /opt
-      - run: perl src/scripts/fastnetmon_build.pl
-      - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
-      - store_artifacts:
-          path: /opt/fastnetmon_libraries_bundle.tar.gz
-      - store_artifacts:
-          path: /tmp/fastnetmon_install.log
-      - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> debian << parameters.debian_version >>
-      - store_artifacts:
-          path: /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
-      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/debian/<< parameters.debian_version >>/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
+      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/<< parameters.distro_name >>/<< parameters.distro_version >>/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
       - run: cp src/fastnetmon.conf /etc/fastnetmon.conf
       - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon
       - run: ldd /opt/fastnetmon-community/app/bin/fastnetmon_client
@@ -324,38 +268,46 @@ workflows:
           docker_image: almalinux:9
           centos_version: "9"
           name: "centos9"
-      - build_ubuntu:
+      - build_debian:
           docker_image: "ubuntu:jammy"
-          ubuntu_version: "22.04"
+          distro_version: "22.04"
           name: "ubuntu2204"
-      - build_ubuntu:
+          distro_name: "ubuntu"
+      - build_debian:
           docker_image: "ubuntu:focal"
-          ubuntu_version: "20.04"
+          distro_version: "20.04"
           name: "ubuntu2004"
-      - build_ubuntu:
+          distro_name: "ubuntu"
+      - build_debian:
           docker_image: "ubuntu:bionic"
-          ubuntu_version: "18.04"
+          distro_version: "18.04"
           name: "ubuntu1804"
-      - build_ubuntu:
+          distro_name: "ubuntu"
+      - build_debian:
           docker_image: "ubuntu:xenial"
-          ubuntu_version: "16.04"
+          distro_version: "16.04"
           name: "ubuntu1604"
+          distro_name: "ubuntu"
       - build_debian:
           docker_image: "debian:stretch"
           debian_version: "9"
           name: "debian9"
+          distro_name: "debian"
       - build_debian:
           docker_image: "debian:buster"
           debian_version: "10"
           name: "debian10"
+          distro_name: "debian"
       - build_debian:
           docker_image: "debian:bullseye"
           debian_version: "11"
           name: "debian11"
+          distro_name: "debian"
       - build_debian:
           docker_image: "debian:bookworm"
           debian_version: "12"
           name: "debian12"
+          distro_name: "debian"
       - build_docker_x86_64:
           name: "Build Docker image on x86_64 platform"
       - build_debian_upstream_package:
