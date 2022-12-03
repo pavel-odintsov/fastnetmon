@@ -82,7 +82,7 @@ sub main {
     }
 
     # Install packages required for build
-    if ($distro_type eq 'ubuntu') {
+    if ($distro_type eq 'ubuntu' or $distro_type eq 'debian') {
         print "Update package manager cache\n";
         exec_command("apt-get update");
         apt_get('make', 'wget', 'git');
