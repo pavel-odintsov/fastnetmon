@@ -147,7 +147,7 @@ sub get_library_binary_build_from_google_storage {
         return '';
     }
 
-    system("mkdir -p /opt/$library_install_folder");
+    system("mkdir -p $library_install_folder");
 
     my $unpack_res = system("tar -xf /tmp/$dependency_archive_name -C $library_install_folder");
 
