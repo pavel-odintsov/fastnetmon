@@ -62,6 +62,9 @@ my $use_libcpp_instead_stdcpp = '';
 
 my $gcc_version = '12.1.0';
 
+# Name of bucket where we keep compiled dependencies
+my $s3_bucket_binary_dependency_name = 'fastnetmon_community_binary_dependencies';
+
 # We are using this for Boost build system
 # 5.3 instead of 5.3.0
 my $gcc_version_only_major = $gcc_version;
@@ -115,6 +118,78 @@ my $openssl_folder_name = "openssl_1_1_1q";
 
 my $current_distro_architecture = `uname -m`;
 chomp $current_distro_architecture;
+
+# Retrieves binary build of particular dependency from Google
+# Expects argument in format: libbpf_1_0_1
+sub get_library_binary_build_from_google_storage {
+    my $dependency_name = shift;
+
+    my $dependency_archive_name = "$dependency_name.tar.gz";
+
+    # I think we need to unify $distro_version as it may have plenty of varieties
+    my $binary_path = "s3://$s3_bucket_binary_dependency_name/$distro_type/$distro_version/$dependency_archive_name";
+
+    print "Will use following path to retrieve dependency: $binary_path\n";
+
+    my $check_that_file_exists =
+        system("s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket=\"%(bucket).storage.googleapis.com\" ls $binary_path");
+
+    # We do not have it
+    if ($check_that_file_exists != 0) {
+        print "File does not exist on Google Storage side\n";
+        return '';
+    }
+
+    my $download_this_file =
+        system("s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket=\"%(bucket).storage.googleapis.com\" get $binary_path /tmp/$dependency_archive_name");
+
+    if ($download_this_file != 0) {
+        print "Cannot download dependency file from Google Storage\n";
+        return '';
+    }
+
+    system("mkdir -p /opt/$library_install_folder");
+
+    my $unpack_res = system("tar -xf -C $library_install_folder /tmp/$dependency_archive_name");
+
+    if ($unpack_res != 0) {
+        print "Cannot unpack file\n";
+        return '';
+    }
+
+    return 1;
+}
+
+
+# Uploads binary build to Google
+sub upload_binary_build_to_google_storage {
+    my $dependency_name = shift;
+
+    my $dependency_archive_name = "$dependency_name.tar.gz";
+
+    # I think we need to unify $distro_version as it may have plenty of varieties
+    my $binary_path = "s3://$s3_bucket_binary_dependency_name/$distro_type/$distro_version/$dependency_archive_name";
+
+    my $archive_res = system("tar -cpzf /tmp/$dependency_archive_name -C $library_install_folder $dependency_name");
+
+    if ($archive_res != 0) {
+        print "Cannot pack dependency\n";
+        return '';
+    }
+
+    my $upload_this_file =
+        system("s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket=\"%(bucket).storage.googleapis.com\" put /tmp/$dependency_archive_name $binary_path");
+
+    if ($upload_this_file != 0) {
+        print "Cannot upload dependency file from Google Storage\n";
+        return '';
+    }
+
+    print "Successfully uploaded\n";
+
+    return 1
+}
+
 
 sub exec_command {
     my $command = shift;
@@ -340,18 +415,26 @@ sub init_compiler {
 }
 
 sub install_libbpf {
+    my $folder_name = 'libbpf_1_0_1';
+
+    my $libbpf_package_install_path = "$library_install_folder/$folder_name";
+
+    if (-e $libbpf_package_install_path) {
+        warn "libbpf is installed, skip build\n";
+        return 1;
+    }
+
+    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name); 
+
+    if (!$get_from_cache) {
+        warn "Cannot get dependency from cache, do manual build\n";
+    }
+
     if ($distro_type eq 'ubuntu' || $distro_type eq 'debian') {
         my @dependency_list = ('libelf-dev');
         apt_get(@dependency_list);
     } elsif ($distro_type eq 'centos') {
         yum('elfutils-libelf-devel');
-    }
-
-    my $libbpf_package_install_path = "$library_install_folder/libbpf_1_0_1";
-
-    if (-e $libbpf_package_install_path) {
-        warn "libbpf is installed, skip build\n";
-        return 1;
     }
 
     my $archive_file_name = 'v1.0.1.tar.gz ';
@@ -377,6 +460,12 @@ sub install_libbpf {
 
     system("mkdir -p $libbpf_package_install_path/include/bpf");
     system("cp bpf.h libbpf.h libbpf_common.h libbpf_version.h libbpf_legacy.h $libbpf_package_install_path/include/bpf");
+
+    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
+    
+    if (!$upload_binary_res) {
+        warn "Cannot upload dependency to cache\n";
+    }   
 
     return 1;
 }
