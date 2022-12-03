@@ -419,6 +419,12 @@ sub install_libbpf {
 
     my $libbpf_package_install_path = "$library_install_folder/$folder_name";
 
+    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
+
+    if (!$upload_binary_res) {
+        warn "Cannot upload dependency to cache\n";
+    }
+
     if (-e $libbpf_package_install_path) {
         warn "libbpf is installed, skip build\n";
         return 1;
@@ -461,12 +467,6 @@ sub install_libbpf {
     system("mkdir -p $libbpf_package_install_path/include/bpf");
     system("cp bpf.h libbpf.h libbpf_common.h libbpf_version.h libbpf_legacy.h $libbpf_package_install_path/include/bpf");
 
-    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
-    
-    if (!$upload_binary_res) {
-        warn "Cannot upload dependency to cache\n";
-    }   
-
     return 1;
 }
 
@@ -475,7 +475,15 @@ sub install_gcc {
     my $gcc_version_for_path = $gcc_version;
     $gcc_version_for_path =~ s/\.//g;
 
-    my $gcc_package_install_path = "$library_install_folder/gcc$gcc_version_for_path";
+    my $folder_name = "gcc$gcc_version_for_path";
+
+    my $gcc_package_install_path = "$library_install_folder/$folder_name";
+
+    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
+
+    if (!$upload_binary_res) {
+        warn "Cannot upload dependency to cache\n";
+    }
 
     if (-e $gcc_package_install_path) {
         warn "Found already installed gcc in $gcc_package_install_path. Skip compilation\n";
@@ -531,7 +539,15 @@ sub install_gcc {
 }
 
 sub install_boost {
-    my $boost_install_path = "$library_install_folder/boost_${boost_version_with_underscore}";
+    my $folder_name = "boost_${boost_version_with_underscore}";
+
+    my $boost_install_path = "$library_install_folder/$folder_name";
+
+    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
+
+    if (!$upload_binary_res) {
+        warn "Cannot upload dependency to cache\n";
+    }
 
     if (-e $boost_install_path) {
         warn "Boost libraries already exist in $boost_install_path Skip build process\n";
@@ -595,10 +611,18 @@ sub install_boost {
 sub install_boost_builder {
     chdir $temp_folder_for_building_project;
 
+    my $folder_name = 'boost_build_4_9_2';
+
+    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
+
+    if (!$upload_binary_res) {
+        warn "Cannot upload dependency to cache\n";
+    }
+
     # We use another name because it uses same name as boost distribution
     my $archive_file_name = '4.9.2.tar.gz';
 
-    my $boost_builder_install_folder = "$library_install_folder/boost_build_4_9_2";
+    my $boost_builder_install_folder = "$library_install_folder/$folder_name";
 
     if (-e $boost_builder_install_folder) {
         warn "Found installed Boost builder at $boost_builder_install_folder\n";
@@ -650,7 +674,15 @@ sub install_boost_builder {
 sub install_log4cpp {
     my $log_cpp_version_short = '1.1.3';
 
-    my $log4cpp_install_path = "$library_install_folder/log4cpp" . $log_cpp_version_short;
+    my $folder_name = "log4cpp$log_cpp_version_short";
+
+    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
+
+    if (!$upload_binary_res) {
+        warn "Cannot upload dependency to cache\n";
+    }
+
+    my $log4cpp_install_path = "$library_install_folder/$folder_name";
 
     if (-e $log4cpp_install_path) {
 	warn "We have log4cpp already, skip build\n";
@@ -703,7 +735,15 @@ sub install_log4cpp {
 sub install_grpc {
     my $grpc_git_commit = "v1.30.2";
 
-    my $grpc_install_path = "$library_install_folder/grpc_1_30_2"; 
+    my $folder_name = "grpc_1_30_2";
+
+    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
+
+    if (!$upload_binary_res) {
+        warn "Cannot upload dependency to cache\n";
+    }
+
+    my $grpc_install_path = "$library_install_folder/$folder_name"; 
 
     if (-e $grpc_install_path) {
          print "gRPC is already installed, skip compilation\n";
@@ -767,6 +807,8 @@ sub git_clone_repository {
 }
 
 sub install_gobgp {
+    # I see no reasons to cache binary build in this case
+
     chdir $temp_folder_for_building_project;
     my $distro_file_name = 'gobgp_2.27.0_linux_amd64.tar.gz';
     
@@ -795,7 +837,16 @@ sub install_gobgp {
 }
 
 sub install_protobuf {
-    my $protobuf_install_path = "$library_install_folder/protobuf_3.11.4";
+    my $folder_name = "protobuf_3.11.4";
+
+    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
+
+    if (!$upload_binary_res) {
+        warn "Cannot upload dependency to cache\n";
+    }
+
+
+    my $protobuf_install_path = "$library_install_folder/$folder_name";
 
     if (-e $protobuf_install_path) {
         warn "Found installed Protobuf, skip compilation\n";
@@ -838,7 +889,15 @@ sub install_protobuf {
 }
 
 sub install_libelf {
-    if (-e "$library_install_folder/elfutils_0_186") {
+    my $folder_name = 'elfutils_0_186';
+
+    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
+
+    if (!$upload_binary_res) {
+        warn "Cannot upload dependency to cache\n";
+    }
+
+    if (-e "$library_install_folder/$folder_name") {
         warn "elfutils already exists\n";
         return 1;
     }
@@ -859,7 +918,15 @@ sub install_libelf {
 }
 
 sub install_capnproto {
-    my $capnp_install_path = "$library_install_folder/capnproto_0_8_0";
+    my $folder_name = 'capnproto_0_8_0';
+
+    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
+
+    if (!$upload_binary_res) {
+        warn "Cannot upload dependency to cache\n";
+    }
+
+    my $capnp_install_path = "$library_install_folder/$folder_name";
 
     if (-e $capnp_install_path) {
         warn "Cap'n'proto already existis, skip compilation\n";
@@ -878,7 +945,16 @@ sub install_capnproto {
 }
 
 sub install_mongo_client {
-    my $install_path = "$library_install_folder/mongo_c_driver_1_23_0";
+    my $folder_name = 'mongo_c_driver_1_23_0';
+
+    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
+
+    if (!$upload_binary_res) {
+        warn "Cannot upload dependency to cache\n";
+    }
+
+
+    my $install_path = "$library_install_folder/$folder_name";
     
     if (-e $install_path) {
 	warn "mongo_c_driver is already installed, skip build";
@@ -990,8 +1066,16 @@ sub install_configure_based_software {
 }
 
 sub install_openssl {
+    my $folder_name = 'openssl_1_1_1q';
+
+    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
+
+    if (!$upload_binary_res) {
+        warn "Cannot upload dependency to cache\n";
+    }
+
     my $distro_file_name = 'openssl-1.1.1q.tar.gz';
-    my $openssl_install_path = "$library_install_folder/openssl_1_1_1q";
+    my $openssl_install_path = "$library_install_folder/$folder_name";
  
     if (-e $openssl_install_path) {
         warn "We found already installed openssl in folder $openssl_install_path Skip compilation\n";
@@ -1017,11 +1101,20 @@ sub install_openssl {
 }
 
 sub install_icu {
+    my $folder_name = "libicu_65_1";
+
+    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
+
+    if (!$upload_binary_res) {
+        warn "Cannot upload dependency to cache\n";
+    }
+
+
     my $distro_file_name = 'icu4c-65_1-src.tgz';
    
     chdir $temp_folder_for_building_project;
  
-    my $icu_install_path = "$library_install_folder/libicu_65_1";
+    my $icu_install_path = "$library_install_folder/$folder_name";
 
     if (-e $icu_install_path) {
         warn "Found installed icu at $icu_install_path\n";
@@ -1048,9 +1141,17 @@ sub install_icu {
 }
 
 sub install_cmake {
+    my $folder_name = 'cmake_3_23_4';
+
+    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
+
+    if (!$upload_binary_res) {
+        warn "Cannot upload dependency to cache\n";
+    }
+
     print "Install cmake\n";
 
-    my $cmake_install_path = "$library_install_folder/cmake_3_23_4";
+    my $cmake_install_path = "$library_install_folder/$folder_name";
 
     if (-e $cmake_install_path) {
         warn "Found installed cmake at $cmake_install_path\n";
@@ -1217,8 +1318,17 @@ sub get_folder_name_inside_archive {
 }
 
 sub install_hiredis {
+    my $folder_name = 'libhiredis_0_14';
+
+    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
+
+    if (!$upload_binary_res) {
+        warn "Cannot upload dependency to cache\n";
+    }
+
+
     my $disto_file_name = 'v0.14.0.tar.gz'; 
-    my $hiredis_install_path = "$library_install_folder/libhiredis_0_14";
+    my $hiredis_install_path = "$library_install_folder/$folder_name";
 
     if (-e $hiredis_install_path) {
 	warn "hiredis is found at $hiredis_install_path skip build\n";
