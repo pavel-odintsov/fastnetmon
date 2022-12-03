@@ -290,22 +290,22 @@ workflows:
           distro_name: "ubuntu"
       - build_debian:
           docker_image: "debian:stretch"
-          debian_version: "9"
+          distro_version: "9"
           name: "debian9"
           distro_name: "debian"
       - build_debian:
           docker_image: "debian:buster"
-          debian_version: "10"
+          distro_version: "10"
           name: "debian10"
           distro_name: "debian"
       - build_debian:
           docker_image: "debian:bullseye"
-          debian_version: "11"
+          distro_version: "11"
           name: "debian11"
           distro_name: "debian"
       - build_debian:
           docker_image: "debian:bookworm"
-          debian_version: "12"
+          distro_version: "12"
           name: "debian12"
           distro_name: "debian"
       - build_docker_x86_64:
