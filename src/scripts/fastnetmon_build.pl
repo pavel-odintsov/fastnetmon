@@ -3,26 +3,11 @@
 use strict;
 use warnings;
 
-use Getopt::Long;
 use File::Basename;
 
 # Use path to our libraries folder relvant to path where we keep script itself 
 use FindBin;
 use lib "$FindBin::Bin/perllib";
-
-# It's from base system
-use Archive::Tar;
-
-my $have_ansi_color = '';
-
-# We should handle cases when customer does not have perl modules package installed
-BEGIN {
-    unless (eval "use Term::ANSIColor") {
-	# warn "Cannot load module Term::ANSIColor";
-    } else {
-        $have_ansi_color = 1;
-    }
-}
 
 my $fastnetmon_install_folder = '/opt/fastnetmon-community';
 my $library_install_folder = "$fastnetmon_install_folder/libraries";
@@ -39,9 +24,6 @@ my $distro_version = '';
 my $distro_architecture = '';
 
 my $gcc_version = '12.1.0';
-
-# We need it for all OpenSSL dependencies
-my $openssl_folder_name = "openssl_1_1_1q";
 
 my $user_email = '';
 
@@ -76,11 +58,6 @@ my $start_time = time();
 
 my $fastnetmon_code_dir = "$temp_folder_for_building_project/fastnetmon/src";
 
-# By default do not use mirror
-my $use_mirror = '';
-
-my $mirror_url = 'https://github.com/pavel-odintsov/fastnetmon_dependencies/raw/master/files'; 
-
 # Used for VyOS and different appliances based on rpm/deb
 my $appliance_name = ''; 
 
@@ -92,33 +69,7 @@ my $make_options = '';
 # We could pass options to configure with this variable
 my $configure_options = '';
 
-my $show_help = '';
-
-my $build_fastnetmon_only = '';
-
-# Get options from command line
-GetOptions(
-    'use-mirror' => \$use_mirror,
-    'build_fastnetmon_only' => \$build_fastnetmon_only,
-    'help' => \$show_help,
-);
-
-if ($show_help) {
-    print "We have following options:\n" .
-        "--use-mirror\n" .
-        "--build_fastnetmon_only\n"; 
-    exit (0);
-}
-
-
 main();
-
-# Applies colors to terminal if we have this module
-sub fast_color {
-    if ($have_ansi_color) {
-        color(@_);
-    }
-}
 
 sub get_logical_cpus_number {
     if ($os_type eq 'linux') {
@@ -226,17 +177,6 @@ sub main {
     # Refresh information about packages
     init_package_manager();
 
-    # Install standard tools for building packages
-    if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
-        my @debian_packages_for_build = ('build-essential', 'make', 'tar', 'wget', 'git');
-
-        apt_get(@debian_packages_for_build);
-    } elsif ($distro_type eq 'centos') {
-        my @centos_dependency_packages = ('make', 'gcc', 'gcc-c++', 'git');
-
-        yum(@centos_dependency_packages);
-    }
-
     unless (-e $library_install_folder) {
         exec_command("mkdir -p $library_install_folder");
     }
@@ -244,10 +184,7 @@ sub main {
     # For all platforms we use custom compiler
     init_compiler();
     
-    if ($build_fastnetmon_only) {
-        install_fastnetmon();
-        exit(0);
-    }
+    install_fastnetmon();
 
     my $install_time = time() - $start_time;
     my $pretty_install_time_in_minutes = sprintf("%.2f", $install_time / 60);
@@ -272,61 +209,12 @@ sub exec_command {
     }
 }
 
-sub get_sha1_sum {
-    my $path = shift;
-
-    if ($os_type eq 'freebsd') {
-        # # We should not use 'use' here because we haven't this package on non FreeBSD systems by default
-        require Digest::SHA;
-
-        # SHA1
-        my $sha = Digest::SHA->new(1);
-
-        $sha->addfile($path);
-
-        return $sha->hexdigest; 
-    }
-
-    my $hasher_name = '';
-
-    if ($os_type eq 'macosx') {
-        $hasher_name = 'shasum';
-    } elsif ($os_type eq 'freebsd') {
-        $hasher_name = 'sha1';
-    } else {
-        # Linux
-        $hasher_name = 'sha1sum';
-    }
-
-    my $output = `$hasher_name $path`;
-    chomp $output;
-   
-    my ($sha1) = ($output =~ m/^(\w+)\s+/);
-
-    return $sha1;
-}
-
 sub init_package_manager { 
 
     print "Update package manager cache\n";
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
         exec_command("apt-get update");
     }
-}
-
-sub read_file {
-    my $file_name = shift;
-
-    my $res = open my $fl, "<", $file_name;
-
-    unless ($res) {
-        return "";
-    }
-
-    my $content = join '', <$fl>;
-    chomp $content;
-
-    return $content;
 }
 
 # Detect operating system of this machine
@@ -488,55 +376,17 @@ sub yum {
     }
 }
 
-
-# Get folder name from archive
-sub get_folder_name_inside_archive {
-    my $file_path = shift;
-
-    unless ($file_path && -e $file_path) {
-        return '';
-    }
-
-    my $tar = Archive::Tar->new;
-    $tar->read($file_path);
-
-    for my $file($tar->list_files()) {
-        # if name has / in the end we could assume it's folder
-        if ($file =~ m#/$#) {
-            return $file;
-        }
-    }
-
-    # For some reasons we can have case when we do not have top level folder alone but we can extract it from path:
-    # libcmime-0.2.1/VERSION
-    for my $file($tar->list_files()) {
-        # if name has / in the end we could assume it's folder
-        if ($file =~ m#(.*?)/.*+$#) {
-            return $1;
-        }
-    }
-
-    return '';
-}
-
 sub install_fastnetmon_dependencies {
     print "Install FastNetMon dependency list\n";
 
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
-        my @fastnetmon_deps = ("git", "g++", "gcc", "libgpm-dev", "libncurses5-dev",
-            "liblog4cpp5-dev", "libnuma-dev", "libpcap-dev", "cmake", "pkg-config",
+        my @fastnetmon_deps = ("libncurses5-dev", "libpcap-dev", "pkg-config",
         );
 
         apt_get(@fastnetmon_deps);
     } elsif ($distro_type eq 'centos') {
-        my @fastnetmon_deps = ('git', 'make', 'gcc', 'gcc-c++',
-            'ncurses-devel', 'libpcap-devel',
-            'gpm-devel', 'cmake', 'pkgconfig',
+        my @fastnetmon_deps = ( 'ncurses-devel', 'libpcap-devel', 'pkgconfig',
         );
-
-        if ($distro_type eq 'centos' && int($distro_version) == 7) {
-            push @fastnetmon_deps, 'net-tools';
-        }
 
         yum(@fastnetmon_deps);
     }
@@ -548,21 +398,11 @@ sub install_fastnetmon {
     print "Clone FastNetMon repo\n";
     chdir $temp_folder_for_building_project;
 
-    if (-e $fastnetmon_code_dir) {
-        # Code already downloaded
-        chdir $fastnetmon_code_dir;
+    # Pull code
+    exec_command("git clone $fastnetmon_git_path");
 
-        exec_command("git checkout master");
-        printf("\n");
-
-        exec_command("git pull");
-    } else {
-        # Pull code
-        exec_command("git clone $fastnetmon_git_path");
-
-        if ($? != 0) {
-            fast_die("Can't clone source code");
-        }
+    if ($? != 0) {
+        fast_die("Can't clone source code");
     }
 
     exec_command("mkdir -p $fastnetmon_code_dir/build");
