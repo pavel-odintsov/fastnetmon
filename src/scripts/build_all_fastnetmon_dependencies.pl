@@ -85,10 +85,10 @@ sub main {
     if ($distro_type eq 'ubuntu') {
         print "Update package manager cache\n";
         exec_command("apt-get update");
-        apt_get('make', 'wget');
+        apt_get('make', 'wget', 'git');
     } elsif ( $distro_type eq 'centos') {
         # We need libmpc for our custom built gcc
-        yum('make', 'wget', 'libmpc', 'glibc-devel'); 
+        yum('make', 'wget', 'libmpc', 'glibc-devel', 'git'); 
     }
 
     # Init environment
