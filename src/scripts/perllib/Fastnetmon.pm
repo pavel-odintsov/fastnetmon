@@ -126,7 +126,6 @@ sub get_library_binary_build_from_google_storage {
 
     my $dependency_archive_name = "$dependency_name.tar.gz";
 
-    # I think we need to unify $distro_version as it may have plenty of varieties
     my $binary_path = "s3://$s3_bucket_binary_dependency_name/$distro_type/$distro_version/$dependency_archive_name";
 
     print "Will use following path to retrieve dependency: $binary_path\n";
@@ -167,7 +166,6 @@ sub upload_binary_build_to_google_storage {
 
     my $dependency_archive_name = "$dependency_name.tar.gz";
 
-    # I think we need to unify $distro_version as it may have plenty of varieties
     my $binary_path = "s3://$s3_bucket_binary_dependency_name/$distro_type/$distro_version/$dependency_archive_name";
 
     my $archive_res = system("tar -cpzf /tmp/$dependency_archive_name -C $library_install_folder $dependency_name");
@@ -1469,9 +1467,13 @@ sub detect_distribution {
                 $distro_version = `cat /etc/debian_version`;
                 chomp $distro_version;
 
+                # 
                 # Debian 6 example: 6.0.10
                 # We will try transform it to decimal number
-                if ($distro_version =~ /^(\d+\.\d+)\.\d+$/) {
+                if ($distro_version =~ /^(\d+)\.\d+\.\d+$/) {
+                    $distro_version = $1;
+                } elsif ($distro_version =~ /^(\d+)\.\d+\$/) {
+                    # Examples: 9.13, 10.13, 11.5
                     $distro_version = $1;
                 }
             } elsif ($issue_first_line =~ m/Ubuntu (\d+(?:\.\d+)?)/) {
