@@ -1512,28 +1512,9 @@ sub yum {
     }
 }
 
-sub get_logical_cpus_number {
-    if ($os_type eq 'linux') {
-        my @cpuinfo = `cat /proc/cpuinfo`;
-        chomp @cpuinfo;
-    
-        my $cpus_number = scalar grep {/processor/} @cpuinfo;
-    
-        return $cpus_number;
-    } elsif ($os_type eq 'macosx' or $os_type eq 'freebsd') {
-        my $cpus_number = `sysctl -n hw.ncpu`;
-        chomp $cpus_number;
-    }   
-}
-
-
-# Detect operating system of this machine
-sub detect_distribution { 
+# Gets OS type for our purposes
+sub get_os_type {
     my $os_type = '';
-    my $distro_type = '';
-    my $distro_version = '';
-    my $appliance_name = '';
-    my $distro_architecture = '';
 
     my $uname_s_output = `uname -s`;
     chomp $uname_s_output;
@@ -1552,6 +1533,38 @@ sub detect_distribution {
     } else {
         warn "Can't detect platform operating system\n";
     }
+
+    return $os_type;
+}
+
+
+sub get_logical_cpus_number {
+    my $os_type = get_os_type();
+
+    if ($os_type eq 'linux') {
+        my @cpuinfo = `cat /proc/cpuinfo`;
+        chomp @cpuinfo;
+
+        my $cpus_number = scalar grep {/processor/} @cpuinfo;
+
+        return $cpus_number;
+    } elsif ($os_type eq 'macosx' or $os_type eq 'freebsd') {
+        my $cpus_number = `sysctl -n hw.ncpu`;
+        chomp $cpus_number;
+    } else {
+        warn "Unknown platform: $os_type Cannot get number of CPUs";
+        return 1;
+    }
+}
+
+# Detect operating system of this machine
+sub detect_distribution { 
+    my $distro_type = '';
+    my $distro_version = '';
+    my $appliance_name = '';
+    my $distro_architecture = '';
+
+    my $os_type = get_os_type();
 
     if ($os_type eq 'linux') {
         # x86_64 or i686

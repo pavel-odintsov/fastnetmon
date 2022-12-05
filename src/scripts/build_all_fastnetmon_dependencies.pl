@@ -75,6 +75,8 @@ sub main {
 
     $cpus_number = Fastnetmon::get_logical_cpus_number();
 
+    print "Your machine has $cpus_number CPUs\n";
+
     # We could get huge speed benefits with this option
     if ($cpus_number > 1) { 
         print "You have really nice server with $cpus_number CPU's and we will use they all for build process :)\n";
