@@ -286,9 +286,6 @@ workflows:
           name: "Debian Sid Upstream Build"
           debian_codename: "sid"
       - build_fedora_upstream:
-          name: "Fedora 35 Upstream RPM"
-          docker_image: fedora:35
-      - build_fedora_upstream:
           name: "Fedora 36 Upstream RPM"
           docker_image: fedora:36
       - build_fedora_upstream:
