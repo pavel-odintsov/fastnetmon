@@ -149,7 +149,7 @@ sub get_library_binary_build_from_google_storage {
 
     system("mkdir -p $library_install_folder");
 
-    my $unpack_res = system("tar -xf /tmp/$dependency_archive_name -C $library_install_folder");
+    my $unpack_res = system("tar --use-compress-program=pigz -xf /tmp/$dependency_archive_name -C $library_install_folder");
 
     if ($unpack_res != 0) {
         print "Cannot unpack file\n";
@@ -168,7 +168,7 @@ sub upload_binary_build_to_google_storage {
 
     my $binary_path = "s3://$s3_bucket_binary_dependency_name/$distro_type/$distro_version/$dependency_archive_name";
 
-    my $archive_res = system("tar -cpzf /tmp/$dependency_archive_name -C $library_install_folder $dependency_name");
+    my $archive_res = system("tar --use-compress-program=pigz -cpzf /tmp/$dependency_archive_name -C $library_install_folder $dependency_name");
 
     if ($archive_res != 0) {
         print "Cannot pack dependency\n";
