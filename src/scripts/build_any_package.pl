@@ -21,7 +21,8 @@ unless ($package_type && $archive_name && $package_version && $distro_name && $d
 }
 
 # Gzip does not compress well, let's use xz instead
-my $dpkg_deb_options = '-Zxz -z9';
+# By default it uses compression level 6
+my $dpkg_deb_options = '-Zxz -z6';
 
 my $debian_architecture_name = 'amd64';
 
@@ -476,6 +477,8 @@ DOC
         die "Cannot chown /opt";
     }
 
+    my $deb_build_start_time = time();
+
     my $deb_build_command = "dpkg-deb  --debug  --verbose $dpkg_deb_options --build $folder_for_build /tmp/fastnetmon_${package_version}_${debian_architecture_name}.deb";
 
     print "Build command: $deb_build_command\n";
@@ -485,6 +488,8 @@ DOC
     if ($deb_build_res != 0) {
         die "dpkg-deb failed with error code: $deb_build_res\n";
     }
+
+    print "dpkg-deb finished in ", time() - $deb_build_start_time, " seconds\n";
 }
 
 sub put_text_to_file {
