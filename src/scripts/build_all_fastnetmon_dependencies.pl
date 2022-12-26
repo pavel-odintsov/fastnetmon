@@ -83,15 +83,11 @@ sub main {
         $make_options = "-j $cpus_number";
     }
 
-    # Install packages required for build
-    if ($distro_type eq 'ubuntu' or $distro_type eq 'debian') {
-        print "Update package manager cache\n";
-        exec_command("apt-get update");
-        apt_get('make', 'wget', 'git', 'pigz');
-    } elsif ( $distro_type eq 'centos') {
-        # We need libmpc for our custom built gcc
-        yum('make', 'wget', 'libmpc', 'glibc-devel', 'git', 'pigz'); 
-    }
+    # Install build dependencies
+    my $dependencies_install_start_time = time();
+    install_build_dependencies();
+
+    print "Installed dependencies in ", time() - $dependencies_install_start_time, " seconds\n";
 
     # Init environment
     init_compiler();

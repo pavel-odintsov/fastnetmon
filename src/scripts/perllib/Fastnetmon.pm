@@ -343,6 +343,28 @@ sub init_machine_information {
     $appliance_name = $machine_information->{appliance_name}; 
 }
 
+# Installs all dependencies required for build process
+sub install_build_dependencies {
+    my $machine_information = Fastnetmon::detect_distribution();
+
+    unless ($machine_information) {
+        die "Could not collect machine information\n";
+    }
+
+    my $distro_version = $machine_information->{distro_version};
+    my $distro_type = $machine_information->{distro_type};
+
+    # Install packages required for build
+    if ($distro_type eq 'ubuntu' or $distro_type eq 'debian') {
+        print "Update package manager cache\n";
+        exec_command("apt-get update");
+        apt_get('make', 'wget', 'git', 'pigz');
+    } elsif ( $distro_type eq 'centos') {
+        # We need libmpc for our custom built gcc
+        yum('make', 'wget', 'libmpc', 'glibc-devel', 'git', 'pigz');
+    }
+}
+
 # This code will init global compiler settings used in options for other packages build
 sub init_compiler {
     init_machine_information();

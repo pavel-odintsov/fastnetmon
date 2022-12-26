@@ -63,6 +63,11 @@ sub install_package {
     # We should init compiler before any operations
     Fastnetmon::init_compiler();
 
+    print "Install build dependencies\n";
+
+    Fastnetmon::install_build_dependencies();
+
+    print "Start package install\n";
     Fastnetmon::install_package_by_name_with_dependencies($package_name);
 }
 
