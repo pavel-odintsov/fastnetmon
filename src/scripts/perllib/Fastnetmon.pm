@@ -41,6 +41,7 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw(
 detect_distribution
 init_compiler
+install_build_dependencies
 exec_command
 get_sha1_sum
 download_file
