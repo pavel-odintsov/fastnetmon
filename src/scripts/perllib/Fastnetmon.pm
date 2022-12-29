@@ -968,7 +968,9 @@ sub install_gobgp {
 }
 
 sub install_protobuf {
-    my $folder_name = "protobuf_3.11.4";
+    my $folder_name = 'protobuf_3_15_7';
+
+    my $protobuf_version = '3.15.7';
 
     my $protobuf_install_path = "$library_install_folder/$folder_name";
 
@@ -977,47 +979,51 @@ sub install_protobuf {
         return 1;
     }
 
-    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
+    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name); 
 
     if ($get_from_cache) {
         print "Got depency from cache\n";
         return 1;
-    }
-        
-    warn "Cannot get dependency from cache, do manual build\n";
+    } 
 
-    if ($distro_type eq 'ubuntu' || $distro_type eq 'debian') {
-        apt_get('make', 'autoconf', 'automake', 'git', 'libtool', 'curl');
-    } elsif ($distro_type eq 'centos') {
-        yum('make', 'autoconf', 'automake', 'git', 'libtool', 'curl');
-    }
-
-    my $distro_file_name = 'protobuf-all-3.11.4.tar.gz';
+    my $distro_file_name = "protobuf-all-$protobuf_version.tar.gz";
 
     chdir $temp_folder_for_building_project;
+
     print "Download protocol buffers\n";
 
-    my $protobuf_download_result = download_file("https://github.com/protocolbuffers/protobuf/releases/download/v3.11.4/$distro_file_name",
-        $distro_file_name, '318f4d044078285db7ae69b68e77f148667f98f4'); 
+    # We use manual build process as we have required step to run autogen
+
+    my $protobuf_download_result = download_file("https://github.com/protocolbuffers/protobuf/releases/download/v$protobuf_version/$distro_file_name",
+        $distro_file_name, 'fa8bde97bc024fd9f5be86d8b8461003a5acc23b'); 
 
     unless ($protobuf_download_result) {
         die "Can't download protobuf\n";
     }
 
     print "Unpack protocol buffers\n";
-    exec_command("tar -xf $distro_file_name");
 
-    chdir "protobuf-3.11.4";
+    unless (exec_command("tar -xf $distro_file_name")) {
+        die "Cannot unpack archive";
+    }
+
+    chdir "protobuf-$protobuf_version" or die "Cannot chdir to folder";
+    
     print "Configure protobuf\n";
 
     print "Execute autogen\n";
-    exec_command("./autogen.sh");
+    unless (exec_command("./autogen.sh")) {
+        die "Cannot finish autogen";
+    }
 
-    exec_command("$configure_options ./configure --prefix=$protobuf_install_path");
+    unless (exec_command("$configure_options ./configure --prefix=$protobuf_install_path")) {
+        die "Configure failed";
+    }
 
     print "Build protobuf\n";
-    # We have specified LD_LIBRARY path for fixing issue with version `GLIBCXX_3.4.21' not found 
-    exec_command("$ld_library_path_for_make make $make_options install");
+    unless (exec_command("$ld_library_path_for_make make $make_options install")) {
+        die "Make install failed";
+    }
 
     my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
 
@@ -1027,6 +1033,7 @@ sub install_protobuf {
 
     1;
 }
+
 
 sub install_libelf {
     my $folder_name = 'elfutils_0_186';
