@@ -103,6 +103,8 @@ sub main {
         'hiredis',
         'mongo_client',
         'protobuf',
+        'zlib',
+        'cares',
         'grpc',
         'libbpf',
         'libelf',

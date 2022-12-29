@@ -793,6 +793,69 @@ sub install_log4cpp {
     1;
 }
 
+sub install_cares {
+    my $folder_name = 'cares_1_18_1';
+
+    if (-e "$library_install_folder/$folder_name") {
+        warn "libmaxminddb is already installed at $library_install_folder/$folder_name";
+        return 1;
+    }
+
+    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
+
+    if ($get_from_cache) {
+        print "Got depency from cache\n";
+        return 1;
+    }
+
+    my $res = install_configure_based_software("https://github.com/c-ares/c-ares/releases/download/cares-1_18_1/c-ares-1.18.1.tar.gz",
+        "9e2a99af58d163d084db6fcebb2165a960bdd1af", "$library_install_folder/$folder_name", "");
+
+    unless ($res) {
+        die "Cannot install C-Ares\n";
+    }
+
+    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
+
+    if (!$upload_binary_res) {
+        warn "Cannot upload dependency to cache\n";
+    }
+
+    return 1;
+}
+
+
+sub install_zlib {
+    my $folder_name = 'zlib_1_2_13';
+
+    if (-e "$library_install_folder/$folder_name") {
+        warn "zlib is already installed at $library_install_folder/$folder_name";
+        return 1;
+    }
+
+    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
+
+    if ($get_from_cache) {
+        print "Got depency from cache\n";
+        return 1;
+    }
+
+    my $res = install_configure_based_software("https://zlib.net/zlib-1.2.13.tar.gz",
+        "55eaa84906f31ac20d725aa26cd20839196b6ba6", "$library_install_folder/$folder_name", "");
+
+    unless ($res) {
+        die "Cannot install zlib\n";
+    }
+
+    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
+
+    if (!$upload_binary_res) {
+        warn "Cannot upload dependency to cache\n";
+    }
+
+    return 1;
+}
+
 sub install_grpc {
     my $grpc_git_commit = "v1.30.2";
 
