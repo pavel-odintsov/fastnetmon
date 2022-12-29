@@ -857,15 +857,13 @@ sub install_zlib {
 }
 
 sub install_grpc {
-    my $grpc_git_commit = "v1.30.2";
+    my $folder_name = 'grpc_1_30_2';
 
-    my $folder_name = "grpc_1_30_2";
-
-    my $grpc_install_path = "$library_install_folder/$folder_name"; 
+    my $grpc_install_path = "$library_install_folder/$folder_name";
 
     if (-e $grpc_install_path) {
-         print "gRPC is already installed, skip compilation\n";
-         return 1;
+        warn "Found installed gRPC";
+        return 1;
     }
 
     my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
@@ -874,43 +872,43 @@ sub install_grpc {
         print "Got depency from cache\n";
         return 1;
     }
-    
-    warn "Cannot get dependency from cache, do manual build\n";
 
-    chdir $temp_folder_for_building_project;
- 
-    print "Clone gRPC repository\n";
-    exec_command("git clone https://github.com/grpc/grpc.git");
-    chdir "grpc";
+    my $protobuf_install_path = "$library_install_folder/protobuf_3_15_7";
 
-    # For back compatibility with old git
-    exec_command("git checkout $grpc_git_commit");
+    my $abseil_install_path = "$library_install_folder/abseil_20211102";
 
-    print "Update project submodules\n";
-    exec_command("git submodule update --init");
+    my $openssl_path = "$library_install_folder/$openssl_folder_name";
 
-    ### Patch makefile for custom gcc: https://github.com/grpc/grpc/issues/3893
-    exec_command("sed -i '81i DEFAULT_CC=$default_c_compiler_path' Makefile");
-    exec_command("sed -i '82i DEFAULT_CXX=$default_cpp_compiler_path' Makefile");
+    my $cares_path = "$library_install_folder/cares_1_18_1";
 
-    print "Build gRPC\n";
-    my $make_result = exec_command("$ld_library_path_for_make make $make_options");
+    my $zlib_path = "$library_install_folder/zlib_1_2_13";
 
-    unless ($make_result) {
-        die "Could not build gRPC: make failed";
+    # There is a problem with official tar.gz from https://github.com/grpc/grpc/releases
+    # When they prepare tar.gz they do not pull all required dependencies to third_party folder
+    # https://github.com/grpc/grpc/issues/31760#issuecomment-1339944451
+    # Such a great finding that you actually need to explicitly provide -DBUILD_SHARED_LIBS=ON to build dynamic libraries
+    #
+    # I decided to explicitly set CMAKE_INSTALL_RPATH to lib folder of installed library as we're dealing with some weird linker issues for gRPC dependencies
+    # (libupb.so.10, libaddress_sorting.so.10 and it actually solved these issues
+    #
+    my $res = install_cmake_based_software("https://github.com/grpc/grpc/archive/v1.30.2.tar.gz",
+         "d5f2270c7a42154e0a5a184b3b0a9a97e90442de",
+         $grpc_install_path,
+         "$ld_library_path_for_make $cmake_path -DCMAKE_C_COMPILER=$default_c_compiler_path -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DCMAKE_INSTALL_PREFIX=$grpc_install_path -DgRPC_PROTOBUF_PROVIDER=package -DCMAKE_INSTALL_RPATH=$grpc_install_path/lib -DCMAKE_PREFIX_PATH=\"$protobuf_install_path;$openssl_path;$cares_path;$abseil_install_path/lib/cmake/absl;$abseil_install_path/lib64/cmake/absl;$zlib_path\" -DgRPC_ZLIB_PROVIDER=package -DgRPC_SSL_PROVIDER=package -DgRPC_ABSL_PROVIDER=package -DgRPC_INSTALL=ON -DgRPC_BUILD_TESTS=OFF  -DgRPC_CARES_PROVIDER=package -DBUILD_SHARED_LIBS=ON ..");
+
+    if (!$res) {
+        die "Can't install gRPC\n";
     }
-
-    print "Install gRPC\n";
-    exec_command("$ld_library_path_for_make make install prefix=$grpc_install_path"); 
 
     my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
 
     if (!$upload_binary_res) {
-        warn "Cannot upload dependency to cache\n";
+       warn "Cannot upload dependency to cache\n";
     }
 
-    1;
+    return 1;
 }
+
 
 # Get git repository source code
 sub git_clone_repository {
