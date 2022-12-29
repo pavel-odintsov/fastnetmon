@@ -1104,6 +1104,45 @@ sub install_capnproto {
     return 1;
 }
 
+sub install_abseil {
+    my $folder_name = 'abseil_20211102';
+
+    my $install_path = "$library_install_folder/$folder_name";
+
+    if (-e $install_path) {
+        warn "abseil is already installed\n";
+        return 1;
+    }
+
+    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
+
+    if ($get_from_cache) {
+        print "Got depency from cache\n";
+        return 1;
+    }
+
+    # We need explicitly enable PIC to successfully build against gRPC
+    # https://github.com/abseil/abseil-cpp/pull/741
+    # -DCMAKE_POSITION_INDEPENDENT_CODE=true
+    my $res = install_cmake_based_software("https://github.com/abseil/abseil-cpp/archive/refs/tags/20211102.0.tar.gz",
+        "8ec1d0e9f51ecbc9bf67b3f07007d2b04b0ca198",
+        "$library_install_folder/$folder_name",
+        "$ld_library_path_for_make $cmake_path -DCMAKE_C_COMPILER=$default_c_compiler_path -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DABSL_BUILD_TESTING=ON -DABSL_USE_GOOGLETEST_HEAD=ON -DABSL_ENABLE_INSTALL=ON -DCMAKE_CXX_STANDARD=11 -DCMAKE_POSITION_INDEPENDENT_CODE=true -DCMAKE_INSTALL_PREFIX=$library_install_folder/abseil_20211102 ..");
+
+    if (!$res) {
+        die "Cannot install abseil";
+    }
+
+    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
+
+    if (!$upload_binary_res) {
+        warn "Cannot upload dependency to cache\n";
+    }
+
+    return 1;
+}
+
+
 sub install_mongo_client {
     my $folder_name = 'mongo_c_driver_1_23_0';
 
