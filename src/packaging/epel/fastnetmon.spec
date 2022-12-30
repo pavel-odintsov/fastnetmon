@@ -27,6 +27,8 @@ BuildRequires:     boost-regex
 BuildRequires:     libpcap-devel
 BuildRequires:     gpm-devel
 BuildRequires:     cmake
+BuildRequires:     capnproto-devel
+BuildRequires:     capnproto
 BuildRequires:     grpc-devel
 BuildRequires:     grpc-cpp
 BuildRequires:     abseil-cpp-devel
@@ -49,7 +51,7 @@ DDoS detection tool with sFlow, Netflow, IPFIX and port mirror support.
 
 %build
 
-%cmake -DENABLE_CUSTOM_BOOST_BUILD=FALSE -DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE -DCMAKE_SKIP_BUILD_RPATH=TRUE -DLINK_WITH_ABSL=TRUE -DENABLE_CAPNP_SUPPORT=OFF -S src
+%cmake -DENABLE_CUSTOM_BOOST_BUILD=FALSE -DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE -DCMAKE_SKIP_BUILD_RPATH=TRUE -DLINK_WITH_ABSL=TRUE -S src
 
 %cmake_build
 
