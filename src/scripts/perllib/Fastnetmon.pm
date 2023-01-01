@@ -359,10 +359,10 @@ sub install_build_dependencies {
     if ($distro_type eq 'ubuntu' or $distro_type eq 'debian') {
         print "Update package manager cache\n";
         exec_command("apt-get update");
-        apt_get('make', 'wget', 'git', 'pigz');
+        apt_get('make', 'wget', 'git', 'pigz', 'autoconf');
     } elsif ( $distro_type eq 'centos') {
         # We need libmpc for our custom built gcc
-        yum('make', 'wget', 'libmpc', 'glibc-devel', 'git', 'pigz');
+        yum('make', 'wget', 'libmpc', 'glibc-devel', 'git', 'pigz', 'autoconf');
     }
 }
 
