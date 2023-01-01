@@ -1003,7 +1003,7 @@ sub install_protobuf {
 
     print "Unpack protocol buffers\n";
 
-    unless (exec_command("tar -xf $distro_file_name")) {
+    unless (exec_command("tar --no-same-owner -xf $distro_file_name")) {
         die "Cannot unpack archive";
     }
 
