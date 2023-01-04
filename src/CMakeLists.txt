@@ -464,7 +464,8 @@ if (ENABLE_GOBGP_SUPPORT)
         message(STATUS "Found protoc protobuf compiler: ${PROTOC_BINARY}")
 
         # We need to explicitly provide paths for our dependency libraries in environment variable LD_LIBRARY_PATH as we use non system path for them
-        set(ENV{LD_LIBRARY_PATH} "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/gcc1210/lib64:${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib:${GRPC_CUSTOM_INSTALL_PATH}/lib")
+        # CentOS uses lib64 but Debian / Ubuntu still use lib for Protobuf, that's why we keep both of them
+        set(ENV{LD_LIBRARY_PATH} "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/gcc1210/lib64:${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib:${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib64:${GRPC_CUSTOM_INSTALL_PATH}/lib")
     else()
         message(FATAL_ERROR "Can't find protoc compiler")
     endif()
