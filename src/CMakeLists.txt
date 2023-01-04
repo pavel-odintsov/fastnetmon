@@ -534,6 +534,7 @@ if (ENABLE_GOBGP_SUPPORT)
 
     target_link_libraries(fastnetmon_api_client ${GRPC_LIBRARY_GPR_PATH})
     target_link_libraries(fastnetmon_api_client ${GRPC_LIBRARY_GRPC_CPP_PATH})
+    target_link_libraries(fastnetmon_api_client ${CARES_LIBRARY_PATH})
     target_link_libraries(fastnetmon_api_client ${GRPC_LIBRARY_GRPC_PATH})
     target_link_libraries(fastnetmon_api_client fastnetmon_grpc_pb_cc)
     target_link_libraries(fastnetmon_api_client fastnetmon_pb_cc)
