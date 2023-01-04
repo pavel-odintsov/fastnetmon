@@ -462,6 +462,7 @@ if (ENABLE_GOBGP_SUPPORT)
     if (PROTOC_BINARY)
         message(STATUS "Found protoc protobuf compiler: ${PROTOC_BINARY}")
 
+        # We need to explicitly provide paths for our dependency libraries in environment variable LD_LIBRARY_PATH as we use non system path for them
         set(ENV{LD_LIBRARY_PATH} "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/gcc1210/lib64:${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib:${GRPC_CUSTOM_INSTALL_PATH}/lib")
     else()
         message(FATAL_ERROR "Can't find protoc compiler")
@@ -478,11 +479,11 @@ if (ENABLE_GOBGP_SUPPORT)
 
     message(STATUS "Building protobuf and gRPC mappings for C++")
 
-    execute_process(COMMAND "LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH}" ${PROTOC_BINARY} -I ${PROJECT_SOURCE_DIR}/actions --grpc_out=${PROJECT_SOURCE_DIR}/actions --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} ${PROJECT_SOURCE_DIR}/actions/gobgp.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${PROTOC_BINARY} -I ${PROJECT_SOURCE_DIR}/actions --grpc_out=${PROJECT_SOURCE_DIR}/actions --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} ${PROJECT_SOURCE_DIR}/actions/gobgp.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     message(STATUS "Protoc return code for gobgp.proto gRPC: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
 
-    execute_process(COMMAND "LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH}" ${PROTOC_BINARY} -I  ${PROJECT_SOURCE_DIR}/actions --cpp_out=${PROJECT_SOURCE_DIR}/actions ${PROJECT_SOURCE_DIR}/actions/gobgp.proto ${PROJECT_SOURCE_DIR}/actions/attribute.proto  ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${PROTOC_BINARY} -I  ${PROJECT_SOURCE_DIR}/actions --cpp_out=${PROJECT_SOURCE_DIR}/actions ${PROJECT_SOURCE_DIR}/actions/gobgp.proto ${PROJECT_SOURCE_DIR}/actions/attribute.proto  ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     message(STATUS "Protoc return code for gobgp.proto and attribute.proto Protobuf: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
 
@@ -507,11 +508,11 @@ if (ENABLE_GOBGP_SUPPORT)
     # FastNetMon API
     add_definitions(-DFASTNETMON_API)    
 
-    execute_process(COMMAND "LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH}" ${PROTOC_BINARY} -I ${PROJECT_SOURCE_DIR} --grpc_out=${PROJECT_SOURCE_DIR} --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} ${PROJECT_SOURCE_DIR}/fastnetmon.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${PROTOC_BINARY} -I ${PROJECT_SOURCE_DIR} --grpc_out=${PROJECT_SOURCE_DIR} --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} ${PROJECT_SOURCE_DIR}/fastnetmon.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     message(STATUS "Protoc return code for gRPC fastnetmon.proto: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
 
-    execute_process(COMMAND "LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH}" ${PROTOC_BINARY} -I ${PROJECT_SOURCE_DIR} --cpp_out=${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/fastnetmon.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE) 
+    execute_process(COMMAND ${PROTOC_BINARY} -I ${PROJECT_SOURCE_DIR} --cpp_out=${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/fastnetmon.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE) 
 
     message(STATUS "Protoc return code for protobuf fastnetmon.proto: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
 
