@@ -725,7 +725,7 @@ sub install_boost_builder {
 sub install_log4cpp {
     my $log_cpp_version_short = '1.1.3';
 
-    my $folder_name = "log4cpp$log_cpp_version_short";
+    my $folder_name = "log4cpp_1_1_3";
 
     my $log4cpp_install_path = "$library_install_folder/$folder_name";
 
