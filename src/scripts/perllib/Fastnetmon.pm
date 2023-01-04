@@ -873,7 +873,7 @@ sub install_grpc {
         return 1;
     }
 
-    my $protobuf_install_path = "$library_install_folder/protobuf_3_15_7";
+    my $protobuf_install_path = "$library_install_folder/protobuf_21_12";
 
     my $abseil_install_path = "$library_install_folder/abseil_20211102";
 
@@ -970,68 +970,29 @@ sub install_gobgp {
 }
 
 sub install_protobuf {
-    my $folder_name = 'protobuf_3_15_7';
+    my $folder_name = 'protobuf_21_12';
 
-    my $protobuf_version = '3.15.7';
+    my $install_path = "$library_install_folder/$folder_name";
 
-    my $protobuf_install_path = "$library_install_folder/$folder_name";
-
-    if (-e $protobuf_install_path) {
-        warn "Found installed Protobuf, skip compilation\n";
+    if (-e $install_path) {
+        warn "Protobuf is already installed\n";
         return 1;
     }
 
-    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name); 
+    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
 
     if ($get_from_cache) {
         print "Got depency from cache\n";
         return 1;
-    } 
-
-    my $distro_file_name = "protobuf-all-$protobuf_version.tar.gz";
-
-    chdir $temp_folder_for_building_project;
-
-    # We have to install gcc and g++ to build Protobuf due to this bug: https://github.com/protocolbuffers/protobuf/issues/11458
-    if ($distro_type eq 'ubuntu' || $distro_type eq 'debian') {
-        apt_get('g++');
-    } elsif ($distro_type eq 'centos') {
-        yum('gcc-c++');
     }
 
-    print "Download protocol buffers\n";
+    my $res = install_cmake_based_software("https://github.com/protocolbuffers/protobuf/releases/download/v21.12/protobuf-all-21.12.tar.gz",
+        "5dcaabdc890593b1c9c5dc5646a26ff82593ccb9",
+        "$library_install_folder/$folder_name",
+        "$ld_library_path_for_make $cmake_path -DCMAKE_C_COMPILER=$default_c_compiler_path -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -Dprotobuf_BUILD_TESTS=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$install_path ..");
 
-    # We use manual build process as we have required step to run autogen
-
-    my $protobuf_download_result = download_file("https://github.com/protocolbuffers/protobuf/releases/download/v$protobuf_version/$distro_file_name",
-        $distro_file_name, 'fa8bde97bc024fd9f5be86d8b8461003a5acc23b'); 
-
-    unless ($protobuf_download_result) {
-        die "Can't download protobuf\n";
-    }
-
-    print "Unpack protocol buffers\n";
-
-    unless (exec_command("tar --no-same-owner -xf $distro_file_name")) {
-        die "Cannot unpack archive";
-    }
-
-    chdir "protobuf-$protobuf_version" or die "Cannot chdir to folder";
-    
-    print "Configure protobuf\n";
-
-    print "Execute autogen\n";
-    unless (exec_command("./autogen.sh")) {
-        die "Cannot finish autogen";
-    }
-
-    unless (exec_command("$configure_options ./configure --prefix=$protobuf_install_path")) {
-        die "Configure failed";
-    }
-
-    print "Build protobuf\n";
-    unless (exec_command("$ld_library_path_for_make make $make_options install")) {
-        die "Make install failed";
+    if (!$res) {
+        die "Cannot install Protobuf";
     }
 
     my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
@@ -1040,9 +1001,8 @@ sub install_protobuf {
         warn "Cannot upload dependency to cache\n";
     }
 
-    1;
+    return 1;
 }
-
 
 sub install_libelf {
     my $folder_name = 'elfutils_0_186';
