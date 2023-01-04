@@ -992,6 +992,13 @@ sub install_protobuf {
 
     chdir $temp_folder_for_building_project;
 
+    # We have to install gcc and g++ to build Protobuf due to this bug: https://github.com/protocolbuffers/protobuf/issues/11458
+    if ($distro_type eq 'ubuntu' || $distro_type eq 'debian') {
+        apt_get('g++');
+    } elsif ($distro_type eq 'centos') {
+        yum('gcc-c++');
+    }
+
     print "Download protocol buffers\n";
 
     # We use manual build process as we have required step to run autogen
