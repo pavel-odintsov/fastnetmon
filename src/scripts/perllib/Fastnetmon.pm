@@ -1451,7 +1451,7 @@ sub install_cmake_based_software {
     }
 
     print "Unpack archive\n";
-    my $unpack_result = exec_command("tar -xf $file_name");
+    my $unpack_result = exec_command("tar --no-same-owner -xf $file_name");
 
     unless ($unpack_result) {
         die "Unpack failed";
