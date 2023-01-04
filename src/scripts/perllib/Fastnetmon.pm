@@ -857,7 +857,7 @@ sub install_zlib {
 }
 
 sub install_grpc {
-    my $folder_name = 'grpc_1_30_2';
+    my $folder_name = 'grpc_1_49_2';
 
     my $grpc_install_path = "$library_install_folder/$folder_name";
 
@@ -893,8 +893,8 @@ sub install_grpc {
     #
     # Then I added all dependency libraries into CMAKE_INSTALL_RPATH as we had weird linking issues with Cares
     #
-    my $res = install_cmake_based_software("https://github.com/grpc/grpc/archive/v1.30.2.tar.gz",
-         "d5f2270c7a42154e0a5a184b3b0a9a97e90442de",
+    my $res = install_cmake_based_software("https://github.com/grpc/grpc/archive/v1.49.2.tar.gz",
+         "28ba57cb3648812a48fd06c0de4b1e89d41e6934",
          $grpc_install_path,
          "$ld_library_path_for_make $cmake_path -DCMAKE_C_COMPILER=$default_c_compiler_path -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DCMAKE_INSTALL_PREFIX=$grpc_install_path -DgRPC_PROTOBUF_PROVIDER=package -DCMAKE_INSTALL_RPATH=\"$grpc_install_path/lib;$cares_path/lib;$openssl_path/lib;$abseil_install_path/lib\" -DCMAKE_PREFIX_PATH=\"$protobuf_install_path;$openssl_path;$cares_path;$abseil_install_path/lib/cmake/absl;$abseil_install_path/lib64/cmake/absl;$zlib_path\" -DgRPC_ZLIB_PROVIDER=package -DgRPC_SSL_PROVIDER=package -DgRPC_ABSL_PROVIDER=package -DgRPC_INSTALL=ON -DgRPC_BUILD_TESTS=OFF  -DgRPC_CARES_PROVIDER=package -DBUILD_SHARED_LIBS=ON ..");
 
