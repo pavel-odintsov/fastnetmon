@@ -28,6 +28,7 @@ set(LIBBPF_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libbpf_1_0_1
 set(LIBELF_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/elfutils_0_186")
 set(PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/protobuf_3_15_7")
 set(ICU_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libicu_65_1")
+set(CARES_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/cares_1_18_1")
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} --std=c++2a")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} --std=c++2a")
@@ -89,7 +90,7 @@ if (DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
     # Create builds in current folder with install RPATH
     SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
-    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libhiredis_0_14/lib;${LOG4CPP_CUSTOM_INSTALL_PATH}/lib;${MONGO_C_CUSTOM_INSTALL_PATH}/lib;${MONGO_C_CUSTOM_INSTALL_PATH}/lib64;${GRPC_CUSTOM_INSTALL_PATH}/lib;${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib;${CAPNP_CUSTOM_INSTALL_PATH}/lib;${OPENSSL_CUSTOM_INSTALL_PATH}/lib;${LIBBPF_CUSTOM_INSTALL_PATH};${LIBELF_CUSTOM_INSTALL_PATH}/lib")
+    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libhiredis_0_14/lib;${LOG4CPP_CUSTOM_INSTALL_PATH}/lib;${MONGO_C_CUSTOM_INSTALL_PATH}/lib;${MONGO_C_CUSTOM_INSTALL_PATH}/lib64;${GRPC_CUSTOM_INSTALL_PATH}/lib;${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib;${CAPNP_CUSTOM_INSTALL_PATH}/lib;${OPENSSL_CUSTOM_INSTALL_PATH}/lib;${LIBBPF_CUSTOM_INSTALL_PATH};${LIBELF_CUSTOM_INSTALL_PATH}/lib;${CARES_INSTALL_PATH}/lib")
 
 else()
    # We do not need any RPATH alterations when we want to link with system libraries (i.e. upstream builds for Debian or RedHat family)
@@ -540,6 +541,7 @@ if (ENABLE_GOBGP_SUPPORT)
 
     target_link_libraries(fastnetmon ${GRPC_LIBRARY_GPR_PATH})
     target_link_libraries(fastnetmon ${GRPC_LIBRARY_GRPC_CPP_PATH})
+    target_link_libraries(fastnetmon ${CARES_LIBRARY_PATH})
     target_link_libraries(fastnetmon ${GRPC_LIBRARY_GRPC_PATH})
     target_link_libraries(fastnetmon fastnetmon_grpc_pb_cc)
     target_link_libraries(fastnetmon fastnetmon_pb_cc)
@@ -693,6 +695,15 @@ endif()
 #    message(FATAL_ERROR "We can't find pcap library")    
 #endif()
 
+# Try to find C-Ares, we need it for gRPC, we do not use it directly
+find_library(CARES_LIBRARY_PATH NAMES cares PATHS "${CARES_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
+
+if (CARES_LIBRARY_PATH)
+    message(STATUS "Found C-Ares: ${CARES_LIBRARY_PATH}")
+else()
+    message(FATAL_ERROR "Cannot find C-Ares")
+endif()
+
 ### Look for log4cpp
 
 # Try to find log4cpp includes path
@@ -707,8 +718,6 @@ if (LOG4CPP_INCLUDES_FOLDER AND LOG4CPP_LIBRARY_PATH)
 else()
     message(FATAL_ERROR "We can't find log4cpp. We can't build project")
 endif()
-
-### Look for jsonc
 
 target_link_libraries(fast_library ${OPENSSL_LIBRARY_PATH})
 target_link_libraries(fast_library ${OPENSSL_CRYPTO_LIBRARY_PATH})
