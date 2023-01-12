@@ -969,6 +969,42 @@ sub install_gobgp {
     1; 
 }
 
+sub install_re2 {
+    my $folder_name = 're2_2022_12_01';
+
+    my $install_path = "$library_install_folder/$folder_name";
+
+    if (-e $install_path) {
+        warn "Re2 is already installed\n";
+        return 1;
+    }    
+
+    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
+
+    if ($get_from_cache) {
+        print "Got depency from cache\n";
+        return 1;
+    }    
+
+    my $res = install_cmake_based_software("https://github.com/google/re2/archive/refs/tags/2022-12-01.tar.gz",
+        "8146fb81e2b8988a455f2f7291c7a8a4001e55a6",
+        "$library_install_folder/$folder_name",
+        "$ld_library_path_for_make $cmake_path -DCMAKE_C_COMPILER=$default_c_compiler_path -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$install_path ..");
+
+    if (!$res) {
+        die "Cannot install re2";
+    }    
+
+    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
+
+    if (!$upload_binary_res) {
+        warn "Cannot upload dependency to cache\n";
+    }    
+
+    return 1;
+}
+
+
 sub install_protobuf {
     my $folder_name = 'protobuf_21_12';
 

@@ -102,6 +102,7 @@ sub main {
         'capnproto',
         'hiredis',
         'mongo_client',
+        're2',          # Required to build gRPC
         'abseil',       # Required to build gRPC
         'zlib',         # Required to build gRPC
         'cares',        # Required to build gRPC
