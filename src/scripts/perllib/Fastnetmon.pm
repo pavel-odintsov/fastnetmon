@@ -883,6 +883,8 @@ sub install_grpc {
 
     my $zlib_path = "$library_install_folder/zlib_1_2_13";
 
+    my $re2_path = "$library_install_folder/re2_2022_12_01";
+
     # There is a problem with official tar.gz from https://github.com/grpc/grpc/releases
     # When they prepare tar.gz they do not pull all required dependencies to third_party folder
     # https://github.com/grpc/grpc/issues/31760#issuecomment-1339944451
@@ -896,7 +898,7 @@ sub install_grpc {
     my $res = install_cmake_based_software("https://github.com/grpc/grpc/archive/v1.49.2.tar.gz",
          "28ba57cb3648812a48fd06c0de4b1e89d41e6934",
          $grpc_install_path,
-         "$ld_library_path_for_make $cmake_path -DCMAKE_C_COMPILER=$default_c_compiler_path -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DCMAKE_INSTALL_PREFIX=$grpc_install_path -DgRPC_PROTOBUF_PROVIDER=package -DCMAKE_INSTALL_RPATH=\"$grpc_install_path/lib;$cares_path/lib;$openssl_path/lib;$abseil_install_path/lib\" -DCMAKE_PREFIX_PATH=\"$protobuf_install_path;$openssl_path;$cares_path;$abseil_install_path/lib/cmake/absl;$abseil_install_path/lib64/cmake/absl;$zlib_path\" -DgRPC_ZLIB_PROVIDER=package -DgRPC_SSL_PROVIDER=package -DgRPC_ABSL_PROVIDER=package -DgRPC_INSTALL=ON -DgRPC_BUILD_TESTS=OFF  -DgRPC_CARES_PROVIDER=package -DBUILD_SHARED_LIBS=ON ..");
+         "$ld_library_path_for_make $cmake_path -DCMAKE_C_COMPILER=$default_c_compiler_path -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DCMAKE_INSTALL_PREFIX=$grpc_install_path -DgRPC_PROTOBUF_PROVIDER=package -DCMAKE_INSTALL_RPATH=\"$grpc_install_path/lib;$cares_path/lib;$openssl_path/lib;$abseil_install_path/lib;$re2_path/lib64\" -DCMAKE_PREFIX_PATH=\"$protobuf_install_path;$openssl_path;$cares_path;$abseil_install_path/lib/cmake/absl;$abseil_install_path/lib64/cmake/absl;$zlib_path;$re2_path/lib64/cmake/re2\" -DgRPC_ZLIB_PROVIDER=package -DgRPC_SSL_PROVIDER=package -DgRPC_ABSL_PROVIDER=package -DgRPC_INSTALL=ON -DgRPC_BUILD_TESTS=OFF  -DgRPC_CARES_PROVIDER=package gRPC_RE2_PROVIDER=package -DBUILD_SHARED_LIBS=ON ..");
 
     if (!$res) {
         die "Can't install gRPC\n";
