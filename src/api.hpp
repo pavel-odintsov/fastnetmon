@@ -55,6 +55,9 @@ Status FastnetmonApiServiceImpl::ExecuteBan(ServerContext* context,
     attack_details_t current_attack;
     current_attack.ipv6 = ipv6;
 
+    // We trigger this action manually
+    current_attack.attack_detection_source = attack_detection_source_t::Manual;
+
     boost::circular_buffer<simple_packet_t> empty_simple_packets_buffer;
 
     std::string flow_attack_details = "manually triggered attack";
