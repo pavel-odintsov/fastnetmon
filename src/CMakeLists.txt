@@ -29,6 +29,7 @@ set(LIBELF_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/elfutils_0_1
 set(PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/protobuf_21_12")
 set(ICU_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libicu_65_1")
 set(CARES_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/cares_1_18_1")
+set(ABSL_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/abseil_2022_06_23")
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} --std=c++2a")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} --std=c++2a")
@@ -41,6 +42,9 @@ option(ENABLE_GOBGP_SUPPORT "Enable GoBGP support build" ON)
 # libgpr.so: undefined reference to symbol '_ZN4absl12lts_202103245Mutex4LockEv'
 # /usr/lib64/libabsl_synchronization.so.2103.0.1: error adding symbols: DSO missing from command line
 option(LINK_WITH_ABSL "Enable optonal linking with ABSL" OFF)
+
+# We need to add it into include path as gRPC uses it include path
+include_directories("${ABSL_INSTALL_PATH}/include")
 
 option(DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD "Disables use of libraries from system path" ON)
 
