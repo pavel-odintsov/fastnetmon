@@ -63,10 +63,10 @@ jobs:
       image: ubuntu-2004:current
     steps:
      - checkout
-     - run: docker build -t ghcr.io/pavel-odintsov/fastnetmon-community:1.2.1 -t ghcr.io/pavel-odintsov/fastnetmon-community:latest - < src/Dockerfile
+     - run: docker build -t ghcr.io/pavel-odintsov/fastnetmon-community:1.2.3 -t ghcr.io/pavel-odintsov/fastnetmon-community:latest - < src/Dockerfile
      - run: sudo docker images
      - run: echo $CR_PAT | sudo docker login ghcr.io -u pavel-odintsov --password-stdin
-     - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:1.2.1
+     - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:1.2.3
      - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:latest
   build_docker_arm64:
     machine:
