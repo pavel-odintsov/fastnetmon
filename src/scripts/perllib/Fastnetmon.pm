@@ -106,8 +106,20 @@ chomp $current_distro_architecture;
 
 # Retrieves binary build of particular dependency from Google
 # Expects argument in format: libbpf_1_0_1
+# In case of success returns 1
+# In case of any hash related issues returns 2
 sub get_library_binary_build_from_google_storage {
     my $dependency_name = shift;
+
+    # Hashes for all distros
+    my $data_hashes = shift;
+
+    my $current_build_hash = $data_hashes->{ "$distro_type:$distro_version" };
+
+    unless ($current_build_hash) {
+        warn "Cannot get $dependency_name hash for Distro $distro_type $distro_version, please add it to build configuration";
+        return 2;
+    }
 
     my $dependency_archive_name = "$dependency_name.tar.gz";
 
@@ -121,7 +133,7 @@ sub get_library_binary_build_from_google_storage {
     # We do not have it
     if ($check_that_file_exists != 0) {
         print "File does not exist on Google Storage side\n";
-        return '';
+        return 0;
     }
 
     my $download_this_file =
@@ -129,7 +141,7 @@ sub get_library_binary_build_from_google_storage {
 
     if ($download_this_file != 0) {
         print "Cannot download dependency file from Google Storage\n";
-        return '';
+        return 0;
     }
 
     system("mkdir -p $library_install_folder");
@@ -138,7 +150,7 @@ sub get_library_binary_build_from_google_storage {
 
     if ($unpack_res != 0) {
         print "Cannot unpack file\n";
-        return '';
+        return 0;
     }
 
     return 1;
@@ -195,18 +207,6 @@ sub exec_command {
 sub get_sha1_sum {
     my $path = shift;
 
-    if ($os_type eq 'freebsd') {
-        # # We should not use 'use' here because we haven't this package on non FreeBSD systems by default
-        require Digest::SHA;
-
-        # SHA1
-        my $sha = Digest::SHA->new(1);
-
-        $sha->addfile($path);
-
-        return $sha->hexdigest; 
-    }
-
     my $hasher_name = '';
 
     if ($os_type eq 'macosx') {
@@ -224,6 +224,19 @@ sub get_sha1_sum {
     my ($sha1) = ($output =~ m/^(\w+)\s+/);
 
     return $sha1;
+}
+
+sub get_sha_512_sum {
+    my $path = shift;
+    
+    my $hasher_name = 'sha512sum';
+
+    my $output = `$hasher_name $path`;
+    chomp $output;
+
+    my ($sha_512) = ($output =~ m/^(\w+)\s+/);
+
+    return $sha_512;
 }
 
 sub download_file {

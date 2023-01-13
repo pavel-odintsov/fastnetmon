@@ -125,6 +125,17 @@ sub main {
         @required_packages = @ARGV;
     }
 
+    # To guarantee that binary dependencies are not altered in storage side we store their hashes in repository
+    my $binary_build_hashes = { 
+        'gcc_12_1_0' => {
+            'debian:10'       => '2c18964400a6660eae4ee36369c50829fda4ad4ee049c29aa1fd925bf96c3f8eed3ecb619cc02c6f470d0170d56aee1c840a4ca58d8132ca7ae395759aa49fc7',
+            'debian:11'       => '3ad28bf950a7be070f1de9b3184f1fe9f42405cdbc0f980ab97e13d571a5be1441963a43304d784c135a43278454149039bd2a6252035c7755d4ba5e0eb41480',
+            'debian:bookworm' => '907bf0bb451c5575105695a98c3b9c61ff67ad607bcd6a133342dfddd80d8eac69c7af9f97d215a7d4469d4885e5d6914766c77db8def4efa92637ab2c12a515',
+            'ubuntu:16_04'    => '433789f72e40cb8358ea564f322d6e6c117f6728e5e1f16310624ee2606a1d662dad750c90ac60404916aaad1bbf585968099fffca178d716007454e05c49237',
+            'centos:7'        => 'f7bb6b23d338fa80e1a72912d001ef926cbeb1df26f53d4c75d5e20ffe107e146637cb583edd08d02d252fc1bb93b2af6b827bd953713a9f55de148fb10b55aa',
+        }
+    };
+
     for my $package (@required_packages) {
         print "Install package $package\n";
         my $package_install_start_time = time();
@@ -142,12 +153,23 @@ sub main {
             next;
         }
 
-        # Try to retrieve it from S3 bucket 
-        my $get_from_cache = Fastnetmon::get_library_binary_build_from_google_storage($package);
+        my $binary_hash = $binary_build_hashes->{$package}; 
 
-        if ($get_from_cache) {
+        unless ($binary_hash) {
+            die "Binary hash does not exist for $package, please do fresh build and add hash for it\n";
+        }
+
+        # Try to retrieve it from S3 bucket 
+        my $get_from_cache = Fastnetmon::get_library_binary_build_from_google_storage($package, $binary_hash);
+
+        if ($get_from_cache == 1) {
             print "Got $package from cache\n";
             next;
+        }
+
+        # In case of any issues with hashes we must break build procedure to raise attention
+        if ($get_from_cache == 2) {
+            die "Detected hash issues for package $package, stop build process, it may be sign of data tampering, manual checking is needed\n";
         }
 
         print "Cannot get package $package from cache, starting build procedure\n";
