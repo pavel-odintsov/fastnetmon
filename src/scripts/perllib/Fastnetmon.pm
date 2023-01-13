@@ -80,11 +80,6 @@ my $clang_cpp_compiler_path = '';
 # By default we haven't any make options
 my $make_options = '';
 
-my $boost_version = '1.80.0';
-
-my $boost_version_with_underscore = $boost_version;
-$boost_version_with_underscore =~ s/\./_/g;
-
 # We need to know it because we could get huge speed improvements with this option
 my $cpus_number = 1;
 
@@ -572,6 +567,11 @@ sub install_gcc {
 }
 
 sub install_boost {
+    my $boost_version = '1.80.0';
+
+    my $boost_version_with_underscore = $boost_version;
+    $boost_version_with_underscore =~ s/\./_/g;
+
     my $folder_name = "boost_${boost_version_with_underscore}";
 
     my $boost_install_path = "$library_install_folder/$folder_name";
