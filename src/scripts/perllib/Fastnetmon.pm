@@ -7,17 +7,6 @@ use File::Copy;
 use File::Basename;
 
 # Retrieve all required modules
-BEGIN {
-
-eval { require Env; };
-
-if ($@) {
-    die "Perl module Env is not installed, install it:\nsudo yum install -y perl-Env.noarch\n";
-}
-
-}
-
-use Env qw(PATH);
 
 BEGIN {
 
