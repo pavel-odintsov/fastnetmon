@@ -111,16 +111,6 @@ chomp $current_distro_architecture;
 sub get_library_binary_build_from_google_storage {
     my $dependency_name = shift;
 
-    # Hashes for all distros
-    my $data_hashes = shift;
-
-    my $current_build_hash = $data_hashes->{ "$distro_type:$distro_version" };
-
-    unless ($current_build_hash) {
-        warn "Cannot get $dependency_name hash for Distro $distro_type $distro_version, please add it to build configuration";
-        return 2;
-    }
-
     my $dependency_archive_name = "$dependency_name.tar.gz";
 
     my $binary_path = "s3://$s3_bucket_binary_dependency_name/$distro_type/$distro_version/$dependency_archive_name";
@@ -144,6 +134,17 @@ sub get_library_binary_build_from_google_storage {
         return 0;
     }
 
+    # Hashes for all distros
+    my $data_hashes = shift;
+
+    my $current_build_hash = $data_hashes->{ "$distro_type:$distro_version" };
+
+    # Hash must exist for all our existing dependencies
+    unless ($current_build_hash) {
+        warn "Cannot get $dependency_name hash for Distro $distro_type $distro_version, please add it to build configuration";
+        return 2;
+    }
+
     print "Start sha-512 calculation\n";
     my $sha512 = get_sha_512_sum("/tmp/$dependency_archive_name");
 
@@ -152,7 +153,7 @@ sub get_library_binary_build_from_google_storage {
         return 2;
     }
 
-    print "Calculated sha-512: $sha512\n";
+    print "Calculated sha-512 for $dependency_name $sha512\n";
 
     if ($sha512 ne $current_build_hash) {
         warn "Hash mismatch. Expected: $current_build_hash got: $sha512. It may be sign of data tampering, please validate data source\n";
