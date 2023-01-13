@@ -424,20 +424,6 @@ sub install_bpf {
 
     my $libbpf_package_install_path = "$library_install_folder/$folder_name";
 
-    if (-e $libbpf_package_install_path) {
-        warn "libbpf is installed, skip build\n";
-        return 1;
-    }
-
-    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name); 
-
-    if ($get_from_cache) {
-        print "Got depency from cache\n";
-        return 1;
-    } 
-        
-    warn "Cannot get dependency from cache, do manual build\n";
-
     if ($distro_type eq 'ubuntu' || $distro_type eq 'debian') {
         my @dependency_list = ('libelf-dev');
         apt_get(@dependency_list);
@@ -469,15 +455,10 @@ sub install_bpf {
     system("mkdir -p $libbpf_package_install_path/include/bpf");
     system("cp bpf.h libbpf.h libbpf_common.h libbpf_version.h libbpf_legacy.h $libbpf_package_install_path/include/bpf");
 
-    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
-
-    if (!$upload_binary_res) {
-        warn "Cannot upload dependency to cache\n";
-    }
-
     return 1;
 }
 
+# TODO: it still uses old caching logic
 sub install_gcc {
     # 530 instead of 5.3.0
     my $gcc_version_for_path = $gcc_version;
@@ -564,20 +545,6 @@ sub install_boost {
 
     my $boost_install_path = "$library_install_folder/$folder_name";
 
-    if (-e $boost_install_path) {
-        warn "Boost libraries already exist in $boost_install_path Skip build process\n";
-        return 1;
-    }
-
-    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
-
-    if ($get_from_cache) {
-        print "Got depency from cache\n";
-        return 1;
-    }
-
-    warn "Cannot get dependency from cache, do manual build\n";
-
     # TODO: not perfect option actually
     # We're going to build directly in install folder
     chdir $library_install_folder;
@@ -631,12 +598,6 @@ sub install_boost {
         ### die "Can't execute b2 build correctly\n";
     }
 
-    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
-
-    if (!$upload_binary_res) {
-        warn "Cannot upload dependency to cache\n";
-    }
-
     1;
 }
 
@@ -649,20 +610,6 @@ sub install_boost_build {
     my $archive_file_name = '4.9.2.tar.gz';
 
     my $boost_builder_install_folder = "$library_install_folder/$folder_name";
-
-    if (-e $boost_builder_install_folder) {
-        warn "Found installed Boost builder at $boost_builder_install_folder\n";
-        return 1;
-    }
-
-    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
-
-    if ($get_from_cache) {
-        print "Got depency from cache\n";
-        return 1;
-    }
-    
-    warn "Cannot get dependency from cache, do manual build\n";
 
     print "Download boost builder\n";
     my $boost_build_result = download_file("https://github.com/bfgroup/build/archive/$archive_file_name", $archive_file_name,
@@ -703,12 +650,6 @@ sub install_boost_build {
         die("Can't execute b2 install\n");
     }
 
-    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
-
-    if (!$upload_binary_res) {
-        warn "Cannot upload dependency to cache\n";
-    }
-
     1;
 }
 
@@ -718,20 +659,6 @@ sub install_log4cpp {
     my $log_cpp_version_short = '1.1.3';
 
     my $log4cpp_install_path = "$library_install_folder/$folder_name";
-
-    if (-e $log4cpp_install_path) {
-	    warn "We have log4cpp already, skip build\n";
-	    return 1;
-    }
-
-    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
-
-    if ($get_from_cache) {
-        print "Got depency from cache\n";
-        return 1;
-    }
-     
-    warn "Cannot get dependency from cache, do manual build\n";
 
     my $distro_file_name = "log4cpp-$log_cpp_version_short.tar.gz";
     my $log4cpp_url = "https://sourceforge.net/projects/log4cpp/files/log4cpp-1.1.x%20%28new%29/log4cpp-1.1/log4cpp-$log_cpp_version_short.tar.gz/download";
@@ -774,41 +701,17 @@ sub install_log4cpp {
         print "make for log4cpp failed\n";
     }
 
-    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
-
-    if (!$upload_binary_res) {
-        warn "Cannot upload dependency to cache\n";
-    }
-
     1;
 }
 
 sub install_cares {
     my $folder_name = shift;
 
-    if (-e "$library_install_folder/$folder_name") {
-        warn "libmaxminddb is already installed at $library_install_folder/$folder_name";
-        return 1;
-    }
-
-    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
-
-    if ($get_from_cache) {
-        print "Got depency from cache\n";
-        return 1;
-    }
-
     my $res = install_configure_based_software("https://github.com/c-ares/c-ares/releases/download/cares-1_18_1/c-ares-1.18.1.tar.gz",
         "9e2a99af58d163d084db6fcebb2165a960bdd1af", "$library_install_folder/$folder_name", "");
 
     unless ($res) {
         die "Cannot install C-Ares\n";
-    }
-
-    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
-
-    if (!$upload_binary_res) {
-        warn "Cannot upload dependency to cache\n";
     }
 
     return 1;
@@ -818,29 +721,11 @@ sub install_cares {
 sub install_zlib {
     my $folder_name = shift;
 
-    if (-e "$library_install_folder/$folder_name") {
-        warn "zlib is already installed at $library_install_folder/$folder_name";
-        return 1;
-    }
-
-    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
-
-    if ($get_from_cache) {
-        print "Got depency from cache\n";
-        return 1;
-    }
-
     my $res = install_configure_based_software("https://zlib.net/zlib-1.2.13.tar.gz",
         "55eaa84906f31ac20d725aa26cd20839196b6ba6", "$library_install_folder/$folder_name", "");
 
     unless ($res) {
         die "Cannot install zlib\n";
-    }
-
-    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
-
-    if (!$upload_binary_res) {
-        warn "Cannot upload dependency to cache\n";
     }
 
     return 1;
@@ -850,18 +735,6 @@ sub install_grpc {
     my $folder_name = shift;
 
     my $grpc_install_path = "$library_install_folder/$folder_name";
-
-    if (-e $grpc_install_path) {
-        warn "Found installed gRPC";
-        return 1;
-    }
-
-    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
-
-    if ($get_from_cache) {
-        print "Got depency from cache\n";
-        return 1;
-    }
 
     my $protobuf_install_path = "$library_install_folder/protobuf_21_12";
 
@@ -892,12 +765,6 @@ sub install_grpc {
 
     if (!$res) {
         die "Can't install gRPC\n";
-    }
-
-    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
-
-    if (!$upload_binary_res) {
-       warn "Cannot upload dependency to cache\n";
     }
 
     return 1;
@@ -967,18 +834,6 @@ sub install_re2 {
 
     my $install_path = "$library_install_folder/$folder_name";
 
-    if (-e $install_path) {
-        warn "Re2 is already installed\n";
-        return 1;
-    }    
-
-    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
-
-    if ($get_from_cache) {
-        print "Got depency from cache\n";
-        return 1;
-    }    
-
     my $res = install_cmake_based_software("https://github.com/google/re2/archive/refs/tags/2022-12-01.tar.gz",
         "8146fb81e2b8988a455f2f7291c7a8a4001e55a6",
         "$library_install_folder/$folder_name",
@@ -986,12 +841,6 @@ sub install_re2 {
 
     if (!$res) {
         die "Cannot install re2";
-    }    
-
-    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
-
-    if (!$upload_binary_res) {
-        warn "Cannot upload dependency to cache\n";
     }    
 
     return 1;
@@ -1003,18 +852,6 @@ sub install_protobuf {
 
     my $install_path = "$library_install_folder/$folder_name";
 
-    if (-e $install_path) {
-        warn "Protobuf is already installed\n";
-        return 1;
-    }
-
-    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
-
-    if ($get_from_cache) {
-        print "Got depency from cache\n";
-        return 1;
-    }
-
     my $res = install_cmake_based_software("https://github.com/protocolbuffers/protobuf/releases/download/v21.12/protobuf-all-21.12.tar.gz",
         "5dcaabdc890593b1c9c5dc5646a26ff82593ccb9",
         "$library_install_folder/$folder_name",
@@ -1024,31 +861,11 @@ sub install_protobuf {
         die "Cannot install Protobuf";
     }
 
-    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
-
-    if (!$upload_binary_res) {
-        warn "Cannot upload dependency to cache\n";
-    }
-
     return 1;
 }
 
 sub install_elfutils {
     my $folder_name = shift;
-
-    if (-e "$library_install_folder/$folder_name") {
-        warn "elfutils already exists\n";
-        return 1;
-    }
-
-    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
-
-    if ($get_from_cache) {
-        print "Got depency from cache\n";
-        return 1;
-    }
-
-    warn "Cannot get dependency from cache, do manual build\n";
 
     if ($distro_type eq 'ubuntu' || $distro_type eq 'debian') {
         apt_get(('zlib1g-dev'));
@@ -1056,16 +873,14 @@ sub install_elfutils {
         yum('zlib-devel', 'm4');
     }
 
-    my $res = install_configure_based_software("https://sourceware.org/pub/elfutils/0.186/elfutils-0.186.tar.bz2", "650d52024be684dabf18a5261a69836a16f84f72", "$library_install_folder/elfutils_0_186", '--disable-debuginfod --disable-libdebuginfod');
+    my $res = install_configure_based_software("https://sourceware.org/pub/elfutils/0.186/elfutils-0.186.tar.bz2",
+        "650d52024be684dabf18a5261a69836a16f84f72",
+        "$library_install_folder/$folder_name",
+        '--disable-debuginfod --disable-libdebuginfod'
+    );
 
     unless ($res) { 
         die "Cannot install elfutils\n";
-    }
-
-    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
-
-    if (!$upload_binary_res) {
-        warn "Cannot upload dependency to cache\n";
     }
 
     return 1;
@@ -1075,18 +890,6 @@ sub install_capnproto {
     my $folder_name = shift;
 
     my $capnp_install_path = "$library_install_folder/$folder_name";
-
-    if (-e $capnp_install_path) {
-        warn "Cap'n'proto already existis, skip compilation\n";
-        return 1;
-    }   
-
-    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
-
-    if ($get_from_cache) {
-        print "Got depency from cache\n";
-        return 1;
-    }
 
     warn "Cannot get dependency from cache, do manual build\n";
 
@@ -1098,12 +901,6 @@ sub install_capnproto {
         die "Could not install capnproto";
     }
 
-    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
-
-    if (!$upload_binary_res) {
-        warn "Cannot upload dependency to cache\n";
-    }
-
     return 1;
 }
 
@@ -1111,18 +908,6 @@ sub install_abseil {
     my $folder_name = shift;
 
     my $install_path = "$library_install_folder/$folder_name";
-
-    if (-e $install_path) {
-        warn "abseil is already installed\n";
-        return 1;
-    }
-
-    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
-
-    if ($get_from_cache) {
-        print "Got depency from cache\n";
-        return 1;
-    }
 
     # We need explicitly enable PIC to successfully build against gRPC
     # https://github.com/abseil/abseil-cpp/pull/741
@@ -1136,12 +921,6 @@ sub install_abseil {
         die "Cannot install abseil";
     }
 
-    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
-
-    if (!$upload_binary_res) {
-        warn "Cannot upload dependency to cache\n";
-    }
-
     return 1;
 }
 
@@ -1151,20 +930,6 @@ sub install_mongo_c_driver {
 
     my $install_path = "$library_install_folder/$folder_name";
     
-    if (-e $install_path) {
-	    warn "mongo_c_driver is already installed, skip build";
-        return 1;
-    } 
-
-    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
-
-    if ($get_from_cache) {
-        print "Got depency from cache\n";
-        return 1;
-    }
-        
-    warn "Cannot get dependency from cache, do manual build\n";
-
     my $openssl_path = "$library_install_folder/$openssl_folder_name";
 
     # OpenSSL is mandatory for SCRAM-SHA-1 auth mode
@@ -1176,12 +941,6 @@ sub install_mongo_c_driver {
 
     if (!$res) {
         die "Could not install mongo c client\n";
-    }
-
-    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
-
-    if (!$upload_binary_res) {
-        warn "Cannot upload dependency to cache\n";
     }
 
     return 1;
@@ -1281,20 +1040,6 @@ sub install_openssl {
     my $distro_file_name = 'openssl-1.1.1q.tar.gz';
     my $openssl_install_path = "$library_install_folder/$folder_name";
  
-    if (-e $openssl_install_path) {
-        warn "We found already installed openssl in folder $openssl_install_path Skip compilation\n";
-        return 1;
-    }
-
-    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
-
-    if ($get_from_cache) {
-        print "Got depency from cache\n";
-        return 1;
-    }
-
-    warn "Cannot get dependency from cache, do manual build\n";
-
     chdir $temp_folder_for_building_project;
    
     my $openssl_download_result = download_file("https://www.openssl.org/source/$distro_file_name", 
@@ -1311,12 +1056,6 @@ sub install_openssl {
     exec_command("$ld_library_path_for_make make -j $make_options");
     exec_command("$ld_library_path_for_make make install");
     
-    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
-
-    if (!$upload_binary_res) {
-        warn "Cannot upload dependency to cache\n";
-    }
-
     1;
 }
 
@@ -1328,20 +1067,6 @@ sub install_icu {
     chdir $temp_folder_for_building_project;
  
     my $icu_install_path = "$library_install_folder/$folder_name";
-
-    if (-e $icu_install_path) {
-        warn "Found installed icu at $icu_install_path\n";
-        return 1;
-    }
-
-    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
-
-    if ($get_from_cache) {
-        print "Got depency from cache\n";
-        return 1;
-    }
-
-    warn "Cannot get dependency from cache, do manual build\n";
 
     print "Download icu\n";
     my $icu_download_result = download_file("https://github.com/unicode-org/icu/releases/download/release-65-1/$distro_file_name",
@@ -1359,12 +1084,6 @@ sub install_icu {
     exec_command("$configure_options ./configure --prefix=$icu_install_path");
     exec_command("$ld_library_path_for_make make $make_options");
     exec_command("$ld_library_path_for_make make $make_options install");
-    
-    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
-
-    if (!$upload_binary_res) {
-        warn "Cannot upload dependency to cache\n";
-    }
 
     1;
 }
@@ -1376,18 +1095,6 @@ sub install_cmake {
 
     my $cmake_install_path = "$library_install_folder/$folder_name";
 
-    if (-e $cmake_install_path) {
-        warn "Found installed cmake at $cmake_install_path\n";
-        return 1;
-    }
-
-    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
-
-    if ($get_from_cache) {
-        print "Got depency from cache\n";
-        return 1;
-    }
-    
     warn "Cannot get dependency from cache, do manual build\n";
     
     my $distro_file_name = "cmake-3.23.4.tar.gz"; 
@@ -1424,12 +1131,6 @@ sub install_cmake {
 
     print "Make install it\n";
     exec_command("$ld_library_path_for_make make install");
-
-    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
-
-    if (!$upload_binary_res) {
-        warn "Cannot upload dependency to cache\n";
-    }
 
     return 1;
 }
@@ -1560,20 +1261,6 @@ sub install_hiredis {
 
     my $disto_file_name = 'v0.14.0.tar.gz'; 
     my $hiredis_install_path = "$library_install_folder/$folder_name";
-
-    if (-e $hiredis_install_path) {
-    	warn "hiredis is found at $hiredis_install_path skip build\n";
-        return 1;
-    }
-
-    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
-
-    if ($get_from_cache) {
-        print "Got depency from cache\n";
-        return 1;
-    }
-    
-    warn "Cannot get dependency from cache, do manual build\n";
 
     chdir $temp_folder_for_building_project;
 
