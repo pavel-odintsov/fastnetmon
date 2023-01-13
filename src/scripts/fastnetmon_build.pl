@@ -322,13 +322,11 @@ sub install_fastnetmon_dependencies {
     print "Install FastNetMon dependency list\n";
 
     if ($distro_type eq 'debian' or $distro_type eq 'ubuntu') {
-        my @fastnetmon_deps = ("libncurses5-dev", "libpcap-dev", "pkg-config",
-        );
+        my @fastnetmon_deps = ("libncurses5-dev", "libpcap-dev");
 
         apt_get(@fastnetmon_deps);
     } elsif ($distro_type eq 'centos') {
-        my @fastnetmon_deps = ( 'ncurses-devel', 'libpcap-devel', 'pkgconfig',
-        );
+        my @fastnetmon_deps = ('ncurses-devel', 'libpcap-devel');
 
         yum(@fastnetmon_deps);
     }
@@ -344,7 +342,7 @@ sub install_fastnetmon {
     exec_command("git clone $fastnetmon_git_path");
 
     if ($? != 0) {
-        die("Can't clone source code");
+        die "Can't clone source code";
     }
 
     exec_command("mkdir -p $fastnetmon_code_dir/build");
@@ -357,13 +355,13 @@ sub install_fastnetmon {
     # $cmake_params .= " -DUSE_NEW_ATOMIC_BUILTINS=ON";
 
     # We need to specify path to libraries of gcc. Otherwise it will not work well
-    my $ld_library_path_for_make = "LD_LIBRARY_PATH=$gcc_compiler_path/lib64";
+    my $ld_library_path = "LD_LIBRARY_PATH=$gcc_compiler_path/lib64";
 
     print "Run cmake to generate make file\n";
-    system("CC=$default_c_compiler_path CXX=$default_cpp_compiler_path $ld_library_path_for_make $cmake_path .. $cmake_params");
+    system("$ld_library_path CC=$default_c_compiler_path CXX=$default_cpp_compiler_path $cmake_path .. $cmake_params");
 
     print "Run make to build FastNetMon\n";
-    system("$ld_library_path_for_make make $make_options");
+    system("$ld_library_path make $make_options");
 
     my $fastnetmon_build_binary_path = "$fastnetmon_code_dir/build/fastnetmon";
 
