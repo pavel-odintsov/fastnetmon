@@ -420,7 +420,7 @@ sub init_compiler {
 }
 
 sub install_bpf {
-    my $folder_name = 'bpf_1_0_1';
+    my $folder_name = shift;
 
     my $libbpf_package_install_path = "$library_install_folder/$folder_name";
 
@@ -1836,14 +1836,16 @@ sub install_package_by_name_with_dependencies {
 }
 
 sub install_package_by_name {
-    my $package_name = shift;
+    my $handler_name = shift;
 
-    unless (defined( &{ "install_$package_name" } )) {
-        die "We haven't handler function for this library: $package_name\n";
+    my $full_package_name = shift;
+
+    unless (defined( &{ "install_$handler_name" } )) {
+        die "We have no handler function $handler_bane for this library $full_package_name\n";
     }   
 
     no strict 'refs';
-    &{ "install_$package_name"}();
+    &{ "install_$package_name"}($full_package_name);
     use strict 'refs';
 }
 
