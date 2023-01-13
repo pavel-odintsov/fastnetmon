@@ -358,8 +358,8 @@ sub init_compiler {
     my $gcc_version_for_path = $gcc_version;
     $gcc_version_for_path =~ s/\.//g;
 
-    $gcc_c_compiler_path = "$library_install_folder/gcc$gcc_version_for_path/bin/gcc";
-    $gcc_cpp_compiler_path = "$library_install_folder/gcc$gcc_version_for_path/bin/g++";
+    $gcc_c_compiler_path = "$library_install_folder/gcc_$gcc_version_for_path/bin/gcc";
+    $gcc_cpp_compiler_path = "$library_install_folder/gcc_$gcc_version_for_path/bin/g++";
 
     $clang_c_compiler_path = "$library_install_folder/clang_7_0_0/bin/clang";
     $clang_cpp_compiler_path = "$library_install_folder/clang_7_0_0/bin/clang++";
@@ -458,27 +458,14 @@ sub install_bpf {
     return 1;
 }
 
-# TODO: it still uses old caching logic
 sub install_gcc {
+    my $folder_name = shift;    
+
     # 530 instead of 5.3.0
     my $gcc_version_for_path = $gcc_version;
     $gcc_version_for_path =~ s/\.//g;
 
-    my $folder_name = "gcc$gcc_version_for_path";
-
     my $gcc_package_install_path = "$library_install_folder/$folder_name";
-
-    if (-e $gcc_package_install_path) {
-        warn "Found already installed gcc in $gcc_package_install_path. Skip compilation\n";
-        return '1';
-    }
-
-    my $get_from_cache = get_library_binary_build_from_google_storage($folder_name);
-
-    if ($get_from_cache) {
-        print "Got depency from cache\n";
-        return 1;
-    }
 
     warn "Cannot get dependency from cache, do manual build\n";
 
@@ -510,27 +497,21 @@ sub install_gcc {
     print "Configure build system\n";
     # We are using  --enable-host-shared because we should build gcc as dynamic library for jit compiler purposes
     unless (exec_command("$temp_folder_for_building_project/gcc-$gcc_version/configure --prefix=$gcc_package_install_path --enable-languages=c,c++,jit  --enable-host-shared --disable-multilib")) {
-	warn "Cannot configure gcc\n";
-	return '';
+	    warn "Cannot configure gcc\n";
+	    return '';
     }
 
     print "Build gcc\n";
 
     unless (exec_command("make $make_options")) {
-	warn "Cannot make gcc\n";
-	return '';
+	    warn "Cannot make gcc\n";
+	    return '';
     }
 
     print "Install gcc\n";
     unless (exec_command("make $make_options install")) {
-	warn "Cannot install gcc\n";
-	return '';
-    }
-
-    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
-
-    if (!$upload_binary_res) {
-        warn "Cannot upload dependency to cache\n";
+	    warn "Cannot install gcc\n";
+	    return '';
     }
 
     return 1;

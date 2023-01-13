@@ -31,6 +31,7 @@ set(ICU_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/icu_65_1")
 set(CARES_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/cares_1_18_1")
 set(ABSL_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/abseil_2022_06_23")
 set(BOOST_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/boost_1_80_0")
+set(GCC_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/gcc_12_1_0")
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} --std=c++2a")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} --std=c++2a")
@@ -59,6 +60,7 @@ else ()
 endif()
 
 option(ENABLE_CUSTOM_BOOST_BUILD "Enable build with custom Boost" ON)
+
 if (ENABLE_CUSTOM_BOOST_BUILD)
     message(STATUS "Build with custom Boost")
 
@@ -71,7 +73,7 @@ if (ENABLE_CUSTOM_BOOST_BUILD)
 
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
 
-    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${BOOST_INSTALL_PATH}/stage/lib;${ICU_CUSTOM_INSTALL_PATH}/lib;${FASTNETMON_LIBRARIES_GLOBAL_PATH}/gcc1210/lib64")
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${BOOST_INSTALL_PATH}/stage/lib;${ICU_CUSTOM_INSTALL_PATH}/lib;${GCC_INSTALL_PATH}/lib64")
 
     # For custom Boost we need to build libicu library
     find_library(ICU_LIBRARY_UC_PATH NAMES icuuc PATHS "${ICU_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
@@ -470,7 +472,7 @@ if (ENABLE_GOBGP_SUPPORT)
 
         # We need to explicitly provide paths for our dependency libraries in environment variable LD_LIBRARY_PATH as we use non system path for them
         # CentOS uses lib64 but Debian / Ubuntu still use lib for Protobuf, that's why we keep both of them
-        set(ENV{LD_LIBRARY_PATH} "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/gcc1210/lib64:${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib:${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib64:${GRPC_CUSTOM_INSTALL_PATH}/lib")
+        set(ENV{LD_LIBRARY_PATH} "${GCC_INSTALL_PATH}/lib64:${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib:${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib64:${GRPC_CUSTOM_INSTALL_PATH}/lib")
     else()
         message(FATAL_ERROR "Can't find protoc compiler")
     endif()

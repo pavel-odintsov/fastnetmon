@@ -12,20 +12,15 @@ use lib "$FindBin::Bin/perllib";
 my $fastnetmon_install_folder = '/opt/fastnetmon-community';
 my $library_install_folder = "$fastnetmon_install_folder/libraries";
 
-my $ld_library_path_for_make = "";
+my $gcc_compiler_path = "$fastnetmon_install_folder/gcc_12_1_0";
 
-# We should specify custom compiler path
-my $default_c_compiler_path = '/usr/bin/gcc';
-my $default_cpp_compiler_path = '/usr/bin/g++';
+my $default_c_compiler_path = "$gcc_compiler_path/bin/gcc";
+my $default_cpp_compiler_path = "$gcc_compiler_path/bin/g++";
 
 my $os_type = '';
 my $distro_type = '';  
 my $distro_version = '';  
 my $distro_architecture = '';
-
-my $gcc_version = '12.1.0';
-
-my $user_email = '';
 
 my $install_log_path = "/tmp/fastnetmon_install_$$.log";
 
@@ -36,22 +31,13 @@ if (defined($ENV{'CI'}) && $ENV{'CI'}) {
 # For all libs build we use custom cmake
 my $cmake_path = "$library_install_folder/cmake_3_23_4/bin/cmake";
 
-# die wrapper to send message to tracking server
-sub fast_die {
-    my $message = shift;
-
-    print "$message Please share $install_log_path with FastNetMon team at GitHub to get help: https://github.com/pavel-odintsov/fastnetmon/issues/new\n";
-
-    exit(1);
-}
-
 my $fastnetmon_git_path = 'https://github.com/pavel-odintsov/fastnetmon.git';
 
 my $temp_folder_for_building_project = `mktemp -d /tmp/fastnetmon.build.dir.XXXXXXXXXX`;
 chomp $temp_folder_for_building_project;
 
 unless ($temp_folder_for_building_project && -e $temp_folder_for_building_project) {
-    fast_die("Can't create temp folder in /tmp for building project: $temp_folder_for_building_project");
+    die("Can't create temp folder in /tmp for building project: $temp_folder_for_building_project");
 }
 
 my $start_time = time();
@@ -65,9 +51,6 @@ my $cpus_number = 1;
 
 # We could pass options to make with this variable
 my $make_options = '';
-
-# We could pass options to configure with this variable
-my $configure_options = '';
 
 main();
 
@@ -109,44 +92,6 @@ sub install_additional_repositories {
     }
 }
 
-# This code will init global compiler settings used in options for other packages build
-sub init_compiler {
-    # 530 instead of 5.3.0
-    my $gcc_version_for_path = $gcc_version;
-    $gcc_version_for_path =~ s/\.//g;
-
-    # We are using this for Boost build system
-    # 5.3 instead of 5.3.0
-    my $gcc_version_only_major = $gcc_version;
-    $gcc_version_only_major =~ s/\.\d$//;
-
-    $default_c_compiler_path = "$library_install_folder/gcc$gcc_version_for_path/bin/gcc";
-    $default_cpp_compiler_path = "$library_install_folder/gcc$gcc_version_for_path/bin/g++";
-
-
-    # Add new compiler to configure options
-    # It's mandatory for log4cpp
-    $configure_options = "CC=$default_c_compiler_path CXX=$default_cpp_compiler_path";
-
-
-    my @make_library_path_list_options = ("$library_install_folder/gcc$gcc_version_for_path/lib64");
-
-
-    $ld_library_path_for_make = "LD_LIBRARY_PATH=" . join ':', @make_library_path_list_options;
-
-    # More detailes about jam lookup: http://www.boost.org/build/doc/html/bbv2/overview/configuration.html
-
-    # We use non standard gcc compiler for Boost builder and Boost and specify it this way
-    open my $fl, ">", "/root/user-config.jam" or die "Can't open $! file for writing manifest\n";
-    print {$fl} "using gcc : $gcc_version_only_major : $default_cpp_compiler_path ;\n";
-    close $fl;
-
-    # When we run it with vzctl exec we ahve broken env and should put config in /etc too
-    open my $etcfl, ">", "/etc/user-config.jam" or die "Can't open $! file for writing manifest\n";
-    print {$etcfl} "using gcc : $gcc_version_only_major : $default_cpp_compiler_path ;\n";
-    close $etcfl;
-}
-
 ### Functions start here
 sub main {
     # Open log file, we need to append it to keep logs for CI in single file
@@ -181,9 +126,6 @@ sub main {
         exec_command("mkdir -p $library_install_folder");
     }
 
-    # For all platforms we use custom compiler
-    init_compiler();
-    
     install_fastnetmon();
 
     my $install_time = time() - $start_time;
@@ -326,7 +268,7 @@ sub detect_distribution {
         }
 
         unless ($distro_type) {
-            fast_die("This distro is unsupported, please do manual install");
+            die("This distro is unsupported");
         }
 
         print "We detected your OS as $distro_type Linux $distro_version\n";
@@ -402,7 +344,7 @@ sub install_fastnetmon {
     exec_command("git clone $fastnetmon_git_path");
 
     if ($? != 0) {
-        fast_die("Can't clone source code");
+        die("Can't clone source code");
     }
 
     exec_command("mkdir -p $fastnetmon_code_dir/build");
@@ -414,22 +356,19 @@ sub install_fastnetmon {
     # Test that atomics build works as expected
     # $cmake_params .= " -DUSE_NEW_ATOMIC_BUILTINS=ON";
 
-    # We use $configure_options to pass CC and CXX variables about custom compiler when we use it 
-    if ((defined($ENV{'TRAVIS'}) && $ENV{'TRAVIS'}) or (defined($ENV{'CI'}) && $ENV{'CI'})) {
-        system("$configure_options $ld_library_path_for_make $cmake_path .. $cmake_params");
-        system("$ld_library_path_for_make make $make_options");
-    } else {
-        print "Run cmake to generate make file\n";
-        system("$configure_options $ld_library_path_for_make $cmake_path .. $cmake_params >> $install_log_path 2>&1");
+    # We need to specify path to libraries of gcc. Otherwise it will not work well
+    my $ld_library_path_for_make = "LD_LIBRARY_PATH=$gcc_compiler_path/lib64";
 
-        print "Run make to build FastNetMon\n";
-        system("$ld_library_path_for_make make $make_options >> $install_log_path 2>&1");
-    }
+    print "Run cmake to generate make file\n";
+    system("CC=$default_c_compiler_path CXX=$default_cpp_compiler_path $ld_library_path_for_make $cmake_path .. $cmake_params");
+
+    print "Run make to build FastNetMon\n";
+    system("$ld_library_path_for_make make $make_options");
 
     my $fastnetmon_build_binary_path = "$fastnetmon_code_dir/build/fastnetmon";
 
     unless (-e $fastnetmon_build_binary_path) {
-        fast_die("Can't build fastnetmon!");
+        die("Can't build fastnetmon!");
     }
 
     mkdir $fastnetmon_install_folder;

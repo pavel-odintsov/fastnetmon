@@ -160,11 +160,11 @@ jobs:
       - run:
           name: install_gcc
           no_output_timeout: 120m 
-          command: perl src/scripts/package_installer.pl gcc
+          command: perl src/scripts/install_fastnetmon_dependencies.pl gcc_12_1_0
       - run:
           name: install_dependencies
           no_output_timeout: 180m
-          command: perl src/scripts/build_all_fastnetmon_dependencies.pl
+          command: perl src/scripts/install_fastnetmon_dependencies.pl
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log
@@ -202,11 +202,11 @@ jobs:
       - run:
           name: install_gcc
           no_output_timeout: 120m 
-          command: perl src/scripts/package_installer.pl gcc
+          command: perl src/scripts/install_fastnetmon_dependencies.pl gcc_12_1_0
       - run:
           name: install_dependencies
           no_output_timeout: 180m
-          command: perl src/scripts/build_all_fastnetmon_dependencies.pl
+          command: perl src/scripts/install_fastnetmon_dependencies.pl
       - run:
           name: collect_debug
           command: cat /tmp/fastnetmon_install.log

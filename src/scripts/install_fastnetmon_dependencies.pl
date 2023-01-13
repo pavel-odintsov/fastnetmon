@@ -119,7 +119,12 @@ sub main {
         'gobgp_2_27_0',
         'log4cpp_1_1_3',
     );
- 
+
+    # Accept package name from command line argument
+    if (scalar @ARGV > 0) {
+        @required_packages = @ARGV;
+    }
+
     for my $package (@required_packages) {
         print "Install package $package\n";
         my $package_install_start_time = time();
