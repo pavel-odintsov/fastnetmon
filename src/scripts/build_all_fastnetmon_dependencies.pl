@@ -129,9 +129,34 @@ sub main {
         # Name may be multi word like: aaa_bbb_123
         my ($function_name) = $package =~ m/^(.*?)_\d/;
 
+        # Check that package is not installed
+        my $package_install_path = "$library_install_folder/$package";
+
+        if (-e $package_install_path) {
+            warn "$package is installed, skip build\n";
+            next;
+        }
+
+        # Try to retrieve it from S3 bucket 
+        my $get_from_cache = Fastnetmon::get_library_binary_build_from_google_storage($package);
+
+        if ($get_from_cache) {
+            print "Got $package from cache\n";
+            next;
+        }
+
+        print "Cannot get package $package from cache, starting build procedure\n";
+
+
         # We provide full package name i.e. package_1_2_3 as second argument as we will use it as name for installation folder
         my $install_res = Fastnetmon::install_package_by_name($function_name, $package);
-  
+ 
+        unless ($install_res) {
+            die "Cannot install package $package using handler $function_name: $install_res\n";
+        }
+
+        # We successfully built it, let's upload it to cache
+
         my $elapse = time() - $package_install_start_time;
 
         my $build_time_minutes = sprintf("%.2f", $elapse / 60);
@@ -141,9 +166,15 @@ sub main {
             print "Package build time: " . int($build_time_minutes) . " Minutes\n";
         }
 
-        unless ($install_res) {
-            die "Cannot install package $package using handler $function_name: $install_res\n";
+        # Upload successfully built package to S3
+        my $upload_binary_res = Fastnetmon::upload_binary_build_to_google_storage($package);
+
+        # We can ignore upload failures as they're not critical
+        if (!$upload_binary_res) {
+            warn "Cannot upload dependency to cache\n";
+            next;
         }
+
 
         print "\n\n";
     }
