@@ -395,9 +395,9 @@ sub install_build_dependencies {
 sub init_compiler {
     init_machine_information();
 
-    # 530 instead of 5.3.0
+    # 5_3_0 instead of 5.3.0
     my $gcc_version_for_path = $gcc_version;
-    $gcc_version_for_path =~ s/\.//g;
+    $gcc_version_for_path =~ s/\./_/g;
 
     $gcc_c_compiler_path = "$library_install_folder/gcc_$gcc_version_for_path/bin/gcc";
     $gcc_cpp_compiler_path = "$library_install_folder/gcc_$gcc_version_for_path/bin/g++";
@@ -422,7 +422,7 @@ sub init_compiler {
         $configure_options = "$configure_options -stdlib=libc++";
     }
 
-    my @make_library_path_list_options = ("$library_install_folder/gcc$gcc_version_for_path/lib64");
+    my @make_library_path_list_options = ("$library_install_folder/gcc_$gcc_version_for_path/lib64");
 
     if ($use_libcpp_instead_stdcpp) {
         @make_library_path_list_options = ("$library_install_folder/clang_7_0_0/lib");
@@ -501,10 +501,6 @@ sub install_bpf {
 
 sub install_gcc {
     my $folder_name = shift;    
-
-    # 530 instead of 5.3.0
-    my $gcc_version_for_path = $gcc_version;
-    $gcc_version_for_path =~ s/\.//g;
 
     my $gcc_package_install_path = "$library_install_folder/$folder_name";
 
