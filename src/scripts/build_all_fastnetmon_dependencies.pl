@@ -92,48 +92,61 @@ sub main {
     # Init environment
     init_compiler();
 
+    # We do not use prefix "lib" in names as all of them are libs and it's meaning less
+    # We use target folder names in this list for clarity
+    # Versions may be in different formats and we do not use them yet
     my @required_packages = (
         # 'gcc', # we build it separately as it requires excessive amount of time
-        'openssl',
-        'cmake',
-        'boost_builder',
-        'icu',
-        'boost',
-        'capnproto',
-        'hiredis',
-        'mongo_client',
-        're2',          # Required to build gRPC
-        'abseil',       # Required to build gRPC
-        'zlib',         # Required to build gRPC
-        'cares',        # Required to build gRPC
-        'protobuf',
-        'grpc',
-        'libbpf',
-        'libelf',
-        'gobgp',
-        'log4cpp',
+        'openssl_1_1_1q',
+        'cmake_3_23_4',
+        'boost_build_4_9_2',
+        'icu_65_1',
+        'boost_1_80_0',
+        'capnproto_0_8_0',
+        'hiredis_0_14',
+        'mongo_c_driver_1_23_0',
+        
+        # gRPC dependencies 
+        're2_2022_12_01',
+        'abseil_2022_06_23',        
+        'zlib_1_2_13',,
+        'cares_1_18_1',
+
+        'protobuf_21_12',
+        'grpc_1_49_2',
+        'bpf_1_0_1',
+        'elfutils_0_186',
+        'gobgp_2_27_0',
+        'log4cpp_1_1_3',
     );
  
     for my $package (@required_packages) {
-       print "Install package $package\n";
-       my $package_install_start_time = time();
+        print "Install package $package\n";
+        my $package_install_start_time = time();
 
-       my $install_res = Fastnetmon::install_package_by_name($package);
+        # We need to get package name from our folder name
+        # We use regular expression which matches first part of folder name before we observe any numeric digits after _ (XXX_12345)
+        # Name may be multi word like: aaa_bbb_123
+        my ($function_name) = $package =~ m/^(.*?)_\d/;
+        warn $function_name, "\n";
+        next;
+
+        my $install_res = Fastnetmon::install_package_by_name($package);
   
-       my $elapse = time() - $package_install_start_time;
+        my $elapse = time() - $package_install_start_time;
 
-       my $build_time_minutes = sprintf("%.2f", $elapse / 60);
+        my $build_time_minutes = sprintf("%.2f", $elapse / 60);
 
-       # Build only long time
-       if ($build_time_minutes > 1) {
-           print "Package build time: " . int($build_time_minutes) . " Minutes\n";
-       }
+        # Build only long time
+        if ($build_time_minutes > 1) {
+            print "Package build time: " . int($build_time_minutes) . " Minutes\n";
+        }
 
-       unless ($install_res) {
-           die "Cannot install package $package: $install_res\n";
-       }
+        unless ($install_res) {
+            die "Cannot install package $package: $install_res\n";
+        }
 
-       print "\n\n";
+        print "\n\n";
     }
 
     my $install_time = time() - $start_time;

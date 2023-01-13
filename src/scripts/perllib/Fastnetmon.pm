@@ -52,7 +52,7 @@ get_active_network_interfaces
 );
 
 our $dependency_map = {
-    'boost' => [ 'boost_builder', 'icu' ]
+    'boost' => [ 'boost_build', 'icu' ]
 };
 
 my $ld_library_path_for_make = "";
@@ -430,8 +430,8 @@ sub init_compiler {
 
 }
 
-sub install_libbpf {
-    my $folder_name = 'libbpf_1_0_1';
+sub install_bpf {
+    my $folder_name = 'bpf_1_0_1';
 
     my $libbpf_package_install_path = "$library_install_folder/$folder_name";
 
@@ -569,10 +569,9 @@ sub install_gcc {
 sub install_boost {
     my $boost_version = '1.80.0';
 
-    my $boost_version_with_underscore = $boost_version;
-    $boost_version_with_underscore =~ s/\./_/g;
+    my $boost_version_with_underscore = "1_80_0";
 
-    my $folder_name = "boost_${boost_version_with_underscore}";
+    my $folder_name = "boost_1_80_0";
 
     my $boost_install_path = "$library_install_folder/$folder_name";
 
@@ -590,6 +589,8 @@ sub install_boost {
 
     warn "Cannot get dependency from cache, do manual build\n";
 
+    # TODO: not perfect option actually
+    # We're going to build directly in install folder
     chdir $library_install_folder;
     my $archive_file_name = "boost_${boost_version_with_underscore}.tar.gz";
 
@@ -634,7 +635,7 @@ sub install_boost {
     print "Build Boost\n";
     # We have troubles when run this code with vzctl exec so we should add custom compiler in path 
     # So without HOME=/root nothing worked correctly due to another "openvz" feature
-    my $b2_build_result = exec_command("$ld_library_path_for_make $library_install_folder/boost_build_4_9_2/bin/b2 -j $boost_build_threads -sICU_PATH=$library_install_folder/libicu_65_1 linkflags=\"-Wl,-rpath,$library_install_folder/libicu_65_1/lib\" --build-dir=$temp_folder_for_building_project/boost_build_temp_directory_1_7_8 link=shared --without-test --without-python --without-wave --without-log --without-mpi");
+    my $b2_build_result = exec_command("$ld_library_path_for_make $library_install_folder/boost_build_4_9_2/bin/b2 -j $boost_build_threads -sICU_PATH=$library_install_folder/icu_65_1 linkflags=\"-Wl,-rpath,$library_install_folder/icu_65_1/lib\" --build-dir=$temp_folder_for_building_project/boost_build_temp_directory link=shared --without-test --without-python --without-wave --without-log --without-mpi");
 
     # We should not do this check because b2 build return bad return code even in success case... when it can't build few non important targets
     unless ($b2_build_result) {
@@ -650,7 +651,7 @@ sub install_boost {
     1;
 }
 
-sub install_boost_builder {
+sub install_boost_build {
     chdir $temp_folder_for_building_project;
 
     my $folder_name = 'boost_build_4_9_2';
@@ -1042,7 +1043,7 @@ sub install_protobuf {
     return 1;
 }
 
-sub install_libelf {
+sub install_elfutils {
     my $folder_name = 'elfutils_0_186';
 
     if (-e "$library_install_folder/$folder_name") {
@@ -1155,7 +1156,7 @@ sub install_abseil {
 }
 
 
-sub install_mongo_client {
+sub install_mongo_c_driver {
     my $folder_name = 'mongo_c_driver_1_23_0';
 
     my $install_path = "$library_install_folder/$folder_name";
@@ -1330,7 +1331,7 @@ sub install_openssl {
 }
 
 sub install_icu {
-    my $folder_name = "libicu_65_1";
+    my $folder_name = "icu_65_1";
 
     my $distro_file_name = 'icu4c-65_1-src.tgz';
    
@@ -1565,7 +1566,7 @@ sub get_folder_name_inside_archive {
 }
 
 sub install_hiredis {
-    my $folder_name = 'libhiredis_0_14';
+    my $folder_name = 'hiredis_0_14';
 
     my $disto_file_name = 'v0.14.0.tar.gz'; 
     my $hiredis_install_path = "$library_install_folder/$folder_name";
