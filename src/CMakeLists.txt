@@ -580,10 +580,16 @@ add_executable(fastnetmon_client fastnetmon_client.cpp)
 set(Boost_DETAILED_FAILURE_MSG ON)
 # set(Boost_DEBUG ON)
 
+# Boost.System is a library that, in essence, defines four classes to identify errors. All four classes were added to the standard library with C++11. If your development environment supports C++11, you don’t need to use Boost.System. However, since many Boost libraries use Boost.System, you might encounter Boost.System through those other libraries.
+# Boost.System is a library that, in essence, defines four classes to identify errors. All four classes were added to the standard library with C++11. If your development environment supports C++11, you don’t need to use Boost.System. However, since many Boost libraries use Boost.System, you might encounter Boost.System through those other libraries.
+# TODO: we may not need system at all
 find_package(Boost COMPONENTS thread regex program_options system REQUIRED)
 
 if(Boost_FOUND)
     message(STATUS "Found Boost: ${Boost_LIBRARIES} ${Boost_INCLUDE_DIRS}")
+
+    # We can get separate library paths for each library too
+    message(STATUS "Found Boost library program_options: ${Boost_program_options_LIBRARY}")
 
     include_directories(${Boost_INCLUDE_DIRS})
     target_link_libraries(fastnetmon ${Boost_LIBRARIES})
