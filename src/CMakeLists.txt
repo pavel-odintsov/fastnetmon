@@ -589,7 +589,7 @@ if(Boost_FOUND)
     message(STATUS "Found Boost: ${Boost_LIBRARIES} ${Boost_INCLUDE_DIRS}")
 
     # We can get separate library paths for each library too
-    message(STATUS "Found Boost library program_options: ${Boost_program_options_LIBRARY}")
+    message(STATUS "Found Boost library program_options: ${Boost_PROGRAM_OPTIONS_LIBRARY}")
 
     include_directories(${Boost_INCLUDE_DIRS})
     target_link_libraries(fastnetmon ${Boost_LIBRARIES})
