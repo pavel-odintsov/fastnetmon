@@ -95,8 +95,10 @@ void silent_logging_function(gpr_log_func_args* args) {
 }
 
 int main(int argc, char** argv) {
+    std::string supported_commands_list = "ban, unban, get_banlist";
+
     if (argc <= 1) {
-        std::cerr << "Please provide command: ban, unban or get_banlist " << std::endl;
+        std::cerr << "Please provide command as argument, supported commands: " << supported_commands_list << std::endl;
         return 1;
     }
 
@@ -125,8 +127,12 @@ int main(int argc, char** argv) {
         } else {
             fastnetmon.ExecuteBan(ip_for_ban, false);
         }
+    } else if (request_command == "help") {
+        std::cout << "Supported commands: " << supported_commands_list;
+        return 0;
     } else {
-        std::cerr << "Unknown command, we support only: ban, unban and get_banlist" << std::endl;
+        std::cerr << "Unknown command " << request_command << " we support only: " << supported_commands_list << std::endl;
+        return 1;
     }
 
     return 0;
