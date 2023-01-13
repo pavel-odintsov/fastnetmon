@@ -594,7 +594,7 @@ if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
     target_link_libraries(fastnetmon ${Boost_LIBRARIES})
     target_link_libraries(fast_library ${Boost_LIBRARIES})
-    target_link_libraries(fastnetmon_client ${Boost_LIBRARIES})
+    target_link_libraries(fastnetmon_client ${Boost_PROGRAM_OPTIONS_LIBRARY})
 endif()
 
 target_link_libraries(fast_library patricia)
