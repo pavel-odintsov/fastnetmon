@@ -133,7 +133,25 @@ sub main {
             'debian:bookworm/sid' => '907bf0bb451c5575105695a98c3b9c61ff67ad607bcd6a133342dfddd80d8eac69c7af9f97d215a7d4469d4885e5d6914766c77db8def4efa92637ab2c12a515',
             'ubuntu:16_04'        => '433789f72e40cb8358ea564f322d6e6c117f6728e5e1f16310624ee2606a1d662dad750c90ac60404916aaad1bbf585968099fffca178d716007454e05c49237',
             'centos:7'            => 'f7bb6b23d338fa80e1a72912d001ef926cbeb1df26f53d4c75d5e20ffe107e146637cb583edd08d02d252fc1bb93b2af6b827bd953713a9f55de148fb10b55aa',
-        }
+        },
+        'openssl_1_1_1q'        => {}, 
+        'cmake_3_23_4'          => {},
+        'boost_build_4_9_2'     => {},
+        'icu_65_1'              => {},
+        'boost_1_80_0'          => {},
+        'capnproto_0_8_0'       => {},
+        'hiredis_0_14'          => {},
+        'mongo_c_driver_1_23_0' => {},
+        're2_2022_12_01'        => {},
+        'abseil_2022_06_23'     => {},
+        'zlib_1_2_13'           => {},
+        'cares_1_18_1'          => {},
+        'protobuf_21_12'        => {},
+        'grpc_1_49_2'           => {},
+        'bpf_1_0_1'             => {},
+        'elfutils_0_186'        => {},
+        'gobgp_2_27_0'          => {},
+        'log4cpp_1_1_3'         => {},
     };
 
     for my $package (@required_packages) {
@@ -153,6 +171,10 @@ sub main {
             next;
         }
 
+        # This check just validates that entry for package exists in $binary_build_hashes
+        # But it does not validate that anything in that entry is populated
+        # When add new package you just need to add it as empty hash first
+        # And then populate with hashes
         my $binary_hash = $binary_build_hashes->{$package}; 
 
         unless ($binary_hash) {
