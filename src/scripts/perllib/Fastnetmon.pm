@@ -144,6 +144,23 @@ sub get_library_binary_build_from_google_storage {
         return 0;
     }
 
+    print "Start sha-512 calculation\n";
+    my $sha512 = get_sha_512_sum("/tmp/$dependency_archive_name");
+
+    unless ($sha512) {
+        warn "Cannot calculate SHA512 for file from S3\n";
+        return 2;
+    }
+
+    print "Calculated sha-512: $sha512\n";
+
+    if ($sha512 ne $current_build_hash) {
+        warn "Hash mismatch. Expected: $current_build_hash got: $sha512. It may be sign of data tampering, please validate data source\n";
+        return 2;
+    }
+
+    print "Successfully validated sha-512 signatures\n";
+
     system("mkdir -p $library_install_folder");
 
     my $unpack_res = system("tar --use-compress-program=pigz -xf /tmp/$dependency_archive_name -C $library_install_folder");
@@ -181,6 +198,16 @@ sub upload_binary_build_to_google_storage {
     }
 
     print "Successfully uploaded\n";
+
+    print "Start sha 512 calculations\n";
+    my $sha512 = get_sha_512_sum("/tmp/$dependency_archive_name");
+
+    unless ($sha512) {
+        print "Cannot calculate sha-512 for file\n";
+        return '';
+    }
+
+    print "Successfully calculated sha-512: $sha512\n";
 
     return 1
 }
@@ -508,7 +535,7 @@ sub install_gcc {
     chdir "$temp_folder_for_building_project/gcc-$gcc_version-objdir";
 
     print "Configure build system\n";
-    # We are using  --enable-host-shared because we should build gcc as dynamic library for jit compiler purposes
+    # We are using --enable-host-shared because we should build gcc as dynamic library for jit compiler purposes
     unless (exec_command("$temp_folder_for_building_project/gcc-$gcc_version/configure --prefix=$gcc_package_install_path --enable-languages=c,c++,jit  --enable-host-shared --disable-multilib")) {
 	    warn "Cannot configure gcc\n";
 	    return '';
