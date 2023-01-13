@@ -1839,14 +1839,15 @@ sub install_package_by_name_with_dependencies {
 sub install_package_by_name {
     my $handler_name = shift;
 
+    # libname_1_2_3
     my $full_package_name = shift;
 
     unless (defined( &{ "install_$handler_name" } )) {
-        die "We have no handler function $handler_bane for this library $full_package_name\n";
+        die "We have no handler function $handler_name for this library $full_package_name\n";
     }   
 
     no strict 'refs';
-    &{ "install_$package_name"}($full_package_name);
+    &{ "install_$handler_name"}($full_package_name);
     use strict 'refs';
 }
 
