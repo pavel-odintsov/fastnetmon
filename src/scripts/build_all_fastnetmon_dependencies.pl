@@ -128,10 +128,8 @@ sub main {
         # We use regular expression which matches first part of folder name before we observe any numeric digits after _ (XXX_12345)
         # Name may be multi word like: aaa_bbb_123
         my ($function_name) = $package =~ m/^(.*?)_\d/;
-        warn $function_name, "\n";
-        next;
 
-        my $install_res = Fastnetmon::install_package_by_name($package);
+        my $install_res = Fastnetmon::install_package_by_name($function_name);
   
         my $elapse = time() - $package_install_start_time;
 
@@ -143,7 +141,7 @@ sub main {
         }
 
         unless ($install_res) {
-            die "Cannot install package $package: $install_res\n";
+            die "Cannot install package $package using handler $function_name: $install_res\n";
         }
 
         print "\n\n";
