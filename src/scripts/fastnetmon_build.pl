@@ -12,10 +12,12 @@ use lib "$FindBin::Bin/perllib";
 my $fastnetmon_install_folder = '/opt/fastnetmon-community';
 my $library_install_folder = "$fastnetmon_install_folder/libraries";
 
-my $gcc_compiler_path = "$fastnetmon_install_folder/gcc_12_1_0";
+my $gcc_compiler_path = "$library_install_folder/gcc_12_1_0";
 
 my $default_c_compiler_path = "$gcc_compiler_path/bin/gcc";
 my $default_cpp_compiler_path = "$gcc_compiler_path/bin/g++";
+
+my $cmake_path = "$library_install_folder/cmake_3_23_4/bin/cmake";
 
 my $os_type = '';
 my $distro_type = '';  
@@ -27,9 +29,6 @@ my $install_log_path = "/tmp/fastnetmon_install_$$.log";
 if (defined($ENV{'CI'}) && $ENV{'CI'}) {
     $install_log_path = "/tmp/fastnetmon_install.log";
 }
-
-# For all libs build we use custom cmake
-my $cmake_path = "$library_install_folder/cmake_3_23_4/bin/cmake";
 
 my $fastnetmon_git_path = 'https://github.com/pavel-odintsov/fastnetmon.git';
 
