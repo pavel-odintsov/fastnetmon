@@ -129,7 +129,8 @@ sub main {
         # Name may be multi word like: aaa_bbb_123
         my ($function_name) = $package =~ m/^(.*?)_\d/;
 
-        my $install_res = Fastnetmon::install_package_by_name($function_name);
+        # We provide full package name i.e. package_1_2_3 as second argument as we will use it as name for installation folder
+        my $install_res = Fastnetmon::install_package_by_name($function_name, $package);
   
         my $elapse = time() - $package_install_start_time;
 

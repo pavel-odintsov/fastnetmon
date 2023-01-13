@@ -556,11 +556,11 @@ sub install_gcc {
 }
 
 sub install_boost {
+    my $folder_name = shift;
+
     my $boost_version = '1.80.0';
 
     my $boost_version_with_underscore = "1_80_0";
-
-    my $folder_name = "boost_1_80_0";
 
     my $boost_install_path = "$library_install_folder/$folder_name";
 
@@ -641,9 +641,9 @@ sub install_boost {
 }
 
 sub install_boost_build {
-    chdir $temp_folder_for_building_project;
+    my $folder_name = shift;
 
-    my $folder_name = 'boost_build_4_9_2';
+    chdir $temp_folder_for_building_project;
 
     # We use another name because it uses same name as boost distribution
     my $archive_file_name = '4.9.2.tar.gz';
@@ -713,9 +713,9 @@ sub install_boost_build {
 }
 
 sub install_log4cpp {
-    my $log_cpp_version_short = '1.1.3';
+    my $folder_name = shift;
 
-    my $folder_name = "log4cpp_1_1_3";
+    my $log_cpp_version_short = '1.1.3';
 
     my $log4cpp_install_path = "$library_install_folder/$folder_name";
 
@@ -784,7 +784,7 @@ sub install_log4cpp {
 }
 
 sub install_cares {
-    my $folder_name = 'cares_1_18_1';
+    my $folder_name = shift;
 
     if (-e "$library_install_folder/$folder_name") {
         warn "libmaxminddb is already installed at $library_install_folder/$folder_name";
@@ -816,7 +816,7 @@ sub install_cares {
 
 
 sub install_zlib {
-    my $folder_name = 'zlib_1_2_13';
+    my $folder_name = shift;
 
     if (-e "$library_install_folder/$folder_name") {
         warn "zlib is already installed at $library_install_folder/$folder_name";
@@ -847,7 +847,7 @@ sub install_zlib {
 }
 
 sub install_grpc {
-    my $folder_name = 'grpc_1_49_2';
+    my $folder_name = shift;
 
     my $grpc_install_path = "$library_install_folder/$folder_name";
 
@@ -931,8 +931,9 @@ sub git_clone_repository {
     return 1;
 }
 
+# We do not use cache for it yet
 sub install_gobgp {
-    # I see no reasons to cache binary build in this case
+    my $folder_name = shift;
 
     chdir $temp_folder_for_building_project;
     my $distro_file_name = 'gobgp_2.27.0_linux_amd64.tar.gz';
@@ -951,7 +952,7 @@ sub install_gobgp {
     }    
 
    
-    my $gobgp_install_path = "$library_install_folder/gobgp_2_27_0";
+    my $gobgp_install_path = "$library_install_folder/$folder_name";
 
     mkdir "$gobgp_install_path";
    
@@ -962,7 +963,7 @@ sub install_gobgp {
 }
 
 sub install_re2 {
-    my $folder_name = 're2_2022_12_01';
+    my $folder_name = shift;
 
     my $install_path = "$library_install_folder/$folder_name";
 
@@ -998,7 +999,7 @@ sub install_re2 {
 
 
 sub install_protobuf {
-    my $folder_name = 'protobuf_21_12';
+    my $folder_name = shift;
 
     my $install_path = "$library_install_folder/$folder_name";
 
@@ -1033,7 +1034,7 @@ sub install_protobuf {
 }
 
 sub install_elfutils {
-    my $folder_name = 'elfutils_0_186';
+    my $folder_name = shift;
 
     if (-e "$library_install_folder/$folder_name") {
         warn "elfutils already exists\n";
@@ -1071,7 +1072,7 @@ sub install_elfutils {
 }
 
 sub install_capnproto {
-    my $folder_name = 'capnproto_0_8_0';
+    my $folder_name = shift;
 
     my $capnp_install_path = "$library_install_folder/$folder_name";
 
@@ -1107,7 +1108,7 @@ sub install_capnproto {
 }
 
 sub install_abseil {
-    my $folder_name = 'abseil_2022_06_23';
+    my $folder_name = shift;
 
     my $install_path = "$library_install_folder/$folder_name";
 
@@ -1146,7 +1147,7 @@ sub install_abseil {
 
 
 sub install_mongo_c_driver {
-    my $folder_name = 'mongo_c_driver_1_23_0';
+    my $folder_name = shift;
 
     my $install_path = "$library_install_folder/$folder_name";
     
@@ -1275,7 +1276,7 @@ sub install_configure_based_software {
 }
 
 sub install_openssl {
-    my $folder_name = 'openssl_1_1_1q';
+    my $folder_name = shift;
 
     my $distro_file_name = 'openssl-1.1.1q.tar.gz';
     my $openssl_install_path = "$library_install_folder/$folder_name";
@@ -1320,7 +1321,7 @@ sub install_openssl {
 }
 
 sub install_icu {
-    my $folder_name = "icu_65_1";
+    my $folder_name = shift;
 
     my $distro_file_name = 'icu4c-65_1-src.tgz';
    
@@ -1369,7 +1370,7 @@ sub install_icu {
 }
 
 sub install_cmake {
-    my $folder_name = 'cmake_3_23_4';
+    my $folder_name = shift;
 
     print "Install cmake\n";
 
@@ -1555,7 +1556,7 @@ sub get_folder_name_inside_archive {
 }
 
 sub install_hiredis {
-    my $folder_name = 'hiredis_0_14';
+    my $folder_name = shift;
 
     my $disto_file_name = 'v0.14.0.tar.gz'; 
     my $hiredis_install_path = "$library_install_folder/$folder_name";
