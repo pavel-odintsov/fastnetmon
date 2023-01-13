@@ -127,7 +127,7 @@ int main(int argc, char** argv) {
         } else {
             fastnetmon.ExecuteBan(ip_for_ban, false);
         }
-    } else if (request_command == "help") {
+    } else if (request_command == "help" || request_command == "--help") {
         std::cout << "Supported commands: " << supported_commands_list;
         return 0;
     } else {
