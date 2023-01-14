@@ -134,24 +134,60 @@ sub main {
             'ubuntu:16_04'        => '433789f72e40cb8358ea564f322d6e6c117f6728e5e1f16310624ee2606a1d662dad750c90ac60404916aaad1bbf585968099fffca178d716007454e05c49237',
             'centos:7'            => 'f7bb6b23d338fa80e1a72912d001ef926cbeb1df26f53d4c75d5e20ffe107e146637cb583edd08d02d252fc1bb93b2af6b827bd953713a9f55de148fb10b55aa',
         },
-        'openssl_1_1_1q'        => {}, 
-        'cmake_3_23_4'          => {},
-        'boost_build_4_9_2'     => {},
-        'icu_65_1'              => {},
-        'boost_1_80_0'          => {},
-        'capnproto_0_8_0'       => {},
-        'hiredis_0_14'          => {},
-        'mongo_c_driver_1_23_0' => {},
-        're2_2022_12_01'        => {},
-        'abseil_2022_06_23'     => {},
-        'zlib_1_2_13'           => {},
-        'cares_1_18_1'          => {},
-        'protobuf_21_12'        => {},
-        'grpc_1_49_2'           => {},
-        'bpf_1_0_1'             => {},
-        'elfutils_0_186'        => {},
-        'gobgp_2_27_0'          => {},
-        'log4cpp_1_1_3'         => {},
+        'openssl_1_1_1q'        => {
+            'debian:10' => 'eac2b5a066386f7900b1e364b5347d87ab4a994a058ecfaf5682a9325fc72362b8532ddf974e092c08bebd9f4cc4b433e00c3ab564c532fa6ed1f30a6b354626',
+        }, 
+        'cmake_3_23_4'          => {
+            'debian:10' => 'cab3412debee6f864551e94f322d453daca292e092eb67a5b7f1cd0025d1997cfa60302dccc52f96be09127aee493ab446004c1e578e1725b4205f8812abd9ea',
+        },
+        'boost_build_4_9_2'     => {
+            'debian:10' => '89c1a916456f85aa76578d5d85b2c0665155e3b7913fd79f2bb6309642dab54335b6febcf6395b2ab4312c8cc5b3480541d1da54137e83619f825a1be3be2e4e',
+        },
+        'icu_65_1'              => {
+            'debian:10' => '1c10db8094967024d5aec07231fb79c8364cff4c850e0f29f511ddaa5cfdf4d18217bda13c41a1194bd2b674003d375d4df3ef76c83f6cbdf3bea74b48bcdcea',
+        },
+        'boost_1_80_0'          => {
+            'debian:10' => '1787410b79d314576fcf5a0a0e226ed8b74c1e0c7d4629209bb17221a785b40d4daa07f5df04aec24922266947f4a56a3db8664f563bc2f305efc79279aeb918',
+        },
+        'capnproto_0_8_0'       => {
+            'debian:10' => 'e9ba7567657d87d908ff0d00a819ad5da86476453dc207cf8882f8d18cbc4353d18f90e7e4bcfbb3392e4bc2007964ea0d9efb529b285e7f008c16063cce4c4e',
+        },
+        'hiredis_0_14'          => {
+            'debian:10' => '76ca19f7cd4ec5e0251bc4804901acbd6b70cf25098831d1e16da85ad18d4bb2a07faa1a8e84e1d58257d5b8b1d521b5e49135ce502bd16929c0015a00f4089d',
+        },
+        'mongo_c_driver_1_23_0' => {
+            'debian:10' => '3beadd580e8c95463fd8c4be2f4f7105935bd68a2da3fd3ba2413e0182ad8083fd3339aab59f5f20cc0593ffa200415220f7782524721cb197a098c6175452e9',
+        },
+        're2_2022_12_01'        => {
+            'debian:10' => 'f2f6dc33364f22cba010f13c43cea00ce1a1f8c1a59c444a39a45029d5154303882cba2176c4ccbf512b7c52c7610db4a8b284e03b33633ff24729ca56b4f078',
+        },
+        'abseil_2022_06_23'     => {
+            'debian:10' => '5256e2da02b15e8e69aadb0a96bbffd03858f3aa37cb08c029d726627ee26b0428fc086e94d8a0ce2c6a402b8484b96b3ccb5aa3a15af800348b26ce4873068a',
+        },
+        'zlib_1_2_13'           => {
+            'debian:10' => '8f7d5ae6b8922b0da22c94ad6dac2bde9c30e4902db93666c8dd1e8985c7c658a581a296bd160c5fff9c52c969b95aa806a8ae7dd4ee94eeb165d62a7fa499f8',
+        },
+        'cares_1_18_1'          => {
+            'debian:10' => '433fdaed84962575809969d36a5587becbcf557221b82dfe4c65c4a67e6736de0dfe1408e1fb8859aacf979931a75483bac7679f210c84a5b030ddeba079524d',
+        },
+        'protobuf_21_12'        => {
+            'debian:10' => 'b0dde2a94dc7e935f906608be5c8204393e87ba5703b78b84ad41ab690107eb306c50c9572669b0d18a55334ba26ed22a2242b54d6e30dffb1c11f8328b23c20',
+        },
+        'grpc_1_49_2'           => {
+            'debian:10' => '71c6d626aaebcec2f9faa8df215ac988379ef3b7eeb2bdbef4d176d6a3534ec561fa55a4f2b69979c9cd51dcd52aa59b937718066f35cfb1cef5861f2e988bf8',
+        },
+        'bpf_1_0_1'             => {
+            'debian:10' => 'e9f131ab11bf1984d19eac280b0f0f5c6161131d2b3ad06deafd3fb3c14e76f2cbfb0c3b01c88a3df05b4f2bca96d7e7934695b099721ed510c21ef9ae43243b',
+        },
+        'elfutils_0_186'        => {
+            'debian:10' => '16bdd1aa0feee95d529fa98bf2db5a5b3a834883ba4b890773d32fc3a7c5b04a9a5212d2b6d9d7aa5d9a0176a9e9002743d20515912381dcafbadc766f8d0a9d',
+        },
+        'gobgp_2_27_0'          => {
+            'debian:10' => 'c5f16ad35f13555514c3a286b32909f51f9eeada3f0fd7ccba519a6faff8e1d710eb16e7d33132ed7ecc9b2477f49279eeb4cc1dd9ae62b249ffe46522c370d2',
+        },
+        'log4cpp_1_1_3'         => {
+            'debian:10' => 'a966df89fc18ef4b4ea82cc3d2d53d3ecb3623ef5cd197a23ed8135f27ecfab2d35b4a24f594bb16aaa11b618126cba640ef7a61d7d2d22ba9682e5e0e8114ca',
+        },
     };
 
     for my $package (@required_packages) {

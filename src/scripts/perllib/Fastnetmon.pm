@@ -208,7 +208,7 @@ sub upload_binary_build_to_google_storage {
         return '';
     }
 
-    print "Successfully calculated sha-512: $sha512\n";
+    print "Successfully calculated sha-512 for $dependency_name: $sha512\n";
 
     return 1
 }
