@@ -177,7 +177,7 @@ sub main {
             'centos:8'            => '',
             'centos:9'            => '',
             
-            'debian:9'            => '6d61189b93fe0c115923ee070ff66f0539e1d93a14d0f7880578ffde9b26bfa13cbaa080deca9870285533a5fcbad14b4d17a3a6f6cb234a097e635b7aaa259f',
+            'debian:9'            => 'ac536be94ec5133c45f4d435dd082e1ee7299bce7ae971e361eda716466963be358452ff0c959d7e610a05b03dbbd41ce195be4ee6023b8b223f6cdb22cd0c67',
             'debian:10'           => '89c1a916456f85aa76578d5d85b2c0665155e3b7913fd79f2bb6309642dab54335b6febcf6395b2ab4312c8cc5b3480541d1da54137e83619f825a1be3be2e4e',
             'debian:11'           => 'f434ddf167a36c5ec5f4dd87c9913fb7463427e4cda212b319d245a8df7c0cb41ec0a7fb399292a7312af1c118de821cf0d87ac9dcd00eed2ea06f59e3415da2', 
             'debian:bookworm/sid' => '283835e4cb70db05f205280334614391d932bea4dc71916192e80f7625b51aade7b939f4a683c310f49d7fbcd815318b261d8d34668bb3cc205015448dc973b3',
