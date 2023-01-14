@@ -45,11 +45,6 @@ my $start_time = time();
 
 my $fastnetmon_code_dir = "$temp_folder_for_building_project/fastnetmon/src";
 
-my $cpus_number = 1;
-
-# We could pass options to make with this variable
-my $make_options = '';
-
 unless (-e $library_install_folder) {
     exec_command("mkdir -p $library_install_folder");
 }
@@ -72,16 +67,6 @@ sub main {
 	
     $Fastnetmon::library_install_folder = $library_install_folder;
     $Fastnetmon::temp_folder_for_building_project = $temp_folder_for_building_project;
-
-    $cpus_number = Fastnetmon::get_logical_cpus_number();
-
-    print "Your machine has $cpus_number CPUs\n";
-
-    # We could get huge speed benefits with this option
-    if ($cpus_number > 1) { 
-        print "You have really nice server with $cpus_number CPU's and we will use they all for build process :)\n";
-        $make_options = "-j $cpus_number";
-    }
 
     # Install build dependencies
     my $dependencies_install_start_time = time();

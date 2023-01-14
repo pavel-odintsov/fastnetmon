@@ -431,6 +431,8 @@ sub init_compiler {
     if (defined($ENV{'CI'}) && $ENV{'CI'}) {
         if ($cpus_number > 4) {
             $cpus_number = 4;
+
+            print "We run on CI and we need to cap number of CPU cores to 4 as CircleCI does not report corect number of cores to us due to Docker use\n";
         }
     }
 
@@ -599,12 +601,6 @@ sub install_boost {
     chdir $folder_name_inside_archive;
 
     my $boost_build_threads = $cpus_number;
-
-    # Boost compilation needs lots of memory, we need to reduce number of threads on CircleCI
-    # Limit it by number of threads available on our plan: https://circleci.com/product/features/resource-classes/
-    if (defined($ENV{'CI'}) && $ENV{'CI'}) {
-        $boost_build_threads = 4;
-    }
 
     my $icu_path = "$library_install_folder/icu_65_1";
 
