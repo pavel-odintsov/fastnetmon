@@ -45,7 +45,17 @@ my $use_libcpp_instead_stdcpp = '';
 
 my $gcc_version = '12.1.0';
 
+#
 # Name of bucket where we keep compiled dependencies
+#
+# CI should have only two permissions for this bucket:
+# - Storage Object Creator
+# - Storage Object Viewer 
+#
+# It must not have admin permissions. We should not allow overwrites of existing binary dependencies. Only way to replace binary dependency with same name to manually remove it from S3
+#
+# Storage Object Creator permissions allow upload but do not allow replacement of same file and that's exactly what we need
+#
 my $s3_bucket_binary_dependency_name = 'fastnetmon_community_binary_dependencies';
 
 # We are using this for Boost build system
@@ -123,7 +133,7 @@ sub get_library_binary_build_from_google_storage {
         system("s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket=\"%(bucket).storage.googleapis.com\" get $binary_path /tmp/$dependency_archive_name");
 
     if ($download_this_file != 0) {
-        print "Cannot download dependency file from Google Storage\n";
+        print "Cannot download dependency file from Google Storage. Exit code: $download_this_file\n";
         return 0;
     }
 
