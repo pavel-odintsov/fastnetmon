@@ -344,11 +344,11 @@ sub main {
             'centos:9'            => '',
             
             'debian:9'            => 'BROKEN',
-            'debian:10'           => 'e9f131ab11bf1984d19eac280b0f0f5c6161131d2b3ad06deafd3fb3c14e76f2cbfb0c3b01c88a3df05b4f2bca96d7e7934695b099721ed510c21ef9ae43243b',
-            'debian:11'           => '4122539c763654fdf22dc55e7c8c4b5b42a082dac660f4779c9f1decea9b599a48bacc1f8cb7f9b859c5c520067e2d491b6b3fe9d53ea220ce8ee5eeac7cb3b2', 
-            'debian:bookworm/sid' => '845aad7f4d09a05327ec16e6e35874a97ff8e63ff6ab6c3610e7ed864ade2d012c5699bf427fad88d02b621cb538e99663c46cb053903e78abcfcb82e66bf269',
+            'debian:10'           => '8f2e456bcd0b89fafe97c6368f725d85230f183f72a720bb4f7da043ca6ea255a2c97e374eb78407e8ef969d84faebd63cf5b509eb9bf4476fac5b08567574b9',
+            'debian:11'           => '11e91e87b2d10d5e73958c1944abb50e1c9df5891ad563683e2b313848c85d3fd15aff8ce70445afc768dd490c5d8de12f887b314eb55af7e4a8f9613c003806', 
+            'debian:bookworm/sid' => 'c1023d1208a6a8a43afa143df13bf3e83384c56270ce1869d5f37afe8445edba239792c76ea9b731c24cd622089ae89cd053a499ac3d57983902295e2b963985',
 
-            'ubuntu:16.04'        => 'broken_build',
+            'ubuntu:16.04'        => '548a80ace21320b6ecd170868852dfa1ade66c23a5c8fb4879ca911132a2ef3bcce51e622786e69ee0b60ddd883a15e1fbf65b6b03d36c27219dc20e824a8eb7',
             'ubuntu:18.04'        => 'bac4d836afc9b24d3939951f8a48a3077a1ebfe1a3523a4080fa07cda6a2bc5b48334452b4f9b120ecd17936203820c093f8ed3e900d17e23675ac686241f823',
             'ubuntu:20.04'        => '',
             'ubuntu:22.04'        => '',
@@ -373,7 +373,7 @@ sub main {
             'centos:8'            => '',
             'centos:9'            => '',
 
-            'debian:9'            => '',
+            'debian:9'            => '2cf31b1176966a92bc856ba96ebce734d57e123b837eba3d9561439169e195d3dff2a4a03f3196647fc38bf96d69b7ed0bf2e7556996a0a39dda07640fef3699',
             'debian:10'           => 'c5f16ad35f13555514c3a286b32909f51f9eeada3f0fd7ccba519a6faff8e1d710eb16e7d33132ed7ecc9b2477f49279eeb4cc1dd9ae62b249ffe46522c370d2',
             'debian:11'           => 'a4eb95aee0fd69c98f67d51737a93a200c87ab898786f8f18b69e1145f2316d93a55ee5c7c61de41e57f0408a9961c6e463f7d283d10d22fe3f8abdb4757d335', 
             'debian:bookworm/sid' => 'deeeff6f0a77f56846bd84c1edbe4a87978bdb40c0632074b86a27e705ce0064a4ed948934e568bbb56f24e102fce9630073391d3bdb21ba794f4e600a8c5a3f',
