@@ -537,11 +537,18 @@ sub install_gcc {
     }
 
     print "Unpack archive\n";
-    exec_command("tar -xf $archive_file_name");
+    unless (exec_command("tar -xf $archive_file_name")) {
+        warn 'Cannot create archive\n';
+        return '';
+    }
     
     # Remove source archive
     unlink "$archive_file_name";
-    exec_command("mkdir $temp_folder_for_building_project/gcc-$gcc_version-objdir");
+    
+    unless (exec_command("mkdir $temp_folder_for_building_project/gcc-$gcc_version-objdir")) {
+        warn "Cannot create build folder\n";
+        return '';
+    }
 
     chdir "$temp_folder_for_building_project/gcc-$gcc_version-objdir";
 
@@ -559,6 +566,7 @@ sub install_gcc {
     }
 
     print "Install gcc\n";
+    
     unless (exec_command("make $make_options install")) {
 	    warn "Cannot install gcc\n";
 	    return '';
