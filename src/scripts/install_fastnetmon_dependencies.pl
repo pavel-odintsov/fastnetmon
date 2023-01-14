@@ -343,7 +343,7 @@ sub main {
             'centos:8'            => '',
             'centos:9'            => '',
             
-            'debian:9'            => 'BROKEN',
+            'debian:9'            => '0f397e08a6bec515260c2937d76dbf48ad8b3452ead4ac5c41d4b3536ba7e8a40fa703f7638111492e690d9c9e3fd5316aaf41c9c93e82eacd8dd0fb6bac2c2c',
             'debian:10'           => '8f2e456bcd0b89fafe97c6368f725d85230f183f72a720bb4f7da043ca6ea255a2c97e374eb78407e8ef969d84faebd63cf5b509eb9bf4476fac5b08567574b9',
             'debian:11'           => '11e91e87b2d10d5e73958c1944abb50e1c9df5891ad563683e2b313848c85d3fd15aff8ce70445afc768dd490c5d8de12f887b314eb55af7e4a8f9613c003806', 
             'debian:bookworm/sid' => 'c1023d1208a6a8a43afa143df13bf3e83384c56270ce1869d5f37afe8445edba239792c76ea9b731c24cd622089ae89cd053a499ac3d57983902295e2b963985',
@@ -388,7 +388,7 @@ sub main {
             'centos:8'            => '',
             'centos:9'            => '',
 
-            'debian:9'            => '',
+            'debian:9'            => 'bd886f9d7950443c8135255e1c59229ce76dc09260b76eae82c4c665414151b473299347d7621aae4a4743df51a923c2eaeef904b1140092ffe5976b3b346fd7',
             'debian:10'           => 'a966df89fc18ef4b4ea82cc3d2d53d3ecb3623ef5cd197a23ed8135f27ecfab2d35b4a24f594bb16aaa11b618126cba640ef7a61d7d2d22ba9682e5e0e8114ca',
             'debian:11'           => '8b695af4f89fd879b274efb93539827d73d8b823ff15a76181d2e66c8f4d337ebc92e8df090ea0d16d6bb685caf7353e37ee9b1415a64c67d30a764da649c3d7', 
             'debian:bookworm/sid' => '0203c130e64e3ed88b5d7f5142f6e07b6a66cf9d7942d16c461a6e9c45fe95c6a924ecab822a3b1863fe121972749b2c977e443f7d729a9948662546789b49ed',
