@@ -121,7 +121,7 @@ sub get_library_binary_build_from_google_storage {
     print "Will use following path to retrieve dependency: $binary_path\n";
 
     my $check_that_file_exists =
-        system("s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket=\"%(bucket).storage.googleapis.com\" ls $binary_path");
+        system("s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket=\"%(bucket).storage.googleapis.com\" ls $binary_path >/dev/null 2>&1");
 
     # We do not have it
     if ($check_that_file_exists != 0) {
@@ -130,7 +130,7 @@ sub get_library_binary_build_from_google_storage {
     }
 
     my $download_this_file =
-        system("s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket=\"%(bucket).storage.googleapis.com\" get $binary_path /tmp/$dependency_archive_name");
+        system("s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket=\"%(bucket).storage.googleapis.com\" get $binary_path /tmp/$dependency_archive_name >/dev/null 2>&1");
 
     if ($download_this_file != 0) {
         print "Cannot download dependency file from Google Storage. Exit code: $download_this_file\n";
