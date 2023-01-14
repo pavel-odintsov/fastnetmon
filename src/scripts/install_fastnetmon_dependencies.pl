@@ -360,7 +360,7 @@ sub main {
             'debian:9'            => 'd5cc79509a537feb7fe2cc0241695f530ac5459f7dbdc83d16590db83057cc3ee79f2197033d9ce6a8530cc5491836943a04e18af13a2c71d40f6b68a3ebfd6d',
             'debian:10'           => '16bdd1aa0feee95d529fa98bf2db5a5b3a834883ba4b890773d32fc3a7c5b04a9a5212d2b6d9d7aa5d9a0176a9e9002743d20515912381dcafbadc766f8d0a9d',
             'debian:11'           => 'b9adf5fde5078835cd7ba9f17cfc770849bf3e6255f9f6c6686dba85472b92ff5b75b69b9db8f6d8707fcb3c819af2089ef595973410124d822d62eb47381052', 
-            'debian:bookworm/sid' => '845aad7f4d09a05327ec16e6e35874a97ff8e63ff6ab6c3610e7ed864ade2d012c5699bf427fad88d02b621cb538e99663c46cb053903e78abcfcb82e66bf269',
+            'debian:bookworm/sid' => '276deea5a2f071d1a9920fe1554233409dba97c7975d9f33f1425d567f5f6ccae1b102b27cddf538750260e459e42e41938c62164aa0a804c065edfa9e50c60d',
 
             'ubuntu:16.04'        => 'crashed',
             'ubuntu:18.04'        => 'bc29397fab79440a6677844dcdd550e6a157cf4c4e779c9aca5a9d38e2d8ab1e5527585e16bebf4deca765fe9afde2c1ebc1f677d2444b9b48e6bf9a2b97288d',
