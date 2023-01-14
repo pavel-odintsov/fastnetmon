@@ -532,8 +532,7 @@ sub install_gcc {
     chdir "$temp_folder_for_building_project/gcc-$gcc_version-objdir";
 
     print "Configure build system\n";
-    # We are using --enable-host-shared because we should build gcc as dynamic library for jit compiler purposes
-    unless (exec_command("$temp_folder_for_building_project/gcc-$gcc_version/configure --prefix=$gcc_package_install_path --enable-languages=c,c++,jit  --enable-host-shared --disable-multilib")) {
+    unless (exec_command("$temp_folder_for_building_project/gcc-$gcc_version/configure --prefix=$gcc_package_install_path --enable-languages=c,c++ --disable-multilib")) {
 	    warn "Cannot configure gcc\n";
 	    return '';
     }
@@ -1295,12 +1294,6 @@ sub install_hiredis {
     print "Build hiredis\n";
     chdir "hiredis-0.14.0";
     exec_command("PREFIX=$hiredis_install_path make $make_options install");
-
-    my $upload_binary_res = upload_binary_build_to_google_storage($folder_name);
-
-    if (!$upload_binary_res) {
-        warn "Cannot upload dependency to cache\n";
-    }
 
     1;
 }
