@@ -203,17 +203,17 @@ sub main {
             'ubuntu:22.04'        => '',
         },
         'boost_1_81_0'          => {
-            'centos:7'            => '',
+            'centos:7'            => '403c89dfdfe3ef979f2f742b9a199a3031426ec6c10a0b1be895e5876240e5b636a33b590dc01766acbebe36ff9b6c7175523be2d95097ac37994a346081b343',
             'centos:8'            => '',
             'centos:9'            => '',
             
             'debian:9'            => '',
-            'debian:10'           => '',
-            'debian:11'           => '',
-            'debian:bookworm/sid' => '',
+            'debian:10'           => '3b146de940bf36ea301c2078edc8dead611c4a770643c548080ecfdf8820856b23fa73a15fcab0579550cb19ad816fbef6040ad98ee500a8d15a66ed99eef241',
+            'debian:11'           => '6e8a48ce6874e5f12b1734e590c726dd53801a5193e71cc505ce2bf9e558318fe970bbac1c8e50938798e0c86a9314ea32268ce0e817cc4a6023f46fd6e011ae',
+            'debian:bookworm/sid' => '9b4cf7bb2a002559b95f83487723d1d4f99277fc0268454367bc6912ffc41256a30c2e211fb66bb57e50909c535cefcedd611ab27aea373166db6c124d6a9d80',
 
-            'ubuntu:16.04'        => '',
-            'ubuntu:18.04'        => '',
+            'ubuntu:16.04'        => 'f9c9b6141d554529f8386412c20873758974798e646bdbd4a5aea4c35af8183057ae34930d3d59f296bd94db970fa42abb07555407d339f8aad07b1a2bd7211d',
+            'ubuntu:18.04'        => '35092c1acad174667ca67cec6cc55b3a2944d194d16e669c261c65dc73f6e328cd7d0fe33e17d8cfd25f781e34f9b9438c8b1e0ccf24b546b17f949791082dd4',
             'ubuntu:20.04'        => '',
             'ubuntu:22.04'        => '',
         },
