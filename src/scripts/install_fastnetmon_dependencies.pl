@@ -228,13 +228,13 @@ sub main {
         # Try to retrieve it from S3 bucket 
         my $get_from_cache = Fastnetmon::get_library_binary_build_from_google_storage($package, $binary_hash);
 
+        my $cache_download_duration = time() - $cache_download_start_time;
+        $dependencies_download_time += $cache_download_duration;
+
         if ($get_from_cache == 1) {
             print "Got $package from cache\n";
             next;
         }
-
-        my $cache_download_duration = time() - $cache_download_start_time;
-        $dependencies_download_time += $cache_download_duration;
 
         # In case of any issues with hashes we must break build procedure to raise attention
         if ($get_from_cache == 2) {
