@@ -423,18 +423,6 @@ sub init_compiler {
 
     $ld_library_path_for_make = "LD_LIBRARY_PATH=" . join ':', @make_library_path_list_options;
 
-    # More detailes about jam lookup: http://www.boost.org/build/doc/html/bbv2/overview/configuration.html
-
-    # We use non standard gcc compiler for Boost builder and Boost and specify it this way
-    open my $fl, ">", "/root/user-config.jam" or die "Can't open $! file for writing manifest\n";
-    print {$fl} "using gcc : $gcc_version_only_major : $default_cpp_compiler_path ;\n";
-    close $fl; 
-
-    # When we run it with vzctl exec we have broken env and should put config in /etc too
-    open my $etcfl, ">", "/etc/user-config.jam" or die "Can't open $! file for writing manifest\n";
-    print {$etcfl} "using gcc : $gcc_version_only_major : $default_cpp_compiler_path ;\n";
-    close $etcfl;
-
     # Also we should tune number of threads for make
     $cpus_number = get_logical_cpus_number();
 
@@ -515,8 +503,6 @@ sub install_gcc {
     my $folder_name = shift;    
 
     my $gcc_package_install_path = "$library_install_folder/$folder_name";
-
-    warn "Cannot get dependency from cache, do manual build\n";
 
     if ($distro_type eq 'ubuntu' || $distro_type eq 'debian') {
         my @dependency_list = ('libmpfr-dev', 'libmpc-dev', 'libgmp-dev', 'gcc', 'g++');
@@ -628,14 +614,35 @@ sub install_boost {
         $boost_build_threads = 4;
     }
 
-    print "Build Boost\n";
-    # We have troubles when run this code with vzctl exec so we should add custom compiler in path 
-    # So without HOME=/root nothing worked correctly due to another "openvz" feature
-    my $b2_build_result = exec_command("$ld_library_path_for_make $library_install_folder/boost_build_4_9_2/bin/b2 -j $boost_build_threads -sICU_PATH=$library_install_folder/icu_65_1 linkflags=\"-Wl,-rpath,$library_install_folder/icu_65_1/lib\" --build-dir=$temp_folder_for_building_project/boost_build_temp_directory link=shared --without-test --without-python --without-wave --without-log --without-mpi");
+    my $icu_path = "$library_install_folder/icu_65_1";
 
-    # We should not do this check because b2 build return bad return code even in success case... when it can't build few non important targets
+    my $boost_build_path = "$library_install_folder/boost_build_4_9_2";
+
+    # More details about jam lookup: http://www.boost.org/build/doc/html/bbv2/overview/configuration.html
+
+    my $content = "using gcc : $gcc_version_only_major : $default_cpp_compiler_path ;\n";
+
+    # We use non standard gcc compiler for Boost build and we need to specify it this way
+    open my $fl, ">", "/root/user-config.jam" or die "Can't open $! file for writing manifest\n";
+    print {$fl} $content;
+    close $fl; 
+
+    # When we run it with vzctl exec we have broken env and should put config in /etc too
+    open my $etcfl, ">", "/etc/user-config.jam" or die "Can't open $! file for writing manifest\n";
+    print {$etcfl} $content;
+    close $etcfl;
+
+    print "Build Boost\n";
+
+    my $build_command = "$ld_library_path_for_make $boost_build_path/bin/b2 -j $boost_build_threads -sICU_PATH=$icu_path linkflags=\"-Wl,-rpath,$icu_path/lib\" --build-dir=$temp_folder_for_building_project/boost_build_temp_directory link=shared --without-test --without-python --without-wave --without-log --without-mpi --without-graph  --without-math --without-fiber --without-nowide  --without-graph_parallel --without-json --without-type_erasure --without-coroutine";
+
+    print "Build command: $build_command\n";
+
+    my $b2_build_result = exec_command($build_command);
+
     unless ($b2_build_result) {
-        ### die "Can't execute b2 build correctly\n";
+        warn "Can't execute b2 build correctly\n";
+        return '';
     }
 
     1;
