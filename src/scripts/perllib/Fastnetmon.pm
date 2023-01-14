@@ -118,7 +118,7 @@ sub get_library_binary_build_from_google_storage {
 
     my $binary_path = "s3://$s3_bucket_binary_dependency_name/$distro_type/$distro_version/$dependency_archive_name";
 
-    print "Will use following path to retrieve dependency: $binary_path\n";
+    # print "Will use following path to retrieve dependency: $binary_path\n";
 
     my $check_that_file_exists =
         system("s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket=\"%(bucket).storage.googleapis.com\" ls $binary_path >/dev/null 2>&1");
@@ -148,7 +148,7 @@ sub get_library_binary_build_from_google_storage {
         return 2;
     }
 
-    print "Start sha-512 calculation\n";
+    #print "Start sha-512 calculation\n";
     my $sha512 = get_sha_512_sum("/tmp/$dependency_archive_name");
 
     unless ($sha512) {
@@ -156,14 +156,14 @@ sub get_library_binary_build_from_google_storage {
         return 2;
     }
 
-    print "Calculated sha-512 for $dependency_name $sha512\n";
+    # print "Calculated sha-512 for $dependency_name $sha512\n";
 
     if ($sha512 ne $current_build_hash) {
         warn "Hash mismatch. Expected: $current_build_hash got: $sha512. It may be sign of data tampering, please validate data source\n";
         return 2;
     }
 
-    print "Successfully validated sha-512 signatures\n";
+    # print "Successfully validated sha-512 signatures\n";
 
     system("mkdir -p $library_install_folder");
 
