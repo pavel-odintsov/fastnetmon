@@ -99,9 +99,11 @@ sub main {
         # 'gcc', # we build it separately as it requires excessive amount of time
         'openssl_1_1_1q',
         'cmake_3_23_4',
+        
         'boost_build_4_9_2',
         'icu_65_1',
         'boost_1_80_0',
+
         'capnproto_0_8_0',
         'hiredis_0_14',
         'mongo_c_driver_1_23_0',
@@ -114,8 +116,10 @@ sub main {
 
         'protobuf_21_12',
         'grpc_1_49_2',
-        'bpf_1_0_1',
+        
         'elfutils_0_186',
+        'bpf_1_0_1',
+        
         'gobgp_2_27_0',
         'log4cpp_1_1_3',
     );

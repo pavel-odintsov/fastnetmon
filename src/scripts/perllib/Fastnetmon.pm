@@ -18,11 +18,7 @@ if ($@) {
 
 }
 
-
-
 use Archive::Tar;
-
-
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -40,9 +36,6 @@ yum
 get_active_network_interfaces
 );
 
-our $dependency_map = {
-    'boost' => [ 'boost_build', 'icu' ]
-};
 
 my $ld_library_path_for_make = "";
 
