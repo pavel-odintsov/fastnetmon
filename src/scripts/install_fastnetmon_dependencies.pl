@@ -393,7 +393,7 @@ sub main {
             'debian:bookworm/sid' => 'deeeff6f0a77f56846bd84c1edbe4a87978bdb40c0632074b86a27e705ce0064a4ed948934e568bbb56f24e102fce9630073391d3bdb21ba794f4e600a8c5a3f',
 
             'ubuntu:16.04'        => '45f99e2b3f2662aadea72c13eedcfda36289fabc3b50cbd0447cb218961a6f8e6deffb1d0f384ca9dcfb6609f4ef0dba1a5c9b0e6732a6b56a3ec6e345e1a05f',
-            'ubuntu:18.04'        => 'bc29397fab79440a6677844dcdd550e6a157cf4c4e779c9aca5a9d38e2d8ab1e5527585e16bebf4deca765fe9afde2c1ebc1f677d2444b9b48e6bf9a2b97288d',
+            'ubuntu:18.04'        => 'd938f255eb75e2980bb9f14d2915b22ba9ae0f1afb0195ec57129569148c780375cab2687637d55d390a065fcd395ff4acf07602f3ceab382b3cd49bbc7b0060',
             'ubuntu:20.04'        => '',
             'ubuntu:22.04'        => '',
         },
