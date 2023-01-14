@@ -564,9 +564,9 @@ sub install_gcc {
 sub install_boost {
     my $folder_name = shift;
 
-    my $boost_version = '1.80.0';
+    my $boost_version = '1.81.0';
 
-    my $boost_version_with_underscore = "1_80_0";
+    my $boost_version_with_underscore = "1_81_0";
 
     my $boost_install_path = "$library_install_folder/$folder_name";
 
@@ -574,15 +574,8 @@ sub install_boost {
 
     my $archive_file_name = "boost_${boost_version_with_underscore}.tar.gz";
 
-    print "Install Boost dependencies\n";
-    if ($distro_type eq 'ubuntu' || $distro_type eq 'debian') {
-        apt_get('bzip2');
-    } elsif ($distro_type eq 'centos') {
-        yum('bzip2');
-    }
-
     print "Download Boost source code\n";
-    my $boost_download_result = download_file("https://boostorg.jfrog.io/artifactory/main/release/$boost_version/source/boost_${boost_version_with_underscore}.tar.bz2", $archive_file_name, '690a2a2ed6861129828984b1d52a473d2c8393d1');
+    my $boost_download_result = download_file("https://boostorg.jfrog.io/artifactory/main/release/$boost_version/source/boost_${boost_version_with_underscore}.tar.gz", $archive_file_name, '06d4bff547c1948fbdaf59b9d9d1399917ed0eb3');
         
     unless ($boost_download_result) {
         warn "Can't download Boost source code\n";

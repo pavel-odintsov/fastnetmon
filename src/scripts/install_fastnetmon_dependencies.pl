@@ -102,7 +102,7 @@ sub main {
         
         'boost_build_4_9_2',
         'icu_65_1',
-        'boost_1_80_0',
+        'boost_1_81_0',
 
         'capnproto_0_8_0',
         'hiredis_0_14',
@@ -202,18 +202,18 @@ sub main {
             'ubuntu:20.04'        => '',
             'ubuntu:22.04'        => '',
         },
-        'boost_1_80_0'          => {
-            'centos:7'            => '14c81d9937ce763464ccfb04546ed24d04f052c073132cdde20986bd78f3aae2cb386ab8c63f01bcfe43a60d5eceb1deb750ee54fde1a5e8da28b6d2a6f65a4d',
+        'boost_1_81_0'          => {
+            'centos:7'            => '',
             'centos:8'            => '',
             'centos:9'            => '',
             
-            'debian:9'            => '77c38d1985cea123b9468db216d04145915cd70d665ade057af82cba52a5c24026f6dfe88793970e1c91a4539750aebbe864b0d585c287cb5896d3993542c418',
-            'debian:10'           => '1787410b79d314576fcf5a0a0e226ed8b74c1e0c7d4629209bb17221a785b40d4daa07f5df04aec24922266947f4a56a3db8664f563bc2f305efc79279aeb918',
-            'debian:11'           => '19c4172ddf247cf7e451ee90a9610aa65370cd088905d6828441f1d6e9945acc9950dcaaf1e09fbe2ec9ed89edb0253c7cb4bbedd1f580757e88902feb5b2d4a', 
-            'debian:bookworm/sid' => '9b044d136f69881954ed0245d4c6c0f99ee4f44e9f37e115eb5fb7c1571a0fe1d1e94a715969c3952d2500a1ddf23d8a5f238e3f6abcf2d2bde6684de723364a',
+            'debian:9'            => '',
+            'debian:10'           => '',
+            'debian:11'           => '',
+            'debian:bookworm/sid' => '',
 
-            'ubuntu:16.04'        => 'XXXXmissing',
-            'ubuntu:18.04'        => '2969e8bc87a6c0864273b2edc0d4e5ec5bbdf14d4bc3000e106803dad3d76133d2e4595548adb08ee7768f6b7167c469eb7dee2fa9cf878edbd2b4b5ac05aa95',
+            'ubuntu:16.04'        => '',
+            'ubuntu:18.04'        => '',
             'ubuntu:20.04'        => '',
             'ubuntu:22.04'        => '',
         },
