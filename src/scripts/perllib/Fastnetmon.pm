@@ -129,11 +129,13 @@ sub get_library_binary_build_from_google_storage {
         return 0;
     }
 
-    my $download_this_file =
+    my $download_file_return_code =
         system("s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket=\"%(bucket).storage.googleapis.com\" get $binary_path /tmp/$dependency_archive_name >/dev/null 2>&1");
 
-    if ($download_this_file != 0) {
-        print "Cannot download dependency file from Google Storage. Exit code: $download_this_file\n";
+    if ($download_file_return_code != 0) {
+        my $real_exit_code = $download_file_return_code >> 8;
+
+        print "Cannot download dependency file from Google Storage. Exit code: $real_exit_code\n";
         return 0;
     }
 
