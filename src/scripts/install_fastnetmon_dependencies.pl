@@ -149,7 +149,9 @@ sub main {
             
             'debian:9'            => 'd284915be431493b4c336d452478a28906a8268c4079fbb19c8851cf70a1a9eefe942a424e922caa4bc38eaf66b40a9971576a62ba0aebe7fd20d05b2bdeacf0',
             'debian:10'           => 'eac2b5a066386f7900b1e364b5347d87ab4a994a058ecfaf5682a9325fc72362b8532ddf974e092c08bebd9f4cc4b433e00c3ab564c532fa6ed1f30a6b354626',
-            
+            'debian:11'           => '',
+            'debian:bookworm/sid' => '',
+
             'ubuntu:16.04'        => 'e5af3f4008f715319cc2ca69e6b3d5f720322887de5f7758e4cbd7090e5282bb172d1e4b26ef88ca9a5212efd852658034ddac51ea86c4ca166c86e46e7d5809',
             'ubuntu:18.04'        => 'ec1dbceef7c3db5aca772f0ec313a9220ead22347957e8c24951b536477093d6561c3b6b2c9d1b876b30b52f793b5b3ab7dc8c4c9b6518f56d144e88cb4508e9',
             'ubuntu:20.04'        => '',
@@ -162,7 +164,9 @@ sub main {
             
             'debian:9'            => 'd23bc4b5e5b8ab39ecb2046629a259265ea82f9247785c4c63cef2c11f0eb8064476f3d775a5b94ce0272f9a3227f2b618d87dae387840b69e468b9985416398',
             'debian:10'           => 'cab3412debee6f864551e94f322d453daca292e092eb67a5b7f1cd0025d1997cfa60302dccc52f96be09127aee493ab446004c1e578e1725b4205f8812abd9ea',
-            
+            'debian:11'           => '',
+            'debian:bookworm/sid' => '',
+
             'ubuntu:16.04'        => '156c5de5de7daae35723934eb61396e257fab4d08224d19af9e0d076324052ce14f1c7e69bae07d595686430b6b197ec5b911944d4410e0456d4465888200870',
             'ubuntu:18.04'        => '1d0c06bea58cba2d03dbc4c9b17e12c07d5c41168473dee34bfcd7ab21169ab1082d9024458a62247ae7585cf98c86d8e64508c3eab9d9653dee1357481fc866',
             'ubuntu:20.04'        => '',
@@ -175,7 +179,9 @@ sub main {
             
             'debian:9'            => '6d61189b93fe0c115923ee070ff66f0539e1d93a14d0f7880578ffde9b26bfa13cbaa080deca9870285533a5fcbad14b4d17a3a6f6cb234a097e635b7aaa259f',
             'debian:10'           => '89c1a916456f85aa76578d5d85b2c0665155e3b7913fd79f2bb6309642dab54335b6febcf6395b2ab4312c8cc5b3480541d1da54137e83619f825a1be3be2e4e',
-            
+            'debian:11'           => '', 
+            'debian:bookworm/sid' => '',
+
             'ubuntu:16.04'        => '0361e191dc9010bbe725eaccea802adad2fced77c4d0152fc224c3fd8dfc474dd537945830255d375796d8153ecfb985d6ee16b5c88370c24dbd28a5f71a8f56',
             'ubuntu:18.04'        => 'bc4287b1431776ae9d2c2c861451631a6744d7ae445630e96a2bb2d85a785935e261735c33a4a79a4874e6f00a7dd94252bc5e88ddce85b41f27fba038fea5a2',
             'ubuntu:20.04'        => '',
@@ -188,7 +194,9 @@ sub main {
             
             'debian:9'            => 'bdf9c89926d3aff1c5b65d20b94b2bddece53841732349bcb15f956025f950809e0212841712f21b52c5286c513066c01fa025a0e06ab9feee9bef8f7b74372d',
             'debian:10'           => '1c10db8094967024d5aec07231fb79c8364cff4c850e0f29f511ddaa5cfdf4d18217bda13c41a1194bd2b674003d375d4df3ef76c83f6cbdf3bea74b48bcdcea',
-            
+            'debian:11'           => '', 
+            'debian:bookworm/sid' => '',
+
             'ubuntu:16.04'        => '4038a62347794808f7608f0e4ee15841989cf1b33cab443ea5a29a20f348d179d96d846931e8610b823bde68974e75e95be1f46e71376f84af79d7c84badeea4',
             'ubuntu:18.04'        => '549423e7db477b4562d44bbd665e0fb865a1b085a8127746b8dbbaa34571a193aaa4a988dac68f4cd274b759200441b3d2a07ae2c99531d548775a915b79bb61',
             'ubuntu:20.04'        => '',
@@ -201,7 +209,9 @@ sub main {
             
             'debian:9'            => '77c38d1985cea123b9468db216d04145915cd70d665ade057af82cba52a5c24026f6dfe88793970e1c91a4539750aebbe864b0d585c287cb5896d3993542c418',
             'debian:10'           => '1787410b79d314576fcf5a0a0e226ed8b74c1e0c7d4629209bb17221a785b40d4daa07f5df04aec24922266947f4a56a3db8664f563bc2f305efc79279aeb918',
-            
+            'debian:11'           => '', 
+            'debian:bookworm/sid' => '',
+
             'ubuntu:16.04'        => 'XXXXmissing',
             'ubuntu:18.04'        => '2969e8bc87a6c0864273b2edc0d4e5ec5bbdf14d4bc3000e106803dad3d76133d2e4595548adb08ee7768f6b7167c469eb7dee2fa9cf878edbd2b4b5ac05aa95',
             'ubuntu:20.04'        => '',
@@ -214,7 +224,9 @@ sub main {
             
             'debian:9'            => '7c6b3c073ab6461daef783ab08d367df56730764bc43d1c2a66d6a4001744400a98adf0399326ceb303f2d609c206858c311300eb06b252bf899d5a5616f142e',
             'debian:10'           => 'e9ba7567657d87d908ff0d00a819ad5da86476453dc207cf8882f8d18cbc4353d18f90e7e4bcfbb3392e4bc2007964ea0d9efb529b285e7f008c16063cce4c4e',
-            
+            'debian:11'           => '', 
+            'debian:bookworm/sid' => '',
+
             'ubuntu:16.04'        => '5709dc2477169cec3157a7393a170028a61afdfab194d5428db5e8800e4f02bd8b978692ae75dae9642adca4561c66733f3f0c4c19ec85c8081cc2a818fed913',
             'ubuntu:18.04'        => '3c1281ed39b7d5b8facdb8282e3302f5871593b1c7c63be8c9eb79c0d1c95a8636faa52ce75b7a8f99c2f8f272a21c8fc0c99948bbf8d973cb359c5ae26bb435',
             'ubuntu:20.04'        => '',
@@ -227,7 +239,9 @@ sub main {
             
             'debian:9'            => 'dae76b5ff1749f9b28af8b2bb87e36879312bad7f6ea1f622e87f957eb1d8c9ea7eb4591a92a175f7db58268371a6c70de7d07cbffa43e763c326a08bbf09cb9',
             'debian:10'           => '76ca19f7cd4ec5e0251bc4804901acbd6b70cf25098831d1e16da85ad18d4bb2a07faa1a8e84e1d58257d5b8b1d521b5e49135ce502bd16929c0015a00f4089d',
-            
+            'debian:11'           => '', 
+            'debian:bookworm/sid' => '',
+
             'ubuntu:16.04'        => '268de5b8e759752333f2b8c79185fdb7059e6510bc2d8bf10fe75a37db92ba833a95ddd09b0b50e237de5812aa2c1f336fa6f4cc67da5f60d9aa4a862b2afdfd',
             'ubuntu:18.04'        => '5171604d9e0f019c22e8b871dd247663d1c2631a2aa5b7706bf50e9f62f6b1cef82db2fe3d0ff0248493c175fb83d0434339d7d8446c587947ab187fabf5fff4',
             'ubuntu:20.04'        => '',
@@ -240,7 +254,9 @@ sub main {
             
             'debian:9'            => '5b41952d68747fbe4d402b2f5be29250e68936599fc0254cc79c4518548b209056a24debce1aca3b0efa9fa09b1c1e0e3a6cbd588690cb03cb5e5cc487c18253',
             'debian:10'           => '3beadd580e8c95463fd8c4be2f4f7105935bd68a2da3fd3ba2413e0182ad8083fd3339aab59f5f20cc0593ffa200415220f7782524721cb197a098c6175452e9',
-            
+            'debian:11'           => '', 
+            'debian:bookworm/sid' => '',
+
             'ubuntu:16.04'        => 'c61b7c5e216a784eb920fbda887fa3520079073678c878cb5cb556d7b01d7d66f7a3d33dadbe2b386e0e55deea898d85540effeef930f622c2a10eaf0291d7f5',
             'ubuntu:18.04'        => '556e5036aae67cc994054142dec8b2775025bbf8fdb27cdb6434b5fb5b4cdda2628829cf8a764c31e71bbf613e4dae8d8382a16fb4f66aabea1bf486b500fb27',
             'ubuntu:20.04'        => '',
@@ -253,7 +269,9 @@ sub main {
             
             'debian:9'            => '74fbeb57fe006f4e6c47d818ebd5bf2816c385a952c328e0231a6707160f05977d55cc45fa28ac1ee1c8c44b6f28622ce1d22452f0dc9f164866e90c87c19ca4',
             'debian:10'           => 'f2f6dc33364f22cba010f13c43cea00ce1a1f8c1a59c444a39a45029d5154303882cba2176c4ccbf512b7c52c7610db4a8b284e03b33633ff24729ca56b4f078',
-            
+            'debian:11'           => '', 
+            'debian:bookworm/sid' => '',
+
             'ubuntu:16.04'        => '39a585e44db8df7bae517bb3be752d464da746c11f08f688232e98b68a4da83a0a83f9014879d8b837d786f021f6e99cf28fd8cadf561f2b2c51be29beb1974c',
             'ubuntu:18.04'        => '405aa75526b0bfd2380d2b7b52129b4086756d1507b04ea3416c88942c24b32e6a0c6893d9af3e3903e766fb2dbe2b48fdde7e2f355a651368c810ff3c1d2cb6',
             'ubuntu:20.04'        => '',
@@ -266,7 +284,9 @@ sub main {
             
             'debian:9'            => 'd9657d15987a84e857897672259f61b6939ac7170eeb66216996225652f7e0f92f97a1e20adbdcb1e24ec32fcae5283462bbdf0a4f1e0819973c7030ed9c7212',
             'debian:10'           => '5256e2da02b15e8e69aadb0a96bbffd03858f3aa37cb08c029d726627ee26b0428fc086e94d8a0ce2c6a402b8484b96b3ccb5aa3a15af800348b26ce4873068a',
-            
+            'debian:11'           => '', 
+            'debian:bookworm/sid' => '',
+
             'ubuntu:16.04'        => '2346e76308afeb174d0825921e2e0b417f268745ceef99ce38f148a00f02ca0763256025245aea56ff4f65922ab63ca037857e9b53377c6be972048e94767cb9',
             'ubuntu:18.04'        => '4e6da7f81d195e61c92189e3382021ba9180ca25e91067be91d3fb681d35804bce0fbbe7afc82a0d988a063de29895dbef1ce2c3c3a36458f64219ba7eae5792',
             'ubuntu:20.04'        => '',
@@ -279,7 +299,9 @@ sub main {
             
             'debian:9'            => 'f2d63bb2b629408166da876a3797fe4b2f71aed793696634b9653248eae0ac5ff50f39e48afb504edf08c99a9e1fe4f6568b4be59e3a2116970dc2e030eb312c',
             'debian:10'           => '8f7d5ae6b8922b0da22c94ad6dac2bde9c30e4902db93666c8dd1e8985c7c658a581a296bd160c5fff9c52c969b95aa806a8ae7dd4ee94eeb165d62a7fa499f8',
-            
+            'debian:11'           => '', 
+            'debian:bookworm/sid' => '',
+
             'ubuntu:16.04'        => 'e4a3e89bd72bef42a2fdc3a13559966924361593bd03318532cbe81a5f70ef1991f8e5ab245e4740ef97deae75b907b27d9a8c4ed33d2be88ed912a31d0e7b2e',
             'ubuntu:18.04'        => '0bfe299e2d99ad9a163e1e32e1f23f0126237f171a05dcbffbe86e2d76ee770a739794e9148d25b66916ce0531eb2811da682f99b1dc9405ec7c5b88db49dd26',
             'ubuntu:20.04'        => '',
@@ -292,6 +314,8 @@ sub main {
 
             'debian:9'            => '1f4474b79ca5f01ff4ee8edc3f25551c7d1425e691a135348a242784eafb21c625af4a189bff3275a667a61f78269f199b70077d7ff9755e8f2a30ad1ba6d200',
             'debian:10'           => '433fdaed84962575809969d36a5587becbcf557221b82dfe4c65c4a67e6736de0dfe1408e1fb8859aacf979931a75483bac7679f210c84a5b030ddeba079524d',
+            'debian:11'           => '', 
+            'debian:bookworm/sid' => '',
 
             'ubuntu:16.04'        => '8ad5c1e5cdc36b609d163cde39f87d99fb8281baf5c692f5525c3234dc8788f8f50f400cb4e2ca0e089c19275167d20e634f509d06c4d61a827ea2e4d3719dde',
             'ubuntu:18.04'        => '58fdfadf9492cba13e907f2227d3ed249de78e8839ecfecc01957d3e62c8b4c5969ac647068ee87e84a44ee853fa88367ba29fd8dab6e53a685f31e699148ee0',
@@ -305,7 +329,9 @@ sub main {
             
             'debian:9'            => '77882d112364681cfe795a8676d75d214a1030f0bf1a2e281b4100b493b8b4eb6e3c57db9f19770f6df9c3d629a43aebba446391bff299170f9ed9ee08cd0f52',
             'debian:10'           => 'b0dde2a94dc7e935f906608be5c8204393e87ba5703b78b84ad41ab690107eb306c50c9572669b0d18a55334ba26ed22a2242b54d6e30dffb1c11f8328b23c20',
-            
+            'debian:11'           => '', 
+            'debian:bookworm/sid' => '',
+
             'ubuntu:16.04'        => '3bc1b533b0e67b1c3599a63510a9a95b170029ff74cff5d1960028b770631c5b14bab38e39ab0aaa4c9a5e8bdc295b671dbca2aded7e5fedc99179f8b1a0f83e',
             'ubuntu:18.04'        => '77ea38ecab665863631b2882338a7668e730d870f02377c4ceb10af1a3f91d35befd110790866ec8da6e9cd9e2cb4b88a078487b668d397b624cf5e9e2bd9282',
             'ubuntu:20.04'        => '',
@@ -318,7 +344,9 @@ sub main {
             
             'debian:9'            => 'eaa6052481b1ef2535bd474caf404763a1b7b3eb85ba3ae5c0d1effee7ceb86577689e57666fbbb10bb100351ecd61e966cb72ff1ef376fdfb1ebbcb48ff1870',
             'debian:10'           => '71c6d626aaebcec2f9faa8df215ac988379ef3b7eeb2bdbef4d176d6a3534ec561fa55a4f2b69979c9cd51dcd52aa59b937718066f35cfb1cef5861f2e988bf8',
-            
+            'debian:11'           => '', 
+            'debian:bookworm/sid' => '',
+
             'ubuntu:16.04'        => '4c26236d708260d682f346eb5fb9c4c3828cd31c286f4ae95357e9e4b9a99220e29d65e7cb5ea25dd9210bc08194170863b275f0016bce8302e6d2e8a31687e2',
             'ubuntu:18.04'        => 'b885b3e7b22a1ec0d4a49d7de952a1c667eab4313c6c1e299f05969bfb194aa677bcce5cf495230087b65e25f76496786f998fdb250fd7c7826ba98164434aa1',
             'ubuntu:20.04'        => '',
@@ -331,7 +359,9 @@ sub main {
             
             'debian:9'            => 'BROKEN',
             'debian:10'           => 'e9f131ab11bf1984d19eac280b0f0f5c6161131d2b3ad06deafd3fb3c14e76f2cbfb0c3b01c88a3df05b4f2bca96d7e7934695b099721ed510c21ef9ae43243b',
-            
+            'debian:11'           => '', 
+            'debian:bookworm/sid' => '',
+
             'ubuntu:16.04'        => 'broken_build',
             'ubuntu:18.04'        => 'bac4d836afc9b24d3939951f8a48a3077a1ebfe1a3523a4080fa07cda6a2bc5b48334452b4f9b120ecd17936203820c093f8ed3e900d17e23675ac686241f823',
             'ubuntu:20.04'        => '',
@@ -344,7 +374,9 @@ sub main {
             
             'debian:9'            => '',
             'debian:10'           => '16bdd1aa0feee95d529fa98bf2db5a5b3a834883ba4b890773d32fc3a7c5b04a9a5212d2b6d9d7aa5d9a0176a9e9002743d20515912381dcafbadc766f8d0a9d',
-            
+            'debian:11'           => '', 
+            'debian:bookworm/sid' => '',
+
             'ubuntu:16.04'        => 'crashed',
             'ubuntu:18.04'        => 'bc29397fab79440a6677844dcdd550e6a157cf4c4e779c9aca5a9d38e2d8ab1e5527585e16bebf4deca765fe9afde2c1ebc1f677d2444b9b48e6bf9a2b97288d',
             'ubuntu:20.04'        => '',
@@ -357,7 +389,9 @@ sub main {
 
             'debian:9'            => '',
             'debian:10'           => 'c5f16ad35f13555514c3a286b32909f51f9eeada3f0fd7ccba519a6faff8e1d710eb16e7d33132ed7ecc9b2477f49279eeb4cc1dd9ae62b249ffe46522c370d2',
-            
+            'debian:11'           => '', 
+            'debian:bookworm/sid' => '',
+
             'ubuntu:16.04'        => '45f99e2b3f2662aadea72c13eedcfda36289fabc3b50cbd0447cb218961a6f8e6deffb1d0f384ca9dcfb6609f4ef0dba1a5c9b0e6732a6b56a3ec6e345e1a05f',
             'ubuntu:18.04'        => 'bc29397fab79440a6677844dcdd550e6a157cf4c4e779c9aca5a9d38e2d8ab1e5527585e16bebf4deca765fe9afde2c1ebc1f677d2444b9b48e6bf9a2b97288d',
             'ubuntu:20.04'        => '',
@@ -370,7 +404,9 @@ sub main {
 
             'debian:9'            => '',
             'debian:10'           => 'a966df89fc18ef4b4ea82cc3d2d53d3ecb3623ef5cd197a23ed8135f27ecfab2d35b4a24f594bb16aaa11b618126cba640ef7a61d7d2d22ba9682e5e0e8114ca',
-            
+            'debian:11'           => '', 
+            'debian:bookworm/sid' => '',
+
             'ubuntu:16.04'        => '517204d76129ddb153a0c44a82fea512250388faa0b8ee39ac087a9dd09d04c2fae29e700364de300d63b94dcd09a85e75f7d08bbb3f7aad4cf7940b94c30bff',
             'ubuntu:18.04'        => '205e5f4601225a7fd4e58d4103a2a51dc1736361e73c8122b89c0ecaaf171245a13e3d720a144af6e36c21e9f64279d87cad46ad8c64f8d0c8ddd6c7baebe9dd',
             'ubuntu:20.04'        => '',
