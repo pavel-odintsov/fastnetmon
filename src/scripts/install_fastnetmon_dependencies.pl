@@ -192,6 +192,10 @@ sub main {
         },
     };
 
+    # How many seconds we needed to download all dependencies
+    # We need it to investigate impact on whole build process duration
+    my $dependencies_download_time = 0;
+
     for my $package (@required_packages) {
         print "Install package $package\n";
         my $package_install_start_time = time();
@@ -219,6 +223,8 @@ sub main {
             die "Binary hash does not exist for $package, please do fresh build and add hash for it\n";
         }
 
+        my $cache_download_start_time = time();
+
         # Try to retrieve it from S3 bucket 
         my $get_from_cache = Fastnetmon::get_library_binary_build_from_google_storage($package, $binary_hash);
 
@@ -226,6 +232,9 @@ sub main {
             print "Got $package from cache\n";
             next;
         }
+
+        my $cache_download_duration = time() - $cache_download_start_time;
+        $dependencies_download_time += $cache_download_duration;
 
         # In case of any issues with hashes we must break build procedure to raise attention
         if ($get_from_cache == 2) {
@@ -269,5 +278,9 @@ sub main {
     my $install_time = time() - $start_time;
     my $pretty_install_time_in_minutes = sprintf("%.2f", $install_time / 60);
 
-    print "We have built project in $pretty_install_time_in_minutes minutes\n";
+    print "We have installed all dependencies in $pretty_install_time_in_minutes minutes\n";
+    
+    my $cache_download_time_in_minutes = sprintf("%.2f", $dependencies_download_time / 60);
+    
+    print "We have downloaded all cached dependencies in $cache_download_time_in_minutes minutes\n";
 }
