@@ -458,8 +458,10 @@ sub install_bpf {
 
     my $libbpf_package_install_path = "$library_install_folder/$folder_name";
 
+    # TODO:
+    # We need to get rid of these dependencies and link against our zlib and elfutils
     if ($distro_type eq 'ubuntu' || $distro_type eq 'debian') {
-        my @dependency_list = ('libelf-dev');
+        my @dependency_list = ('libelf-dev', 'zlib1g-dev');
         apt_get(@dependency_list);
     } elsif ($distro_type eq 'centos') {
         yum('elfutils-libelf-devel');
