@@ -111,7 +111,7 @@ jobs:
   build_epel9_upstream:
     docker:
       - image: almalinux:9
-    resource_class: xlarge
+    resource_class: large
     steps:
       - checkout
       - run: dnf install -y rpm-build rpmdevtools dnf-plugins-core
