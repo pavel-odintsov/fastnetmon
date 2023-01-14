@@ -437,7 +437,7 @@ sub init_compiler {
     print {$fl} "using gcc : $gcc_version_only_major : $default_cpp_compiler_path ;\n";
     close $fl; 
 
-    # When we run it with vzctl exec we ahve broken env and should put config in /etc too
+    # When we run it with vzctl exec we have broken env and should put config in /etc too
     open my $etcfl, ">", "/etc/user-config.jam" or die "Can't open $! file for writing manifest\n";
     print {$etcfl} "using gcc : $gcc_version_only_major : $default_cpp_compiler_path ;\n";
     close $etcfl;
@@ -480,7 +480,8 @@ sub install_bpf {
     my $lib_bpf_download_result = download_file("https://github.com/libbpf/libbpf/archive/refs/tags/v1.0.1.tar.gz",  $archive_file_name, '9350f196150892f544e0681cc6c1f78e603b5d95');
 
     unless ($lib_bpf_download_result) {
-        die "Cannot download libbpf\n";
+        warn "Cannot download libbpf\n";
+        return '';
     }
 
     print "Unpack libbpf\n";
@@ -538,7 +539,8 @@ sub install_gcc {
     my $gcc_download_result = download_file("http://ftp.mpi-sb.mpg.de/pub/gnu/mirror/gcc.gnu.org/pub/gcc/releases/gcc-$gcc_version/$archive_file_name", $archive_file_name, '7e79c695a0380ac838fa7c876a121cd28a73a9f5');
 
     unless ($gcc_download_result) {
-        die "Can't download gcc sources\n";
+        warn "Can't download gcc sources\n";
+        return '';
     }
 
     print "Unpack archive\n";
@@ -597,7 +599,8 @@ sub install_boost {
     my $boost_download_result = download_file("https://boostorg.jfrog.io/artifactory/main/release/$boost_version/source/boost_${boost_version_with_underscore}.tar.bz2", $archive_file_name, '690a2a2ed6861129828984b1d52a473d2c8393d1');
         
     unless ($boost_download_result) {
-        die "Can't download Boost source code\n";
+        warn "Can't download Boost source code\n";
+        return '';
     }
 
     print "Unpack Boost source code\n";
@@ -652,14 +655,16 @@ sub install_boost_build {
         '1c77d3fda9425fd89b783db8f7bd8ebecdf8f916');
 
     unless ($boost_build_result) {
-        die("Can't download boost builder\n");
+        warn("Can't download boost builder\n");
+        return '';
     }
 
     print "Unpack boost builder\n";
     exec_command("tar -xf $archive_file_name");
 
     unless (chdir "b2-4.9.2") {
-        die("Cannot do chdir to build boost folder\n");
+        warn("Cannot do chdir to build boost folder\n");
+        return '';
     }
 
     # Due to this bug:
@@ -677,13 +682,15 @@ sub install_boost_build {
     my $bootstrap_result = exec_command("$ld_library_path_for_make CC=$default_c_compiler_path CXX=$default_cpp_compiler_path  ./bootstrap.sh --with-toolset=gcc");
 
     unless ($bootstrap_result) {
-        die("bootstrap of Boost Builder failed, please check logs\n");
+        warn("bootstrap of Boost Builder failed, please check logs\n");
+        return '';
     }
 
     my $b2_install_result = exec_command("$ld_library_path_for_make ./b2 install --prefix=$boost_builder_install_folder");
 
     unless ($b2_install_result) {
-        die("Can't execute b2 install\n");
+        warn("Can't execute b2 install\n");
+        return '';
     }
 
     1;
@@ -705,7 +712,8 @@ sub install_log4cpp {
     my $log4cpp_download_result = download_file($log4cpp_url, $distro_file_name, '74f0fea7931dc1bc4e5cd34a6318cd2a51322041');
 
     unless ($log4cpp_download_result) {
-        die "Can't download log4cpp\n";
+        warn "Can't download log4cpp\n";
+        return '';
     }
 
     print "Unpack log4cpp sources\n";
@@ -747,7 +755,8 @@ sub install_cares {
         "9e2a99af58d163d084db6fcebb2165a960bdd1af", "$library_install_folder/$folder_name", "");
 
     unless ($res) {
-        die "Cannot install C-Ares\n";
+        warn "Cannot install C-Ares\n";
+        return '';
     }
 
     return 1;
@@ -761,7 +770,8 @@ sub install_zlib {
         "55eaa84906f31ac20d725aa26cd20839196b6ba6", "$library_install_folder/$folder_name", "");
 
     unless ($res) {
-        die "Cannot install zlib\n";
+        warn "Cannot install zlib\n";
+        return '';
     }
 
     return 1;
@@ -800,7 +810,8 @@ sub install_grpc {
          "$ld_library_path_for_make $cmake_path -DCMAKE_C_COMPILER=$default_c_compiler_path -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DCMAKE_INSTALL_PREFIX=$grpc_install_path -DgRPC_PROTOBUF_PROVIDER=package -DCMAKE_INSTALL_RPATH=\"$grpc_install_path/lib;$cares_path/lib;$openssl_path/lib;$abseil_install_path/lib;$re2_path/lib64;$re2_path/lib\" -DCMAKE_PREFIX_PATH=\"$protobuf_install_path;$openssl_path;$cares_path;$abseil_install_path/lib/cmake/absl;$abseil_install_path/lib64/cmake/absl;$zlib_path;$re2_path/lib64/cmake/re2;$re2_path/lib/cmake/re2\" -DgRPC_ZLIB_PROVIDER=package -DgRPC_SSL_PROVIDER=package -DgRPC_ABSL_PROVIDER=package -DgRPC_INSTALL=ON -DgRPC_BUILD_TESTS=OFF -DgRPC_CARES_PROVIDER=package -DgRPC_RE2_PROVIDER=package -DBUILD_SHARED_LIBS=ON ..");
 
     if (!$res) {
-        die "Can't install gRPC\n";
+        warn "Can't install gRPC\n";
+        return '';
     }
 
     return 1;
@@ -845,13 +856,15 @@ sub install_gobgp {
         $distro_file_name, 'dd906c552a727d3f226f3851bf2c92bfdafb92a7'); 
 
     unless ($download_result) {
-        die "Could not download gobgp\n";
+        warn "Could not download gobgp\n";
+        return '';
     }    
 
     my $unpack_result = exec_command("tar -xf $distro_file_name");
 
     unless ($unpack_result) {
-        die "Could not unpack gobgp\n";
+        warn "Could not unpack gobgp\n";
+        return '';
     }    
 
    
@@ -876,7 +889,8 @@ sub install_re2 {
         "$ld_library_path_for_make $cmake_path -DCMAKE_C_COMPILER=$default_c_compiler_path -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$install_path ..");
 
     if (!$res) {
-        die "Cannot install re2";
+        warn "Cannot install re2\n";
+        return '';
     }    
 
     return 1;
@@ -894,7 +908,8 @@ sub install_protobuf {
         "$ld_library_path_for_make $cmake_path -DCMAKE_C_COMPILER=$default_c_compiler_path -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -Dprotobuf_BUILD_TESTS=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$install_path ..");
 
     if (!$res) {
-        die "Cannot install Protobuf";
+        warn "Cannot install Protobuf\n";
+        return '';
     }
 
     return 1;
@@ -916,7 +931,8 @@ sub install_elfutils {
     );
 
     unless ($res) { 
-        die "Cannot install elfutils\n";
+        warn "Cannot install elfutils\n";
+        return '';
     }
 
     return 1;
@@ -934,7 +950,8 @@ sub install_capnproto {
         '');
 
     unless ($res) { 
-        die "Could not install capnproto";
+        warn "Could not install capnproto\n";
+        return '';
     }
 
     return 1;
@@ -954,7 +971,8 @@ sub install_abseil {
         "$ld_library_path_for_make $cmake_path -DCMAKE_C_COMPILER=$default_c_compiler_path -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DABSL_BUILD_TESTING=ON -DABSL_USE_GOOGLETEST_HEAD=ON -DABSL_ENABLE_INSTALL=ON -DCMAKE_CXX_STANDARD=11 -DCMAKE_POSITION_INDEPENDENT_CODE=true -DCMAKE_INSTALL_PREFIX=$install_path ..");
 
     if (!$res) {
-        die "Cannot install abseil";
+        warn "Cannot install abseil\n";
+        return ''
     }
 
     return 1;
@@ -976,7 +994,8 @@ sub install_mongo_c_driver {
 	"$ld_library_path_for_make $cmake_path -DENABLE_AUTOMATIC_INIT_AND_CLEANUP=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:STRING=$library_install_folder/mongo_c_driver_1_23_0 -DCMAKE_C_COMPILER=$default_c_compiler_path -DOPENSSL_ROOT_DIR=$openssl_path -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DENABLE_ICU=OFF -DMONGOC_TEST_USE_CRYPT_SHARED=OFF ..");
 
     if (!$res) {
-        die "Could not install mongo c client\n";
+        warn "Could not install mongo c client\n";
+        return '';
     }
 
     return 1;
@@ -999,38 +1018,44 @@ sub install_configure_based_software {
     my $file_name = get_file_name_from_url($url_to_archive);
 
     unless ($file_name) {
-        die "Could not extract file name from URL $url_to_archive";
+        warn "Could not extract file name from URL $url_to_archive\n";
+        return '';
     }
 
     print "Download archive\n";
     my $archive_download_result = download_file($url_to_archive, $file_name, $sha1_summ_for_archive);
 
     unless ($archive_download_result) {
-        die "Could not download URL $url_to_archive";
+        warn "Could not download URL $url_to_archive\n";
+        return '';
     }    
 
     unless (-e $file_name) {
-        die "Could not find downloaded file in current folder";
+        warn "Could not find downloaded file in current folder\n";
+        return '';
     }
 
     print "Read file list inside archive\n";
     my $folder_name_inside_archive = get_folder_name_inside_archive("$temp_folder_for_building_project/$file_name"); 
 
     unless ($folder_name_inside_archive) {
-        die "We could not extract folder name from tar archive '$temp_folder_for_building_project/$file_name'\n";
+        warn "We could not extract folder name from tar archive '$temp_folder_for_building_project/$file_name'\n";
+        return '';
     }
 
     print "Unpack archive\n";
     my $unpack_result = exec_command("tar -xf $file_name");
 
     unless ($unpack_result) {
-        die "Unpack failed";
+        warn "Unpack failed\n";
+        return '';
     }
 
     chdir $folder_name_inside_archive;
 
     unless (-e "configure") {
-        die "We haven't configure script here";
+        warn "We haven't configure script here\n";
+        return '';
     }
 
     print "Execute configure\n";
@@ -1039,7 +1064,8 @@ sub install_configure_based_software {
     my $configure_result = exec_command($configure_command);
 
     unless ($configure_result) {
-        die "Configure failed";
+        warn "Configure failed";
+        return '';
     } 
 
     ### TODO: this is ugly thing! But here you could find hack for poco libraries
@@ -1056,7 +1082,8 @@ sub install_configure_based_software {
     my $make_result = exec_command("$ld_library_path_for_make make $make_options");
 
     unless ($make_result) {
-        die "Make failed";
+        warn "Make failed\n";
+        return '';
     } 
 
     print "Execute make install\n";
@@ -1064,7 +1091,8 @@ sub install_configure_based_software {
     my $make_install_result = exec_command("$ld_library_path_for_make make install"); 
 
     unless ($make_install_result) {
-        die "Make install failed";
+        warn "Make install failed\n";
+        return '';
     }
 
     return 1;
@@ -1082,7 +1110,8 @@ sub install_openssl {
         $distro_file_name, '79511a8f46f267c533efd32f22ad3bf89a92d8e5');
 
     unless ($openssl_download_result) {   
-        die "Could not download openssl";
+        warn "Could not download openssl";
+        return '';
     }
 
     exec_command("tar -xf $distro_file_name");
@@ -1109,7 +1138,8 @@ sub install_icu {
         $distro_file_name, 'd1e6b58aea606894cfb2495b6eb1ad533ccd2a25');
 
     unless ($icu_download_result) {
-        die "Could not download ibicu";
+        warn "Could not download ibicu";
+        return '';
     }
 
     print "Unpack icu\n";
@@ -1141,7 +1171,8 @@ sub install_cmake {
     my $cmake_download_result = download_file("https://github.com/Kitware/CMake/releases/download/v3.23.4/$distro_file_name", $distro_file_name, '05957280718e068df074f76c89cba77de1ddd4a2');
 
     unless ($cmake_download_result) {
-        die "Can't download cmake\n";
+        warn "Can't download cmake\n";
+        return '';
     }
 
     exec_command("tar -xf $distro_file_name");
@@ -1154,7 +1185,8 @@ sub install_cmake {
     my $boostrap_result = exec_command("$ld_library_path_for_make CC=$default_c_compiler_path CXX=$default_cpp_compiler_path ./bootstrap --prefix=$cmake_install_path --parallel=$cpus_number -- -DOPENSSL_ROOT_DIR=$openssl_path");
 
     unless ($boostrap_result) {
-        die("Cannot run bootstrap\n");
+        warn("Cannot run bootstrap\n");
+        return '';
     }
 
     print "Make it\n";
@@ -1162,7 +1194,8 @@ sub install_cmake {
     my $make_result = exec_command($make_command);
 
     unless ($make_result) {
-        die "Make command '$make_command' failed\n";
+        warn "Make command '$make_command' failed\n";
+        return '';
     }
 
     print "Make install it\n";
@@ -1195,38 +1228,44 @@ sub install_cmake_based_software {
     my $file_name = get_file_name_from_url($url_to_archive);
 
     unless ($file_name) {
-        die "Could not extract file name from URL $url_to_archive";
+        warn "Could not extract file name from URL $url_to_archive";
+        return '';
     }
 
     print "Download archive\n";
     my $archive_download_result = download_file($url_to_archive, $file_name, $sha1_summ_for_archive);
 
     unless ($archive_download_result) {
-        die "Could not download URL $url_to_archive";
+        warn "Could not download URL $url_to_archive\n";
+        return '';
     }    
 
     unless (-e $file_name) {
-        die "Could not find downloaded file in current folder";
+        warn "Could not find downloaded file in current folder\n";
+        return '';
     }
 
     print "Read file list inside archive\n";
     my $folder_name_inside_archive = get_folder_name_inside_archive("$temp_folder_for_building_project/$file_name"); 
 
     unless ($folder_name_inside_archive) {
-        die "We could not extract folder name from tar archive: $temp_folder_for_building_project/$file_name\n";
+        warn "We could not extract folder name from tar archive: $temp_folder_for_building_project/$file_name\n";
+        return '';
     }
 
     print "Unpack archive\n";
     my $unpack_result = exec_command("tar --no-same-owner -xf $file_name");
 
     unless ($unpack_result) {
-        die "Unpack failed";
+        warn "Unpack failed\n";
+        return '';
     }
 
     chdir $folder_name_inside_archive;
 
     unless (-e "CMakeLists.txt") {
-        die "We haven't CMakeLists.txt in top project folder! Could not build project";
+        warn "We haven't CMakeLists.txt in top project folder! Could not build project\n";
+        return '';
     }
 
     unless (-e "build") {
@@ -1240,7 +1279,8 @@ sub install_cmake_based_software {
     my $cmake_result = exec_command($cmake_with_options);
 
     unless ($cmake_result) {
-        die "cmake command failed";
+        warn "cmake command failed\n";
+        return '';
     }
 
     print "Build project with make\n";
@@ -1249,14 +1289,16 @@ sub install_cmake_based_software {
     my $make_result = exec_command($make_command);
 
     unless ($make_result) {
-        die "Make command '$make_command' failed\n";
+        warn "Make command '$make_command' failed\n";
+        return '';
     } 
 
     print "Install project to target directory\n";
     my $install_result = exec_command("$ld_library_path_for_make make install");
 
     unless ($install_result) {
-        die "Install failed";
+        warn "Install failed\n";
+        return '';
     } 
 
     return 1;
@@ -1305,7 +1347,8 @@ sub install_hiredis {
         $disto_file_name, 'd668b86756d2c68f0527e845dc10ace5a053bbd9');
 
     unless ($hiredis_download_result) {
-        die "Can't download hiredis\n";
+        warn "Can't download hiredis\n";
+        return '';
     }
 
     exec_command("tar -xf $disto_file_name");
@@ -1530,29 +1573,6 @@ sub detect_distribution {
     };
 }
 
-sub install_package_by_name_with_dependencies {
-    my $package_name = shift;
-    my @dependency_packages = ();
-
-    die "Please specify package name" unless $package_name;
-
-    if (defined $dependency_map->{$package_name} && $dependency_map->{$package_name}) {
-        unless (ref $dependency_map->{$package_name} eq 'ARRAY') {
-            die "Dependency list should be array!\n"
-        }   
-
-        @dependency_packages = @{ $dependency_map->{$package_name} };
-
-        print "We have dependencies for this package: " . (join ',', @dependency_packages) . "\n";        
-    }
-
-    my @pckages_for_install = (@dependency_packages, $package_name);
-    
-    for my $package (@pckages_for_install) {
-        install_package_by_name($package);
-    }   
-}
-
 sub install_package_by_name {
     my $handler_name = shift;
 
@@ -1564,8 +1584,10 @@ sub install_package_by_name {
     }   
 
     no strict 'refs';
-    &{ "install_$handler_name"}($full_package_name);
+    my $return_code = &{ "install_$handler_name"}($full_package_name);
     use strict 'refs';
+
+    return $return_code;
 }
 
 1;
