@@ -111,7 +111,7 @@ jobs:
   build_epel9_upstream:
     docker:
       - image: almalinux:9
-    resource_class: large
+    resource_class: xlarge
     steps:
       - checkout
       - run: dnf install -y rpm-build rpmdevtools dnf-plugins-core
@@ -172,8 +172,6 @@ jobs:
       - run: perl src/scripts/fastnetmon_build.pl
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
       - store_artifacts:
-          path: /opt/fastnetmon_libraries_bundle.tar.gz
-      - store_artifacts:
           path: /tmp/fastnetmon_install.log
       - run: src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> << parameters.distro_name >> << parameters.distro_version >>
       - store_artifacts:
@@ -215,8 +213,6 @@ jobs:
           path: /tmp/fastnetmon_install.log
       - run: perl src/scripts/fastnetmon_build.pl
       - run: perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
-      - store_artifacts:
-          path: /opt/fastnetmon_libraries_bundle.tar.gz
       - run: src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> centos << parameters.centos_version >>
       - store_artifacts:
           path: /tmp/result_data/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el<< parameters.centos_version >>.x86_64.rpm
