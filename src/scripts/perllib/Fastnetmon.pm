@@ -480,21 +480,39 @@ sub install_bpf {
     my $lib_bpf_download_result = download_file("https://github.com/libbpf/libbpf/archive/refs/tags/v1.0.1.tar.gz",  $archive_file_name, '9350f196150892f544e0681cc6c1f78e603b5d95');
 
     unless ($lib_bpf_download_result) {
-        die "Cannot download linux kernel\n";
+        die "Cannot download libbpf\n";
     }
 
     print "Unpack libbpf\n";
-    system("tar -xf $archive_file_name");
+    unless (exec_command("tar -xf $archive_file_name")) {
+        warn "Cannot unpack libbpf\n";
+        return '';
+    }
 
     chdir "libbpf-1.0.1/src";
 
-    system("$ld_library_path_for_make make");
+    unless (exec_command("$ld_library_path_for_make make")) {
+        warn "Cannot make libbpf\n";
+        return '';
+    }
 
     system("mkdir -p $libbpf_package_install_path");
-    system("cp libbpf.a libbpf.so libbpf.so.1 libbpf.so.1.0.1 $libbpf_package_install_path");
+    
+    unless (exec_command("cp libbpf.a libbpf.so libbpf.so.1 libbpf.so.1.0.1 $libbpf_package_install_path")) {
+        warn "Cannot install libbpf into folder\n";
+        return '';
+    }
 
-    system("mkdir -p $libbpf_package_install_path/include/bpf");
-    system("cp bpf.h libbpf.h libbpf_common.h libbpf_version.h libbpf_legacy.h $libbpf_package_install_path/include/bpf");
+
+    unless (exec_command("mkdir -p $libbpf_package_install_path/include/bpf")) {
+        warn "Cannot create folder for headers for bpf\n";
+        return '';
+    }
+
+    unless (exec_command("cp bpf.h libbpf.h libbpf_common.h libbpf_version.h libbpf_legacy.h $libbpf_package_install_path/include/bpf")) {
+        warn "Cannot install bpf headers into target folder\n";
+        return '';
+    }
 
     return 1;
 }
@@ -525,6 +543,7 @@ sub install_gcc {
 
     print "Unpack archive\n";
     exec_command("tar -xf $archive_file_name");
+    
     # Remove source archive
     unlink "$archive_file_name";
     exec_command("mkdir $temp_folder_for_building_project/gcc-$gcc_version-objdir");
