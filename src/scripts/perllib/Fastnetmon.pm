@@ -465,6 +465,9 @@ sub install_bpf {
         yum('elfutils-libelf-devel');
     }
 
+    my $elfutils_install_path = "$library_install_folder/elfutils_0_186";
+    my $zlib_path             = "$library_install_folder/zlib_1_2_13";
+
     my $archive_file_name = 'v1.0.1.tar.gz ';
 
     print "Download libbpf\n";
@@ -485,29 +488,24 @@ sub install_bpf {
 
     chdir "libbpf-1.0.1/src";
 
+    print "Make bpf\n";
+    # Unfortunately, pkg-config does not accept multiple paths in PKG_CONFIG_PATH
+    # And for now I decided to link against our own libelf but keep linking with standard zlib
+    # PKG_CONFIG_PATH=\"$elfutils_install_path/lib/pkgconfig\"
+    #
     unless (exec_command("$ld_library_path_for_make make")) {
         warn "Cannot make libbpf\n";
         return '';
     }
 
-    system("mkdir -p $libbpf_package_install_path");
-    
-    unless (exec_command("cp libbpf.a libbpf.so libbpf.so.1 libbpf.so.1.0.1 $libbpf_package_install_path")) {
-        warn "Cannot install libbpf into folder\n";
+    print "Make install\n";
+
+    # We set prefix to "" as it's /usr by default and we do not need intermediate folder in install path
+    unless (exec_command("PREFIX=\"\" DESTDIR=$libbpf_package_install_path $ld_library_path_for_make make install")) {
+        warn "Cannot install libbpf\n";
         return '';
     }
-
-
-    unless (exec_command("mkdir -p $libbpf_package_install_path/include/bpf")) {
-        warn "Cannot create folder for headers for bpf\n";
-        return '';
-    }
-
-    unless (exec_command("cp bpf.h libbpf.h libbpf_common.h libbpf_version.h libbpf_legacy.h $libbpf_package_install_path/include/bpf")) {
-        warn "Cannot install bpf headers into target folder\n";
-        return '';
-    }
-
+   
     return 1;
 }
 
