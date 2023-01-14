@@ -570,9 +570,8 @@ sub install_boost {
 
     my $boost_install_path = "$library_install_folder/$folder_name";
 
-    # TODO: not perfect option actually
-    # We're going to build directly in install folder
-    chdir $library_install_folder;
+    chdir $temp_folder_for_building_project;
+
     my $archive_file_name = "boost_${boost_version_with_underscore}.tar.gz";
 
     print "Install Boost dependencies\n";
@@ -634,7 +633,7 @@ sub install_boost {
 
     print "Build Boost\n";
 
-    my $build_command = "$ld_library_path_for_make $boost_build_path/bin/b2 -j $boost_build_threads -sICU_PATH=$icu_path linkflags=\"-Wl,-rpath,$icu_path/lib\" --build-dir=$temp_folder_for_building_project/boost_build_temp_directory link=shared --without-test --without-python --without-wave --without-log --without-mpi --without-graph  --without-math --without-fiber --without-nowide  --without-graph_parallel --without-json --without-type_erasure --without-coroutine";
+    my $build_command = "$ld_library_path_for_make $boost_build_path/bin/b2 install -j $boost_build_threads -sICU_PATH=$icu_path linkflags=\"-Wl,-rpath,$icu_path/lib\" --build-dir=$temp_folder_for_building_project/boost_build_temp_directory link=shared --without-test --without-python --without-wave --without-log --without-mpi --without-graph  --without-math --without-fiber --without-nowide  --without-graph_parallel --without-json --without-type_erasure --without-coroutine --prefix=$boost_install_path";
 
     print "Build command: $build_command\n";
 
