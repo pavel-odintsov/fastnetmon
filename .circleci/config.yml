@@ -68,6 +68,16 @@ jobs:
      - run: echo $CR_PAT | sudo docker login ghcr.io -u pavel-odintsov --password-stdin
      - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:1.2.3
      - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:latest
+  build_gce:
+    machine:
+      # We use this image because it uses GCE instead of AWS for testing
+      # https://circleci.com/blog/building-android-on-circleci/
+      # You can find latest tag here: https://circleci.com/developer/images/image/cimg/android#image-tags
+      image: android:2022.09.1
+    steps:
+      - checkout
+      - run: false
+
   build_docker_arm64:
     machine:
       image: ubuntu-2004:current
@@ -302,4 +312,4 @@ workflows:
           name: "Build on Windows Server 2022"
       - build_windows2019:
           name: "Build on Windows Server 2019"
-      - build_docker_arm64
+      - build_gce
