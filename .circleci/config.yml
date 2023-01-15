@@ -71,10 +71,10 @@ jobs:
   build_docker_arm64:
     machine:
       image: ubuntu-2004:current
-    resource_class: arm.medium
+    resource_class: arm.large
     steps:
      - checkout
-     - run: docker build --build-arg installer_file_name=installer_arm64 -t ghcr.io/pavel-odintsov/fastnetmon-community:1.2.1 -t ghcr.io/pavel-odintsov/fastnetmon-community:latest - < src/Dockerfile
+     - run: docker build --build-arg installer_file_name=installer_arm64 -t ghcr.io/pavel-odintsov/fastnetmon-community:1.2.3 -t ghcr.io/pavel-odintsov/fastnetmon-community:latest - < src/Dockerfile
      - run: sudo docker images
   build_fedora_upstream:
     parameters:
@@ -302,3 +302,4 @@ workflows:
           name: "Build on Windows Server 2022"
       - build_windows2019:
           name: "Build on Windows Server 2019"
+      - build_docker_arm64
