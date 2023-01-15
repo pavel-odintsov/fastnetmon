@@ -76,8 +76,6 @@ jobs:
       image: android:2022.09.1
     steps:
       - checkout
-      - run: false
-
   build_docker_arm64:
     machine:
       image: ubuntu-2004:current
