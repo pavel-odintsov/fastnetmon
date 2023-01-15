@@ -389,11 +389,16 @@ sub install_build_dependencies {
     if ($distro_type eq 'ubuntu' or $distro_type eq 'debian') {
         print "Update package manager cache\n";
         exec_command("apt-get update");
+
+        print "Install packages\n";
         apt_get('make', 'wget', 'git', 'pigz', 'autoconf', 'libtool', 'pkg-config');
     } elsif ( $distro_type eq 'centos') {
         # We need libmpc for our custom built gcc
+        print "Install packages\n";
         yum('make', 'wget', 'libmpc', 'glibc-devel', 'git', 'pigz', 'autoconf', 'libtool', 'pkgconfig');
     }
+
+    print "Successfully installed all packages\n";
 }
 
 # This code will init global compiler settings used in options for other packages build
