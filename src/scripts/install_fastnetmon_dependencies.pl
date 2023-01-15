@@ -128,6 +128,8 @@ sub main {
             'ubuntu:22.04'        => '23c01edfb5a640bd1108a112366ed7c5862b75bdd16cbe376a8c23db2d5eb5fded70e8750e9a372c0279c950f1d3adf4d53f5233371cd2acbd11def3010561df',
 
             'centos:7'            => 'f7bb6b23d338fa80e1a72912d001ef926cbeb1df26f53d4c75d5e20ffe107e146637cb583edd08d02d252fc1bb93b2af6b827bd953713a9f55de148fb10b55aa',
+            'centos:8'            => 'a3fcd2331143579f4178e5142a6949ba248278c8cea7cc70c977ebade1bf2b3bcea7b8115e1fbec8981042e0242578be822113e63b3dea68ae4279a63d9afd01',
+            'centos:9'            => '',
         },
         'openssl_1_1_1q'        => {
             'centos:7'            => 'ab9dde43afc7b6bcc4399b6fbd746727e0ce72cf254e9b7f6abcc5c22b319ab82c051546decc6804e508654975089888c544258514e30dc18385ad1dd59d63fb',
