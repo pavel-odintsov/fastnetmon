@@ -24,7 +24,7 @@ jobs:
       - run: brew install --build-from-source --HEAD --verbose --debug fastnetmon
   build_debian_upstream_package:
     machine:
-      image: ubuntu-2004:current
+      image: ubuntu-2204:current
     resource_class: large
     parameters:
       debian_codename:
@@ -60,7 +60,7 @@ jobs:
       - run: sudo docker exec -it linux_priviledged_container pbuilder --build --basetgz /data/debian_base.tgz --debbuildopts "-sa" /fastnetmon_$(sudo docker exec -it linux_priviledged_container head -n 1 fastnetmon-debian-salsa/debian/changelog|awk '{print $2}'|sed 's/[()]//g').dsc
   build_docker_x86_64:
     machine:
-      image: ubuntu-2004:current
+      image: ubuntu-2204:current
     steps:
      - checkout
      - run: docker build -t ghcr.io/pavel-odintsov/fastnetmon-community:1.2.3 -t ghcr.io/pavel-odintsov/fastnetmon-community:latest - < src/Dockerfile
@@ -79,7 +79,7 @@ jobs:
       - checkout
   build_docker_arm64:
     machine:
-      image: ubuntu-2004:current
+      image: ubuntu-2204:current
     resource_class: arm.large
     steps:
      - checkout
