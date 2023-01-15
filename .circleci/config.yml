@@ -217,11 +217,11 @@ jobs:
           name: collect_debug
           command: sudo docker exec linux_docker cat /tmp/fastnetmon_install.log
           when: on_fail
-      - run: sudo docker exec linux_docker perl src/scripts/fastnetmon_build.pl
-      - run: sudo docker exec linux_docker perl src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
-      - run: sudo docker exec linux_docker src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> centos << parameters.centos_version >>
+      - run: sudo docker exec linux_docker perl fastnetmon/src/scripts/fastnetmon_build.pl
+      - run: sudo docker exec linux_docker perl fastnetmon/src/scripts/build_libary_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
+      - run: sudo docker exec linux_docker fastnetmon/src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> centos << parameters.centos_version >>
       - run: sudo -E docker exec --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY linux_docker s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/result_data/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el<< parameters.centos_version >>.x86_64.rpm s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/centos/<< parameters.centos_version >>/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el<< parameters.centos_version >>.x86_64.rpm
-      - run: sudo docker exec linux_docker cp src/fastnetmon.conf /etc/fastnetmon.conf
+      - run: sudo docker exec linux_docker cp fastnetmon/src/fastnetmon.conf /etc/fastnetmon.conf
       - run: sudo docker exec linux_docker ldd /opt/fastnetmon-community/app/bin/fastnetmon
       - run: sudo docker exec linux_docker ldd /opt/fastnetmon-community/app/bin/fastnetmon_client
       - run: sudo docker exec linux_docker ldd /opt/fastnetmon-community/app/bin/fastnetmon_api_client
