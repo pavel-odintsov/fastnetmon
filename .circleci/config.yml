@@ -311,4 +311,3 @@ workflows:
           name: "Build on Windows Server 2022"
       - build_windows2019:
           name: "Build on Windows Server 2019"
-      - build_gce
