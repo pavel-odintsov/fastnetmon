@@ -204,7 +204,7 @@ jobs:
       - run: sudo docker run --name  linux_docker -d -t << parameters.docker_image >>
       - run: sudo docker exec linux_docker yum install -y perl wget python3-pip perl-Archive-Tar git
       - run: sudo docker exec linux_docker git clone https://github.com/pavel-odintsov/fastnetmon.git
-      - run: sudp docker exec linux_docker pip3 install s3cmd
+      - run: sudo docker exec linux_docker pip3 install s3cmd
       - run:
           name: install_gcc
           no_output_timeout: 120m 
