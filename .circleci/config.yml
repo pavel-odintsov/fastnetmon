@@ -74,6 +74,7 @@ jobs:
       # https://circleci.com/blog/building-android-on-circleci/
       # You can find latest tag here: https://circleci.com/developer/images/image/cimg/android#image-tags
       image: android:2022.09.1
+    resource_class: large
     steps:
       - checkout
   build_docker_arm64:
