@@ -464,7 +464,7 @@ if (ENABLE_GOBGP_SUPPORT)
         target_link_libraries(gobgp_action absl::base absl::synchronization)
     endif()
 
-    find_path(PROTOCOL_BUFFERS_INCLUDE_FOLDER NAMES "google/protobuf/stubs/common.h" PATHS "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/include")
+    find_path(PROTOCOL_BUFFERS_INCLUDE_FOLDER NAMES "google/protobuf/stubs/common.h" PATHS "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/include" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
 
     find_library(PROTOCOL_BUFFERS_LIBRARY_PATH NAMES protobuf PATHS "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib") 
 
