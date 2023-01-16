@@ -1894,7 +1894,7 @@ void traffic_draw_ipv4_program() {
     output_buffer << std::endl;
 
     // Application statistics
-    output_buffer << "Screen updated in:\t\t" << drawing_thread_execution_time << " sec\n";
+    output_buffer << "Screen updated in:\t\t" << std::setprecision (2) <<  drawing_thread_execution_time << " sec\n";
 
     output_buffer << "Traffic calculated in:\t\t" << speed_calculation_time.tv_sec << " sec "
                   << speed_calculation_time.tv_usec << " microseconds\n";
