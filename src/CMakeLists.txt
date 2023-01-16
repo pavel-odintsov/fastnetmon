@@ -52,16 +52,14 @@ option(DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD "Disables use of libraries from sys
 
 if (DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
     # We need to avoid using system path for libraries and includes search because we ship specific versions of our own libraries in package
-    # And we need to avoid implit fallbacks to system libraries as it will break dependencies
+    # And we need to avoid implicit fallbacks to system libraries as it will break dependencies
     set(DISABLE_DEFAULT_PATH_SEARCH_VAR "NO_DEFAULT_PATH")
 else ()
     # Disable this logic and allow any paths
     set(DISABLE_DEFAULT_PATH_SEARCH_VAR "")
 endif()
 
-option(ENABLE_CUSTOM_BOOST_BUILD "Enable build with custom Boost" ON)
-
-if (ENABLE_CUSTOM_BOOST_BUILD)
+if (DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
     message(STATUS "Build with custom Boost")
 
     set(Boost_NO_SYSTEM_PATHS ON)
@@ -97,6 +95,8 @@ if (DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
     # Create builds in current folder with install RPATH
     SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
+    # We need to manually set RPATH to each of our custom libraries
+    # Otherwise our binaries will not able to find them as we use non standard path
     SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${HIREDIS_CUSTOM_INSTALL_PATH}/lib")
     SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${LOG4CPP_CUSTOM_INSTALL_PATH}/lib")
     
@@ -572,7 +572,8 @@ if (ENABLE_GOBGP_SUPPORT)
     target_link_libraries(fastnetmon ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
 endif()
 
-if (ENABLE_CUSTOM_BOOST_BUILD)
+# We link with icu only when we do build with our custom libraries
+if (DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
     target_link_libraries(fastnetmon ${ICU_LIBRARY_UC_PATH})
     target_link_libraries(fastnetmon ${ICU_LIBRARY_DATA_PATH})
     target_link_libraries(fastnetmon ${ICU_LIBRARY_I18N_PATH})
