@@ -48,7 +48,7 @@ option(LINK_WITH_ABSL "Enable optonal linking with ABSL" OFF)
 # We need to add it into include path as gRPC uses it include path
 include_directories("${ABSL_INSTALL_PATH}/include")
 
-option(DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD "Disables use of libraries from system path" ON)
+option(DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD "Disables use of libraries from system path" OFF)
 
 if (DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
     # We need to avoid using system path for libraries and includes search because we ship specific versions of our own libraries in package
