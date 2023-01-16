@@ -131,7 +131,7 @@ std::unique_ptr<Server> api_server;
 bool enable_api = false;
 #endif
 
-time_t last_call_of_traffic_recalculation;
+std::chrono::steady_clock::time_point last_call_of_traffic_recalculation;
 
 std::string cli_stats_file_path = "/tmp/fastnetmon.dat";
 
@@ -1668,7 +1668,7 @@ int main(int argc, char** argv) {
     }
 #endif
     // Init previous run date
-    time(&last_call_of_traffic_recalculation);
+    last_call_of_traffic_recalculation = std::chrono::steady_clock::now();
 
     // We call init for each action
 #ifdef ENABLE_GOBGP

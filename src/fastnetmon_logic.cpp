@@ -1,5 +1,6 @@
 #include "fastnetmon_logic.hpp"
 #include <algorithm>
+#include <chrono>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
@@ -70,7 +71,7 @@ extern unsigned int maximum_time_since_bucket_start_to_remove;
 extern unsigned int max_ips_in_list;
 extern struct timeval speed_calculation_time;
 extern struct timeval drawing_thread_execution_time;
-extern time_t last_call_of_traffic_recalculation;
+extern std::chrono::steady_clock::time_point last_call_of_traffic_recalculation;
 extern std::string cli_stats_ipv6_file_path;
 extern unsigned int check_for_availible_for_processing_packets_buckets;
 extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t> ipv6_host_counters;
@@ -2153,19 +2154,30 @@ void recalculate_speed() {
     gettimeofday(&start_calc_time, NULL);
 
     double speed_calc_period = recalculate_speed_timeout;
-    time_t start_time;
-    time(&start_time);
 
-    // If we got 1+ seconds lag we should use new "delta" or skip this step
-    double time_difference = difftime(start_time, last_call_of_traffic_recalculation);
+    std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
 
+    // Calculate duration of our sleep duration as it may be altered by OS behaviour (i.e. process scheduler)
+    // And if it differs from reference value then we need to adjust it and use new value
+    std::chrono::duration<double> diff = start_time - last_call_of_traffic_recalculation;
+
+    double time_difference = diff.count();
+
+    // Handle case of time moving backwards
     if (time_difference < 0) {
-        // It may happen when you adjust time
-        logger << log4cpp::Priority::ERROR << "Negative delay for traffic calculation " << time_difference << " Skipped iteration";
+        // It must not happen as our time source is explicitly monotonic: https://en.cppreference.com/w/cpp/chrono/steady_clock
+        logger << log4cpp::Priority::ERROR << "Negative delay for traffic calculation " << time_difference;
+        logger << log4cpp::Priority::ERROR << "This must not happen, please report this issue to maintainers. Skipped iteration";
+
         return;
-    } else if (time_difference < recalculate_speed_timeout) {
+    }
+
+    // logger << log4cpp::Priority::INFO << "Delay in seconds " << time_difference;
+
+    // Zero or positive delay
+    if (time_difference < recalculate_speed_timeout) {
         // It could occur on toolkit start or in some weird cases of Linux scheduler
-        // I really saw cases when sleep executed in zero zeconds:
+        // I really saw cases when sleep executed in zero seconds:
         // [WARN] Sleep time expected: 1. Sleep time experienced: 0
         // But we have handlers for such case and should not bother client about with it
         // And we are using DEBUG level here
@@ -2346,7 +2358,7 @@ void recalculate_speed() {
     }
 
     // Set time of previous startup
-    time(&last_call_of_traffic_recalculation);
+    last_call_of_traffic_recalculation = std::chrono::steady_clock::now();
 
     struct timeval finish_calc_time;
     gettimeofday(&finish_calc_time, NULL);
