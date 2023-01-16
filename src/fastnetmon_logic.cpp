@@ -70,7 +70,7 @@ extern uint64_t total_simple_packets_processed;
 extern unsigned int maximum_time_since_bucket_start_to_remove;
 extern unsigned int max_ips_in_list;
 extern struct timeval speed_calculation_time;
-extern struct timeval drawing_thread_execution_time;
+extern double drawing_thread_execution_time;
 extern std::chrono::steady_clock::time_point last_call_of_traffic_recalculation;
 extern std::string cli_stats_ipv6_file_path;
 extern unsigned int check_for_availible_for_processing_packets_buckets;
@@ -1770,10 +1770,6 @@ void traffic_draw_ipv6_program() {
     std::stringstream output_buffer;
 
     // logger<<log4cpp::Priority::INFO<<"Draw table call";
-
-    struct timeval start_calc_time;
-    gettimeofday(&start_calc_time, NULL);
-
     sort_type_t sorter;
     if (sort_parameter == "packets") {
         sorter = PACKETS;
@@ -1857,9 +1853,7 @@ void traffic_draw_ipv4_program() {
     std::stringstream output_buffer;
 
     // logger<<log4cpp::Priority::INFO<<"Draw table call";
-
-    struct timeval start_calc_time;
-    gettimeofday(&start_calc_time, NULL);
+    std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
 
     sort_type_t sorter;
     if (sort_parameter == "packets") {
@@ -1900,8 +1894,7 @@ void traffic_draw_ipv4_program() {
     output_buffer << std::endl;
 
     // Application statistics
-    output_buffer << "Screen updated in:\t\t" << drawing_thread_execution_time.tv_sec << " sec "
-                  << drawing_thread_execution_time.tv_usec << " microseconds\n";
+    output_buffer << "Screen updated in:\t\t" << drawing_thread_execution_time << " sec\n";
 
     output_buffer << "Traffic calculated in:\t\t" << speed_calculation_time.tv_sec << " sec "
                   << speed_calculation_time.tv_usec << " microseconds\n";
@@ -1925,10 +1918,9 @@ void traffic_draw_ipv4_program() {
     // Print screen contents into file
     print_screen_contents_into_file(output_buffer.str(), cli_stats_file_path);
 
-    struct timeval end_calc_time;
-    gettimeofday(&end_calc_time, NULL);
+    std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
 
-    timeval_subtract(&drawing_thread_execution_time, &end_calc_time, &start_calc_time);
+    drawing_thread_execution_time = diff.count();
 }
 
 std::string get_human_readable_threshold_type(attack_detection_threshold_type_t detecttion_type) {
