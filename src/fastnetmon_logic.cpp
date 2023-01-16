@@ -2149,10 +2149,6 @@ void speed_callback_subnet_ipv6(subnet_ipv6_cidr_mask_t* subnet, subnet_counter_
 /* Calculate speed for all connnections */
 void recalculate_speed() {
     // logger<< log4cpp::Priority::INFO<<"We run recalculate_speed";
-
-    struct timeval start_calc_time;
-    gettimeofday(&start_calc_time, NULL);
-
     double speed_calc_period = recalculate_speed_timeout;
 
     std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
@@ -2360,10 +2356,17 @@ void recalculate_speed() {
     // Set time of previous startup
     last_call_of_traffic_recalculation = std::chrono::steady_clock::now();
 
-    struct timeval finish_calc_time;
-    gettimeofday(&finish_calc_time, NULL);
+    // Calculate time we spent to calculate speed in this function
+    std::chrono::duration<double> speed_calculation_diff = std::chrono::steady_clock::now() - start_time; 
 
-    timeval_subtract(&speed_calculation_time, &finish_calc_time, &start_calc_time);
+    // Populate fields of old structure for backward compatibility
+    double integer = 0;
+
+    // Split double into integer and fractional parts
+    double fractional = std::modf(speed_calculation_diff.count(), &integer);
+
+    speed_calculation_time.tv_sec = time_t(integer);
+    speed_calculation_time.tv_usec = suseconds_t(fractional*1000000);
 }
 
 std::string draw_table_ipv6(direction_t sort_direction, bool do_redis_update, sort_type_t sorter_type) {
