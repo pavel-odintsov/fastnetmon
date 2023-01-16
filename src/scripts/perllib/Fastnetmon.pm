@@ -391,11 +391,11 @@ sub install_build_dependencies {
         exec_command("apt-get update");
 
         print "Install packages\n";
-        apt_get('make', 'wget', 'git', 'pigz', 'lbzip2', 'autoconf', 'libtool', 'pkg-config');
+        apt_get('make', 'wget', 'git', 'pigz', 'bzip2', 'autoconf', 'libtool', 'pkg-config');
     } elsif ( $distro_type eq 'centos') {
         # We need libmpc for our custom built gcc
         print "Install packages\n";
-        yum('make', 'wget', 'libmpc', 'glibc-devel', 'git', 'pigz', 'lbzip2', 'autoconf', 'libtool', 'pkgconfig');
+        yum('make', 'wget', 'libmpc', 'glibc-devel', 'git', 'pigz', 'bzip2', 'autoconf', 'libtool', 'pkgconfig');
     }
 
     print "Successfully installed all packages\n";
