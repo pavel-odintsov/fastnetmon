@@ -310,7 +310,7 @@ Section: misc
 Priority: optional
 Architecture: $debian_architecture_name
 Version: $package_version
-Depends: libpcap0.8, libatomic1
+Depends: libpcap0.8
 Description: Very fast DDoS analyzer with sFlow/Netflow/IPFIX and mirror support
  FastNetMon - A high performance DoS/DDoS attack sensor.
 DOC
