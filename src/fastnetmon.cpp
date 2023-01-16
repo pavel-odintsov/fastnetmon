@@ -419,9 +419,6 @@ std::string graphite_host         = "127.0.0.1";
 unsigned short int graphite_port  = 2003;
 unsigned int graphite_push_period = 1;
 
-// Time consumed by pushing data to Graphite
-struct timeval graphite_thread_execution_time;
-
 // Default graphite namespace
 std::string graphite_prefix = "fastnetmon";
 

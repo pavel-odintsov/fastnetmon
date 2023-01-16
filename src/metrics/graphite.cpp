@@ -11,7 +11,6 @@
 #include "../abstract_subnet_counters.hpp"
 
 extern log4cpp::Category& logger;
-extern struct timeval graphite_thread_execution_time;
 extern map_of_vector_counters_t SubnetVectorMapSpeed;
 extern map_of_vector_counters_t SubnetVectorMapSpeedAverage;
 extern uint64_t incoming_total_flows_speed;
@@ -205,8 +204,7 @@ void graphite_push_thread() {
     while (true) {
         boost::this_thread::sleep(boost::posix_time::seconds(graphite_push_period));
 
-        struct timeval start_calc_time;
-        gettimeofday(&start_calc_time, NULL);
+        std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
 
         // First of all push total counters to Graphite
         push_total_traffic_counters_to_graphite();
@@ -217,12 +215,8 @@ void graphite_push_thread() {
         // Push per host counters to graphite
         push_hosts_traffic_counters_to_graphite();
 
-        struct timeval end_calc_time;
-        gettimeofday(&end_calc_time, NULL);
+        std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
 
-        timeval_subtract(&graphite_thread_execution_time, &end_calc_time, &start_calc_time);
-
-        logger << log4cpp::Priority::DEBUG << "Graphite data pushed in: " << graphite_thread_execution_time.tv_sec
-               << " sec " << graphite_thread_execution_time.tv_usec << " microseconds\n";
+        logger << log4cpp::Priority::DEBUG << "Graphite data pushed in: " << diff.count() << " seconds";
     }
 }
