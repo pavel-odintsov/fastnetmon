@@ -343,8 +343,8 @@ sub main {
         },
         'bpf_1_0_1'             => {
             'centos:7'            => 'b6c6b072cef81b2462c280935852f085b7e09f9677723caf9bb5df08971886985446ba20a4aa984381c766ed0fc2d2b9cd2afaa7ab3d63becde566738058fd1d',
-            'centos:8'            => '',
-            'centos:9'            => '',
+            'centos:8'            => '70787f1c28791e01ed1612df7bce226bd7e293f3b17ecfa22284841198a050c0422e46dc78597226c091e04198b8b0681cd1d4d5fde4f068434c45876b1dad72',
+            'centos:9'            => '6313c8ad1c6e6e070e06796807770a291d85ae6e5fb67d3045dbcb144016968e34b5256f83006be0847fcc53222b931c300b11598d7bf031d75c6284343a6db1',
             
             'debian:9'            => '0f397e08a6bec515260c2937d76dbf48ad8b3452ead4ac5c41d4b3536ba7e8a40fa703f7638111492e690d9c9e3fd5316aaf41c9c93e82eacd8dd0fb6bac2c2c',
             'debian:10'           => '8f2e456bcd0b89fafe97c6368f725d85230f183f72a720bb4f7da043ca6ea255a2c97e374eb78407e8ef969d84faebd63cf5b509eb9bf4476fac5b08567574b9',
@@ -358,8 +358,8 @@ sub main {
         },
         'elfutils_0_186'        => {
             'centos:7'            => '23acf9d80f72da864310f13b36b941938a841c6418c5378f6c3620a339d0f018376e52509216417ec9c0ce3d65c9a285d2c009ec5245e3ee01e9e54d2f10b2f8',
-            'centos:8'            => '',
-            'centos:9'            => '',
+            'centos:8'            => '28ffbc485b5feaa3ba334d34757a9f39e2d99c97f00ca4163e2d8ce24746bf5619338c279c873ab2d28fd7156b556816ee7cc2833a12c4391f65dddfc8392a00',
+            'centos:9'            => 'b518006d054e123142c186b7eeff5f0d76ea3828487da6cab46e1ad172367a92dc038b1b88dd284226909df25bec3979e400637336839a4d322cac376afda8ec',
             
             'debian:9'            => 'd5cc79509a537feb7fe2cc0241695f530ac5459f7dbdc83d16590db83057cc3ee79f2197033d9ce6a8530cc5491836943a04e18af13a2c71d40f6b68a3ebfd6d',
             'debian:10'           => '16bdd1aa0feee95d529fa98bf2db5a5b3a834883ba4b890773d32fc3a7c5b04a9a5212d2b6d9d7aa5d9a0176a9e9002743d20515912381dcafbadc766f8d0a9d',
@@ -373,8 +373,8 @@ sub main {
         },
         'gobgp_2_27_0'          => {
             'centos:7'            => 'a907b6cc247147fb2c125ee7c8186c4f2b5b57e3a114e45c53b5373324d02318aad6d3d0397aa3d9761c434f022f8a8bbb2e55caa9c5654966ef9ce85c6206b9',
-            'centos:8'            => '',
-            'centos:9'            => '',
+            'centos:8'            => '97caaa7853099de36c17bd69d5c67ec967a0ea1ad90f7ddb0a2238144e833373b47990209995528d35d824684566a03dde4d49866db43a2721194c5d20f53281',
+            'centos:9'            => '91904a141da4171f791b04e4853848523a53f7b7c2459f14ed202cabfce596ecfa292bd80dd9a25a5e0ba50f670e8fde21720df9f8a8ab834f7497a2a0974d18',
 
             'debian:9'            => '2cf31b1176966a92bc856ba96ebce734d57e123b837eba3d9561439169e195d3dff2a4a03f3196647fc38bf96d69b7ed0bf2e7556996a0a39dda07640fef3699',
             'debian:10'           => 'c5f16ad35f13555514c3a286b32909f51f9eeada3f0fd7ccba519a6faff8e1d710eb16e7d33132ed7ecc9b2477f49279eeb4cc1dd9ae62b249ffe46522c370d2',
@@ -388,8 +388,8 @@ sub main {
         },
         'log4cpp_1_1_3'         => {
             'centos:7'            => '5f314177ff82f9b822c76a0256a322e1b8c81575d9b3da33f45532f0942f5358c7588cf1b88a88f8ed99c433c97a3f2fbf59a949eb32a7335c5a8d3a59895a65',
-            'centos:8'            => '',
-            'centos:9'            => '',
+            'centos:8'            => 'a5e2068788957b9b14042e3ea9cc1aecb4c7910bea770e270d2a21392a7569004bda74546d7025c95f937de6368b705848c151386a765c55f3fa14ef511b67d2',
+            'centos:9'            => '052457ac03a5640e4d51e93f47b83d5990663f0629633c956466bf156fa9bf63052700d4d2c5aae44bc5022dd9b93ef65d2dd1176a675e3dd61a6e960afa58e7',
 
             'debian:9'            => 'bd886f9d7950443c8135255e1c59229ce76dc09260b76eae82c4c665414151b473299347d7621aae4a4743df51a923c2eaeef904b1140092ffe5976b3b346fd7',
             'debian:10'           => 'a966df89fc18ef4b4ea82cc3d2d53d3ecb3623ef5cd197a23ed8135f27ecfab2d35b4a24f594bb16aaa11b618126cba640ef7a61d7d2d22ba9682e5e0e8114ca',
