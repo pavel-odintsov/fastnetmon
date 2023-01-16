@@ -29,8 +29,6 @@ class Fastnetmon < Formula
 
   def install
     system "cmake", "-S", "src", "-B", "build",
-                    "-DENABLE_CUSTOM_BOOST_BUILD=FALSE",
-                    "-DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE",
                     "-DLINK_WITH_ABSL=TRUE",
                     "-DSET_ABSOLUTE_INSTALL_PATH=OFF",
                     *std_cmake_args
