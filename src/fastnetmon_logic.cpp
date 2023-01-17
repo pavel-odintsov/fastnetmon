@@ -1899,10 +1899,6 @@ void traffic_draw_ipv4_program() {
     output_buffer << "Traffic calculated in:\t\t" << speed_calculation_time.tv_sec << " sec "
                   << speed_calculation_time.tv_usec << " microseconds\n";
 
-    if (speed_calculation_time.tv_sec > 0) {
-        output_buffer << "ALERT! Toolkit working incorrectly! We should calculate speed in ~1 second\n";
-    }
-
     output_buffer << "Not processed packets: " << total_unparsed_packets_speed << " pps\n";
 
     // Print backend stats
@@ -2359,6 +2355,15 @@ void recalculate_speed() {
 
     speed_calculation_time.tv_sec = time_t(integer);
     speed_calculation_time.tv_usec = suseconds_t(fractional*1000000);
+
+    // Report cases when we calculate speed too slow
+    if (speed_calculation_time.tv_sec > 0) {
+        logger << log4cpp::Priority::ERROR << "ALERT. Toolkit working incorrectly. We should calculate speed counters in <1 second";
+        logger << log4cpp::Priority::ERROR << "Traffic was calculated in: " << speed_calculation_time.tv_sec << " sec "
+               << speed_calculation_time.tv_usec << " microseconds";
+
+        logger << log4cpp::Priority::ERROR << "Please use CPU with higher frequency and better single core performance or reduce number of monitored hosts";
+    }
 }
 
 std::string draw_table_ipv6(direction_t sort_direction, bool do_redis_update, sort_type_t sorter_type) {
