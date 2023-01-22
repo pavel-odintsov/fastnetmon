@@ -439,13 +439,6 @@ sub init_compiler {
         if ($cpus_number > 4) {
             $cpus_number = 4;
 
-            # TODO: remove it after finishing gcc build 
-            # https://gcc.gnu.org/install/build.html
-            # You can also specify a bigger number, and in most cases using a value greater than the number of processors in your machine will result
-            # in fewer and shorter I/O latency hits, thus improving overall throughput; this is especially true for slow drives and network filesystems. 
-            print "We've set number of CPU cores to 5 in attempt to speed up gcc build time on CI, this option need to be removed in future\n";
-            $cpus_number = 5;
-
             print "We run on CI and we need to cap number of CPU cores to $cpus_number as CircleCI does not report corect number of cores to us due to Docker use\n";
         }
     }
