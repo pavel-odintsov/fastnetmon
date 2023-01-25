@@ -13,6 +13,10 @@
 //
 // clang -c -g -O2 -target bpf xdp_kernel.c -o xdp_kernel.o
 //
+// To unload BPF for specific interface you need to apply following command:
+//
+// sudo xdp-loader unload <interface> --all
+//
 
 struct {
     __uint(type, BPF_MAP_TYPE_ARRAY);
