@@ -1,28 +1,22 @@
 // SPDX-License-Identifier: GPL-2.0
 #define KBUILD_MODNAME "foo"
-#include <uapi/linux/bpf.h>
-#include "bpf_helpers.h"
+#include <linux/bpf.h>
+#include "bpf/bpf_helpers.h"
 
-struct bpf_map_def SEC("maps") qidconf_map = {
-    .type       = BPF_MAP_TYPE_ARRAY,
-    .key_size   = sizeof(int),
-    .value_size = sizeof(int),
-    .max_entries    = 1,
-};
+struct {
+    __uint(type, BPF_MAP_TYPE_ARRAY);
+    __uint(max_entries, 1);
+    __type(key, int);
+    __type(value, int);
+} qidconf_map SEC(".maps");
 
-struct bpf_map_def SEC("maps") xsks_map = {
-    .type = BPF_MAP_TYPE_XSKMAP,
-    .key_size = sizeof(int),
-    .value_size = sizeof(int),
-    .max_entries = 4,
-};
+struct {
+    __uint(type, BPF_MAP_TYPE_XSKMAP);
+    __uint(max_entries, 4);
+    __type(key, int);
+    __type(value, int);
+} xsks_map SEC(".maps");
 
-struct bpf_map_def SEC("maps") rr_map = {
-    .type = BPF_MAP_TYPE_PERCPU_ARRAY,
-    .key_size = sizeof(int),
-    .value_size = sizeof(unsigned int),
-    .max_entries = 1,
-};
 
 SEC("xdp_sock")
 int xdp_sock_prog(struct xdp_md *ctx)
