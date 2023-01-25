@@ -550,8 +550,11 @@ void start_xdp_collection(process_packet_pointer func_ptr) {
 
     bpf_object* obj = bpf_object__open_file(bpf_microcode_path.c_str(), NULL);
 
-    if (libbpf_get_error(obj)) {
-        logger << log4cpp::Priority::ERROR << "Cannot open BPF file: " << bpf_microcode_path;
+    int open_file_error_code = libbpf_get_error(obj);
+
+    if (open_file_error_code) {
+        // Documentation claims https://libbpf.readthedocs.io/en/latest/api.html that errno will be set too
+        logger << log4cpp::Priority::ERROR << "Cannot open BPF file: " << bpf_microcode_path << " with error code " << open_file_error_code << " errno " << errno;
         return;
     }
 
