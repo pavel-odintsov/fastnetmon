@@ -3,6 +3,17 @@
 #include <linux/bpf.h>
 #include "bpf/bpf_helpers.h"
 
+//
+// To compile it on Ubuntu 22.04 x86_64 you will need following packages:
+// sudo apt install -y clang libbpf-dev  gcc-multilib
+//
+// Sadly ARM64 has no gcc-multilib package and we cannot compile it on ARM64 boxes
+//
+// Compile command:
+//
+// clang -c -g -O2 -target bpf xdp_kernel.c -o xdp_kernel.o
+//
+
 struct {
     __uint(type, BPF_MAP_TYPE_ARRAY);
     __uint(max_entries, 1);
