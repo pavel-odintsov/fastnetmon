@@ -979,6 +979,14 @@ bool load_configuration_file() {
         collect_attack_pcap_dumps = configuration_map["collect_attack_pcap_dumps"] == "on" ? true : false;
     }
 
+    if (configuration_map.count("dump_all_traffic") != 0) {
+        DEBUG_DUMP_ALL_PACKETS = configuration_map["dump_all_traffic"] == "on" ? true : false;
+    }
+
+    if (configuration_map.count("dump_other_traffic") != 0) {
+        DEBUG_DUMP_OTHER_PACKETS = configuration_map["dump_other_traffic"] == "on" ? true : false;
+    }
+
     return true;
 }
 
