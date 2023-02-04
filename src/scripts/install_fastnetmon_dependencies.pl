@@ -404,6 +404,12 @@ sub main {
             'ubuntu:20.04'        => 'b0d1d78db526784c66d6cb8ed03941c7f7d00ab16983588e14f0ffb2d9e0a340b1c40008c109962e7fd6d8fce5dca3145de16b05c83cd0ff0afe753bbd75587b',
             'ubuntu:22.04'        => '371a8c0424ad3fc8b1ab63217a850ec234f5768243a6e7737696cfd115da86f63f7399a993ea4c97654c860072c9e662d1586378c62dab04281214d69d4ed1d5',
         },
+        'rdkafka_1_7_0'           => {
+
+        },
+        'cppkafka_0_3_1'          => {
+
+        },
     };
 
     # How many seconds we needed to download all dependencies
@@ -434,7 +440,7 @@ sub main {
         my $binary_hash = $binary_build_hashes->{$package}; 
 
         unless ($binary_hash) {
-            die "Binary hash does not exist for $package, please do fresh build and add hash for it\n";
+            die "Binary hash does not exist for $package, please create at least empty hash structure for it in binary_build_hashes\n";
         }
 
         my $cache_download_start_time = time();
