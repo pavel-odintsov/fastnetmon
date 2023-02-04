@@ -118,6 +118,10 @@
 #include "metrics/graphite.hpp"
 #include "metrics/influxdb.hpp"
 
+#ifdef KAFKA
+#include <cppkafka/cppkafka.h>
+#endif
+
 #ifdef FASTNETMON_API
 using fastmitigation::BanListReply;
 using fastmitigation::BanListRequest;
@@ -129,6 +133,18 @@ using grpc::Status;
 
 std::unique_ptr<Server> api_server;
 bool enable_api = false;
+#endif
+
+#ifdef KAFKA
+cppkafka::Producer* kafka_producer = nullptr;
+
+// Traffic export to Kafka
+bool kafka_traffic_export = false;
+
+std::string kafka_traffic_export_topic = "fastnetmon";
+
+std::string kafka_traffic_export_format = "json";
+std::vector<std::string> kafka_broker;
 #endif
 
 std::chrono::steady_clock::time_point last_call_of_traffic_recalculation;
