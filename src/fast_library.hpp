@@ -160,3 +160,5 @@ bool execute_web_request_secure(std::string address,
                                 std::string& response_body,
                                 std::map<std::string, std::string>& headers,
                                 std::string& error_text);
+std::string forwarding_status_to_string(forwarding_status_t status);
+std::string country_static_string_to_dynamic_string(const boost::beast::static_string<2>& country_code);

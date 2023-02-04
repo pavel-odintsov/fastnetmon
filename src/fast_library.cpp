@@ -429,6 +429,85 @@ int clear_bit_value(uint16_t& num, int bit) {
     }
 }
 
+// Encodes simple packet with all fields as separate fields in json format
+bool serialize_simple_packet_to_json(const simple_packet_t& packet, nlohmann::json& json_packet) {
+    extern log4cpp::Category& logger;
+
+    std::string protocol_version;
+    std::string source_ip_as_string;
+    std::string destination_ip_as_string;
+
+    if (packet.ip_protocol_version == 4) {
+        protocol_version = "ipv4";
+
+        source_ip_as_string      = convert_ip_as_uint_to_string(packet.src_ip);
+        destination_ip_as_string = convert_ip_as_uint_to_string(packet.dst_ip);
+    } else if (packet.ip_protocol_version == 6) {
+        protocol_version = "ipv6";
+
+        source_ip_as_string      = print_ipv6_address(packet.src_ipv6);
+        destination_ip_as_string = print_ipv6_address(packet.dst_ipv6);
+    } else {
+        protocol_version = "unknown";
+    }
+
+    try {
+
+        json_packet["ip_version"] = protocol_version;
+
+        json_packet["source_ip"]      = source_ip_as_string;
+        json_packet["destination_ip"] = destination_ip_as_string;
+
+        json_packet["source_asn"]      = packet.src_asn;
+        json_packet["destination_asn"] = packet.dst_asn;
+
+        json_packet["source_country"]      = country_static_string_to_dynamic_string(packet.src_country);
+        json_packet["destination_country"] = country_static_string_to_dynamic_string(packet.dst_country);
+
+        json_packet["input_interface"]  = packet.input_interface;
+        json_packet["output_interface"] = packet.output_interface;
+
+        // Add ports for TCP and UDP
+        if (packet.protocol == IPPROTO_TCP or packet.protocol == IPPROTO_UDP) {
+            json_packet["source_port"]      = packet.source_port;
+            json_packet["destination_port"] = packet.destination_port;
+        }
+
+        // Add agent information
+        std::string agent_ip_as_string = convert_ip_as_uint_to_string(packet.agent_ip_address);
+        json_packet["agent_address"] = agent_ip_as_string;
+
+        if (packet.protocol == IPPROTO_TCP) {
+            std::string tcp_flags    = print_tcp_flags(packet.flags);
+            json_packet["tcp_flags"] = tcp_flags;
+        }
+
+        // Add forwarding status
+        std::string forwarding_status = forwarding_status_to_string(packet.forwarding_status);
+
+        json_packet["forwarding_status"] = forwarding_status;
+
+        json_packet["fragmentation"] = packet.ip_fragmented;
+
+        json_packet["packets"]   = packet.number_of_packets;
+        json_packet["length"]    = packet.length;
+        json_packet["ip_length"] = packet.ip_length;
+
+        json_packet["ttl"]          = packet.ttl;
+        json_packet["sample_ratio"] = packet.sample_ratio;
+
+        std::string protocol = get_printable_protocol_name(packet.protocol);
+
+        json_packet["protocol"] = protocol;
+
+    } catch (...) {
+        logger << log4cpp::Priority::ERROR << "Exception was triggered in JSON logic in serialize_simple_packet_to_json";
+        return false;
+    }
+
+    return true;
+}
+
 std::string print_simple_packet(simple_packet_t packet) {
     std::stringstream buffer;
 
@@ -2252,5 +2331,33 @@ std::string get_cpu_model() {
 #endif
 
     return "";
+}
+
+// returns forwarding status as string
+std::string forwarding_status_to_string(forwarding_status_t status) {
+    if (status == forwarding_status_t::unknown) {
+        return "unknown";
+    } else if (status == forwarding_status_t::forwarded) {
+        return "forwarded";
+    } else if (status == forwarding_status_t::dropped) {
+        return "dropped";
+    } else if (status == forwarding_status_t::consumed) {
+        return "consumed";
+    } else {
+        // It must not happen
+        return "unknown";
+    }
+}
+
+// Pretty strange function to implement country code conversion we use in fastnetmon_simple_packet
+std::string country_static_string_to_dynamic_string(const boost::beast::static_string<2>& country_code) {
+    std::string country_code_dynamic_string;
+
+    if (country_code.size() == 2) {
+        country_code_dynamic_string += country_code[0];
+        country_code_dynamic_string += country_code[1];
+    }
+
+    return country_code_dynamic_string;
 }
 
