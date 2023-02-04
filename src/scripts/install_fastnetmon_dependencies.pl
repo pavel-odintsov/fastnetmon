@@ -104,7 +104,10 @@ sub main {
         
         'elfutils_0_186',
         'bpf_1_0_1',
-        
+       
+        'rdkafka_1_7_0',
+        'cppkafka_0_3_1',
+
         'gobgp_2_27_0',
         'log4cpp_1_1_3',
     );

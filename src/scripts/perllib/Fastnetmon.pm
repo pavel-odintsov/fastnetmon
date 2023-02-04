@@ -918,6 +918,20 @@ sub install_protobuf {
     return 1;
 }
 
+sub install_rdkafka {
+    my $folder_name = shift;
+
+    my $res = install_configure_based_software("https://github.com/edenhill/librdkafka/archive/v1.7.0.tar.gz", "d07d7f4ca8b969d90cb380c7d9e381690890e677", "$library_install_folder/$folder_name", "--disable-gssapi --disable-lz4-ext --disable-ssl");
+
+    unless ($res) {
+        die "Cannot install librdkafka\n";
+    }    
+
+    return 1;
+}
+
+
+
 sub install_elfutils {
     my $folder_name = shift;
 
@@ -945,8 +959,6 @@ sub install_capnproto {
     my $folder_name = shift;
 
     my $capnp_install_path = "$library_install_folder/$folder_name";
-
-    warn "Cannot get dependency from cache, do manual build\n";
 
     my $res = install_configure_based_software("https://capnproto.org/capnproto-c++-0.8.0.tar.gz", 
         "fbc1c65b32748029f1a09783d3ebe9d496d5fcc4", $capnp_install_path, 
@@ -976,6 +988,25 @@ sub install_abseil {
     if (!$res) {
         warn "Cannot install abseil\n";
         return ''
+    }
+
+    return 1;
+}
+
+sub install_cppkafka {
+    my $folder_name = shift;
+
+    my $rdkafka_path = "$library_install_folder/rdkafka_1_7_0";
+
+    my $boost_path = "$library_install_folder/boost_1_81_0";
+
+    my $res = install_cmake_based_software("https://github.com/mfontanini/cppkafka/archive/v0.3.1.tar.gz",
+         "0da8a4229dddf97cbf52a1a5ae7b99c923052edb",
+         "$library_install_folder/$folder_name",
+         "$ld_library_path_for_make $cmake_path -DRDKAFKA_ROOT_DIR=$rdkafka_path -DCPPKAFKA_DISABLE_TESTS=ON -DBOOST_ROOT=$boost_path -DCMAKE_C_COMPILER=$default_c_compiler_path -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DCMAKE_INSTALL_PREFIX=$library_install_folder/$folder_name ..");
+
+    if (!$res) {
+        die "Can't install cppkafka\n";
     }
 
     return 1;
