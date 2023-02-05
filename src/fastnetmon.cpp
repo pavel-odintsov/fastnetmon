@@ -142,8 +142,7 @@ cppkafka::Producer* kafka_producer = nullptr;
 bool kafka_traffic_export = false;
 
 std::string kafka_traffic_export_topic = "fastnetmon";
-
-std::string kafka_traffic_export_format = "json";
+kafka_traffic_export_format_t kafka_traffic_export_format = kafka_traffic_export_format_t::JSON;
 std::vector<std::string> kafka_broker;
 #endif
 
@@ -940,6 +939,33 @@ bool load_configuration_file() {
             redis_enabled = true;
         } else {
             redis_enabled = false;
+        }
+    }
+#endif
+
+#ifdef KAFKA
+    if (configuration_map.count("kafka_traffic_export") != 0) {
+        if (configuration_map["kafka_traffic_export"] == "on") {
+            kafka_traffic_export = true;
+        }
+    }
+
+    if (configuration_map.count("kafka_traffic_export_topic") != 0) {
+        kafka_traffic_export_topic = configuration_map["kafka_traffic_export_topic"];
+    }
+
+    if (configuration_map.count("kafka_traffic_export_format") != 0) {
+        std::string kafka_traffic_export_format_raw = configuration_map["kafka_traffic_export_format"];
+
+        // Switch it to lowercase
+        boost::algorithm::to_lower(kafka_traffic_export_format_raw);
+
+        if (kafka_traffic_export_format_raw == "json") {
+            kafka_traffic_export_format = kafka_traffic_export_format_t::JSON;
+        } else if (kafka_traffic_export_format_raw == "protobuf") {
+            kafka_traffic_export_format = kafka_traffic_export_format_t::Protobuf;
+        } else {
+            kafka_traffic_export_format = kafka_traffic_export_format_t::Unknown;
         }
     }
 #endif

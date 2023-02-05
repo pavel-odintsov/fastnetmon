@@ -25,6 +25,10 @@
 
 enum attack_severity_t { ATTACK_SEVERITY_LOW, ATTACK_SEVERITY_MIDDLE, ATTACK_SEVERITY_HIGH };
 
+
+// Kafka traffic export formats
+enum class kafka_traffic_export_format_t : uint32_t { JSON = 1, Protobuf = 2, Unknown = 255 };
+
 typedef std::vector<subnet_counter_t> vector_of_counters_t;
 
 typedef std::map<std::string, std::string> configuration_map_t;
