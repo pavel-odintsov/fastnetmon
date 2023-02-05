@@ -27,7 +27,6 @@ set(GRPC_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/grpc_1_49_2")
 set(LIBBPF_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/bpf_1_0_1")
 set(LIBELF_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/elfutils_0_186")
 set(PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/protobuf_21_12")
-set(ICU_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/icu_65_1")
 set(ABSL_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/abseil_2022_06_23")
 set(BOOST_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/boost_1_81_0")
 set(GCC_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/gcc_12_1_0")
@@ -75,19 +74,7 @@ if (DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
 
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
 
-    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${BOOST_INSTALL_PATH}/lib;${ICU_CUSTOM_INSTALL_PATH}/lib;${GCC_INSTALL_PATH}/lib64")
-
-    # For custom Boost we need to link with libicu library
-    find_library(ICU_LIBRARY_UC_PATH NAMES icuuc PATHS "${ICU_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
-    find_library(ICU_LIBRARY_DATA_PATH NAMES icudata PATHS "${ICU_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
-    find_library(ICU_LIBRARY_I18N_PATH NAMES icui18n PATHS "${ICU_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
-
-    if (ICU_LIBRARY_UC_PATH AND ICU_LIBRARY_DATA_PATH AND ICU_LIBRARY_I18N_PATH)
-        message(STATUS "Found libicu")
-    else()
-        message(FATAL_ERROR "Could not find icu libraries ${ICU_LIBRARY_UC_PATH} ${ICU_LIBRARY_DATA_PATH} ${ICU_LIBRARY_I18N_PATH}")
-    endif()
-
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${BOOST_INSTALL_PATH}/lib;${GCC_INSTALL_PATH}/lib64")
 endif()
 
 # We use hardcoded RPATH for our libraries only when we compile against our custom libraries
@@ -597,13 +584,6 @@ if (ENABLE_GOBGP_SUPPORT)
     target_link_libraries(fastnetmon fastnetmon_grpc_pb_cc)
     target_link_libraries(fastnetmon fastnetmon_pb_cc)
     target_link_libraries(fastnetmon ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
-endif()
-
-# We link with icu only when we do build with our custom libraries
-if (DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
-    target_link_libraries(fastnetmon ${ICU_LIBRARY_UC_PATH})
-    target_link_libraries(fastnetmon ${ICU_LIBRARY_DATA_PATH})
-    target_link_libraries(fastnetmon ${ICU_LIBRARY_I18N_PATH})
 endif()
 
 # example plugin
