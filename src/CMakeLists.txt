@@ -378,17 +378,8 @@ if (KAFKA_SUPPORT)
     # We need to enable it explicitly
     add_definitions(-DKAFKA)
 
-    # Find librdkafka
-    find_library(LIBRDKAFKA_LIBRARY_PATH names "rdkafka" PATHS "${LIB_RDKAFKA_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
-
     # cpp-kafka uses these header files from their header too
     include_directories("${LIB_RDKAFKA_INSTALL_PATH}/include")
-
-    if (NOT LIBRDKAFKA_LIBRARY_PATH)
-        message(FATAL_ERROR "Could not find rdkafka library")
-    else()
-        message(STATUS "Will use rdkafka library from ${LIBRDKAFKA_LIBRARY_PATH}")
-    endif()
 
     # cppkafka
     find_library(LIBKAFKA_CPP_LIBRARY_PATH names "cppkafka" PATHS "${LIB_CPP_KAFKA_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
@@ -601,7 +592,6 @@ if (ENABLE_GOBGP_SUPPORT)
 
     if (KAFKA_SUPPORT)
         target_link_libraries(fastnetmon ${LIBKAFKA_CPP_LIBRARY_PATH})
-        target_link_libraries(fastnetmon ${LIBRDKAFKA_LIBRARY_PATH})
     endif()
 
     target_link_libraries(fastnetmon ${GRPC_LIBRARY_GPR_PATH})
