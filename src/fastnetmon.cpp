@@ -143,7 +143,7 @@ bool kafka_traffic_export = false;
 
 std::string kafka_traffic_export_topic = "fastnetmon";
 kafka_traffic_export_format_t kafka_traffic_export_format = kafka_traffic_export_format_t::JSON;
-std::vector<std::string> kafka_broker;
+std::vector<std::string> kafka_traffic_export_brokers;
 #endif
 
 std::chrono::steady_clock::time_point last_call_of_traffic_recalculation;
@@ -954,6 +954,13 @@ bool load_configuration_file() {
         kafka_traffic_export_topic = configuration_map["kafka_traffic_export_topic"];
     }
 
+    // Load brokers list
+    if (configuration_map.count("kafka_traffic_export_brokers") != 0) {
+        std::string brokers_list_raw = configuration_map["kafka_traffic_export_brokers"];
+
+        boost::split( kafka_traffic_export_brokers, brokers_list_raw, boost::is_any_of(","), boost::token_compress_on);
+    }
+
     if (configuration_map.count("kafka_traffic_export_format") != 0) {
         std::string kafka_traffic_export_format_raw = configuration_map["kafka_traffic_export_format"];
 
@@ -965,6 +972,8 @@ bool load_configuration_file() {
         } else if (kafka_traffic_export_format_raw == "protobuf") {
             kafka_traffic_export_format = kafka_traffic_export_format_t::Protobuf;
         } else {
+            logger << log4cpp::Priority::ERROR << "Unknown format for kafka_traffic_export_format: " << kafka_traffic_export_format_raw;
+
             kafka_traffic_export_format = kafka_traffic_export_format_t::Unknown;
         }
     }
