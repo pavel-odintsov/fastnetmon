@@ -28,7 +28,6 @@ set(LIBBPF_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/bpf_1_0_1")
 set(LIBELF_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/elfutils_0_186")
 set(PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/protobuf_21_12")
 set(ICU_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/icu_65_1")
-set(CARES_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/cares_1_18_1")
 set(ABSL_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/abseil_2022_06_23")
 set(BOOST_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/boost_1_81_0")
 set(GCC_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/gcc_12_1_0")
@@ -117,7 +116,6 @@ if (DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
     SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${OPENSSL_CUSTOM_INSTALL_PATH}/lib")
     SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${LIBBPF_CUSTOM_INSTALL_PATH}/lib64")
     SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${LIBELF_CUSTOM_INSTALL_PATH}/lib")
-    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${CARES_INSTALL_PATH}/lib")
 
     SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${LIB_CPP_KAFKA_INSTALL_PATH}/lib")
     SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${LIB_RDKAFKA_INSTALL_PATH}/lib")
@@ -584,7 +582,6 @@ if (ENABLE_GOBGP_SUPPORT)
 
     target_link_libraries(fastnetmon_api_client ${GRPC_LIBRARY_GPR_PATH})
     target_link_libraries(fastnetmon_api_client ${GRPC_LIBRARY_GRPC_CPP_PATH})
-    target_link_libraries(fastnetmon_api_client ${CARES_LIBRARY_PATH})
     target_link_libraries(fastnetmon_api_client ${GRPC_LIBRARY_GRPC_PATH})
     target_link_libraries(fastnetmon_api_client fastnetmon_grpc_pb_cc)
     target_link_libraries(fastnetmon_api_client fastnetmon_pb_cc)
@@ -596,7 +593,6 @@ if (ENABLE_GOBGP_SUPPORT)
 
     target_link_libraries(fastnetmon ${GRPC_LIBRARY_GPR_PATH})
     target_link_libraries(fastnetmon ${GRPC_LIBRARY_GRPC_CPP_PATH})
-    target_link_libraries(fastnetmon ${CARES_LIBRARY_PATH})
     target_link_libraries(fastnetmon ${GRPC_LIBRARY_GRPC_PATH})
     target_link_libraries(fastnetmon fastnetmon_grpc_pb_cc)
     target_link_libraries(fastnetmon fastnetmon_pb_cc)
@@ -756,15 +752,6 @@ endif()
 #else()
 #    message(FATAL_ERROR "We can't find pcap library")    
 #endif()
-
-# Try to find C-Ares, we need it for gRPC, we do not use it directly
-find_library(CARES_LIBRARY_PATH NAMES cares PATHS "${CARES_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
-
-if (CARES_LIBRARY_PATH)
-    message(STATUS "Found C-Ares: ${CARES_LIBRARY_PATH}")
-else()
-    message(FATAL_ERROR "Cannot find C-Ares")
-endif()
 
 ### Look for log4cpp
 
