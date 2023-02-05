@@ -2604,67 +2604,67 @@ void process_ipv6_packet(simple_packet_t& current_packet) {
     uint64_t sampled_number_of_packets = current_packet.number_of_packets * current_packet.sample_ratio;
     uint64_t sampled_number_of_bytes   = current_packet.length * current_packet.sample_ratio;
 
-        subnet_ipv6_cidr_mask_t ipv6_cidr_subnet;
+    subnet_ipv6_cidr_mask_t ipv6_cidr_subnet;
 
-        current_packet.packet_direction =
-            get_packet_direction_ipv6(lookup_tree_ipv6, current_packet.src_ipv6, current_packet.dst_ipv6, ipv6_cidr_subnet);
+    current_packet.packet_direction =
+        get_packet_direction_ipv6(lookup_tree_ipv6, current_packet.src_ipv6, current_packet.dst_ipv6, ipv6_cidr_subnet);
 
 #ifdef USE_NEW_ATOMIC_BUILTINS
-        __atomic_add_fetch(&total_counters_ipv6.total_counters[current_packet.packet_direction].packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&total_counters_ipv6.total_counters[current_packet.packet_direction].bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+    __atomic_add_fetch(&total_counters_ipv6.total_counters[current_packet.packet_direction].packets, sampled_number_of_packets, __ATOMIC_RELAXED);
+    __atomic_add_fetch(&total_counters_ipv6.total_counters[current_packet.packet_direction].bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
 
-        __atomic_add_fetch(&total_ipv6_packets, 1, __ATOMIC_RELAXED);
+    __atomic_add_fetch(&total_ipv6_packets, 1, __ATOMIC_RELAXED);
 #else
-        __sync_fetch_and_add(&total_counters_ipv6.total_counters[current_packet.packet_direction].packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&total_counters_ipv6.total_counters[current_packet.packet_direction].bytes, sampled_number_of_bytes);
+    __sync_fetch_and_add(&total_counters_ipv6.total_counters[current_packet.packet_direction].packets, sampled_number_of_packets);
+    __sync_fetch_and_add(&total_counters_ipv6.total_counters[current_packet.packet_direction].bytes, sampled_number_of_bytes);
 
-        __sync_fetch_and_add(&total_ipv6_packets, 1);
+    __sync_fetch_and_add(&total_ipv6_packets, 1);
 #endif
 
-        {
-            std::lock_guard<std::mutex> lock_guard(ipv6_subnet_counters.counter_map_mutex);
+    {
+        std::lock_guard<std::mutex> lock_guard(ipv6_subnet_counters.counter_map_mutex);
 
-            // We will create keys for new subnet here on demand
-            subnet_counter_t* counter_ptr = &ipv6_subnet_counters.counter_map[ipv6_cidr_subnet];
+        // We will create keys for new subnet here on demand
+        subnet_counter_t* counter_ptr = &ipv6_subnet_counters.counter_map[ipv6_cidr_subnet];
 
-            if (current_packet.packet_direction == OUTGOING) {
-                counter_ptr->total.out_packets += sampled_number_of_packets;
-                counter_ptr->total.out_bytes += sampled_number_of_bytes;
-            } else if (current_packet.packet_direction == INCOMING) {
-                counter_ptr->total.in_packets += sampled_number_of_packets;
-                counter_ptr->total.in_bytes += sampled_number_of_bytes;
-            }
+        if (current_packet.packet_direction == OUTGOING) {
+            counter_ptr->total.out_packets += sampled_number_of_packets;
+            counter_ptr->total.out_bytes += sampled_number_of_bytes;
+        } else if (current_packet.packet_direction == INCOMING) {
+            counter_ptr->total.in_packets += sampled_number_of_packets;
+            counter_ptr->total.in_bytes += sampled_number_of_bytes;
         }
+    }
 
-        // Here I use counters allocated per /128. In some future we could offer option to count them in diffenrent way
-        // (/64, /96)
-        {
-            std::lock_guard<std::mutex> lock_guard(ipv6_host_counters.counter_map_mutex);
+    // Here I use counters allocated per /128. In some future we could offer option to count them in diffenrent way
+    // (/64, /96)
+    {
+        std::lock_guard<std::mutex> lock_guard(ipv6_host_counters.counter_map_mutex);
 
-            if (current_packet.packet_direction == OUTGOING) {
-                subnet_ipv6_cidr_mask_t ipv6_address;
-                ipv6_address.set_cidr_prefix_length(128);
-                ipv6_address.set_subnet_address(&current_packet.src_ipv6);
+        if (current_packet.packet_direction == OUTGOING) {
+            subnet_ipv6_cidr_mask_t ipv6_address;
+            ipv6_address.set_cidr_prefix_length(128);
+            ipv6_address.set_subnet_address(&current_packet.src_ipv6);
 
-                subnet_counter_t* counter_ptr = &ipv6_host_counters.counter_map[ipv6_address];
-                increment_outgoing_counters(counter_ptr, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
+            subnet_counter_t* counter_ptr = &ipv6_host_counters.counter_map[ipv6_address];
+            increment_outgoing_counters(counter_ptr, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
 
-                // Collect packets for DDoS analytics engine
-                packet_buckets_ipv6_storage.add_packet_to_storage(ipv6_address, current_packet);
-            } else if (current_packet.packet_direction == INCOMING) {
-                subnet_ipv6_cidr_mask_t ipv6_address;
-                ipv6_address.set_cidr_prefix_length(128);
-                ipv6_address.set_subnet_address(&current_packet.dst_ipv6);
+            // Collect packets for DDoS analytics engine
+            packet_buckets_ipv6_storage.add_packet_to_storage(ipv6_address, current_packet);
+        } else if (current_packet.packet_direction == INCOMING) {
+            subnet_ipv6_cidr_mask_t ipv6_address;
+            ipv6_address.set_cidr_prefix_length(128);
+            ipv6_address.set_subnet_address(&current_packet.dst_ipv6);
 
-                subnet_counter_t* counter_ptr = &ipv6_host_counters.counter_map[ipv6_address];
-                increment_incoming_counters(counter_ptr, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
+            subnet_counter_t* counter_ptr = &ipv6_host_counters.counter_map[ipv6_address];
+            increment_incoming_counters(counter_ptr, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
 
-                // Collect packets for DDoS analytics engine
-                packet_buckets_ipv6_storage.add_packet_to_storage(ipv6_address, current_packet);
-            }
+            // Collect packets for DDoS analytics engine
+            packet_buckets_ipv6_storage.add_packet_to_storage(ipv6_address, current_packet);
         }
+    }
 
-        return;
+    return;
 }
 
 // Process simple unified packet
