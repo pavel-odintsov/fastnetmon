@@ -2602,7 +2602,7 @@ void zeroify_all_flow_counters() {
     }
 }
 
-// Exportst traffic to Kafka
+// Exports traffic to Kafka
 void export_to_kafka(const simple_packet_t& current_packet) {
     extern std::string kafka_traffic_export_topic;
 #ifdef KAFKA
