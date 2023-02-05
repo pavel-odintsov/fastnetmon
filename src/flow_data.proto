@@ -10,7 +10,7 @@ enum TrafficDirection {
     // Traffic is coming from our address space
     TRAFFIC_DIRECTION_OUTGOING = 2;
     
-    // Traffic where both source and destination IPs do not belong our address space
+    // Traffic where both source and destination IPs do not belong to our address space or non IP traffic (for example ARP)
     TRAFFIC_DIRECTION_OTHER    = 3;
 
     // Traffic is going from our address space to our address space
