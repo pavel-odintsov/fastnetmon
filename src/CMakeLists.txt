@@ -32,6 +32,8 @@ set(CARES_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/cares_1_18_1")
 set(ABSL_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/abseil_2022_06_23")
 set(BOOST_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/boost_1_81_0")
 set(GCC_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/gcc_12_1_0")
+set(LIB_CPP_KAFKA_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/cppkafka_0_3_1")
+set(LIB_RDKAFKA_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/rdkafka_1_7_0")
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} --std=c++2a")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} --std=c++2a")
@@ -44,6 +46,9 @@ option(ENABLE_GOBGP_SUPPORT "Enable GoBGP support build" ON)
 # libgpr.so: undefined reference to symbol '_ZN4absl12lts_202103245Mutex4LockEv'
 # /usr/lib64/libabsl_synchronization.so.2103.0.1: error adding symbols: DSO missing from command line
 option(LINK_WITH_ABSL "Enable optonal linking with ABSL" OFF)
+
+# Kafka support is optional and we do not enable it for build by default
+option(KAFKA_SUPPORT "Enables Kafka support" OFF)
 
 # We need to add it into include path as gRPC uses it include path
 include_directories("${ABSL_INSTALL_PATH}/include")
@@ -114,6 +119,8 @@ if (DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
     SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${LIBELF_CUSTOM_INSTALL_PATH}/lib")
     SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${CARES_INSTALL_PATH}/lib")
 
+    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${LIB_CPP_KAFKA_INSTALL_PATH}/lib")
+    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${LIB_RDKAFKA_INSTALL_PATH}/lib")
 else()
    # We do not need any RPATH alterations when we want to link with system libraries (i.e. upstream builds for Debian or RedHat family)
 endif()
@@ -367,11 +374,40 @@ if (ENABLE_AF_XDP_SUPPORT)
     set(ENABLE_LIBELF_SUPPORT TRUE)
 endif()
 
+if (KAFKA_SUPPORT)
+    # We need to enable it explicitly
+    add_definitions(-DKAFKA)
+
+    # Find librdkafka
+    find_library(LIBRDKAFKA_LIBRARY_PATH names "rdkafka" PATHS "${LIB_RDKAFKA_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
+
+    # cpp-kafka uses these header files from their header too
+    include_directories("${LIB_RDKAFKA_INSTALL_PATH}/include")
+
+    if (NOT LIBRDKAFKA_LIBRARY_PATH)
+        message(FATAL_ERROR "Could not find rdkafka library")
+    else()
+        message(STATUS "Will use rdkafka library from ${LIBRDKAFKA_LIBRARY_PATH}")
+    endif()
+
+    # cppkafka
+    find_library(LIBKAFKA_CPP_LIBRARY_PATH names "cppkafka" PATHS "${LIB_CPP_KAFKA_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
+
+    include_directories("${LIB_CPP_KAFKA_INSTALL_PATH}/include")
+
+    if (NOT LIBKAFKA_CPP_LIBRARY_PATH)
+        message(FATAL_ERROR "Could not find cppkafka library")
+    else()
+        message(STATUS "Will use cppkafka library from ${LIBKAFKA_CPP_LIBRARY_PATH}")
+    endif()
+
+endif()
+
 if (ENABLE_LIBELF_SUPPORT) 
     # We do not use it directly but we need it as dependency for libbpf
     # include_directories("${LIBELF_CUSTOM_INSTALL_PATH/include") 
 
-    find_library(LIBELF_LIBRARY_PATH names "elf" PATHS "${LIBELF_CUSTOM_INSTALL_PATH}/lib" )
+    find_library(LIBELF_LIBRARY_PATH names "elf" PATHS "${LIBELF_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
 
     if (NOT LIBELF_LIBRARY_PATH)
         message(FATAL_ERROR "Could not find libelf library")
