@@ -2599,44 +2599,11 @@ void zeroify_all_flow_counters() {
     }
 }
 
-/* Process simple unified packet */
-void process_packet(simple_packet_t& current_packet) {
-    // Packets dump is very useful for bug hunting
-    if (DEBUG_DUMP_ALL_PACKETS) {
-        logger << log4cpp::Priority::INFO << "Dump: " << print_simple_packet(current_packet);
-    }
-
-    // Increment counter about total number of packets processes here
-#ifdef USE_NEW_ATOMIC_BUILTINS
-    __atomic_add_fetch(&total_simple_packets_processed, 1, __ATOMIC_RELAXED);
-
-    if (current_packet.ip_protocol_version == 4) {
-        __atomic_add_fetch(&total_ipv4_packets, 1, __ATOMIC_RELAXED);
-    } else if (current_packet.ip_protocol_version == 6) {
-        __atomic_add_fetch(&total_ipv6_packets, 1, __ATOMIC_RELAXED);
-    } else {
-        // Non IP packets
-        __atomic_add_fetch(&non_ip_packets, 1, __ATOMIC_RELAXED);
-        return;
-    }
-#else
-    __sync_fetch_and_add(&total_simple_packets_processed, 1);
-
-    if (current_packet.ip_protocol_version == 4) {
-        __sync_fetch_and_add(&total_ipv4_packets, 1);
-    } else if (current_packet.ip_protocol_version == 6) {
-        __sync_fetch_and_add(&total_ipv6_packets, 1);
-    } else {
-        // Non IP packets
-        __sync_fetch_and_add(&non_ip_packets, 1);
-        return;
-    }
-#endif
-
+// Process IPv6 traffic
+void process_ipv6_packet(simple_packet_t& current_packet) {
     uint64_t sampled_number_of_packets = current_packet.number_of_packets * current_packet.sample_ratio;
     uint64_t sampled_number_of_bytes   = current_packet.length * current_packet.sample_ratio;
 
-    if (current_packet.ip_protocol_version == 6) {
         subnet_ipv6_cidr_mask_t ipv6_cidr_subnet;
 
         current_packet.packet_direction =
@@ -2698,9 +2665,50 @@ void process_packet(simple_packet_t& current_packet) {
         }
 
         return;
+}
+
+// Process simple unified packet
+void process_packet(simple_packet_t& current_packet) {
+    // Packets dump is very useful for bug hunting
+    if (DEBUG_DUMP_ALL_PACKETS) {
+        logger << log4cpp::Priority::INFO << "Dump: " << print_simple_packet(current_packet);
     }
 
-    // We do not process IPv6 at all on this mement
+    // Increment counter about total number of packets processes here
+#ifdef USE_NEW_ATOMIC_BUILTINS
+    __atomic_add_fetch(&total_simple_packets_processed, 1, __ATOMIC_RELAXED);
+
+    if (current_packet.ip_protocol_version == 4) {
+        __atomic_add_fetch(&total_ipv4_packets, 1, __ATOMIC_RELAXED);
+    } else if (current_packet.ip_protocol_version == 6) {
+        __atomic_add_fetch(&total_ipv6_packets, 1, __ATOMIC_RELAXED);
+    } else {
+        // Non IP packets
+        __atomic_add_fetch(&non_ip_packets, 1, __ATOMIC_RELAXED);
+        return;
+    }
+#else
+    __sync_fetch_and_add(&total_simple_packets_processed, 1);
+
+    if (current_packet.ip_protocol_version == 4) {
+        __sync_fetch_and_add(&total_ipv4_packets, 1);
+    } else if (current_packet.ip_protocol_version == 6) {
+        __sync_fetch_and_add(&total_ipv6_packets, 1);
+    } else {
+        // Non IP packets
+        __sync_fetch_and_add(&non_ip_packets, 1);
+        return;
+    }
+#endif
+
+    // Process IPv6 traffic in differnt function
+    if (current_packet.ip_protocol_version == 6) {
+        return process_ipv6_packet(current_packet);
+    }
+
+    uint64_t sampled_number_of_packets = current_packet.number_of_packets * current_packet.sample_ratio;
+    uint64_t sampled_number_of_bytes   = current_packet.length * current_packet.sample_ratio;
+
     if (current_packet.ip_protocol_version != 4) {
         return;
     }
