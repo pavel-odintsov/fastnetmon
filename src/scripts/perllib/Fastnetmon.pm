@@ -1000,10 +1000,12 @@ sub install_cppkafka {
 
     my $boost_path = "$library_install_folder/boost_1_81_0";
 
+    # We hardcode RPATH with CMAKE_INSTALL_RPATH to allow cppkafka to find rdkafka in our custom path automatically
+    
     my $res = install_cmake_based_software("https://github.com/mfontanini/cppkafka/archive/v0.3.1.tar.gz",
          "0da8a4229dddf97cbf52a1a5ae7b99c923052edb",
          "$library_install_folder/$folder_name",
-         "$ld_library_path_for_make $cmake_path -DRDKAFKA_ROOT_DIR=$rdkafka_path -DCPPKAFKA_DISABLE_TESTS=ON -DBOOST_ROOT=$boost_path -DCMAKE_C_COMPILER=$default_c_compiler_path -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DCMAKE_INSTALL_PREFIX=$library_install_folder/$folder_name ..");
+         "$ld_library_path_for_make $cmake_path -DRDKAFKA_ROOT_DIR=$rdkafka_path -DCPPKAFKA_DISABLE_TESTS=ON -DCMAKE_INSTALL_RPATH=$rdkafka_path/lib -DBOOST_ROOT=$boost_path -DCMAKE_C_COMPILER=$default_c_compiler_path -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DCMAKE_INSTALL_PREFIX=$library_install_folder/$folder_name ..");
 
     if (!$res) {
         die "Can't install cppkafka\n";

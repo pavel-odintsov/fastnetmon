@@ -599,6 +599,11 @@ if (ENABLE_GOBGP_SUPPORT)
     target_link_libraries(fastnetmon_api_client fastnetmon_pb_cc)
     target_link_libraries(fastnetmon_api_client ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
 
+    if (KAFKA_SUPPORT)
+        target_link_libraries(fastnetmon ${LIBKAFKA_CPP_LIBRARY_PATH})
+        target_link_libraries(fastnetmon ${LIBRDKAFKA_LIBRARY_PATH})
+    endif()
+
     target_link_libraries(fastnetmon ${GRPC_LIBRARY_GPR_PATH})
     target_link_libraries(fastnetmon ${GRPC_LIBRARY_GRPC_CPP_PATH})
     target_link_libraries(fastnetmon ${CARES_LIBRARY_PATH})
