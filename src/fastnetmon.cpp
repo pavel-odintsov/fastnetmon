@@ -136,7 +136,7 @@ bool enable_api = false;
 #endif
 
 #ifdef KAFKA
-cppkafka::Producer* kafka_producer = nullptr;
+cppkafka::Producer* kafka_traffic_export_producer = nullptr;
 
 // Traffic export to Kafka
 bool kafka_traffic_export = false;
@@ -1730,6 +1730,37 @@ int main(int argc, char** argv) {
 #ifdef ENABLE_GOBGP
     if (gobgp_enabled) {
         gobgp_action_init();
+    }
+#endif
+
+#ifdef KAFKA
+    if (kafka_traffic_export) {
+        if (kafka_traffic_export_brokers.size() == 0) {
+           logger << log4cpp::Priority::ERROR << "Kafka traffic export requires at least single broker, please configure kafka_traffic_export_brokers"; 
+        } else {
+            std::string all_brokers = boost::algorithm::join(kafka_traffic_export_brokers, ",");
+
+            std::string partitioner = "random";
+
+            // All available configuration options: https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
+            cppkafka::Configuration kafka_traffic_export_config = {
+                { "metadata.broker.list", all_brokers },
+                { "request.required.acks", "0" }, // Disable ACKs
+                { "partitioner", partitioner },
+            };
+
+            logger << log4cpp::Priority::INFO << "Initialise Kafka producer for traffic export";
+
+            // In may crash during producer creation
+            try {
+                 kafka_traffic_export_producer = new cppkafka::Producer(kafka_traffic_export_config);
+            } catch (...) {
+                logger << log4cpp::Priority::ERROR << "Cannot initialise Kafka producer";
+                kafka_traffic_export = false;
+            }
+
+            logger << log4cpp::Priority::INFO << "Kafka traffic producer is ready";
+        }
     }
 #endif
 
