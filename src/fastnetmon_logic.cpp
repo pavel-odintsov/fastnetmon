@@ -46,6 +46,9 @@
 
 #include "ban_list.hpp"
 
+#ifdef KAFKA
+#include <cppkafka/cppkafka.h>
+#endif
 
 extern uint64_t influxdb_writes_total;
 extern uint64_t influxdb_writes_failed;
@@ -2599,8 +2602,43 @@ void zeroify_all_flow_counters() {
     }
 }
 
+// Exportst traffic to Kafka
+void export_to_kafka(const simple_packet_t& current_packet) {
+    extern std::string kafka_traffic_export_topic;
+#ifdef KAFKA
+    extern cppkafka::Producer* kafka_traffic_export_producer;
+#endif
+
+    nlohmann::json json_packet;
+
+    if (!serialize_simple_packet_to_json(current_packet, json_packet)) {
+        return;
+    }
+
+    std::string simple_packet_as_json_string = json_packet.dump();
+
+    try {
+        kafka_traffic_export_producer->produce(
+                cppkafka::MessageBuilder(kafka_traffic_export_topic)
+                                             .partition(RD_KAFKA_PARTITION_UA)
+                                             .payload(simple_packet_as_json_string));
+    } catch (...) {
+        // We do not log it as it will flood log files
+        // logger << log4cpp::Priority::ERROR << "Kafka write failed";
+    }
+
+    try {
+        kafka_traffic_export_producer->flush();
+    } catch (...) {
+        // We do not log it as it will flood log files
+        // logger << log4cpp::Priority::ERROR << "Kafka flush failed";
+    }
+} 
+
 // Process IPv6 traffic
 void process_ipv6_packet(simple_packet_t& current_packet) {
+    extern bool kafka_traffic_export;
+
     uint64_t sampled_number_of_packets = current_packet.number_of_packets * current_packet.sample_ratio;
     uint64_t sampled_number_of_bytes   = current_packet.length * current_packet.sample_ratio;
 
@@ -2608,6 +2646,10 @@ void process_ipv6_packet(simple_packet_t& current_packet) {
 
     current_packet.packet_direction =
         get_packet_direction_ipv6(lookup_tree_ipv6, current_packet.src_ipv6, current_packet.dst_ipv6, ipv6_cidr_subnet);
+
+    if (kafka_traffic_export) {
+        export_to_kafka(current_packet);
+    }
 
 #ifdef USE_NEW_ATOMIC_BUILTINS
     __atomic_add_fetch(&total_counters_ipv6.total_counters[current_packet.packet_direction].packets, sampled_number_of_packets, __ATOMIC_RELAXED);
@@ -2669,6 +2711,8 @@ void process_ipv6_packet(simple_packet_t& current_packet) {
 
 // Process simple unified packet
 void process_packet(simple_packet_t& current_packet) {
+    extern bool kafka_traffic_export;
+
     // Packets dump is very useful for bug hunting
     if (DEBUG_DUMP_ALL_PACKETS) {
         logger << log4cpp::Priority::INFO << "Dump: " << print_simple_packet(current_packet);
@@ -2718,6 +2762,10 @@ void process_packet(simple_packet_t& current_packet) {
 
     current_packet.packet_direction =
         get_packet_direction(lookup_tree_ipv4, current_packet.src_ip, current_packet.dst_ip, current_subnet);
+
+    if (kafka_traffic_export) {
+        export_to_kafka(current_packet);
+    }
 
     // It's useful in case when we can't find what packets do not processed correctly
     if (DEBUG_DUMP_OTHER_PACKETS && current_packet.packet_direction == OTHER) {

@@ -162,3 +162,4 @@ bool execute_web_request_secure(std::string address,
                                 std::string& error_text);
 std::string forwarding_status_to_string(forwarding_status_t status);
 std::string country_static_string_to_dynamic_string(const boost::beast::static_string<2>& country_code);
+bool serialize_simple_packet_to_json(const simple_packet_t& packet, nlohmann::json& json_packet);

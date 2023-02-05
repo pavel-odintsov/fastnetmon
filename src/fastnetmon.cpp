@@ -137,6 +137,7 @@ bool enable_api = false;
 
 #ifdef KAFKA
 cppkafka::Producer* kafka_traffic_export_producer = nullptr;
+#endif
 
 // Traffic export to Kafka
 bool kafka_traffic_export = false;
@@ -144,7 +145,6 @@ bool kafka_traffic_export = false;
 std::string kafka_traffic_export_topic = "fastnetmon";
 kafka_traffic_export_format_t kafka_traffic_export_format = kafka_traffic_export_format_t::JSON;
 std::vector<std::string> kafka_traffic_export_brokers;
-#endif
 
 std::chrono::steady_clock::time_point last_call_of_traffic_recalculation;
 
