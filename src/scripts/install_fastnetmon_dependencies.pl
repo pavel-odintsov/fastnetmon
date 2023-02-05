@@ -420,6 +420,7 @@ sub main {
             'ubuntu:22.04'        => 'c547ecc1e5d94f557184fe7a9202a56065edc5afcb71d8b803be7d864c20422af889a7ed693623280ee0a0991cabde99901edfa5ed02a352d9bd63f716277f42', 
         },
         'cppkafka_0_3_1'          => {
+
         },
     };
 
