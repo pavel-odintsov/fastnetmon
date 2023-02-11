@@ -30,88 +30,101 @@ extern log4cpp::Category& logger;
 // Global configuration map
 extern std::map<std::string, std::string> configuration_map;
 
-// Number of raw packets received without any errors
+std::string raw_udp_packets_received_desc = "Number of raw packets received without any errors";
 uint64_t raw_udp_packets_received = 0;
-
 
 // We have an option to use IP length from the packet header because some vendors may lie about it: https://github.com/pavel-odintsov/fastnetmon/issues/893
 bool sflow_read_packet_length_from_ip_header = false;
 
-// Number of failed receives
-uint64_t udp_receive_errors = 0;
+std::string udp_receive_errors_desc = "Number of failed receives";
+uint64_t udp_receive_errors         = 0;
 
-// Number of eagains
-uint64_t udp_receive_eagain = 0;
-
-// sFLOW v4 specification: http://www.sflow.org/rfc3176.txt
+std::string udp_receive_eagain_desc = "Number of eagains";
+uint64_t udp_receive_eagain         = 0;
 
 std::string plugin_name       = "sflow";
 std::string plugin_log_prefix = plugin_name + ": ";
 
-uint64_t sflow_total_packets = 0;
+std::string sflow_total_packets_desc = "Total number of received UDP sFlow packets";
+uint64_t sflow_total_packets         = 0;
 
-// Incorrectly crafted sflow packets
-uint64_t sflow_bad_packets = 0;
+std::string sflow_bad_packets_desc = "Incorrectly crafted sFlow packets";
+uint64_t sflow_bad_packets         = 0;
 
-// Number of flow samples, i.e. with packet headers
-uint64_t sflow_flow_samples = 0;
+std::string sflow_flow_samples_desc = "Number of flow samples, i.e. with packet headers";
+uint64_t sflow_flow_samples         = 0;
 
-// Number of broken flow samples
-uint64_t sflow_bad_flow_samples = 0;
+std::string sflow_bad_flow_samples_desc = "Number of broken flow samples";
+uint64_t sflow_bad_flow_samples         = 0;
 
-// Number of packets where we have padding at the end of packet
+std::string sflow_with_padding_at_the_end_of_packet_desc =
+    "Number of packets where we have padding at the end of packet";
 uint64_t sflow_with_padding_at_the_end_of_packet = 0;
 
-// Number of packets with padding inside flow sample
-uint64_t sflow_padding_flow_sample = 0;
+std::string sflow_padding_flow_sample_desc = "Number of packets with padding inside flow sample";
+uint64_t sflow_padding_flow_sample         = 0;
 
-// Number of packet headers from flow samples which could not be decoded correctly
+std::string sflow_parse_error_nested_header_desc =
+    "Number of packet headers from flow samples which could not be decoded correctly";
 uint64_t sflow_parse_error_nested_header = 0;
 
-// Number of counter samples, i.e. with port counters
-uint64_t sflow_counter_sample = 0;
+std::string sflow_counter_sample_desc = "Number of counter samples, i.e. with port counters";
+uint64_t sflow_counter_sample         = 0;
 
-uint64_t sflow_raw_packet_headers_total = 0;
+std::string sflow_raw_packet_headers_total_desc = "Number of packet headers from flow samples";
+uint64_t sflow_raw_packet_headers_total         = 0;
 
-// Number of records with extended information from routers
-uint64_t sflow_extended_router_data_records = 0;
+std::string sflow_extended_router_data_records_desc = "Number of records with extended information from routers";
+uint64_t sflow_extended_router_data_records         = 0;
 
-// For switch data
-uint64_t sflow_extended_switch_data_records = 0;
+std::string sflow_extended_switch_data_records_desc = "Number of samples with switch data";
+uint64_t sflow_extended_switch_data_records         = 0;
 
-// For gateway data
-uint64_t sflow_extended_gateway_data_records = 0;
+std::string sflow_extended_gateway_data_records_desc = "Number of samples with gateway data";
+uint64_t sflow_extended_gateway_data_records         = 0;
 
-// Number of packets for unknown header protocol
-uint64_t sflow_unknown_header_protocol = 0;
+std::string sflow_unknown_header_protocol_desc = "Number of packets for unknown header protocol";
+uint64_t sflow_unknown_header_protocol         = 0;
 
-uint64_t sflow_ipv4_header_protocol = 0;
+std::string sflow_ipv4_header_protocol_desc = "Number of samples with IPv4 packet headers";
+uint64_t sflow_ipv4_header_protocol         = 0;
 
-uint64_t sflow_ipv6_header_protocol = 0;
+std::string sflow_ipv6_header_protocol_desc = "Number of samples with IPv6 packet headers";
+uint64_t sflow_ipv6_header_protocol         = 0;
 
 std::vector<system_counter_t> get_sflow_stats() {
     std::vector<system_counter_t> counters;
 
-    counters.push_back(system_counter_t("sflow_raw_udp_packets_received", raw_udp_packets_received));
-    counters.push_back(system_counter_t("sflow_udp_receive_errors", udp_receive_errors));
-    counters.push_back(system_counter_t("sflow_udp_receive_eagain", udp_receive_eagain));
-    counters.push_back(system_counter_t("sflow_total_packets", sflow_total_packets));
-    counters.push_back(system_counter_t("sflow_bad_packets", sflow_bad_packets));
-    counters.push_back(system_counter_t("sflow_flow_samples", sflow_flow_samples));
-    counters.push_back(system_counter_t("sflow_bad_flow_samples", sflow_bad_flow_samples));
-    counters.push_back(system_counter_t("sflow_padding_flow_sample", sflow_padding_flow_sample));
-    counters.push_back(system_counter_t("sflow_with_padding_at_the_end_of_packet", sflow_with_padding_at_the_end_of_packet));
-    counters.push_back(system_counter_t("sflow_parse_error_nested_header", sflow_parse_error_nested_header));
-    counters.push_back(system_counter_t("sflow_counter_sample", sflow_counter_sample));
-    counters.push_back(system_counter_t("sflow_raw_packet_headers_total", sflow_raw_packet_headers_total));
-    counters.push_back(system_counter_t("sflow_ipv4_header_protocol", sflow_ipv4_header_protocol));
-    counters.push_back(system_counter_t("sflow_ipv6_header_protocol", sflow_ipv6_header_protocol));
-    counters.push_back(system_counter_t("sflow_unknown_header_protocol", sflow_unknown_header_protocol));
-    counters.push_back(system_counter_t("sflow_extended_router_data_records", sflow_extended_router_data_records));
-
-
-    counters.push_back(system_counter_t("sflow_extended_switch_data_records", sflow_extended_switch_data_records));
-    counters.push_back(system_counter_t("sflow_extended_gateway_data_records", sflow_extended_gateway_data_records));
+    counters.push_back(system_counter_t("sflow_raw_udp_packets_received", raw_udp_packets_received,
+                                        metric_type_t::counter, raw_udp_packets_received_desc));
+    counters.push_back(system_counter_t("sflow_udp_receive_errors", udp_receive_errors, metric_type_t::counter, udp_receive_errors_desc));
+    counters.push_back(system_counter_t("sflow_udp_receive_eagain", udp_receive_eagain, metric_type_t::counter, udp_receive_eagain_desc));
+    counters.push_back(system_counter_t("sflow_total_packets", sflow_total_packets, metric_type_t::counter, sflow_total_packets_desc));
+    counters.push_back(system_counter_t("sflow_bad_packets", sflow_bad_packets, metric_type_t::counter, sflow_bad_packets_desc));
+    counters.push_back(system_counter_t("sflow_flow_samples", sflow_flow_samples, metric_type_t::counter, sflow_flow_samples_desc));
+    counters.push_back(system_counter_t("sflow_bad_flow_samples", sflow_bad_flow_samples, metric_type_t::counter,
+                                        sflow_bad_flow_samples_desc));
+    counters.push_back(system_counter_t("sflow_padding_flow_sample", sflow_padding_flow_sample, metric_type_t::counter,
+                                        sflow_padding_flow_sample_desc));
+    counters.push_back(system_counter_t("sflow_with_padding_at_the_end_of_packet", sflow_with_padding_at_the_end_of_packet,
+                                        metric_type_t::counter, sflow_with_padding_at_the_end_of_packet_desc));
+    counters.push_back(system_counter_t("sflow_parse_error_nested_header", sflow_parse_error_nested_header,
+                                        metric_type_t::counter, sflow_parse_error_nested_header_desc));
+    counters.push_back(system_counter_t("sflow_counter_sample", sflow_counter_sample, metric_type_t::counter, sflow_counter_sample_desc));
+    counters.push_back(system_counter_t("sflow_raw_packet_headers_total", sflow_raw_packet_headers_total,
+                                        metric_type_t::counter, sflow_raw_packet_headers_total_desc));
+    counters.push_back(system_counter_t("sflow_ipv4_header_protocol", sflow_ipv4_header_protocol,
+                                        metric_type_t::counter, sflow_ipv4_header_protocol_desc));
+    counters.push_back(system_counter_t("sflow_ipv6_header_protocol", sflow_ipv6_header_protocol,
+                                        metric_type_t::counter, sflow_ipv6_header_protocol_desc));
+    counters.push_back(system_counter_t("sflow_unknown_header_protocol", sflow_unknown_header_protocol,
+                                        metric_type_t::counter, sflow_unknown_header_protocol_desc));
+    counters.push_back(system_counter_t("sflow_extended_router_data_records", sflow_extended_router_data_records,
+                                        metric_type_t::counter, sflow_extended_router_data_records_desc));
+    counters.push_back(system_counter_t("sflow_extended_switch_data_records", sflow_extended_switch_data_records,
+                                        metric_type_t::counter, sflow_extended_switch_data_records_desc));
+    counters.push_back(system_counter_t("sflow_extended_gateway_data_records", sflow_extended_gateway_data_records,
+                                        metric_type_t::counter, sflow_extended_gateway_data_records_desc));
 
     return counters;
 }
