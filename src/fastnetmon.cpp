@@ -345,20 +345,22 @@ log4cpp::Category& logger = log4cpp::Category::getRoot();
 total_speed_counters_t total_counters_ipv4;
 total_speed_counters_t total_counters_ipv6;
 
-// Total amount of non parsed packets
+std::string total_unparsed_packets_desc = "Total number of packets we failed to parse";
 uint64_t total_unparsed_packets       = 0;
+
+std::string total_unparsed_packets_speed_desc = "Number of packets we fail to parse per second";
 uint64_t total_unparsed_packets_speed = 0;
 
-// Total amount of IPv4 packets
+std::string total_ipv4_packets_desc = "Total number of IPv4 simple packets processed";
 uint64_t total_ipv4_packets = 0;
 
-// Total amount of IPv6 packets
+std::string total_ipv6_packets_desc = "Total number of IPv6 simple packets processed";
 uint64_t total_ipv6_packets = 0;
 
-// Number of non IPv4/IPv6 packets received by us
-uint64_t non_ip_packets = 0;
+std::string unknown_ip_version_packets_desc = "Non IPv4 and non IPv6 packets";
+uint64_t unknown_ip_version_packets         = 0;
 
-// Total number of times when we executed process_packet()
+std::string total_simple_packets_processed_desc = "Total number of simple packets processed";
 uint64_t total_simple_packets_processed = 0;
 
 // IPv6 traffic which belongs to our own networks

@@ -75,7 +75,7 @@ extern double average_calculation_amount;
 extern bool print_configuration_params_on_the_screen;
 extern uint64_t our_ipv6_packets;
 extern map_of_vector_counters_t SubnetVectorMap;
-extern uint64_t non_ip_packets;
+extern uint64_t unknown_ip_version_packets;
 extern uint64_t total_simple_packets_processed;
 extern unsigned int maximum_time_since_bucket_start_to_remove;
 extern unsigned int max_ips_in_list;
@@ -2736,8 +2736,8 @@ void process_packet(simple_packet_t& current_packet) {
     } else if (current_packet.ip_protocol_version == 6) {
         __atomic_add_fetch(&total_ipv6_packets, 1, __ATOMIC_RELAXED);
     } else {
-        // Non IP packets
-        __atomic_add_fetch(&non_ip_packets, 1, __ATOMIC_RELAXED);
+        // Non IPv4 and non IPv6 packets
+        __atomic_add_fetch(&unknown_ip_version_packets, 1, __ATOMIC_RELAXED);
         return;
     }
 #else
@@ -2748,8 +2748,8 @@ void process_packet(simple_packet_t& current_packet) {
     } else if (current_packet.ip_protocol_version == 6) {
         __sync_fetch_and_add(&total_ipv6_packets, 1);
     } else {
-        // Non IP packets
-        __sync_fetch_and_add(&non_ip_packets, 1);
+        // Non IPv4 and non IPv6 packets
+        __atomic_add_fetch(&unknown_ip_version_packets, 1, __ATOMIC_RELAXED);
         return;
     }
 #endif
@@ -3411,14 +3411,25 @@ bool should_remove_orphaned_bucket(const std::pair<TemplatedKeyType, packet_buck
 }
 
 bool get_statistics(std::vector<system_counter_t>& system_counters) {
-    system_counters.push_back(system_counter_t("total_simple_packets_processed", total_simple_packets_processed));
-    system_counters.push_back(system_counter_t("total_ipv4_packets", total_ipv4_packets));
-    system_counters.push_back(system_counter_t("total_ipv6_packets", total_ipv6_packets));
+    extern std::string total_simple_packets_processed_desc;
+    extern std::string total_ipv6_packets_desc;
+    extern std::string total_ipv4_packets_desc;
+    extern std::string unknown_ip_version_packets_desc;
+    extern std::string total_unparsed_packets_desc;
+    extern std::string total_unparsed_packets_speed_desc;
 
-    system_counters.push_back(system_counter_t("non_ip_packets", non_ip_packets));
+    system_counters.push_back(system_counter_t("total_simple_packets_processed", total_simple_packets_processed,
+                                               metric_type_t::counter, total_simple_packets_processed_desc));
 
-    system_counters.push_back(system_counter_t("total_unparsed_packets_speed", total_unparsed_packets_speed));
-    system_counters.push_back(system_counter_t("total_unparsed_packets", total_unparsed_packets));
+    system_counters.push_back(system_counter_t("total_ipv4_packets", total_ipv4_packets, metric_type_t::counter, total_ipv4_packets_desc));
+    system_counters.push_back(system_counter_t("total_ipv6_packets", total_ipv6_packets, metric_type_t::counter, total_ipv6_packets_desc));
+    system_counters.push_back(system_counter_t("unknown_ip_version_packets", unknown_ip_version_packets,
+                                               metric_type_t::counter, unknown_ip_version_packets_desc));
+
+    system_counters.push_back(system_counter_t("total_unparsed_packets", total_unparsed_packets, metric_type_t::counter,
+                                               total_unparsed_packets_desc));
+    system_counters.push_back(system_counter_t("total_unparsed_packets_speed", total_unparsed_packets_speed,
+                                               metric_type_t::gauge, total_unparsed_packets_speed_desc));
 
     system_counters.push_back(system_counter_t("speed_recalculation_time_seconds", speed_calculation_time.tv_sec));
     system_counters.push_back(system_counter_t("speed_recalculation_time_microseconds", speed_calculation_time.tv_usec));

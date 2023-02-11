@@ -75,12 +75,17 @@ enum class metric_type_t { counter, gauge };
 // Here we store different counters
 class system_counter_t {
     public:
-    system_counter_t(std::string counter_name, uint64_t counter_value) {
-        this->counter_name  = counter_name;
-        this->counter_value = counter_value;
+    system_counter_t(const std::string& counter_name, uint64_t counter_value, const metric_type_t& metric_type, const std::string& description) {
+        this->counter_name        = counter_name;
+        this->counter_value       = counter_value;
+        this->counter_type        = metric_type;
+        this->counter_description = description;
     }
+
     std::string counter_name;
-    uint64_t counter_value = 0;
+    uint64_t counter_value     = 0;
+    metric_type_t counter_type = metric_type_t::counter;
+    std::string counter_description;
 };
 
 
