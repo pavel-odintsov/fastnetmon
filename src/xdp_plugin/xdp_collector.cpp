@@ -124,9 +124,9 @@ class xsk_memory_configuration {
 std::vector<system_counter_t> get_xdp_stats() {
     std::vector<system_counter_t> system_counter;
 
-    system_counter.push_back(system_counter_t("xdp_packets_received", packets_received));
-    system_counter.push_back(system_counter_t("xdp_packets_unparsed", xdp_packets_unparsed));
-
+    system_counter.push_back(system_counter_t("xdp_packets_received", packets_received, metric_type_t::counter, packets_received_desc));
+    system_counter.push_back(system_counter_t("xdp_packets_unparsed", xdp_packets_unparsed, metric_type_t::counter,
+                                              xdp_packets_unparsed_desc));
     return system_counter;
 }
 

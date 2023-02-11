@@ -3749,8 +3749,6 @@ void handle_prometheus_http_request(boost::beast::http::request<Body, boost::bea
     for (auto counter : system_counters) {
         std::string metric_type = "counter";
 
-        /*
-         * uncomment it after migration to new counter type
         if (counter.counter_type == metric_type_t::gauge) {
             metric_type = "gauge";
         }
@@ -3759,7 +3757,6 @@ void handle_prometheus_http_request(boost::beast::http::request<Body, boost::bea
         output << "# HELP " << counter.counter_description << "\n";
         output << "# TYPE " << "fastnetmon_" << counter.counter_name << " " << metric_type << "\n";
         output << "fastnetmon_" << counter.counter_name << " " << counter.counter_value << "\n";
-        */    
     }
 
     extern total_speed_counters_t total_counters_ipv4;
