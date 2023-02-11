@@ -5,6 +5,13 @@
 #include <iomanip>
 #include <sstream>
 #include <vector>
+#include <thread>
+
+#include <boost/asio/ip/tcp.hpp>
+
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/version.hpp>
 
 #include "all_logcpp_libraries.hpp"
 #include "bgp_protocol.hpp"
@@ -3600,6 +3607,259 @@ void collect_stats() {
     while (true) {
         send_usage_data_to_reporting_server();
         boost::this_thread::sleep(boost::posix_time::seconds(stats_thread_sleep_time));
+    }
+}
+
+// Adds total traffic metrics to Prometheus endpoint
+void add_total_traffic_to_prometheus(const total_speed_counters_t& total_counters, std::stringstream& output, const std::string& protocol_version) {
+    std::vector<direction_t> directions = { INCOMING, OUTGOING, INTERNAL, OTHER };
+
+    for (auto packet_direction : directions) {
+        std::string direction_as_string = get_direction_name(packet_direction);
+
+        // Packets
+        std::string packet_metric_name = "fastnetmon_total_traffic_packets";
+
+        output << "# HELP Total traffic in packets\n";
+        output << "# TYPE " << packet_metric_name << " gauge\n";
+        output << packet_metric_name << "{traffic_direction=\"" << direction_as_string  << "\",protocol_version=\"" << protocol_version << "\"} " << total_counters.total_speed_average_counters[packet_direction].packets << "\n";
+
+        // Bytes
+        std::string bits_metric_name = "fastnetmon_total_traffic_bits";
+
+        output << "# HELP Total traffic in bits\n";
+        output << "# TYPE " << bits_metric_name << " gauge\n";
+        output << bits_metric_name << "{traffic_direction=\"" << direction_as_string << "\",protocol_version=\"" << protocol_version << "\"} " << total_counters.total_speed_average_counters[packet_direction].bytes * 8  << "\n";
+
+        // Flows
+        if (protocol_version == "ipv4" && enable_connection_tracking && (packet_direction == INCOMING || packet_direction == OUTGOING)) {
+            uint64_t flow_rate = 0;
+
+            std::string flows_metric_name = "fastnetmon_total_traffic_flows";
+
+            if (packet_direction == INCOMING) {
+                flow_rate = incoming_total_flows_speed;
+            } else if (packet_direction == OUTGOING) {
+                flow_rate = outgoing_total_flows_speed;
+            }
+
+            output << "# HELP Total traffic in flows\n";
+            output << "# TYPE " << flows_metric_name << " gauge\n";
+            output << flows_metric_name << "{traffic_direction=\"" << direction_as_string << "\",protocol_version=\"" << protocol_version << "\"}" << flow_rate << "\n";
+        }
+    }
+}
+
+
+// This function produces an HTTP response for the given
+// request. The type of the response object depends on the
+// contents of the request, so the interface requires the
+// caller to pass a generic lambda for receiving the response.
+template <class Body, class Allocator, class Send>
+void handle_prometheus_http_request(boost::beast::http::request<Body, boost::beast::http::basic_fields<Allocator>>&& req,
+                                    Send&& send) {
+    // Returns a bad request response
+    auto const bad_request = [&req](boost::beast::string_view why) {
+        boost::beast::http::response<boost::beast::http::string_body> res{ boost::beast::http::status::bad_request, req.version() };
+
+        res.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
+        res.set(boost::beast::http::field::content_type, "text/html");
+
+        res.keep_alive(req.keep_alive());
+        res.body() = std::string(why);
+        res.prepare_payload();
+
+        return res;
+    };
+
+    // Returns a not found response
+    auto const not_found = [&req](boost::beast::string_view target) {
+        boost::beast::http::response<boost::beast::http::string_body> res{ boost::beast::http::status::not_found, req.version() };
+
+        res.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
+        res.set(boost::beast::http::field::content_type, "text/html");
+        res.keep_alive(req.keep_alive());
+        res.body() = "The resource '" + std::string(target) + "' was not found.";
+        res.prepare_payload();
+
+        return res;
+    };
+
+    // Returns a server error response
+    auto const server_error = [&req](boost::beast::string_view what) {
+        boost::beast::http::response<boost::beast::http::string_body> res{ boost::beast::http::status::internal_server_error,
+                                                                           req.version() };
+        res.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
+        res.set(boost::beast::http::field::content_type, "text/html");
+        res.keep_alive(req.keep_alive());
+        res.body() = "An error occurred: '" + std::string(what) + "'";
+        res.prepare_payload();
+        return res;
+    };
+
+    // Make sure we can handle the method
+    if (req.method() != boost::beast::http::verb::get) {
+        return send(bad_request("Unknown HTTP-method"));
+    }
+
+    // We support only /metrics URL
+    if (req.target() != "/metrics") {
+        return send(not_found(req.target()));
+    }
+
+    // Respond to GET request
+    boost::beast::http::response<boost::beast::http::string_body> res{ boost::beast::http::status::ok, req.version() };
+
+    res.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
+    res.set(boost::beast::http::field::content_type, "text/html");
+
+    std::vector<system_counter_t> system_counters;
+
+    // Application statistics
+    bool result = get_statistics(system_counters);
+
+    if (!result) {
+        return send(server_error("Could not get application statistics"));
+    }
+
+    std::stringstream output;
+
+    for (auto counter : system_counters) {
+        std::string metric_type = "counter";
+
+        /*
+         * uncomment it after migration to new counter type
+        if (counter.counter_type == metric_type_t::gauge) {
+            metric_type = "gauge";
+        }
+
+        // It's good idea to add proper descriptions in future
+        output << "# HELP " << counter.counter_description << "\n";
+        output << "# TYPE " << "fastnetmon_" << counter.counter_name << " " << metric_type << "\n";
+        output << "fastnetmon_" << counter.counter_name << " " << counter.counter_value << "\n";
+        */    
+    }
+
+    extern total_speed_counters_t total_counters_ipv4;
+
+    // Add total traffic metrics
+    add_total_traffic_to_prometheus(total_counters_ipv4, output, "ipv4");
+
+    extern total_speed_counters_t total_counters_ipv6;
+
+    add_total_traffic_to_prometheus(total_counters_ipv6, output, "ipv6");
+
+    res.body() = output.str();
+
+    res.keep_alive(req.keep_alive());
+
+    res.prepare_payload();
+
+    return send(std::move(res));
+}
+
+
+// This is the C++11 equivalent of a generic lambda.
+// The function object is used to send an HTTP message.
+template <class Stream> struct send_lambda {
+    Stream& stream_;
+    bool& close_;
+    boost::beast::error_code& ec_;
+
+    explicit send_lambda(Stream& stream, bool& close, boost::beast::error_code& ec)
+    : stream_(stream), close_(close), ec_(ec) {
+    }
+
+    template <bool isRequest, class Body, class Fields>
+    void operator()(boost::beast::http::message<isRequest, Body, Fields>&& msg) const {
+        // Determine if we should close the connection after
+        close_ = msg.need_eof();
+
+        // We need the serialiser here because the serialiser requires
+        // a non-const file_body, and the message oriented version of
+        // http::write only works with const messages.
+        boost::beast::http::serializer<isRequest, Body, Fields> sr{ msg };
+        boost::beast::http::write(stream_, sr, ec_);
+    }
+};
+
+// handled http query to Prometheus endpoint
+void do_prometheus_http_session(boost::asio::ip::tcp::socket& socket) {
+    bool close = false;
+    boost::beast::error_code ec;
+
+    // This buffer is required to persist across reads
+    boost::beast::flat_buffer buffer;
+
+    // This lambda is used to send messages
+    send_lambda<boost::asio::ip::tcp::socket> lambda{ socket, close, ec };
+
+    while (true) {
+        // Read a request
+        boost::beast::http::request<boost::beast::http::string_body> req;
+        boost::beast::http::read(socket, buffer, req, ec);
+
+        if (ec == boost::beast::http::error::end_of_stream) {
+            break;
+        }
+
+        if (ec) {
+            logger << log4cpp::Priority::ERROR << "HTTP query read failed: " << ec.message();
+            return;
+        }
+
+        // Send the response
+        handle_prometheus_http_request(std::move(req), lambda);
+
+        if (ec) {
+            logger << log4cpp::Priority::ERROR << "HTTP query read failed: " << ec.message();
+            return;
+        }
+
+        if (close) {
+            // This means we should close the connection, usually because
+            // the response indicated the "Connection: close" semantic.
+            break;
+        }
+    }
+
+    // Send a TCP shutdown
+    socket.shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
+
+    // At this point the connection is closed gracefully
+}
+
+
+void start_prometheus_web_server() {
+    extern unsigned short prometheus_port;
+    extern std::string prometheus_host;
+
+    try {
+        logger << log4cpp::Priority::INFO << "Starting Prometheus endpoint on "
+               << prometheus_host << ":" << prometheus_port;
+
+        auto const address = boost::asio::ip::make_address(prometheus_host);
+        auto const port    = static_cast<unsigned short>(prometheus_port);
+
+        // The io_context is required for all I/O
+        boost::asio::io_context ioc{ 1 };
+
+        // The acceptor receives incoming connections
+        boost::asio::ip::tcp::acceptor acceptor{ ioc, { address, port } };
+
+        while (true) {
+            // This will receive the new connection
+            boost::asio::ip::tcp::socket socket{ ioc };
+
+            // Block until we get a connection
+            acceptor.accept(socket);
+
+            // Launch the session, transferring ownership of the socket
+            std::thread{ std::bind(&do_prometheus_http_session, std::move(socket)) }.detach();
+        }
+
+    } catch (const std::exception& e) {
+        logger << log4cpp::Priority::ERROR << "Prometheus server exception: " << e.what();
     }
 }
 

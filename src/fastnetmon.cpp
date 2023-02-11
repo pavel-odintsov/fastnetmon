@@ -192,6 +192,12 @@ logging_configuration_t logging_configuration;
 // Global map with parsed config file
 configuration_map_t configuration_map;
 
+// Prometheus port
+unsigned short prometheus_port = 9209;
+
+// Prometheus host
+std::string prometheus_host = "127.0.0.1";
+
 // Every X seconds we will run ban list cleaner thread
 // If customer uses ban_time smaller than this value we will use ban_time/2 as unban_iteration_sleep_time
 int unban_iteration_sleep_time = 60;
