@@ -280,7 +280,7 @@ bool enable_sflow_collection            = false;
 bool enable_netflow_collection          = false;
 bool enable_pcap_collection             = false;
 
-// Time consumed by reaclculation for all IPs
+std::string speed_calculation_time_desc = "Time consumed by recalculation for all IPs";
 struct timeval speed_calculation_time;
 
 // Time consumed by drawing stats for all IPs
@@ -293,8 +293,7 @@ boost::thread_group packet_capture_plugin_thread_group;
 // screen updater and ban list cleaner)
 boost::thread_group service_thread_group;
 
-// Total number of hosts in our networks
-// We need this as global variable because it's very important value for configuring data structures
+std::string total_number_of_hosts_in_our_networks_desc = "Total number of hosts in our networks";
 unsigned int total_number_of_hosts_in_our_networks = 0;
 
 #ifdef GEOIP
@@ -445,11 +444,10 @@ unsigned int graphite_push_period = 1;
 // Default graphite namespace
 std::string graphite_prefix = "fastnetmon";
 
-
-// Total number of InfluxDB writes
+std::string influxdb_writes_total_desc = "Total number of InfluxDB writes";
 uint64_t influxdb_writes_total = 0;
 
-// Total number of failed InfluxDB writes
+std::string influxdb_writes_failed_desc = "Total number of failed InfluxDB writes";
 uint64_t influxdb_writes_failed = 0;
 
 // InfluxDB

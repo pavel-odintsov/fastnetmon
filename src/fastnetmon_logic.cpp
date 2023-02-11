@@ -3417,6 +3417,10 @@ bool get_statistics(std::vector<system_counter_t>& system_counters) {
     extern std::string unknown_ip_version_packets_desc;
     extern std::string total_unparsed_packets_desc;
     extern std::string total_unparsed_packets_speed_desc;
+    extern std::string speed_calculation_time_desc;
+    extern std::string total_number_of_hosts_in_our_networks_desc;
+    extern std::string influxdb_writes_total_desc;
+    extern std::string influxdb_writes_failed_desc;
 
     system_counters.push_back(system_counter_t("total_simple_packets_processed", total_simple_packets_processed,
                                                metric_type_t::counter, total_simple_packets_processed_desc));
@@ -3431,13 +3435,20 @@ bool get_statistics(std::vector<system_counter_t>& system_counters) {
     system_counters.push_back(system_counter_t("total_unparsed_packets_speed", total_unparsed_packets_speed,
                                                metric_type_t::gauge, total_unparsed_packets_speed_desc));
 
-    system_counters.push_back(system_counter_t("speed_recalculation_time_seconds", speed_calculation_time.tv_sec));
-    system_counters.push_back(system_counter_t("speed_recalculation_time_microseconds", speed_calculation_time.tv_usec));
 
-    system_counters.push_back(system_counter_t("total_number_of_hosts", total_number_of_hosts_in_our_networks));
+    system_counters.push_back(system_counter_t("speed_recalculation_time_seconds", speed_calculation_time.tv_sec,
+                                               metric_type_t::gauge, speed_calculation_time_desc));
+    system_counters.push_back(system_counter_t("speed_recalculation_time_microseconds", speed_calculation_time.tv_usec,
+                                               metric_type_t::gauge, speed_calculation_time_desc));
 
-    system_counters.push_back(system_counter_t("influxdb_writes_total", influxdb_writes_total));
-    system_counters.push_back(system_counter_t("influxdb_writes_failed", influxdb_writes_failed));
+
+    system_counters.push_back(system_counter_t("total_number_of_hosts", total_number_of_hosts_in_our_networks,
+                                               metric_type_t::gauge, total_number_of_hosts_in_our_networks_desc));
+
+    system_counters.push_back(system_counter_t("influxdb_writes_total", influxdb_writes_total, metric_type_t::counter,
+                                               influxdb_writes_total_desc));
+    system_counters.push_back(system_counter_t("influxdb_writes_failed", influxdb_writes_failed, metric_type_t::counter,
+                                               influxdb_writes_failed_desc));
 
     if (enable_netflow_collection) {
         auto netflow_stats = get_netflow_stats();
