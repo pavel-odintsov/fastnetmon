@@ -52,109 +52,254 @@ std::string netflow_plugin_log_prefix = netflow_plugin_name + ": ";
 
 ipfix_information_database ipfix_db_instance;
 
-uint64_t netflow_total_packets = 0;
-// Number of incoming UDP packets
-uint64_t netflow_v5_total_packets = 0;
-// Number of flows in these packets (multiple in each packet)
-uint64_t netflow_v5_total_flows = 0;
+// Counters section start
 
-uint64_t netflow_v9_total_packets = 0;
+std::string netflow_ipfix_total_packets_desc = "Total number of Netflow or IPFIX UDP packets received";
+uint64_t netflow_ipfix_total_packets         = 0;
 
-// Multiple in each UDP packet
-uint64_t netflow_v9_total_flows        = 0;
-uint64_t netflow_v9_total_ipv4_packets = 0;
-uint64_t netflow_v9_total_ipv6_packets = 0;
+std::string netflow_v5_total_packets_desc = "Total number of Netflow v5 UDP packets received";
+uint64_t netflow_v5_total_packets         = 0;
 
-uint64_t netflow_ipfix_total_packets = 0;
+std::string netflow_v5_total_flows_desc = "Total number of Netflow v5 flows (multiple in each packet)";
+uint64_t netflow_v5_total_flows         = 0;
+
+std::string netflow_v9_total_packets_desc = "Total number of Netflow v5 UDP packets received";
+uint64_t netflow_v9_total_packets         = 0;
+
+std::string netflow_v9_total_flows_desc = "Total number of Netflow v9 flows (multiple in each packet)";
+uint64_t netflow_v9_total_flows         = 0;
+
+std::string netflow_v9_total_ipv4_flows_desc = "Total number of Netflow v9 IPv4 flows (multiple in each packet)";
+uint64_t netflow_v9_total_ipv4_flows         = 0;
+
+std::string netflow_v9_total_ipv6_flows_desc = "Total number of Netflow v9 IPv6 flows (multiple in each packet)";
+uint64_t netflow_v9_total_ipv6_flows         = 0;
+
+std::string netflow_v9_forwarding_status_desc = "Number of Netflow v9 flows with forwarding status provided";
+uint64_t netflow_v9_forwarding_status         = 0;
+
+std::string ipfix_marked_zero_next_hop_and_zero_output_as_dropped_desc =
+    "IPFIX flow was marked as dropped from interface and next hop information";
+uint64_t ipfix_marked_zero_next_hop_and_zero_output_as_dropped = 0;
+
+std::string netflow_v9_marked_zero_next_hop_and_zero_output_as_dropped_desc =
+    "Netflow v9 flow was marked as dropped from interface and next hop information";
+uint64_t netflow_v9_marked_zero_next_hop_and_zero_output_as_dropped = 0;
+
+std::string ipfix_total_packets_desc = "Total number of IPFIX UDP packets received";
+uint64_t ipfix_total_packets         = 0;
 
 std::string netflow_ipfix_all_protocols_total_flows_desc =
     "Total number of flows summarized for all kinds of Netflow and IPFIX";
-uint64_t netflow_ipfix_all_protocols_total_flows = 0; 
+uint64_t netflow_ipfix_all_protocols_total_flows = 0;
 
-// Multiple in each UDP packet
-uint64_t netflow_ipfix_total_flows        = 0;
-uint64_t netflow_ipfix_total_ipv4_packets = 0;
-uint64_t netflow_ipfix_total_ipv6_packets = 0;
+std::string ipfix_total_flows_desc = "Total number of IPFIX flows (multiple in each packet)";
+uint64_t ipfix_total_flows         = 0;
 
-uint64_t netflow_broken_packets = 0;
+std::string ipfix_total_ipv4_flows_desc = "Total number of IPFIX IPv4 flows (multiple in each packet)";
+uint64_t ipfix_total_ipv4_flows         = 0;
 
-// Netflow9 counters
-uint64_t netflow9_data_packet_number       = 0;
-uint64_t netflow9_data_templates_number    = 0;
-uint64_t netflow9_options_templates_number = 0;
-// Number of times we received sampling rate from Netflow agent
+std::string ipfix_active_flow_timeout_received_desc = "Total number of received active IPFIX flow timeouts";
+uint64_t ipfix_active_flow_timeout_received         = 0;
+
+std::string ipfix_inactive_flow_timeout_received_desc = "Total number of received inactive IPFIX flow timeouts";
+uint64_t ipfix_inactive_flow_timeout_received         = 0;
+
+std::string netflow_v9_active_flow_timeout_received_desc = "Total number of received active Netflow v9 flow timeouts";
+uint64_t netflow_v9_active_flow_timeout_received         = 0;
+
+std::string netflow_v9_inactive_flow_timeout_received_desc =
+    "Total number of received inactive Netflow v9 flow timeouts";
+uint64_t netflow_v9_inactive_flow_timeout_received = 0;
+
+std::string ipfix_total_ipv6_flows_desc = "Total number of IPFIX IPv6 flows (multiple in each packet)";
+uint64_t ipfix_total_ipv6_flows         = 0;
+
+std::string netflow_v9_broken_packets_desc = "Netflow v9 packets we cannot decode";
+uint64_t netflow_v9_broken_packets         = 0;
+
+std::string netflow_ipfix_udp_packet_drops_desc = "Number of UDP packets dropped by system on our socket";
+uint64_t netflow_ipfix_udp_packet_drops         = 0;
+
+std::string netflow9_data_packet_number_desc = "Number of Netflow v9 data packets";
+uint64_t netflow9_data_packet_number         = 0;
+
+std::string netflow9_data_templates_number_desc = "Number of Netflow v9 data template packets";
+uint64_t netflow9_data_templates_number         = 0;
+
+std::string netflow9_options_templates_number_desc = "Number of Netflow v9 options templates packets";
+uint64_t netflow9_options_templates_number         = 0;
+
+std::string netflow9_custom_sampling_rate_received_desc =
+    "Number of times we received sampling rate from Netflow v9 agent";
 uint64_t netflow9_custom_sampling_rate_received = 0;
+
+std::string netflow9_options_packet_number_desc = "Number of Netflow v9 options data packets";
 uint64_t netflow9_options_packet_number         = 0;
 
-// How much times we changed sampling rate for same agent
-// As change we also count when we recived it for the first time
+std::string netflow9_sampling_rate_changes_desc = "How much times we changed sampling rate for same agent. As change "
+                                                  "we also count when we received it for the first time";
 uint64_t netflow9_sampling_rate_changes = 0;
 
-// How much times we changed sampling rate for same agent
-// As change we also count when we recived it for the first time
+std::string netflow_ipfix_unknown_protocol_version_desc =
+    "Number of packets with unknown Netflow version. In may be sign that some another protocol like sFlow is being "
+    "send to Netflow or IPFIX port";
+uint64_t netflow_ipfix_unknown_protocol_version = 0;
+
+std::string ipfix_sampling_rate_changes_desc = "How much times we changed sampling rate for same agent.  As change we "
+                                               "also count when we received it for the first time";
 uint64_t ipfix_sampling_rate_changes = 0;
 
-// Number of dropped packets due to unknown template in message
+std::string netflow9_packets_with_unknown_templates_desc =
+    "Number of dropped Netflow v9 packets due to unknown template in message";
 uint64_t netflow9_packets_with_unknown_templates = 0;
 
-// Duration counters for Netflow v9
-uint64_t netflow9_duration_less_15_seconds    = 0;
-uint64_t netflow9_duration_less_30_seconds    = 0;
-uint64_t netflow9_duration_less_60_seconds    = 0;
-uint64_t netflow9_duration_less_90_seconds    = 0;
-uint64_t netflow9_duration_less_180_seconds   = 0;
-uint64_t netflow9_duration_exceed_180_seconds = 0;
+std::string netflow9_duration_less_15_seconds_desc = "Netflow v9 flows with duration less then 15 seconds";
+uint64_t netflow9_duration_less_15_seconds         = 0;
 
-// Duration counter for IPFIX
-uint64_t ipfix_duration_less_15_seconds    = 0;
-uint64_t ipfix_duration_less_30_seconds    = 0;
-uint64_t ipfix_duration_less_60_seconds    = 0;
-uint64_t ipfix_duration_less_90_seconds    = 0;
-uint64_t ipfix_duration_less_180_seconds   = 0;
-uint64_t ipfix_duration_exceed_180_seconds = 0;
+std::string netflow9_duration_less_30_seconds_desc = "Netflow v9 flows with duration less then 30 seconds";
+uint64_t netflow9_duration_less_30_seconds         = 0;
 
-uint64_t ipfix_custom_sampling_rate_received = 0;
+std::string netflow9_duration_less_60_seconds_desc = "Netflow v9 flows with duration less then 60 seconds";
+uint64_t netflow9_duration_less_60_seconds         = 0;
 
+std::string netflow9_duration_less_90_seconds_desc = "Netflow v9 flows with duration less then 90 seconds";
+uint64_t netflow9_duration_less_90_seconds         = 0;
+
+std::string netflow9_duration_less_180_seconds_desc = "Netflow v9 flows with duration less then 180 seconds";
+uint64_t netflow9_duration_less_180_seconds         = 0;
+
+std::string netflow9_duration_exceed_180_seconds_desc = "Netflow v9 flows with duration more then 180 seconds";
+uint64_t netflow9_duration_exceed_180_seconds         = 0;
+
+std::string ipfix_duration_less_15_seconds_desc = "IPFIX flows with duration less then 15 seconds";
+uint64_t ipfix_duration_less_15_seconds         = 0;
+
+std::string ipfix_duration_less_30_seconds_desc = "IPFIX flows with duration less then 30 seconds";
+uint64_t ipfix_duration_less_30_seconds         = 0;
+
+std::string ipfix_duration_less_60_seconds_desc = "IPFIX flows with duration less then 60 seconds";
+uint64_t ipfix_duration_less_60_seconds         = 0;
+
+std::string ipfix_duration_less_90_seconds_desc = "IPFIX flows with duration less then 90 seconds";
+uint64_t ipfix_duration_less_90_seconds         = 0;
+
+std::string ipfix_duration_less_180_seconds_desc = "IPFIX flows with duration less then 180 seconds";
+uint64_t ipfix_duration_less_180_seconds         = 0;
+
+std::string ipfix_duration_exceed_180_seconds_desc = "IPFIX flows with duration more then 180 seconds";
+uint64_t ipfix_duration_exceed_180_seconds         = 0;
+
+std::string ipfix_forwarding_status_desc = "Number of IPFIX flows with forwarding status provided";
+uint64_t ipfix_forwarding_status         = 0;
+
+std::string ipfix_custom_sampling_rate_received_desc = "IPFIX customer sampling rates received";
+uint64_t ipfix_custom_sampling_rate_received         = 0;
+
+std::string ipfix_duration_negative_desc =
+    "IPFIX packets with negative duration, it may happen when vendor does not implement protocol correctly";
 uint64_t ipfix_duration_negative = 0;
 
-uint64_t netflow5_duration_less_15_seconds    = 0;
-uint64_t netflow5_duration_less_30_seconds    = 0;
-uint64_t netflow5_duration_less_60_seconds    = 0;
-uint64_t netflow5_duration_less_90_seconds    = 0;
-uint64_t netflow5_duration_less_180_seconds   = 0;
-uint64_t netflow5_duration_exceed_180_seconds = 0;
+std::string netflow5_duration_less_15_seconds_desc = "Netflow v5 flows with duration less then 15 seconds";
+uint64_t netflow5_duration_less_15_seconds         = 0;
 
-// IPFIX counters
-uint64_t ipfix_data_packet_number       = 0;
-uint64_t ipfix_data_templates_number    = 0;
-uint64_t ipfix_options_templates_number = 0;
-uint64_t ipfix_options_packet_number    = 0;
-// Number of dropped packets due to unknown template in message
+std::string netflow5_duration_less_30_seconds_desc = "Netflow v5 flows with duration less then 30 seconds";
+uint64_t netflow5_duration_less_30_seconds         = 0;
+
+std::string netflow5_duration_less_60_seconds_desc = "Netflow v5 flows with duration less then 60 seconds";
+uint64_t netflow5_duration_less_60_seconds         = 0;
+
+std::string netflow5_duration_less_90_seconds_desc = "Netflow v5 flows with duration less then 90 seconds";
+uint64_t netflow5_duration_less_90_seconds         = 0;
+
+std::string netflow5_duration_less_180_seconds_desc = "Netflow v5 flows with duration less then 180 seconds";
+uint64_t netflow5_duration_less_180_seconds         = 0;
+
+std::string netflow5_duration_exceed_180_seconds_desc = "Netflow v5 flows with duration more then 180 seconds";
+uint64_t netflow5_duration_exceed_180_seconds         = 0;
+
+std::string ipfix_data_packet_number_desc = "IPFIX data packets number";
+uint64_t ipfix_data_packet_number         = 0;
+
+std::string ipfix_data_templates_number_desc = "IPFIX data templates number";
+uint64_t ipfix_data_templates_number         = 0;
+
+std::string ipfix_options_templates_number_desc = "IPFIX options templates number";
+uint64_t ipfix_options_templates_number         = 0;
+
+std::string ipfix_options_packet_number_desc = "IPFIX options data packets number";
+uint64_t ipfix_options_packet_number         = 0;
+
+std::string ipfix_packets_with_unknown_templates_desc =
+    "Number of dropped IPFIX packets due to unknown template in message";
 uint64_t ipfix_packets_with_unknown_templates = 0;
 
 // https://www.iana.org/assignments/ipfix/ipfix.xhtml#ipfix-flow-end-reason
-uint64_t ipfix_flows_end_reason_idle_timeout             = 0;
-uint64_t ipfix_flows_end_reason_active_timeout           = 0;
-uint64_t ipfix_flows_end_reason_end_of_flow_timeout      = 0;
-uint64_t ipfix_flows_end_reason_force_end_timeout        = 0;
-uint64_t ipfix_flows_end_reason_lack_of_resource_timeout = 0;
+std::string ipfix_flows_end_reason_idle_timeout_desc = "IPFIX flows finished by idle timeout";
+uint64_t ipfix_flows_end_reason_idle_timeout         = 0;
 
-// Number of template updates when actual template content was changed
-uint64_t template_updates_number_due_to_real_changes = 0;
+std::string ipfix_flows_end_reason_active_timeout_desc = "IPFIX flows finished by active timeout";
+uint64_t ipfix_flows_end_reason_active_timeout         = 0;
 
-// Number of templates received with same data as inside known by FastNetMon templates
+std::string ipfix_flows_end_reason_end_of_flow_timeout_desc = "IPFIX flows finished by end of flow timeout";
+uint64_t ipfix_flows_end_reason_end_of_flow_timeout         = 0;
+
+std::string ipfix_flows_end_reason_force_end_timeout_desc = "IPFIX flows finished by force end timeout";
+uint64_t ipfix_flows_end_reason_force_end_timeout         = 0;
+
+std::string ipfix_flows_end_reason_lack_of_resource_timeout_desc = "IPFIX flows finished by lack of resources";
+uint64_t ipfix_flows_end_reason_lack_of_resource_timeout         = 0;
+
+std::string template_update_attempts_with_same_template_data_desc =
+    "Number of templates received with same data as inside known by us";
 uint64_t template_update_attempts_with_same_template_data = 0;
 
-// Number of times when we write netflow / ipfix templates to disk
+std::string ipfix_template_data_updates_desc = "Count times when template data actually changed for IPFIX";
+uint64_t ipfix_template_data_updates         = 0;
+
+std::string netflow_v9_template_data_updates_desc = "Count times when template data actually changed for Netflow v9";
+uint64_t netflow_v9_template_data_updates         = 0;
+
+std::string template_netflow_ipfix_disk_writes_desc =
+    "Number of times when we write Netflow or ipfix templates to disk";
 uint64_t template_netflow_ipfix_disk_writes = 0;
 
 
-// Number of flows which exceed specified limit in configuration
-uint64_t netflow_ignored_long_flows = 0;
+std::string netflow_ignored_long_flows_desc = "Number of flows which exceed specified limit in configuration";
+uint64_t netflow_ignored_long_flows         = 0;
 
-// If we wan't listen on IPv4 and IPv6 in same time we need listen multiple
-// sockets. Not good,
-// right.
+std::string netflow9_protocol_version_adjustments_desc =
+    "Number of Netflow v9 flows with re-classified protocol version";
+uint64_t netflow9_protocol_version_adjustments = 0;
+
+std::string ipfix_protocol_version_adjustments_desc = "Number of IPFIX flows with re-classified protocol version";
+uint64_t ipfix_protocol_version_adjustments         = 0;
+
+std::string ipfix_too_large_field_desc = "We increment these counters when field we use to store particular type of "
+                                         "IPFIX record is smaller than we actually received from device";
+uint64_t ipfix_too_large_field = 0;
+
+std::string netflow_v9_too_large_field_desc = "We increment these counters when field we use to store particular type "
+                                              "of Netflow v9 record is smaller than we actually received from device";
+uint64_t netflow_v9_too_large_field = 0;
+
+std::string netflow_v9_lite_header_parser_error_desc = "Netflow v9 Lite header parser errors";
+uint64_t netflow_v9_lite_header_parser_error         = 0;
+
+std::string ipfix_inline_header_parser_error_desc = "IPFIX inline header parser errors";
+uint64_t ipfix_inline_header_parser_error         = 0;
+
+std::string netflow_v9_lite_headers_desc = "Total number of headers in Netflow v9 lite received";
+uint64_t netflow_v9_lite_headers         = 0;
+
+std::string ipfix_inline_headers_desc = "Total number of headers in IPFIX received";
+uint64_t ipfix_inline_headers         = 0;
+
+std::string ipfix_packets_with_padding_desc = "Total number of IPFIX packets with padding";
+uint64_t ipfix_packets_with_padding         = 0;
+
+// END of counters section
+
 
 void increment_duration_counters_ipfix(int64_t duration);
 
@@ -170,80 +315,181 @@ global_template_storage_t global_netflow10_templates;
 std::vector<system_counter_t> get_netflow_stats() {
     std::vector<system_counter_t> system_counter;
 
-    system_counter.push_back(system_counter_t("netflow_total_packets", netflow_total_packets));
-
     // Netflow v5
-    system_counter.push_back(system_counter_t("netflow_v5_total_packets", netflow_v5_total_packets));
-    system_counter.push_back(system_counter_t("netflow_v5_total_flows", netflow_v5_total_flows));
-    system_counter.push_back(system_counter_t("netflow_v5_duration_less_15_seconds", netflow5_duration_less_15_seconds));
-    system_counter.push_back(system_counter_t("netflow_v5_duration_less_30_seconds", netflow5_duration_less_30_seconds));
-    system_counter.push_back(system_counter_t("netflow_v5_duration_less_60_seconds", netflow5_duration_less_60_seconds));
-    system_counter.push_back(system_counter_t("netflow_v5_duration_less_90_seconds", netflow5_duration_less_90_seconds));
-    system_counter.push_back(system_counter_t("netflow_v5_duration_less_180_seconds", netflow5_duration_less_180_seconds));
-    system_counter.push_back(system_counter_t("netflow_v5_duraion_exceed_180_seconds", netflow5_duration_exceed_180_seconds));
+    system_counter.push_back(system_counter_t("netflow_v5_total_packets", netflow_v5_total_packets,
+                                              metric_type_t::counter, netflow_v5_total_packets_desc));
+    system_counter.push_back(system_counter_t("netflow_v5_total_flows", netflow_v5_total_flows, metric_type_t::counter,
+                                              netflow_v5_total_flows_desc));
+    system_counter.push_back(system_counter_t("netflow_v5_duration_less_15_seconds", netflow5_duration_less_15_seconds,
+                                              metric_type_t::counter, netflow5_duration_less_15_seconds_desc));
+    system_counter.push_back(system_counter_t("netflow_v5_duration_less_30_seconds", netflow5_duration_less_30_seconds,
+                                              metric_type_t::counter, netflow5_duration_less_30_seconds_desc));
+    system_counter.push_back(system_counter_t("netflow_v5_duration_less_60_seconds", netflow5_duration_less_60_seconds,
+                                              metric_type_t::counter, netflow5_duration_less_60_seconds_desc));
+    system_counter.push_back(system_counter_t("netflow_v5_duration_less_90_seconds", netflow5_duration_less_90_seconds,
+                                              metric_type_t::counter, netflow5_duration_less_90_seconds_desc));
+    system_counter.push_back(system_counter_t("netflow_v5_duration_less_180_seconds", netflow5_duration_less_180_seconds,
+                                              metric_type_t::counter, netflow5_duration_less_180_seconds_desc));
+    system_counter.push_back(system_counter_t("netflow_v5_duration_exceed_180_seconds", netflow5_duration_exceed_180_seconds,
+                                              metric_type_t::counter, netflow5_duration_exceed_180_seconds_desc));
 
     // Netflow v9
-    system_counter.push_back(system_counter_t("netflow_v9_total_packets", netflow_v9_total_packets));
+    system_counter.push_back(system_counter_t("netflow_v9_total_packets", netflow_v9_total_packets,
+                                              metric_type_t::counter, netflow_v9_total_packets_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_total_flows", netflow_v9_total_flows, metric_type_t::counter,
+                                              netflow_v9_total_flows_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_total_ipv4_flows", netflow_v9_total_ipv4_flows,
+                                              metric_type_t::counter, netflow_v9_total_ipv4_flows_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_total_ipv6_flows", netflow_v9_total_ipv6_flows,
+                                              metric_type_t::counter, netflow_v9_total_ipv6_flows_desc));
 
-    system_counter.push_back(system_counter_t("netflow_v9_total_flows", netflow_v9_total_flows));
-    system_counter.push_back(system_counter_t("netflow_v9_total_ipv4_packets", netflow_v9_total_ipv4_packets));
-    system_counter.push_back(system_counter_t("netflow_v9_total_ipv6_packets", netflow_v9_total_ipv6_packets));
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_15_seconds", netflow9_duration_less_15_seconds,
+                                              metric_type_t::counter, netflow9_duration_less_15_seconds_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_30_seconds", netflow9_duration_less_30_seconds,
+                                              metric_type_t::counter, netflow9_duration_less_30_seconds_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_60_seconds", netflow9_duration_less_60_seconds,
+                                              metric_type_t::counter, netflow9_duration_less_60_seconds_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_90_seconds", netflow9_duration_less_90_seconds,
+                                              metric_type_t::counter, netflow9_duration_less_90_seconds_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_180_seconds", netflow9_duration_less_180_seconds,
+                                              metric_type_t::counter, netflow9_duration_less_180_seconds_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_duration_exceed_180_seconds", netflow9_duration_exceed_180_seconds,
+                                              metric_type_t::counter, netflow9_duration_exceed_180_seconds_desc));
 
-    system_counter.push_back(system_counter_t("netflow_v9_duration_less_15_seconds", netflow9_duration_less_15_seconds));
-    system_counter.push_back(system_counter_t("netflow_v9_duration_less_30_seconds", netflow9_duration_less_30_seconds));
-    system_counter.push_back(system_counter_t("netflow_v9_duration_less_60_seconds", netflow9_duration_less_60_seconds));
-    system_counter.push_back(system_counter_t("netflow_v9_duration_less_90_seconds", netflow9_duration_less_90_seconds));
-    system_counter.push_back(system_counter_t("netflow_v9_duration_less_180_seconds", netflow9_duration_less_180_seconds));
-    system_counter.push_back(system_counter_t("netflow_v9_duraion_exceed_180_seconds", netflow9_duration_exceed_180_seconds));
+    system_counter.push_back(system_counter_t("netflow_v9_data_packet_number", netflow9_data_packet_number,
+                                              metric_type_t::counter, netflow9_data_packet_number_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_data_templates_number", netflow9_data_templates_number,
+                                              metric_type_t::counter, netflow9_data_templates_number_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_options_templates_number", netflow9_options_templates_number,
+                                              metric_type_t::counter, netflow9_options_templates_number_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_options_packet_number", netflow9_options_packet_number,
+                                              metric_type_t::counter, netflow9_options_packet_number_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_packets_with_unknown_templates", netflow9_packets_with_unknown_templates,
+                                              metric_type_t::counter, netflow9_packets_with_unknown_templates_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_custom_sampling_rate_received", netflow9_custom_sampling_rate_received,
+                                              metric_type_t::counter, netflow9_custom_sampling_rate_received_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_sampling_rate_changes", netflow9_sampling_rate_changes,
+                                              metric_type_t::counter, netflow9_sampling_rate_changes_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_protocol_version_adjustments", netflow9_protocol_version_adjustments,
+                                              metric_type_t::counter, netflow9_protocol_version_adjustments_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_template_updates_number_due_to_real_changes", netflow_v9_template_data_updates,
+                                              metric_type_t::counter, netflow_v9_template_data_updates_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_too_large_field", netflow_v9_too_large_field,
+                                              metric_type_t::counter, netflow_v9_too_large_field_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_lite_headers", netflow_v9_lite_headers,
+                                              metric_type_t::counter, netflow_v9_lite_headers_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_forwarding_status", netflow_v9_forwarding_status,
+                                              metric_type_t::counter, netflow_v9_forwarding_status_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_lite_header_parser_error", netflow_v9_lite_header_parser_error,
+                                              metric_type_t::counter, netflow_v9_lite_header_parser_error_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_broken_packets", netflow_v9_broken_packets,
+                                              metric_type_t::counter, netflow_v9_broken_packets_desc));
 
-    system_counter.push_back(system_counter_t("ipfix_duration_less_15_seconds", ipfix_duration_less_15_seconds));
-    system_counter.push_back(system_counter_t("ipfix_duration_less_30_seconds", ipfix_duration_less_30_seconds));
-    system_counter.push_back(system_counter_t("ipfix_duration_less_60_seconds", ipfix_duration_less_60_seconds));
-    system_counter.push_back(system_counter_t("ipfix_duration_less_90_seconds", ipfix_duration_less_90_seconds));
-    system_counter.push_back(system_counter_t("ipfix_duration_less_180_seconds", ipfix_duration_less_180_seconds));
-    system_counter.push_back(system_counter_t("ipfix_duraion_exceed_180_seconds", ipfix_duration_exceed_180_seconds));
-    system_counter.push_back(system_counter_t("ipfix_duration_negative", ipfix_duration_negative));
+    system_counter.push_back(system_counter_t("netflow_v9_active_flow_timeout_received", netflow_v9_active_flow_timeout_received,
+                                              metric_type_t::counter, netflow_v9_active_flow_timeout_received_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_inactive_flow_timeout_received", netflow_v9_inactive_flow_timeout_received,
+                                              metric_type_t::counter, netflow_v9_inactive_flow_timeout_received_desc));
 
-    system_counter.push_back(system_counter_t("ipfix_flows_end_reason_idle_timeout", ipfix_flows_end_reason_idle_timeout));
-    system_counter.push_back(system_counter_t("ipfix_flows_end_reason_active_timeout", ipfix_flows_end_reason_active_timeout));
-    system_counter.push_back(system_counter_t("ipfix_flows_end_reason_end_of_flow_timeout", ipfix_flows_end_reason_end_of_flow_timeout));
-    system_counter.push_back(system_counter_t("ipfix_flows_end_reason_force_end_timeout", ipfix_flows_end_reason_force_end_timeout));
+    system_counter.push_back(system_counter_t("netflow_v9_marked_zero_next_hop_and_zero_output_as_dropped",
+                                              netflow_v9_marked_zero_next_hop_and_zero_output_as_dropped, metric_type_t::counter,
+                                              netflow_v9_marked_zero_next_hop_and_zero_output_as_dropped_desc));
+
+    // IPFIX
+    system_counter.push_back(system_counter_t("ipfix_total_flows", ipfix_total_flows, metric_type_t::counter, ipfix_total_flows_desc));
+    system_counter.push_back(
+        system_counter_t("ipfix_total_packets", ipfix_total_packets, metric_type_t::counter, ipfix_total_packets_desc));
+    system_counter.push_back(system_counter_t("ipfix_total_ipv4_flows", ipfix_total_ipv4_flows, metric_type_t::counter,
+                                              ipfix_total_ipv4_flows_desc));
+    system_counter.push_back(system_counter_t("ipfix_total_ipv6_flows", ipfix_total_ipv6_flows, metric_type_t::counter,
+                                              ipfix_total_ipv6_flows_desc));
+
+    system_counter.push_back(system_counter_t("ipfix_duration_less_15_seconds", ipfix_duration_less_15_seconds,
+                                              metric_type_t::counter, ipfix_duration_less_15_seconds_desc));
+    system_counter.push_back(system_counter_t("ipfix_duration_less_30_seconds", ipfix_duration_less_30_seconds,
+                                              metric_type_t::counter, ipfix_duration_less_30_seconds_desc));
+    system_counter.push_back(system_counter_t("ipfix_duration_less_60_seconds", ipfix_duration_less_60_seconds,
+                                              metric_type_t::counter, ipfix_duration_less_60_seconds_desc));
+    system_counter.push_back(system_counter_t("ipfix_duration_less_90_seconds", ipfix_duration_less_90_seconds,
+                                              metric_type_t::counter, ipfix_duration_less_90_seconds_desc));
+    system_counter.push_back(system_counter_t("ipfix_duration_less_180_seconds", ipfix_duration_less_180_seconds,
+                                              metric_type_t::counter, ipfix_duration_less_180_seconds_desc));
+    system_counter.push_back(system_counter_t("ipfix_duration_exceed_180_seconds", ipfix_duration_exceed_180_seconds,
+                                              metric_type_t::counter, ipfix_duration_exceed_180_seconds_desc));
+    system_counter.push_back(system_counter_t("ipfix_duration_negative", ipfix_duration_negative,
+                                              metric_type_t::counter, ipfix_duration_negative_desc));
+
+    system_counter.push_back(system_counter_t("ipfix_flows_end_reason_idle_timeout", ipfix_flows_end_reason_idle_timeout,
+                                              metric_type_t::counter, ipfix_flows_end_reason_idle_timeout_desc));
+    system_counter.push_back(system_counter_t("ipfix_flows_end_reason_active_timeout", ipfix_flows_end_reason_active_timeout,
+                                              metric_type_t::counter, ipfix_flows_end_reason_active_timeout_desc));
+    system_counter.push_back(system_counter_t("ipfix_flows_end_reason_end_of_flow_timeout", ipfix_flows_end_reason_end_of_flow_timeout,
+                                              metric_type_t::counter, ipfix_flows_end_reason_end_of_flow_timeout_desc));
+    system_counter.push_back(system_counter_t("ipfix_flows_end_reason_force_end_timeout", ipfix_flows_end_reason_force_end_timeout,
+                                              metric_type_t::counter, ipfix_flows_end_reason_force_end_timeout_desc));
     system_counter.push_back(system_counter_t("ipfix_flows_end_reason_lack_of_resource_timeout",
-                                              ipfix_flows_end_reason_lack_of_resource_timeout));
+                                              ipfix_flows_end_reason_lack_of_resource_timeout, metric_type_t::counter,
+                                              ipfix_flows_end_reason_lack_of_resource_timeout_desc));
 
-    system_counter.push_back(system_counter_t("netflow_ipfix_total_packets", netflow_ipfix_total_packets));
-    system_counter.push_back(system_counter_t("netflow_ipfix_total_flows", netflow_ipfix_total_flows));
-    system_counter.push_back(system_counter_t("netflow_ipfix_total_ipv4_packets", netflow_ipfix_total_ipv4_packets));
-    system_counter.push_back(system_counter_t("netflow_ipfix_total_ipv6_packets", netflow_ipfix_total_ipv6_packets));
+    system_counter.push_back(system_counter_t("ipfix_data_packet_number", ipfix_data_packet_number,
+                                              metric_type_t::counter, ipfix_data_packet_number_desc));
+    system_counter.push_back(system_counter_t("ipfix_data_templates_number", ipfix_data_templates_number,
+                                              metric_type_t::counter, ipfix_data_templates_number_desc));
+    system_counter.push_back(system_counter_t("ipfix_options_templates_number", ipfix_options_templates_number,
+                                              metric_type_t::counter, ipfix_options_templates_number_desc));
+    system_counter.push_back(system_counter_t("ipfix_options_packet_number", ipfix_options_packet_number,
+                                              metric_type_t::counter, ipfix_options_packet_number_desc));
+    system_counter.push_back(system_counter_t("ipfix_packets_with_unknown_templates", ipfix_packets_with_unknown_templates,
+                                              metric_type_t::counter, ipfix_packets_with_unknown_templates_desc));
+    system_counter.push_back(system_counter_t("ipfix_custom_sampling_rate_received", ipfix_custom_sampling_rate_received,
+                                              metric_type_t::counter, ipfix_custom_sampling_rate_received_desc));
+    system_counter.push_back(system_counter_t("ipfix_sampling_rate_changes", ipfix_sampling_rate_changes,
+                                              metric_type_t::counter, ipfix_sampling_rate_changes_desc));
+    system_counter.push_back(system_counter_t("ipfix_marked_zero_next_hop_and_zero_output_as_dropped",
+                                              ipfix_marked_zero_next_hop_and_zero_output_as_dropped, metric_type_t::counter,
+                                              ipfix_marked_zero_next_hop_and_zero_output_as_dropped_desc));
+    system_counter.push_back(system_counter_t("ipfix_template_updates_number_due_to_real_changes", ipfix_template_data_updates,
+                                              metric_type_t::counter, ipfix_template_data_updates_desc));
+    system_counter.push_back(system_counter_t("ipfix_packets_with_padding", ipfix_packets_with_padding,
+                                              metric_type_t::counter, ipfix_packets_with_padding_desc));
+    system_counter.push_back(system_counter_t("ipfix_inline_headers", ipfix_inline_headers, metric_type_t::counter,
+                                              ipfix_inline_headers_desc));
+    system_counter.push_back(system_counter_t("ipfix_protocol_version_adjustments", ipfix_protocol_version_adjustments,
+                                              metric_type_t::counter, ipfix_protocol_version_adjustments_desc));
+    system_counter.push_back(system_counter_t("ipfix_too_large_field", ipfix_too_large_field, metric_type_t::counter,
+                                              ipfix_too_large_field_desc));
+    system_counter.push_back(system_counter_t("ipfix_forwarding_status", ipfix_forwarding_status,
+                                              metric_type_t::counter, ipfix_forwarding_status_desc));
+    system_counter.push_back(system_counter_t("ipfix_inline_header_parser_error", ipfix_inline_header_parser_error,
+                                              metric_type_t::counter, ipfix_inline_header_parser_error_desc));
+    system_counter.push_back(system_counter_t("ipfix_active_flow_timeout_received", ipfix_active_flow_timeout_received,
+                                              metric_type_t::counter, ipfix_active_flow_timeout_received_desc));
+    system_counter.push_back(system_counter_t("ipfix_inactive_flow_timeout_received", ipfix_inactive_flow_timeout_received,
+                                              metric_type_t::counter, ipfix_inactive_flow_timeout_received_desc));
 
-    system_counter.push_back(system_counter_t("netflow_ipfix_all_protocols_total_flows", netflow_ipfix_all_protocols_total_flows));
+    // Common
 
-    system_counter.push_back(system_counter_t("netflow_broken_packets", netflow_broken_packets));
-    system_counter.push_back(system_counter_t("template_updates_number_due_to_real_changes", template_updates_number_due_to_real_changes));
+    system_counter.push_back(system_counter_t("netflow_ipfix_total_packets", netflow_ipfix_total_packets,
+                                              metric_type_t::counter, netflow_ipfix_total_packets_desc));
+    system_counter.push_back(system_counter_t("netflow_ipfix_all_protocols_total_flows", netflow_ipfix_all_protocols_total_flows,
+                                              metric_type_t::counter, netflow_ipfix_all_protocols_total_flows_desc));
+    system_counter.push_back(system_counter_t("netflow_ipfix_udp_packet_drops", netflow_ipfix_udp_packet_drops,
+                                              metric_type_t::counter, netflow_ipfix_udp_packet_drops_desc));
+
+    system_counter.push_back(system_counter_t("netflow_ipfix_unknown_protocol_version", netflow_ipfix_unknown_protocol_version,
+                                              metric_type_t::counter, netflow_ipfix_unknown_protocol_version_desc));
+
     system_counter.push_back(system_counter_t("template_update_attempts_with_same_template_data",
-                                              template_update_attempts_with_same_template_data));
-    system_counter.push_back(system_counter_t("ipfix_data_packet_number", ipfix_data_packet_number));
-    system_counter.push_back(system_counter_t("ipfix_data_templates_number", ipfix_data_templates_number));
-    system_counter.push_back(system_counter_t("ipfix_options_templates_number", ipfix_options_templates_number));
-    system_counter.push_back(system_counter_t("ipfix_options_packet_number", ipfix_options_packet_number));
-    system_counter.push_back(system_counter_t("ipfix_packets_with_unknown_templates", ipfix_packets_with_unknown_templates));
-    system_counter.push_back(system_counter_t("ipfix_custom_sampling_rate_received", ipfix_custom_sampling_rate_received));
-    system_counter.push_back(system_counter_t("ipfix_sampling_rate_changes", ipfix_sampling_rate_changes));
+                                              template_update_attempts_with_same_template_data, metric_type_t::counter,
+                                              template_update_attempts_with_same_template_data_desc));
 
-    system_counter.push_back(system_counter_t("netflow9_data_packet_number", netflow9_data_packet_number));
-    system_counter.push_back(system_counter_t("netflow9_data_templates_number", netflow9_data_templates_number));
-    system_counter.push_back(system_counter_t("netflow9_options_templates_number", netflow9_options_templates_number));
-    system_counter.push_back(system_counter_t("netflow9_options_packet_number", netflow9_options_packet_number));
-    system_counter.push_back(system_counter_t("netflow9_packets_with_unknown_templates", netflow9_packets_with_unknown_templates));
-    system_counter.push_back(system_counter_t("netflow9_custom_sampling_rate_received", netflow9_custom_sampling_rate_received));
-    system_counter.push_back(system_counter_t("netflow9_sampling_rate_changes", netflow9_sampling_rate_changes));
-    system_counter.push_back(system_counter_t("netflow_ignored_long_flows", netflow_ignored_long_flows));
+    system_counter.push_back(system_counter_t("netflow_ignored_long_flows", netflow_ignored_long_flows,
+                                              metric_type_t::counter, netflow_ignored_long_flows_desc));
 
-    system_counter.push_back(system_counter_t("template_netflow_ipfix_disk_writes", template_netflow_ipfix_disk_writes));
+    system_counter.push_back(system_counter_t("template_netflow_ipfix_disk_writes", template_netflow_ipfix_disk_writes,
+                                              metric_type_t::counter, template_netflow_ipfix_disk_writes_desc));
 
     return system_counter;
 }
-
 
 /* Prototypes */
 void add_update_peer_template(global_template_storage_t& table_for_add,
