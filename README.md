@@ -64,12 +64,14 @@ Features
 - Thresholds can be configured per-subnet basis with the hostgroups feature
 - [Email notifications](https://fastnetmon.com/docs/attack_report_example/) about detected attack
 - Complete IPv6 support
+- Prometheus support: system metrics and total traffic counters
 - Flow and packet export to Kafka in JSON format
 - Announce blocked IPs via BGP to routers with [ExaBGP](https://fastnetmon.com/docs/exabgp_integration/) or [GoBGP](https://fastnetmon.com/docs/gobgp-integration/) (recommended)
 - Full integration with [InfluxDB](https://fastnetmon.com/docs/influxdb_integration/) and [Graphite](https://fastnetmon.com/docs/graphite_integration/)
 - [API](https://fastnetmon.com/docs/fastnetmon-community-api/)
 - [Redis](https://fastnetmon.com/docs/redis/) integration
 - [MongoDB](https://fastnetmon.com/docs/mongodb/) integration
+- Prometheus support
 - VLAN untagging in mirror and sFlow modes
 - Capture attack fingerprints in PCAP format
 

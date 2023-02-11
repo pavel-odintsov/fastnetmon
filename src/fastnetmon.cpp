@@ -192,6 +192,9 @@ logging_configuration_t logging_configuration;
 // Global map with parsed config file
 configuration_map_t configuration_map;
 
+// Enable Prometheus
+bool prometheus = false;
+
 // Prometheus port
 unsigned short prometheus_port = 9209;
 
@@ -948,6 +951,20 @@ bool load_configuration_file() {
         }
     }
 #endif
+
+    if (configuration_map.count("prometheus") != 0) {
+        if (configuration_map["prometheus"] == "on") {
+            prometheus = true;
+        }
+    }
+
+    if (configuration_map.count("prometheus_host") != 0) {
+        prometheus_host = configuration_map["prometheus_host"];
+    }
+
+    if (configuration_map.count("prometheus_port") != 0) {
+        prometheus_port = convert_string_to_integer(configuration_map["prometheus_port"]);
+    }
 
 #ifdef KAFKA
     if (configuration_map.count("kafka_traffic_export") != 0) {
@@ -1775,6 +1792,12 @@ int main(int argc, char** argv) {
         service_thread_group.add_thread(new boost::thread(RunApiServer));
     }
 #endif
+
+    if (prometheus) {
+        auto prometheus_thread = new boost::thread(start_prometheus_web_server);
+        set_boost_process_name(prometheus_thread, "prometheus");
+        service_thread_group.add_thread(prometheus_thread);
+    }
 
     // Set inaccurate time value which will be used in process_packet() from capture backends
     time(&current_inaccurate_time);

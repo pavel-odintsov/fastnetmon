@@ -139,6 +139,7 @@ template <typename TemplatedKeyType>
 bool should_remove_orphaned_bucket(const std::pair<TemplatedKeyType, packet_bucket_t>& pair);
 void inaccurate_time_generator();
 void collect_stats();
+void start_prometheus_web_server();
 
 // API declaration
 using fastmitigation::BanListReply;
