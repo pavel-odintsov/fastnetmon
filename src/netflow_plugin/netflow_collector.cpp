@@ -997,7 +997,7 @@ void add_update_peer_template(global_template_storage_t& table_for_add,
             // Should I track timestamp here and drop old templates after some time?
             if (itr->second[template_id] != field_template) {
                 itr->second[template_id] = field_template;
-                template_updates_number_due_to_real_changes++;
+                
                 updated = true;
             } else {
                 template_update_attempts_with_same_template_data++;
@@ -1561,12 +1561,12 @@ void nf10_flowset_to_store(uint8_t* pkt,
 
     netflow_ipfix_all_protocols_total_flows++;
 
-    netflow_ipfix_total_flows++;
+    ipfix_total_flows++;
 
     if (packet.ip_protocol_version == 4) {
-        netflow_ipfix_total_ipv4_packets++;
+        ipfix_total_ipv4_flows++;
     } else if (packet.ip_protocol_version == 6) {
-        netflow_ipfix_total_ipv6_packets++;
+        ipfix_total_ipv6_flows++;
     }
 
     double duration_float = packet.flow_end - packet.flow_start;
@@ -1852,9 +1852,9 @@ void nf9_flowset_to_store(uint8_t* pkt,
     netflow_ipfix_all_protocols_total_flows++;
 
     if (packet.ip_protocol_version == 4) {
-        netflow_v9_total_ipv4_packets++;
+        netflow_v9_total_ipv4_flows++;
     } else if (packet.ip_protocol_version == 6) {
-        netflow_v9_total_ipv6_packets++;
+        netflow_v9_total_ipv6_flows++;
     }
 
     double duration_float = packet.flow_end - packet.flow_start;
@@ -2232,7 +2232,7 @@ bool process_netflow_packet_v9(uint8_t* packet, uint32_t len, std::string& clien
                                         client_addres_in_string_format, client_ipv4_address) != 0) {
                 // logger<< log4cpp::Priority::ERROR<<"Can't process function
                 // process_netflow_v9_data correctly";
-                netflow_broken_packets++;
+                netflow_v9_broken_packets++;
                 return false;
             }
 
@@ -2390,7 +2390,7 @@ bool process_netflow_packet(uint8_t* packet, uint32_t len, std::string& client_a
         netflow_ipfix_total_packets++;
         return process_netflow_packet_v10(packet, len, client_addres_in_string_format, client_ipv4_address);
     default:
-        netflow_broken_packets++;
+        netflow_ipfix_unknown_protocol_version++;
         logger << log4cpp::Priority::ERROR << "We do not support Netflow " << ntohs(hdr->version)
                << " we received this packet from " << client_addres_in_string_format;
 
@@ -2574,7 +2574,7 @@ void start_netflow_collector(std::string netflow_host, unsigned int netflow_port
             // logger<< log4cpp::Priority::INFO<<"We receive packet from IP:
             // "<<client_addres_in_string_format;
 
-            netflow_total_packets++;
+            netflow_ipfix_total_packets++;
             process_netflow_packet((uint8_t*)udp_buffer, received_bytes, client_addres_in_string_format, client_ipv4_address);
         } else {
 
