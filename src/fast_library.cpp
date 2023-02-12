@@ -35,6 +35,8 @@
 #include <capnp/serialize-packed.h>
 #endif
 
+#include "flow_data.pb.h"
+
 boost::regex regular_expression_cidr_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+\\/\\d+$");
 boost::regex regular_expression_host_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+$");
 
@@ -2361,3 +2363,38 @@ std::string country_static_string_to_dynamic_string(const boost::beast::static_s
     return country_code_dynamic_string;
 }
 
+// Encode simple packet into Protobuf
+bool write_simple_packet_to_protobuf(const simple_packet_t& packet, TrafficData& traffic_data) {
+    extern log4cpp::Category& logger;
+
+    traffic_data.set_protocol(packet.protocol);
+    traffic_data.set_sampling_ratio(packet.sample_ratio);
+    
+    // packet.src_ipv6 and packet.dst_ipv6
+    traffic_data.set_source_ip(packet.src_ip);
+    traffic_data.set_destination_ip(packet.dst_ip);
+    
+    traffic_data.set_ip_protocol_version(packet.ip_protocol_version);
+    traffic_data.set_ttl(packet.ttl);
+
+    traffic_data.set_source_port(packet.source_port);
+    traffic_data.set_destinationPort(packet.destination_port);
+    
+    traffic_data.set_octets(packet.length);
+    traffic_data.set_packets(packet.number_of_packets);
+
+    traffic_data.set_tcp_flags(packet.flags);
+    traffic_data.set_ip_fragmented(packet.ip_fragmented);
+    traffic_data.set_timestamp_seconds(packet.ts.tv_sec);
+    traffic_data.set_timestamp_milliseconds(packet.ts.tv_usec);
+    traffic_data.set_octets(packet.length);
+    traffic_data.set_traffic_direction(packet.packet_direction);
+    traffic_data.set_source(packet.source);
+    traffic_data.set_source_asn(packet.src_asn);
+    traffic_data.set_destination_asn(packet.dst_asn);
+    traffic_data.set_input_interface(packet.input_interface);
+    traffic_data.set_output_interface(packet.output_interface);
+    traffic_data.set_agent_address(packet.agent_ip_address);
+
+    return true;
+}

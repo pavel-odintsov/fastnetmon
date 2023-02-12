@@ -525,11 +525,14 @@ if (ENABLE_GOBGP_SUPPORT)
 
     message(STATUS "Building Protobuf bindings for C++ for Flow Data")
 
-    execute_process(COMMAND ${PROTOC_BINARY} -I ${PROJECT_SOURCE_DIR} --cpp_out=${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/flow_data.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${PROTOC_BINARY} -I ${PROJECT_SOURCE_DIR} --cpp_out=${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/traffic_data.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     message(STATUS "Protoc return code for FlowData Protobuf: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
+    
+    # Build Flow Data binary 
+    add_library(traffic_data_library STATIC traffic_data.pb.cc)
 
-    # Build gRPC and protocol bufffers libraries and link they to gobgp_action
+    # Build gRPC and protocol buffers libraries and link they to gobgp_action
     add_library(gobgp_api_client_pb_cc STATIC actions/gobgp.pb.cc)
     add_library(gobgp_api_client_grpc_pb_cc STATIC actions/gobgp.grpc.pb.cc)
 
@@ -770,6 +773,8 @@ target_link_libraries(fastnetmon ${OPENSSL_CRYPTO_LIBRARY_PATH})
 if (ENABLE_GOBGP_SUPPORT)
     target_link_libraries(fastnetmon gobgp_action)
 endif()
+
+target_link_libraries(fastnetmon traffic_data_library)
 
 target_link_libraries(fastnetmon exabgp_action)
 
