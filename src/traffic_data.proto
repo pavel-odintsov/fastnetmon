@@ -47,7 +47,7 @@ message TrafficData {
     // Protocol field from IP packet
     uint32 protocol = 7;
 
-    // Source and destination IPs for IPv4 and IPv6
+    // Source and destination IPs for IPv4 (4 bytes) and IPv6 (16 bytes)
     bytes source_ip      = 8;
     bytes destination_ip = 9;
 
