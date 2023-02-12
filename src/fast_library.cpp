@@ -2405,7 +2405,18 @@ bool write_simple_packet_to_protobuf(const simple_packet_t& packet, TrafficData&
         traffic_data.set_traffic_direction(TRAFFIC_DIRECTION_UNKNOWN);
     }
 
-    traffic_data.set_telemetry_type(packet.source);
+    if (packet.source == MIRROR) {
+        traffic_data.set_telemetry_type(TELEMETRY_TYPE_MIRROR);
+    } else if (packet.source == SFLOW) {
+        traffic_data.set_telemetry_type(TELEMETRY_TYPE_SFLOW);
+    } else if (packet.source == NETFLOW) {
+        traffic_data.set_telemetry_type(TELEMETRY_TYPE_NETFLOW);
+    } else if (packet.source == TERAFLOW) {
+        traffic_data.set_telemetry_type(TELEMETRY_TYPE_TERA_FLOW);
+    } else {
+        traffic_data.set_telemetry_type(TELEMETRY_TYPE_UNKNOWN);
+    }
+
     traffic_data.set_source_asn(packet.src_asn);
     traffic_data.set_destination_asn(packet.dst_asn);
     traffic_data.set_input_interface(packet.input_interface);
