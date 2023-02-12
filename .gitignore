@@ -2,3 +2,15 @@
 __pycache__
 *.DS_Store
 src/build/
+src/actions/attribute.pb.cc
+src/actions/attribute.pb.h
+src/actions/gobgp.grpc.pb.cc
+src/actions/gobgp.grpc.pb.h
+src/actions/gobgp.pb.cc
+src/actions/gobgp.pb.h
+src/fastnetmon.grpc.pb.cc
+src/fastnetmon.grpc.pb.h
+src/fastnetmon.pb.cc
+src/fastnetmon.pb.h
+src/simple_packet_capnp/simple_packet.capnp.c++
+src/simple_packet_capnp/simple_packet.capnp.h
