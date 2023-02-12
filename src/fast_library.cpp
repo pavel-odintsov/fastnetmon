@@ -35,7 +35,7 @@
 #include <capnp/serialize-packed.h>
 #endif
 
-#include "flow_data.pb.h"
+#include "traffic_data.pb.h"
 
 boost::regex regular_expression_cidr_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+\\/\\d+$");
 boost::regex regular_expression_host_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+$");
@@ -2374,11 +2374,11 @@ bool write_simple_packet_to_protobuf(const simple_packet_t& packet, TrafficData&
     traffic_data.set_source_ip(packet.src_ip);
     traffic_data.set_destination_ip(packet.dst_ip);
     
-    traffic_data.set_ip_protocol_version(packet.ip_protocol_version);
+    traffic_data.set_ip_version(packet.ip_protocol_version);
     traffic_data.set_ttl(packet.ttl);
 
     traffic_data.set_source_port(packet.source_port);
-    traffic_data.set_destinationPort(packet.destination_port);
+    traffic_data.set_destination_port(packet.destination_port);
     
     traffic_data.set_octets(packet.length);
     traffic_data.set_packets(packet.number_of_packets);

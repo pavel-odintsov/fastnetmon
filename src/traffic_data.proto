@@ -37,7 +37,7 @@ message TrafficData {
     TelemetryType telemetry_type = 3;
 
     // IP protocol version: 4 or 6
-    uint32 protocol_version = 4;
+    uint32 ip_version = 4;
 
     TrafficDirection traffic_direction = 5;
 
@@ -78,6 +78,6 @@ message TrafficData {
     // TCP flags encoded in bit set
     uint32 tcp_flags = 20;
 
-    bool ip_fragmented   = 21;
+    bool ip_fragmented    = 21;
     bool ip_dont_fragment = 22;
 }
