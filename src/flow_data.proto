@@ -72,12 +72,12 @@ message TrafficData {
     // TTL for IPv4 or Hop Limit for IPv6 
     uint32 ttl = 18;
 
-    // IP address of device which sent traffic data
-    uint32 agent_address = 19;
+    // IPv4 or IPv6 address of device which sent traffic data
+    bytes agent_address = 19;
    
     // TCP flags encoded in bit set
     uint32 tcp_flags = 20;
 
-    bool ip_fragmented_flag    = 21;
-    bool ip_dont_fragment_flag = 22;
+    bool ip_fragmented   = 21;
+    bool ip_dont_fragment = 22;
 }
