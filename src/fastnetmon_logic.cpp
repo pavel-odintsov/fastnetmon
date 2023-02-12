@@ -2614,23 +2614,52 @@ void zeroify_all_flow_counters() {
 void export_to_kafka(const simple_packet_t& current_packet) {
     extern std::string kafka_traffic_export_topic;
     extern cppkafka::Producer* kafka_traffic_export_producer;
+    extern kafka_traffic_export_format_t kafka_traffic_export_format;
 
-    nlohmann::json json_packet;
+    if (kafka_traffic_export_format == kafka_traffic_export_format_t::JSON) {
 
-    if (!serialize_simple_packet_to_json(current_packet, json_packet)) {
-        return;
-    }
+        nlohmann::json json_packet;
 
-    std::string simple_packet_as_json_string = json_packet.dump();
+        if (!serialize_simple_packet_to_json(current_packet, json_packet)) {
+            return;
+        }
 
-    try {
-        kafka_traffic_export_producer->produce(
+        std::string simple_packet_as_json_string = json_packet.dump();
+
+        try {
+            kafka_traffic_export_producer->produce(
                 cppkafka::MessageBuilder(kafka_traffic_export_topic)
                                              .partition(RD_KAFKA_PARTITION_UA)
                                              .payload(simple_packet_as_json_string));
-    } catch (...) {
-        // We do not log it as it will flood log files
-        // logger << log4cpp::Priority::ERROR << "Kafka write failed";
+        } catch (...) {
+            // We do not log it as it will flood log files
+            // logger << log4cpp::Priority::ERROR << "Kafka write failed";
+        }
+    } else if (kafka_traffic_export_format == kafka_traffic_export_format_t::Protobuf) {
+        TrafficData traffic_data;
+
+        // Encode Packet in protobuf
+        write_simple_packet_to_protobuf(current_packet, traffic_data);
+
+        std::string output_data;
+
+        if (!traffic_data.SerializeToString(output_data)) {
+            // Encoding error happened
+            return;
+        }
+
+        try {
+            kafka_traffic_export_producer->produce(
+                cppkafka::MessageBuilder(kafka_traffic_export_topic)
+                                             .partition(RD_KAFKA_PARTITION_UA)
+                                             .payload(output_data));
+        } catch (...) {
+            // We do not log it as it will flood log files
+            // logger << log4cpp::Priority::ERROR << "Kafka write failed";
+        }
+    } else {
+        // Unknown format
+        return;
     }
 
     try {
