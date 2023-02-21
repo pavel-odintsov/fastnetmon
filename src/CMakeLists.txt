@@ -532,6 +532,9 @@ if (ENABLE_GOBGP_SUPPORT)
     # Build Flow Data binary 
     add_library(traffic_data_library STATIC traffic_data.pb.cc)
 
+    add_library(protobuf_traffic_format STATIC traffic_output_formats/protobuf/protobuf_traffic_format.cpp)
+    target_link_libraries(protobuf_traffic_format traffic_data_library)
+
     # Build gRPC and protocol buffers libraries and link they to gobgp_action
     add_library(gobgp_api_client_pb_cc STATIC actions/gobgp.pb.cc)
     add_library(gobgp_api_client_grpc_pb_cc STATIC actions/gobgp.grpc.pb.cc)
@@ -763,6 +766,8 @@ target_link_libraries(fastnetmon ipfix_rfc)
 
 target_link_libraries(fastnetmon_logic bgp_protocol exabgp_action)
 
+target_link_libraries(fastnetmon_logic protobuf_traffic_format)
+
 # Link to our functions
 target_link_libraries(fastnetmon fast_library)
 
@@ -773,8 +778,6 @@ target_link_libraries(fastnetmon ${OPENSSL_CRYPTO_LIBRARY_PATH})
 if (ENABLE_GOBGP_SUPPORT)
     target_link_libraries(fastnetmon gobgp_action)
 endif()
-
-target_link_libraries(fastnetmon traffic_data_library)
 
 target_link_libraries(fastnetmon exabgp_action)
 
