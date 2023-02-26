@@ -15,3 +15,5 @@ fmt/core.h
 fmt/format-inl.h
 fmt/format.h
 build
+traffic_data.pb.h
+traffic_data.pb.cc
