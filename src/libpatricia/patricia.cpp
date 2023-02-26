@@ -716,7 +716,7 @@ patricia_node_t* patricia_lookup(patricia_tree_t* patricia, prefix_t* prefix) {
 }
 
 patricia_node_t* make_and_lookup(patricia_tree_t* tree, const char* prefix_as_string) {
-    prefix_t* prefix      = ascii2prefix(AF_INET, prefix_as_string);
+    prefix_t* prefix = ascii2prefix(AF_INET, prefix_as_string);
 
     patricia_node_t* node = patricia_lookup(tree, prefix);
 
@@ -727,8 +727,8 @@ patricia_node_t* make_and_lookup(patricia_tree_t* tree, const char* prefix_as_st
 
 
 patricia_node_t* make_and_lookup_ipv6(patricia_tree_t* tree, const char* prefix_as_string) {
-    prefix_t* prefix      = ascii2prefix(AF_INET6, prefix_as_string);
-    
+    prefix_t* prefix = ascii2prefix(AF_INET6, prefix_as_string);
+
     patricia_node_t* node = patricia_lookup(tree, prefix);
 
     Deref_Prefix(prefix);

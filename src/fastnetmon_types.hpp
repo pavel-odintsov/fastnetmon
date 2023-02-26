@@ -5,10 +5,10 @@
 #include <stdint.h> // uint32_t
 #include <sys/time.h> // struct timeval
 
-#include <utility> // std::pair
 #include <map>
 #include <string>
 #include <unordered_map>
+#include <utility> // std::pair
 #include <vector>
 
 #include "packet_storage.hpp"
@@ -199,7 +199,7 @@ class total_speed_counters_t {
         ar& BOOST_SERIALIZATION_NVP(total_counters);
         ar& BOOST_SERIALIZATION_NVP(total_speed_counters);
         ar& BOOST_SERIALIZATION_NVP(total_speed_average_counters);
-    }   
+    }
 };
 
 

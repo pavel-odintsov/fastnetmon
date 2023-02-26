@@ -31,7 +31,7 @@ extern log4cpp::Category& logger;
 extern std::map<std::string, std::string> configuration_map;
 
 std::string raw_udp_packets_received_desc = "Number of raw packets received without any errors";
-uint64_t raw_udp_packets_received = 0;
+uint64_t raw_udp_packets_received         = 0;
 
 // We have an option to use IP length from the packet header because some vendors may lie about it: https://github.com/pavel-odintsov/fastnetmon/issues/893
 bool sflow_read_packet_length_from_ip_header = false;
@@ -373,8 +373,7 @@ bool process_sflow_flow_sample(uint8_t* data_pointer,
                 auto result = parse_raw_packet_to_simple_packet_full_ng(header_payload_pointer,
                                                                         sflow_raw_protocol_header.frame_length_before_sampling,
                                                                         sflow_raw_protocol_header.header_size, packet,
-                                                                        unpack_gre,
-                                                                        sflow_read_packet_length_from_ip_header);
+                                                                        unpack_gre, sflow_read_packet_length_from_ip_header);
 
                 if (result != network_data_stuctures::parser_code_t::success) {
                     sflow_parse_error_nested_header++;
@@ -389,11 +388,10 @@ bool process_sflow_flow_sample(uint8_t* data_pointer,
                 sflow_ipv4_header_protocol++;
 
                 // We parse this packet using special version of our parser which looks only on IPv4 packet
-                auto result =
-                    parse_raw_ipv4_packet_to_simple_packet_full_ng(header_payload_pointer,
-                                                                   sflow_raw_protocol_header.frame_length_before_sampling,
-                                                                   sflow_raw_protocol_header.header_size, packet,
-                                                                   sflow_read_packet_length_from_ip_header);
+                auto result = parse_raw_ipv4_packet_to_simple_packet_full_ng(header_payload_pointer,
+                                                                             sflow_raw_protocol_header.frame_length_before_sampling,
+                                                                             sflow_raw_protocol_header.header_size, packet,
+                                                                             sflow_read_packet_length_from_ip_header);
 
                 if (result != network_data_stuctures::parser_code_t::success) {
                     sflow_parse_error_nested_header++;

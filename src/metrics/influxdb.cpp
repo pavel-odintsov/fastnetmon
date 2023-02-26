@@ -171,9 +171,9 @@ void influxdb_push_thread() {
         }
 
         // First of all push total counters to InfluxDB
-        push_total_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address,
-                                                std::to_string(influxdb_port), influxdb_auth, influxdb_user,
-                                                influxdb_password, "total_traffic", total_counters_ipv4.total_speed_average_counters, false);
+        push_total_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
+                                                influxdb_auth, influxdb_user, influxdb_password, "total_traffic",
+                                                total_counters_ipv4.total_speed_average_counters, false);
 
         // Push per subnet counters to InfluxDB
         push_network_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
@@ -191,9 +191,9 @@ void influxdb_push_thread() {
                                                      influxdb_auth, influxdb_user, influxdb_password);
 
         // Push total IPv6 counters
-        push_total_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address,
-                                                std::to_string(influxdb_port), influxdb_auth, influxdb_user, influxdb_password,
-                                                "total_traffic_ipv6", total_counters_ipv6.total_speed_average_counters, true);
+        push_total_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
+                                                influxdb_auth, influxdb_user, influxdb_password, "total_traffic_ipv6",
+                                                total_counters_ipv6.total_speed_average_counters, true);
     }
 }
 
@@ -349,11 +349,11 @@ bool push_network_traffic_counters_to_influxdb(std::string influx_database,
     std::vector<std::pair<subnet_cidr_mask_t, subnet_counter_t>> speed_elements;
     ipv4_network_counters.get_all_non_zero_average_speed_elements_as_pairs(speed_elements);
 
-    for (const auto& itr: speed_elements) {
+    for (const auto& itr : speed_elements) {
         std::map<std::string, uint64_t> plain_total_counters_map;
 
-        const subnet_counter_t* speed         = &itr.second;
-        std::string subnet_as_string = convert_subnet_to_string(itr.first);
+        const subnet_counter_t* speed = &itr.second;
+        std::string subnet_as_string  = convert_subnet_to_string(itr.first);
 
         fill_main_counters_for_influxdb(speed, plain_total_counters_map, false);
 

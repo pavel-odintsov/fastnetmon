@@ -93,11 +93,11 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(uint8_t* pointer,
         // Convert all integers in IP header to little endian
         ipv4_header->convert();
 
-        packet.ttl              = ipv4_header->ttl;
-        
+        packet.ttl = ipv4_header->ttl;
+
         // We need this specific field for Flow Spec mitigation mode
-        packet.ip_length        = ipv4_header->total_length;
-        
+        packet.ip_length = ipv4_header->total_length;
+
         packet.ip_dont_fragment = ipv4_header->dont_fragment_flag;
 
         packet.ip_fragmented = ipv4_header->is_fragmented();
@@ -129,7 +129,7 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(uint8_t* pointer,
         }
 
         ipv6_header_t* ipv6_header = (ipv6_header_t*)local_pointer;
-        
+
         // Convert all integers in IP header to little endian
         ipv6_header->convert();
 
@@ -138,10 +138,10 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(uint8_t* pointer,
 
         packet.ip_protocol_version = 6;
 
-        packet.ttl              = ipv6_header->hop_limit;
+        packet.ttl = ipv6_header->hop_limit;
 
         // We need this specific field for Flow Spec mitigation mode
-        packet.ip_length        = ipv6_header->payload_length;
+        packet.ip_length = ipv6_header->payload_length;
 
         // We keep these variables to maintain backward compatibility with parse_raw_packet_to_simple_packet_full()
         packet.packet_payload_length      = length_before_sampling;
@@ -190,7 +190,7 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(uint8_t* pointer,
 
                 packet.ip_more_fragments = ipv6_extension_header_fragment->more_fragments;
 
-                // We stop processing here as I believe that it's enough to know that this traffic was fragmented 
+                // We stop processing here as I believe that it's enough to know that this traffic was fragmented
                 // We do not parse nested protocol in this case at all
                 // If we observe first fragment of UDP datagram we may see header but for consequent packets we cannot do it
                 // I think that's it's safer to avoid parsing such traffic deeper until we collect packet examples for all cases

@@ -475,7 +475,7 @@ bool serialize_simple_packet_to_json(const simple_packet_t& packet, nlohmann::js
 
         // Add agent information
         std::string agent_ip_as_string = convert_ip_as_uint_to_string(packet.agent_ip_address);
-        json_packet["agent_address"] = agent_ip_as_string;
+        json_packet["agent_address"]   = agent_ip_as_string;
 
         if (packet.protocol == IPPROTO_TCP) {
             std::string tcp_flags    = print_tcp_flags(packet.flags);
@@ -557,8 +557,8 @@ std::string print_simple_packet(simple_packet_t packet) {
 }
 
 std::string convert_timeval_to_date(const timeval& tv) {
-    time_t nowtime   = tv.tv_sec;
-    tm* nowtm = localtime(&nowtime);
+    time_t nowtime = tv.tv_sec;
+    tm* nowtm      = localtime(&nowtime);
 
     std::ostringstream ss;
     ss << std::put_time(nowtm, "%F %H:%M:%S");
@@ -581,7 +581,7 @@ std::string get_protocol_name_by_number(unsigned int proto_number) {
 }
 
 // Exec command in shell and capture output
-bool exec(const std::string& cmd, std::vector<std::string>& output_list,  std::string& error_text) {
+bool exec(const std::string& cmd, std::vector<std::string>& output_list, std::string& error_text) {
     FILE* pipe = popen(cmd.c_str(), "r");
 
     if (!pipe) {
@@ -1619,7 +1619,7 @@ bool execute_web_request_secure(std::string address,
             return false;
         }
 
-        logger << log4cpp::Priority::DEBUG << "Resolved host " <<  host << " to " << end_point.size() << " IP addresses";
+        logger << log4cpp::Priority::DEBUG << "Resolved host " << host << " to " << end_point.size() << " IP addresses";
 
         boost::asio::connect(stream.next_layer(), end_point.begin(), end_point.end(), ec);
 
@@ -1662,7 +1662,7 @@ bool execute_web_request_secure(std::string address,
 
         // We can override Content Type from headers
         auto header_itr = headers.find("Content-Type");
-        
+
         if (header_itr != headers.end()) {
             content_type = header_itr->second;
         }
@@ -1816,7 +1816,7 @@ bool execute_web_request(std::string address,
         }
 
         std::string content_type = "application/x-www-form-urlencoded";
-    
+
         // We can override Content Type from headers
         auto header_itr = headers.find("Content-Type");
 
@@ -2144,7 +2144,6 @@ bool get_linux_distro_name(std::string& distro_name) {
     distro_name = itr->second;
     return true;
 }
-
 
 
 // Returns Linux distro version

@@ -461,7 +461,7 @@ class __attribute__((__packed__)) ipv6_header_t {
 
         uint32_t version_and_traffic_class_as_integer = 0;
     };
-    
+
     uint16_t payload_length = 0;
     uint8_t next_header     = 0;
     uint8_t hop_limit       = 0;
@@ -623,7 +623,16 @@ class __attribute__((__packed__)) ipv4_header_t {
 
 static_assert(sizeof(ipv4_header_t) == 20, "Bad size for ipv4_header_t");
 
-enum class parser_code_t { memory_violation, not_ipv4, success, broken_gre, no_ipv6_support, no_ipv6_options_support, unknown_ethertype, arp };
+enum class parser_code_t {
+    memory_violation,
+    not_ipv4,
+    success,
+    broken_gre,
+    no_ipv6_support,
+    no_ipv6_options_support,
+    unknown_ethertype,
+    arp
+};
 
 std::string parser_code_to_string(parser_code_t code);
 } // namespace network_data_stuctures

@@ -1,6 +1,6 @@
-#include "../../traffic_data.pb.h"
-#include "../../fastnetmon_types.hpp"
 #include "../../all_logcpp_libraries.hpp"
+#include "../../fastnetmon_types.hpp"
+#include "../../traffic_data.pb.h"
 
 // Encode simple packet into Protobuf
 bool write_simple_packet_to_protobuf(const simple_packet_t& packet, TrafficData& traffic_data) {

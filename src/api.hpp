@@ -141,7 +141,8 @@ Status FastnetmonApiServiceImpl::ExecuteUnBan(ServerContext* context,
         logger << log4cpp::Priority::INFO << "API: remove IP from ban list";
 
         {
-            std::lock_guard<std::mutex> lock_guard(ban_list_mutex);;
+            std::lock_guard<std::mutex> lock_guard(ban_list_mutex);
+            ;
             ban_list.erase(client_ip);
         }
     } else {

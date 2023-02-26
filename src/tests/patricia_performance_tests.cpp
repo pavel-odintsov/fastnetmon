@@ -14,8 +14,8 @@
 
 #include "../nlohmann/json.hpp"
 
-#include "../libpatricia/patricia.hpp"
 #include "../fast_library.hpp"
+#include "../libpatricia/patricia.hpp"
 
 #include "../all_logcpp_libraries.hpp"
 

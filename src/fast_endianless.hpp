@@ -55,9 +55,6 @@ inline uint64_t fast_hton(uint64_t value) {
 }
 
 // Explicitly remove all other types to avoid implicit conversion
-template <class T>
-void fast_ntoh(T) = delete;
+template <class T> void fast_ntoh(T) = delete;
 
-template <class T>
-void fast_hton(T) = delete;
-
+template <class T> void fast_hton(T) = delete;

@@ -81,10 +81,10 @@
 #include <iostream>
 #include <map>
 
+#include <filesystem>
 #include <sstream>
 #include <utility>
 #include <vector>
-#include <filesystem>
 
 #include <boost/regex.hpp>
 #include <boost/thread.hpp>
@@ -142,7 +142,7 @@ cppkafka::Producer* kafka_traffic_export_producer = nullptr;
 // Traffic export to Kafka
 bool kafka_traffic_export = false;
 
-std::string kafka_traffic_export_topic = "fastnetmon";
+std::string kafka_traffic_export_topic                    = "fastnetmon";
 kafka_traffic_export_format_t kafka_traffic_export_format = kafka_traffic_export_format_t::JSON;
 std::vector<std::string> kafka_traffic_export_brokers;
 
@@ -153,7 +153,7 @@ std::string cli_stats_file_path = "/tmp/fastnetmon.dat";
 std::string cli_stats_ipv6_file_path = "/tmp/fastnetmon_ipv6.dat";
 
 // How often we send usage data
-unsigned int stats_thread_sleep_time         = 3600;
+unsigned int stats_thread_sleep_time = 3600;
 
 // Delay before we send first report about usage
 unsigned int stats_thread_initial_call_delay = 30;
@@ -276,7 +276,7 @@ void init_global_ban_settings() {
 bool enable_connection_tracking = true;
 
 bool enable_afpacket_collection         = false;
-bool enable_af_xdp_collection = false;
+bool enable_af_xdp_collection           = false;
 bool enable_data_collection_from_mirror = true;
 bool enable_netmap_collection           = false;
 bool enable_sflow_collection            = false;
@@ -297,7 +297,7 @@ boost::thread_group packet_capture_plugin_thread_group;
 boost::thread_group service_thread_group;
 
 std::string total_number_of_hosts_in_our_networks_desc = "Total number of hosts in our networks";
-unsigned int total_number_of_hosts_in_our_networks = 0;
+unsigned int total_number_of_hosts_in_our_networks     = 0;
 
 #ifdef GEOIP
 GeoIP* geo_ip = NULL;
@@ -348,22 +348,22 @@ total_speed_counters_t total_counters_ipv4;
 total_speed_counters_t total_counters_ipv6;
 
 std::string total_unparsed_packets_desc = "Total number of packets we failed to parse";
-uint64_t total_unparsed_packets       = 0;
+uint64_t total_unparsed_packets         = 0;
 
 std::string total_unparsed_packets_speed_desc = "Number of packets we fail to parse per second";
-uint64_t total_unparsed_packets_speed = 0;
+uint64_t total_unparsed_packets_speed         = 0;
 
 std::string total_ipv4_packets_desc = "Total number of IPv4 simple packets processed";
-uint64_t total_ipv4_packets = 0;
+uint64_t total_ipv4_packets         = 0;
 
 std::string total_ipv6_packets_desc = "Total number of IPv6 simple packets processed";
-uint64_t total_ipv6_packets = 0;
+uint64_t total_ipv6_packets         = 0;
 
 std::string unknown_ip_version_packets_desc = "Non IPv4 and non IPv6 packets";
 uint64_t unknown_ip_version_packets         = 0;
 
 std::string total_simple_packets_processed_desc = "Total number of simple packets processed";
-uint64_t total_simple_packets_processed = 0;
+uint64_t total_simple_packets_processed         = 0;
 
 // IPv6 traffic which belongs to our own networks
 uint64_t our_ipv6_packets = 0;
@@ -448,10 +448,10 @@ unsigned int graphite_push_period = 1;
 std::string graphite_prefix = "fastnetmon";
 
 std::string influxdb_writes_total_desc = "Total number of InfluxDB writes";
-uint64_t influxdb_writes_total = 0;
+uint64_t influxdb_writes_total         = 0;
 
 std::string influxdb_writes_failed_desc = "Total number of failed InfluxDB writes";
-uint64_t influxdb_writes_failed = 0;
+uint64_t influxdb_writes_failed         = 0;
 
 // InfluxDB
 bool influxdb_enabled             = false;
@@ -981,7 +981,7 @@ bool load_configuration_file() {
     if (configuration_map.count("kafka_traffic_export_brokers") != 0) {
         std::string brokers_list_raw = configuration_map["kafka_traffic_export_brokers"];
 
-        boost::split( kafka_traffic_export_brokers, brokers_list_raw, boost::is_any_of(","), boost::token_compress_on);
+        boost::split(kafka_traffic_export_brokers, brokers_list_raw, boost::is_any_of(","), boost::token_compress_on);
     }
 
     if (configuration_map.count("kafka_traffic_export_format") != 0) {
@@ -1688,7 +1688,6 @@ int main(int argc, char** argv) {
                    << "Could not create pid file, please check permissions: " << fastnetmon_platform_configuration.pid_path;
             exit(EXIT_FAILURE);
         }
-
     }
 
     lookup_tree_ipv4    = New_Patricia(32);
@@ -1759,7 +1758,7 @@ int main(int argc, char** argv) {
 #ifdef KAFKA
     if (kafka_traffic_export) {
         if (kafka_traffic_export_brokers.size() == 0) {
-           logger << log4cpp::Priority::ERROR << "Kafka traffic export requires at least single broker, please configure kafka_traffic_export_brokers"; 
+            logger << log4cpp::Priority::ERROR << "Kafka traffic export requires at least single broker, please configure kafka_traffic_export_brokers";
         } else {
             std::string all_brokers = boost::algorithm::join(kafka_traffic_export_brokers, ",");
 
@@ -1776,7 +1775,7 @@ int main(int argc, char** argv) {
 
             // In may crash during producer creation
             try {
-                 kafka_traffic_export_producer = new cppkafka::Producer(kafka_traffic_export_config);
+                kafka_traffic_export_producer = new cppkafka::Producer(kafka_traffic_export_config);
             } catch (...) {
                 logger << log4cpp::Priority::ERROR << "Cannot initialise Kafka producer";
                 kafka_traffic_export = false;
@@ -1816,7 +1815,7 @@ int main(int argc, char** argv) {
     bool usage_stats = true;
 
     if (configuration_map.count("disable_usage_report") != 0 && configuration_map["disable_usage_report"] == "on") {
-	    usage_stats = false;
+        usage_stats = false;
     }
 
     if (usage_stats) {

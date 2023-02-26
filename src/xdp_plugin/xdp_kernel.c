@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 #define KBUILD_MODNAME "foo"
-#include <linux/bpf.h>
 #include "bpf/bpf_helpers.h"
+#include <linux/bpf.h>
 
 //
 // To compile it on Ubuntu 22.04 x86_64 you will need following packages:
@@ -34,17 +34,14 @@ struct {
 
 
 SEC("xdp_sock")
-int xdp_sock_prog(struct xdp_md *ctx)
-{
+int xdp_sock_prog(struct xdp_md* ctx) {
     int *qidconf, key = 0, idx;
-    unsigned int *rr;
+    unsigned int* rr;
 
     qidconf = bpf_map_lookup_elem(&qidconf_map, &key);
-    if (!qidconf)
-        return XDP_ABORTED;
+    if (!qidconf) return XDP_ABORTED;
 
-    if (*qidconf != ctx->rx_queue_index)
-        return XDP_PASS;
+    if (*qidconf != ctx->rx_queue_index) return XDP_PASS;
 
     idx = 0;
 
@@ -52,4 +49,3 @@ int xdp_sock_prog(struct xdp_md *ctx)
 }
 
 char _license[] SEC("license") = "GPL";
-

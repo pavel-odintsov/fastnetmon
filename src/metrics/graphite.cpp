@@ -165,8 +165,8 @@ bool push_network_traffic_counters_to_graphite() {
     std::vector<std::pair<subnet_cidr_mask_t, subnet_counter_t>> speed_elements;
     ipv4_network_counters.get_all_non_zero_average_speed_elements_as_pairs(speed_elements);
 
-    for (const auto& itr: speed_elements) {
-        const subnet_counter_t* speed                            = &itr.second;
+    for (const auto& itr : speed_elements) {
+        const subnet_counter_t* speed                   = &itr.second;
         std::string subnet_as_string_as_dash_delimiters = convert_subnet_to_string(itr.first);
 
         // Replace dots by dashes

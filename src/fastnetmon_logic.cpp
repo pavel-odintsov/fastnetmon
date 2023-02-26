@@ -4,8 +4,8 @@
 #include <fstream>
 #include <iomanip>
 #include <sstream>
-#include <vector>
 #include <thread>
+#include <vector>
 
 #include <boost/asio/ip/tcp.hpp>
 
@@ -241,26 +241,26 @@ void build_average_speed_counters_from_speed_counters(subnet_counter_t* current_
 
     // Global bytes counters
     current_average_speed_element->total.in_bytes =
-        uint64_t(new_speed_element.total.in_bytes +
-                 exp_value * ((double)current_average_speed_element->total.in_bytes - (double)new_speed_element.total.in_bytes));
+        uint64_t(new_speed_element.total.in_bytes + exp_value * ((double)current_average_speed_element->total.in_bytes -
+                                                                 (double)new_speed_element.total.in_bytes));
 
     current_average_speed_element->total.out_bytes =
-        uint64_t(new_speed_element.total.out_bytes +
-                 exp_value * ((double)current_average_speed_element->total.out_bytes - (double)new_speed_element.total.out_bytes));
+        uint64_t(new_speed_element.total.out_bytes + exp_value * ((double)current_average_speed_element->total.out_bytes -
+                                                                  (double)new_speed_element.total.out_bytes));
 
     // Global packet counters
     current_average_speed_element->total.in_packets =
-        uint64_t(new_speed_element.total.in_packets +
-                 exp_value * ((double)current_average_speed_element->total.in_packets - (double)new_speed_element.total.in_packets));
+        uint64_t(new_speed_element.total.in_packets + exp_value * ((double)current_average_speed_element->total.in_packets -
+                                                                   (double)new_speed_element.total.in_packets));
 
     current_average_speed_element->total.out_packets =
-        uint64_t(new_speed_element.total.out_packets +
-                 exp_value * ((double)current_average_speed_element->total.out_packets - (double)new_speed_element.total.out_packets));
+        uint64_t(new_speed_element.total.out_packets + exp_value * ((double)current_average_speed_element->total.out_packets -
+                                                                    (double)new_speed_element.total.out_packets));
 
     // Per packet type packet counters for in traffic
-    current_average_speed_element->fragmented.in_packets =
-        uint64_t(new_speed_element.fragmented.in_packets + exp_value * ((double)current_average_speed_element->fragmented.in_packets -
-                                                                        (double)new_speed_element.fragmented.in_packets));
+    current_average_speed_element->fragmented.in_packets = uint64_t(
+        new_speed_element.fragmented.in_packets + exp_value * ((double)current_average_speed_element->fragmented.in_packets -
+                                                               (double)new_speed_element.fragmented.in_packets));
 
     current_average_speed_element->tcp.in_packets =
         uint64_t(new_speed_element.tcp.in_packets + exp_value * ((double)current_average_speed_element->tcp.in_packets -
@@ -279,9 +279,9 @@ void build_average_speed_counters_from_speed_counters(subnet_counter_t* current_
                                                                   (double)new_speed_element.icmp.in_packets));
 
     // Per packet type packets counters for out
-    current_average_speed_element->fragmented.out_packets =
-        uint64_t(new_speed_element.fragmented.out_packets + exp_value * ((double)current_average_speed_element->fragmented.out_packets -
-                                                                         (double)new_speed_element.fragmented.out_packets));
+    current_average_speed_element->fragmented.out_packets = uint64_t(
+        new_speed_element.fragmented.out_packets + exp_value * ((double)current_average_speed_element->fragmented.out_packets -
+                                                                (double)new_speed_element.fragmented.out_packets));
 
     current_average_speed_element->tcp.out_packets =
         uint64_t(new_speed_element.tcp.out_packets + exp_value * ((double)current_average_speed_element->tcp.out_packets -
@@ -417,15 +417,15 @@ std::string print_subnet_ipv4_load() {
     ipv4_network_counters.get_sorted_average_speed(vector_for_sort, sorter, INCOMING);
 
     for (auto itr = vector_for_sort.begin(); itr != vector_for_sort.end(); ++itr) {
-        subnet_counter_t* speed         = &itr->second;
+        subnet_counter_t* speed      = &itr->second;
         std::string subnet_as_string = convert_subnet_to_string(itr->first);
 
         buffer << std::setw(18) << std::left << subnet_as_string;
 
         buffer << " "
-               << "pps in: " << std::setw(8) << speed->total.in_packets << " out: " << std::setw(8) << speed->total.out_packets
-               << " mbps in: " << std::setw(5) << convert_speed_to_mbps(speed->total.in_bytes) << " out: " << std::setw(5)
-               << convert_speed_to_mbps(speed->total.out_bytes) << "\n";
+               << "pps in: " << std::setw(8) << speed->total.in_packets << " out: " << std::setw(8)
+               << speed->total.out_packets << " mbps in: " << std::setw(5) << convert_speed_to_mbps(speed->total.in_bytes)
+               << " out: " << std::setw(5) << convert_speed_to_mbps(speed->total.out_bytes) << "\n";
     }
 
     return buffer.str();
@@ -669,14 +669,16 @@ bool we_should_ban_this_entity(subnet_counter_t* average_speed_element,
 
     // we detect overspeed by packets
     if (current_ban_settings.enable_ban_for_pps &&
-        exceed_pps_speed(average_speed_element->total.in_packets, average_speed_element->total.out_packets, current_ban_settings.ban_threshold_pps)) {
+        exceed_pps_speed(average_speed_element->total.in_packets, average_speed_element->total.out_packets,
+                         current_ban_settings.ban_threshold_pps)) {
 
         attack_detection_source = attack_detection_threshold_type_t::packets_per_second;
         return true;
     }
 
     if (current_ban_settings.enable_ban_for_bandwidth &&
-        exceed_mbps_speed(average_speed_element->total.in_bytes, average_speed_element->total.out_bytes, current_ban_settings.ban_threshold_mbps)) {
+        exceed_mbps_speed(average_speed_element->total.in_bytes, average_speed_element->total.out_bytes,
+                          current_ban_settings.ban_threshold_mbps)) {
 
         attack_detection_source = attack_detection_threshold_type_t::bytes_per_second;
         return true;
@@ -1052,12 +1054,12 @@ bool serialize_traffic_counters_to_json(const attack_details_t& traffic_counters
         json_details["total_incoming_pps"]   = traffic_counters.total.in_packets;
         json_details["total_outgoing_pps"]   = traffic_counters.total.out_packets;
         json_details["total_incoming_flows"] = traffic_counters.in_flows;
-        json_details["total_outgoing_flows"] =traffic_counters.out_flows;
+        json_details["total_outgoing_flows"] = traffic_counters.out_flows;
 
         json_details["incoming_dropped_traffic"]      = traffic_counters.dropped.in_bytes;
         json_details["incoming_dropped_traffic_bits"] = traffic_counters.dropped.in_bytes * 8;
 
-        json_details["outgoing_dropped_traffic"]      =traffic_counters.dropped.out_bytes;
+        json_details["outgoing_dropped_traffic"]      = traffic_counters.dropped.out_bytes;
         json_details["outgoing_dropped_traffic_bits"] = traffic_counters.dropped.out_bytes * 8;
 
         json_details["incoming_dropped_pps"] = traffic_counters.dropped.in_packets;
@@ -1093,15 +1095,15 @@ bool serialize_traffic_counters_to_json(const attack_details_t& traffic_counters
         json_details["outgoing_syn_tcp_pps"] = traffic_counters.tcp_syn.out_packets;
 
         json_details["incoming_udp_traffic"]      = traffic_counters.udp.in_bytes;
-        json_details["incoming_udp_traffic_bits"] =traffic_counters.udp.in_bytes * 8;
+        json_details["incoming_udp_traffic_bits"] = traffic_counters.udp.in_bytes * 8;
 
-        json_details["outgoing_udp_traffic"]      =traffic_counters.udp.out_bytes;
+        json_details["outgoing_udp_traffic"]      = traffic_counters.udp.out_bytes;
         json_details["outgoing_udp_traffic_bits"] = traffic_counters.udp.out_bytes * 8;
 
         json_details["incoming_udp_pps"] = traffic_counters.udp.in_packets;
         json_details["outgoing_udp_pps"] = traffic_counters.udp.out_packets;
 
-        json_details["incoming_icmp_traffic"]      =traffic_counters.icmp.in_bytes;
+        json_details["incoming_icmp_traffic"]      = traffic_counters.icmp.in_bytes;
         json_details["incoming_icmp_traffic_bits"] = traffic_counters.icmp.in_bytes * 8;
 
         json_details["outgoing_icmp_traffic"]      = traffic_counters.icmp.out_bytes;
@@ -1121,9 +1123,9 @@ bool serialize_traffic_counters_to_json(const attack_details_t& traffic_counters
 bool serialize_attack_description_to_json(const attack_details_t& current_attack, nlohmann::json& json_details) {
     // We need to catch exceptions as code may raise them here
     try {
-        json_details["attack_uuid"]     = current_attack.get_attack_uuid_as_string();
-        json_details["host_group"]        = current_attack.host_group;
-        json_details["protocol_version"]     = current_attack.get_protocol_name();
+        json_details["attack_uuid"]      = current_attack.get_attack_uuid_as_string();
+        json_details["host_group"]       = current_attack.host_group;
+        json_details["protocol_version"] = current_attack.get_protocol_name();
     } catch (...) {
         logger << log4cpp::Priority::ERROR << "Exception was triggered in attack details JSON encoder";
         return false;
@@ -1137,7 +1139,11 @@ bool serialize_attack_description_to_json(const attack_details_t& current_attack
     return true;
 }
 
-std::string get_attack_description_in_json_for_web_hooks(uint32_t client_ip, const subnet_ipv6_cidr_mask_t& client_ipv6, bool ipv6, const std::string& action_type, const attack_details_t& current_attack) {
+std::string get_attack_description_in_json_for_web_hooks(uint32_t client_ip,
+                                                         const subnet_ipv6_cidr_mask_t& client_ipv6,
+                                                         bool ipv6,
+                                                         const std::string& action_type,
+                                                         const attack_details_t& current_attack) {
     nlohmann::json callback_info;
 
     callback_info["alert_scope"] = "host";
@@ -1560,7 +1566,7 @@ void execute_ip_ban(uint32_t client_ip, subnet_counter_t average_speed_element, 
         }
     }
 
-    { 
+    {
         std::lock_guard<std::mutex> lock_guard(ban_list_mutex);
         ban_list[client_ip] = current_attack;
     }
@@ -1607,7 +1613,8 @@ void call_ban_handlers(uint32_t client_ip,
 
     std::string basic_attack_information = get_attack_description(client_ip, current_attack);
 
-    std::string basic_attack_information_in_json = get_attack_description_in_json_for_web_hooks(client_ip, subnet_ipv6_cidr_mask_t{}, false, "ban", current_attack);
+    std::string basic_attack_information_in_json =
+        get_attack_description_in_json_for_web_hooks(client_ip, subnet_ipv6_cidr_mask_t{}, false, "ban", current_attack);
 
     std::string full_attack_description = basic_attack_information + flow_attack_details;
 
@@ -1850,15 +1857,15 @@ std::string print_subnet_ipv6_load() {
 
     for (std::vector<pair_of_map_for_ipv6_subnet_counters_elements_t>::iterator itr = vector_for_sort.begin();
          itr != vector_for_sort.end(); ++itr) {
-        subnet_counter_t* speed         = &itr->second;
+        subnet_counter_t* speed      = &itr->second;
         std::string subnet_as_string = print_ipv6_cidr_subnet(itr->first);
 
         buffer << std::setw(42) << std::left << subnet_as_string;
 
         buffer << " "
-               << "pps in: " << std::setw(8) << speed->total.in_packets << " out: " << std::setw(8) << speed->total.out_packets
-               << " mbps in: " << std::setw(5) << convert_speed_to_mbps(speed->total.in_bytes) << " out: " << std::setw(5)
-               << convert_speed_to_mbps(speed->total.out_bytes) << "\n";
+               << "pps in: " << std::setw(8) << speed->total.in_packets << " out: " << std::setw(8)
+               << speed->total.out_packets << " mbps in: " << std::setw(5) << convert_speed_to_mbps(speed->total.in_bytes)
+               << " out: " << std::setw(5) << convert_speed_to_mbps(speed->total.out_bytes) << "\n";
     }
 
     return buffer.str();
@@ -1909,7 +1916,7 @@ void traffic_draw_ipv4_program() {
     output_buffer << std::endl;
 
     // Application statistics
-    output_buffer << "Screen updated in:\t\t" << std::setprecision (2) <<  drawing_thread_execution_time << " sec\n";
+    output_buffer << "Screen updated in:\t\t" << std::setprecision(2) << drawing_thread_execution_time << " sec\n";
 
     output_buffer << "Traffic calculated in:\t\t" << speed_calculation_time.tv_sec << " sec "
                   << speed_calculation_time.tv_usec << " microseconds\n";
@@ -2199,8 +2206,7 @@ void recalculate_speed() {
     uint64_t incoming_total_flows = 0;
     uint64_t outgoing_total_flows = 0;
 
-    ipv4_network_counters.recalculate_speed(speed_calc_period,
-                                        (double)average_calculation_amount, nullptr);
+    ipv4_network_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, nullptr);
 
 
     for (map_of_vector_counters_t::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); ++itr) {
@@ -2294,8 +2300,7 @@ void recalculate_speed() {
     }
 
     // Calculate IPv6 per network traffic
-    ipv6_subnet_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount,
-                                           speed_callback_subnet_ipv6);
+    ipv6_subnet_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, speed_callback_subnet_ipv6);
 
     // Recalculate traffic for hosts
     ipv6_host_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, speed_callback_ipv6);
@@ -2316,20 +2321,24 @@ void recalculate_speed() {
 
     // Calculate IPv4 total traffic speed
     for (unsigned int index = 0; index < 4; index++) {
-        total_counters_ipv4.total_speed_counters[index].bytes = uint64_t((double)total_counters_ipv4.total_counters[index].bytes / (double)speed_calc_period);
+        total_counters_ipv4.total_speed_counters[index].bytes =
+            uint64_t((double)total_counters_ipv4.total_counters[index].bytes / (double)speed_calc_period);
 
-        total_counters_ipv4.total_speed_counters[index].packets = uint64_t((double)total_counters_ipv4.total_counters[index].packets / (double)speed_calc_period);
+        total_counters_ipv4.total_speed_counters[index].packets =
+            uint64_t((double)total_counters_ipv4.total_counters[index].packets / (double)speed_calc_period);
 
         double exp_power = -speed_calc_period / average_calculation_amount;
         double exp_value = exp(exp_power);
 
         total_counters_ipv4.total_speed_average_counters[index].bytes =
-            uint64_t(total_counters_ipv4.total_speed_counters[index].bytes + exp_value * ((double)total_counters_ipv4.total_speed_average_counters[index].bytes -
-                                                                      (double)total_counters_ipv4.total_speed_counters[index].bytes));
+            uint64_t(total_counters_ipv4.total_speed_counters[index].bytes +
+                     exp_value * ((double)total_counters_ipv4.total_speed_average_counters[index].bytes -
+                                  (double)total_counters_ipv4.total_speed_counters[index].bytes));
 
         total_counters_ipv4.total_speed_average_counters[index].packets =
-            uint64_t(total_counters_ipv4.total_speed_counters[index].packets + exp_value * ((double)total_counters_ipv4.total_speed_average_counters[index].packets -
-                                                                        (double)total_counters_ipv4.total_speed_counters[index].packets));
+            uint64_t(total_counters_ipv4.total_speed_counters[index].packets +
+                     exp_value * ((double)total_counters_ipv4.total_speed_average_counters[index].packets -
+                                  (double)total_counters_ipv4.total_speed_counters[index].packets));
 
         // nullify data counters after speed calculation
         total_counters_ipv4.total_counters[index].bytes   = 0;
@@ -2338,19 +2347,23 @@ void recalculate_speed() {
 
     // Do same for IPv6
     for (unsigned int index = 0; index < 4; index++) {
-        total_counters_ipv6.total_speed_counters[index].bytes = uint64_t((double)total_counters_ipv6.total_counters[index].bytes / (double)speed_calc_period);
-        total_counters_ipv6.total_speed_counters[index].packets = uint64_t((double)total_counters_ipv6.total_counters[index].packets / (double)speed_calc_period);
+        total_counters_ipv6.total_speed_counters[index].bytes =
+            uint64_t((double)total_counters_ipv6.total_counters[index].bytes / (double)speed_calc_period);
+        total_counters_ipv6.total_speed_counters[index].packets =
+            uint64_t((double)total_counters_ipv6.total_counters[index].packets / (double)speed_calc_period);
 
         double exp_power = -speed_calc_period / average_calculation_amount;
         double exp_value = exp(exp_power);
 
-        total_counters_ipv6.total_speed_average_counters[index].bytes = uint64_t(
-            total_counters_ipv6.total_speed_counters[index].bytes + exp_value * ((double)total_counters_ipv6.total_speed_average_counters[index].bytes -
-                                                                  (double)total_counters_ipv6.total_speed_counters[index].bytes));
+        total_counters_ipv6.total_speed_average_counters[index].bytes =
+            uint64_t(total_counters_ipv6.total_speed_counters[index].bytes +
+                     exp_value * ((double)total_counters_ipv6.total_speed_average_counters[index].bytes -
+                                  (double)total_counters_ipv6.total_speed_counters[index].bytes));
 
-        total_counters_ipv6.total_speed_average_counters[index].packets = uint64_t(
-            total_counters_ipv6.total_speed_counters[index].packets + exp_value * ((double)total_counters_ipv6.total_speed_average_counters[index].packets -
-                                                                    (double)total_counters_ipv6.total_speed_counters[index].packets));
+        total_counters_ipv6.total_speed_average_counters[index].packets =
+            uint64_t(total_counters_ipv6.total_speed_counters[index].packets +
+                     exp_value * ((double)total_counters_ipv6.total_speed_average_counters[index].packets -
+                                  (double)total_counters_ipv6.total_speed_counters[index].packets));
 
         // nullify data counters after speed calculation
         total_counters_ipv6.total_counters[index].zeroify();
@@ -2360,7 +2373,7 @@ void recalculate_speed() {
     last_call_of_traffic_recalculation = std::chrono::steady_clock::now();
 
     // Calculate time we spent to calculate speed in this function
-    std::chrono::duration<double> speed_calculation_diff = std::chrono::steady_clock::now() - start_time; 
+    std::chrono::duration<double> speed_calculation_diff = std::chrono::steady_clock::now() - start_time;
 
     // Populate fields of old structure for backward compatibility
     double integer = 0;
@@ -2368,8 +2381,8 @@ void recalculate_speed() {
     // Split double into integer and fractional parts
     double fractional = std::modf(speed_calculation_diff.count(), &integer);
 
-    speed_calculation_time.tv_sec = time_t(integer);
-    speed_calculation_time.tv_usec = suseconds_t(fractional*1000000);
+    speed_calculation_time.tv_sec  = time_t(integer);
+    speed_calculation_time.tv_usec = suseconds_t(fractional * 1000000);
 
     // Report cases when we calculate speed too slow
     if (speed_calculation_time.tv_sec > 0) {
@@ -2458,7 +2471,7 @@ std::string draw_table_ipv6(direction_t sort_direction, bool do_redis_update, so
             flows = current_speed_element->out_flows;
         }
 
-        uint64_t mbps         = convert_speed_to_mbps(bps);
+        uint64_t mbps = convert_speed_to_mbps(bps);
 
         // We use setw for alignment
         output_buffer << client_ip_as_string << "\t";
@@ -2557,7 +2570,7 @@ std::string draw_table_ipv4(direction_t data_direction, bool do_redis_update, so
             flows = current_speed_element->out_flows;
         }
 
-        uint64_t mbps         = convert_speed_to_mbps(bps);
+        uint64_t mbps = convert_speed_to_mbps(bps);
 
         std::string is_banned = ban_list.count(client_ip) > 0 ? " *banned* " : "";
 
@@ -2633,9 +2646,7 @@ void export_to_kafka(const simple_packet_t& current_packet) {
 
         try {
             kafka_traffic_export_producer->produce(
-                cppkafka::MessageBuilder(kafka_traffic_export_topic)
-                                             .partition(RD_KAFKA_PARTITION_UA)
-                                             .payload(simple_packet_as_json_string));
+                cppkafka::MessageBuilder(kafka_traffic_export_topic).partition(RD_KAFKA_PARTITION_UA).payload(simple_packet_as_json_string));
         } catch (...) {
             // We do not log it as it will flood log files
             // logger << log4cpp::Priority::ERROR << "Kafka write failed";
@@ -2655,9 +2666,7 @@ void export_to_kafka(const simple_packet_t& current_packet) {
 
         try {
             kafka_traffic_export_producer->produce(
-                cppkafka::MessageBuilder(kafka_traffic_export_topic)
-                                             .partition(RD_KAFKA_PARTITION_UA)
-                                             .payload(output_data));
+                cppkafka::MessageBuilder(kafka_traffic_export_topic).partition(RD_KAFKA_PARTITION_UA).payload(output_data));
         } catch (...) {
             // We do not log it as it will flood log files
             // logger << log4cpp::Priority::ERROR << "Kafka write failed";
@@ -2673,7 +2682,7 @@ void export_to_kafka(const simple_packet_t& current_packet) {
         // We do not log it as it will flood log files
         // logger << log4cpp::Priority::ERROR << "Kafka flush failed";
     }
-} 
+}
 #endif
 
 // Process IPv6 traffic
@@ -2695,8 +2704,10 @@ void process_ipv6_packet(simple_packet_t& current_packet) {
 #endif
 
 #ifdef USE_NEW_ATOMIC_BUILTINS
-    __atomic_add_fetch(&total_counters_ipv6.total_counters[current_packet.packet_direction].packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-    __atomic_add_fetch(&total_counters_ipv6.total_counters[current_packet.packet_direction].bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+    __atomic_add_fetch(&total_counters_ipv6.total_counters[current_packet.packet_direction].packets,
+                       sampled_number_of_packets, __ATOMIC_RELAXED);
+    __atomic_add_fetch(&total_counters_ipv6.total_counters[current_packet.packet_direction].bytes,
+                       sampled_number_of_bytes, __ATOMIC_RELAXED);
 
     __atomic_add_fetch(&total_ipv6_packets, 1, __ATOMIC_RELAXED);
 #else
@@ -2839,7 +2850,7 @@ void process_packet(simple_packet_t& current_packet) {
             increment_outgoing_counters(&counters, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
         } else if (current_packet.packet_direction == INCOMING) {
             increment_incoming_counters(&counters, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
-        } 
+        }
     }
 
     map_of_vector_counters_for_flow_t::iterator itr_flow;
@@ -2863,8 +2874,10 @@ void process_packet(simple_packet_t& current_packet) {
     */
 
 #ifdef USE_NEW_ATOMIC_BUILTINS
-    __atomic_add_fetch(&total_counters_ipv4.total_counters[current_packet.packet_direction].packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-    __atomic_add_fetch(&total_counters_ipv4.total_counters[current_packet.packet_direction].bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+    __atomic_add_fetch(&total_counters_ipv4.total_counters[current_packet.packet_direction].packets,
+                       sampled_number_of_packets, __ATOMIC_RELAXED);
+    __atomic_add_fetch(&total_counters_ipv4.total_counters[current_packet.packet_direction].bytes,
+                       sampled_number_of_bytes, __ATOMIC_RELAXED);
 #else
     __sync_fetch_and_add(&total_counters_ipv4.total_counters[current_packet.packet_direction].packets, sampled_number_of_packets);
     __sync_fetch_and_add(&total_counters_ipv4.total_counters[current_packet.packet_direction].bytes, sampled_number_of_bytes);
@@ -3000,7 +3013,7 @@ void increment_outgoing_counters(subnet_counter_t* current_element,
         if (extract_bit_value(current_packet.flags, TCP_SYN_FLAG_SHIFT)) {
             __atomic_add_fetch(&current_element->tcp_syn.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
             __atomic_add_fetch(&current_element->tcp_syn.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-        }    
+        }
     } else if (current_packet.protocol == IPPROTO_UDP) {
         __atomic_add_fetch(&current_element->udp.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
         __atomic_add_fetch(&current_element->udp.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
@@ -3009,7 +3022,7 @@ void increment_outgoing_counters(subnet_counter_t* current_element,
         __atomic_add_fetch(&current_element->icmp.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
         // no flow tracking for icmp
     } else {
-    }    
+    }
 }
 #else
 // Increment fields using data from specified packet
@@ -3089,7 +3102,7 @@ void increment_incoming_counters(subnet_counter_t* current_element,
         __atomic_add_fetch(&current_element->icmp.in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
     } else {
         // TBD
-    }    
+    }
 }
 
 #else
@@ -3524,8 +3537,7 @@ void send_usage_data_to_reporting_server() {
     // Build query
     std::stringstream request_stream;
 
-    request_stream << "https://" << reporting_server
-                   << "/stats_v1";
+    request_stream << "https://" << reporting_server << "/stats_v1";
 
 
     std::string stats_json_string;
@@ -3535,13 +3547,13 @@ void send_usage_data_to_reporting_server() {
 
         stats["incoming_traffic_speed"] = total_counters_ipv4.total_speed_average_counters[INCOMING].bytes;
         stats["outgoing_traffic_speed"] = total_counters_ipv4.total_speed_average_counters[OUTGOING].bytes;
-        stats["flows_speed"] = netflow_ipfix_all_protocols_total_flows_speed;
-        stats["headers_speed"] = sflow_raw_packet_headers_total_speed;
-        stats["total_hosts"] = total_number_of_hosts_in_our_networks;
-        stats["cap_plugins"] = generate_list_of_enabled_capture_engines();
-        stats["speed_calc_time"] = speed_calculation_time.tv_sec;
-        stats["version"] = fastnetmon_platform_configuration.fastnetmon_version;
-        stats["virt_method"] = get_virtualisation_method();
+        stats["flows_speed"]            = netflow_ipfix_all_protocols_total_flows_speed;
+        stats["headers_speed"]          = sflow_raw_packet_headers_total_speed;
+        stats["total_hosts"]            = total_number_of_hosts_in_our_networks;
+        stats["cap_plugins"]            = generate_list_of_enabled_capture_engines();
+        stats["speed_calc_time"]        = speed_calculation_time.tv_sec;
+        stats["version"]                = fastnetmon_platform_configuration.fastnetmon_version;
+        stats["virt_method"]            = get_virtualisation_method();
 
         // We use statically allocated counters in that case
         stats["hosts_hash_ipv4"] = total_number_of_hosts_in_our_networks;
@@ -3562,7 +3574,7 @@ void send_usage_data_to_reporting_server() {
         }
 
         stats["bgp"] = gobgp;
-        
+
         stats["bgp_flow_spec"] = false;
 
         bool influxdb = false;
@@ -3572,12 +3584,12 @@ void send_usage_data_to_reporting_server() {
         }
 
         stats["influxdb"] = influxdb;
-        
-        stats["clickhouse_metrics"] = false;
-        stats["traffic_db"] = false;
-        stats["prometheus"] = false;
 
-        stats["cpu_model"] = get_cpu_model();
+        stats["clickhouse_metrics"] = false;
+        stats["traffic_db"]         = false;
+        stats["prometheus"]         = false;
+
+        stats["cpu_model"]         = get_cpu_model();
         stats["cpu_logical_cores"] = get_logical_cpus_number();
 
         // Mbytes
@@ -3616,7 +3628,7 @@ void send_usage_data_to_reporting_server() {
         stats["linux_distro_version"] = linux_distro_version;
 
         stats_json_string = stats.dump();
-    }  catch (...) {
+    } catch (...) {
         logger << log4cpp::Priority::ERROR << "Failed to serialise stats";
         return;
     }
@@ -3633,7 +3645,7 @@ void send_usage_data_to_reporting_server() {
     // I think we need to do it to make clear about format for remote app
     headers["Content-Type"] = "application/json";
 
-    // Just do it to know about DNS issues, execute_web_request can do DNS resolution on it's own 
+    // Just do it to know about DNS issues, execute_web_request can do DNS resolution on it's own
     std::string reporting_server_ip_address = dns_lookup(reporting_server);
 
     if (reporting_server_ip_address.empty()) {
@@ -3641,7 +3653,8 @@ void send_usage_data_to_reporting_server() {
         return;
     }
 
-    bool result = execute_web_request_secure(request_stream.str(), "post", stats_json_string, response_code, response_body, headers, error_text);
+    bool result = execute_web_request_secure(request_stream.str(), "post", stats_json_string, response_code,
+                                             response_body, headers, error_text);
 
     if (!result) {
         logger << log4cpp::Priority::DEBUG << "Can't collect stats data";
@@ -3678,17 +3691,20 @@ void add_total_traffic_to_prometheus(const total_speed_counters_t& total_counter
 
         output << "# HELP Total traffic in packets\n";
         output << "# TYPE " << packet_metric_name << " gauge\n";
-        output << packet_metric_name << "{traffic_direction=\"" << direction_as_string  << "\",protocol_version=\"" << protocol_version << "\"} " << total_counters.total_speed_average_counters[packet_direction].packets << "\n";
+        output << packet_metric_name << "{traffic_direction=\"" << direction_as_string << "\",protocol_version=\""
+               << protocol_version << "\"} " << total_counters.total_speed_average_counters[packet_direction].packets << "\n";
 
         // Bytes
         std::string bits_metric_name = "fastnetmon_total_traffic_bits";
 
         output << "# HELP Total traffic in bits\n";
         output << "# TYPE " << bits_metric_name << " gauge\n";
-        output << bits_metric_name << "{traffic_direction=\"" << direction_as_string << "\",protocol_version=\"" << protocol_version << "\"} " << total_counters.total_speed_average_counters[packet_direction].bytes * 8  << "\n";
+        output << bits_metric_name << "{traffic_direction=\"" << direction_as_string << "\",protocol_version=\"" << protocol_version
+               << "\"} " << total_counters.total_speed_average_counters[packet_direction].bytes * 8 << "\n";
 
         // Flows
-        if (protocol_version == "ipv4" && enable_connection_tracking && (packet_direction == INCOMING || packet_direction == OUTGOING)) {
+        if (protocol_version == "ipv4" && enable_connection_tracking &&
+            (packet_direction == INCOMING || packet_direction == OUTGOING)) {
             uint64_t flow_rate = 0;
 
             std::string flows_metric_name = "fastnetmon_total_traffic_flows";
@@ -3701,7 +3717,8 @@ void add_total_traffic_to_prometheus(const total_speed_counters_t& total_counter
 
             output << "# HELP Total traffic in flows\n";
             output << "# TYPE " << flows_metric_name << " gauge\n";
-            output << flows_metric_name << "{traffic_direction=\"" << direction_as_string << "\",protocol_version=\"" << protocol_version << "\"}" << flow_rate << "\n";
+            output << flows_metric_name << "{traffic_direction=\"" << direction_as_string << "\",protocol_version=\""
+                   << protocol_version << "\"}" << flow_rate << "\n";
         }
     }
 }
@@ -3789,7 +3806,8 @@ void handle_prometheus_http_request(boost::beast::http::request<Body, boost::bea
 
         // It's good idea to add proper descriptions in future
         output << "# HELP " << counter.counter_description << "\n";
-        output << "# TYPE " << "fastnetmon_" << counter.counter_name << " " << metric_type << "\n";
+        output << "# TYPE "
+               << "fastnetmon_" << counter.counter_name << " " << metric_type << "\n";
         output << "fastnetmon_" << counter.counter_name << " " << counter.counter_value << "\n";
     }
 
@@ -3888,8 +3906,7 @@ void start_prometheus_web_server() {
     extern std::string prometheus_host;
 
     try {
-        logger << log4cpp::Priority::INFO << "Starting Prometheus endpoint on "
-               << prometheus_host << ":" << prometheus_port;
+        logger << log4cpp::Priority::INFO << "Starting Prometheus endpoint on " << prometheus_host << ":" << prometheus_port;
 
         auto const address = boost::asio::ip::make_address(prometheus_host);
         auto const port    = static_cast<unsigned short>(prometheus_port);
@@ -3915,4 +3932,3 @@ void start_prometheus_web_server() {
         logger << log4cpp::Priority::ERROR << "Prometheus server exception: " << e.what();
     }
 }
-

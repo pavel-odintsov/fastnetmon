@@ -63,4 +63,3 @@ void exabgp_ban_manage(std::string action, std::string ip_as_string, attack_deta
         exabgp_prefix_ban_manage(action, ip_as_string_with_mask, exabgp_next_hop, exabgp_community_host);
     }
 }
-

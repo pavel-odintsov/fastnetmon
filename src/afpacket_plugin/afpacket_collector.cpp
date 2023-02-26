@@ -52,22 +52,22 @@ extern std::map<std::string, std::string> configuration_map;
 process_packet_pointer afpacket_process_func_ptr = NULL;
 
 std::string socket_received_packets_desc = "Number of received packets";
-uint64_t socket_received_packets = 0;
+uint64_t socket_received_packets         = 0;
 
 std::string socket_dropped_packets_desc = "Number of dropped packets";
-uint64_t socket_dropped_packets  = 0;
+uint64_t socket_dropped_packets         = 0;
 
 std::string blocks_read_desc = "Number of blocks we read from kernel, each block has multiple packets";
-uint64_t blocks_read = 0;
+uint64_t blocks_read         = 0;
 
 std::string af_packet_packets_raw_desc = "Number of packets read by AF_PACKET before parsing";
-uint64_t af_packet_packets_raw = 0;
+uint64_t af_packet_packets_raw         = 0;
 
 std::string af_packet_packets_parsed_desc = "Number of parsed packets";
-uint64_t af_packet_packets_parsed = 0;
+uint64_t af_packet_packets_parsed         = 0;
 
 std::string af_packet_packets_unparsed_desc = "Number of not parsed packets";
-uint64_t af_packet_packets_unparsed = 0;
+uint64_t af_packet_packets_unparsed         = 0;
 
 // Default sampling rate
 uint32_t mirror_af_packet_custom_sampling_rate = 1;
@@ -150,10 +150,9 @@ void walk_block(struct block_desc* pbd, const int block_num) {
         // Not enabled by default
         bool af_packet_extract_tunnel_traffic = false;
 
-        auto result =
-            parse_raw_packet_to_simple_packet_full_ng((u_char*)data_pointer, ppd->tp_snaplen, ppd->tp_snaplen, packet,
-                                                      af_packet_extract_tunnel_traffic,
-                                                      afpacket_read_packet_length_from_ip_header);
+        auto result = parse_raw_packet_to_simple_packet_full_ng((u_char*)data_pointer, ppd->tp_snaplen, ppd->tp_snaplen,
+                                                                packet, af_packet_extract_tunnel_traffic,
+                                                                afpacket_read_packet_length_from_ip_header);
 
         if (result != network_data_stuctures::parser_code_t::success) {
             // This counter resets for speed calculation every second
@@ -180,7 +179,8 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
     int packet_socket = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
 
     if (packet_socket == -1) {
-        logger << log4cpp::Priority::ERROR << "Can't create AF_PACKET socket. Error number: " << errno << " error text: " << strerror(errno);
+        logger << log4cpp::Priority::ERROR << "Can't create AF_PACKET socket. Error number: " << errno
+               << " error text: " << strerror(errno);
         return false;
     }
 

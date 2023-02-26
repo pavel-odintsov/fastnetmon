@@ -10,8 +10,8 @@
 
 // TODO: add support for multiple interfaces
 
-// Only relatively fresh kernels have this type and we need to declare this type on older kernels to be able to compile libbpf
-// On Ubuntu 20.04 and Debian 11
+// Only relatively fresh kernels have this type and we need to declare this type on older kernels to be able to compile
+// libbpf On Ubuntu 20.04 and Debian 11
 #ifdef DECLARE_FAKE_BPF_STATS
 
 /* type for BPF_ENABLE_STATS */
@@ -22,17 +22,17 @@ enum bpf_stats_type {
 
 #endif
 
-#ifdef DECLARE_FAKE_BPF_LINK_TYPE 
+#ifdef DECLARE_FAKE_BPF_LINK_TYPE
 
 enum bpf_link_type {
-    BPF_LINK_TYPE_UNSPEC = 0,
+    BPF_LINK_TYPE_UNSPEC         = 0,
     BPF_LINK_TYPE_RAW_TRACEPOINT = 1,
-    BPF_LINK_TYPE_TRACING = 2,
-    BPF_LINK_TYPE_CGROUP = 3,
-    BPF_LINK_TYPE_ITER = 4,
-    BPF_LINK_TYPE_NETNS = 5,
-    BPF_LINK_TYPE_XDP = 6,
-    BPF_LINK_TYPE_PERF_EVENT = 7,
+    BPF_LINK_TYPE_TRACING        = 2,
+    BPF_LINK_TYPE_CGROUP         = 3,
+    BPF_LINK_TYPE_ITER           = 4,
+    BPF_LINK_TYPE_NETNS          = 5,
+    BPF_LINK_TYPE_XDP            = 6,
+    BPF_LINK_TYPE_PERF_EVENT     = 7,
 
     MAX_BPF_LINK_TYPE,
 };
@@ -374,7 +374,7 @@ bool create_and_configure_xsk_socket(int& xsk_socket_param,
     __u32 bind_flags = 0;
 
     bool force_native_mode_xdp = configuration_map["force_native_mode_xdp"] == "on";
-       
+
     bool zero_copy_xdp = configuration_map["zero_copy_xdp"] == "on";
 
     if (!force_native_mode_xdp) {
@@ -495,16 +495,16 @@ void xdp_process_traffic(int xdp_socket, xsk_memory_configuration* mem_configura
             packet.arrival_time = current_inaccurate_time;
 
             bool xdp_extract_tunnel_traffic = false;
-                    
-            auto result =
-                parse_raw_packet_to_simple_packet_full_ng((u_char*)packet_data, descs[i].len, descs[i].len, packet,
-                                                          xdp_extract_tunnel_traffic,
-                                                          xdp_read_packet_length_from_ip_header);
+
+            auto result = parse_raw_packet_to_simple_packet_full_ng((u_char*)packet_data, descs[i].len, descs[i].len,
+                                                                    packet, xdp_extract_tunnel_traffic,
+                                                                    xdp_read_packet_length_from_ip_header);
 
             if (result != network_data_stuctures::parser_code_t::success) {
                 xdp_packets_unparsed++;
 
-                logger << log4cpp::Priority::DEBUG << "Cannot parse packet using ng parser: " << network_data_stuctures::parser_code_to_string(result);
+                logger << log4cpp::Priority::DEBUG
+                       << "Cannot parse packet using ng parser: " << network_data_stuctures::parser_code_to_string(result);
             } else {
                 // Successfully parsed packet
                 xdp_process_func_ptr(packet);
@@ -519,7 +519,7 @@ void start_xdp_collection(process_packet_pointer func_ptr) {
     logger << log4cpp::Priority::INFO << "XDP plugin started";
 
     std::vector<std::string> interfaces_xdp;
-    
+
     if (configuration_map.count("interfaces") != 0) {
         boost::split(interfaces_xdp, configuration_map["interfaces"], boost::is_any_of(","), boost::token_compress_on);
     }
@@ -554,7 +554,8 @@ void start_xdp_collection(process_packet_pointer func_ptr) {
 
     if (open_file_error_code) {
         // Documentation claims https://libbpf.readthedocs.io/en/latest/api.html that errno will be set too
-        logger << log4cpp::Priority::ERROR << "Cannot open BPF file: " << bpf_microcode_path << " with error code " << open_file_error_code << " errno " << errno;
+        logger << log4cpp::Priority::ERROR << "Cannot open BPF file: " << bpf_microcode_path << " with error code "
+               << open_file_error_code << " errno " << errno;
         return;
     }
 
@@ -632,7 +633,7 @@ void start_xdp_collection(process_packet_pointer func_ptr) {
     // We keep this code only for EPEL 9 compatibility
 #if LIBBPF_MAJOR_VERSION > 0
     int set_link_xdp_res = bpf_xdp_attach(ifindex, prog_fd, opt_xdp_flags, NULL);
-#else 
+#else
     int set_link_xdp_res = bpf_set_link_xdp_fd(ifindex, prog_fd, opt_xdp_flags);
 #endif
 

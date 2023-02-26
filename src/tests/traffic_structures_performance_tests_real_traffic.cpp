@@ -15,9 +15,9 @@
 
 #include "../fastnetmon_types.hpp"
 
+#include <boost/unordered_map.hpp>
 #include <map>
 #include <unordered_map>
-#include <boost/unordered_map.hpp>
 
 #ifdef __MACH__
 // On MacOS X we haven't clock_gettime(CLOCK_REALTIME, &ts) and should use another code
@@ -45,8 +45,7 @@ int clock_gettime(int clodk_type_do_not_used_really, struct timespec* ts) {
 log4cpp::Category& logger = log4cpp::Category::getRoot();
 
 // Runs tests for specific structure
-template <typename T>
-void run_tests(std::vector<uint32_t> our_ips, T& data_structure) {
+template <typename T> void run_tests(std::vector<uint32_t> our_ips, T& data_structure) {
     struct timespec start_time;
     clock_gettime(CLOCK_REALTIME, &start_time);
 
@@ -57,7 +56,7 @@ void run_tests(std::vector<uint32_t> our_ips, T& data_structure) {
     total_ops = number_of_reruns * our_ips.size();
 
     for (int j = 0; j < number_of_reruns; j++) {
-        for (const auto& ip: our_ips) {
+        for (const auto& ip : our_ips) {
             data_structure[ip].udp.in_bytes++;
         }
     }
@@ -81,8 +80,7 @@ void run_tests(std::vector<uint32_t> our_ips, T& data_structure) {
 }
 
 // Runs tests for specific structure
-template <typename T>
-void run_scan_tests(T& data_structure, uint64_t& accumulator) {
+template <typename T> void run_scan_tests(T& data_structure, uint64_t& accumulator) {
     struct timespec start_time;
     clock_gettime(CLOCK_REALTIME, &start_time);
 
@@ -93,7 +91,7 @@ void run_scan_tests(T& data_structure, uint64_t& accumulator) {
     total_ops = number_of_reruns * data_structure.size();
 
     for (int j = 0; j < number_of_reruns; j++) {
-        for (const auto& elem: data_structure) {
+        for (const auto& elem : data_structure) {
             accumulator += elem.second.udp.in_bytes;
         }
     }
@@ -138,7 +136,6 @@ int main() {
     our_ips_big_endian.reserve(200000);
     our_ips_little_endian.reserve(200000);
 
-    
 
     while (getline(myfile, line)) {
         // It will be big endian internally
@@ -235,5 +232,4 @@ int main() {
 
         std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator;
     }
-
 }

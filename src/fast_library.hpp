@@ -46,7 +46,7 @@ interfaces_list_t get_interfaces_list();
 bool store_data_to_graphite(unsigned short int graphite_port, std::string graphite_host, graphite_data_t graphite_data);
 std::string get_protocol_name_by_number(unsigned int proto_number);
 uint64_t convert_speed_to_mbps(uint64_t speed_in_bps);
-bool exec(const std::string& cmd, std::vector<std::string>& output_list,  std::string& error_text);
+bool exec(const std::string& cmd, std::vector<std::string>& output_list, std::string& error_text);
 uint32_t convert_ip_as_string_to_uint(std::string ip);
 std::string convert_ip_as_uint_to_string(uint32_t ip_as_integer);
 std::string convert_int_to_string(int value);

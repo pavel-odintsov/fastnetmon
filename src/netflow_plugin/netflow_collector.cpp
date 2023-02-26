@@ -139,7 +139,7 @@ uint64_t netflow9_options_packet_number         = 0;
 
 std::string netflow9_sampling_rate_changes_desc = "How much times we changed sampling rate for same agent. As change "
                                                   "we also count when we received it for the first time";
-uint64_t netflow9_sampling_rate_changes = 0;
+uint64_t netflow9_sampling_rate_changes         = 0;
 
 std::string netflow_ipfix_unknown_protocol_version_desc =
     "Number of packets with unknown Netflow version. In may be sign that some another protocol like sFlow is being "
@@ -148,7 +148,7 @@ uint64_t netflow_ipfix_unknown_protocol_version = 0;
 
 std::string ipfix_sampling_rate_changes_desc = "How much times we changed sampling rate for same agent.  As change we "
                                                "also count when we received it for the first time";
-uint64_t ipfix_sampling_rate_changes = 0;
+uint64_t ipfix_sampling_rate_changes         = 0;
 
 std::string netflow9_packets_with_unknown_templates_desc =
     "Number of dropped Netflow v9 packets due to unknown template in message";
@@ -277,11 +277,11 @@ uint64_t ipfix_protocol_version_adjustments         = 0;
 
 std::string ipfix_too_large_field_desc = "We increment these counters when field we use to store particular type of "
                                          "IPFIX record is smaller than we actually received from device";
-uint64_t ipfix_too_large_field = 0;
+uint64_t ipfix_too_large_field         = 0;
 
 std::string netflow_v9_too_large_field_desc = "We increment these counters when field we use to store particular type "
                                               "of Netflow v9 record is smaller than we actually received from device";
-uint64_t netflow_v9_too_large_field = 0;
+uint64_t netflow_v9_too_large_field         = 0;
 
 std::string netflow_v9_lite_header_parser_error_desc = "Netflow v9 Lite header parser errors";
 uint64_t netflow_v9_lite_header_parser_error         = 0;
@@ -883,7 +883,6 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
         bool updated = false;
         add_update_peer_template(global_netflow10_templates, source_id, template_id, client_addres_in_string_format,
                                  field_template, updated);
-
     }
 
     return true;
@@ -997,7 +996,7 @@ void add_update_peer_template(global_template_storage_t& table_for_add,
             // Should I track timestamp here and drop old templates after some time?
             if (itr->second[template_id] != field_template) {
                 itr->second[template_id] = field_template;
-                
+
                 updated = true;
             } else {
                 template_update_attempts_with_same_template_data++;
@@ -1237,7 +1236,8 @@ int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data,
         bool unpack_gre = false;
 
         auto result = parse_raw_packet_to_simple_packet_full_ng((u_char*)(data), full_packet_length, record_length,
-                                                                flow_meta.nested_packet, unpack_gre, read_packet_length_from_ip_header);
+                                                                flow_meta.nested_packet, unpack_gre,
+                                                                read_packet_length_from_ip_header);
 
         if (result != network_data_stuctures::parser_code_t::success) {
             // Cannot decode data
