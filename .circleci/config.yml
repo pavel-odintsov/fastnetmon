@@ -158,6 +158,9 @@ jobs:
         type: string
       distro_name: 
         type: string
+      pip_arguments:
+        type: string
+        default: ""
     docker:
       - image: << parameters.docker_image >>
     resource_class: large
@@ -165,7 +168,7 @@ jobs:
       - checkout
       - run: apt-get update; true
       - run: apt-get install -y perl wget python3-pip
-      - run: pip3 install s3cmd
+      - run: pip3 << parameters.pip_arguments >> install s3cmd
       - run:
           name: install_gcc
           no_output_timeout: 120m 
@@ -284,6 +287,7 @@ workflows:
           distro_version: "12"
           name: "debian12"
           distro_name: "debian"
+          pip_arguments: "--break-system-packages"
       - build_docker_x86_64:
           name: "Build Docker image on x86_64 platform"
       - build_debian_upstream_package:
