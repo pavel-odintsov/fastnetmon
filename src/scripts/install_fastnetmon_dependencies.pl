@@ -81,7 +81,6 @@ sub main {
     # We use target folder names in this list for clarity
     # Versions may be in different formats and we do not use them yet
     my @required_packages = (
-        'gtest_1_13_0',
         # 'gcc', # we build it separately as it requires excessive amount of time
         'openssl_1_1_1q',
         'cmake_3_23_4',
@@ -111,6 +110,7 @@ sub main {
 
         'gobgp_2_27_0',
         'log4cpp_1_1_3',
+        'gtest_1_13_0'
     );
 
     # Accept package name from command line argument
