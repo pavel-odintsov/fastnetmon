@@ -160,7 +160,7 @@ jobs:
         type: string
       s3cmd_install_command:
         type: string
-        default: "apt-get install -y s3cmd"
+        default: "DEBIAN_FRONTEND noninteractive apt-get install -y s3cmd"
     docker:
       - image: << parameters.docker_image >>
     resource_class: large
