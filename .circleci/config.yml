@@ -287,7 +287,6 @@ workflows:
           distro_version: "12"
           name: "debian12"
           distro_name: "debian"
-          pip_arguments: "--break-system-packages"
       - build_docker_x86_64:
           name: "Build Docker image on x86_64 platform"
       - build_debian_upstream_package:
