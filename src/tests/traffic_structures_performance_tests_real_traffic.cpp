@@ -11,7 +11,9 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "fast_library.hpp"
+#include "../all_logcpp_libraries.hpp"
+
+#include "../fast_library.hpp"
 
 #include "../fastnetmon_types.hpp"
 

@@ -2359,3 +2359,19 @@ std::string country_static_string_to_dynamic_string(const boost::beast::static_s
 
     return country_code_dynamic_string;
 }
+
+// Convert IP in string representation to uint32_t in big endian (network byte order)
+bool convert_ip_as_string_to_uint_safe(const std::string& ip, uint32_t& ip_as_integer) {
+    struct in_addr ip_addr;
+
+    // Please be careful! This function uses pretty strange approach for returned codes
+    // inet_aton() returns nonzero if the address is valid, zero if not.
+    if (inet_aton(ip.c_str(), &ip_addr) == 0) {
+        return false;
+    }
+
+    // in network byte order
+    ip_as_integer = ip_addr.s_addr;
+    return true;
+}
+
