@@ -158,17 +158,17 @@ jobs:
         type: string
       distro_name: 
         type: string
-      pip_arguments:
+      s3cmd_install_command:
         type: string
-        default: ""
+        default: "apt-get install -y s3cmd"
     docker:
       - image: << parameters.docker_image >>
     resource_class: large
     steps:
       - checkout
       - run: apt-get update; true
-      - run: apt-get install -y perl wget python3-pip
-      - run: pip3 << parameters.pip_arguments >> install s3cmd
+      - run: apt-get install -y perl wget
+      - run: << parameters.s3cmd_install_command >>
       - run:
           name: install_gcc
           no_output_timeout: 120m 
