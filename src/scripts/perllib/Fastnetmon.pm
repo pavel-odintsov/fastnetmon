@@ -780,6 +780,24 @@ sub install_zlib {
     return 1;
 }
 
+sub install_gtest {
+    my $folder_name = shift;
+
+    my $install_path = "$library_install_folder/$folder_name";
+
+    my $res = install_cmake_based_software("https://github.com/google/googletest/archive/refs/tags/v1.13.0.tar.gz",
+        "bfa4b5131b6eaac06962c251742c96aab3f7aa78",
+        $install_path,
+        "$ld_library_path_for_make $cmake_path -DCMAKE_C_COMPILER=$default_c_compiler_path -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$install_path ..");
+
+    if (!$res) {
+        warn "Cannot install gtest\n";
+        return '';
+    }
+
+    return 1;
+}
+
 sub install_grpc {
     my $folder_name = shift;
 

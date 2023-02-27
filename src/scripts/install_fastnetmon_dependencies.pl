@@ -81,6 +81,7 @@ sub main {
     # We use target folder names in this list for clarity
     # Versions may be in different formats and we do not use them yet
     my @required_packages = (
+        'gtest_1_13_0',
         # 'gcc', # we build it separately as it requires excessive amount of time
         'openssl_1_1_1q',
         'cmake_3_23_4',
@@ -133,6 +134,9 @@ sub main {
             'centos:7'            => 'f7bb6b23d338fa80e1a72912d001ef926cbeb1df26f53d4c75d5e20ffe107e146637cb583edd08d02d252fc1bb93b2af6b827bd953713a9f55de148fb10b55aa',
             'centos:8'            => 'a3fcd2331143579f4178e5142a6949ba248278c8cea7cc70c977ebade1bf2b3bcea7b8115e1fbec8981042e0242578be822113e63b3dea68ae4279a63d9afd01',
             'centos:9'            => '8ee999dd3783abf99e79be4ba9c717a713330db7c17d1228c3dcdaa71c784f512d17b91d463f8dda3281ab07ed409439186d3c84385c480ed80b73fc86f0183a',
+        },
+        'gtest_1_13_0' => {
+
         },
         'openssl_1_1_1q'        => {
             'centos:7'            => 'ab9dde43afc7b6bcc4399b6fbd746727e0ce72cf254e9b7f6abcc5c22b319ab82c051546decc6804e508654975089888c544258514e30dc18385ad1dd59d63fb',

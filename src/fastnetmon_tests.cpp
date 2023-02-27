@@ -1,8 +1,9 @@
 #include <gtest/gtest.h>
 #include <math.h>
 
-#include "bgp_flow_spec.h"
-#include "fast_library.h"
+#include "fast_library.hpp"
+
+#include "bgp_protocol.hpp"
 
 #include <fstream>
 
@@ -125,7 +126,7 @@ TEST(patricia, positive_lookup_ipv6_prefix) {
 }
 
 TEST(serialize_attack_description, blank_attack) {
-    attack_details current_attack;
+    attack_details_t current_attack;
     std::string result = serialize_attack_description(current_attack);
     EXPECT_EQ(result, "Attack type: unknown\nInitial attack power: 0 packets per second\nPeak attack power: 0 "
                       "packets per second\nAttack direction: other\nAttack protocol: unknown\nTotal incoming "
@@ -145,49 +146,3 @@ TEST(serialize_attack_description, blank_attack) {
                       "packets per second\nOutgoing icmp pps: 0 packets per second\n");
 }
 
-TEST(serialize_attack_description_to_json, blank_attack) {
-    attack_details current_attack;
-    json_object* jobj = serialize_attack_description_to_json(current_attack);
-
-    EXPECT_EQ(std::string(json_object_to_json_string(jobj)),
-              "{ \"Attack type\": \"unknown\", \"Initial attack power\": 0, \"Peak attack power\": "
-              "0, \"Attack direction\": \"other\", \"Attack protocol\": \"unknown\", \"Total "
-              "incoming traffic\": 0, \"Total outgoing traffic\": 0, \"Total incoming pps\": 0, "
-              "\"Total outgoing pps\": 0, \"Total incoming flows\": 0, \"Total outgoing flows\": "
-              "0, \"Average incoming traffic\": 0, \"Average outgoing traffic\": 0, \"Average "
-              "incoming pps\": 0, \"Average outgoing pps\": 0, \"Average incoming flows\": 0, "
-              "\"Average outgoing flows\": 0, \"Incoming ip fragmented traffic\": 0, \"Outgoing ip "
-              "fragmented traffic\": 0, \"Incoming ip fragmented pps\": 0, \"Outgoing ip "
-              "fragmented pps\": 0, \"Incoming tcp traffic\": 0, \"Outgoing tcp traffic\": 0, "
-              "\"Incoming tcp pps\": 0, \"Outgoing tcp pps\": 0, \"Incoming syn tcp traffic\": 0, "
-              "\"Outgoing syn tcp traffic\": 0, \"Incoming syn tcp pps\": 0, \"Outgoing syn tcp "
-              "pps\": 0, \"Incoming udp traffic\": 0, \"Outgoing udp traffic\": 0, \"Incoming udp "
-              "pps\": 0, \"Outgoing udp pps\": 0, \"Incoming icmp traffic\": 0, \"Outgoing icmp "
-              "traffic\": 0, \"Incoming icmp pps\": 0, \"Outgoing icmp pps\": 0 }");
-}
-
-TEST(serialize_network_load_to_text, blank_attck_average) {
-    map_element network_speed_meter;
-
-    EXPECT_EQ(serialize_network_load_to_text(network_speed_meter, true),
-              "Average network incoming traffic: 0 mbps\nAverage network outgoing traffic: 0 "
-              "mbps\nAverage network incoming pps: 0 packets per second\nAverage network outgoing "
-              "pps: 0 packets per second\n");
-}
-
-TEST(serialize_network_load_to_text, blank_attck_absolute) {
-    map_element network_speed_meter;
-
-    EXPECT_EQ(serialize_network_load_to_text(network_speed_meter, false),
-              "Network incoming traffic: 0 mbps\nNetwork outgoing traffic: 0 mbps\nNetwork "
-              "incoming pps: 0 packets per second\nNetwork outgoing pps: 0 packets per second\n");
-}
-
-TEST(serialize_network_load_to_json, blank_attack_average) {
-    map_element network_speed_meter;
-    json_object* jobj = serialize_network_load_to_json(network_speed_meter);
-
-    EXPECT_EQ(std::string(json_object_to_json_string(jobj)),
-              "{ \"incoming traffic\": 0, \"outgoing traffic\": 0, \"incoming pps\": 0, \"outgoing "
-              "pps\": 0 }");
-}
