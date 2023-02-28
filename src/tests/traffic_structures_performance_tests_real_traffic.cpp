@@ -18,8 +18,14 @@
 #include "../fastnetmon_types.hpp"
 
 #include <boost/unordered_map.hpp>
+#include <boost/unordered/unordered_flat_map.hpp>
 #include <map>
 #include <unordered_map>
+
+#ifdef ABSEIL_TESTS
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/node_hash_map.h"
+#endif
 
 #ifdef __MACH__
 // On MacOS X we haven't clock_gettime(CLOCK_REALTIME, &ts) and should use another code
@@ -45,6 +51,18 @@ int clock_gettime(int clodk_type_do_not_used_really, struct timespec* ts) {
 #endif
 
 log4cpp::Category& logger = log4cpp::Category::getRoot();
+
+// We use these structures to tests smaller value
+class udp_t {
+    public:
+    uint64_t in_bytes = 0;
+};
+
+class subnet_counter_small_t {
+    public:
+    udp_t udp;
+};
+
 
 // Runs tests for specific structure
 template <typename T> void run_tests(std::vector<uint32_t> our_ips, T& data_structure) {
@@ -169,7 +187,7 @@ int main() {
         run_scan_tests(std_map, accumulator);
         std_map.clear();
 
-        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator;
+        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator << std::endl;
     }
 
 
@@ -182,7 +200,7 @@ int main() {
         run_scan_tests(std_map, accumulator);
         std_map.clear();
 
-        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator;
+        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator << std::endl;
     }
 
 
@@ -195,7 +213,8 @@ int main() {
         run_scan_tests(std_unordered, accumulator);
         std_unordered.clear();
 
-        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator;
+        std::cout << "Bucket number: " << std_unordered.bucket_count() << std::endl;
+        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator << std::endl;
     }
 
     {
@@ -207,7 +226,8 @@ int main() {
         run_scan_tests(std_unordered, accumulator);
         std_unordered.clear();
 
-        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator;
+        std::cout << "Bucket number: " << std_unordered.bucket_count() << std::endl;
+        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator << std::endl;
     }
 
 
@@ -220,7 +240,8 @@ int main() {
         run_scan_tests(boost_unordered, accumulator);
         boost_unordered.clear();
 
-        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator;
+        std::cout << "Bucket number: " << boost_unordered.bucket_count() << std::endl;
+        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator << std::endl;
     }
 
     {
@@ -232,6 +253,89 @@ int main() {
         run_scan_tests(boost_unordered, accumulator);
         boost_unordered.clear();
 
-        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator;
+        std::cout << "Bucket number: " << boost_unordered.bucket_count() << std::endl;
+        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator << std::endl;
     }
+
+    {
+        uint64_t accumulator = 0;
+        std::cout << std::endl << "boost::unordered_flat_map big endian " << std::endl;
+
+        boost::unordered_flat_map<uint32_t, subnet_counter_t> boost_unordered;
+        run_tests(our_ips_big_endian, boost_unordered);
+        run_scan_tests(boost_unordered, accumulator);
+        boost_unordered.clear();
+
+        std::cout << "Bucket number: " << boost_unordered.bucket_count() << std::endl;
+        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator << std::endl;
+    }
+
+    {
+        uint64_t accumulator = 0;
+        std::cout << std::endl << "boost::unordered_flat_map little endian " << std::endl;
+
+        boost::unordered_flat_map<uint32_t, subnet_counter_t> boost_unordered;
+        run_tests(our_ips_little_endian, boost_unordered);
+        run_scan_tests(boost_unordered, accumulator);
+        boost_unordered.clear();
+
+        std::cout << "Bucket number: " << boost_unordered.bucket_count() << std::endl;
+        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator << std::endl;
+    }
+
+#ifdef ABSEIL_TESTS
+    {
+        uint64_t accumulator = 0;
+        std::cout << std::endl << "absl::flat_hash_map little endian " << std::endl;
+
+        absl::flat_hash_map<uint32_t, subnet_counter_t> unordered;
+        run_tests(our_ips_little_endian, unordered);
+        run_scan_tests(unordered, accumulator);
+        unordered.clear();
+
+        std::cout << "Bucket number: " << unordered.bucket_count() << std::endl;
+        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator << std::endl;
+    }
+
+    {
+        uint64_t accumulator = 0;
+        std::cout << std::endl << "absl::flat_hash_map big endian " << std::endl;
+
+        absl::flat_hash_map<uint32_t, subnet_counter_t> unordered;
+        run_tests(our_ips_big_endian, unordered);
+        run_scan_tests(unordered, accumulator);
+        unordered.clear();
+
+        std::cout << "Bucket number: " << unordered.bucket_count() << std::endl;
+        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator << std::endl;
+    }
+
+    {
+        uint64_t accumulator = 0;
+        std::cout << std::endl << "absl::node_hash_map little endian " << std::endl;
+
+        absl::node_hash_map<uint32_t, subnet_counter_t> unordered;
+        run_tests(our_ips_little_endian, unordered);
+        run_scan_tests(unordered, accumulator);
+        unordered.clear();
+
+        std::cout << "Bucket number: " << unordered.bucket_count() << std::endl;
+        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator << std::endl;
+    }
+
+    {
+        uint64_t accumulator = 0;
+        std::cout << std::endl << "node_hash_map big endian " << std::endl;
+
+        absl::node_hash_map<uint32_t, subnet_counter_t> unordered;
+        run_tests(our_ips_big_endian, unordered);
+        run_scan_tests(unordered, accumulator);
+        unordered.clear();
+
+        std::cout << "Bucket number: " << unordered.bucket_count() << std::endl;
+        std::cout << "Accumulator value to guarantee no optimisation tricks from compiler: " << accumulator << std::endl;
+    }
+
+
+#endif
 }
