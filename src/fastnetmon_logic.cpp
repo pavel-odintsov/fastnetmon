@@ -67,7 +67,7 @@ extern uint64_t influxdb_writes_failed;
 extern packet_buckets_storage_t<subnet_ipv6_cidr_mask_t> packet_buckets_ipv6_storage;
 extern std::string cli_stats_file_path;
 extern unsigned int total_number_of_hosts_in_our_networks;
-extern abstract_subnet_counters_t<subnet_cidr_mask_t> ipv4_network_counters;
+extern abstract_subnet_counters_t<subnet_cidr_mask_t, subnet_counter_t> ipv4_network_counters;
 extern unsigned int recalculate_speed_timeout;
 extern map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
 extern bool DEBUG_DUMP_ALL_PACKETS;
@@ -89,8 +89,8 @@ extern double drawing_thread_execution_time;
 extern std::chrono::steady_clock::time_point last_call_of_traffic_recalculation;
 extern std::string cli_stats_ipv6_file_path;
 extern unsigned int check_for_availible_for_processing_packets_buckets;
-extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t> ipv6_host_counters;
-extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t> ipv6_subnet_counters;
+extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t,subnet_counter_t> ipv6_host_counters;
+extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t,subnet_counter_t> ipv6_subnet_counters;
 extern bool process_incoming_traffic;
 extern bool process_outgoing_traffic;
 extern uint64_t total_unparsed_packets;
@@ -187,162 +187,6 @@ unsigned int detect_attack_protocol(subnet_counter_t& speed_element, direction_t
     }
 }
 
-// We calculate speed from packet counters here
-void build_speed_counters_from_packet_counters(subnet_counter_t& new_speed_element, subnet_counter_t* vector_itr, double speed_calc_period) {
-    // calculate_speed(new_speed_element speed_element, vector_itr* );
-    new_speed_element.total.in_packets  = uint64_t((double)vector_itr->total.in_packets / speed_calc_period);
-    new_speed_element.total.out_packets = uint64_t((double)vector_itr->total.out_packets / speed_calc_period);
-
-    new_speed_element.total.in_bytes  = uint64_t((double)vector_itr->total.in_bytes / speed_calc_period);
-    new_speed_element.total.out_bytes = uint64_t((double)vector_itr->total.out_bytes / speed_calc_period);
-
-    // Fragmented
-    new_speed_element.fragmented.in_packets  = uint64_t((double)vector_itr->fragmented.in_packets / speed_calc_period);
-    new_speed_element.fragmented.out_packets = uint64_t((double)vector_itr->fragmented.out_packets / speed_calc_period);
-
-    new_speed_element.fragmented.in_bytes  = uint64_t((double)vector_itr->fragmented.in_bytes / speed_calc_period);
-    new_speed_element.fragmented.out_bytes = uint64_t((double)vector_itr->fragmented.out_bytes / speed_calc_period);
-
-    // By protocol counters
-
-    // TCP
-    new_speed_element.tcp.in_packets  = uint64_t((double)vector_itr->tcp.in_packets / speed_calc_period);
-    new_speed_element.tcp.out_packets = uint64_t((double)vector_itr->tcp.out_packets / speed_calc_period);
-
-    new_speed_element.tcp.in_bytes  = uint64_t((double)vector_itr->tcp.in_bytes / speed_calc_period);
-    new_speed_element.tcp.out_bytes = uint64_t((double)vector_itr->tcp.out_bytes / speed_calc_period);
-
-    // TCP syn
-    new_speed_element.tcp_syn.in_packets  = uint64_t((double)vector_itr->tcp_syn.in_packets / speed_calc_period);
-    new_speed_element.tcp_syn.out_packets = uint64_t((double)vector_itr->tcp_syn.out_packets / speed_calc_period);
-
-    new_speed_element.tcp_syn.in_bytes  = uint64_t((double)vector_itr->tcp_syn.in_bytes / speed_calc_period);
-    new_speed_element.tcp_syn.out_bytes = uint64_t((double)vector_itr->tcp_syn.out_bytes / speed_calc_period);
-
-    // UDP
-    new_speed_element.udp.in_packets  = uint64_t((double)vector_itr->udp.in_packets / speed_calc_period);
-    new_speed_element.udp.out_packets = uint64_t((double)vector_itr->udp.out_packets / speed_calc_period);
-
-    new_speed_element.udp.in_bytes  = uint64_t((double)vector_itr->udp.in_bytes / speed_calc_period);
-    new_speed_element.udp.out_bytes = uint64_t((double)vector_itr->udp.out_bytes / speed_calc_period);
-
-    // ICMP
-    new_speed_element.icmp.in_packets  = uint64_t((double)vector_itr->icmp.in_packets / speed_calc_period);
-    new_speed_element.icmp.out_packets = uint64_t((double)vector_itr->icmp.out_packets / speed_calc_period);
-
-    new_speed_element.icmp.in_bytes  = uint64_t((double)vector_itr->icmp.in_bytes / speed_calc_period);
-    new_speed_element.icmp.out_bytes = uint64_t((double)vector_itr->icmp.out_bytes / speed_calc_period);
-}
-
-void build_average_speed_counters_from_speed_counters(subnet_counter_t* current_average_speed_element,
-                                                      subnet_counter_t& new_speed_element,
-                                                      double exp_value,
-                                                      double exp_power) {
-
-    // Global bytes counters
-    current_average_speed_element->total.in_bytes =
-        uint64_t(new_speed_element.total.in_bytes + exp_value * ((double)current_average_speed_element->total.in_bytes -
-                                                                 (double)new_speed_element.total.in_bytes));
-
-    current_average_speed_element->total.out_bytes =
-        uint64_t(new_speed_element.total.out_bytes + exp_value * ((double)current_average_speed_element->total.out_bytes -
-                                                                  (double)new_speed_element.total.out_bytes));
-
-    // Global packet counters
-    current_average_speed_element->total.in_packets =
-        uint64_t(new_speed_element.total.in_packets + exp_value * ((double)current_average_speed_element->total.in_packets -
-                                                                   (double)new_speed_element.total.in_packets));
-
-    current_average_speed_element->total.out_packets =
-        uint64_t(new_speed_element.total.out_packets + exp_value * ((double)current_average_speed_element->total.out_packets -
-                                                                    (double)new_speed_element.total.out_packets));
-
-    // Per packet type packet counters for in traffic
-    current_average_speed_element->fragmented.in_packets = uint64_t(
-        new_speed_element.fragmented.in_packets + exp_value * ((double)current_average_speed_element->fragmented.in_packets -
-                                                               (double)new_speed_element.fragmented.in_packets));
-
-    current_average_speed_element->tcp.in_packets =
-        uint64_t(new_speed_element.tcp.in_packets + exp_value * ((double)current_average_speed_element->tcp.in_packets -
-                                                                 (double)new_speed_element.tcp.in_packets));
-
-    current_average_speed_element->tcp_syn.in_packets =
-        uint64_t(new_speed_element.tcp_syn.in_packets + exp_value * ((double)current_average_speed_element->tcp_syn.in_packets -
-                                                                     (double)new_speed_element.tcp_syn.in_packets));
-
-    current_average_speed_element->udp.in_packets =
-        uint64_t(new_speed_element.udp.in_packets + exp_value * ((double)current_average_speed_element->udp.in_packets -
-                                                                 (double)new_speed_element.udp.in_packets));
-
-    current_average_speed_element->icmp.in_packets =
-        uint64_t(new_speed_element.icmp.in_packets + exp_value * ((double)current_average_speed_element->icmp.in_packets -
-                                                                  (double)new_speed_element.icmp.in_packets));
-
-    // Per packet type packets counters for out
-    current_average_speed_element->fragmented.out_packets = uint64_t(
-        new_speed_element.fragmented.out_packets + exp_value * ((double)current_average_speed_element->fragmented.out_packets -
-                                                                (double)new_speed_element.fragmented.out_packets));
-
-    current_average_speed_element->tcp.out_packets =
-        uint64_t(new_speed_element.tcp.out_packets + exp_value * ((double)current_average_speed_element->tcp.out_packets -
-                                                                  (double)new_speed_element.tcp.out_packets));
-
-    current_average_speed_element->tcp_syn.out_packets =
-        uint64_t(new_speed_element.tcp_syn.out_packets + exp_value * ((double)current_average_speed_element->tcp_syn.out_packets -
-                                                                      (double)new_speed_element.tcp_syn.out_packets));
-
-    current_average_speed_element->udp.out_packets =
-        uint64_t(new_speed_element.udp.out_packets + exp_value * ((double)current_average_speed_element->udp.out_packets -
-                                                                  (double)new_speed_element.udp.out_packets));
-
-    current_average_speed_element->icmp.out_packets =
-        uint64_t(new_speed_element.icmp.out_packets + exp_value * ((double)current_average_speed_element->icmp.out_packets -
-                                                                   (double)new_speed_element.icmp.out_packets));
-
-    // Per packet type bytes counter for out
-    current_average_speed_element->fragmented.out_bytes =
-        uint64_t(new_speed_element.fragmented.out_bytes + exp_value * ((double)current_average_speed_element->fragmented.out_bytes -
-                                                                       (double)new_speed_element.fragmented.out_bytes));
-
-    current_average_speed_element->tcp.out_bytes =
-        uint64_t(new_speed_element.tcp.out_bytes + exp_value * ((double)current_average_speed_element->tcp.out_bytes -
-                                                                (double)new_speed_element.tcp.out_bytes));
-
-    current_average_speed_element->tcp_syn.out_bytes =
-        uint64_t(new_speed_element.tcp_syn.out_bytes + exp_value * ((double)current_average_speed_element->tcp_syn.out_bytes -
-                                                                    (double)new_speed_element.tcp_syn.out_bytes));
-
-    current_average_speed_element->udp.out_bytes =
-        uint64_t(new_speed_element.udp.out_bytes + exp_value * ((double)current_average_speed_element->udp.out_bytes -
-                                                                (double)new_speed_element.udp.out_bytes));
-
-    current_average_speed_element->icmp.out_bytes =
-        uint64_t(new_speed_element.icmp.out_bytes + exp_value * ((double)current_average_speed_element->icmp.out_bytes -
-                                                                 (double)new_speed_element.icmp.out_bytes));
-
-    // Per packet type bytes counter for in
-    current_average_speed_element->fragmented.in_bytes =
-        uint64_t(new_speed_element.fragmented.in_bytes + exp_value * ((double)current_average_speed_element->fragmented.in_bytes -
-                                                                      (double)new_speed_element.fragmented.in_bytes));
-
-    current_average_speed_element->tcp.in_bytes =
-        uint64_t(new_speed_element.tcp.in_bytes +
-                 exp_value * ((double)current_average_speed_element->tcp.in_bytes - (double)new_speed_element.tcp.in_bytes));
-
-    current_average_speed_element->tcp_syn.in_bytes =
-        uint64_t(new_speed_element.tcp_syn.in_bytes + exp_value * ((double)current_average_speed_element->tcp_syn.in_bytes -
-                                                                   (double)new_speed_element.tcp_syn.in_bytes));
-
-    current_average_speed_element->udp.in_bytes =
-        uint64_t(new_speed_element.udp.in_bytes +
-                 exp_value * ((double)current_average_speed_element->udp.in_bytes - (double)new_speed_element.udp.in_bytes));
-
-    current_average_speed_element->icmp.in_bytes =
-        uint64_t(new_speed_element.icmp.in_bytes + exp_value * ((double)current_average_speed_element->icmp.in_bytes -
-                                                                (double)new_speed_element.icmp.in_bytes));
-}
-
-
 std::string print_flow_tracking_for_ip(conntrack_main_struct_t& conntrack_element, std::string client_ip) {
     std::stringstream buffer;
 
@@ -400,21 +244,22 @@ std::string print_flow_tracking_for_ip(conntrack_main_struct_t& conntrack_elemen
 std::string print_subnet_ipv4_load() {
     std::stringstream buffer;
 
-    sort_type_t sorter;
+    attack_detection_threshold_type_t sorter_type;
+
     if (sort_parameter == "packets") {
-        sorter = PACKETS;
+        sorter_type = attack_detection_threshold_type_t::packets_per_second;
     } else if (sort_parameter == "bytes") {
-        sorter = BYTES;
+        sorter_type = attack_detection_threshold_type_t::bytes_per_second;
     } else if (sort_parameter == "flows") {
-        sorter = FLOWS;
+        sorter_type = attack_detection_threshold_type_t::flows_per_second;
     } else {
         logger << log4cpp::Priority::INFO << "Unexpected sorter type: " << sort_parameter;
-        sorter = PACKETS;
+        sorter_type = attack_detection_threshold_type_t::packets_per_second;
     }
 
     std::vector<std::pair<subnet_cidr_mask_t, subnet_counter_t>> vector_for_sort;
 
-    ipv4_network_counters.get_sorted_average_speed(vector_for_sort, sorter, INCOMING);
+    ipv4_network_counters.get_sorted_average_speed(vector_for_sort, sorter_type, attack_detection_direction_type_t::incoming);
 
     for (auto itr = vector_for_sort.begin(); itr != vector_for_sort.end(); ++itr) {
         subnet_counter_t* speed      = &itr->second;
@@ -658,8 +503,8 @@ bool exceed_mbps_speed(uint64_t in_counter, uint64_t out_counter, unsigned int t
 }
 
 // Return true when we should ban this entity
-bool we_should_ban_this_entity(subnet_counter_t* average_speed_element,
-                               ban_settings_t& current_ban_settings,
+bool we_should_ban_this_entity(const subnet_counter_t& average_speed_element,
+                               const ban_settings_t& current_ban_settings,
                                attack_detection_threshold_type_t& attack_detection_source,
                                attack_detection_direction_type_t& attack_detection_direction) {
 
@@ -669,7 +514,7 @@ bool we_should_ban_this_entity(subnet_counter_t* average_speed_element,
 
     // we detect overspeed by packets
     if (current_ban_settings.enable_ban_for_pps &&
-        exceed_pps_speed(average_speed_element->total.in_packets, average_speed_element->total.out_packets,
+        exceed_pps_speed(average_speed_element.total.in_packets, average_speed_element.total.out_packets,
                          current_ban_settings.ban_threshold_pps)) {
 
         attack_detection_source = attack_detection_threshold_type_t::packets_per_second;
@@ -677,7 +522,7 @@ bool we_should_ban_this_entity(subnet_counter_t* average_speed_element,
     }
 
     if (current_ban_settings.enable_ban_for_bandwidth &&
-        exceed_mbps_speed(average_speed_element->total.in_bytes, average_speed_element->total.out_bytes,
+        exceed_mbps_speed(average_speed_element.total.in_bytes, average_speed_element.total.out_bytes,
                           current_ban_settings.ban_threshold_mbps)) {
 
         attack_detection_source = attack_detection_threshold_type_t::bytes_per_second;
@@ -685,7 +530,7 @@ bool we_should_ban_this_entity(subnet_counter_t* average_speed_element,
     }
 
     if (current_ban_settings.enable_ban_for_flows_per_second &&
-        exceed_flow_speed(average_speed_element->in_flows, average_speed_element->out_flows, current_ban_settings.ban_threshold_flows)) {
+        exceed_flow_speed(average_speed_element.in_flows, average_speed_element.out_flows, current_ban_settings.ban_threshold_flows)) {
 
         attack_detection_source = attack_detection_threshold_type_t::flows_per_second;
         return true;
@@ -695,7 +540,7 @@ bool we_should_ban_this_entity(subnet_counter_t* average_speed_element,
 
     // Per protocol pps thresholds
     if (current_ban_settings.enable_ban_for_tcp_pps &&
-        exceed_pps_speed(average_speed_element->tcp.in_packets, average_speed_element->tcp.out_packets,
+        exceed_pps_speed(average_speed_element.tcp.in_packets, average_speed_element.tcp.out_packets,
                          current_ban_settings.ban_threshold_tcp_pps)) {
         attack_detection_source = attack_detection_threshold_type_t::tcp_packets_per_second;
 
@@ -703,7 +548,7 @@ bool we_should_ban_this_entity(subnet_counter_t* average_speed_element,
     }
 
     if (current_ban_settings.enable_ban_for_udp_pps &&
-        exceed_pps_speed(average_speed_element->udp.in_packets, average_speed_element->udp.out_packets,
+        exceed_pps_speed(average_speed_element.udp.in_packets, average_speed_element.udp.out_packets,
                          current_ban_settings.ban_threshold_udp_pps)) {
 
         attack_detection_source = attack_detection_threshold_type_t::udp_packets_per_second;
@@ -711,7 +556,7 @@ bool we_should_ban_this_entity(subnet_counter_t* average_speed_element,
     }
 
     if (current_ban_settings.enable_ban_for_icmp_pps &&
-        exceed_pps_speed(average_speed_element->icmp.in_packets, average_speed_element->icmp.out_packets,
+        exceed_pps_speed(average_speed_element.icmp.in_packets, average_speed_element.icmp.out_packets,
                          current_ban_settings.ban_threshold_icmp_pps)) {
         attack_detection_source = attack_detection_threshold_type_t::icmp_packets_per_second;
         return true;
@@ -719,7 +564,7 @@ bool we_should_ban_this_entity(subnet_counter_t* average_speed_element,
 
     // Per protocol bandwidth thresholds
     if (current_ban_settings.enable_ban_for_tcp_bandwidth &&
-        exceed_mbps_speed(average_speed_element->tcp.in_bytes, average_speed_element->tcp.out_bytes,
+        exceed_mbps_speed(average_speed_element.tcp.in_bytes, average_speed_element.tcp.out_bytes,
                           current_ban_settings.ban_threshold_tcp_mbps)) {
         attack_detection_source = attack_detection_threshold_type_t::tcp_bytes_per_second;
         ;
@@ -727,14 +572,14 @@ bool we_should_ban_this_entity(subnet_counter_t* average_speed_element,
     }
 
     if (current_ban_settings.enable_ban_for_udp_bandwidth &&
-        exceed_mbps_speed(average_speed_element->udp.in_bytes, average_speed_element->udp.out_bytes,
+        exceed_mbps_speed(average_speed_element.udp.in_bytes, average_speed_element.udp.out_bytes,
                           current_ban_settings.ban_threshold_udp_mbps)) {
         attack_detection_source = attack_detection_threshold_type_t::udp_bytes_per_second;
         return true;
     }
 
     if (current_ban_settings.enable_ban_for_icmp_bandwidth &&
-        exceed_mbps_speed(average_speed_element->icmp.in_bytes, average_speed_element->icmp.out_bytes,
+        exceed_mbps_speed(average_speed_element.icmp.in_bytes, average_speed_element.icmp.out_bytes,
                           current_ban_settings.ban_threshold_icmp_mbps)) {
         attack_detection_source = attack_detection_threshold_type_t::icmp_bytes_per_second;
         return true;
@@ -915,7 +760,7 @@ void cleanup_ban_list() {
                     continue;
                 }
 
-                subnet_counter_t* average_speed_element = &itr_average_speed->second[shift_in_vector];
+                subnet_counter_t& average_speed_element = itr_average_speed->second[shift_in_vector];
 
                 // We get ban settings from host subnet
                 std::string host_group_name;
@@ -1792,16 +1637,17 @@ void traffic_draw_ipv6_program() {
     std::stringstream output_buffer;
 
     // logger<<log4cpp::Priority::INFO<<"Draw table call";
-    sort_type_t sorter;
+    attack_detection_threshold_type_t sorter_type;
+
     if (sort_parameter == "packets") {
-        sorter = PACKETS;
+        sorter_type = attack_detection_threshold_type_t::packets_per_second;
     } else if (sort_parameter == "bytes") {
-        sorter = BYTES;
+        sorter_type = attack_detection_threshold_type_t::bytes_per_second;
     } else if (sort_parameter == "flows") {
-        sorter = FLOWS;
+        sorter_type = attack_detection_threshold_type_t::flows_per_second;
     } else {
         logger << log4cpp::Priority::INFO << "Unexpected sorter type: " << sort_parameter;
-        sorter = PACKETS;
+        sorter_type = attack_detection_threshold_type_t::packets_per_second;
     }
 
     output_buffer << "FastNetMon " << fastnetmon_platform_configuration.fastnetmon_version << " Try Advanced edition: https://fastnetmon.com"
@@ -1811,14 +1657,14 @@ void traffic_draw_ipv6_program() {
     output_buffer << print_channel_speed_ipv6("Incoming traffic", INCOMING) << std::endl;
 
     if (process_incoming_traffic) {
-        output_buffer << draw_table_ipv6(INCOMING, true, sorter);
+        output_buffer << draw_table_ipv6(attack_detection_direction_type_t::incoming, true, sorter_type);
         output_buffer << std::endl;
     }
 
     output_buffer << print_channel_speed_ipv6("Outgoing traffic", OUTGOING) << std::endl;
 
     if (process_outgoing_traffic) {
-        output_buffer << draw_table_ipv6(OUTGOING, false, sorter);
+        output_buffer << draw_table_ipv6(attack_detection_direction_type_t::outgoing, false, sorter_type);
         output_buffer << std::endl;
     }
 
@@ -1837,22 +1683,21 @@ void traffic_draw_ipv6_program() {
 std::string print_subnet_ipv6_load() {
     std::stringstream buffer;
 
-    sort_type_t sorter_type;
+    attack_detection_threshold_type_t sorter_type;
+
     if (sort_parameter == "packets") {
-        sorter_type = PACKETS;
+        sorter_type = attack_detection_threshold_type_t::packets_per_second;
     } else if (sort_parameter == "bytes") {
-        sorter_type = BYTES;
+        sorter_type = attack_detection_threshold_type_t::bytes_per_second;
     } else if (sort_parameter == "flows") {
-        sorter_type = FLOWS;
+        sorter_type = attack_detection_threshold_type_t::flows_per_second;
     } else {
         logger << log4cpp::Priority::INFO << "Unexpected sorter type: " << sort_parameter;
-        sorter_type = PACKETS;
+        sorter_type = attack_detection_threshold_type_t::packets_per_second;
     }
 
-    direction_t sort_direction = OUTGOING;
-
     std::vector<pair_of_map_for_ipv6_subnet_counters_elements_t> vector_for_sort;
-    ipv6_subnet_counters.get_sorted_average_speed(vector_for_sort, sorter_type, sort_direction);
+    ipv6_subnet_counters.get_sorted_average_speed(vector_for_sort, sorter_type, attack_detection_direction_type_t::outgoing);
 
 
     for (std::vector<pair_of_map_for_ipv6_subnet_counters_elements_t>::iterator itr = vector_for_sort.begin();
@@ -1877,16 +1722,17 @@ void traffic_draw_ipv4_program() {
     // logger<<log4cpp::Priority::INFO<<"Draw table call";
     std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
 
-    sort_type_t sorter;
+    attack_detection_threshold_type_t sorter_type;
+
     if (sort_parameter == "packets") {
-        sorter = PACKETS;
+        sorter_type = attack_detection_threshold_type_t::packets_per_second;
     } else if (sort_parameter == "bytes") {
-        sorter = BYTES;
+        sorter_type = attack_detection_threshold_type_t::bytes_per_second;
     } else if (sort_parameter == "flows") {
-        sorter = FLOWS;
+        sorter_type = attack_detection_threshold_type_t::flows_per_second;
     } else {
         logger << log4cpp::Priority::INFO << "Unexpected sorter type: " << sort_parameter;
-        sorter = PACKETS;
+        sorter_type = attack_detection_threshold_type_t::packets_per_second;
     }
 
     output_buffer << "FastNetMon " << fastnetmon_platform_configuration.fastnetmon_version << " Try Advanced edition: https://fastnetmon.com"
@@ -1896,14 +1742,14 @@ void traffic_draw_ipv4_program() {
     output_buffer << print_channel_speed("Incoming traffic", INCOMING) << std::endl;
 
     if (process_incoming_traffic) {
-        output_buffer << draw_table_ipv4(INCOMING, true, sorter);
+        output_buffer << draw_table_ipv4(attack_detection_direction_type_t::incoming, true, sorter_type);
         output_buffer << std::endl;
     }
 
     output_buffer << print_channel_speed("Outgoing traffic", OUTGOING) << std::endl;
 
     if (process_outgoing_traffic) {
-        output_buffer << draw_table_ipv4(OUTGOING, false, sorter);
+        output_buffer << draw_table_ipv4(attack_detection_direction_type_t::outgoing, false, sorter_type);
         output_buffer << std::endl;
     }
 
@@ -2084,7 +1930,7 @@ bool fill_attack_information(subnet_counter_t average_speed_element,
 
 
 // Speed recalculation function for IPv6 hosts calls it for each host during speed recalculation
-void speed_callback_ipv6(subnet_ipv6_cidr_mask_t* current_subnet, subnet_counter_t* current_average_speed_element) {
+void speed_callback_ipv6(const subnet_ipv6_cidr_mask_t& current_subnet, const subnet_counter_t& current_average_speed_element) {
     // We should check thresholds only for per host counters for IPv6 and only when any ban actions for IPv6 traffic were enabled
     if (!global_ban_settings.enable_ban_ipv6) {
         return;
@@ -2104,20 +1950,20 @@ void speed_callback_ipv6(subnet_ipv6_cidr_mask_t* current_subnet, subnet_counter
     }
 
     // This code works only for /128 subnets
-    bool in_white_list = ip_belongs_to_patricia_tree_ipv6(whitelist_tree_ipv6, current_subnet->subnet_address);
+    bool in_white_list = ip_belongs_to_patricia_tree_ipv6(whitelist_tree_ipv6, current_subnet.subnet_address);
 
     if (in_white_list) {
         // logger << log4cpp::Priority::INFO << "This IP was whitelisted";
         return;
     }
 
-    bool we_already_have_buckets_for_this_ip = packet_buckets_ipv6_storage.we_have_bucket_for_this_ip(*current_subnet);
+    bool we_already_have_buckets_for_this_ip = packet_buckets_ipv6_storage.we_have_bucket_for_this_ip(current_subnet);
 
     if (we_already_have_buckets_for_this_ip) {
         return;
     }
 
-    bool this_ip_is_already_banned = ban_list_ipv6_ng.is_blackholed(*current_subnet);
+    bool this_ip_is_already_banned = ban_list_ipv6_ng.is_blackholed(current_subnet);
 
     if (this_ip_is_already_banned) {
         return;
@@ -2125,27 +1971,27 @@ void speed_callback_ipv6(subnet_ipv6_cidr_mask_t* current_subnet, subnet_counter
 
     std::string ddos_detection_threshold_as_string = get_human_readable_threshold_type(attack_detection_source);
 
-    logger << log4cpp::Priority::INFO << "We have detected IPv6 attack for " << print_ipv6_cidr_subnet(*current_subnet)
+    logger << log4cpp::Priority::INFO << "We have detected IPv6 attack for " << print_ipv6_cidr_subnet(current_subnet)
            << " with " << ddos_detection_threshold_as_string << " threshold host group: " << host_group_name;
 
     std::string parent_group;
 
     attack_details_t attack_details;
-    fill_attack_information(*current_average_speed_element, attack_details, host_group_name, parent_group, unban_enabled, global_ban_time);
+    fill_attack_information(current_average_speed_element, attack_details, host_group_name, parent_group, unban_enabled, global_ban_time);
 
     attack_details.ipv6 = true;
     // TODO: Also, we should find IPv6 network for attack here
 
     bool enable_backet_capture =
-        packet_buckets_ipv6_storage.enable_packet_capture(*current_subnet, attack_details, collection_pattern_t::ONCE);
+        packet_buckets_ipv6_storage.enable_packet_capture(current_subnet, attack_details, collection_pattern_t::ONCE);
 
     if (!enable_backet_capture) {
         logger << log4cpp::Priority::ERROR << "Could not enable packet capture for deep analytics for IPv6 "
-               << print_ipv6_cidr_subnet(*current_subnet);
+               << print_ipv6_cidr_subnet(current_subnet);
         return;
     }
 
-    logger << log4cpp::Priority::INFO << "Enabled packet capture for IPv6 " << print_ipv6_address(current_subnet->subnet_address);
+    logger << log4cpp::Priority::INFO << "Enabled packet capture for IPv6 " << print_ipv6_address(current_subnet.subnet_address);
 }
 
 
@@ -2224,7 +2070,7 @@ void recalculate_speed() {
             uint32_t client_ip = htonl(client_ip_in_host_bytes_order);
 
             // Calculate speed for IP or whole subnet
-            build_speed_counters_from_packet_counters(new_speed_element, &*vector_itr, speed_calc_period);
+            build_speed_counters_from_packet_counters(new_speed_element, *vector_itr, speed_calc_period);
 
             conntrack_main_struct_t* flow_counter_ptr = &SubnetVectorMapFlow[itr->first][current_index];
 
@@ -2256,18 +2102,18 @@ void recalculate_speed() {
             double exp_power = -speed_calc_period / average_calculation_amount;
             double exp_value = exp(exp_power);
 
-            subnet_counter_t* current_average_speed_element = &SubnetVectorMapSpeedAverage[itr->first][current_index];
+            subnet_counter_t& current_average_speed_element = SubnetVectorMapSpeedAverage[itr->first][current_index];
 
             // Calculate average speed from per-second speed
-            build_average_speed_counters_from_speed_counters(current_average_speed_element, new_speed_element, exp_value, exp_power);
+            build_average_speed_counters_from_speed_counters(current_average_speed_element, new_speed_element, exp_value);
 
             if (enable_connection_tracking) {
-                current_average_speed_element->out_flows =
-                    uint64_t(new_speed_element.out_flows + exp_value * ((double)current_average_speed_element->out_flows -
+                current_average_speed_element.out_flows =
+                    uint64_t(new_speed_element.out_flows + exp_value * ((double)current_average_speed_element.out_flows -
                                                                         (double)new_speed_element.out_flows));
 
-                current_average_speed_element->in_flows =
-                    uint64_t(new_speed_element.in_flows + exp_value * ((double)current_average_speed_element->in_flows -
+                current_average_speed_element.in_flows =
+                    uint64_t(new_speed_element.in_flows + exp_value * ((double)current_average_speed_element.in_flows -
                                                                        (double)new_speed_element.in_flows));
             }
 
@@ -2290,7 +2136,7 @@ void recalculate_speed() {
                 }
 
                 // TODO: we should pass type of ddos ban source (pps, flowd, bandwidth)!
-                execute_ip_ban(client_ip, *current_average_speed_element, flow_attack_details, itr->first);
+                execute_ip_ban(client_ip, current_average_speed_element, flow_attack_details, itr->first);
             }
 
             SubnetVectorMapSpeed[itr->first][current_index] = new_speed_element;
@@ -2300,7 +2146,7 @@ void recalculate_speed() {
     }
 
     // Calculate IPv6 per network traffic
-    ipv6_subnet_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, speed_callback_subnet_ipv6);
+    ipv6_subnet_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, nullptr);
 
     // Recalculate traffic for hosts
     ipv6_host_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, speed_callback_ipv6);
@@ -2394,7 +2240,7 @@ void recalculate_speed() {
     }
 }
 
-std::string draw_table_ipv6(direction_t sort_direction, bool do_redis_update, sort_type_t sorter_type) {
+std::string draw_table_ipv6(attack_detection_direction_type_t sort_direction, bool do_redis_update, attack_detection_threshold_type_t sorter_type) {
     std::vector<pair_of_map_for_ipv6_subnet_counters_elements_t> vector_for_sort;
     ssize_t size_of_ipv6_counters_map = 0;
     std::stringstream output_buffer;
@@ -2461,11 +2307,11 @@ std::string draw_table_ipv6(direction_t sort_direction, bool do_redis_update, so
         subnet_counter_t* current_speed_element = &ii->second;
 
         // Create polymorphic pps, byte and flow counters
-        if (sort_direction == INCOMING) {
+        if (sort_direction == attack_detection_direction_type_t::incoming) {
             pps   = current_speed_element->total.in_packets;
             bps   = current_speed_element->total.in_bytes;
             flows = current_speed_element->in_flows;
-        } else if (sort_direction == OUTGOING) {
+        } else if (sort_direction == attack_detection_direction_type_t::outgoing) {
             pps   = current_speed_element->total.out_packets;
             bps   = current_speed_element->total.out_bytes;
             flows = current_speed_element->out_flows;
@@ -2488,7 +2334,7 @@ std::string draw_table_ipv6(direction_t sort_direction, bool do_redis_update, so
     return output_buffer.str();
 }
 
-std::string draw_table_ipv4(direction_t data_direction, bool do_redis_update, sort_type_t sort_item) {
+std::string draw_table_ipv4(const attack_detection_direction_type_t& data_direction, bool do_redis_update, const attack_detection_threshold_type_t& sorter_type) {
     std::vector<pair_of_map_elements> vector_for_sort;
 
     std::stringstream output_buffer;
@@ -2525,7 +2371,7 @@ std::string draw_table_ipv4(direction_t data_direction, bool do_redis_update, so
     // Sort only first X elements in this vector
     unsigned int shift_for_sort = max_ips_in_list;
 
-    if (data_direction == INCOMING or data_direction == OUTGOING) {
+    if (data_direction == attack_detection_direction_type_t::incoming or data_direction == attack_detection_direction_type_t::outgoing) {
         // Because in another case we will got segmentation fault
         unsigned int vector_size = vector_for_sort.size();
 
@@ -2534,7 +2380,7 @@ std::string draw_table_ipv4(direction_t data_direction, bool do_redis_update, so
         }
 
         std::partial_sort(vector_for_sort.begin(), vector_for_sort.begin() + shift_for_sort, vector_for_sort.end(),
-                          TrafficComparatorClass<pair_of_map_elements>(data_direction, sort_item));
+                          TrafficComparatorClass<pair_of_map_elements>(data_direction, sorter_type));
     } else {
         logger << log4cpp::Priority::ERROR << "Unexpected bahaviour on sort function";
         return "Internal error";
@@ -2560,11 +2406,11 @@ std::string draw_table_ipv4(direction_t data_direction, bool do_redis_update, so
         subnet_counter_t* current_speed_element = &ii->second;
 
         // Create polymorphic pps, byte and flow counters
-        if (data_direction == INCOMING) {
+        if (data_direction == attack_detection_direction_type_t::incoming) {
             pps   = current_speed_element->total.in_packets;
             bps   = current_speed_element->total.in_bytes;
             flows = current_speed_element->in_flows;
-        } else if (data_direction == OUTGOING) {
+        } else if (data_direction == attack_detection_direction_type_t::outgoing) {
             pps   = current_speed_element->total.out_packets;
             bps   = current_speed_element->total.out_bytes;
             flows = current_speed_element->out_flows;

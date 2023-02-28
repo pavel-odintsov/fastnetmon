@@ -374,13 +374,13 @@ uint64_t outgoing_total_flows_speed = 0;
 map_of_vector_counters_t SubnetVectorMap;
 
 // Network counters for IPv6
-abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t> ipv6_subnet_counters;
+abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t,subnet_counter_t> ipv6_subnet_counters;
 
 // Host counters for IPv6
-abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t> ipv6_host_counters;
+abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t,subnet_counter_t> ipv6_host_counters;
 
 // Here we store traffic per subnet
-abstract_subnet_counters_t<subnet_cidr_mask_t> ipv4_network_counters;
+abstract_subnet_counters_t<subnet_cidr_mask_t,subnet_counter_t> ipv4_network_counters;
 
 // Flow tracking structures
 map_of_vector_counters_for_flow_t SubnetVectorMapFlow;

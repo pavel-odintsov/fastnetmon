@@ -20,7 +20,7 @@
 
 log4cpp::Category& logger = log4cpp::Category::getRoot();
 
-abstract_subnet_counters_t<uint32_t> ipv4_host_counters;
+abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counters;
 time_t current_inaccurate_time = 0;
 
 // Try to copy source map into vector
@@ -311,7 +311,7 @@ int main() {
 
     const int sharding_value = 32;
 
-    std::array<abstract_subnet_counters_t<uint32_t>, sharding_value> speed_counters;
+    std::array<abstract_subnet_counters_t<uint32_t, subnet_counter_t>, sharding_value> speed_counters;
 
     for (const auto& itr : ipv4_host_counters.counter_map) {
         // NB!!!! TODO: without ntoh conversion it will be 2 all the time and sharding will not work!!!

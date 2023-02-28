@@ -11,18 +11,11 @@
 #include "fastnetmon.grpc.pb.h"
 #include <grpc++/grpc++.h>
 
-void build_speed_counters_from_packet_counters(subnet_counter_t& new_speed_element, subnet_counter_t* vector_itr, double speed_calc_period);
-
-void build_average_speed_counters_from_speed_counters(subnet_counter_t* current_average_speed_element,
-                                                      subnet_counter_t& new_speed_element,
-                                                      double exp_value,
-                                                      double exp_power);
-
 std::string get_amplification_attack_type(amplification_attack_type_t attack_type);
 std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type, std::string destination_ip);
 
-bool we_should_ban_this_entity(subnet_counter_t* average_speed_element,
-                               ban_settings_t& current_ban_settings,
+bool we_should_ban_this_entity(const subnet_counter_t& average_speed_element,
+                               const ban_settings_t& current_ban_settings,
                                attack_detection_threshold_type_t& attack_detection_source,
                                attack_detection_direction_type_t& attack_detection_direction);
 
@@ -90,8 +83,8 @@ std::string print_channel_speed_ipv6(std::string traffic_type, direction_t packe
 std::string print_channel_speed(std::string traffic_type, direction_t packet_direction);
 void traffic_draw_ipv4_program();
 void recalculate_speed();
-std::string draw_table_ipv4(direction_t data_direction, bool do_redis_update, sort_type_t sort_item);
-std::string draw_table_ipv6(direction_t data_direction, bool do_redis_update, sort_type_t sort_item);
+std::string draw_table_ipv4(const attack_detection_direction_type_t& sort_direction, bool do_redis_update, const attack_detection_threshold_type_t& sorter_type);
+std::string draw_table_ipv6(attack_detection_direction_type_t sort_direction, bool do_redis_update, attack_detection_threshold_type_t sorter_type);
 void print_screen_contents_into_file(std::string screen_data_stats_param, std::string file_path);
 void zeroify_all_flow_counters();
 void process_packet(simple_packet_t& current_packet);

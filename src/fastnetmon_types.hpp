@@ -66,6 +66,9 @@ enum class attack_detection_threshold_type_t {
 
     tcp_syn_packets_per_second,
     tcp_syn_bytes_per_second,
+
+    ip_fragments_packets_per_second,
+    ip_fragments_bytes_per_second,
 };
 
 // Types of metrics as in Prometheus:
@@ -88,41 +91,120 @@ class system_counter_t {
     std::string counter_description;
 };
 
-
 /* Class for custom comparison fields by different fields */
 template <typename T> class TrafficComparatorClass {
     private:
-    sort_type_t sort_field;
-    direction_t sort_direction;
+    attack_detection_threshold_type_t sort_field;
+    attack_detection_direction_type_t sort_direction;
 
     public:
-    TrafficComparatorClass(direction_t sort_direction, sort_type_t sort_field) {
+    TrafficComparatorClass(attack_detection_direction_type_t sort_direction, attack_detection_threshold_type_t sort_field) {
         this->sort_field     = sort_field;
         this->sort_direction = sort_direction;
     }
 
     bool operator()(T a, T b) {
-        if (sort_field == FLOWS) {
-            if (sort_direction == INCOMING) {
+        if (sort_field == attack_detection_threshold_type_t::flows_per_second) {
+            if (sort_direction == attack_detection_direction_type_t::incoming) {
                 return a.second.in_flows > b.second.in_flows;
-            } else if (sort_direction == OUTGOING) {
+            } else if (sort_direction == attack_detection_direction_type_t::outgoing) {
                 return a.second.out_flows > b.second.out_flows;
             } else {
                 return false;
             }
-        } else if (sort_field == PACKETS) {
-            if (sort_direction == INCOMING) {
+        } else if (sort_field == attack_detection_threshold_type_t::packets_per_second) {
+            if (sort_direction == attack_detection_direction_type_t::incoming) {
                 return a.second.total.in_packets > b.second.total.in_packets;
-            } else if (sort_direction == OUTGOING) {
+            } else if (sort_direction == attack_detection_direction_type_t::outgoing) {
                 return a.second.total.out_packets > b.second.total.out_packets;
             } else {
                 return false;
             }
-        } else if (sort_field == BYTES) {
-            if (sort_direction == INCOMING) {
+        } else if (sort_field == attack_detection_threshold_type_t::bytes_per_second) {
+            if (sort_direction == attack_detection_direction_type_t::incoming) {
                 return a.second.total.in_bytes > b.second.total.in_bytes;
-            } else if (sort_direction == OUTGOING) {
+            } else if (sort_direction == attack_detection_direction_type_t::outgoing) {
                 return a.second.total.out_bytes > b.second.total.out_bytes;
+            } else {
+                return false;
+            }
+        } else if (sort_field == attack_detection_threshold_type_t::tcp_packets_per_second) {
+            if (sort_direction == attack_detection_direction_type_t::incoming) {
+                return a.second.tcp.in_packets > b.second.tcp.in_packets;
+            } else if (sort_direction == attack_detection_direction_type_t::outgoing) {
+                return a.second.tcp.out_packets > b.second.tcp.out_packets;
+            } else {
+                return false;
+            }
+        } else if (sort_field == attack_detection_threshold_type_t::udp_packets_per_second) {
+            if (sort_direction == attack_detection_direction_type_t::incoming) {
+                return a.second.udp.in_packets > b.second.udp.in_packets;
+            } else if (sort_direction == attack_detection_direction_type_t::outgoing) {
+                return a.second.udp.out_packets > b.second.udp.out_packets;
+            } else {
+                return false;
+            }
+        } else if (sort_field == attack_detection_threshold_type_t::icmp_packets_per_second) {
+            if (sort_direction == attack_detection_direction_type_t::incoming) {
+                return a.second.icmp.in_packets > b.second.icmp.in_packets;
+            } else if (sort_direction == attack_detection_direction_type_t::outgoing) {
+                return a.second.icmp.out_packets > b.second.icmp.out_packets;
+            } else {
+                return false;
+            }
+        } else if (sort_field == attack_detection_threshold_type_t::tcp_bytes_per_second) {
+            if (sort_direction == attack_detection_direction_type_t::incoming) {
+                return a.second.tcp.in_bytes > b.second.tcp.in_bytes;
+            } else if (sort_direction == attack_detection_direction_type_t::outgoing) {
+                return a.second.tcp.out_bytes > b.second.tcp.out_bytes;
+            } else {
+                return false;
+            }
+        } else if (sort_field == attack_detection_threshold_type_t::udp_bytes_per_second) {
+            if (sort_direction == attack_detection_direction_type_t::incoming) {
+                return a.second.udp.in_bytes > b.second.udp.in_bytes;
+            } else if (sort_direction == attack_detection_direction_type_t::outgoing) {
+                return a.second.udp.out_bytes > b.second.udp.out_bytes;
+            } else {
+                return false;
+            }
+        } else if (sort_field == attack_detection_threshold_type_t::icmp_bytes_per_second) {
+            if (sort_direction == attack_detection_direction_type_t::incoming) {
+                return a.second.icmp.in_bytes > b.second.icmp.in_bytes;
+            } else if (sort_direction == attack_detection_direction_type_t::outgoing) {
+                return a.second.icmp.out_bytes > b.second.icmp.out_bytes;
+            } else {
+                return false;
+            }
+        } else if (sort_field == attack_detection_threshold_type_t::tcp_syn_packets_per_second) {
+            if (sort_direction == attack_detection_direction_type_t::incoming) {
+                return a.second.tcp_syn.in_packets > b.second.tcp_syn.in_packets;
+            } else if (sort_direction == attack_detection_direction_type_t::outgoing) {
+                return a.second.tcp_syn.out_packets > b.second.tcp_syn.out_packets;
+            } else {
+                return false;
+            }
+        } else if (sort_field == attack_detection_threshold_type_t::tcp_syn_bytes_per_second) {
+            if (sort_direction == attack_detection_direction_type_t::incoming) {
+                return a.second.tcp_syn.in_bytes > b.second.tcp_syn.in_bytes;
+            } else if (sort_direction == attack_detection_direction_type_t::outgoing) {
+                return a.second.tcp_syn.out_bytes > b.second.tcp_syn.out_bytes;
+            } else {
+                return false;
+            }
+        } else if (sort_field == attack_detection_threshold_type_t::ip_fragments_packets_per_second) {
+            if (sort_direction == attack_detection_direction_type_t::incoming) {
+                return a.second.fragmented.in_packets > b.second.fragmented.in_packets;
+            } else if (sort_direction == attack_detection_direction_type_t::outgoing) {
+                return a.second.fragmented.out_packets > b.second.fragmented.out_packets;
+            } else {
+                return false;
+            }
+        } else if (sort_field == attack_detection_threshold_type_t::ip_fragments_bytes_per_second) {
+            if (sort_direction == attack_detection_direction_type_t::incoming) {
+                return a.second.fragmented.in_bytes > b.second.fragmented.in_bytes;
+            } else if (sort_direction == attack_detection_direction_type_t::outgoing) {
+                return a.second.fragmented.out_bytes > b.second.fragmented.out_bytes;
             } else {
                 return false;
             }

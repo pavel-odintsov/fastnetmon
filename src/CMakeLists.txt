@@ -415,6 +415,10 @@ endif()
 # Library with data types for parsing network structures
 add_library(network_data_structures STATIC network_data_structures.cpp)
 
+# Speed counters lib
+add_library(speed_counters STATIC speed_counters.cpp)
+target_link_libraries(speed_counters fast_library)
+
 # Our new parser for parsing traffic up to L4
 add_library(simple_packet_parser_ng STATIC simple_packet_parser_ng.cpp)
 target_link_libraries(simple_packet_parser_ng network_data_structures)
@@ -769,6 +773,8 @@ target_link_libraries(fastnetmon_logic bgp_protocol exabgp_action)
 
 target_link_libraries(fastnetmon_logic protobuf_traffic_format)
 
+target_link_libraries(fastnetmon_logic speed_counters)
+
 # Link to our functions
 target_link_libraries(fastnetmon fast_library)
 
@@ -882,7 +888,7 @@ if (BUILD_TESTS)
     target_link_libraries(traffic_structures_tests_real_traffic ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${LOG4CPP_LIBRARY_PATH} fast_library)
 
     add_executable(speed_counters_performance_test tests/speed_counters_performance_test.cpp)
-    target_link_libraries(speed_counters_performance_test ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} fast_library ${LOG4CPP_LIBRARY_PATH} fastnetmon_logic)
+    target_link_libraries(speed_counters_performance_test ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} fast_library ${LOG4CPP_LIBRARY_PATH} speed_counters)
 
     add_executable(patricia_performance_tests tests/patricia_performance_tests.cpp)
     target_link_libraries(patricia_performance_tests patricia fast_library ${LOG4CPP_LIBRARY_PATH})

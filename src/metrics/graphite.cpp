@@ -15,7 +15,7 @@ extern map_of_vector_counters_t SubnetVectorMapSpeed;
 extern map_of_vector_counters_t SubnetVectorMapSpeedAverage;
 extern uint64_t incoming_total_flows_speed;
 extern uint64_t outgoing_total_flows_speed;
-extern abstract_subnet_counters_t<subnet_cidr_mask_t> ipv4_network_counters;
+extern abstract_subnet_counters_t<subnet_cidr_mask_t, subnet_counter_t> ipv4_network_counters;
 extern total_speed_counters_t total_counters_ipv4;
 extern total_speed_counters_t total_counters_ipv6;
 
