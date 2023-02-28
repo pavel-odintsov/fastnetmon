@@ -608,7 +608,7 @@ set(Boost_DETAILED_FAILURE_MSG ON)
 # Boost.System is a library that, in essence, defines four classes to identify errors. All four classes were added to the standard library with C++11. If your development environment supports C++11, you don’t need to use Boost.System. However, since many Boost libraries use Boost.System, you might encounter Boost.System through those other libraries.
 # Boost.System is a library that, in essence, defines four classes to identify errors. All four classes were added to the standard library with C++11. If your development environment supports C++11, you don’t need to use Boost.System. However, since many Boost libraries use Boost.System, you might encounter Boost.System through those other libraries.
 # TODO: we may not need system at all
-find_package(Boost COMPONENTS thread regex program_options system REQUIRED)
+find_package(Boost COMPONENTS serialization thread regex program_options system REQUIRED)
 
 if(Boost_FOUND)
     message(STATUS "Found Boost: ${Boost_LIBRARIES} ${Boost_INCLUDE_DIRS}")
@@ -852,12 +852,28 @@ if (BUILD_TESTS)
     target_link_libraries(fastnetmon_tests ${Boost_LIBRARIES})
     target_link_libraries(fastnetmon_tests ${LOG4CPP_LIBRARY_PATH})
 
+    find_library(GTEST_LIBRARY_PATH names "gtest" PATHS "${GTEST_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
+    
+    if (GTEST_LIBRARY_PATH) 
+        message(STATUS "Found gTest library: ${GTEST_LIBRARY_PATH}")
+    else()
+        message(FATAL_ERROR "Can't find gTest library")
+    endif()
+
+    find_library(GTEST_MAIN_LIBRARY_PATH names "gtest_main" PATHS "${GTEST_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
+
+    if (GTEST_MAIN_LIBRARY_PATH)
+        message(STATUS "Found gTest main library: ${GTEST_MAIN_LIBRARY_PATH}")
+    else()
+        message(FATAL_ERROR "Can't find gTest main library")
+    endif()
+
+
     set(GOOGLE_TEST_INCLUDE_DIRS "${GTEST_INSTALL_PATH}/include")
-    set(GOOGLE_TEST_LIBRARIES "${GTEST_INSTALL_PATH}/lib/libgtest.so" "${GTEST_INSTALL_PATH}/lib/libgtest_main.so")
 
     # Compiled Google Library
     include_directories(${GOOGLE_TEST_INCLUDE_DIRS})
-    target_link_libraries(fastnetmon_tests ${GOOGLE_TEST_LIBRARIES})
+    target_link_libraries(fastnetmon_tests ${GTEST_LIBRARY_PATH} ${GTEST_MAIN_LIBRARY_PATH})
 
     add_executable(traffic_structures_tests tests/traffic_structures_performance_tests.cpp)
     target_link_libraries(traffic_structures_tests ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${LOG4CPP_LIBRARY_PATH} fast_library)
@@ -866,7 +882,7 @@ if (BUILD_TESTS)
     target_link_libraries(traffic_structures_tests_real_traffic ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${LOG4CPP_LIBRARY_PATH} fast_library)
 
     add_executable(speed_counters_performance_test tests/speed_counters_performance_test.cpp)
-    target_link_libraries(speed_counters_performance_test ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} fast_library speed_counters)
+    target_link_libraries(speed_counters_performance_test ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} fast_library ${LOG4CPP_LIBRARY_PATH} fastnetmon_logic)
 
     add_executable(patricia_performance_tests tests/patricia_performance_tests.cpp)
     target_link_libraries(patricia_performance_tests patricia fast_library ${LOG4CPP_LIBRARY_PATH})
