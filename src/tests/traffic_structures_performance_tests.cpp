@@ -204,6 +204,7 @@ void packet_collector_time_calculaitons_gettimeofday(int) {
 
 
 // We just execute time read here
+/*
 void packet_collector_time_calculaitons_rdtsc(int) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
@@ -216,6 +217,7 @@ void packet_collector_time_calculaitons_rdtsc(int) {
     }
 #pragma GCC diagnostic pop
 }
+*/
 
 template <typename T> int run_tests(double total_operations, std::function<void(T&)> tested_function, T& value) {
     timeval start_time;
@@ -1091,11 +1093,12 @@ std::cout << std::endl;
         run_tests<int>(total_operations, packet_collector_time_calculaitons, fake_int);
     }
 
+    /*
     if (test_rdtsc_time) {
         std::cout << "rdtsc assembler instruction: ";
         run_tests<int>(total_operations, packet_collector_time_calculaitons_rdtsc, fake_int);
     }
-
+    */
 
     if (test_gettimeofday) {
         std::cout << "gettimeofday: ";
