@@ -2588,7 +2588,7 @@ void process_ipv6_packet(simple_packet_t& current_packet) {
             ipv6_address.set_cidr_prefix_length(128);
             ipv6_address.set_subnet_address(&current_packet.src_ipv6);
 
-            subnet_counter_t* counter_ptr = &ipv6_host_counters.counter_map[ipv6_address];
+            subnet_counter_t& counter_ptr = ipv6_host_counters.counter_map[ipv6_address];
             increment_outgoing_counters(counter_ptr, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
 
             // Collect packets for DDoS analytics engine
@@ -2598,7 +2598,7 @@ void process_ipv6_packet(simple_packet_t& current_packet) {
             ipv6_address.set_cidr_prefix_length(128);
             ipv6_address.set_subnet_address(&current_packet.dst_ipv6);
 
-            subnet_counter_t* counter_ptr = &ipv6_host_counters.counter_map[ipv6_address];
+            subnet_counter_t& counter_ptr = ipv6_host_counters.counter_map[ipv6_address];
             increment_incoming_counters(counter_ptr, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
 
             // Collect packets for DDoS analytics engine
@@ -2693,9 +2693,9 @@ void process_packet(simple_packet_t& current_packet) {
         subnet_counter_t& counters = ipv4_network_counters.counter_map[current_subnet];
 
         if (current_packet.packet_direction == OUTGOING) {
-            increment_outgoing_counters(&counters, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
+            increment_outgoing_counters(counters, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
         } else if (current_packet.packet_direction == INCOMING) {
-            increment_incoming_counters(&counters, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
+            increment_incoming_counters(counters, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
         }
     }
 
@@ -2757,7 +2757,7 @@ void process_packet(simple_packet_t& current_packet) {
             return;
         }
 
-        subnet_counter_t* current_element = &itr->second[shift_in_vector];
+        subnet_counter_t& current_element = itr->second[shift_in_vector];
 
         increment_outgoing_counters(current_element, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
 
@@ -2778,7 +2778,7 @@ void process_packet(simple_packet_t& current_packet) {
             return;
         }
 
-        subnet_counter_t* current_element = &itr->second[shift_in_vector];
+        subnet_counter_t& current_element = itr->second[shift_in_vector];
 
         increment_incoming_counters(current_element, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
 
@@ -2831,168 +2831,6 @@ void process_packet(simple_packet_t& current_packet) {
         }
     }
 }
-
-#ifdef USE_NEW_ATOMIC_BUILTINS
-// Increment fields using data from specified packet
-void increment_outgoing_counters(subnet_counter_t* current_element,
-                                 simple_packet_t& current_packet,
-                                 uint64_t sampled_number_of_packets,
-                                 uint64_t sampled_number_of_bytes) {
-
-    // Update last update time
-    current_element->last_update_time = current_inaccurate_time;
-
-    // Main packet/bytes counter
-    __atomic_add_fetch(&current_element->total.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-    __atomic_add_fetch(&current_element->total.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-
-    // Fragmented IP packets
-    if (current_packet.ip_fragmented) {
-        __atomic_add_fetch(&current_element->fragmented.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element->fragmented.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-    }
-
-    if (current_packet.protocol == IPPROTO_TCP) {
-        __atomic_add_fetch(&current_element->tcp.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element->tcp.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-
-        if (extract_bit_value(current_packet.flags, TCP_SYN_FLAG_SHIFT)) {
-            __atomic_add_fetch(&current_element->tcp_syn.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-            __atomic_add_fetch(&current_element->tcp_syn.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-        }
-    } else if (current_packet.protocol == IPPROTO_UDP) {
-        __atomic_add_fetch(&current_element->udp.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element->udp.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-    } else if (current_packet.protocol == IPPROTO_ICMP) {
-        __atomic_add_fetch(&current_element->icmp.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element->icmp.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-        // no flow tracking for icmp
-    } else {
-    }
-}
-#else
-// Increment fields using data from specified packet
-void increment_outgoing_counters(subnet_counter_t* current_element,
-                                 simple_packet_t& current_packet,
-                                 uint64_t sampled_number_of_packets,
-                                 uint64_t sampled_number_of_bytes) {
-
-    // Update last update time
-    current_element->last_update_time = current_inaccurate_time;
-
-    // Main packet/bytes counter
-    __sync_fetch_and_add(&current_element->total.out_packets, sampled_number_of_packets);
-    __sync_fetch_and_add(&current_element->total.out_bytes, sampled_number_of_bytes);
-
-    // Fragmented IP packets
-    if (current_packet.ip_fragmented) {
-        __sync_fetch_and_add(&current_element->fragmented.out_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element->fragmented.out_bytes, sampled_number_of_bytes);
-    }
-
-    if (current_packet.protocol == IPPROTO_TCP) {
-        __sync_fetch_and_add(&current_element->tcp.out_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element->tcp.out_bytes, sampled_number_of_bytes);
-
-        if (extract_bit_value(current_packet.flags, TCP_SYN_FLAG_SHIFT)) {
-            __sync_fetch_and_add(&current_element->tcp_syn.out_packets, sampled_number_of_packets);
-            __sync_fetch_and_add(&current_element->tcp_syn.out_bytes, sampled_number_of_bytes);
-        }
-    } else if (current_packet.protocol == IPPROTO_UDP) {
-        __sync_fetch_and_add(&current_element->udp.out_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element->udp.out_bytes, sampled_number_of_bytes);
-    } else if (current_packet.protocol == IPPROTO_ICMP) {
-        __sync_fetch_and_add(&current_element->icmp.out_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element->icmp.out_bytes, sampled_number_of_bytes);
-        // no flow tracking for icmp
-    } else {
-    }
-}
-#endif
-
-#ifdef USE_NEW_ATOMIC_BUILTINS
-
-// This function increments all our accumulators according to data from packet
-void increment_incoming_counters(subnet_counter_t* current_element,
-                                 simple_packet_t& current_packet,
-                                 uint64_t sampled_number_of_packets,
-                                 uint64_t sampled_number_of_bytes) {
-
-    // Uodate last update time
-    current_element->last_update_time = current_inaccurate_time;
-
-    // Main packet/bytes counter
-    __atomic_add_fetch(&current_element->total.in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-    __atomic_add_fetch(&current_element->total.in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-
-    // Count fragmented IP packets
-    if (current_packet.ip_fragmented) {
-        __atomic_add_fetch(&current_element->fragmented.in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element->fragmented.in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-    }
-
-    // Count per protocol packets
-    if (current_packet.protocol == IPPROTO_TCP) {
-        __atomic_add_fetch(&current_element->tcp.in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element->tcp.in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-
-        if (extract_bit_value(current_packet.flags, TCP_SYN_FLAG_SHIFT)) {
-            __atomic_add_fetch(&current_element->tcp_syn.in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-            __atomic_add_fetch(&current_element->tcp_syn.in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-        }
-    } else if (current_packet.protocol == IPPROTO_UDP) {
-        __atomic_add_fetch(&current_element->udp.in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element->udp.in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-    } else if (current_packet.protocol == IPPROTO_ICMP) {
-        __atomic_add_fetch(&current_element->icmp.in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element->icmp.in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-    } else {
-        // TBD
-    }
-}
-
-#else
-
-// This function increments all our accumulators according to data from packet
-void increment_incoming_counters(subnet_counter_t* current_element,
-                                 simple_packet_t& current_packet,
-                                 uint64_t sampled_number_of_packets,
-                                 uint64_t sampled_number_of_bytes) {
-
-    // Uodate last update time
-    current_element->last_update_time = current_inaccurate_time;
-
-    // Main packet/bytes counter
-    __sync_fetch_and_add(&current_element->total.in_packets, sampled_number_of_packets);
-    __sync_fetch_and_add(&current_element->total.in_bytes, sampled_number_of_bytes);
-
-    // Count fragmented IP packets
-    if (current_packet.ip_fragmented) {
-        __sync_fetch_and_add(&current_element->fragmented.in_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element->fragmented.in_bytes, sampled_number_of_bytes);
-    }
-
-    // Count per protocol packets
-    if (current_packet.protocol == IPPROTO_TCP) {
-        __sync_fetch_and_add(&current_element->tcp.in_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element->tcp.in_bytes, sampled_number_of_bytes);
-
-        if (extract_bit_value(current_packet.flags, TCP_SYN_FLAG_SHIFT)) {
-            __sync_fetch_and_add(&current_element->tcp_syn.in_packets, sampled_number_of_packets);
-            __sync_fetch_and_add(&current_element->tcp_syn.in_bytes, sampled_number_of_bytes);
-        }
-    } else if (current_packet.protocol == IPPROTO_UDP) {
-        __sync_fetch_and_add(&current_element->udp.in_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element->udp.in_bytes, sampled_number_of_bytes);
-    } else if (current_packet.protocol == IPPROTO_ICMP) {
-        __sync_fetch_and_add(&current_element->icmp.in_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element->icmp.in_bytes, sampled_number_of_bytes);
-    } else {
-        // TBD
-    }
-}
-
-#endif
 
 void system_counters_speed_thread_handler() {
     while (true) {

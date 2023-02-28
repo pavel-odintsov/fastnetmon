@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include "speed_counters.hpp"
 
 #include <boost/serialization/unordered_map.hpp>

@@ -88,28 +88,7 @@ std::string draw_table_ipv6(attack_detection_direction_type_t sort_direction, bo
 void print_screen_contents_into_file(std::string screen_data_stats_param, std::string file_path);
 void zeroify_all_flow_counters();
 void process_packet(simple_packet_t& current_packet);
-
-void increment_outgoing_counters(subnet_counter_t* current_element,
-                                 simple_packet_t& current_packet,
-                                 uint64_t sampled_number_of_packets,
-                                 uint64_t sampled_number_of_bytes);
-
-void increment_incoming_counters(subnet_counter_t* current_element,
-                                 simple_packet_t& current_packet,
-                                 uint64_t sampled_number_of_packets,
-                                 uint64_t sampled_number_of_bytes);
-
 void system_counters_speed_thread_handler();
-
-void increment_outgoing_counters(subnet_counter_t* current_element,
-                                 simple_packet_t& current_packet,
-                                 uint64_t sampled_number_of_packets,
-                                 uint64_t sampled_number_of_bytes);
-
-void increment_incoming_counters(subnet_counter_t* current_element,
-                                 simple_packet_t& current_packet,
-                                 uint64_t sampled_number_of_packets,
-                                 uint64_t sampled_number_of_bytes);
 
 void increment_outgoing_flow_counters(map_of_vector_counters_for_flow_t& SubnetVectorMapFlow,
                                       int64_t shift_in_vector,
