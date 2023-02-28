@@ -1,5 +1,6 @@
 #include <boost/thread.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/unordered/unordered_flat_map.hpp>
 #include <functional>
 #include <iomanip>
 #include <iostream>
@@ -34,10 +35,9 @@
 #include <sys/shm.h>
 
 
-// #define ABSEIL
-
-#ifdef ABSEIL
+#ifdef ABSEIL_TESTS
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/node_hash_map.h"
 #endif
 
 // It's not enabled because it crashes: https://github.com/sparsehash/sparsehash/issues/166
@@ -202,7 +202,7 @@ void packet_collector_time_calculaitons_gettimeofday(int) {
     }
 }
 
-/*
+
 // We just execute time read here
 void packet_collector_time_calculaitons_rdtsc(int) {
 #pragma GCC diagnostic push
@@ -216,7 +216,6 @@ void packet_collector_time_calculaitons_rdtsc(int) {
     }
 #pragma GCC diagnostic pop
 }
-*/
 
 template <typename T> int run_tests(double total_operations, std::function<void(T&)> tested_function, T& value) {
     timeval start_time;
@@ -292,6 +291,15 @@ int main(int argc, char* argv[]) {
 
     bool test_boost_unordered_map_precreated            = false;
     bool test_boost_unordered_map_precreated_big_endian = false;
+
+    bool test_boost_unordered_flat_map            = false;
+    bool test_boost_unordered_flat_map_big_endian = false;
+
+    bool test_boost_unordered_flat_map_preallocated            = false;
+    bool test_boost_unordered_flat_map_preallocated_big_endian = false;
+
+    bool test_boost_unordered_flat_map_precreated            = false;
+    bool test_boost_unordered_flat_map_precreated_big_endian = false;
 
     bool test_boost_container_flat_map = false;
 
@@ -382,6 +390,15 @@ int main(int argc, char* argv[]) {
 
         test_boost_unordered_map_precreated            = true;
         test_boost_unordered_map_precreated_big_endian = true;
+
+        test_boost_unordered_flat_map            = true;
+        test_boost_unordered_flat_map_big_endian = true;
+
+        test_boost_unordered_flat_map_preallocated            = true;
+        test_boost_unordered_flat_map_preallocated_big_endian = true;
+
+        test_boost_unordered_flat_map_precreated            = true;
+        test_boost_unordered_flat_map_precreated_big_endian = true;
 
         test_boost_container_flat_map = true;
 
@@ -562,6 +579,126 @@ int main(int argc, char* argv[]) {
 
     std::cout << std::endl << std::endl;
 
+
+    std::cout << std::endl << std::endl;
+
+    if (test_boost_unordered_flat_map) {
+        boost::unordered_flat_map<uint32_t, subnet_counter_t> DataCounterBoostUnordered;
+
+        std::cout << "boost::unordered_flat_map: ";
+        run_tests(total_operations, packet_collector<boost::unordered_flat_map<uint32_t, subnet_counter_t>>, DataCounterBoostUnordered);
+
+        std::cout << "boost::unordered_flat_map full scan: ";
+        run_tests(DataCounterBoostUnordered.size(),
+                  do_full_table_scan<boost::unordered_flat_map<uint32_t, subnet_counter_t>>, DataCounterBoostUnordered);
+
+        DataCounterBoostUnordered.clear();
+    }
+
+    std::cout << std::endl;
+
+    if (test_boost_unordered_flat_map_big_endian) {
+        boost::unordered_flat_map<uint32_t, subnet_counter_t> DataCounterBoostUnordered;
+
+        std::cout << "boost::unordered_flat_map big endian keys: ";
+        run_tests(total_operations, packet_collector_big_endian<boost::unordered_flat_map<uint32_t, subnet_counter_t>>,
+                  DataCounterBoostUnordered);
+
+        std::cout << "boost::unordered_flat_map big endian keys full scan: ";
+        run_tests(DataCounterBoostUnordered.size(),
+                  do_full_table_scan<boost::unordered_flat_map<uint32_t, subnet_counter_t>>, DataCounterBoostUnordered);
+
+        DataCounterBoostUnordered.clear();
+    }
+
+    std::cout << std::endl;
+
+std::cout << std::endl;
+
+    if (test_boost_unordered_flat_map_preallocated) {
+        boost::unordered_flat_map<uint32_t, subnet_counter_t> DataCounterBoostUnorderedPreallocated;
+
+        std::cout << "boost::unordered_flat_map with preallocated elements: ";
+        DataCounterBoostUnorderedPreallocated.reserve(number_of_ips);
+        run_tests(total_operations, packet_collector<boost::unordered_flat_map<uint32_t, subnet_counter_t>>,
+                  DataCounterBoostUnorderedPreallocated);
+
+        std::cout << "boost::unordered_flat_map with preallocated elements full scan: ";
+        run_tests(DataCounterBoostUnorderedPreallocated.size(),
+                  do_full_table_scan<boost::unordered_flat_map<uint32_t, subnet_counter_t>>, DataCounterBoostUnorderedPreallocated);
+
+        DataCounterBoostUnorderedPreallocated.clear();
+    }
+
+    std::cout << std::endl;
+
+    if (test_boost_unordered_flat_map_preallocated_big_endian) {
+        boost::unordered_flat_map<uint32_t, subnet_counter_t> DataCounterBoostUnorderedPreallocated;
+
+        std::cout << "boost::unordered_flat_map big endian keys with preallocated elements: ";
+        DataCounterBoostUnorderedPreallocated.reserve(number_of_ips);
+        run_tests(total_operations, packet_collector_big_endian<boost::unordered_flat_map<uint32_t, subnet_counter_t>>,
+                  DataCounterBoostUnorderedPreallocated);
+
+        std::cout << "boost::unordered_flat_map big endian keys with preallocated elements full scan: ";
+        run_tests(DataCounterBoostUnorderedPreallocated.size(),
+                  do_full_table_scan<boost::unordered_flat_map<uint32_t, subnet_counter_t>>, DataCounterBoostUnorderedPreallocated);
+
+        DataCounterBoostUnorderedPreallocated.clear();
+    }
+
+    std::cout << std::endl;
+
+
+    if (test_boost_unordered_flat_map_precreated) {
+        boost::unordered_flat_map<uint32_t, subnet_counter_t> DataCounterBoostUnorderedPrecreated;
+
+        std::cout << "boost::unordered_flat_map with pre-created elements: ";
+
+        for (uint32_t i = 0; i < number_of_ips; i++) {
+            subnet_counter_t current_map_element;
+
+            DataCounterBoostUnorderedPrecreated.insert(std::make_pair(i, current_map_element));
+        }
+
+        run_tests(total_operations, packet_collector<boost::unordered_flat_map<uint32_t, subnet_counter_t>>,
+                  DataCounterBoostUnorderedPrecreated);
+
+        std::cout << "boost::unordered_flat_map with pre-created elements full scan: ";
+        run_tests(DataCounterBoostUnorderedPrecreated.size(),
+                  do_full_table_scan<boost::unordered_flat_map<uint32_t, subnet_counter_t>>, DataCounterBoostUnorderedPrecreated);
+
+        DataCounterBoostUnorderedPrecreated.clear();
+    }
+
+    std::cout << std::endl;
+
+    if (test_boost_unordered_flat_map_precreated_big_endian) {
+        boost::unordered_flat_map<uint32_t, subnet_counter_t> DataCounterBoostUnorderedPrecreated;
+
+        std::cout << "boost::unordered_flat_map big endian keys with pre-created elements: ";
+
+        for (uint32_t i = 0; i < number_of_ips; i++) {
+            subnet_counter_t current_map_element;
+
+            DataCounterBoostUnorderedPrecreated.insert(std::make_pair(fast_hton(i), current_map_element));
+        }
+
+        run_tests(total_operations, packet_collector_big_endian<boost::unordered_flat_map<uint32_t, subnet_counter_t>>,
+                  DataCounterBoostUnorderedPrecreated);
+
+        std::cout << "boost::unordered_flat_map big endian with pre-created elements full scan: ";
+        run_tests(DataCounterBoostUnorderedPrecreated.size(),
+                  do_full_table_scan<boost::unordered_flat_map<uint32_t, subnet_counter_t>>, DataCounterBoostUnorderedPrecreated);
+
+        DataCounterBoostUnorderedPrecreated.clear();
+    }
+
+    std::cout << std::endl << std::endl;
+
+
+
+
     if (test_boost_container_flat_map) {
         boost::container::flat_map<uint32_t, subnet_counter_t> DataCounterBoostFlatMap;
 
@@ -650,18 +787,89 @@ int main(int argc, char* argv[]) {
 
     std::cout << std::endl << std::endl;
 
-#ifdef ABSEIL
-    absl::flat_hash_map<uint32_t, subnet_counter_t> DataCounterAbseilFlatHashMap;
+#ifdef ABSEIL_TESTS
+    {
+        absl::flat_hash_map<uint32_t, subnet_counter_t> DataCounterAbseilFlatHashMap;
 
-    std::cout << "abesil::flat_hash_map: ";
-    run_tests(total_operations, packet_collector<absl::flat_hash_map<uint32_t, subnet_counter_t>>, DataCounterAbseilFlatHashMap);
+        std::cout << "abesil::flat_hash_map: ";
+        run_tests(total_operations, packet_collector<absl::flat_hash_map<uint32_t, subnet_counter_t>>, DataCounterAbseilFlatHashMap);
 
-    std::cout << "abesil::flat_hash_map full scan: ";
-    run_tests(DataCounterAbseilFlatHashMap.size(), do_full_table_scan<absl::flat_hash_map<uint32_t, subnet_counter_t>>,
-              DataCounterAbseilFlatHashMap);
+        std::cout << "abesil::flat_hash_map full scan: ";
+        run_tests(DataCounterAbseilFlatHashMap.size(),
+                  do_full_table_scan<absl::flat_hash_map<uint32_t, subnet_counter_t>>, DataCounterAbseilFlatHashMap);
 
-    DataCounterAbseilFlatHashMap.clear();
+        DataCounterAbseilFlatHashMap.clear();
+    }
 #endif
+
+    std::cout << std::endl << std::endl;
+
+#ifdef ABSEIL_TESTS
+    {
+        absl::flat_hash_map<uint32_t, subnet_counter_t> DataCounterAbseilFlatHashMap;
+
+        // Pre-create all elements in hash
+        for (uint32_t i = 0; i < number_of_ips; i++) {
+            subnet_counter_t current_map_element;
+
+            DataCounterAbseilFlatHashMap.insert(std::make_pair(i, current_map_element));
+        }
+
+        std::cout << "abesil::flat_hash_map pre-created elements : ";
+        run_tests(total_operations, packet_collector<absl::flat_hash_map<uint32_t, subnet_counter_t>>, DataCounterAbseilFlatHashMap);
+
+        std::cout << "abesil::flat_hash_map pre-created elements full scan: ";
+        run_tests(DataCounterAbseilFlatHashMap.size(),
+                  do_full_table_scan<absl::flat_hash_map<uint32_t, subnet_counter_t>>, DataCounterAbseilFlatHashMap);
+
+        DataCounterAbseilFlatHashMap.clear();
+    }
+#endif
+
+
+    std::cout << std::endl << std::endl;
+
+#ifdef ABSEIL_TESTS
+    {
+        absl::node_hash_map<uint32_t, subnet_counter_t> DataCounterAbseilNodeHashMap;
+
+        std::cout << "abesil::node_hash_map: ";
+        run_tests(total_operations, packet_collector<absl::node_hash_map<uint32_t, subnet_counter_t>>, DataCounterAbseilNodeHashMap);
+
+        std::cout << "abesil::node_hash_map full scan: ";
+        run_tests(DataCounterAbseilNodeHashMap.size(),
+                  do_full_table_scan<absl::node_hash_map<uint32_t, subnet_counter_t>>, DataCounterAbseilNodeHashMap);
+
+        DataCounterAbseilNodeHashMap.clear();
+    }
+#endif
+
+    std::cout << std::endl << std::endl;
+
+#ifdef ABSEIL_TESTS
+    {
+        absl::node_hash_map<uint32_t, subnet_counter_t> DataCounterAbseilNodeHashMap;
+
+        // Pre-create all elements in hash
+        for (uint32_t i = 0; i < number_of_ips; i++) {
+            subnet_counter_t current_map_element;
+
+            DataCounterAbseilNodeHashMap.insert(std::make_pair(i, current_map_element));
+        }
+
+        std::cout << "abesil::node_hash_map pre-created elements: ";
+        run_tests(total_operations, packet_collector<absl::node_hash_map<uint32_t, subnet_counter_t>>, DataCounterAbseilNodeHashMap);
+
+        std::cout << "abesil::node_hash_map pre-created elements full scan: ";
+        run_tests(DataCounterAbseilNodeHashMap.size(),
+                  do_full_table_scan<absl::node_hash_map<uint32_t, subnet_counter_t>>, DataCounterAbseilNodeHashMap);
+
+        DataCounterAbseilNodeHashMap.clear();
+    }
+#endif
+
+
+    std::cout << std::endl << std::endl;
 
 #ifdef TEST_SPARSE_HASH
     google::dense_hash_map<uint32_t, subnet_counter_t, std::hash<uint32_t>, eqint, google::libc_allocator_with_realloc<std::pair<const uint32_t, subnet_counter_t>>> DataCounterGoogleDensehashMap;
@@ -759,9 +967,7 @@ int main(int argc, char* argv[]) {
             std::string allocate_required_number_of_huge_pages =
                 "echo " + std::to_string(required_number_of_hugetlb_pages) + "> /proc/sys/vm/nr_hugepages";
 
-            std::string error_text;
-            std::vector<std::string> output_list;
-            exec(allocate_required_number_of_huge_pages, output_list, error_text);
+            exec_no_error_check(allocate_required_number_of_huge_pages);
         }
 
 
@@ -785,11 +991,8 @@ int main(int argc, char* argv[]) {
         std::string increase_shm_all_command = "echo " + std::to_string(required_number_of_bytes) + " > /proc/sys/kernel/shmall";
         std::string increase_shm_max_command = "echo " + std::to_string(required_number_of_bytes) + " > /proc/sys/kernel/shmmax";
 
-        std::string error_text;
-        std::vector<std::string> output_list;
-
-        exec(increase_shm_all_command, output_list, error_text);
-        exec(increase_shm_max_command, output_list, error_text);
+        exec_no_error_check(increase_shm_all_command);
+        exec_no_error_check(increase_shm_max_command);
 
         // Let's check new values right now!
 
@@ -888,10 +1091,10 @@ int main(int argc, char* argv[]) {
         run_tests<int>(total_operations, packet_collector_time_calculaitons, fake_int);
     }
 
-    // if (test_rdtsc_time) {
-    //     std::cout << "rdtsc assembler instruction: ";
-    //     run_tests<int>(total_operations, packet_collector_time_calculaitons_rdtsc, fake_int);
-    // }
+    if (test_rdtsc_time) {
+        std::cout << "rdtsc assembler instruction: ";
+        run_tests<int>(total_operations, packet_collector_time_calculaitons_rdtsc, fake_int);
+    }
 
 
     if (test_gettimeofday) {
