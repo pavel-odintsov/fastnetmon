@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <functional>
 
+#include <boost/serialization/unordered_map.hpp>
+
 // I keep these declaration here because of following error:
 // error: there are no arguments to ‘increment_outgoing_counters’ that depend on a template parameter, so a declaration
 // of ‘increment_outgoing_counters’ must be available [-fpermissive]
@@ -32,6 +34,12 @@ template <typename T> class abstract_subnet_counters_t {
 
     std::unordered_map<T, subnet_counter_t> speed_map;
     std::unordered_map<T, subnet_counter_t> average_speed_map;
+
+    template <class Archive> void serialize(Archive& ar, [[maybe_unused]] const unsigned int version) {
+        ar& BOOST_SERIALIZATION_NVP(counter_map);
+        ar& BOOST_SERIALIZATION_NVP(speed_map);
+        ar& BOOST_SERIALIZATION_NVP(average_speed_map);
+    }
 
     // Increments outgoing counters for specified key
     void increment_outgoing_counters_for_key(T key, simple_packet_t& current_packet, uint64_t sampled_number_of_packets, uint64_t sampled_number_of_bytes) {
