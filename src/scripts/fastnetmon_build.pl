@@ -359,16 +359,22 @@ sub install_fastnetmon {
     my $ld_library_path = "LD_LIBRARY_PATH=$gcc_compiler_path/lib64";
 
     print "Run cmake to generate make file\n";
-    system("$ld_library_path CC=$default_c_compiler_path CXX=$default_cpp_compiler_path $cmake_path .. $cmake_params");
+    
+    my $cmake_result = system("$ld_library_path CC=$default_c_compiler_path CXX=$default_cpp_compiler_path $cmake_path .. $cmake_params");
+
+    if ($cmake_result != 0) {
+        die "cmake call failed\n";
+    }
 
     print "Run make to build FastNetMon\n";
-    system("$ld_library_path make $make_options");
+    
+    my $make_result = system("$ld_library_path make $make_options");
+
+    if ($make_result != 0) {
+        die "make call failed\n";
+    }
 
     my $fastnetmon_build_binary_path = "$fastnetmon_code_dir/build/fastnetmon";
-
-    unless (-e $fastnetmon_build_binary_path) {
-        die("Can't build fastnetmon!");
-    }
 
     mkdir $fastnetmon_install_folder;
 
