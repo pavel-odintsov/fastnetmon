@@ -349,7 +349,7 @@ sub install_fastnetmon {
     
     # We enable Kafka support only for our releases
     # By default it's disabled as we have no cppkafka for many distributions
-    my $cmake_params = "-DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=ON -DKAFKA_SUPPORT=ON";
+    my $cmake_params = "-DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=ON -DKAFKA_SUPPORT=ON -DBUILD_TESTS=ON";
 
 
     # Test that atomics build works as expected
