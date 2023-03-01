@@ -1735,7 +1735,7 @@ void traffic_draw_ipv4_program() {
         sorter_type = attack_detection_threshold_type_t::packets_per_second;
     }
 
-    output_buffer << "FastNetMon " << fastnetmon_platform_configuration.fastnetmon_version << " Try Advanced edition: https://fastnetmon.com"
+    output_buffer << "FastNetMon " << fastnetmon_platform_configuration.fastnetmon_version << " Try Advanced edition: https://fastnetmon.com/product-overview/"
                   << "\n"
                   << "IPs ordered by: " << sort_parameter << "\n";
 
