@@ -535,7 +535,7 @@ if (ENABLE_GOBGP_SUPPORT)
     message(STATUS "Protoc return code for FlowData Protobuf: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
     
     # Build Flow Data binary 
-    add_library(traffic_data_library STATIC traffic_data.pb.cc)
+    add_library(traffic_data_library STATIC traffic_output_formats/protobuf/traffic_data.pb.cc)
 
     add_library(protobuf_traffic_format STATIC traffic_output_formats/protobuf/protobuf_traffic_format.cpp)
     target_link_libraries(protobuf_traffic_format traffic_data_library)
