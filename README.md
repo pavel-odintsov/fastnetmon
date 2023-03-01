@@ -9,7 +9,9 @@ What do we do?
 We detect hosts in the deployed network sending or receiving large volumes of traffic, packets/bytes/flows per second and
 perform a configurable action to handle that event. These configurable actions include notifying you, calling script or making BGP announces. 
 
-Flow is one or more ICMP, UDP, or TCP packets which can be identified via their unique src IP, dst IP, src port, dst port, and protocol fields.
+Legal
+--------------
+FastNetMon is a product of FastNetMon LTD, UK. FastNetMon ® is a registered trademark in the UK and EU.
 
 [![CircleCI](https://circleci.com/gh/pavel-odintsov/fastnetmon/tree/master.svg?style=svg)](https://circleci.com/gh/pavel-odintsov/fastnetmon/tree/master)
 
