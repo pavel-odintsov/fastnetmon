@@ -530,7 +530,7 @@ if (ENABLE_GOBGP_SUPPORT)
 
     message(STATUS "Building Protobuf bindings for C++ for Flow Data")
 
-    execute_process(COMMAND ${PROTOC_BINARY} -I ${PROJECT_SOURCE_DIR} --cpp_out=${PROJECT_SOURCE_DIR}/traffic_output_formats/protobuf ${PROJECT_SOURCE_DIR}/traffic_output_formats/protobuf/traffic_data.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${PROTOC_BINARY} -I ${PROJECT_SOURCE_DIR}/traffic_output_formats/protobuf --cpp_out=${PROJECT_SOURCE_DIR}/traffic_output_formats/protobuf ${PROJECT_SOURCE_DIR}/traffic_output_formats/protobuf/traffic_data.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     message(STATUS "Protoc return code for FlowData Protobuf: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
     
