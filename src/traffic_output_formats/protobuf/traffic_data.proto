@@ -51,33 +51,33 @@ message TrafficData {
     bytes source_ip      = 8;
     bytes destination_ip = 9;
 
-    // Autonomous system numbers
-    uint32 source_asn      = 10;
-    uint32 destination_asn = 11;
-   
     // Ports for UDP and TCP protocols
-    uint32 source_port      = 12;
-    uint32 destination_port = 13;
+    uint32 source_port      = 10;
+    uint32 destination_port = 11;
 
     // Number of transferred packets
-    uint64 packets = 14; 
+    uint64 packets = 12; 
 
     // Total length in bytes for transferred packets
-    uint64 octets = 15;
-
-    // Input and output interfaces
-    uint64 input_interface  = 16;
-    uint64 output_interface = 17;
+    uint64 octets = 13;
 
     // TTL for IPv4 or Hop Limit for IPv6 
-    uint32 ttl = 18;
+    uint32 ttl = 14;
+
+    // TCP flags encoded in bit set
+    uint32 tcp_flags = 15;
+
+    bool ip_fragmented    = 16;
+    bool ip_dont_fragment = 17;
+
+    // Input and output interfaces
+    uint64 input_interface  = 18;
+    uint64 output_interface = 19;
+
+    // Autonomous system numbers
+    uint32 source_asn      = 20;
+    uint32 destination_asn = 21;
 
     // IPv4 or IPv6 address of device which sent traffic data
-    bytes agent_address = 19;
-   
-    // TCP flags encoded in bit set
-    uint32 tcp_flags = 20;
-
-    bool ip_fragmented    = 21;
-    bool ip_dont_fragment = 22;
+    bytes agent_address = 22;
 }
