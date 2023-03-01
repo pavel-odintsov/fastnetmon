@@ -2374,4 +2374,3 @@ bool convert_ip_as_string_to_uint_safe(const std::string& ip, uint32_t& ip_as_in
     ip_as_integer = ip_addr.s_addr;
     return true;
 }
-

@@ -145,4 +145,3 @@ TEST(serialize_attack_description, blank_attack) {
                       "second\nIncoming icmp traffic: 0 mbps\nOutgoing icmp traffic: 0 mbps\nIncoming icmp pps: 0 "
                       "packets per second\nOutgoing icmp pps: 0 packets per second\n");
 }
-

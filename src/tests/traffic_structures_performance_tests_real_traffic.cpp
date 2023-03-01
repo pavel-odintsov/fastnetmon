@@ -17,8 +17,8 @@
 
 #include "../fastnetmon_types.hpp"
 
-#include <boost/unordered_map.hpp>
 #include <boost/unordered/unordered_flat_map.hpp>
+#include <boost/unordered_map.hpp>
 #include <map>
 #include <unordered_map>
 

@@ -1,6 +1,6 @@
 #include <boost/thread.hpp>
-#include <boost/unordered_map.hpp>
 #include <boost/unordered/unordered_flat_map.hpp>
+#include <boost/unordered_map.hpp>
 #include <functional>
 #include <iomanip>
 #include <iostream>
@@ -615,7 +615,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << std::endl;
 
-std::cout << std::endl;
+    std::cout << std::endl;
 
     if (test_boost_unordered_flat_map_preallocated) {
         boost::unordered_flat_map<uint32_t, subnet_counter_t> DataCounterBoostUnorderedPreallocated;
@@ -697,8 +697,6 @@ std::cout << std::endl;
     }
 
     std::cout << std::endl << std::endl;
-
-
 
 
     if (test_boost_container_flat_map) {

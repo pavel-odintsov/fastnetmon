@@ -89,8 +89,8 @@ extern double drawing_thread_execution_time;
 extern std::chrono::steady_clock::time_point last_call_of_traffic_recalculation;
 extern std::string cli_stats_ipv6_file_path;
 extern unsigned int check_for_availible_for_processing_packets_buckets;
-extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t,subnet_counter_t> ipv6_host_counters;
-extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t,subnet_counter_t> ipv6_subnet_counters;
+extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t, subnet_counter_t> ipv6_host_counters;
+extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t, subnet_counter_t> ipv6_subnet_counters;
 extern bool process_incoming_traffic;
 extern bool process_outgoing_traffic;
 extern uint64_t total_unparsed_packets;
@@ -2334,7 +2334,9 @@ std::string draw_table_ipv6(attack_detection_direction_type_t sort_direction, bo
     return output_buffer.str();
 }
 
-std::string draw_table_ipv4(const attack_detection_direction_type_t& data_direction, bool do_redis_update, const attack_detection_threshold_type_t& sorter_type) {
+std::string draw_table_ipv4(const attack_detection_direction_type_t& data_direction,
+                            bool do_redis_update,
+                            const attack_detection_threshold_type_t& sorter_type) {
     std::vector<pair_of_map_elements> vector_for_sort;
 
     std::stringstream output_buffer;

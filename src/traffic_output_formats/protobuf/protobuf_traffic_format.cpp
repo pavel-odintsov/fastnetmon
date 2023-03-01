@@ -75,8 +75,8 @@ bool write_simple_packet_to_protobuf(const simple_packet_t& packet, TrafficData&
 
     // 15
     traffic_data.set_tcp_flags(packet.flags);
-    
-    // 16 
+
+    // 16
     traffic_data.set_ip_fragmented(packet.ip_fragmented);
 
     // 17

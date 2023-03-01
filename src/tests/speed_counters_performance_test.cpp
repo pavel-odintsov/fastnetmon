@@ -5,9 +5,9 @@
 
 #include <boost/archive/binary_iarchive.hpp>
 
+#include "../abstract_subnet_counters.hpp"
 #include "../fast_library.hpp"
 #include "../fastnetmon_types.hpp"
-#include "../abstract_subnet_counters.hpp"
 
 #include "log4cpp/Appender.hh"
 #include "log4cpp/BasicLayout.hh"
