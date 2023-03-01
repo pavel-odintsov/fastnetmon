@@ -40,7 +40,7 @@
 // Traffic output formats
 #include "traffic_output_formats/protobuf/protobuf_traffic_format.hpp"
 
-#include "traffic_data.pb.h"
+#include "traffic_output_formats/protobuf/traffic_data.pb.h"
 
 // Yes, maybe it's not an good idea but with this we can guarantee working code in example plugin
 #include "example_plugin/example_collector.hpp"
