@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 #
 # Hello, lovely FastNetMon customer. I'm really happy to see you here
