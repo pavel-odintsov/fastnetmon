@@ -1,0 +1,26 @@
+--- src/fast_platform.h.template.orig	2023-03-01 14:23:34 UTC
++++ src/fast_platform.h.template
+@@ -9,19 +9,19 @@ class FastnetmonPlatformConfigurtion {
+     std::string fastnetmon_version = "${FASTNETMON_APPLICATION_VERSION}";
+ 
+     std::string pid_path = "/var/run/fastnetmon.pid";
+-    std::string global_config_path = "/etc/fastnetmon.conf";
++    std::string global_config_path = "%%PREFIX%%/etc/fastnetmon.conf";
+ 
+     std::string log_file_path = "/var/log/fastnetmon.log";
+     std::string attack_details_folder = "/var/log/fastnetmon_attacks";
+ 
+     // Default path to notify script
+-    std::string notify_script_path = "/usr/local/bin/notify_about_attack.sh";
++    std::string notify_script_path = "%%PREFIX%%/bin/notify_about_attack.sh";
+ 
+     // Default path to file with networks for whitelising
+-    std::string white_list_path = "/etc/networks_whitelist";
++    std::string white_list_path = "%%PREFIX%%/etc/networks_whitelist";
+ 
+     // Default path to file with all networks listing
+-    std::string networks_list_path = "/etc/networks_list";
++    std::string networks_list_path = "%%PREFIX%%/etc/networks_list";
+ 
+     /* Platform specific paths end */
+ };
