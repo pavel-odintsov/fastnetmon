@@ -1,5 +1,11 @@
 bin/fastnetmon
+bin/fastnetmon_api_client
 bin/fastnetmon_client
+bin/notify_about_attack.sh
+etc/networks_list
+etc/networks_whitelist
+man/man8/fastnetmon.8.gz
+man/man1/fastnetmon_client.1.gz
 @sample etc/fastnetmon.conf.sample
-@dir /var/run/fastnetmon
-@dir /var/log/fastnetmon
+@dir(fastnetmon,fastnetmon) /var/run/fastnetmon
+@dir(fastnetmon,fastnetmon) /var/log/fastnetmon
