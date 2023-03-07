@@ -17,6 +17,10 @@ jobs:
   build_macos:
     macos:
       xcode: 13.2.1
+    environment:
+      # We need it to address Error: No head is defined for fastnetmon
+      # https://github.com/Homebrew/discussions/discussions/4136
+      HOMEBREW_NO_INSTALL_FROM_API: 1
     steps:
       - checkout
       - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
