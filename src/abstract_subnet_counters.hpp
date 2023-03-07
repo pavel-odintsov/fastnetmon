@@ -5,6 +5,17 @@
 
 #include "speed_counters.hpp"
 
+//
+// Even latest Debian Sid (March 2023) uses Boost 1.74 which does not behave well with very fresh compilers and triggers this error:
+// https://github.com/pavel-odintsov/fastnetmon/issues/970
+// This bug was fixed in fresh Boost versions: https://github.com/boostorg/serialization/issues/219 and we apply workaround only for 1.74
+//
+
+#include <boost/serialization/version.hpp>
+#if BOOST_VERSION / 100000 == 1 && BOOST_VERSION / 100 % 1000 == 74
+#include <boost/serialization/library_version_type.hpp>
+#endif
+
 #include <boost/serialization/unordered_map.hpp>
 
 // Class for abstract per key counters
