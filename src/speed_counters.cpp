@@ -2,7 +2,7 @@
 
 #include "fast_library.hpp"
 
-extern time_t current_inaccurate_time;
+extern timespec current_inaccurate_time;
 
 
 #ifdef USE_NEW_ATOMIC_BUILTINS
@@ -13,7 +13,7 @@ void increment_outgoing_counters(subnet_counter_t& current_element,
                                  uint64_t sampled_number_of_bytes) {
 
     // Update last update time
-    current_element.last_update_time = current_inaccurate_time;
+    current_element.last_update_time = current_inaccurate_time.tv_sec;
 
     // Main packet/bytes counter
     __atomic_add_fetch(&current_element.total.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
@@ -51,7 +51,7 @@ void increment_outgoing_counters(subnet_counter_t& current_element,
                                  uint64_t sampled_number_of_bytes) {
 
     // Update last update time
-    current_element.last_update_time = current_inaccurate_time;
+    current_element.last_update_time = current_inaccurate_time.tv_sec;
 
     // Main packet/bytes counter
     __sync_fetch_and_add(&current_element.total.out_packets, sampled_number_of_packets);
@@ -92,7 +92,7 @@ void increment_incoming_counters(subnet_counter_t& current_element,
                                  uint64_t sampled_number_of_bytes) {
 
     // Uodate last update time
-    current_element.last_update_time = current_inaccurate_time;
+    current_element.last_update_time = current_inaccurate_time.tv_sec;
 
     // Main packet/bytes counter
     __atomic_add_fetch(&current_element.total.in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
@@ -133,7 +133,7 @@ void increment_incoming_counters(subnet_counter_t& current_element,
                                  uint64_t sampled_number_of_bytes) {
 
     // Uodate last update time
-    current_element.last_update_time = current_inaccurate_time;
+    current_element.last_update_time = current_inaccurate_time.tv_sec;
 
     // Main packet/bytes counter
     __sync_fetch_and_add(&current_element.total.in_packets, sampled_number_of_packets);

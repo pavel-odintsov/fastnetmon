@@ -48,6 +48,9 @@ extern uint64_t total_unparsed_packets;
 // Global configuration map
 extern std::map<std::string, std::string> configuration_map;
 
+// external clock source
+extern timespec current_inaccurate_time;
+
 // This variable name should be uniq for every plugin!
 process_packet_pointer afpacket_process_func_ptr = NULL;
 
@@ -141,6 +144,10 @@ void walk_block(struct block_desc* pbd, const int block_num) {
         u_char* data_pointer = (u_char*)((uint8_t*)ppd + ppd->tp_mac);
 
         simple_packet_t packet;
+
+        // Convert nanosecond to microseconds
+        packet.ts.tv_usec   = current_inaccurate_time.tv_nsec / 1000;
+        packet.ts.tv_sec    = current_inaccurate_time.tv_sec;
 
         // Override default sample rate by rate specified in configuration
         if (mirror_af_packet_custom_sampling_rate > 1) {

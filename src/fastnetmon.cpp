@@ -167,7 +167,7 @@ std::string backtrace_path = "/var/log/fastnetmon_backtrace.dump";
 unsigned int check_for_availible_for_processing_packets_buckets = 1;
 
 // Current time with pretty low precision, we use separate thread to update it
-time_t current_inaccurate_time = 0;
+timespec current_inaccurate_time = timespec{};
 
 // This is thread safe storage for captured from the wire packets for IPv6 traffic
 packet_buckets_storage_t<subnet_ipv6_cidr_mask_t> packet_buckets_ipv6_storage;
@@ -1799,7 +1799,8 @@ int main(int argc, char** argv) {
     }
 
     // Set inaccurate time value which will be used in process_packet() from capture backends
-    time(&current_inaccurate_time);
+    // https://stackoverflow.com/questions/6498972/faster-equivalent-of-gettimeofday
+    clock_gettime(CLOCK_MONOTONIC_COARSE, &current_inaccurate_time);
 
     // start thread which pre-calculates speed for system counters
     auto system_counters_speed_thread = new boost::thread(system_counters_speed_thread_handler);

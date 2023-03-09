@@ -49,7 +49,7 @@ extern "C" {
 // Our new generation parser
 #include "../simple_packet_parser_ng.hpp"
 
-extern time_t current_inaccurate_time;
+extern timespec current_inaccurate_time;
 
 // Global configuration map
 extern std::map<std::string, std::string> configuration_map;
@@ -492,7 +492,11 @@ void xdp_process_traffic(int xdp_socket, xsk_memory_configuration* mem_configura
 
             simple_packet_t packet;
             packet.source       = MIRROR;
-            packet.arrival_time = current_inaccurate_time;
+            packet.arrival_time = current_inaccurate_time.tv_sec;
+            // also set other time fields
+            packet.ts.tv_sec    = current_inaccurate_time.tv_sec;
+            // Convert nanosecond to microseconds
+            packet.ts.tv_usec   = current_inaccurate_time.tv_nsec / 1000;
 
             bool xdp_extract_tunnel_traffic = false;
 

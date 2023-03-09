@@ -18,6 +18,8 @@
 
 #include <boost/serialization/unordered_map.hpp>
 
+extern timespec current_inaccurate_time;
+
 // Class for abstract per key counters
 template <typename T, typename Counter> class abstract_subnet_counters_t {
     public:
@@ -53,10 +55,8 @@ template <typename T, typename Counter> class abstract_subnet_counters_t {
         std::lock_guard<std::mutex> lock_guard(counter_map_mutex);
         Counter& counters = counter_map[key];
 
-        extern time_t current_inaccurate_time;
-
         // Update last update time
-        counters.last_update_time = current_inaccurate_time;
+        counters.last_update_time = current_inaccurate_time.tv_sec;
 
         for (std::size_t current_index = 0; current_index < counters.flexible_counters.size(); current_index++) {
             // Increment only counters which are relevant to specific flexible threshold
@@ -87,10 +87,8 @@ template <typename T, typename Counter> class abstract_subnet_counters_t {
         std::lock_guard<std::mutex> lock_guard(counter_map_mutex);
         Counter& counters = counter_map[key];
 
-        extern time_t current_inaccurate_time;
-
         // Update last update time
-        counters.last_update_time = current_inaccurate_time;
+        counters.last_update_time = current_inaccurate_time.tv_sec;
 
         for (std::size_t current_index = 0; current_index < counters.flexible_counters.size(); current_index++) {
             // Increment only counters which are relevant to specific flexible threshold

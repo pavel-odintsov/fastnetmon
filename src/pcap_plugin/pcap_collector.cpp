@@ -39,6 +39,8 @@ unsigned int DATA_SHIFT_VALUE = 14;
 
 extern log4cpp::Category& logger;
 extern std::map<std::string, std::string> configuration_map;
+extern timespec current_inaccurate_time;
+
 
 // This variable name should be uniq for every plugin!
 process_packet_pointer pcap_process_func_ptr = NULL;
@@ -109,6 +111,10 @@ void parse_packet(u_char* user, struct pcap_pkthdr* packethdr, const u_char* pac
     unsigned int packet_length = ntohs(iphdr->ip_len);
 
     simple_packet_t current_packet;
+
+    current_packet.ts.tv_sec    = current_inaccurate_time.tv_sec;
+    // Convert nanosecond to microseconds
+    current_packet.ts.tv_usec   = current_inaccurate_time.tv_nsec / 1000;
 
     // Advance to the transport layer header then parse and display
     // the fields based on the type of hearder: tcp, udp or icmp

@@ -94,7 +94,7 @@ extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t, subnet_counter_t> ipv
 extern bool process_incoming_traffic;
 extern bool process_outgoing_traffic;
 extern uint64_t total_unparsed_packets;
-extern time_t current_inaccurate_time;
+extern timespec current_inaccurate_time;
 extern uint64_t total_unparsed_packets_speed;
 extern bool enable_connection_tracking;
 extern bool enable_afpacket_collection;
@@ -2852,14 +2852,17 @@ void system_counters_speed_thread_handler() {
 
 // Generates inaccurate time for fast time operations
 void inaccurate_time_generator() {
-    extern time_t current_inaccurate_time;
+    extern timespec current_inaccurate_time;
 
     while (true) {
-        boost::this_thread::sleep(boost::posix_time::seconds(1));
+        boost::this_thread::sleep(boost::posix_time::milliseconds(1));
 
-        // We use this thread to update time each second
-        time_t current_time = 0;
-        time(&current_time);
+        // We use this thread to update time each millisecond
+        timespec current_time = timespec{};
+
+        // Set inaccurate time value which will be used in process_packet() from capture backends
+        // https://stackoverflow.com/questions/6498972/faster-equivalent-of-gettimeofday
+        clock_gettime(CLOCK_MONOTONIC_COARSE, &current_time);
 
         // Update global time, yes, it may became inaccurate due to thread sync but that's OK for our purposes
         current_inaccurate_time = current_time;
