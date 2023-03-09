@@ -454,6 +454,8 @@ bool serialize_simple_packet_to_json(const simple_packet_t& packet, nlohmann::js
     try {
 
         json_packet["ip_version"] = protocol_version;
+        json_packet["timestamp_s"] = packet.ts.tv_sec;
+        json_packet["timestamp_ms"] = packet.ts.tv_usec / 1000;
 
         json_packet["source_ip"]      = source_ip_as_string;
         json_packet["destination_ip"] = destination_ip_as_string;
