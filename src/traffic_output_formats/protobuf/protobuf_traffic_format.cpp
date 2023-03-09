@@ -11,8 +11,8 @@ bool write_simple_packet_to_protobuf(const simple_packet_t& packet, TrafficData&
     // 1
     traffic_data.set_timestamp_seconds(packet.ts.tv_sec);
 
-    // 2
-    traffic_data.set_timestamp_milliseconds(packet.ts.tv_usec);
+    // 2 convert microsecond to millisecond
+    traffic_data.set_timestamp_milliseconds(packet.ts.tv_usec / 1000);
 
     // 3
     if (packet.source == MIRROR) {
