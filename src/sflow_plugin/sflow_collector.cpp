@@ -224,11 +224,12 @@ void start_sflow_collector(std::string interface_for_binding, unsigned int sflow
     }
 
     servaddr.sin_port = htons(sflow_port);
+    
     int bind_result   = bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
 
-    if (bind_result) {
-        logger << log4cpp::Priority::ERROR << plugin_log_prefix << "can't listen port: " << sflow_port << " on host "
-               << interface_for_binding;
+    if (bind_result != 0) {
+        logger << log4cpp::Priority::ERROR << plugin_log_prefix << "cannot bind on " << sflow_port << ":"
+               << interface_for_binding << " with errno: " << errno << " error: " << strerror(errno); 
         return;
     }
 
