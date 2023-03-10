@@ -1310,20 +1310,18 @@ void execute_ip_ban(uint32_t client_ip, subnet_counter_t average_speed_element, 
 
     current_attack.attack_protocol = detect_attack_protocol(average_speed_element, data_direction);
 
-    if (ban_list.count(client_ip) > 0) {
-        if (ban_list[client_ip].attack_direction != data_direction) {
-            logger << log4cpp::Priority::INFO << "We expected very strange situation: attack direction for "
-                   << convert_ip_as_uint_to_string(client_ip) << " was changed";
+    {
+        std::lock_guard<std::mutex> lock_guard(ban_list_mutex);
+
+        // Host is blocked already
+        if (ban_list.count(client_ip) > 0) {
+            // update attack power
+            if (pps > ban_list[client_ip].max_attack_power) {
+                ban_list[client_ip].max_attack_power = pps;
+            }
 
             return;
         }
-
-        // update attack power
-        if (pps > ban_list[client_ip].max_attack_power) {
-            ban_list[client_ip].max_attack_power = pps;
-        }
-
-        return;
     }
 
     prefix_t prefix_for_check_adreess;
