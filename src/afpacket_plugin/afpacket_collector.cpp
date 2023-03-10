@@ -1,5 +1,7 @@
 #include "../all_logcpp_libraries.hpp"
 
+#include "../fastnetmon_plugin.hpp"
+
 #include <boost/algorithm/string.hpp>
 #include <boost/version.hpp>
 
@@ -141,6 +143,11 @@ void walk_block(struct block_desc* pbd, const int block_num) {
         u_char* data_pointer = (u_char*)((uint8_t*)ppd + ppd->tp_mac);
 
         simple_packet_t packet;
+
+        packet.source       = MIRROR;
+        packet.arrival_time = current_inaccurate_time;
+        packet.sample_ratio = 1; //-V1048
+
 
         // Override default sample rate by rate specified in configuration
         if (mirror_af_packet_custom_sampling_rate > 1) {

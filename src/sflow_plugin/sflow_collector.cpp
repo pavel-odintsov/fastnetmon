@@ -20,6 +20,7 @@
 #include <sys/socket.h>
 
 #include "../fast_library.hpp"
+#include "../fastnetmon_plugin.hpp"
 
 #include "../all_logcpp_libraries.hpp"
 
@@ -343,6 +344,7 @@ bool process_sflow_flow_sample(uint8_t* data_pointer,
 
     simple_packet_t packet;
     packet.source = SFLOW;
+    packet.arrival_time = current_inaccurate_time;
 
     packet.agent_ip_address = client_ipv4_address;
 
