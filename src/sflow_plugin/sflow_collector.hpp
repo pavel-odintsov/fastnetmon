@@ -9,3 +9,4 @@ void deinit_sflow_module();
 
 // New code for v5 only
 void parse_sflow_v5_packet(uint8_t* payload_ptr, unsigned int payload_length, uint32_t client_ipv4_address);
+std::vector<system_counter_t> get_sflow_stats();

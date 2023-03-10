@@ -3181,6 +3181,11 @@ bool get_statistics(std::vector<system_counter_t>& system_counters) {
     system_counters.push_back(system_counter_t("influxdb_writes_failed", influxdb_writes_failed, metric_type_t::counter,
                                                influxdb_writes_failed_desc));
 
+    if (enable_sflow_collection) {
+        auto sflow_stats = get_sflow_stats();
+        system_counters.insert(system_counters.end(), sflow_stats.begin(), sflow_stats.end());
+    }
+
     if (enable_netflow_collection) {
         auto netflow_stats = get_netflow_stats();
 
