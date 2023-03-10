@@ -8,11 +8,11 @@ bool write_simple_packet_to_protobuf(const simple_packet_t& packet, TrafficData&
 
     // Numbers before field match fields from proto file: traffic_data.proto
 
-    // 1
-    traffic_data.set_timestamp_seconds(packet.ts.tv_sec);
+    // 1 we use arrival_time as traffic telemetry protocols do not provide this time in a reliable manner
+    traffic_data.set_timestamp_seconds(packet.arrival_time);
 
-    // 2
-    traffic_data.set_timestamp_milliseconds(packet.ts.tv_usec);
+    // 2 our time source has second only precision and we cannot populate milliseconds yet
+    traffic_data.set_timestamp_milliseconds(0);
 
     // 3
     if (packet.source == MIRROR) {
