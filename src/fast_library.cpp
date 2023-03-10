@@ -452,6 +452,8 @@ bool serialize_simple_packet_to_json(const simple_packet_t& packet, nlohmann::js
     }
 
     try {
+        // We use arrival_time as traffic telemetry protocols do not provide this time in a reliable manner
+        json_packet["timestamp"] = packet.arrival_time;
 
         json_packet["ip_version"] = protocol_version;
 
