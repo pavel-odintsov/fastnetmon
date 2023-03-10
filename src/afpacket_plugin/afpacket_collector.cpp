@@ -313,9 +313,26 @@ void start_af_packet_capture(std::string interface_name, bool enable_fanout, int
     setup_socket(interface_name, enable_fanout, fanout_group_id);
 }
 
-void get_af_packet_stats() {
-    // getsockopt PACKET_STATISTICS
+std::vector<system_counter_t> get_af_packet_stats() {
+    std::vector<system_counter_t> system_counter;
+
+    system_counter.push_back(system_counter_t("af_packet_socket_received_packets", socket_received_packets,
+                                              metric_type_t::counter, socket_received_packets_desc));
+    system_counter.push_back(system_counter_t("af_packet_socket_dropped_packets", socket_dropped_packets,
+                                              metric_type_t::counter, socket_dropped_packets_desc));
+
+    system_counter.push_back(system_counter_t("af_packet_blocks_read", blocks_read, metric_type_t::counter, blocks_read_desc));
+    system_counter.push_back(system_counter_t("af_packet_packets_raw", af_packet_packets_raw, metric_type_t::counter,
+                                              af_packet_packets_raw_desc));
+
+    system_counter.push_back(system_counter_t("af_packet_packets_parsed", af_packet_packets_parsed,
+                                              metric_type_t::counter, af_packet_packets_parsed_desc));
+    system_counter.push_back(system_counter_t("af_packet_packets_unparsed", af_packet_packets_unparsed,
+                                              metric_type_t::counter, af_packet_packets_unparsed_desc));
+
+    return system_counter;
 }
+
 
 // Could get some speed up on NUMA servers
 bool afpacket_execute_strict_cpu_affinity = false;

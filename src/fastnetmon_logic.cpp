@@ -3192,6 +3192,14 @@ bool get_statistics(std::vector<system_counter_t>& system_counters) {
         system_counters.insert(system_counters.end(), netflow_stats.begin(), netflow_stats.end());
     }
 
+#ifdef FASTNETMON_ENABLE_AFPACKET
+    if (enable_afpacket_collection) {
+        auto af_packet_counters = get_af_packet_stats();
+
+        system_counters.insert(system_counters.end(), af_packet_counters.begin(), af_packet_counters.end());
+    }    
+#endif
+
     return true;
 }
 

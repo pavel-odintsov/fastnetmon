@@ -1,5 +1,4 @@
 #pragma once
-/* netflow plugin header */
 
 #include "../fastnetmon_types.hpp"
 
