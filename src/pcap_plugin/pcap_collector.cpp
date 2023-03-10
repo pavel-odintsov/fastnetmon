@@ -9,6 +9,8 @@
 #include <map>
 #include <string>
 
+#include "../fastnetmon_plugin.hpp"
+
 #include <net/if_arp.h> // struct arphdr
 #include <netinet/if_ether.h>
 #include <netinet/ip.h>
@@ -109,8 +111,8 @@ void parse_packet(u_char* user, struct pcap_pkthdr* packethdr, const u_char* pac
     unsigned int packet_length = ntohs(iphdr->ip_len);
 
     simple_packet_t current_packet;
-    packet.source       = MIRROR;
-    packet.arrival_time = current_inaccurate_time;
+    current_packet.source       = MIRROR;
+    current_packet.arrival_time = current_inaccurate_time;
 
     // Advance to the transport layer header then parse and display
     // the fields based on the type of hearder: tcp, udp or icmp
