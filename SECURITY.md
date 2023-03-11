@@ -6,7 +6,10 @@ We support only latest current version of FastNetMon. We do not issue security f
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.2.1   | :white_check_mark: |
+| latest stable  | :white_check_mark: |
+| 1.2.3   | :x:                |
+| 1.2.2   | :x:                |
+| 1.2.1   | :x:                |
 | 1.2.0   | :x:                |
 | 1.1.9   | :x:                |
 | 1.1.8   | :x:                |
@@ -18,8 +21,8 @@ We support only latest current version of FastNetMon. We do not issue security f
 | 1.1.2   | :x:                |
 | 1.1.1   | :x:                | 
 
-Debian, Ubuntu and FreeBSD packages in their official repositories have their own security policies. 
+Debian, Ubuntu, Fedora, FreeBSD packages in their official repositories have their own security policies. 
 
 ## Reporting a Vulnerability
 
-To report vulkhnerability please use this interface https://support.fastnetmon.com/hc/en-gb/requests/new We gurantee initial feedback in 48 hours. 
+To report vulkhnerability please use this interface https://support.fastnetmon.com/hc/en-gb/requests/new We guarantee initial feedback in 48 hours. 
