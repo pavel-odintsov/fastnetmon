@@ -75,7 +75,6 @@ Features
 - [API](https://fastnetmon.com/docs/fastnetmon-community-api/)
 - [Redis](https://fastnetmon.com/docs/redis/) integration
 - [MongoDB](https://fastnetmon.com/docs/mongodb/) integration
-- Prometheus support
 - VLAN untagging in mirror and sFlow modes
 - Capture attack fingerprints in PCAP format
 
