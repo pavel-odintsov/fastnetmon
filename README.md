@@ -96,8 +96,12 @@ Running FastNetMon
 
 Screenshots
 ------------
-
+Command line interface
 ![Main screen image](docs/images/fastnetmon_screen.png)
+
+------------
+Standard Grafana dashboard
+![Grafana total traffic](docs/images/grafana_total.png)
 
 Example deployment scheme
 --------------
