@@ -29,7 +29,7 @@ using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
 
-using gobgpapi::GobgpApi;
+using apipb::GobgpApi;
 
 class GrpcClient {
     public:
@@ -48,14 +48,14 @@ class GrpcClient {
             std::chrono::system_clock::now() + std::chrono::seconds(gobgp_client_connection_timeout);
         context.set_deadline(deadline);
 
-        auto gobgp_ipv4_unicast_route_family = new gobgpapi::Family;
-        gobgp_ipv4_unicast_route_family->set_afi(gobgpapi::Family::AFI_IP);
-        gobgp_ipv4_unicast_route_family->set_safi(gobgpapi::Family::SAFI_UNICAST);
+        auto gobgp_ipv4_unicast_route_family = new apipb::Family;
+        gobgp_ipv4_unicast_route_family->set_afi(apipb::Family::AFI_IP);
+        gobgp_ipv4_unicast_route_family->set_safi(apipb::Family::SAFI_UNICAST);
 
-        gobgpapi::AddPathRequest request;
-        request.set_table_type(gobgpapi::TableType::GLOBAL);
+        apipb::AddPathRequest request;
+        request.set_table_type(apipb::TableType::GLOBAL);
 
-        gobgpapi::Path* current_path = new gobgpapi::Path;
+        apipb::Path* current_path = new apipb::Path;
 
         current_path->set_allocated_family(gobgp_ipv4_unicast_route_family);
 
@@ -65,7 +65,7 @@ class GrpcClient {
 
         // Configure required announce
         google::protobuf::Any* current_nlri = new google::protobuf::Any;
-        gobgpapi::IPAddressPrefix current_ipaddrprefix;
+        apipb::IPAddressPrefix current_ipaddrprefix;
         current_ipaddrprefix.set_prefix(announced_address);
         current_ipaddrprefix.set_prefix_len(cidr_mask);
 
@@ -74,25 +74,25 @@ class GrpcClient {
 
         // Updating OriginAttribute info for current_path
         google::protobuf::Any* current_origin = current_path->add_pattrs();
-        gobgpapi::OriginAttribute current_origin_t;
+        apipb::OriginAttribute current_origin_t;
         current_origin_t.set_origin(0);
         current_origin->PackFrom(current_origin_t);
 
         // Updating NextHopAttribute info for current_path
         google::protobuf::Any* current_next_hop = current_path->add_pattrs();
-        gobgpapi::NextHopAttribute current_next_hop_t;
+        apipb::NextHopAttribute current_next_hop_t;
         current_next_hop_t.set_next_hop(announced_prefix_nexthop);
         current_next_hop->PackFrom(current_next_hop_t);
 
         // Updating CommunitiesAttribute for current_path
         google::protobuf::Any* current_communities = current_path->add_pattrs();
-        gobgpapi::CommunitiesAttribute current_communities_t;
+        apipb::CommunitiesAttribute current_communities_t;
         current_communities_t.add_communities(community_as_32bit_int);
         current_communities->PackFrom(current_communities_t);
 
         request.set_allocated_path(current_path);
 
-        gobgpapi::AddPathResponse response;
+        apipb::AddPathResponse response;
 
         // Don't be confused by name, it also can withdraw announces
         auto status = stub_->AddPath(&context, request, &response);
@@ -119,14 +119,14 @@ class GrpcClient {
             std::chrono::system_clock::now() + std::chrono::seconds(gobgp_client_connection_timeout);
         context.set_deadline(deadline);
 
-        auto gobgp_ipv6_unicast_route_family = new gobgpapi::Family;
-        gobgp_ipv6_unicast_route_family->set_afi(gobgpapi::Family::AFI_IP6);
-        gobgp_ipv6_unicast_route_family->set_safi(gobgpapi::Family::SAFI_UNICAST);
+        auto gobgp_ipv6_unicast_route_family = new apipb::Family;
+        gobgp_ipv6_unicast_route_family->set_afi(apipb::Family::AFI_IP6);
+        gobgp_ipv6_unicast_route_family->set_safi(apipb::Family::SAFI_UNICAST);
 
-        gobgpapi::AddPathRequest request;
-        request.set_table_type(gobgpapi::TableType::GLOBAL);
+        apipb::AddPathRequest request;
+        request.set_table_type(apipb::TableType::GLOBAL);
 
-        gobgpapi::Path* current_path = new gobgpapi::Path;
+        apipb::Path* current_path = new apipb::Path;
 
         current_path->set_allocated_family(gobgp_ipv6_unicast_route_family);
 
@@ -136,7 +136,7 @@ class GrpcClient {
 
         // Configure required announce
         google::protobuf::Any* current_nlri = new google::protobuf::Any;
-        gobgpapi::IPAddressPrefix current_ipaddrprefix;
+        apipb::IPAddressPrefix current_ipaddrprefix;
         current_ipaddrprefix.set_prefix(print_ipv6_address(client_ipv6.subnet_address));
         current_ipaddrprefix.set_prefix_len(client_ipv6.cidr_prefix_length);
 
@@ -145,25 +145,25 @@ class GrpcClient {
 
         // Updating OriginAttribute info for current_path
         google::protobuf::Any* current_origin = current_path->add_pattrs();
-        gobgpapi::OriginAttribute current_origin_t;
+        apipb::OriginAttribute current_origin_t;
         current_origin_t.set_origin(0);
         current_origin->PackFrom(current_origin_t);
 
         // Updating NextHopAttribute info for current_path
         google::protobuf::Any* current_next_hop = current_path->add_pattrs();
-        gobgpapi::NextHopAttribute current_next_hop_t;
+        apipb::NextHopAttribute current_next_hop_t;
         current_next_hop_t.set_next_hop(print_ipv6_address(ipv6_next_hop.subnet_address));
         current_next_hop->PackFrom(current_next_hop_t);
 
         // Updating CommunitiesAttribute for current_path
         google::protobuf::Any* current_communities = current_path->add_pattrs();
-        gobgpapi::CommunitiesAttribute current_communities_t;
+        apipb::CommunitiesAttribute current_communities_t;
         current_communities_t.add_communities(community_as_32bit_int);
         current_communities->PackFrom(current_communities_t);
 
         request.set_allocated_path(current_path);
 
-        gobgpapi::AddPathResponse response;
+        apipb::AddPathResponse response;
 
         // Don't be confused by name, it also can withdraw announces
         auto status = stub_->AddPath(&context, request, &response);
