@@ -871,10 +871,10 @@ sub install_gobgp {
     my $folder_name = shift;
 
     chdir $temp_folder_for_building_project;
-    my $distro_file_name = 'gobgp_2.27.0_linux_amd64.tar.gz';
+    my $distro_file_name = 'gobgp_3.12.0_linux_amd64.tar.gz';
     
-    my $download_result = download_file("https://github.com/osrg/gobgp/releases/download/v2.27.0/$distro_file_name",
-        $distro_file_name, 'dd906c552a727d3f226f3851bf2c92bfdafb92a7'); 
+    my $download_result = download_file("https://github.com/osrg/gobgp/releases/download/v3.12.0/$distro_file_name",
+        $distro_file_name, 'eca957a8991b8ef6eceef665a9f15a3717827a09'); 
 
     unless ($download_result) {
         warn "Could not download gobgp\n";
