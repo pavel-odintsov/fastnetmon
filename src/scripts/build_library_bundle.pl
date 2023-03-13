@@ -149,7 +149,7 @@ for my $binary_file (@$binary_files) {
 }
 
 # Install GoBGP binary files
-my $gobgp_folder_name = "gobgp_2_27_0";
+my $gobgp_folder_name = "gobgp_3_12_0";
 mkdir "$temp_folder_global_path/libraries/$gobgp_folder_name";
 
 for my $gobgp_binary ('gobgp', 'gobgpd') {
