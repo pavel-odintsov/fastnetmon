@@ -391,19 +391,19 @@ sub main {
             'ubuntu:22.04'        => 'f714682aa3bb7a8a86880973eea1461baf2d00fd6cd8d67a5e0c287079bc36da0cd7b196501e4cad708665b713d7e97452b03e1c33db58dc3ed6a05c2893b32e',
         },
         'gobgp_3_12_0'          => {
-            'centos:7'            => '',
-            'centos:8'            => '',
-            'centos:9'            => '',
+            'centos:7'            => 'ee4e8a976a16b4f0e49753a81e17405b3c219d979313a39e059ec99125e7a5804691c30f2989e60b404d6a9cdc5636d6d9e545e6766c3fd4bede4ff0b830f204',
+            'centos:8'            => 'ca142c7a76f17e4f69ef7c14df0751425656faff8ae1309895ff295950e6fc82ecc497e060f437a45e3e8689f0c561d102f5cb8f920928d2b3ecc91430011a22',
+            'centos:9'            => '25c504c671be26066c1f370eb03bb681209c87bba0c6fce766c8416534007af8e8279b360072711326fa1d248255201adf06c0ccbd1682ab34860d21f72c190f',
 
-            'debian:9'            => '',
-            'debian:10'           => '',
-            'debian:11'           => '',
-            'debian:bookworm/sid' => '',
+            'debian:9'            => '72305f540d838fb5c7e0b416e5c8a493033da4d9afe21ab979d619a1df69115b9036f824aff8d78145aa9742efe4e5363756b87082de6de13dfb17b856a54762',
+            'debian:10'           => '10a38076bebd3a1eb6dd81c5374f209f17808e51ac6476dc256d2a91cd904d5b15a6f9a2161099b2d1e6eaaecc1c3beb54cca1083ac11900001374f4624b38f3',
+            'debian:11'           => '750102bac73ec2c1fb36f470c86d37a2ae59bd49cf76e1ea48385099d6a3bad0bc49768ee3b41ba2f85de7131e28f757d6093c6be879165e211615d50d69239a',
+            'debian:bookworm/sid' => '0aabe505b4ea6649043203a9f4d28dc27efb6fdef8c61bd0c21f0696dabba697a8f7568ce8455a90fb50dde87a30572e8760c66a5d90e647bc0facbe7d9ed2fa',
 
-            'ubuntu:16.04'        => '',
-            'ubuntu:18.04'        => '',
-            'ubuntu:20.04'        => '',
-            'ubuntu:22.04'        => ''
+            'ubuntu:16.04'        => 'ca142c7a76f17e4f69ef7c14df0751425656faff8ae1309895ff295950e6fc82ecc497e060f437a45e3e8689f0c561d102f5cb8f920928d2b3ecc91430011a22',
+            'ubuntu:18.04'        => '55a829e69aebe296ea1537117150982003f0a647674bfb5b4eafd298db9dc9ea6aa961642693d5e21ca737e735167cfe3ca84780144e842a9946134a99c1f4f3',
+            'ubuntu:20.04'        => '750102bac73ec2c1fb36f470c86d37a2ae59bd49cf76e1ea48385099d6a3bad0bc49768ee3b41ba2f85de7131e28f757d6093c6be879165e211615d50d69239a',
+            'ubuntu:22.04'        => 'b3f2168c6b705804155ca944a6c7850057d50652efc57c3c4194838b147176779b98d7b2bf9af72ee141805d62f7a6c1460244ce60b570dbdffc114d5e7dc899',
         },
         'log4cpp_1_1_3'         => {
             'centos:7'            => '5f314177ff82f9b822c76a0256a322e1b8c81575d9b3da33f45532f0942f5358c7588cf1b88a88f8ed99c433c97a3f2fbf59a949eb32a7335c5a8d3a59895a65',
