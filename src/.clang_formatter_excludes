@@ -17,3 +17,6 @@ fmt/format.h
 build
 traffic_data.pb.h
 traffic_data.pb.cc
+packaging/FreeBSD/files/patch-src_fast__endianless.hpp
+packaging/FreeBSD/files/patch-src_fast__library.cpp
+packaging/FreeBSD/files/patch-src_fastnetmon.cpp

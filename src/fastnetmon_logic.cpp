@@ -1648,7 +1648,8 @@ void traffic_draw_ipv6_program() {
         sorter_type = attack_detection_threshold_type_t::packets_per_second;
     }
 
-    output_buffer << "FastNetMon " << fastnetmon_platform_configuration.fastnetmon_version << " Try Advanced edition: https://fastnetmon.com/product-overview/"
+    output_buffer << "FastNetMon " << fastnetmon_platform_configuration.fastnetmon_version
+                  << " Try Advanced edition: https://fastnetmon.com/product-overview/"
                   << "\n"
                   << "IPs ordered by: " << sort_parameter << "\n";
 
@@ -1733,7 +1734,8 @@ void traffic_draw_ipv4_program() {
         sorter_type = attack_detection_threshold_type_t::packets_per_second;
     }
 
-    output_buffer << "FastNetMon " << fastnetmon_platform_configuration.fastnetmon_version << " Try Advanced edition: https://fastnetmon.com/product-overview/"
+    output_buffer << "FastNetMon " << fastnetmon_platform_configuration.fastnetmon_version
+                  << " Try Advanced edition: https://fastnetmon.com/product-overview/"
                   << "\n"
                   << "IPs ordered by: " << sort_parameter << "\n";
 
@@ -3197,7 +3199,7 @@ bool get_statistics(std::vector<system_counter_t>& system_counters) {
         auto af_packet_counters = get_af_packet_stats();
 
         system_counters.insert(system_counters.end(), af_packet_counters.begin(), af_packet_counters.end());
-    }    
+    }
 #endif
 
     return true;

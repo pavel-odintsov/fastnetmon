@@ -1525,7 +1525,7 @@ void nf10_flowset_to_store(uint8_t* pkt,
     }
 
     simple_packet_t packet;
-    packet.source = NETFLOW;
+    packet.source       = NETFLOW;
     packet.arrival_time = current_inaccurate_time;
 
     packet.agent_ip_address = client_ipv4_address;

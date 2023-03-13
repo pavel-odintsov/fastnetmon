@@ -17,4 +17,3 @@ extern log4cpp::Category& logger;
 
 // Access to inaccurate but fast time
 extern time_t current_inaccurate_time;
-

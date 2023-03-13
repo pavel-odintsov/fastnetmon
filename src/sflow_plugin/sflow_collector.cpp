@@ -225,12 +225,12 @@ void start_sflow_collector(std::string interface_for_binding, unsigned int sflow
     }
 
     servaddr.sin_port = htons(sflow_port);
-    
-    int bind_result   = bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
+
+    int bind_result = bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
 
     if (bind_result != 0) {
         logger << log4cpp::Priority::ERROR << plugin_log_prefix << "cannot bind on " << sflow_port << ":"
-               << interface_for_binding << " with errno: " << errno << " error: " << strerror(errno); 
+               << interface_for_binding << " with errno: " << errno << " error: " << strerror(errno);
         return;
     }
 
@@ -343,7 +343,7 @@ bool process_sflow_flow_sample(uint8_t* data_pointer,
     }
 
     simple_packet_t packet;
-    packet.source = SFLOW;
+    packet.source       = SFLOW;
     packet.arrival_time = current_inaccurate_time;
 
     packet.agent_ip_address = client_ipv4_address;
