@@ -74,7 +74,7 @@ Features
 - Full integration with [InfluxDB](https://fastnetmon.com/docs/influxdb_integration/) and [Graphite](https://fastnetmon.com/docs/graphite_integration/)
 - [API](https://fastnetmon.com/docs/fastnetmon-community-api/)
 - [Redis](https://fastnetmon.com/docs/redis/) integration
-- [MongoDB](https://fastnetmon.com/docs/mongodb/) integration
+- MongoDB protocol support compatible with native [MongoDB](https://fastnetmon.com/docs/mongodb/) and [FerretDB](https://github.com/FerretDB/FerretDB)
 - VLAN untagging in mirror and sFlow modes
 - Capture attack fingerprints in PCAP format
 
