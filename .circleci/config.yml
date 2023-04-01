@@ -10,10 +10,12 @@ jobs:
     executor: win/server-2019
     steps:
       - run: 'Write-Host "Hello from FastNetMon"'
+      - run: choco install cmake -y
   build_windows2022:
     executor: win/server-2022
     steps:
       - run: 'Write-Host "Hello from FastNetMon"'
+      - run: choco install cmake -y
   build_macos:
     macos:
       xcode: 13.2.1
