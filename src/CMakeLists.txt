@@ -488,14 +488,20 @@ if (ENABLE_GOBGP_SUPPORT)
 
     find_path(PROTOCOL_BUFFERS_INCLUDE_FOLDER NAMES "google/protobuf/stubs/common.h" PATHS "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/include" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
 
-    find_library(PROTOCOL_BUFFERS_LIBRARY_PATH NAMES protobuf PATHS "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR}) 
+    if (PROTOCOL_BUFFERS_INCLUDE_FOLDER)
+        include_directories(${PROTOCOL_BUFFERS_INCLUDE_FOLDER})
+        message(STATUS "Found protocol Buffers include path: ${PROTOCOL_BUFFERS_INCLUDE_FOLDER}")
+    else()
+        message(FATAL_ERROR "Could not find protocol buffers headers")
+    endif()
 
-    if (PROTOCOL_BUFFERS_INCLUDE_FOLDER AND PROTOCOL_BUFFERS_LIBRARY_PATH)
-        include_directories(${PROTOCOL_BUFFERS_INCLUDE_FOLDER}) 
+    find_library(PROTOCOL_BUFFERS_LIBRARY_PATH NAMES protobuf PATHS "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
+
+    if (PROTOCOL_BUFFERS_LIBRARY_PATH)
         target_link_libraries(gobgp_action ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
 	    message(STATUS "Found protobuf library: ${PROTOCOL_BUFFERS_LIBRARY_PATH}")
     else()
-        message(FATAL_ERROR "Could not find protocol buffers")
+        message(FATAL_ERROR "Could not find protocol buffers library")
     endif()
 
 
