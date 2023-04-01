@@ -1,0 +1,15 @@
+[requires]
+openssl/1.1.1s
+capnproto/0.10.3
+boost/1.81.0
+grpc/1.50.1
+protobuf/3.21.9
+librdkafka/2.0.2
+cppkafka/0.4.0
+mongo-c-driver/1.23.2
+hiredis/1.1.0
+
+[generators]
+cmake
+
+
