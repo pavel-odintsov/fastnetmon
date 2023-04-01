@@ -1,0 +1,16 @@
+{
+  "name": "fastnetmon",
+  "version-string": "1.2.4",
+  "dependencies": [
+    "openssl",
+    "log4cpp",
+    "capnproto",
+    "boost",
+    "grpc",
+    "protobuf",
+    "librdkafka",
+    "cppkafka",
+    "mongo-c-driver",
+    "hiredis"
+  ]
+}
