@@ -13,7 +13,7 @@ jobs:
       - run: 'Write-Host "Hello from FastNetMon"'
       - run: choco install -y --no-progress cmake --installargs "ADD_CMAKE_TO_PATH=User"
       - run: mkdir src/build
-      - run: cmake -S src -B src/build Ver > nul 
+      - run: cmake -S src -B src/build || Ver > nul 
   build_windows2022:
     executor: win/server-2022
     steps:
