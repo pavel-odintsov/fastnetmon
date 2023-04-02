@@ -1,11 +1,3 @@
-#include <inttypes.h>
-#include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-
 #include <map>
 #include <string>
 
@@ -15,6 +7,9 @@
 #include <winsock2.h>
 #else
 
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
 #include <net/if_arp.h> // struct arphdr
 #include <netinet/if_ether.h>
 #include <netinet/ip.h>
