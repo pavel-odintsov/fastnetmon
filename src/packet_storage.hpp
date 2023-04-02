@@ -22,7 +22,7 @@ class packet_storage_t {
 
     bool allocate_buffer(unsigned int buffer_size_in_packets) {
         unsigned int memory_size_in_bytes =
-            buffer_size_in_packets * (max_captured_packet_size + sizeof(fastnetmon_pcap_pkthdr)) + sizeof(fastnetmon_pcap_file_header);
+            buffer_size_in_packets * (max_captured_packet_size + sizeof(fastnetmon_pcap_pkthdr_t)) + sizeof(fastnetmon_pcap_file_header_t);
 
         // std::cout << "We will allocate " << memory_size_in_bytes << std::endl;
 
@@ -62,7 +62,7 @@ class packet_storage_t {
             gettimeofday(&current_time, NULL);
         }
 
-        fastnetmon_pcap_pkthdr pcap_packet_header;
+        fastnetmon_pcap_pkthdr_t pcap_packet_header;
 
         pcap_packet_header.ts_sec  = current_time.tv_sec;
         pcap_packet_header.ts_usec = current_time.tv_usec;
@@ -93,7 +93,7 @@ class packet_storage_t {
     }
 
     bool write_header() {
-        struct fastnetmon_pcap_file_header pcap_header;
+        fastnetmon_pcap_file_header_t pcap_header;
 
         fill_pcap_header(&pcap_header, max_captured_packet_size);
 

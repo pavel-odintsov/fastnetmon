@@ -37,7 +37,7 @@ class fixed_size_packet_storage_t {
     }
 
     // Some useful information about this packet
-    fastnetmon_pcap_pkthdr packet_metadata;
+    fastnetmon_pcap_pkthdr_t packet_metadata;
 
     // Packet itself. Let's zeroify packet payload
     uint8_t packet_payload[2048] = {};

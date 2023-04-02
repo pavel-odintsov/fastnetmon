@@ -1,5 +1,5 @@
 #include "fastnetmon_pcap_format.hpp"
-#include <errno.h>
+#include <iostream>
 #include <string.h>
 
 int pcap_reader(const char* pcap_file_path, pcap_packet_parser_callback pcap_parse_packet_function_ptr) {
@@ -10,10 +10,10 @@ int pcap_reader(const char* pcap_file_path, pcap_packet_parser_callback pcap_par
         return -1;
     }
 
-    struct fastnetmon_pcap_file_header pcap_header;
-    ssize_t file_header_readed_bytes = read(filedesc, &pcap_header, sizeof(struct fastnetmon_pcap_file_header));
+    fastnetmon_pcap_file_header_t pcap_header{};
+    ssize_t file_header_readed_bytes = read(filedesc, &pcap_header, sizeof(fastnetmon_pcap_file_header_t));
 
-    if (file_header_readed_bytes != sizeof(struct fastnetmon_pcap_file_header)) {
+    if (file_header_readed_bytes != sizeof(fastnetmon_pcap_file_header_t)) {
         printf("Can't read pcap file header");
     }
 
@@ -31,16 +31,17 @@ int pcap_reader(const char* pcap_file_path, pcap_packet_parser_callback pcap_par
     unsigned int read_packets = 0;
     while (1) {
         // printf("Start packet %d processing\n", read_packets);
-        struct fastnetmon_pcap_pkthdr pcap_packet_header;
-        ssize_t packet_header_readed_bytes = read(filedesc, &pcap_packet_header, sizeof(struct fastnetmon_pcap_pkthdr));
+        fastnetmon_pcap_pkthdr_t pcap_packet_header;
+        ssize_t packet_header_readed_bytes = read(filedesc, &pcap_packet_header, sizeof(fastnetmon_pcap_pkthdr_t));
 
-        if (packet_header_readed_bytes != sizeof(struct fastnetmon_pcap_pkthdr)) {
+        if (packet_header_readed_bytes != sizeof(fastnetmon_pcap_pkthdr_t)) {
             // We haven't any packets
             break;
         }
 
         if (pcap_packet_header.incl_len > pcap_header.snaplen) {
-            printf("Please enlarge packet buffer! We got packet with size: %d but our buffer is %d "
+            printf("Please enlarge packet buffer! We got packet with size: %d but "
+                   "our buffer is %d "
                    "bytes\n",
                    pcap_packet_header.incl_len, pcap_header.snaplen);
             return -4;
@@ -65,13 +66,15 @@ int pcap_reader(const char* pcap_file_path, pcap_packet_parser_callback pcap_par
     return 0;
 }
 
-bool fill_pcap_header(struct fastnetmon_pcap_file_header* pcap_header, bpf_u_int32 snap_length) {
+// Move this code to constructor
+bool fill_pcap_header(fastnetmon_pcap_file_header_t* pcap_header, uint32_t snap_length) {
     pcap_header->magic         = 0xa1b2c3d4;
     pcap_header->version_major = 2;
     pcap_header->version_minor = 4;
     pcap_header->thiszone      = 0;
     pcap_header->sigfigs       = 0;
-    // TODO: fix this!!!
+
+    // Maximum really captured (not original packet) length for this file
     pcap_header->snaplen = snap_length;
     // http://www.tcpdump.org/linktypes.html
     // DLT_EN10MB = 1
