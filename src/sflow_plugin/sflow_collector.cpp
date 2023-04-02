@@ -25,6 +25,8 @@ extern log4cpp::Category& logger;
 
 #include "../simple_packet_parser_ng.hpp"
 
+#include <boost/algorithm/string.hpp>
+
 // Global configuration map
 extern std::map<std::string, std::string> configuration_map;
 

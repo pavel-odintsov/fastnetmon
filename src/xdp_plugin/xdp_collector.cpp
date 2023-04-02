@@ -8,6 +8,8 @@
 
 #include <poll.h> // poll
 
+#include <boost/algorithm/string.hpp>
+
 // TODO: add support for multiple interfaces
 
 // Only relatively fresh kernels have this type and we need to declare this type on older kernels to be able to compile

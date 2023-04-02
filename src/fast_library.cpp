@@ -28,6 +28,9 @@
 #include <capnp/serialize-packed.h>
 #endif
 
+#include <boost/algorithm/string.hpp>
+#include <boost/regex.hpp>
+
 boost::regex regular_expression_cidr_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+\\/\\d+$");
 boost::regex regular_expression_host_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+$");
 

@@ -39,6 +39,8 @@
 // For Netflow lite parsing
 #include "../simple_packet_parser_ng.hpp"
 
+#include <boost/algorithm/string.hpp>
+
 // Get it from main programme
 extern log4cpp::Category& logger;
 

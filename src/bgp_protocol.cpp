@@ -11,6 +11,8 @@
 
 #include "all_logcpp_libraries.hpp"
 
+#include <boost/algorithm/string.hpp>
+
 // Get log4cpp logger from main programme
 extern log4cpp::Category& logger;
 

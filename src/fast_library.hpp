@@ -5,26 +5,15 @@
 #include <iostream>
 #include <map>
 #include <sstream>
-#include <stdint.h>
 #include <string>
 
-#include <sys/types.h>
-#include <unistd.h>
 #include <utility>
 #include <vector>
 
-#include <boost/regex.hpp>
 #include <boost/thread.hpp>
-#include <boost/thread/mutex.hpp>
-
 #include "nlohmann/json.hpp"
 
-// Boost libs
-#include <boost/algorithm/string.hpp>
-
 #include "libpatricia/patricia.hpp"
-
-#include "fast_endianless.hpp"
 
 #include "fastnetmon_networks.hpp"
 
