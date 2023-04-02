@@ -52,6 +52,10 @@ jobs:
           name: Run cmake
           shell: << parameters.default_shell >>
           command: cmake -DENABLE_MONGODB_SUPPORT=FALSE -S src -B src/build
+      - run:
+          name: Build
+          shell: << parameters.default_shell >>
+          command: cd src/build && ninja
   build_macos:
     macos:
       xcode: 13.2.1

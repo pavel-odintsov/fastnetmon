@@ -11,8 +11,6 @@
 #include <log4cpp/OstreamAppender.hh>
 #include <log4cpp/PatternLayout.hh>
 #include <log4cpp/Priority.hh>
-#include <log4cpp/RemoteSyslogAppender.hh>
-#include <log4cpp/SyslogAppender.hh>
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop

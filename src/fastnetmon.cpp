@@ -94,6 +94,9 @@
 
 #include "all_logcpp_libraries.hpp"
 
+#include <log4cpp/RemoteSyslogAppender.hh>
+#include <log4cpp/SyslogAppender.hh>
+
 // Boost libs
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/trim.hpp>
