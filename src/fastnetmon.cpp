@@ -1,29 +1,10 @@
 /* Author: pavel.odintsov@gmail.com */
 /* License: GPLv2 */
 
-#include <errno.h>
-#include <math.h>
 #include <new>
 #include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
-
-#include <arpa/inet.h>
-#include <net/if_arp.h> // struct arphdr
-#include <netinet/if_ether.h>
-#include <netinet/in.h>
-#include <netinet/ip.h>
-#include <netinet/ip_icmp.h>
-#include <netinet/tcp.h>
-#include <netinet/udp.h>
 #include <sys/resource.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
 
-#include "bgp_protocol.hpp"
 #include "fast_library.hpp"
 #include "fastnetmon_types.hpp"
 #include "libpatricia/patricia.hpp"

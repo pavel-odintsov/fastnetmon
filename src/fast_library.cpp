@@ -1,16 +1,9 @@
 #include "fast_library.hpp"
-#include <arpa/inet.h>
 #include <fstream>
 #include <iostream>
-#include <net/if.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <stdint.h>
-#include <stdlib.h> // atoi
 #include <sys/ioctl.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
-#include <sys/types.h>
+//#include <sys/types.h>
 #include <unistd.h>
 
 // For uname function
