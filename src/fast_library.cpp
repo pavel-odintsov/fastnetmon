@@ -2,9 +2,6 @@
 #include <fstream>
 #include <iostream>
 #include <sys/ioctl.h>
-#include <sys/stat.h>
-//#include <sys/types.h>
-#include <unistd.h>
 
 // For uname function
 #include <sys/utsname.h>

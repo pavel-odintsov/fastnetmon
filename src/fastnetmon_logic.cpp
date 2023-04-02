@@ -1773,11 +1773,6 @@ void traffic_draw_ipv4_program() {
 
     output_buffer << "Not processed packets: " << total_unparsed_packets_speed << " pps\n";
 
-    // Print backend stats
-    if (enable_pcap_collection) {
-        output_buffer << get_pcap_stats() << "\n";
-    }
-
     if (!ban_list.empty()) {
         output_buffer << std::endl << "Ban list:" << std::endl;
         output_buffer << print_ddos_attack_details();
