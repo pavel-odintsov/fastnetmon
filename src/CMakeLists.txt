@@ -652,7 +652,10 @@ target_link_libraries(fast_library fastnetmon_pcap_format)
 # Try to find ncurses library
 find_package(Curses REQUIRED)
 
-if(CURSES_FOUND) 
+if(CURSES_FOUND)
+    message(STATUS "Found curses library: ${CURSES_LIBRARIES}")
+    message(STATUS "Found curses includes: ${CURSES_INCLUDE_DIRS}")
+
     include_directories(${CURSES_INCLUDE_DIRS})
     target_link_libraries(fastnetmon_client ${CURSES_LIBRARIES})
 endif()
