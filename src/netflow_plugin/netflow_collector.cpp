@@ -3,9 +3,17 @@
 // TODO: add timestamp to netflow templates stored at disk
 // TODO: do not kill disk with netflow template writes to disk
 
+#ifdef _WIN32
+#include <winsock2.h>
+#else
+
 #include <arpa/inet.h>
-#include <netdb.h>
 #include <netinet/in.h>
+
+#endif
+
+#include <netdb.h>
+
 #include <sys/socket.h>
 
 #include <fstream>
