@@ -1,6 +1,10 @@
 #include "gobgp_action.hpp"
 #include "../fastnetmon_actions.hpp"
-#include "../fastnetmon_types.hpp"
+
+// Fortunately we do not need these types here
+// Inclusion of this file will lead to inclusion of Mingw headers and then it will break compilation of GoBGP protobuf and gRPC binding:
+// https://github.com/pavel-odintsov/fastnetmon/issues/977
+// #include "../fastnetmon_types.hpp"
 
 #ifdef __GNUC__
 #pragma GCC diagnostic push
