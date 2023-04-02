@@ -246,7 +246,13 @@ void start_sflow_collector(std::string interface_for_binding, unsigned int sflow
     socklen_t value_length = sizeof(receive_buffer);
 
     // Get current read buffer size
+#ifdef _WIN32
+    // Windows uses char* as 4rd argument: https://learn.microsoft.com/en-gb/windows/win32/api/winsock/nf-winsock-getsockopt and we need to add explicit cast
+    // I prefer not to expand this logic to other platforms without testing
+    int get_buffer_size_res = getsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, (char*)&receive_buffer, &value_length);
+#else
     int get_buffer_size_res = getsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &receive_buffer, &value_length);
+#endif
 
     if (get_buffer_size_res != 0) {
         logger << log4cpp::Priority::ERROR << "Cannot retrieve default receive buffer size for sFlow";
