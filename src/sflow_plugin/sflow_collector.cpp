@@ -1,8 +1,6 @@
 #include <climits>
-#include <inttypes.h>
 #include <iomanip>
 #include <iostream>
-#include <sys/types.h>
 #include <type_traits>
 
 #include "../libsflow/libsflow.hpp"
@@ -16,10 +14,6 @@
 #endif
 
 #include <sys/socket.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "../fast_library.hpp"
 #include "../fastnetmon_plugin.hpp"
