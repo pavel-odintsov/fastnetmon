@@ -18,8 +18,17 @@
 
 #include <errno.h> /* for EAFNOSUPPORT */
 
+#ifdef _WIN32
+
+#include <winsock2.h>
+#include <in6addr.h>
+
+#else
+
 #include <netinet/in.h> /* for struct in_addr */
 #include <sys/socket.h> /* for AF_INET */
+
+#endif
 
 #include <functional>
 #include <iostream>

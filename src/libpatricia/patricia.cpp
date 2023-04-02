@@ -19,7 +19,15 @@
 static char copyright[] = "This product includes software developed by the University of Michigan, Merit"
                           "Network, Inc., and their contributors.";
 #pragma GCC diagnostic pop
-#include <arpa/inet.h> /* BSD, Linux, Solaris: for inet_addr */
+
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h> // for inet_ntop
+#else
+// for inet_addr
+#include <arpa/inet.h> // for inet_addr
+#endif 
+
 #include <assert.h> /* assert */
 #include <ctype.h> /* isdigit */
 #include <errno.h> /* errno */
