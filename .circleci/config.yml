@@ -53,6 +53,10 @@ jobs:
           shell: << parameters.default_shell >>
           command: cmake -DENABLE_MONGODB_SUPPORT=FALSE -DENABLE_PCAP_SUPPORT=FALSE -DLINK_WITH_ABSL=TRUE -S src -B src/build
       - run:
+          name: Build client
+          shell: << parameters.default_shell >>
+          command: cd src/build && ninja fastnetmon_client
+      - run:
           name: Build
           shell: << parameters.default_shell >>
           command: cd src/build && ninja
