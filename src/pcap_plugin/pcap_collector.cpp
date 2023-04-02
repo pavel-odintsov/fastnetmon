@@ -11,12 +11,19 @@
 
 #include "../fastnetmon_plugin.hpp"
 
+#ifdef _WIN32
+#include <winsock2.h>
+#else
+
 #include <net/if_arp.h> // struct arphdr
 #include <netinet/if_ether.h>
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
+
+#endif
+
 #include <pcap.h>
 
 #include "../all_logcpp_libraries.hpp"
