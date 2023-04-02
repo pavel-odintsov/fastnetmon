@@ -40,6 +40,9 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} --std=c++2a")
 # With this flag we can enable GoBGP build via console: cmake .. -DENABLE_GOBGP_SUPPORT=ON
 option(ENABLE_GOBGP_SUPPORT "Enable GoBGP support build" ON)
 
+# It can be disabled this way: cmake .. -DENABLE_PCAP_SUPPORT=OFF
+option(ENABLE_PCAP_SUPPORT "Enable PCAP support" ON)
+
 # On some platforms like Fedora we need to explicitly link with libabseil / libabsl.
 # We do not use it directly but gRPC uses it for libgpr and we need to link with absl explicitly to avoid linker errors like this:
 # libgpr.so: undefined reference to symbol '_ZN4absl12lts_202103245Mutex4LockEv'
@@ -460,6 +463,10 @@ if (LINK_WITH_ABSL)
     find_package(absl REQUIRED)
 
     # TODO: check that we actually found it. Otherwise trigger fatal erorr
+endif()
+
+if (ENABLE_PCAP_SUPPORT)
+    add_definitions(-DENABLE_PCAP)
 endif()
 
 if (ENABLE_GOBGP_SUPPORT)

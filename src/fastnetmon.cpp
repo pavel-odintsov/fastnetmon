@@ -54,7 +54,11 @@
 
 // Plugins
 #include "netflow_plugin/netflow_collector.hpp"
+
+#ifdef ENABLE_PCAP
 #include "pcap_plugin/pcap_collector.hpp"
+#endif
+
 #include "sflow_plugin/sflow_collector.hpp"
 
 #ifdef NETMAP_PLUGIN
@@ -1885,9 +1889,11 @@ int main(int argc, char** argv) {
         packet_capture_plugin_thread_group.add_thread(new boost::thread(start_netflow_collection, process_packet));
     }
 
+#ifdef ENABLE_PCAP
     if (enable_pcap_collection) {
         packet_capture_plugin_thread_group.add_thread(new boost::thread(start_pcap_collection, process_packet));
     }
+#endif
 
     // Wait for all threads in capture thread group
     packet_capture_plugin_thread_group.join_all();

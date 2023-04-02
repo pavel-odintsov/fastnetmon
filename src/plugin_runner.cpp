@@ -14,7 +14,11 @@
 #include "fastnetmon_types.h"
 #include "libpatricia/patricia.hpp"
 #include "netflow_plugin/netflow_collector.h"
+
+#ifdef ENABLE_PCAP
 #include "pcap_plugin/pcap_collector.h"
+#endif
+
 #include "sflow_plugin/sflow_collector.h"
 
 #ifdef FASTNETMON_ENABLE_AFPACKET

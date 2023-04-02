@@ -20,7 +20,11 @@
 
 // Plugins
 #include "netflow_plugin/netflow_collector.hpp"
+
+#ifdef ENABLE_PCAP
 #include "pcap_plugin/pcap_collector.hpp"
+#endif
+
 #include "sflow_plugin/sflow_collector.hpp"
 
 #ifdef NETMAP_PLUGIN
