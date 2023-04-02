@@ -2,6 +2,8 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <thread>
+#include <chrono>
 
 #ifdef _WIN32
 // msys2 and mingw use nested path for some reasons but Linux keeps it in include directly: https://packages.msys2.org/package/mingw-w64-x86_64-ncurses
@@ -59,7 +61,7 @@ int main(int argc, char** argv) {
     timeout(0);
 
     while (true) {
-        sleep(1);
+        std::this_thread::sleep_for (std::chrono::seconds(1));
 
         // clean up screen
         clear();
