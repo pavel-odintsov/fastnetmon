@@ -15,6 +15,7 @@ jobs:
       - checkout
       - run: 'Write-Host "Hello from FastNetMon"'
       - run: choco install -y --no-progress cmake --installargs "ADD_CMAKE_TO_PATH=User"
+      - run: choco install -y --no-progress msys2
       - run: mkdir src/build
       # We need to fix dependencies before uncommenting it
       #- run: cmake -S src -B src/build
