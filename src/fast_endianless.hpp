@@ -1,6 +1,10 @@
 #pragma once
 
+#ifdef _WIN32
+#include <winsock.h>
+#else
 #include <arpa/inet.h>
+#endif 
 
 #if defined(__APPLE__)
 #include <libkern/OSByteOrder.h>
@@ -34,7 +38,11 @@ inline int32_t fast_ntoh(int32_t value) {
 
 // network (big endian) byte order to host byte order
 inline uint64_t fast_ntoh(uint64_t value) {
+#ifdef _WIN32
+    return _byteswap_uint64(value);
+#else
     return be64toh(value);
+#endif
 }
 
 // Type safe version of htonl, htons
@@ -52,7 +60,11 @@ inline int32_t fast_hton(int32_t value) {
 
 inline uint64_t fast_hton(uint64_t value) {
     // host to big endian (network byte order)
+#ifdef _WIN32
+    return _byteswap_uint64(value);
+#else
     return htobe64(value);
+#endif
 }
 
 // Explicitly remove all other types to avoid implicit conversion

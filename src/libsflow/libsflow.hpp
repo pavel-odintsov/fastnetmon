@@ -10,8 +10,6 @@
 #include <tuple>
 #include <vector>
 
-#include <arpa/inet.h>
-
 #include "../fast_endianless.hpp"
 
 // We need it for sanity checks
@@ -32,7 +30,7 @@ enum sflow_header_protocol {
     SFLOW_HEADER_PROTOCOL_IPv6     = 12,
 };
 
-// Old fashioned not typed enums for fast comparisions and assignments to
+// Old fashioned not typed enum for fast comparisons and assignments to
 // integers
 enum sflow_sample_type_not_typed_t {
     SFLOW_SAMPLE_TYPE_FLOW_SAMPLE             = 1,
