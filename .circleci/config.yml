@@ -10,6 +10,9 @@ jobs:
     parameters:
       windows_name:
         type: string
+      default_shell:
+        type: string
+        default: "c:/tools/msys64/msys2_shell.cmd -defterm -no-start -mingw64 -full-path -here"
     executor: << parameters.windows_name >>
     steps:
       - checkout
@@ -22,11 +25,33 @@ jobs:
           shell: c:/tools/msys64/msys2_shell.cmd -defterm -no-start -msys2 -full-path -here -c
           command: pacman -S --needed --noconfirm make mingw-w64-x86_64-gcc mingw-w64-x86_64-make mingw-w64-x86_64-boost mingw-w64-x86_64-cmake  zip unzip  mingw-w64-x86_64-capnproto mingw-w64-x86_64-grpc mingw-w64-x86_64-openssl  mingw-w64-x86_64-hiredis mingw-w64-x86_64-librdkafka mingw-w64-x86_64-protobuf mingw-w64-x86_64-ncurses
       - run:
+          name: Download log4cpp
+          shell: << parameters.default_shell >>
+          command: wget https://deac-riga.dl.sourceforge.net/project/log4cpp/log4cpp-1.1.x%20%28new%29/log4cpp-1.1/log4cpp-1.1.4rc3.tar.gz
+      - run:
+          name: Unpack log4cpp 
+          shell: << parameters.default_shell >>
+          command: tar -xf log4cpp-1.1.4rc3.tar.gz
+      - run: 
+          name: Patch log4cpp
+          shell: << parameters.default_shell >>
+          command: sed -i '/#define int64_t __int64/d' log4cpp/include/log4cpp/config-MinGW32.h
+      - run:
+          name: Patch log4cpp
+          shell: << parameters.default_shell >>
+          command: cd log4cpp && ./configure
+      - run:
+          name: Build log4cpp
+          shell: << parameters.default_shell >>
+          command: cd log4cpp & make
+      - run:
+          name: Install log4cpp
+          shell: << parameters.default_shell >>
+          command: cd log4cpp & make install
+      - run:
           name: Run cmake
-          shell: c:/tools/msys64/msys2_shell.cmd -defterm -no-start -mingw64 -full-path -here
-          command: cmake -S src -B src/build
-      # We need to fix dependencies before uncommenting it
-      #- run: cmake -S src -B src/build
+          shell: << parameters.default_shell >>
+          command: cmake -DENABLE_MONGODB_SUPPORT=FALSE -S src -B src/build
   build_macos:
     macos:
       xcode: 13.2.1
