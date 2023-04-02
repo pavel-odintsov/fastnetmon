@@ -2523,7 +2523,7 @@ void start_netflow_collector(std::string netflow_host, unsigned int netflow_port
 #ifdef _WIN32
 // Windows uses char* as 4rd argument: https://learn.microsoft.com/en-gb/windows/win32/api/winsock/nf-winsock-getsockopt and we need to add explicit cast
 // I prefer not to expand this logic to other platforms without testing
-        auto set_reuse_port_res = setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, (char*)&reuse_port_optval, sizeof(reuse_port_optval))
+        auto set_reuse_port_res = setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, (char*)&reuse_port_optval, sizeof(reuse_port_optval));
 #else
         auto set_reuse_port_res = setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &reuse_port_optval, sizeof(reuse_port_optval));
 #endif
