@@ -33,17 +33,17 @@ jobs:
           shell: << parameters.default_shell >>
           command: tar -xf log4cpp-1.1.4rc3.tar.gz
       - run: 
-          name: Patch log4cpp
+          name: Patch log4cpp to compile it on msys2
           shell: << parameters.default_shell >>
           command: sed -i '/#define int64_t __int64/d' log4cpp/include/log4cpp/config-MinGW32.h
       - run:
-          name: Patch log4cpp
+          name: Configure log4cpp
           shell: << parameters.default_shell >>
           command: cd log4cpp && ./configure
       - run:
           name: Build log4cpp
           shell: << parameters.default_shell >>
-          command: cd log4cpp & make
+          command: cd log4cpp && make
       - run:
           name: Install log4cpp
           shell: << parameters.default_shell >>
