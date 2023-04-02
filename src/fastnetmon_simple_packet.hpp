@@ -1,7 +1,13 @@
 #pragma once
 
 #include <iostream>
-#include <netinet/in.h>
+
+#ifdef _WIN32
+#include <winsock2.h>
+#else
+#include <netinet/in.h> // struct in6_addr
+#endif
+
 #include <sys/socket.h>
 
 #include <boost/beast/core/static_string.hpp>
