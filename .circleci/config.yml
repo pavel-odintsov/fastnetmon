@@ -51,7 +51,7 @@ jobs:
       - run:
           name: Run cmake
           shell: << parameters.default_shell >>
-          command: cmake -DENABLE_MONGODB_SUPPORT=FALSE -S src -B src/build
+          command: cmake -DENABLE_MONGODB_SUPPORT=FALSE -DENABLE_PCAP_SUPPORT=FALSE -S src -B src/build
       - run:
           name: Build
           shell: << parameters.default_shell >>
