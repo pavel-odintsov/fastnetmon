@@ -658,6 +658,8 @@ if(CURSES_FOUND)
 
     include_directories(${CURSES_INCLUDE_DIRS})
     target_link_libraries(fastnetmon_client ${CURSES_LIBRARIES})
+else()
+    message(STATUS "We did not find curses library")
 endif()
 
 ### Move this code to cmake module
