@@ -6,9 +6,8 @@
 #include <winsock2.h>
 #else
 #include <netinet/in.h> // struct in6_addr
-#endif
-
 #include <sys/socket.h>
+#endif
 
 #include <boost/beast/core/static_string.hpp>
 
