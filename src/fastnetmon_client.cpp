@@ -3,7 +3,12 @@
 #include <sstream>
 #include <string>
 
+#ifdef _WIN32
+// msys2 and mingw use nested path for some reasons but Linux keeps it in include directly: https://packages.msys2.org/package/mingw-w64-x86_64-ncurses
+#include <ncurses/ncurses.h>
+#else
 #include <ncurses.h>
+#endif
 
 #include <boost/program_options.hpp>
 
