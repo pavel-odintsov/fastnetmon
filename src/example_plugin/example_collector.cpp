@@ -1,16 +1,10 @@
 #include "../all_logcpp_libraries.hpp"
 
-// For support uint32_t, uint16_t
-#include <sys/types.h>
-
 // For config map operations
 #include <map>
 #include <string>
 
-// For support: IPPROTO_TCP, IPPROTO_ICMP, IPPROTO_UDP
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/types.h>
+#include "../iana_ip_protocols.hpp"
 
 #include "example_collector.hpp"
 
@@ -53,15 +47,15 @@ void start_example_collection(process_packet_pointer func_ptr) {
     current_packet.sample_ratio = 1;
 
     /* ICMP */
-    current_packet.protocol = IPPROTO_ICMP;
+    current_packet.protocol = IpProtocolNumberICMP;
 
     /* TCP */
-    current_packet.protocol         = IPPROTO_TCP;
+    current_packet.protocol         = IpProtocolNumberTCP;
     current_packet.source_port      = 0;
     current_packet.destination_port = 0;
 
     /* UDP */
-    current_packet.protocol         = IPPROTO_UDP;
+    current_packet.protocol         = IpProtocolNumberUDP;
     current_packet.source_port      = 0;
     current_packet.destination_port = 0;
 
