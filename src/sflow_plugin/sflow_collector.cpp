@@ -8,16 +8,18 @@
 #include "../libsflow/libsflow.hpp"
 #include "sflow_collector.hpp"
 
+#ifdef _WIN32
+#include <winsock2.h>
+#else
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#endif
+
 #include <sys/socket.h>
 
-// UDP server
-#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 
 #include "../fast_library.hpp"
 #include "../fastnetmon_plugin.hpp"

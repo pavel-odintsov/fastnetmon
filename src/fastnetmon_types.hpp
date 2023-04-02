@@ -1,7 +1,12 @@
 #ifndef FASTNETMON_TYPES_H
 #define FASTNETMON_TYPES_H
 
+#ifdef _WIN32
+#include <winsock2.h>
+#else
 #include <netinet/in.h> // struct in6_addr
+#endif
+
 #include <stdint.h> // uint32_t
 #include <sys/time.h> // struct timeval
 
