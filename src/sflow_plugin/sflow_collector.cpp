@@ -8,6 +8,7 @@
 
 #ifdef _WIN32
 #include <winsock2.h>
+#include <ws2ipdef.h> // sockaddr_in6
 #else
 #include <arpa/inet.h>
 #include <netinet/in.h>
