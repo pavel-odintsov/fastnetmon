@@ -40,7 +40,7 @@ typedef std::vector<std::string> interfaces_list_t;
 typedef std::vector<std::string> ip_addresses_list_t;
 
 ip_addresses_list_t get_local_ip_v4_addresses_list();
-ip_addresses_list_t get_ip_list_for_interface(std::string interface);
+ip_addresses_list_t get_ip_list_for_interface(const std::string& interface_name);
 interfaces_list_t get_interfaces_list();
 
 bool store_data_to_graphite(unsigned short int graphite_port, std::string graphite_host, graphite_data_t graphite_data);

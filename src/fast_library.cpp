@@ -723,13 +723,13 @@ interfaces_list_t get_interfaces_list() {
 }
 
 // Get all IPs for interface: main IP and aliases
-ip_addresses_list_t get_ip_list_for_interface(std::string interface) {
+ip_addresses_list_t get_ip_list_for_interface(const std::string& interface_name) {
     ip_addresses_list_t ip_list;
 
     std::string error_text;
     std::vector<std::string> output_list;
 
-    bool exec_result = exec("ip address show dev " + interface, output_list, error_text);
+    bool exec_result = exec("ip address show dev " + interface_name, output_list, error_text);
 
     if (!exec_result) {
         return ip_list;
