@@ -9,12 +9,9 @@
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
-
-#endif
-
 #include <netdb.h>
-
 #include <sys/socket.h>
+#endif
 
 #include <fstream>
 #include <map>

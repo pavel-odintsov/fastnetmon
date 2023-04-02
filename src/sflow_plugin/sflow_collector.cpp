@@ -11,9 +11,8 @@
 #else
 #include <arpa/inet.h>
 #include <netinet/in.h>
-#endif
-
 #include <sys/socket.h>
+#endif
 
 #include "../fast_library.hpp"
 #include "../fastnetmon_plugin.hpp"
