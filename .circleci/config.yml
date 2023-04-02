@@ -47,7 +47,7 @@ jobs:
       - run:
           name: Install log4cpp
           shell: << parameters.default_shell >>
-          command: cd log4cpp & make install
+          command: cd log4cpp && make install
       - run:
           name: Run cmake
           shell: << parameters.default_shell >>
