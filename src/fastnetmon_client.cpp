@@ -1,11 +1,9 @@
 #include <fstream>
 #include <iostream>
-#include <ncurses.h>
 #include <sstream>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string>
-#include <unistd.h>
+
+#include <ncurses.h>
 
 #include <boost/program_options.hpp>
 
