@@ -2512,6 +2512,12 @@ void start_netflow_collector(std::string netflow_host, unsigned int netflow_port
     int sockfd = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol);
 
     if (reuse_port) {
+        // Windows does not support this setsockopt but they may add such logic in future.
+        // Instead of disabling this logic I prefer to define missing constant to address compilation failure
+#ifdef _WIN32
+#define SO_REUSEPORT 15
+#endif
+
         int reuse_port_optval = 1;
 
         auto set_reuse_port_res = setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &reuse_port_optval, sizeof(reuse_port_optval));
