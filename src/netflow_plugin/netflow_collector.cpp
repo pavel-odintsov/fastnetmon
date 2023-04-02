@@ -5,6 +5,8 @@
 
 #ifdef _WIN32
 #include <winsock2.h>
+#include <ws2ipdef.h>  // sockaddr_in6
+#include <ws2tcpip.h> // getaddrinfo
 #else
 
 #include <arpa/inet.h>
