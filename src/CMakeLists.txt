@@ -451,9 +451,11 @@ add_library(netflow STATIC netflow_plugin/netflow.cpp)
 add_library(netflow_plugin STATIC netflow_plugin/netflow_collector.cpp)
 target_link_libraries(netflow_plugin ipfix_rfc netflow)
 
-# pcap plugin
-add_library(pcap_plugin STATIC pcap_plugin/pcap_collector.cpp)
-target_link_libraries(pcap_plugin pcap)
+if (ENABLE_PCAP_SUPPORT) 
+  # pcap plugin
+  add_library(pcap_plugin STATIC pcap_plugin/pcap_collector.cpp)
+  target_link_libraries(pcap_plugin pcap)
+endif()
 
 find_package(Threads)
 
@@ -821,7 +823,11 @@ if (ENABLE_AF_XDP_SUPPORT)
     target_link_libraries(fastnetmon xdp_plugin)
 endif()
 
-target_link_libraries(fastnetmon sflow_plugin netflow_plugin pcap_plugin example_plugin)
+target_link_libraries(fastnetmon sflow_plugin netflow_plugin example_plugin)
+
+if (ENABLE_PCAP_SUPPORT)
+target_link_libraries(fastnetmon pcap_plugin)
+endif()
 
 target_link_libraries(fastnetmon fastnetmon_logic)
 
