@@ -1,21 +1,28 @@
 #pragma once
 
+#include <cstdint>
+
 #ifdef _WIN32
 #include <winsock2.h>
 #else
 #include <arpa/inet.h>
 #endif 
 
-#if defined(__APPLE__)
+// 64 bit endian-less transformation functions are platform specific
+#ifdef __APPLE__
+
 #include <libkern/OSByteOrder.h>
-// Source: https://gist.github.com/pavel-odintsov/d13684600423d1c5e64e
 #define be64toh(x) OSSwapBigToHostInt64(x)
 #define htobe64(x) OSSwapHostToBigInt64(x)
+
+#elif _WIN32
+#define be64toh(x) _byteswap_uint64(x) 
+#define htobe64(x) _byteswap_uint64(x)
+
 #endif
 
-// For be64toh and htobe64
+// We need this include for be64toh and htobe64 on FreeBSD platforms
 #if defined(__FreeBSD__) || defined(__DragonFly__)
-#include <cstdint>
 #include <sys/endian.h>
 #endif
 
@@ -38,11 +45,7 @@ inline int32_t fast_ntoh(int32_t value) {
 
 // network (big endian) byte order to host byte order
 inline uint64_t fast_ntoh(uint64_t value) {
-#ifdef _WIN32
-    return _byteswap_uint64(value);
-#else
     return be64toh(value);
-#endif
 }
 
 // Type safe version of htonl, htons
@@ -60,11 +63,7 @@ inline int32_t fast_hton(int32_t value) {
 
 inline uint64_t fast_hton(uint64_t value) {
     // host to big endian (network byte order)
-#ifdef _WIN32
-    return _byteswap_uint64(value);
-#else
     return htobe64(value);
-#endif
 }
 
 // Explicitly remove all other types to avoid implicit conversion
