@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
-#include <map>
 #include <sstream>
 
 #include "fast_endianless.hpp"
@@ -12,14 +11,13 @@
 #include "iana_ethertypes.hpp"
 #include "iana_ip_protocols.hpp"
 
-/*
+// Get rid of this include and replace ntohs, ntohl by fast_endianless logic calls
 
-TODO:
-1) Add strict type check for ntohl/ntohs and ntonl/htons
-
-*/
-
-#include <arpa/inet.h> // ntohs, ntohl
+#ifdef _WIN32
+#include <winsock2.h>
+#else
+#include <arpa/inet.h>
+#endif
 
 // This function could copy X bytes from src to dst.
 // Where X - size of dst object (referenced by pointer)
