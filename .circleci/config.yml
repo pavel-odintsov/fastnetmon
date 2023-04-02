@@ -17,6 +17,14 @@ jobs:
       - run: choco install -y --no-progress cmake --installargs "ADD_CMAKE_TO_PATH=User"
       - run: choco install -y --no-progress msys2
       - run: mkdir src/build
+      - run:
+          name: Install dependency libraries
+          shell: c:/tools/msys64/msys2_shell.cmd -defterm -no-start -msys2 -full-path -here -c
+          command: pacman -S --needed --noconfirm make mingw-w64-x86_64-gcc mingw-w64-x86_64-make mingw-w64-x86_64-boost mingw-w64-x86_64-cmake  zip unzip  mingw-w64-x86_64-capnproto mingw-w64-x86_64-grpc mingw-w64-x86_64-openssl  mingw-w64-x86_64-hiredis mingw-w64-x86_64-librdkafka mingw-w64-x86_64-protobuf mingw-w64-x86_64-ncurses
+      - run:
+          name: Run cmake
+          shell: c:/tools/msys64/msys2_shell.cmd -defterm -no-start -mingw64 -full-path -here
+          command: cmake -S src -B src/build
       # We need to fix dependencies before uncommenting it
       #- run: cmake -S src -B src/build
   build_macos:
