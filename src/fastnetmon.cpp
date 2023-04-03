@@ -3,7 +3,11 @@
 
 #include <new>
 #include <signal.h>
-#include <sys/resource.h>
+
+// We have it on all non Windows platofms
+#ifndef _WIN32
+#include <sys/resource.h> // setrlimit
+#endif
 
 #include "fast_library.hpp"
 #include "fastnetmon_types.hpp"
@@ -1052,7 +1056,8 @@ bool load_configuration_file() {
     return true;
 }
 
-/* Enable core dumps for simplify debug tasks */
+// Enable core dumps for simplify debug tasks 
+#ifndef _WIN32
 void enable_core_dumps() {
     struct rlimit rlim;
 
@@ -1066,6 +1071,7 @@ void enable_core_dumps() {
         setrlimit(RLIMIT_CORE, &rlim);
     }
 }
+#endif
 
 void subnet_vectors_allocator(prefix_t* prefix, void* data) {
     // Network byte order
@@ -1598,8 +1604,10 @@ int main(int argc, char** argv) {
         }
     }
 
-    // enable core dumps
+    // Enable core dumps
+#ifndef _WIN32
     enable_core_dumps();
+#endif
 
     // Setup fatal signal handlers to gracefully capture them
     ::signal(SIGSEGV, &fatal_signal_handler);
