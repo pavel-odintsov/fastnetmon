@@ -42,14 +42,6 @@ int convert_string_to_integer(std::string line) {
     return atoi(line.c_str());
 }
 
-uint32_t convert_ip_as_string_to_uint(std::string ip) {
-    struct in_addr ip_addr;
-    inet_aton(ip.c_str(), &ip_addr);
-
-    // in network byte order
-    return ip_addr.s_addr;
-}
-
 std::string convert_ip_as_uint_to_string(uint32_t ip_as_integer) {
     struct in_addr ip_addr;
     ip_addr.s_addr = ip_as_integer;

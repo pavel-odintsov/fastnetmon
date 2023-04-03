@@ -63,7 +63,12 @@ Status FastnetmonApiServiceImpl::ExecuteBan(ServerContext* context,
     std::string flow_attack_details = "manually triggered attack";
 
     if (ipv4) {
-        client_ip = convert_ip_as_string_to_uint(request->ip_address());
+        bool parse_res = convert_ip_as_string_to_uint_safe(request->ip_address(), client_ip);
+
+        if (!parse_res) {
+            logger << log4cpp::Priority::ERROR << "Can't parse IPv4 address: " << request->ip_address();
+            return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, "Can't parse IPv4 address");
+        }
 
         {
             std::lock_guard<std::mutex> lock_guard(ban_list_mutex);
@@ -127,7 +132,12 @@ Status FastnetmonApiServiceImpl::ExecuteUnBan(ServerContext* context,
 
 
     if (ipv4) {
-        client_ip = convert_ip_as_string_to_uint(request->ip_address());
+        bool parse_res = convert_ip_as_string_to_uint_safe(request->ip_address(), client_ip);
+
+        if (!parse_res) {
+            logger << log4cpp::Priority::ERROR << "Can't parse IPv4 address: " << request->ip_address();
+            return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, "Can't parse IPv4 address");
+        }   
 
         if (ban_list.count(client_ip) == 0) {
             logger << log4cpp::Priority::ERROR << "API: Could not find IP in ban list";
