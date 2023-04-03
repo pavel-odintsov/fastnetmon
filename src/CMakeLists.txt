@@ -485,20 +485,36 @@ if (ENABLE_GOBGP_SUPPORT)
     add_definitions(-DENABLE_GOBGP)
     add_library(gobgp_action STATIC actions/gobgp_action.cpp)
 
-    find_path(GRPC_INCLUDES_FOLDER NAMES grpc/grpc.h PATHS "${GRPC_CUSTOM_INSTALL_PATH}/include" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
-    find_library(GRPC_LIBRARY_GRPC_PATH NAMES grpc PATHS "${GRPC_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
-    find_library(GRPC_LIBRARY_GPR_PATH NAMES gpr PATHS "${GRPC_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
-    find_library(GRPC_LIBRARY_GRPC_CPP_PATH NAMES grpc++ PATHS "${GRPC_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR}) 
+    # We use find_package for Windows as our approach for *nix platforms leads to bunch of linking errors
+    if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+      find_package(gRPC CONFIG REQUIRED)
+    
+      if (gRPC_FOUND)
+        message(STATUS "Found gRPC")
+      else()
+        message(FATAL_ERROR "NOT Found gRPC module")
+      endif()
 
-    if (GRPC_INCLUDES_FOLDER AND GRPC_LIBRARY_GRPC_PATH AND GRPC_LIBRARY_GPR_PATH AND GRPC_LIBRARY_GRPC_CPP_PATH)
+       target_link_libraries(gobgp_action gRPC::grpc gRPC::grpc++)
+
+    else()
+
+      find_path(GRPC_INCLUDES_FOLDER NAMES grpc/grpc.h PATHS "${GRPC_CUSTOM_INSTALL_PATH}/include" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
+      find_library(GRPC_LIBRARY_GRPC_PATH NAMES grpc PATHS "${GRPC_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
+      find_library(GRPC_LIBRARY_GPR_PATH NAMES gpr PATHS "${GRPC_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
+      find_library(GRPC_LIBRARY_GRPC_CPP_PATH NAMES grpc++ PATHS "${GRPC_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR}) 
+
+      if (GRPC_INCLUDES_FOLDER AND GRPC_LIBRARY_GRPC_PATH AND GRPC_LIBRARY_GPR_PATH AND GRPC_LIBRARY_GRPC_CPP_PATH)
         include_directories(${GRPC_INCLUDES_FOLDER})
         target_link_libraries(gobgp_action ${GRPC_LIBRARY_GRPC_PATH})
         target_link_libraries(gobgp_action ${GRPC_LIBRARY_GPR_PATH})
         target_link_libraries(gobgp_action ${GRPC_LIBRARY_GRPC_CPP_PATH})
         
 	    message(STATUS "Found gRPC library: ${GRPC_LIBRARY_GRPC_PATH} ${GRPC_LIBRARY_GPR_PATH} ${GRPC_LIBRARY_GRPC_CPP_PATH}")
-    else()
+      else()
         message(FATAL_ERROR "Could not find gRPC library")
+      endif()
+
     endif()
 
     if (LINK_WITH_ABSL)
@@ -601,9 +617,16 @@ if (ENABLE_GOBGP_SUPPORT)
         target_link_libraries(fastnetmon_api_client  absl::base absl::synchronization)
     endif()
 
-    target_link_libraries(fastnetmon_api_client ${GRPC_LIBRARY_GPR_PATH})
-    target_link_libraries(fastnetmon_api_client ${GRPC_LIBRARY_GRPC_CPP_PATH})
-    target_link_libraries(fastnetmon_api_client ${GRPC_LIBRARY_GRPC_PATH})
+    # We use another way to specify dependencies for Windows as our standard approach clearly does not work
+
+    if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+      target_link_libraries(fastnetmon_api_client gRPC::grpc gRPC::grpc++)
+    else()
+      target_link_libraries(fastnetmon_api_client ${GRPC_LIBRARY_GPR_PATH})
+      target_link_libraries(fastnetmon_api_client ${GRPC_LIBRARY_GRPC_CPP_PATH})
+      target_link_libraries(fastnetmon_api_client ${GRPC_LIBRARY_GRPC_PATH})
+    endif()
+
     target_link_libraries(fastnetmon_api_client fastnetmon_grpc_pb_cc)
     target_link_libraries(fastnetmon_api_client fastnetmon_pb_cc)
     target_link_libraries(fastnetmon_api_client ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
@@ -612,9 +635,14 @@ if (ENABLE_GOBGP_SUPPORT)
         target_link_libraries(fastnetmon ${LIBKAFKA_CPP_LIBRARY_PATH})
     endif()
 
-    target_link_libraries(fastnetmon ${GRPC_LIBRARY_GPR_PATH})
-    target_link_libraries(fastnetmon ${GRPC_LIBRARY_GRPC_CPP_PATH})
-    target_link_libraries(fastnetmon ${GRPC_LIBRARY_GRPC_PATH})
+    if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+      target_link_libraries(fastnetmon gRPC::grpc gRPC::grpc++)
+    else()
+      target_link_libraries(fastnetmon ${GRPC_LIBRARY_GPR_PATH})
+      target_link_libraries(fastnetmon ${GRPC_LIBRARY_GRPC_CPP_PATH})
+      target_link_libraries(fastnetmon ${GRPC_LIBRARY_GRPC_PATH})
+    endif()
+
     target_link_libraries(fastnetmon fastnetmon_grpc_pb_cc)
     target_link_libraries(fastnetmon fastnetmon_pb_cc)
     target_link_libraries(fastnetmon ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
