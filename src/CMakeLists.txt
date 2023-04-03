@@ -614,6 +614,12 @@ if (ENABLE_GOBGP_SUPPORT)
 
     # Add attributes
     add_library(attribute_pb_cc STATIC actions/attribute.pb.cc)
+
+    # It does not work without on Windows but works fine on *nix
+    if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+      target_link_libraries(attribute_pb_cc protobuf::libprotobuf)
+    else()
+
     target_link_libraries(gobgp_action attribute_pb_cc)
 
     # FastNetMon API
