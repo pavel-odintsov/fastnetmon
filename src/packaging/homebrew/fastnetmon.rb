@@ -51,7 +51,6 @@ class Fastnetmon < Formula
       "--configuration_file",
       etc/"fastnetmon.conf",
       "--log_to_console",
-      "--disable_pid_logic",
     ]
     keep_alive false
     working_dir HOMEBREW_PREFIX
@@ -70,8 +69,7 @@ class Fastnetmon < Formula
       exec opt_sbin/"fastnetmon",
            "--configuration_file",
            testpath/"fastnetmon.conf",
-           "--log_to_console",
-           "--disable_pid_logic"
+           "--log_to_console"
     end
 
     sleep 15

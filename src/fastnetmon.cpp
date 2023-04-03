@@ -1541,8 +1541,8 @@ int main(int argc, char** argv) {
     // Switch logging to console
     bool log_to_console = false;
 
-    // By default we do PID checks
-    bool do_pid_checks = true;
+    // This was legacy logic for init V based distros to prevent multiple copies of same daemon running in same time
+    bool do_pid_checks = false;
 
     try {
         // clang-format off
@@ -1555,7 +1555,8 @@ int main(int argc, char** argv) {
 		("configuration_file", po::value<std::string>(),"set path to custom configuration file")
 		("log_file", po::value<std::string>(), "set path to custom log file")
         ("log_to_console", "switches all logging to console")
-        ("disable_pid_logic", "Disables logic which stores PID to file and uses it for duplicate instance checks");
+        ("pid_logic", "Enables logic which stores PID to file and uses it for duplicate instance checks")
+        ("disable_pid_logic", "Disables logic which stores PID to file and uses it for duplicate instance checks. No op as it's disabled by default");
         // clang-format on
 
         po::variables_map vm;
@@ -1596,8 +1597,13 @@ int main(int argc, char** argv) {
             log_to_console = true;
         }
 
+        // No op as it's disabled by default
         if (vm.count("disable_pid_logic")) {
             do_pid_checks = false;
+        }
+
+        if (vm.count("pid_logic")) {
+            pid_logic = true;
         }
     } catch (po::error& e) {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;

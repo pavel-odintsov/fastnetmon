@@ -50,7 +50,7 @@ After=network.target remote-fs.target
  
 [Service]
 Type=simple
-ExecStart=/opt/fastnetmon-community/app/bin/fastnetmon --disable_pid_logic
+ExecStart=/opt/fastnetmon-community/app/bin/fastnetmon
 LimitNOFILE=65535
 # Restart service when it fails due to any reasons, we need to keep processing traffic no matter what happened
 Restart=on-failure
@@ -293,7 +293,7 @@ After=network.target remote-fs.target
  
 [Service]
 Type=simple
-ExecStart=/opt/fastnetmon-community/app/bin/fastnetmon --disable_pid_logic
+ExecStart=/opt/fastnetmon-community/app/bin/fastnetmon
 LimitNOFILE=65535
 # Restart service when it fails due to any reasons, we need to keep processing traffic no matter what happened
 Restart=on-failure
