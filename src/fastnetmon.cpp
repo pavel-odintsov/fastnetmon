@@ -1461,7 +1461,10 @@ void reconfigure_logging() {
     reconfigure_logging_level(logging_configuration.logging_level);
 }
 
+
+#ifndef _WIN32
 // Call fork function
+// We have no work on Windows
 int do_fork() {
     int status = 0;
 
@@ -1481,6 +1484,7 @@ int do_fork() {
 
     return status;
 }
+#endif
 
 
 void redirect_fds() {
@@ -1585,11 +1589,11 @@ int main(int argc, char** argv) {
     }
 
     // We use ideas from here https://github.com/bmc/daemonize/blob/master/daemon.c
-
+#ifndef _WIN32
     if (daemonize) {
         int status = 0;
 
-        printf("We will run in daemonized mode\n");
+        std::cout << "We will run in daemonized mode" << std::endl;
 
         if ((status = do_fork()) < 0) {
             // fork failed
@@ -1614,6 +1618,13 @@ int main(int argc, char** argv) {
             redirect_fds();
         }
     }
+#else
+    if (daemonize) {
+        std::cerr << "ERROR: " << "Daemon mode is not supported on Windows platforms" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+#endif
+
 
     // Enable core dumps
 #ifndef _WIN32
