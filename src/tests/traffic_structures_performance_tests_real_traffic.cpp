@@ -15,6 +15,8 @@
 
 #include "../fast_library.hpp"
 
+#include "../fast_endianless.hpp"
+
 #include "../fastnetmon_types.hpp"
 
 #include <boost/unordered/unordered_flat_map.hpp>
