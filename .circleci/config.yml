@@ -43,7 +43,7 @@ jobs:
       - run:
           name: Build log4cpp
           shell: << parameters.default_shell >>
-          command: cd log4cpp && make
+          command: cd log4cpp && make -j
       - run:
           name: Install log4cpp
           shell: << parameters.default_shell >>
