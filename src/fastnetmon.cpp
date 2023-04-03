@@ -1603,7 +1603,7 @@ int main(int argc, char** argv) {
         }
 
         if (vm.count("pid_logic")) {
-            pid_logic = true;
+            do_pid_checks = true;
         }
     } catch (po::error& e) {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
