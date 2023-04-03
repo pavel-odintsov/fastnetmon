@@ -522,6 +522,7 @@ if (ENABLE_GOBGP_SUPPORT)
     endif()
 
     if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+      # https://cmake.org/cmake/help/latest/module/FindProtobuf.html
       find_package(protobuf CONFIG REQUIRED)
 
       if (protobuf_FOUND)
@@ -529,6 +530,8 @@ if (ENABLE_GOBGP_SUPPORT)
 
         # Assign path to protoc
         set(PROTOC_BINARY ${Protobuf_PROTOC_EXECUTABLE})
+
+        include_directories(${Protobuf_INCLUDE_DIR})
       else()
         message(FATAL_ERROR "NOT Found Protobuf module")
       endif()
