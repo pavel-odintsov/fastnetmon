@@ -521,6 +521,21 @@ if (ENABLE_GOBGP_SUPPORT)
         target_link_libraries(gobgp_action absl::base absl::synchronization)
     endif()
 
+    if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+      find_package(protobuf CONFIG REQUIRED)
+
+      if (protobuf_FOUND)
+        message(STATUS "Found Protobuf")
+
+        # Assign path to protoc
+        set(PROTOC_BINARY ${Protobuf_PROTOC_EXECUTABLE})
+      else()
+        message(FATAL_ERROR "NOT Found Protobuf module")
+      endif()
+
+      target_link_libraries(gobgp_action protobuf::libprotobuf)
+    else()
+
     find_path(PROTOCOL_BUFFERS_INCLUDE_FOLDER NAMES "google/protobuf/stubs/common.h" PATHS "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/include" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
 
     if (PROTOCOL_BUFFERS_INCLUDE_FOLDER)
@@ -539,6 +554,7 @@ if (ENABLE_GOBGP_SUPPORT)
         message(FATAL_ERROR "Could not find protocol buffers library")
     endif()
 
+    endif()
 
     # message(STATUS "grpc: ${GRPC_INCLUDES_FOLDER} ${GRPC_LIBRARY_GRPC_PATH} ${GRPC_LIBRARY_GPR_PATH}")
     # message(STATUS ${PROJECT_BINARY_DIR})
@@ -618,7 +634,7 @@ if (ENABLE_GOBGP_SUPPORT)
     endif()
 
     # We use another way to specify dependencies for Windows as our standard approach clearly does not work
-
+    # https://www.f-ax.de/dev/2020/11/08/grpc-plugin-cmake-support.html
     if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
       target_link_libraries(fastnetmon_api_client gRPC::grpc gRPC::grpc++)
     else()
@@ -629,7 +645,12 @@ if (ENABLE_GOBGP_SUPPORT)
 
     target_link_libraries(fastnetmon_api_client fastnetmon_grpc_pb_cc)
     target_link_libraries(fastnetmon_api_client fastnetmon_pb_cc)
-    target_link_libraries(fastnetmon_api_client ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
+
+    if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+      target_link_libraries(fastnetmon_api_client protobuf::libprotobuf)
+    else()
+      target_link_libraries(fastnetmon_api_client ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
+    endif()
 
     if (KAFKA_SUPPORT)
         target_link_libraries(fastnetmon ${LIBKAFKA_CPP_LIBRARY_PATH})
@@ -645,7 +666,12 @@ if (ENABLE_GOBGP_SUPPORT)
 
     target_link_libraries(fastnetmon fastnetmon_grpc_pb_cc)
     target_link_libraries(fastnetmon fastnetmon_pb_cc)
-    target_link_libraries(fastnetmon ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
+
+    if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+      target_link_libraries(fastnetmon protobuf::libprotobuf)
+    else()
+      target_link_libraries(fastnetmon ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
+    endif()
 endif()
 
 # example plugin
