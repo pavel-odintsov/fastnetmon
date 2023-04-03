@@ -12,8 +12,37 @@
 #include <grpc++/security/credentials.h>
 #include <grpc/grpc.h>
 
+//
+// MinGW has quite weird definitions which clash with field names in gRPC bindinds
+// We need to apply some trickery to avoid complilation errors: 
+// https://github.com/pavel-odintsov/fastnetmon/issues/977
+//
+
+#ifdef _WIN32
+
+// Save previous values of these defines
+#pragma push_macro("interface")
+#pragma push_macro("IN")
+#pragma push_macro("OUT")
+
+#undef interface
+#undef IN
+#undef OUT
+
+#endif
+
+
 #include "attribute.pb.h"
 #include "gobgp.grpc.pb.h"
+
+#ifdef _WIN32
+
+// Restore original values of these defines
+#pragma pop_macro("interface")
+#pragma pop_macro("IN")
+#pragma pop_macro("OUT")
+
+#endif
 
 #include "../bgp_protocol.hpp"
 
