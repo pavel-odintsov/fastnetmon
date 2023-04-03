@@ -1693,6 +1693,14 @@ int main(int argc, char** argv) {
         exit(0);
     }
 
+    // On Linux and FreeBSD platforms we use kill to check that process with specific PID is alive
+    // Unfortunately, it's way more tricky to implement such approach on Windows and we decided just to disable this logic 
+#ifdef _WIN32
+    if (do_pid_checks) {
+        logger << log4cpp::Priority::INFO << "PID logic is not available on Windows";
+        exit(1);
+    }
+#else
     if (do_pid_checks && file_exists(fastnetmon_platform_configuration.pid_path)) {
         pid_t pid_from_file = 0;
 
@@ -1729,6 +1737,7 @@ int main(int argc, char** argv) {
             exit(EXIT_FAILURE);
         }
     }
+#endif
 
     lookup_tree_ipv4    = New_Patricia(32);
     whitelist_tree_ipv4 = New_Patricia(32);
