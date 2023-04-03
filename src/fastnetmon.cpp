@@ -1750,11 +1750,14 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
+    // Windows does not support SIGPIPE
+#ifndef _WIN32
     /* Without this SIGPIPE error could shutdown toolkit on call of exec_with_stdin_params */
     if (signal(SIGPIPE, sigpipe_handler_for_popen) == SIG_ERR) {
         logger << log4cpp::Priority::ERROR << "Can't setup SIGPIPE handler";
         exit(1);
     }
+#endif
 
 #ifdef GEOIP
     // Init GeoIP
