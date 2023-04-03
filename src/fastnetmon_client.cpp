@@ -90,7 +90,13 @@ int main(int argc, char** argv) {
         reading_file.open(cli_stats_file_path.c_str(), std::ifstream::in);
 
         if (!reading_file.is_open()) {
-            std::cout << "Can't open fastnetmon stats file: " << cli_stats_file_path;
+            std::string error_message = "Can't open fastnetmon stats file: " + cli_stats_file_path;
+
+            addstr(error_message.c_str());
+
+            // update screen
+            refresh();
+            continue;
         }
 
         std::string line = "";
