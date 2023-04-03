@@ -618,7 +618,7 @@ if (ENABLE_GOBGP_SUPPORT)
     # It does not work without on Windows but works fine on *nix
     if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
       target_link_libraries(attribute_pb_cc protobuf::libprotobuf)
-    else()
+    endif()
 
     target_link_libraries(gobgp_action attribute_pb_cc)
 
