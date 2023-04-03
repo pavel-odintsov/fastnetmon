@@ -76,22 +76,44 @@ subnet_cidr_mask_t convert_subnet_from_string_to_binary(std::string subnet_cidr)
     return subnet_cidr_mask_t(subnet_as_int, cidr);
 }
 
-// TODO: very bad code without result checks!!! Get rid all functions which are using it
-// But this code is pretty handy in tests code
-subnet_cidr_mask_t convert_subnet_from_string_to_binary_with_cidr_format(std::string subnet_cidr) {
-    std::vector<std::string> subnet_as_string;
-    split(subnet_as_string, subnet_cidr, boost::is_any_of("/"), boost::token_compress_on);
-
-    // Return zero subnet in this case
-    if (subnet_as_string.size() != 2) {
-        return subnet_cidr_mask_t();
+// Converts IP address in cidr form 11.22.33.44/24 to our representation
+bool convert_subnet_from_string_to_binary_with_cidr_format_safe(const std::string& subnet_cidr, subnet_cidr_mask_t& subnet_cidr_mask) {
+    if (subnet_cidr.empty()) {
+        return false;
     }
 
-    unsigned int cidr = convert_string_to_integer(subnet_as_string[1]);
+    // It's not a cidr mask
+    if (!is_cidr_subnet(subnet_cidr)) {
+        return false;
+    }
 
-    uint32_t subnet_as_int = convert_ip_as_string_to_uint(subnet_as_string[0]);
+    std::vector<std::string> subnet_as_string;
 
-    return subnet_cidr_mask_t(subnet_as_int, cidr);
+    split(subnet_as_string, subnet_cidr, boost::is_any_of("/"), boost::token_compress_on);
+
+    if (subnet_as_string.size() != 2) {
+        return false;
+    }
+
+    uint32_t subnet_as_int = 0;
+
+    bool ip_to_integer_convresion_result = convert_ip_as_string_to_uint_safe(subnet_as_string[0], subnet_as_int);
+
+    if (!ip_to_integer_convresion_result) {
+        return false;
+    }
+
+    int cidr = 0;
+
+    bool ip_conversion_result = convert_string_to_any_integer_safe(subnet_as_string[1], cidr);
+
+    if (!ip_conversion_result) {
+        return false;
+    }
+
+    subnet_cidr_mask = subnet_cidr_mask_t(subnet_as_int, cidr);
+
+    return true;
 }
 
 void copy_networks_from_string_form_to_binary(std::vector<std::string> networks_list_as_string,

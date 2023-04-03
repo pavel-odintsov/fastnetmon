@@ -573,8 +573,16 @@ void parse_hostgroups(std::string name, std::string value) {
 
     // Split networks
     std::vector<std::string> hostgroup_subnets = split_strings_to_vector_by_comma(splitted_new_host_group[1]);
+
     for (std::vector<std::string>::iterator itr = hostgroup_subnets.begin(); itr != hostgroup_subnets.end(); ++itr) {
-        subnet_cidr_mask_t subnet = convert_subnet_from_string_to_binary_with_cidr_format(*itr);
+        subnet_cidr_mask_t subnet;
+
+        bool subnet_parse_result = convert_subnet_from_string_to_binary_with_cidr_format_safe(*itr, subnet);
+
+        if (!subnet_parse_result) {
+            logger << log4cpp::Priority::ERROR << "Cannot parse subnet " << *itr;
+            continue;
+        }
 
         host_groups[host_group_name].push_back(subnet);
 
