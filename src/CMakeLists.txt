@@ -609,6 +609,11 @@ if (ENABLE_GOBGP_SUPPORT)
     add_library(gobgp_api_client_pb_cc STATIC actions/gobgp.pb.cc)
     add_library(gobgp_api_client_grpc_pb_cc STATIC actions/gobgp.grpc.pb.cc)
 
+    # It does not work without on Windows but works fine on *nix
+    if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+      target_link_libraries(gobgp_api_client_grpc_pb_cc gRPC::grpc gRPC::grpc++)
+    endif()
+
     target_link_libraries(gobgp_action gobgp_api_client_pb_cc)
     target_link_libraries(gobgp_action gobgp_api_client_grpc_pb_cc)
 
