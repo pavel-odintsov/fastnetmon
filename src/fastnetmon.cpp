@@ -1230,10 +1230,6 @@ bool load_our_networks_list() {
         logger << log4cpp::Priority::INFO << "We loaded " << network_list_from_config.size() << " networks from networks file";
     }
 
-    // Some consistency checks
-    assert(convert_ip_as_string_to_uint("255.255.255.0") == convert_cidr_to_binary_netmask(24));
-    assert(convert_ip_as_string_to_uint("255.255.255.255") == convert_cidr_to_binary_netmask(32));
-
     logger << log4cpp::Priority::INFO << "Totally we have " << networks_list_ipv4_as_string.size() << " IPv4 subnets";
     logger << log4cpp::Priority::INFO << "Totally we have " << networks_list_ipv6_as_string.size() << " IPv6 subnets";
 

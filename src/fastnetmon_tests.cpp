@@ -105,6 +105,18 @@ TEST(patricia, negative_lookup_ipv6_prefix) {
     EXPECT_EQ(found, false);
 }
 
+TEST(convert_ip_as_string_to_uint_test, convert_ip_as_string_to_uint) {
+    uint32_t ip = 0;
+
+    convert_ip_as_string_to_uint_safe("255.255.255.0", ip);
+
+    EXPECT_EQ(ip, convert_cidr_to_binary_netmask(24));
+
+    convert_ip_as_string_to_uint_safe("255.255.255.255", ip);
+
+    EXPECT_EQ(ip, convert_cidr_to_binary_netmask(32));
+}
+
 TEST(patricia, positive_lookup_ipv6_prefix) {
     patricia_tree_t* lookup_ipv6_tree;
     lookup_ipv6_tree = New_Patricia(128);
