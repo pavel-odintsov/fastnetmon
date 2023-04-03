@@ -34,6 +34,17 @@ set(LIB_CPP_KAFKA_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/cppkafka_0_3
 set(LIB_RDKAFKA_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/rdkafka_1_7_0")
 set(GTEST_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/gtest_1_13_0")
 
+# On Windows we need to build libgcc and libstdc++ statically to avoid need to carry dlls with us
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+  set(CMAKE_CXX_STANDARD_LIBRARIES "-static-libgcc -static-libstdc++ ${CMAKE_CXX_STANDARD_LIBRARIES}")
+endif()
+
+# We need this to avoid dependency on libwinpthread-1.dll
+# Details: https://cmake.org/pipermail/cmake/2019-June/069611.html
+if (MINGW)
+  set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive")
+endif()
+
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} --std=c++2a")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} --std=c++2a")
 

@@ -7,6 +7,8 @@
 
 #ifdef _WIN32
 // msys2 and mingw use nested path for some reasons but Linux keeps it in include directly: https://packages.msys2.org/package/mingw-w64-x86_64-ncurses
+// On Windows we do only static builds to avoid carrying bunch of dlls with us
+#define NCURSES_STATIC
 #include <ncurses/ncurses.h>
 #else
 #include <ncurses.h>
