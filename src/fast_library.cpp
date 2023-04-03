@@ -7,8 +7,10 @@
 #include <sys/ioctl.h>
 #endif
 
+#ifndef _WIN32
 // For uname function
 #include <sys/utsname.h>
+#endif
 
 #include "all_logcpp_libraries.hpp"
 
@@ -2221,6 +2223,12 @@ std::string get_virtualisation_method() {
     return boost::algorithm::to_lower_copy(output[0]);
 }
 
+#ifdef _WIN32
+bool get_kernel_version(std::string& kernel_version) {
+    kernel_version = "windows";
+    return true;
+}
+#else
 // Get linux kernel version in form: 3.19.0-25-generic
 bool get_kernel_version(std::string& kernel_version) {
     struct utsname current_utsname;
@@ -2236,6 +2244,7 @@ bool get_kernel_version(std::string& kernel_version) {
 
     return true;
 }
+#endif
 
 // Returns all CPU flags in vector
 bool get_cpu_flags(std::vector<std::string>& flags) {
