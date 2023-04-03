@@ -1,7 +1,11 @@
 #include "fast_library.hpp"
 #include <fstream>
 #include <iostream>
+
+// Windows does not use ioctl
+#ifndef _WIN32
 #include <sys/ioctl.h>
+#endif
 
 // For uname function
 #include <sys/utsname.h>
@@ -955,7 +959,6 @@ std::string get_direction_name(direction_t direction_value) {
     return direction_name;
 }
 
-// We haven't this code for FreeBSD yet
 #ifdef __linux__
 bool manage_interface_promisc_mode(std::string interface_name, bool switch_on) {
     extern log4cpp::Category& logger;
@@ -1227,6 +1230,9 @@ bool convert_hex_as_string_to_uint(std::string hex, uint32_t& value) {
     return ss.fail();
 }
 
+
+#ifdef __linux__
+// We use this logic only from AF_PACKET and we clearly have no reasons to maintain cross platform portability for it
 // Get interface number by name
 bool get_interface_number_by_device_name(int socket_fd, std::string interface_name, int& interface_number) {
     struct ifreq ifr;
@@ -1238,26 +1244,15 @@ bool get_interface_number_by_device_name(int socket_fd, std::string interface_na
 
     strncpy(ifr.ifr_name, interface_name.c_str(), sizeof(ifr.ifr_name));
 
-/* Attempt to use SIOCGIFINDEX if present. */
-#ifdef SIOCGIFINDEX
     if (ioctl(socket_fd, SIOCGIFINDEX, &ifr) == -1) {
         return false;
     }
 
-#ifdef __FreeBSD__
-    interface_number = ifr.ifr_ifru.ifru_index;
-#else
     interface_number = ifr.ifr_ifindex;
-#endif
-
-#else
-    /* Fallback to if_nametoindex(3) otherwise. */
-    interface_number = if_nametoindex(interface_name.c_str());
-    if (interface_number == 0) return false;
-#endif /* SIOCGIFINDEX */
     return true;
 }
 
+#endif
 
 #if defined(__APPLE__)
 bool set_boost_process_name(boost::thread* thread, const std::string& process_name) {

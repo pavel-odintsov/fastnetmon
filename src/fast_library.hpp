@@ -88,6 +88,7 @@ subnet_cidr_mask_t convert_subnet_from_string_to_binary_with_cidr_format(std::st
 
 #ifdef __linux__
 bool manage_interface_promisc_mode(std::string interface_name, bool switch_on);
+bool get_interface_number_by_device_name(int socket_fd, std::string interface_name, int& interface_number);
 #endif
 
 bool ip_belongs_to_patricia_tree_ipv6(patricia_tree_t* patricia_tree, struct in6_addr client_ipv6_address);
@@ -99,7 +100,6 @@ std::string serialize_statistic_counters_about_attack(attack_details_t& current_
 
 std::string dns_lookup(std::string domain_name);
 bool store_data_to_stats_server(unsigned short int graphite_port, std::string graphite_host, std::string buffer_as_string);
-bool get_interface_number_by_device_name(int socket_fd, std::string interface_name, int& interface_number);
 
 bool set_boost_process_name(boost::thread* thread, const std::string& process_name);
 std::string convert_subnet_to_string(subnet_cidr_mask_t my_subnet);
