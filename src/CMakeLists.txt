@@ -251,7 +251,7 @@ else()
 endif()
 
 # We need these flags on Linux but Windows does not accept such arguments as part of command call
-SET(CAPNP_ENVORONMENT_VARIABLES "LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH} PATH=$ENV{PATH}:${CAPNP_CUSTOM_INSTALL_PATH}/bin")
+SET(CAPNP_ENVORONMENT_VARIABLES "LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH} PATH=$ENV{PATH}:${CAPNP_CUSTOM_INSTALL_PATH}/bin ")
 
 # Remove them for Windows
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
