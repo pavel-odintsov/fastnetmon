@@ -1254,7 +1254,15 @@ bool load_our_networks_list() {
         total_number_of_hosts_in_our_networks += pow(base, 32 - cidr_mask);
 
         // Make sure it's "subnet address" and not an host address
-        uint32_t subnet_address_as_uint        = convert_ip_as_string_to_uint(network_address);
+        uint32_t subnet_address_as_uint = 0;
+
+        bool ip_parser_result = convert_ip_as_string_to_uint_safe(network_address, subnet_address_as_uint);
+
+        if (!ip_parser_result) {
+            logger << log4cpp::Priority::ERROR << "Cannot parse " << network_address << " as IP";
+            continue;
+        }
+
         uint32_t subnet_address_netmask_binary = convert_cidr_to_binary_netmask(cidr_mask);
         uint32_t generated_subnet_address      = subnet_address_as_uint & subnet_address_netmask_binary;
 
