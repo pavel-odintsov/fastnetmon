@@ -7,10 +7,7 @@ extern log4cpp::Category& logger;
 // Pattern of packet collection
 enum class collection_pattern_t {
     // Just fill whole buffer one time and stop collection process
-    ONCE = 1,
-
-    // Infinitely add packets to storage
-    INFINITE = 2,
+    ONCE = 1
 };
 
 // In this class we are storing circular buffers with full packet payloads and with parsed packet details
