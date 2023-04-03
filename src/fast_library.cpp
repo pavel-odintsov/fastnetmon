@@ -2337,6 +2337,23 @@ std::string country_static_string_to_dynamic_string(const boost::beast::static_s
     return country_code_dynamic_string;
 }
 
+#ifdef _WIN32
+// We have no inet_aton on Windows but we do have inet_pton https://learn.microsoft.com/en-us/windows/win32/api/ws2tcpip/nf-ws2tcpip-inet_pton
+// Convert IP in string representation to uint32_t in big endian (network byte order)
+// I think we can switch to using pton for Linux and other *nix too but we need to do careful testing including performance evaluation before
+bool convert_ip_as_string_to_uint_safe(const std::string& ip, uint32_t& ip_as_integer) {
+    struct in_addr ip_addr;
+
+    // Both Windows and Linux return 1 in case of success
+    if (inet_pton(AF_INET, ip.c_str(), &ip_addr) != 1) {
+        return false;
+    }
+
+    // in network byte order
+    ip_as_integer = ip_addr.s_addr;
+    return true;
+}
+#else
 // Convert IP in string representation to uint32_t in big endian (network byte order)
 bool convert_ip_as_string_to_uint_safe(const std::string& ip, uint32_t& ip_as_integer) {
     struct in_addr ip_addr;
@@ -2351,3 +2368,4 @@ bool convert_ip_as_string_to_uint_safe(const std::string& ip, uint32_t& ip_as_in
     ip_as_integer = ip_addr.s_addr;
     return true;
 }
+#endif
