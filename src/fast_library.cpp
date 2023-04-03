@@ -64,18 +64,6 @@ std::string convert_int_to_string(int value) {
     return out.str();
 }
 
-// BE AWARE! WE USE NON STANDARD SUBNET_T HERE! WE USE NON CIDR MASK HERE!
-subnet_cidr_mask_t convert_subnet_from_string_to_binary(std::string subnet_cidr) {
-    std::vector<std::string> subnet_as_string;
-    split(subnet_as_string, subnet_cidr, boost::is_any_of("/"), boost::token_compress_on);
-
-    unsigned int cidr = convert_string_to_integer(subnet_as_string[1]);
-
-    uint32_t subnet_as_int = convert_ip_as_string_to_uint(subnet_as_string[0]);
-
-    return subnet_cidr_mask_t(subnet_as_int, cidr);
-}
-
 // Converts IP address in cidr form 11.22.33.44/24 to our representation
 bool convert_subnet_from_string_to_binary_with_cidr_format_safe(const std::string& subnet_cidr, subnet_cidr_mask_t& subnet_cidr_mask) {
     if (subnet_cidr.empty()) {

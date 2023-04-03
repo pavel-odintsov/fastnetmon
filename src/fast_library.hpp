@@ -79,7 +79,6 @@ get_packet_direction_ipv6(patricia_tree_t* lookup_tree, struct in6_addr src_ipv6
 std::string convert_prefix_to_string_representation(prefix_t* prefix);
 std::string convert_subnet_to_string(subnet_cidr_mask_t my_subnet);
 std::string get_direction_name(direction_t direction_value);
-subnet_cidr_mask_t convert_subnet_from_string_to_binary(std::string subnet_cidr);
 std::vector<std::string> split_strings_to_vector_by_comma(std::string raw_string);
 bool convert_subnet_from_string_to_binary_with_cidr_format_safe(const std::string& subnet_cidr, subnet_cidr_mask_t& subnet_cidr_mask);
 
