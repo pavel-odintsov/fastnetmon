@@ -66,8 +66,6 @@ std::string get_printable_protocol_name(unsigned int protocol);
 std::string get_net_address_from_network_as_string(std::string network_cidr_format);
 std::string print_time_t_in_fastnetmon_format(time_t current_time);
 unsigned int get_cidr_mask_from_network_as_string(std::string network_cidr_format);
-void copy_networks_from_string_form_to_binary(std::vector<std::string> networks_list_as_string,
-                                              std::vector<subnet_cidr_mask_t>& our_networks);
 int convert_string_to_integer(std::string line);
 
 bool print_pid_to_file(pid_t pid, std::string pid_path);

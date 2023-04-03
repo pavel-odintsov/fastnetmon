@@ -116,15 +116,6 @@ bool convert_subnet_from_string_to_binary_with_cidr_format_safe(const std::strin
     return true;
 }
 
-void copy_networks_from_string_form_to_binary(std::vector<std::string> networks_list_as_string,
-                                              std::vector<subnet_cidr_mask_t>& our_networks) {
-    for (std::vector<std::string>::iterator ii = networks_list_as_string.begin(); ii != networks_list_as_string.end(); ++ii) {
-
-        subnet_cidr_mask_t current_subnet = convert_subnet_from_string_to_binary(*ii);
-        our_networks.push_back(current_subnet);
-    }
-}
-
 std::string convert_subnet_to_string(subnet_cidr_mask_t my_subnet) {
     std::stringstream buffer;
 
