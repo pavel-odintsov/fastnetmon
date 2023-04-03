@@ -2227,7 +2227,13 @@ void recalculate_speed() {
     double fractional = std::modf(speed_calculation_diff.count(), &integer);
 
     speed_calculation_time.tv_sec  = time_t(integer);
+
+    // timeval field tv_usec has type long on Windows
+#ifdef _WIN32
+    speed_calculation_time.tv_usec = long(fractional * 1000000);
+#else
     speed_calculation_time.tv_usec = suseconds_t(fractional * 1000000);
+#endif
 
     // Report cases when we calculate speed too slow
     if (speed_calculation_time.tv_sec > 0) {
