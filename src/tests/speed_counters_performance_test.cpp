@@ -9,6 +9,8 @@
 #include "../fast_library.hpp"
 #include "../fastnetmon_types.hpp"
 
+#include "../fast_endianless.hpp"
+
 #include "log4cpp/Appender.hh"
 #include "log4cpp/BasicLayout.hh"
 #include "log4cpp/Category.hh"
