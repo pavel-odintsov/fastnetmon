@@ -250,12 +250,19 @@ else()
     message(FATAL_ERROR "Can't find capnp compiler")
 endif()
 
+# We need these flags on Linux but Windows does not accept such arguments as part of command call
+SET(CAPNP_ENVORONMENT_VARIABLES "LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH} PATH=$ENV{PATH}:${CAPNP_CUSTOM_INSTALL_PATH}/bin")
+
+# Remove them for Windows
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+    SET(CAPNP_ENVORONMENT_VARIABLES "")
+endif()
 
 # Generate capnp bindings
 ADD_CUSTOM_COMMAND(
     OUTPUT ${PROJECT_SOURCE_DIR}/simple_packet_capnp/simple_packet.capnp.c++
     DEPENDS ${PROJECT_SOURCE_DIR}/simple_packet_capnp/simple_packet.capnp
-    COMMAND "LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH}" "PATH=$ENV{PATH}:${CAPNP_CUSTOM_INSTALL_PATH}/bin" ${CAPNP_BINARY} compile --output c++:${PROJECT_SOURCE_DIR}/simple_packet_capnp --src-prefix=${PROJECT_SOURCE_DIR}/simple_packet_capnp ${PROJECT_SOURCE_DIR}/simple_packet_capnp/simple_packet.capnp
+    COMMAND ${CAPNP_ENVORONMENT_VARIABLES}${CAPNP_BINARY} compile --output c++:${PROJECT_SOURCE_DIR}/simple_packet_capnp --src-prefix=${PROJECT_SOURCE_DIR}/simple_packet_capnp ${PROJECT_SOURCE_DIR}/simple_packet_capnp/simple_packet.capnp
     COMMENT "Build Cap'n'Proto binding for C++"
 )
 
