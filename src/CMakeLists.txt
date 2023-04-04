@@ -1,5 +1,5 @@
-# It's version of cmake in our oldest supported distro CentOS 7: https://repology.org/project/cmake/versions
-cmake_minimum_required (VERSION 2.8.12)
+# We upgraded it to support https://cmake.org/cmake/help/latest/policy/CMP0077.html
+cmake_minimum_required (VERSION 3.13)
 
 set(FASTNETMON_LIBRARIES_GLOBAL_PATH "/opt/fastnetmon-community/libraries")
 
