@@ -530,7 +530,12 @@ if (ENABLE_GOBGP_SUPPORT)
 
       # Switch to use to configuration supplied by custom Protobuf installation as it may be better
       set(FIND_PACKAGE_MODE_PROTOBUF "CONFIG")
+
+      # Apparently it's required to set this flag because without this flag set it cannot find protoc when custom library path is in use
+      # https://github.com/protocolbuffers/protobuf/issues/1931
+      set(protobuf_MODULE_COMPATIBLE true)
     endif()
+
 
     # https://cmake.org/cmake/help/latest/module/FindProtobuf.html
     find_package(Protobuf ${FIND_PACKAGE_MODE_PROTOBUF} REQUIRED ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
