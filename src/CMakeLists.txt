@@ -521,60 +521,39 @@ if (ENABLE_GOBGP_SUPPORT)
         target_link_libraries(gobgp_action absl::base absl::synchronization)
     endif()
 
-    if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-      # https://cmake.org/cmake/help/latest/module/FindProtobuf.html
-      find_package(protobuf CONFIG REQUIRED ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
+    # By default use module supplied by cmake to search for Protobuf 
+    set(FIND_PACKAGE_MODE_PROTOBUF "MODULE")
 
-      if (protobuf_FOUND)
-        message(STATUS "Found Protobuf")
+    if (DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
+      # We need to provide this information as hint for find_package() as we may use non standard path
+      set(protobuf_DIR "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib/cmake/protobuf")
 
-        # Assign path to protoc
-        set(PROTOC_BINARY ${Protobuf_PROTOC_EXECUTABLE})
-
-        include_directories(${Protobuf_INCLUDE_DIR})
-      else()
-        message(FATAL_ERROR "NOT Found Protobuf module")
-      endif()
-
-      target_link_libraries(gobgp_action protobuf::libprotobuf)
-    else()
-
-    find_path(PROTOCOL_BUFFERS_INCLUDE_FOLDER NAMES "google/protobuf/stubs/common.h" PATHS "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/include" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
-
-    if (PROTOCOL_BUFFERS_INCLUDE_FOLDER)
-        include_directories(${PROTOCOL_BUFFERS_INCLUDE_FOLDER})
-        message(STATUS "Found protocol Buffers include path: ${PROTOCOL_BUFFERS_INCLUDE_FOLDER}")
-    else()
-        message(FATAL_ERROR "Could not find protocol buffers headers")
+      # Switch to use to configuration supplied by custom Protobuf installation as it may be better
+      set(FIND_PACKAGE_MODE_PROTOBUF "CONFIG")
     endif()
 
-    find_library(PROTOCOL_BUFFERS_LIBRARY_PATH NAMES protobuf PATHS "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
+    include(FindProtobuf)
+    # https://cmake.org/cmake/help/latest/module/FindProtobuf.html
+    find_package(Protobuf ${FIND_PACKAGE_MODE_PROTOBUF} REQUIRED ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
 
-    if (PROTOCOL_BUFFERS_LIBRARY_PATH)
-        target_link_libraries(gobgp_action ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
-	    message(STATUS "Found protobuf library: ${PROTOCOL_BUFFERS_LIBRARY_PATH}")
+    if (Protobuf_FOUND)
+      message(STATUS "Found Protobuf ${Protobuf_VERSION}")
+
+      # Assign path to protoc
+      set(PROTOC_BINARY ${Protobuf_PROTOC_EXECUTABLE})
+
+      # We need to explicitly provide paths for our dependency libraries in environment variable LD_LIBRARY_PATH as we use non system path for them
+      # CentOS uses lib64 but Debian / Ubuntu still use lib for Protobuf, that's why we keep both of them
+      set(ENV{LD_LIBRARY_PATH} "${GCC_INSTALL_PATH}/lib64:${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib:${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib64:${GRPC_CUSTOM_INSTALL_PATH}/lib")
+
+      include_directories(${Protobuf_INCLUDE_DIR})
     else()
-        message(FATAL_ERROR "Could not find protocol buffers library")
+      message(FATAL_ERROR "NOT Found Protobuf module")
     endif()
 
-    endif()
+    target_link_libraries(gobgp_action protobuf::libprotobuf)
 
-    # message(STATUS "grpc: ${GRPC_INCLUDES_FOLDER} ${GRPC_LIBRARY_GRPC_PATH} ${GRPC_LIBRARY_GPR_PATH}")
-    # message(STATUS ${PROJECT_BINARY_DIR})
-
-    find_program(PROTOC_BINARY protoc PATHS "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/bin" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
-
-    if (PROTOC_BINARY)
-        message(STATUS "Found protoc protobuf compiler: ${PROTOC_BINARY}")
-
-        # We need to explicitly provide paths for our dependency libraries in environment variable LD_LIBRARY_PATH as we use non system path for them
-        # CentOS uses lib64 but Debian / Ubuntu still use lib for Protobuf, that's why we keep both of them
-        set(ENV{LD_LIBRARY_PATH} "${GCC_INSTALL_PATH}/lib64:${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib:${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib64:${GRPC_CUSTOM_INSTALL_PATH}/lib")
-    else()
-        message(FATAL_ERROR "Can't find protoc compiler")
-    endif()
-
-    # Search for gRPC plugin for protobuf, it's just binary
+    # Search for gRPC plugin for Protobuf, it's just binary
     find_program(GRPC_CPP_PLUGIN grpc_cpp_plugin PATHS "${GRPC_CUSTOM_INSTALL_PATH}/bin" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
 
     if (GRPC_CPP_PLUGIN) 
@@ -620,10 +599,7 @@ if (ENABLE_GOBGP_SUPPORT)
     # Add attributes
     add_library(attribute_pb_cc STATIC actions/attribute.pb.cc)
 
-    # It does not work without on Windows but works fine on *nix
-    if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-      target_link_libraries(attribute_pb_cc protobuf::libprotobuf)
-    endif()
+    target_link_libraries(attribute_pb_cc protobuf::libprotobuf)
 
     target_link_libraries(gobgp_action attribute_pb_cc)
 
@@ -660,11 +636,7 @@ if (ENABLE_GOBGP_SUPPORT)
     target_link_libraries(fastnetmon_api_client fastnetmon_grpc_pb_cc)
     target_link_libraries(fastnetmon_api_client fastnetmon_pb_cc)
 
-    if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-      target_link_libraries(fastnetmon_api_client protobuf::libprotobuf)
-    else()
-      target_link_libraries(fastnetmon_api_client ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
-    endif()
+    target_link_libraries(fastnetmon_api_client protobuf::libprotobuf)
 
     if (KAFKA_SUPPORT)
         target_link_libraries(fastnetmon ${LIBKAFKA_CPP_LIBRARY_PATH})
@@ -681,11 +653,7 @@ if (ENABLE_GOBGP_SUPPORT)
     target_link_libraries(fastnetmon fastnetmon_grpc_pb_cc)
     target_link_libraries(fastnetmon fastnetmon_pb_cc)
 
-    if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-      target_link_libraries(fastnetmon protobuf::libprotobuf)
-    else()
-      target_link_libraries(fastnetmon ${PROTOCOL_BUFFERS_LIBRARY_PATH}) 
-    endif()
+    target_link_libraries(fastnetmon protobuf::libprotobuf)
 endif()
 
 # example plugin
