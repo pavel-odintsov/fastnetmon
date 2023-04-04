@@ -538,10 +538,16 @@ if (ENABLE_GOBGP_SUPPORT)
     if (Protobuf_FOUND)
       message(STATUS "Found Protobuf ${Protobuf_VERSION}")
 
+      # Empty checks are very tricky in cmake:
+      # https://cmake.org/pipermail/cmake/2011-October/046939.html
+      if ("${Protobuf_PROTOC_EXECUTABLE}" STREQUAL "")
+        message(FATAL_ERROR "Protobuf was found but we did not find protoc")
+      endif()
+
       # Assign path to protoc
       set(PROTOC_BINARY ${Protobuf_PROTOC_EXECUTABLE})
 
-      message(STATUS "Found Protobuf compiler: ${Protobuf_PROTOC_EXECUTABLE}")
+      message(STATUS "Found Protobuf compiler: '${Protobuf_PROTOC_EXECUTABLE}'")
 
       # We need to explicitly provide paths for our dependency libraries in environment variable LD_LIBRARY_PATH as we use non system path for them
       # CentOS uses lib64 but Debian / Ubuntu still use lib for Protobuf, that's why we keep both of them
