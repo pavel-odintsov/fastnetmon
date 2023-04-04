@@ -541,6 +541,8 @@ if (ENABLE_GOBGP_SUPPORT)
       # Assign path to protoc
       set(PROTOC_BINARY ${Protobuf_PROTOC_EXECUTABLE})
 
+      message(STATUS "Found Protobuf compiler: ${Protobuf_PROTOC_EXECUTABLE}")
+
       # We need to explicitly provide paths for our dependency libraries in environment variable LD_LIBRARY_PATH as we use non system path for them
       # CentOS uses lib64 but Debian / Ubuntu still use lib for Protobuf, that's why we keep both of them
       set(ENV{LD_LIBRARY_PATH} "${GCC_INSTALL_PATH}/lib64:${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib:${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib64:${GRPC_CUSTOM_INSTALL_PATH}/lib")
