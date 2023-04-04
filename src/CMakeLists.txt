@@ -472,7 +472,7 @@ find_package(Threads)
 add_library(exabgp_action STATIC actions/exabgp_action.cpp)
 
 if (LINK_WITH_ABSL)
-    find_package(absl REQUIRED)
+    find_package(absl REQUIRED ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
 
     # TODO: check that we actually found it. Otherwise trigger fatal erorr
 endif()
@@ -487,7 +487,7 @@ if (ENABLE_GOBGP_SUPPORT)
 
     # We use find_package for Windows as our approach for *nix platforms leads to bunch of linking errors
     if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-      find_package(gRPC CONFIG REQUIRED)
+      find_package(gRPC CONFIG REQUIRED ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
     
       if (gRPC_FOUND)
         message(STATUS "Found gRPC")
@@ -523,7 +523,7 @@ if (ENABLE_GOBGP_SUPPORT)
 
     if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
       # https://cmake.org/cmake/help/latest/module/FindProtobuf.html
-      find_package(protobuf CONFIG REQUIRED)
+      find_package(protobuf CONFIG REQUIRED ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
 
       if (protobuf_FOUND)
         message(STATUS "Found Protobuf")
@@ -710,7 +710,7 @@ set(Boost_DETAILED_FAILURE_MSG ON)
 # Boost.System is a library that, in essence, defines four classes to identify errors. All four classes were added to the standard library with C++11. If your development environment supports C++11, you don’t need to use Boost.System. However, since many Boost libraries use Boost.System, you might encounter Boost.System through those other libraries.
 # Boost.System is a library that, in essence, defines four classes to identify errors. All four classes were added to the standard library with C++11. If your development environment supports C++11, you don’t need to use Boost.System. However, since many Boost libraries use Boost.System, you might encounter Boost.System through those other libraries.
 # TODO: we may not need system at all
-find_package(Boost COMPONENTS serialization thread regex program_options system REQUIRED)
+find_package(Boost COMPONENTS serialization thread regex program_options system REQUIRED ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
 
 if(Boost_FOUND)
     message(STATUS "Found Boost: ${Boost_LIBRARIES} ${Boost_INCLUDE_DIRS}")
