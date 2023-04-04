@@ -487,6 +487,15 @@ if (ENABLE_GOBGP_SUPPORT)
 
     # We use find_package for Windows as our approach for *nix platforms leads to bunch of linking errors
     if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+      # Will be great to use this approach for all builds but it's relatively tricky to accomplish
+      # Debian 11 has no cmake files in official gRPC packages and only Debian Sid got them: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1006237
+      # gRPC bug tracker entry: https://github.com/grpc/grpc/issues/29977
+      # https://packages.debian.org/sid/amd64/libgrpc-dev/filelist
+      # Fedora has cmake files: https://packages.fedoraproject.org/pkgs/grpc/grpc-devel/fedora-38.html#files
+      # Epel 9 has cmake files: https://packages.fedoraproject.org/pkgs/grpc/grpc-devel/epel-9.html#files
+      # Both latest Ubuntu 22.04 and 22.10 does not offer it in official package: https://packages.ubuntu.com/kinetic/amd64/libgrpc-dev/filelist
+      # As Ubuntu and Debian our main platforms we will keep old logic for them until LTS / stable versions of Ubuntu and Debian receive it
+      # We need to offer smooth developer experience and allow options to build FastNetMon at least on these platforms without using custom compiled libraries 
       find_package(gRPC CONFIG REQUIRED ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
     
       if (gRPC_FOUND)
