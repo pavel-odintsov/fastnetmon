@@ -526,13 +526,12 @@ if (ENABLE_GOBGP_SUPPORT)
 
     if (DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
       # We need to provide this information as hint for find_package() as we may use non standard path
-      set(protobuf_DIR "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib/cmake/protobuf")
+      set(Protobuf_DIR "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib/cmake/protobuf")
 
       # Switch to use to configuration supplied by custom Protobuf installation as it may be better
       set(FIND_PACKAGE_MODE_PROTOBUF "CONFIG")
     endif()
 
-    include(FindProtobuf)
     # https://cmake.org/cmake/help/latest/module/FindProtobuf.html
     find_package(Protobuf ${FIND_PACKAGE_MODE_PROTOBUF} REQUIRED ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
 
