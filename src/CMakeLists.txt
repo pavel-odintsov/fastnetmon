@@ -525,8 +525,11 @@ if (ENABLE_GOBGP_SUPPORT)
     set(FIND_PACKAGE_MODE_PROTOBUF "MODULE")
 
     if (DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
-      # We need to provide this information as hint for find_package() as we may use non standard path
-      set(Protobuf_DIR "${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib/cmake/protobuf")
+      # We add our custom path to Protobuf to top of search_list used by find_package: https://cmake.org/cmake/help/latest/variable/CMAKE_PREFIX_PATH.html
+      # This approach has advantage over Protobuf_DIR which requires us to set direct path to cmake folder of custom built dependency
+      # which resides in vendor specific folder with name lib which may be lib64 on CentOS platforms:
+      # protobuf_21_12/lib/cmake/protobuf or  protobuf_21_12/lib64/cmake/protobuf on CentOS 
+      list(APPEND CMAKE_PREFIX_PATH ${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}) 
 
       # Switch to use to configuration supplied by custom Protobuf installation as it may be better
       set(FIND_PACKAGE_MODE_PROTOBUF "CONFIG")
@@ -536,9 +539,8 @@ if (ENABLE_GOBGP_SUPPORT)
       set(protobuf_MODULE_COMPATIBLE true)
     endif()
 
-
     # https://cmake.org/cmake/help/latest/module/FindProtobuf.html
-    find_package(Protobuf ${FIND_PACKAGE_MODE_PROTOBUF} REQUIRED ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
+    find_package(Protobuf ${FIND_PACKAGE_MODE_PROTOBUF} REQUIRED)
 
     if (Protobuf_FOUND)
       message(STATUS "Found Protobuf ${Protobuf_VERSION}")
