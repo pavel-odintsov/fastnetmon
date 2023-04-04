@@ -558,7 +558,9 @@ if (ENABLE_GOBGP_SUPPORT)
       # CentOS uses lib64 but Debian / Ubuntu still use lib for Protobuf, that's why we keep both of them
       set(ENV{LD_LIBRARY_PATH} "${GCC_INSTALL_PATH}/lib64:${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib:${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib64:${GRPC_CUSTOM_INSTALL_PATH}/lib")
 
-      include_directories(${Protobuf_INCLUDE_DIR})
+      message(STATUS "Protobuf include directory: ${Protobuf_INCLUDE_DIRS}") 
+
+      include_directories(${Protobuf_INCLUDE_DIRS})
     else()
       message(FATAL_ERROR "NOT Found Protobuf module")
     endif()
