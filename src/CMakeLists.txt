@@ -3,6 +3,11 @@ cmake_minimum_required (VERSION 3.13)
 
 set(FASTNETMON_LIBRARIES_GLOBAL_PATH "/opt/fastnetmon-community/libraries")
 
+# We need this options for generating compile_commands.json file
+# It's required for clang static analyzer and autocompletion tools based on clang
+# PVS uses it too
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 project(FastNetMon)
 
 include(GNUInstallDirs)
