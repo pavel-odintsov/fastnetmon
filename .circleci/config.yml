@@ -220,6 +220,7 @@ jobs:
       - run: sudo docker exec linux_docker apt-get update; true
       - run: sudo docker exec linux_docker apt-get install -y perl wget
       - run: sudo docker exec linux_docker << parameters.s3cmd_install_command >>
+      - run: sudo docker exec linux_docker git clone https://github.com/pavel-odintsov/fastnetmon.git
       - run:
           name: install_gcc
           no_output_timeout: 120m 
@@ -296,7 +297,7 @@ workflows:
       - build_debian:
           docker_image: "ubuntu:jammy"
           distro_version: "22.04"
-          name: "ubuntu2204"
+          name: "ubuntu2204_arm"
           distro_name: "ubuntu"
           resource_class: "arm.large"
       - build_debian:
