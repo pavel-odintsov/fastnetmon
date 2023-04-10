@@ -337,6 +337,13 @@ workflows:
           name: "debian11"
           distro_name: "debian"
       - build_debian:
+          docker_image: "debian:bullseye"
+          distro_version: "11"
+          name: "debian11_arm"
+          distro_name: "debian"
+          resource_class: "arm.large"
+          debian_package_architecture: "arm64"
+      - build_debian:
           docker_image: "debian:bookworm"
           distro_version: "12"
           name: "debian12"
