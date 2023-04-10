@@ -118,6 +118,15 @@ sub get_library_binary_build_from_google_storage {
 
     my $binary_path = "s3://$s3_bucket_binary_dependency_name/$distro_type/$distro_version/$dependency_archive_name";
 
+    # It can be: x86_64 or aarch64
+    my $machine_architecture = `uname -m`;
+    chomp $machine_architecture;
+
+    # We added ARM platforms later and we use another path for them
+    if ($machine_architecture eq 'aarch64') {
+        $binary_path = "s3://$s3_bucket_binary_dependency_name/$machine_architecture/$distro_type/$distro_version/$dependency_archive_name";
+    }
+
     # print "Will use following path to retrieve dependency: $binary_path\n";
     my $download_file_return_code =
         system("s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket=\"%(bucket).storage.googleapis.com\" get $binary_path /tmp/$dependency_archive_name >/dev/null 2>&1");
@@ -177,6 +186,15 @@ sub upload_binary_build_to_google_storage {
     my $dependency_archive_name = "$dependency_name.tar.gz";
 
     my $binary_path = "s3://$s3_bucket_binary_dependency_name/$distro_type/$distro_version/$dependency_archive_name";
+
+    # It can be: x86_64 or aarch64
+    my $machine_architecture = `uname -m`;
+    chomp $machine_architecture;
+
+    # We added ARM platforms later and we use another path for them
+    if ($machine_architecture eq 'aarch64') {
+        $binary_path = "s3://$s3_bucket_binary_dependency_name/$machine_architecture/$distro_type/$distro_version/$dependency_archive_name";
+    }
 
     my $archive_res = system("tar --use-compress-program=pigz -cpf /tmp/$dependency_archive_name -C $library_install_folder $dependency_name");
 
