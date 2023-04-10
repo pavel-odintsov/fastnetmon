@@ -762,6 +762,7 @@ sub install_log4cpp {
     chomp $machine_architecture;
 
     # We can specify build type manually
+    # TODO: we need to report this solution to upstream: https://github.com/nzbget/nzbget/issues/418
     if ($machine_architecture eq 'aarch64') {
         $log4cpp_configure_params = '--build=aarch64-unknown-linux-gnu';
     }
