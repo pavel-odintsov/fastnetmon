@@ -224,15 +224,15 @@ jobs:
       - run:
           name: install_gcc
           no_output_timeout: 120m 
-          command: sudo -E docker exec --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY linux_docker perl src/scripts/install_fastnetmon_dependencies.pl gcc_12_1_0
+          command: sudo -E docker exec --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY linux_docker perl fastnetmon/src/scripts/install_fastnetmon_dependencies.pl gcc_12_1_0
       - run:
           name: install_dependencies
           no_output_timeout: 180m
-          command: sudo -E docker exec --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY linux_docker perl src/scripts/install_fastnetmon_dependencies.pl
+          command: sudo -E docker exec --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY linux_docker perl fastnetmon/src/scripts/install_fastnetmon_dependencies.pl
       - run: perl src/scripts/fastnetmon_build.pl
       - run: perl src/scripts/build_library_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
-      - run: sudo docker exec linux_docker src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> << parameters.distro_name >> << parameters.distro_version >>
-      - run: s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/<< parameters.distro_name >>/<< parameters.distro_version >>/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
+      - run: sudo docker exec linux_docker fastnetmon/src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> << parameters.distro_name >> << parameters.distro_version >>
+      - run: sudo -E docker exec --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY linux_docker s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/<< parameters.distro_name >>/<< parameters.distro_version >>/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
       - run: sudo docker exec linux_docker cp src/fastnetmon.conf /etc/fastnetmon.conf
       - run: sudo docker exec linux_docker ldd /opt/fastnetmon-community/app/bin/fastnetmon
       - run: sudo docker exec linux_docker ldd /opt/fastnetmon-community/app/bin/fastnetmon_client
