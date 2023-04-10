@@ -207,7 +207,7 @@ sub upload_binary_build_to_google_storage {
         system("s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket=\"%(bucket).storage.googleapis.com\" put /tmp/$dependency_archive_name $binary_path");
 
     if ($upload_this_file != 0) {
-        print "Cannot upload dependency file from Google Storage\n";
+        print "Cannot upload dependency file to /tmp/$dependency_archive_name Google Storage\n";
         return '';
     }
 
