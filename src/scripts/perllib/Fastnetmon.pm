@@ -727,7 +727,7 @@ sub install_boost_build {
 sub install_log4cpp {
     my $folder_name = shift;
 
-    my $log_cpp_version_short = '1.1.3';
+    my $log_cpp_version_short = '1.1.4rc3';
 
     my $log4cpp_install_path = "$library_install_folder/$folder_name";
 
@@ -737,7 +737,7 @@ sub install_log4cpp {
     chdir $temp_folder_for_building_project;
 
     print "Download log4cpp sources\n";
-    my $log4cpp_download_result = download_file($log4cpp_url, $distro_file_name, '74f0fea7931dc1bc4e5cd34a6318cd2a51322041');
+    my $log4cpp_download_result = download_file($log4cpp_url, $distro_file_name, 'b32e6ec981a5d75864e1097525e1f502cc242d17');
 
     unless ($log4cpp_download_result) {
         warn "Can't download log4cpp\n";
@@ -748,29 +748,24 @@ sub install_log4cpp {
     exec_command("tar -xf $distro_file_name");
     chdir "$temp_folder_for_building_project/log4cpp";
 
-    if ($distro_architecture eq 'aarch64') {
-        # TODO: unfortunately, I removed these files and we need to switch to master build: https://git.code.sf.net/p/log4cpp/codegit
-        # commit: 2e117d81e94ec4f9c5af42fcf76a0583a036e106
-        # For arm64 build we need multiple fixes
-        # checking build system type... config/config.guess: unable to guess system type
-        # configure: error: cannot guess build type; you must specify one
-        exec_command("curl https://raw.githubusercontent.com/pavel-odintsov/config/master/config.guess -o./config/config.guess");
-        exec_command("curl https://raw.githubusercontent.com/pavel-odintsov/config/master/config.sub -o./config/config.sub");
-    }
-
     print "Build log4cpp\n";
 
-    # TODO: we need some more reliable way to specify options here
+    my $configure_result = '';
+
     if ($configure_options) {
-        exec_command("$configure_options ./configure --prefix=$log4cpp_install_path");
+        $configure_result = exec_command("$configure_options ./configure --prefix=$log4cpp_install_path");
     } else {
-        exec_command("./configure --prefix=$log4cpp_install_path");
-    }    
+        $configure_result = exec_command("./configure --prefix=$log4cpp_install_path");
+    }
+
+    if (!$configure_result) {
+        die "Cannot configure log4cpp\n";
+    }
 
     my $make_result = exec_command("$ld_library_path_for_make make $make_options install"); 
 
     if (!$make_result) {
-        print "make for log4cpp failed\n";
+        die "Make for log4cpp failed\n";
     }
 
     1;

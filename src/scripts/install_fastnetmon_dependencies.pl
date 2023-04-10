@@ -109,7 +109,7 @@ sub main {
         'cppkafka_0_3_1',
 
         'gobgp_3_12_0',
-        'log4cpp_1_1_3',
+        'log4cpp_1_1_4',
         'gtest_1_13_0'
     );
 
@@ -423,7 +423,8 @@ sub main {
             'ubuntu:22.04'        => 'b3f2168c6b705804155ca944a6c7850057d50652efc57c3c4194838b147176779b98d7b2bf9af72ee141805d62f7a6c1460244ce60b570dbdffc114d5e7dc899',
             'ubuntu:aarch64:22.04'=> '4e9114ed4c9fde74517f04fc8b79b44854ee5fc8b51b99816ad60dccbc61a682993c4321a0df6920a40164281ba24d171f9d4972e54a9f3015d993caf7d03c47',
         },
-        'log4cpp_1_1_3'         => {
+        # It's actually 1_1_4rc3 but we use only minor and major numbers
+        'log4cpp_1_1_4'         => {
             'centos:7'            => '5f314177ff82f9b822c76a0256a322e1b8c81575d9b3da33f45532f0942f5358c7588cf1b88a88f8ed99c433c97a3f2fbf59a949eb32a7335c5a8d3a59895a65',
             'centos:8'            => 'a5e2068788957b9b14042e3ea9cc1aecb4c7910bea770e270d2a21392a7569004bda74546d7025c95f937de6368b705848c151386a765c55f3fa14ef511b67d2',
             'centos:9'            => '052457ac03a5640e4d51e93f47b83d5990663f0629633c956466bf156fa9bf63052700d4d2c5aae44bc5022dd9b93ef65d2dd1176a675e3dd61a6e960afa58e7',
