@@ -752,10 +752,24 @@ sub install_log4cpp {
 
     my $configure_result = '';
 
+    # We need to address bug on ARM 64 platforms:
+    # configure: error: cannot guess build type; you must specify one
+    # https://github.com/pavel-odintsov/fastnetmon/issues/980
+    my $log4cpp_configure_params = '';
+
+    # It can be: x86_64 or aarch64
+    my $machine_architecture = `uname -m`;
+    chomp $machine_architecture;
+
+    # We can specify build type manually
+    if ($machine_architecture eq 'aarch64') {
+        $log4cpp_configure_params = '--build=aarch64-unknown-linux-gnu';
+    }
+
     if ($configure_options) {
-        $configure_result = exec_command("$configure_options ./configure --prefix=$log4cpp_install_path");
+        $configure_result = exec_command("$configure_options ./configure --prefix=$log4cpp_install_path $log4cpp_configure_params");
     } else {
-        $configure_result = exec_command("./configure --prefix=$log4cpp_install_path");
+        $configure_result = exec_command("./configure --prefix=$log4cpp_install_path $log4cpp_configure_params");
     }
 
     if (!$configure_result) {
