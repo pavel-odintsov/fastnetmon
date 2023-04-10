@@ -210,6 +210,9 @@ jobs:
       resource_class:
         type: string
         default: large
+      debian_package_architecture:
+        type: string
+        default: "amd64"
     machine:
       image: ubuntu-2204:current
     environment:
@@ -232,7 +235,7 @@ jobs:
       - run: sudo docker exec linux_docker perl fastnetmon/src/scripts/fastnetmon_build.pl
       - run: sudo docker exec linux_docker perl fastnetmon/src/scripts/build_library_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
       - run: sudo docker exec linux_docker fastnetmon/src/scripts/build_any_package.pl deb /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> << parameters.distro_name >> << parameters.distro_version >>
-      - run: sudo -E docker exec --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY linux_docker s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/<< parameters.distro_name >>/<< parameters.distro_version >>/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_amd64.deb
+      - run: sudo -E docker exec --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY linux_docker s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_<< parameters.debian_package_architecture >>.deb s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/<< parameters.distro_name >>/<< parameters.distro_version >>/fastnetmon_<< pipeline.parameters.fastnetmon_build_version >>_<< parameters.debian_package_architecture >>.deb
       - run: sudo docker exec linux_docker cp fastnetmon/src/fastnetmon.conf /etc/fastnetmon.conf
       - run: sudo docker exec linux_docker ldd /opt/fastnetmon-community/app/bin/fastnetmon
       - run: sudo docker exec linux_docker ldd /opt/fastnetmon-community/app/bin/fastnetmon_client
@@ -300,6 +303,7 @@ workflows:
           name: "ubuntu2204_arm"
           distro_name: "ubuntu"
           resource_class: "arm.large"
+          debian_package_architecture: "arm64"
       - build_debian:
           docker_image: "ubuntu:focal"
           distro_version: "20.04"
