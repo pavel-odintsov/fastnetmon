@@ -141,7 +141,14 @@ sub get_library_binary_build_from_google_storage {
     # Hashes for all distros
     my $data_hashes = shift;
 
-    my $current_build_hash = $data_hashes->{ "$distro_type:$distro_version" };
+    my $key_name = "$distro_type:$distro_version";
+
+    # We use another structure of hash for ARM
+    if ($machine_architecture eq 'aarch64') {
+        $key_name = "$distro_type:$machine_architecture:$distro_version";
+    }
+
+    my $current_build_hash = $data_hashes->{ $key_name };
 
     # Hash must exist for all our existing dependencies
     unless ($current_build_hash) {
