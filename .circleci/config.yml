@@ -218,7 +218,7 @@ jobs:
     steps:
       - run: sudo docker run --name  linux_docker -d -t << parameters.docker_image >>
       - run: sudo docker exec linux_docker apt-get update; true
-      - run: sudo docker exec linux_docker apt-get install -y perl wget
+      - run: sudo docker exec linux_docker apt-get install -y perl wget git
       - run: sudo docker exec linux_docker << parameters.s3cmd_install_command >>
       - run: sudo docker exec linux_docker git clone https://github.com/pavel-odintsov/fastnetmon.git
       - run:
