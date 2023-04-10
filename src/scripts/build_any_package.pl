@@ -24,7 +24,18 @@ unless ($package_type && $archive_name && $package_version && $distro_name && $d
 # By default it uses compression level 6
 my $dpkg_deb_options = '-Zxz -z6';
 
+# It can be: x86_64 or aarch64
+my $machine_architecture = `uname -m`;
+chomp $machine_architecture;
+
+# For number of places we need Debian specific name for particular architectures
 my $debian_architecture_name = 'amd64';
+
+if ($machine_architecture eq 'aarch64') {
+    $debian_architecture_name = 'arm64';
+} elsif ($machine_architecture eq 'x86_64') {
+    $debian_architecture_name = 'amd64';
+}
 
 if ($package_type eq 'rpm') {
     build_rpm_package();
