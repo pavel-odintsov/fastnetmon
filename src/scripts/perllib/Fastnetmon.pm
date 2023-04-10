@@ -894,12 +894,24 @@ sub git_clone_repository {
 # We do not use cache for it yet
 sub install_gobgp {
     my $folder_name = shift;
-
-    chdir $temp_folder_for_building_project;
-    my $distro_file_name = 'gobgp_3.12.0_linux_amd64.tar.gz';
     
+    chdir $temp_folder_for_building_project;
+
+    # It can be: x86_64 or aarch64
+    my $machine_architecture = `uname -m`;
+    chomp $machine_architecture;
+
+    my $distro_file_name = 'gobgp_3.12.0_linux_amd64.tar.gz';
+    my $gobgp_sha1 = 'eca957a8991b8ef6eceef665a9f15a3717827a09';
+
+    # We download pre compiled binaries and we need to download different file for ARM64 platform
+    if ($machine_architecture eq 'aarch64') {
+        $distro_file_name = 'gobgp_3.12.0_linux_arm64.tar.gz';
+        $gobgp_sha1 = 'ba42e5c7fb92638a7ced9d30fc20b24925e0a923';
+    }
+
     my $download_result = download_file("https://github.com/osrg/gobgp/releases/download/v3.12.0/$distro_file_name",
-        $distro_file_name, 'eca957a8991b8ef6eceef665a9f15a3717827a09'); 
+        $distro_file_name, $gobgp_sha1); 
 
     unless ($download_result) {
         warn "Could not download gobgp\n";
