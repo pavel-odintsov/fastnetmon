@@ -299,6 +299,7 @@ workflows:
           centos_version: "8"
           name: "centos8_arm"
           resource_class: "arm.large"
+          centos_package_architecture: "aarch64"
       - build_centos:
           docker_image: almalinux:9
           centos_version: "9"
@@ -308,6 +309,7 @@ workflows:
           centos_version: "9"
           name: "centos9_arm"
           resource_class: "arm.large"
+          centos_package_architecture: "aarch64"
       - build_debian:
           docker_image: "ubuntu:jammy"
           distro_version: "22.04"
