@@ -152,7 +152,7 @@ sub get_library_binary_build_from_google_storage {
 
     # Hash must exist for all our existing dependencies
     unless ($current_build_hash) {
-        warn "Cannot get $dependency_name hash for Distro $distro_type $distro_version, please add it to build configuration";
+        warn "Cannot get $dependency_name hash for Distro $distro_type $distro_version architecture $machine_architecture, please add it to build configuration";
         return 2;
     }
 
