@@ -427,19 +427,19 @@ sub main {
         },
         # It's actually 1_1_4rc3 but we use only minor and major numbers
         'log4cpp_1_1_4'         => {
-            'centos:7'            => '5f314177ff82f9b822c76a0256a322e1b8c81575d9b3da33f45532f0942f5358c7588cf1b88a88f8ed99c433c97a3f2fbf59a949eb32a7335c5a8d3a59895a65',
-            'centos:8'            => 'a5e2068788957b9b14042e3ea9cc1aecb4c7910bea770e270d2a21392a7569004bda74546d7025c95f937de6368b705848c151386a765c55f3fa14ef511b67d2',
-            'centos:9'            => '052457ac03a5640e4d51e93f47b83d5990663f0629633c956466bf156fa9bf63052700d4d2c5aae44bc5022dd9b93ef65d2dd1176a675e3dd61a6e960afa58e7',
+            'centos:7'            => '', 
+            'centos:8'            => '',
+            'centos:9'            => '',
 
-            'debian:9'            => 'bd886f9d7950443c8135255e1c59229ce76dc09260b76eae82c4c665414151b473299347d7621aae4a4743df51a923c2eaeef904b1140092ffe5976b3b346fd7',
-            'debian:10'           => 'a966df89fc18ef4b4ea82cc3d2d53d3ecb3623ef5cd197a23ed8135f27ecfab2d35b4a24f594bb16aaa11b618126cba640ef7a61d7d2d22ba9682e5e0e8114ca',
-            'debian:11'           => '8b695af4f89fd879b274efb93539827d73d8b823ff15a76181d2e66c8f4d337ebc92e8df090ea0d16d6bb685caf7353e37ee9b1415a64c67d30a764da649c3d7', 
-            'debian:bookworm/sid' => '0203c130e64e3ed88b5d7f5142f6e07b6a66cf9d7942d16c461a6e9c45fe95c6a924ecab822a3b1863fe121972749b2c977e443f7d729a9948662546789b49ed',
+            'debian:9'            => '',
+            'debian:10'           => '',
+            'debian:11'           => '',
+            'debian:bookworm/sid' => '',
 
-            'ubuntu:16.04'        => '517204d76129ddb153a0c44a82fea512250388faa0b8ee39ac087a9dd09d04c2fae29e700364de300d63b94dcd09a85e75f7d08bbb3f7aad4cf7940b94c30bff',
-            'ubuntu:18.04'        => '205e5f4601225a7fd4e58d4103a2a51dc1736361e73c8122b89c0ecaaf171245a13e3d720a144af6e36c21e9f64279d87cad46ad8c64f8d0c8ddd6c7baebe9dd',
-            'ubuntu:20.04'        => 'b0d1d78db526784c66d6cb8ed03941c7f7d00ab16983588e14f0ffb2d9e0a340b1c40008c109962e7fd6d8fce5dca3145de16b05c83cd0ff0afe753bbd75587b',
-            'ubuntu:22.04'        => '371a8c0424ad3fc8b1ab63217a850ec234f5768243a6e7737696cfd115da86f63f7399a993ea4c97654c860072c9e662d1586378c62dab04281214d69d4ed1d5',
+            'ubuntu:16.04'        => '',
+            'ubuntu:18.04'        => '',
+            'ubuntu:20.04'        => '',
+            'ubuntu:22.04'        => '',
             'ubuntu:aarch64:22.04'=> '82b6229a5346d3859f3263c5a3fae403f7123b2db805e7ef8ca94d3222a5aa8d8ce79a2f6e3345a2849bb949aeb984010154e2119dc20adb5e7052271439492d',
         },
         'rdkafka_1_7_0'           => {
