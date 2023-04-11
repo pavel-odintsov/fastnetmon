@@ -19,9 +19,10 @@ Project
 🔏️ [Privacy policy](https://fastnetmon.com/privacy-policy/)  
 
 ### Installation
-- Linux (Debian, CentOS, RHEL, Ubuntu), [install instructions](https://fastnetmon.com/install/)
-- [VyOS](https://fastnetmon.com/fastnetmon-community-on-vyos-rolling-1-3/)
-- FreeBSD: [official port](https://www.freshports.org/net-mgmt/fastnetmon/).
+- [Linux install instructions](https://fastnetmon.com/install/)
+- [macOS install instructions](https://formulae.brew.sh/formula/fastnetmon)
+- [FreeBSD port](https://www.freshports.org/net-mgmt/fastnetmon/)
+- [VyOS bundled support](https://fastnetmon.com/fastnetmon-community-on-vyos-rolling-1-3/)
 
 Supported packet capture engines
 --------------------------------
@@ -35,20 +36,6 @@ Supported packet capture engines
 - PF_RING / PF_RING ZC (deprecated, available only for CentOS 6 in 1.2.0)
 
 You can check out the [comparison table](https://fastnetmon.com/docs/capture_backends/) for all available packet capture engines.
-
-Official support groups:
--------
-- [Mailing list](https://groups.google.com/g/fastnetmon)
-- [Slack](https://slack.fastnetmon.com)
-- IRC: #fastnetmon at irc.libera.chat:6697 (TLS) [web client](https://web.libera.chat/?channels=#fastnetmon)
-- Telegram: [fastnetmon](https://t.me/fastnetmon)
-- Discord: [fastnetmon](https://discord.fastnetmon.com)
-
-Follow us at social media:
--------
-- [Twitter](https://twitter.com/fastnetmon)
-- [LinkedIn](https://www.linkedin.com/company/fastnetmon/)
-- [Facebook](https://www.facebook.com/fastnetmon/)
 
 Features
 --------
@@ -68,6 +55,20 @@ Features
 - MongoDB protocol support compatible with native [MongoDB](https://fastnetmon.com/docs/mongodb/) and [FerretDB](https://github.com/FerretDB/FerretDB)
 - VLAN untagging in mirror and sFlow modes
 - Capture attack fingerprints in PCAP format
+
+Official support groups:
+-------
+- [Mailing list](https://groups.google.com/g/fastnetmon)
+- [Slack](https://slack.fastnetmon.com)
+- IRC: #fastnetmon at irc.libera.chat:6697 (TLS) [web client](https://web.libera.chat/?channels=#fastnetmon)
+- Telegram: [fastnetmon](https://t.me/fastnetmon)
+- Discord: [fastnetmon](https://discord.fastnetmon.com)
+
+Follow us at social media:
+-------
+- [Twitter](https://twitter.com/fastnetmon)
+- [LinkedIn](https://www.linkedin.com/company/fastnetmon/)
+- [Facebook](https://www.facebook.com/fastnetmon/)
 
 ### Router integration instructions
 - [Juniper MX Routers](https://fastnetmon.com/docs/junos_integration/)
