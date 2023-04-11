@@ -109,10 +109,10 @@ jobs:
       image: ubuntu-2204:current
     steps:
      - checkout
-     - run: docker build -t ghcr.io/pavel-odintsov/fastnetmon-community:1.2.3 -t ghcr.io/pavel-odintsov/fastnetmon-community:latest - < src/Dockerfile
+     - run: docker build -t ghcr.io/pavel-odintsov/fastnetmon-community:1.2.4 -t ghcr.io/pavel-odintsov/fastnetmon-community:latest - < src/Dockerfile
      - run: sudo docker images
      - run: echo $CR_PAT | sudo docker login ghcr.io -u pavel-odintsov --password-stdin
-     - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:1.2.3
+     - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:1.2.4
      - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:latest
   build_gce:
     machine:
@@ -252,6 +252,9 @@ jobs:
       resource_class:
         type: string
         default: large
+      centos_package_architecture:
+        type: string
+        default: "x86_64"
     machine:
       image: ubuntu-2204:current
     resource_class: << parameters.resource_class >>
@@ -271,7 +274,7 @@ jobs:
       - run: sudo docker exec linux_docker perl fastnetmon/src/scripts/fastnetmon_build.pl
       - run: sudo docker exec linux_docker perl fastnetmon/src/scripts/build_library_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
       - run: sudo docker exec linux_docker fastnetmon/src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> centos << parameters.centos_version >>
-      - run: sudo -E docker exec --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY linux_docker s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/result_data/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el<< parameters.centos_version >>.x86_64.rpm s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/centos/<< parameters.centos_version >>/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el<< parameters.centos_version >>.x86_64.rpm
+      - run: sudo -E docker exec --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY linux_docker s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/result_data/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el<< parameters.centos_version >>.<< parameters.centos_package_architecture >>.rpm s3://fastnetmon_community_packages/<< pipeline.parameters.fastnetmon_build_version >>/centos/<< parameters.centos_version >>/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el<< parameters.centos_version >>.<< parameters.centos_package_architecture >>.rpm
       - run: sudo docker exec linux_docker cp fastnetmon/src/fastnetmon.conf /etc/fastnetmon.conf
       - run: sudo docker exec linux_docker ldd /opt/fastnetmon-community/app/bin/fastnetmon
       - run: sudo docker exec linux_docker ldd /opt/fastnetmon-community/app/bin/fastnetmon_client
@@ -377,6 +380,8 @@ workflows:
           debian_package_architecture: "arm64"
       - build_docker_x86_64:
           name: "Build Docker image on x86_64 platform"
+      # - build_docker_arm64:
+      #    name: "Build Docker image on ARM64 platform"
       - build_debian_upstream_package:
           name: "Debian Sid Upstream Build"
           debian_codename: "sid"
