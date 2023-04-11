@@ -168,6 +168,7 @@ sub main {
             'centos:aarch64:8'    => '',
 
             'centos:9'            => '398948e08847b7ac09a232414dc462abe9c66d098e71de3350fcb9cca38fdf0204a302d7fc75ada4fad33072371059646c4d2167baed311143240de9a8e62091',
+            'centos:aarch64:9'    => '',
         },
         'openssl_1_1_1q'        => {
             'centos:7'            => 'ab9dde43afc7b6bcc4399b6fbd746727e0ce72cf254e9b7f6abcc5c22b319ab82c051546decc6804e508654975089888c544258514e30dc18385ad1dd59d63fb',
@@ -176,7 +177,8 @@ sub main {
             'centos:aarch64:8'    => '',
 
             'centos:9'            => '76d2be30ca3afdf3e603b7690a3e7a8bf8423d4b359d928ef45f7aa827dec6d12e47c1f995c945d419763820d566590945aadf7d3ba38344b8b5d184fcc9bffc',
-            
+            'centos:aarch64:9'    => '',
+
             'debian:9'            => 'd284915be431493b4c336d452478a28906a8268c4079fbb19c8851cf70a1a9eefe942a424e922caa4bc38eaf66b40a9971576a62ba0aebe7fd20d05b2bdeacf0',
             'debian:10'           => 'eac2b5a066386f7900b1e364b5347d87ab4a994a058ecfaf5682a9325fc72362b8532ddf974e092c08bebd9f4cc4b433e00c3ab564c532fa6ed1f30a6b354626',
             
@@ -202,7 +204,8 @@ sub main {
             'centos:aarch64:8'    => '',
 
             'centos:9'            => 'ffcfb14f224b24b67ca68edcf36b24d8dc6ddce47dc597ccf4d13301ce7d87e79c9fec67197ce1ee57b9acd8bde58633418b8c1eff1a85300a6f7af033263d2c',
-            
+            'centos:aarch64:9'    => '',
+
             'debian:9'            => 'd23bc4b5e5b8ab39ecb2046629a259265ea82f9247785c4c63cef2c11f0eb8064476f3d775a5b94ce0272f9a3227f2b618d87dae387840b69e468b9985416398',
             'debian:10'           => 'cab3412debee6f864551e94f322d453daca292e092eb67a5b7f1cd0025d1997cfa60302dccc52f96be09127aee493ab446004c1e578e1725b4205f8812abd9ea',
             
@@ -228,7 +231,8 @@ sub main {
             'centos:aarch64:8'    => '',
 
             'centos:9'            => 'fb604dab4188dfa7d81483274fe30daa8ddc27bd8ea0ba37eaf7171db781f397750ab8a27edb160895307ee5e5c89f3b59478cb7f40e7e6113513c76965b6c21',
-            
+            'centos:aarch64:9'    => '',
+
             'debian:9'            => 'ac536be94ec5133c45f4d435dd082e1ee7299bce7ae971e361eda716466963be358452ff0c959d7e610a05b03dbbd41ce195be4ee6023b8b223f6cdb22cd0c67',
             'debian:10'           => '89c1a916456f85aa76578d5d85b2c0665155e3b7913fd79f2bb6309642dab54335b6febcf6395b2ab4312c8cc5b3480541d1da54137e83619f825a1be3be2e4e',
             
@@ -254,7 +258,8 @@ sub main {
             'centos:aarch64:8'    => '',
 
             'centos:9'            => 'ebc4041781e7886d4c2526469bbe23849711b9c9b3e209ff16640dcb0d9c3c874a4958a6a4393c47b0ef8b188bd1ad74aff04ecf82c0214f6d7c4b08549e02af',
-            
+            'centos:aarch64:9'    => '',
+
             'debian:9'            => 'bdf9c89926d3aff1c5b65d20b94b2bddece53841732349bcb15f956025f950809e0212841712f21b52c5286c513066c01fa025a0e06ab9feee9bef8f7b74372d',
             'debian:10'           => '1c10db8094967024d5aec07231fb79c8364cff4c850e0f29f511ddaa5cfdf4d18217bda13c41a1194bd2b674003d375d4df3ef76c83f6cbdf3bea74b48bcdcea',
             'debian:11'           => '0cca0308c2f400c7998b1b2fce391ddef4e77eead15860871874b2513fe3d7da544fdceca9bcbee9158f2f6bd1f786e0aa3685a974694b2c0400a3a7adba31c8', 
@@ -279,7 +284,8 @@ sub main {
             'centos:aarch64:8'    => '',
 
             'centos:9'            => '3e9ad8d2032b5eda9bfe9a1a151f98545ae78cf6422dd307c733507554d4cd23a5d7b30d44552a15c66c0faa25ab2146fdf5a14a2cf360efc5c49ae17ddeb0f1',
-            
+            'centos:aarch64:9'    => '',
+
             'debian:9'            => 'b2bd35fc71d6e00bd35d3ae38728fb5312ed53cbcfb7ff4544281a5016f62961cb4b8371aead26c9964b4cf483ae9e6ee5beed003b7f9d26ad40c90547439795',
             'debian:10'           => '3b146de940bf36ea301c2078edc8dead611c4a770643c548080ecfdf8820856b23fa73a15fcab0579550cb19ad816fbef6040ad98ee500a8d15a66ed99eef241',
             
@@ -305,7 +311,8 @@ sub main {
             'centos:aarch64:8'    => '',
 
             'centos:9'            => 'a4cfb081e1b08b41dc0d51d62e9136826b313c65c773afc2942da09d096f0e07d109be500313ea6cb6d241ff5737f2d6b51a85526e8495afde45fdb2e89f8953',
-            
+            'centos:aarch64:9'    => '',
+
             'debian:9'            => '7c6b3c073ab6461daef783ab08d367df56730764bc43d1c2a66d6a4001744400a98adf0399326ceb303f2d609c206858c311300eb06b252bf899d5a5616f142e',
             'debian:10'           => 'e9ba7567657d87d908ff0d00a819ad5da86476453dc207cf8882f8d18cbc4353d18f90e7e4bcfbb3392e4bc2007964ea0d9efb529b285e7f008c16063cce4c4e',
             
@@ -331,7 +338,8 @@ sub main {
             'centos:aarch64:8'    => '',
 
             'centos:9'            => '304e402b1a86734095476024840c0ba8a0ccf98771ac9655672671a7b264ee73a87a2043ce96ee8acffa12901f75ca5403dda297c040b8b3cfd220979df472c7',
-            
+            'centos:aarch64:9'    => '',
+
             'debian:9'            => 'dae76b5ff1749f9b28af8b2bb87e36879312bad7f6ea1f622e87f957eb1d8c9ea7eb4591a92a175f7db58268371a6c70de7d07cbffa43e763c326a08bbf09cb9',
             'debian:10'           => '76ca19f7cd4ec5e0251bc4804901acbd6b70cf25098831d1e16da85ad18d4bb2a07faa1a8e84e1d58257d5b8b1d521b5e49135ce502bd16929c0015a00f4089d',
             
@@ -357,7 +365,8 @@ sub main {
             'centos:aarch64:8'    => '',
 
             'centos:9'            => 'b1785b2bf23c8363856b8131732577ca955d66d346716a6d5c2f306042fc25d4cfd9ba320dcdcaf34ec810b1eb7be585427f382acbdf99589b84dc246a85871a',
-            
+            'centos:aarch64:9'    => '',
+
             'debian:9'            => '5b41952d68747fbe4d402b2f5be29250e68936599fc0254cc79c4518548b209056a24debce1aca3b0efa9fa09b1c1e0e3a6cbd588690cb03cb5e5cc487c18253',
             'debian:10'           => '3beadd580e8c95463fd8c4be2f4f7105935bd68a2da3fd3ba2413e0182ad8083fd3339aab59f5f20cc0593ffa200415220f7782524721cb197a098c6175452e9',
             'debian:11'           => '22be62776fcb48f45ca0a1c21b554052140d8e00dd4a76ef520b088b32792317b9f88f110d65d67f5edb03596fb0af0e22c990a59ca8f00019ae154364bd99e9', 
@@ -382,7 +391,8 @@ sub main {
             'centos:aarch64:8'    => '',
 
             'centos:9'            => '24ceda96377155a57fa6161def14a8dc7daf10f825fb97f39fcf434fece8b4efe7523e91cae6911f6b58753e73e47547a01488498fd16e7b4c64764682a2313f',
-            
+            'centos:aarch64:9'    => '',
+
             'debian:9'            => '74fbeb57fe006f4e6c47d818ebd5bf2816c385a952c328e0231a6707160f05977d55cc45fa28ac1ee1c8c44b6f28622ce1d22452f0dc9f164866e90c87c19ca4',
             'debian:10'           => 'f2f6dc33364f22cba010f13c43cea00ce1a1f8c1a59c444a39a45029d5154303882cba2176c4ccbf512b7c52c7610db4a8b284e03b33633ff24729ca56b4f078',
             
@@ -408,7 +418,8 @@ sub main {
             'centos:aarch64:8'    => '',
 
             'centos:9'            => '247dfe1699a3bb00e57fe3764d2a69f452f4fabf887c8a0134b73afb5516996518e631c23d59fa998cdf992e6e4f364adb54b3479d6bc4ebbe868d21655e1235',
-            
+            'centos:aarch64:9'    => '',
+
             'debian:9'            => 'd9657d15987a84e857897672259f61b6939ac7170eeb66216996225652f7e0f92f97a1e20adbdcb1e24ec32fcae5283462bbdf0a4f1e0819973c7030ed9c7212',
             'debian:10'           => '5256e2da02b15e8e69aadb0a96bbffd03858f3aa37cb08c029d726627ee26b0428fc086e94d8a0ce2c6a402b8484b96b3ccb5aa3a15af800348b26ce4873068a',
             
@@ -434,7 +445,8 @@ sub main {
             'centos:aarch64:8'    => '',
 
             'centos:9'            => 'd0a58e00541a2808db3e701d7f1148e1d68527802a4a63d6b305bf37aca2e39045b28d0527b46d75b9d008c7e8730eddca6c567e8b1d5c7c9381fa71fcaea3ec',
-            
+            'centos:aarch64:9'    => '',
+
             'debian:9'            => 'f2d63bb2b629408166da876a3797fe4b2f71aed793696634b9653248eae0ac5ff50f39e48afb504edf08c99a9e1fe4f6568b4be59e3a2116970dc2e030eb312c',
             'debian:10'           => '8f7d5ae6b8922b0da22c94ad6dac2bde9c30e4902db93666c8dd1e8985c7c658a581a296bd160c5fff9c52c969b95aa806a8ae7dd4ee94eeb165d62a7fa499f8',
             
@@ -460,6 +472,7 @@ sub main {
             'centos:aarch64:8'    => '',
 
             'centos:9'            => '630f37a4363b42ca2256a3482009f6535680efc504e6df5ac2ea07104331803d14bc610e472b6143127eccb3315bd90a4961c1bbd13e47f2bf6be14000b3427d',
+            'centos:aarch64:9'    => '',
 
             'debian:9'            => '1f4474b79ca5f01ff4ee8edc3f25551c7d1425e691a135348a242784eafb21c625af4a189bff3275a667a61f78269f199b70077d7ff9755e8f2a30ad1ba6d200',
             'debian:10'           => '433fdaed84962575809969d36a5587becbcf557221b82dfe4c65c4a67e6736de0dfe1408e1fb8859aacf979931a75483bac7679f210c84a5b030ddeba079524d',
@@ -486,7 +499,8 @@ sub main {
             'centos:aarch64:8'    => '',            
 
             'centos:9'            => '2ece586671958cf8d619f6da6b6102e1ae36ffc15113d0fe9c3b151a6b15bffbf2ae957c4b74bfcf85996b6327cddf120bc1951b68376bc5d72c5609f9b63b9b',
-            
+            'centos:aarch64:9'    => '',
+
             'debian:9'            => '77882d112364681cfe795a8676d75d214a1030f0bf1a2e281b4100b493b8b4eb6e3c57db9f19770f6df9c3d629a43aebba446391bff299170f9ed9ee08cd0f52',
             'debian:10'           => 'b0dde2a94dc7e935f906608be5c8204393e87ba5703b78b84ad41ab690107eb306c50c9572669b0d18a55334ba26ed22a2242b54d6e30dffb1c11f8328b23c20',
             
@@ -512,7 +526,8 @@ sub main {
             'centos:aarch64:8'    => '',
 
             'centos:9'            => '0848adea41083de22470fde9ce161ca4adf005a6931095b99ad5844808c7ee09f1d5139e9c78e8b4ff5032e06a73ca0d0428f1503838eec46748625e54acf94f',
-            
+            'centos:aarch64:9'    => '',
+
             'debian:9'            => 'eaa6052481b1ef2535bd474caf404763a1b7b3eb85ba3ae5c0d1effee7ceb86577689e57666fbbb10bb100351ecd61e966cb72ff1ef376fdfb1ebbcb48ff1870',
             'debian:10'           => '71c6d626aaebcec2f9faa8df215ac988379ef3b7eeb2bdbef4d176d6a3534ec561fa55a4f2b69979c9cd51dcd52aa59b937718066f35cfb1cef5861f2e988bf8',
             
@@ -537,7 +552,8 @@ sub main {
             'centos:aarch64:8'    => '',
 
             'centos:9'            => '6313c8ad1c6e6e070e06796807770a291d85ae6e5fb67d3045dbcb144016968e34b5256f83006be0847fcc53222b931c300b11598d7bf031d75c6284343a6db1',
-            
+            'centos:aarch64:9'    => '',
+
             'debian:9'            => '0f397e08a6bec515260c2937d76dbf48ad8b3452ead4ac5c41d4b3536ba7e8a40fa703f7638111492e690d9c9e3fd5316aaf41c9c93e82eacd8dd0fb6bac2c2c',
             'debian:10'           => '8f2e456bcd0b89fafe97c6368f725d85230f183f72a720bb4f7da043ca6ea255a2c97e374eb78407e8ef969d84faebd63cf5b509eb9bf4476fac5b08567574b9',
            
@@ -562,7 +578,8 @@ sub main {
             'centos:aarch64:8'    => '',
 
             'centos:9'            => 'b518006d054e123142c186b7eeff5f0d76ea3828487da6cab46e1ad172367a92dc038b1b88dd284226909df25bec3979e400637336839a4d322cac376afda8ec',
-            
+            'centos:aarch64:9'    => '',
+
             'debian:9'            => 'd5cc79509a537feb7fe2cc0241695f530ac5459f7dbdc83d16590db83057cc3ee79f2197033d9ce6a8530cc5491836943a04e18af13a2c71d40f6b68a3ebfd6d',
             'debian:10'           => '16bdd1aa0feee95d529fa98bf2db5a5b3a834883ba4b890773d32fc3a7c5b04a9a5212d2b6d9d7aa5d9a0176a9e9002743d20515912381dcafbadc766f8d0a9d',
             
@@ -587,6 +604,7 @@ sub main {
             'centos:aarch64:8'    => '',
 
             'centos:9'            => '25c504c671be26066c1f370eb03bb681209c87bba0c6fce766c8416534007af8e8279b360072711326fa1d248255201adf06c0ccbd1682ab34860d21f72c190f',
+            'centos:aarch64:9'    => '',
 
             'debian:9'            => '72305f540d838fb5c7e0b416e5c8a493033da4d9afe21ab979d619a1df69115b9036f824aff8d78145aa9742efe4e5363756b87082de6de13dfb17b856a54762',
             'debian:10'           => '10a38076bebd3a1eb6dd81c5374f209f17808e51ac6476dc256d2a91cd904d5b15a6f9a2161099b2d1e6eaaecc1c3beb54cca1083ac11900001374f4624b38f3',
@@ -613,6 +631,7 @@ sub main {
             'centos:aarch64:8'    => '',
 
             'centos:9'            => '010c54e0b62aeda78509bb404e372e85e42073b08b2d0ba90f7e7fcd8bb3d6b943acb56e9dcd8113b44bc6b3bbaa83572cbdf81a9dd7e5b555c29fc73ff46ebf',
+            'centos:aarch64:9'    => '',
 
             'debian:9'            => 'de75b1f0397338c3167ed65d9bd36f346aaa9ebde4b4cc09cee434b7c34a0ded41263533a3ca2c13201a1418ad0cac804aa9aba18ccb800555123b9f8818d042',
             'debian:10'           => 'tbd',
@@ -638,6 +657,7 @@ sub main {
             'centos:aarch64:8'    => '',
 
             'centos:9'            => '544d070e5e61e8d12bab9be9c39d040d7380308241f81f0676ddb627764066788b4a4a45693b8d656d2ed2e412501cedb797b94cea1169d18045ac541d51bf82',
+            'centos:aarch64:9'    => '',
 
             'debian:9'            => '67981b5f576971a79e4685bf867dbc7685453842a31b48a6d48a82f639d67f4be6f7fb1ea8ae60f6170c6367874c05362fb05e4114397016ef7c6fdd6eb6e387',
             'debian:10'           => '6abed5425d55ebe0c251e9b4e51750297491d7fe15c4e1584c53f38d660d0ae91cf05565c9db5cfa36d217becf32ed64a099b7af55391da299536689083cf6d4',
@@ -663,6 +683,7 @@ sub main {
             'centos:aarch64:8'    => '',
 
             'centos:9'            => '1b22492da81139d4f42640b43c43f2e3ca43dc51b6cb2136a80297ba20ecd28f0cfcc035f11526d1b42975558547f978bba01b418c5d9bc0d3f1e910bde5a8ca',
+            'centos:aarch64:9'    => '',
 
             'debian:9'            => '6d9abff6ea377ef058f48663c40a54142c19cc43a69d67766dedfd1ddcb4c02c5b9a7c62b8122dc8692d5bc0655857f53d006f8d32a37004e4967368180c073c',
             'debian:10'           => 'c6316b9171b31eb94b2c31b9532d38f7db372ede62c06372b473149f3e4a2ba386439f4e5caaa7582f0ea015460903d4cd3f750b0f57fa5fc25612a50c10b501',
