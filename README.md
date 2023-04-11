@@ -9,14 +9,6 @@ What do we do?
 We detect hosts in the deployed network sending or receiving large volumes of traffic, packets/bytes/flows per second and
 perform a configurable action to handle that event. These configurable actions include notifying you, calling script or making BGP announces. 
 
-Legal
---------------
-FastNetMon is a product of FastNetMon LTD, UK. FastNetMon ® is a registered trademark in the UK and EU.
-
-CI build status
---------------
-[![CircleCI](https://circleci.com/gh/pavel-odintsov/fastnetmon/tree/master.svg?style=svg)](https://circleci.com/gh/pavel-odintsov/fastnetmon/tree/master)
-
 Project 
 -------
 🌏️ [Official site](https://fastnetmon.com)  
@@ -100,6 +92,14 @@ Example deployment scheme
 --------------
 
 ![Network diagramm](docs/images/deploy.png)
+
+Legal
+--------------
+FastNetMon is a product of FastNetMon LTD, UK. FastNetMon ® is a registered trademark in the UK and EU.
+
+CI build status
+--------------
+[![CircleCI](https://circleci.com/gh/pavel-odintsov/fastnetmon/tree/master.svg?style=svg)](https://circleci.com/gh/pavel-odintsov/fastnetmon/tree/master)
 
 Upstream versions in different distributions
 --------------
