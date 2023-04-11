@@ -284,14 +284,9 @@ DOC
     }
 
     mkdir "/tmp/result_data" or die "Cannot create result_data folder";
-    my $copy_rpm_res = system("cp /root/rpmbuild/RPMS/x86_64/* /tmp/result_data");
+    my $copy_rpm_res = system("cp /root/rpmbuild/RPMS/$machine_architecture/* /tmp/result_data");
     
     if ($copy_rpm_res != 0) {
-        # TODO: remove it after debugging
-        warn "Folders: \n";
-        
-        `ls -la /root/rpmbuild/RPMS`;
-
         die "Cannot copy result rpm\n";
     }
 
