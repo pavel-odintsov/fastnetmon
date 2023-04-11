@@ -539,10 +539,10 @@ sub install_gcc {
     my $gcc_package_install_path = "$library_install_folder/$folder_name";
 
     if ($distro_type eq 'ubuntu' || $distro_type eq 'debian') {
-        my @dependency_list = ('libmpfr-dev', 'libmpc-dev', 'libgmp-dev', 'gcc', 'g++');
+        my @dependency_list = ('libmpfr-dev', 'libmpc-dev', 'libgmp-dev', 'gcc', 'g++', 'diffutils');
         apt_get(@dependency_list);
     } elsif ($distro_type eq 'centos') {
-        yum('gmp-devel', 'mpfr-devel', 'libmpc-devel', 'gcc', 'gcc-c++');
+        yum('gmp-devel', 'mpfr-devel', 'libmpc-devel', 'gcc', 'gcc-c++', 'diffutils');
     }
 
     print "Download gcc archive\n";
