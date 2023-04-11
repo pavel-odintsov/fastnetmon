@@ -26,6 +26,11 @@ Project
 📘️ [Detailed reference](https://translate.google.com/translate?sl=auto&tl=en&u=https%3A%2F%2Ffastnetmon.com%2Fwp-content%2Fuploads%2F2017%2F07%2FFastNetMon_Reference_Russian.pdf)  
 🔏️ [Privacy policy](https://fastnetmon.com/privacy-policy/)  
 
+### Installation
+- Linux (Debian, CentOS, RHEL, Ubuntu), [install instructions](https://fastnetmon.com/install/)
+- [VyOS](https://fastnetmon.com/fastnetmon-community-on-vyos-rolling-1-3/)
+- FreeBSD: [official port](https://www.freshports.org/net-mgmt/fastnetmon/).
+
 Supported packet capture engines
 --------------------------------
 - NetFlow v5, v9, v9 Lite
@@ -53,12 +58,6 @@ Follow us at social media:
 - [LinkedIn](https://www.linkedin.com/company/fastnetmon/)
 - [Facebook](https://www.facebook.com/fastnetmon/)
 
-Complete integration with the following vendors 
---------------------------------
-- [Juniper integration](src/juniper_plugin)
-- [A10 Networks Thunder TPS Appliance integration](src/a10_plugin)
-- [MikroTik RouterOS](src/mikrotik_plugin)
-
 Features
 --------
 - Detects DoS/DDoS in as little as 1-2 seconds
@@ -78,19 +77,14 @@ Features
 - VLAN untagging in mirror and sFlow modes
 - Capture attack fingerprints in PCAP format
 
-Running FastNetMon
-------------------
-
-### Hardware requirements
-- At least 1 GB of RAM
-
-### Installation
-- Linux (Debian, CentOS, RHEL, Ubuntu), [install instructions](https://fastnetmon.com/install/)
-- [VyOS](https://fastnetmon.com/fastnetmon-community-on-vyos-rolling-1-3/)
-- FreeBSD: [official port](https://www.freshports.org/net-mgmt/fastnetmon/).
-
 ### Router integration instructions
 - [Juniper MX Routers](https://fastnetmon.com/docs/junos_integration/)
+
+Complete integration with the following vendors
+--------------------------------
+- [Juniper integration](src/juniper_plugin)
+- [A10 Networks Thunder TPS Appliance integration](src/a10_plugin)
+- [MikroTik RouterOS](src/mikrotik_plugin)
 
 
 Screenshots
