@@ -140,8 +140,12 @@ sub main {
             'ubuntu:aarch64:22.04'=> '5578f8ffc4fcdfa13d3642ebdb990a1820fdd88670a005e59e193348c915ee7391a8a9ddbaabaac85c2a937c21f0310a8e9d89ce9b60eed0fdfba466f798e452',
 
             'centos:7'            => 'f7bb6b23d338fa80e1a72912d001ef926cbeb1df26f53d4c75d5e20ffe107e146637cb583edd08d02d252fc1bb93b2af6b827bd953713a9f55de148fb10b55aa',
+
             'centos:8'            => 'a3fcd2331143579f4178e5142a6949ba248278c8cea7cc70c977ebade1bf2b3bcea7b8115e1fbec8981042e0242578be822113e63b3dea68ae4279a63d9afd01',
+            'centos:aarch64:8'    => 'd26f340a206017c102bdb5cbb6e85076cae13e7c78f0e8161f7403078fa8524ffa651d22e47fb630a6944c3655355a8b5f8ad27aaba32c71b91c987ca342232d',
+
             'centos:9'            => '8ee999dd3783abf99e79be4ba9c717a713330db7c17d1228c3dcdaa71c784f512d17b91d463f8dda3281ab07ed409439186d3c84385c480ed80b73fc86f0183a',
+            'centos:aarch64:9'    => 'b8d18c9b682c91e1cebb0cf3b1efb2281c6bcea067261e63cff2dee076d4842db3cb213b8ef3d986e03491ddf38e59d4b7ccab5dbe9f82bb7e3d4ef9ddaa772a',
         },
         'gtest_1_13_0' => {
             'debian:9'            => '775fbc33cd00f4d56991d860f38af9360169471e1e45ae87f75aae146d2723338cb51e3c9c99716b5f0e03bad3d9eb20b39d84beaaf8753844cc56c3f503b789',
