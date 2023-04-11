@@ -151,7 +151,7 @@ sub main {
             'centos:7'            => 'ab9dde43afc7b6bcc4399b6fbd746727e0ce72cf254e9b7f6abcc5c22b319ab82c051546decc6804e508654975089888c544258514e30dc18385ad1dd59d63fb',
             
             'centos:8'            => 'c4c1fe35008606bc65bff4c125fae83738c397fb14081d59cb1e83ad5b8a69b9f80b7c91318c52613f00a7cf5b7a64dd6d23d2956c2ce083fc4c7502e81714cb',
-            'centos:aarch64:8'    => '',
+            'centos:aarch64:8'    => '0b19b08417e3643c5d5fb7aeb327ea3ac4ea608e5297dea1eb78be69d2add48ac2a6ec6cc38dc446a84a084de13055fad8482b78ec15fd27ae0867bd3e9b2fb4',
 
             'centos:9'            => '76d2be30ca3afdf3e603b7690a3e7a8bf8423d4b359d928ef45f7aa827dec6d12e47c1f995c945d419763820d566590945aadf7d3ba38344b8b5d184fcc9bffc',
             'centos:aarch64:9'    => '',
@@ -178,7 +178,7 @@ sub main {
             'centos:7'            => 'f19d35583461af4a8e90a2c6d3751c586eaae3d18dcf849f992af9add78cf190afe2c5e010ddb9f5913634539222ceb218c2c04861b71691c38f231b3f49f6c5',
             
             'centos:8'            => 'dbe18cd4555aa60783554dcd06d84edac69640d15ef3ec7b4e2ff29e58b643fa8a0bcc2b838d6ae3c52a45043382e40a51888eaf1b45b2de3788931affc9e1c7',
-            'centos:aarch64:8'    => '',
+            'centos:aarch64:8'    => 'bfbed76e9dd3cd64860001f500c413700ef9f58da44ff742b277bc1948df4c92bf574a62ac5a498e32991ed56f8e52837d348fcc89eae5afe2a580c4a267caeb',
 
             'centos:9'            => 'ffcfb14f224b24b67ca68edcf36b24d8dc6ddce47dc597ccf4d13301ce7d87e79c9fec67197ce1ee57b9acd8bde58633418b8c1eff1a85300a6f7af033263d2c',
             'centos:aarch64:9'    => '',
@@ -205,7 +205,7 @@ sub main {
             'centos:7'            => 'd395a8e369d06e8c8ef231d2ffdaa9cacbc0da9dc3520d71cd413c343533af608370c7b9a93843facbd6d179270aabebc9dc4a56f0c1dea3fe4e2ffb503d7efd',
             
             'centos:8'            => '7e79ac11badf496a70af00f87afca2f4cab915b017f06733bd5ba4524d1083f22c5a89a46ee4bad97aaf2b5bdefd65eb92abe63d4857618ac8af1a068700ff18',
-            'centos:aarch64:8'    => '',
+            'centos:aarch64:8'    => '8f25c3ae1cb8334fcc8f9db739374ce0dab760311309897eadcd567cab3d7695bc53d901189975a1d48bf8e5c040ea66331be040bb7599f0040f4b786d151f64',
 
             'centos:9'            => 'fb604dab4188dfa7d81483274fe30daa8ddc27bd8ea0ba37eaf7171db781f397750ab8a27edb160895307ee5e5c89f3b59478cb7f40e7e6113513c76965b6c21',
             'centos:aarch64:9'    => '',
@@ -232,7 +232,7 @@ sub main {
             'centos:7'            => '4360152b0d4c21e2347d6262610092614b671da94592216bd7d3805ab5dbeae7159a30af5ab3e8a63243ff66d283ad4c7787b29cf5d5a7e00c4bad1a040b19a2',
             
             'centos:8'            => '0f3bc9c55e93956ce39c044cb99b4eaff8b69365c69ce845a56ff00ec32cbaeb84ccc9b37757f8024c7c7a1fffcc0e61ee4d8eeb226ac447a2d9718b5667e052',
-            'centos:aarch64:8'    => '',
+            'centos:aarch64:8'    => 'ca3e6ab76206e6efb2d891ec7c9a540ffdc4ef954e46c6ca88f3c9e4ac6bcccf4e62f82eaaa60e9c21193ca5b574f9737f2aaa04034803f07133f65878b7307f',
 
             'centos:9'            => 'ebc4041781e7886d4c2526469bbe23849711b9c9b3e209ff16640dcb0d9c3c874a4958a6a4393c47b0ef8b188bd1ad74aff04ecf82c0214f6d7c4b08549e02af',
             'centos:aarch64:9'    => '',
@@ -258,7 +258,7 @@ sub main {
             'centos:7'            => '403c89dfdfe3ef979f2f742b9a199a3031426ec6c10a0b1be895e5876240e5b636a33b590dc01766acbebe36ff9b6c7175523be2d95097ac37994a346081b343',
             
             'centos:8'            => '0e57552be3ac0d753838628d38485826aa402b2ac752ea1d546994bee3e9d689b3b439e652285f30f777cbc4e19a8217923d994079f243e8a3e4d4f354fa865b',
-            'centos:aarch64:8'    => '',
+            'centos:aarch64:8'    => 'b96787606728aa663329cea0022fd33fc39344e82277e5b2869167e8f628560390f8851ecf663f4bec17181034493000c941e607ac3f9a484fe04c391bf1cc74',
 
             'centos:9'            => '3e9ad8d2032b5eda9bfe9a1a151f98545ae78cf6422dd307c733507554d4cd23a5d7b30d44552a15c66c0faa25ab2146fdf5a14a2cf360efc5c49ae17ddeb0f1',
             'centos:aarch64:9'    => '',
@@ -285,7 +285,7 @@ sub main {
             'centos:7'            => '5c796240cb57179122653b61ee3ef45ca3d209ad83695424952be93bb3aad89e6e660dba034df94d55cc38d3251c438a2eb81b7de2ed9db967154d72441b2e12',
             
             'centos:8'            => '27a2b5128a4398c98e65af1c00c7deae62a472b3b0c01bda96e6903d77974205f2cc6f1dddbe57cb39b3f503fbf466caf255c093d0b0c123e28850f517f0272b',
-            'centos:aarch64:8'    => '',
+            'centos:aarch64:8'    => 'ddf4e19c0655b768a80c9e680e4ddb1cfe05fa606e704912a0b9d467e031605457d679756de23c13c935e9a45a5d770128d8d3cfc592d5ab758860f236dac574',
 
             'centos:9'            => 'a4cfb081e1b08b41dc0d51d62e9136826b313c65c773afc2942da09d096f0e07d109be500313ea6cb6d241ff5737f2d6b51a85526e8495afde45fdb2e89f8953',
             'centos:aarch64:9'    => '',
@@ -312,7 +312,7 @@ sub main {
             'centos:7'            => '03afc34178805b87ef5559ead86c70b5ae315dd407fe7627d6d283f46cf94fd7c41b38c75099703531ae5a08f08ec79a349feef905654de265a7f56b16a129f1',
             
             'centos:8'            => 'ccd1828c397ed56e4ea53dd63931bddd24c0164def64ceedca8d477eb0cafd7db12ae07a4da9584331b1af9ef33792da1cb082b3a93df9372df5ad233c5f231e',
-            'centos:aarch64:8'    => '',
+            'centos:aarch64:8'    => '18e39412a6c8fd9bd7f2f07858784a2d7debca92ce71290bc2c6269443f53919d29ff3f3b6785d637a893da3bf0f409e2160297007546a46984ad5f3980c4ed6',
 
             'centos:9'            => '304e402b1a86734095476024840c0ba8a0ccf98771ac9655672671a7b264ee73a87a2043ce96ee8acffa12901f75ca5403dda297c040b8b3cfd220979df472c7',
             'centos:aarch64:9'    => '',
@@ -339,7 +339,7 @@ sub main {
             'centos:7'            => '8ea15364969ad3e31b3a94ac41142bb3054a7be2809134aa4d018ce627adf9d2c2edd05095a8ea8b60026377937d74eea0bfbb5526fccdcc718fc4ed8f18d826',
             
             'centos:8'            => '99f69f62622032f4f13dad5431529e4f0e69f02de0e23f74e438a2a3677a61a33e649b7384b242857401776a2162aec9478b5ce3658b9ce0b9e27f8fa61f625a',
-            'centos:aarch64:8'    => '',
+            'centos:aarch64:8'    => 'a33fb45aae3fba3c0f2c5e5efdf9e8f1ba09dbefba0368f0316dd536130384fcdb7c2248a38adbb0b3594e31c7f66a897a3a5571a51c537b7f25c8b6232e5cc8',
 
             'centos:9'            => 'b1785b2bf23c8363856b8131732577ca955d66d346716a6d5c2f306042fc25d4cfd9ba320dcdcaf34ec810b1eb7be585427f382acbdf99589b84dc246a85871a',
             'centos:aarch64:9'    => '',
@@ -365,7 +365,7 @@ sub main {
             'centos:7'            => 'f0df85b26ef86d2e0cd9ce40ee16542efc7436c79d8589c94601fedac0e06bd0f84d264741f39b4d65a41916f6f1313cfe83fde28056f906bbeeccc60a04fff0',
             
             'centos:8'            => '57a0442b035767f163559b31a76c2f59285d3605ff078b17aae45a8c643d22f7876ce707d0d2b9b23791f8059921b5334e9b6860718e46510a0aedf05ffbaa58',
-            'centos:aarch64:8'    => '',
+            'centos:aarch64:8'    => 'e9ec5ab3a71770d77b0b758167687f9ff923e75388372146f11ad4cc3bc3cb24990f77ef4fd34c81c1eefb3674160f69bcc0775a4d151da9c4ab9538f661afa1',
 
             'centos:9'            => '24ceda96377155a57fa6161def14a8dc7daf10f825fb97f39fcf434fece8b4efe7523e91cae6911f6b58753e73e47547a01488498fd16e7b4c64764682a2313f',
             'centos:aarch64:9'    => '',
@@ -392,7 +392,7 @@ sub main {
             'centos:7'            => '671a77966a021fe8ca8f25d6510a4ddd7bea78815c9952126fcfabe583315d68ae6c9257bca4c0ad351ff15ae9a7f27c4dab0a4dff6b9f296713b4dfdef4573d',
             
             'centos:8'            => 'a81445b63bcb97541c39a1afdc330ad15840cd8fdc1fc004ac934cd8acf4b4a50a0755ed8a0e7e64c4fa6f3d99725fc67b9d35f4da4753c597a37f6cf0d0ee5d',
-            'centos:aarch64:8'    => '',
+            'centos:aarch64:8'    => '421aecf02072129c92e47e91edbc550d2cb399d5aa8eb44021262f72d3aaecdb8247d4936a6452af7b48d5f23434d55e9df3927912357a58e05d972896d8b347',
 
             'centos:9'            => '247dfe1699a3bb00e57fe3764d2a69f452f4fabf887c8a0134b73afb5516996518e631c23d59fa998cdf992e6e4f364adb54b3479d6bc4ebbe868d21655e1235',
             'centos:aarch64:9'    => '',
@@ -419,7 +419,7 @@ sub main {
             'centos:7'            => '649e8353e1c7ad7597378b25a81e3bccda28441a80a40d12a3e5e5bee34b88681e90157118736358e858a964b1bdc8cb1c35c6df3bdc2aeafe31664abcabb93f',
             
             'centos:8'            => 'f4fa12d80f9a56ecf8dd8ed09de98c1204b8755f7426495ab5671d7dd42828dc31a790e0bab2a4a69224bf8bb6a8f1cdd1bf1444e596d58a08345b98e4ce6f89',
-            'centos:aarch64:8'    => '',
+            'centos:aarch64:8'    => 'f1f417d99472c8c1b2d56ab706867c3b027078dcb6050741750015ff14827ddba30d73adb9f35c1fa0892125872bbe32d2d30e99874b5d7ef36e1b70107593d1',
 
             'centos:9'            => 'd0a58e00541a2808db3e701d7f1148e1d68527802a4a63d6b305bf37aca2e39045b28d0527b46d75b9d008c7e8730eddca6c567e8b1d5c7c9381fa71fcaea3ec',
             'centos:aarch64:9'    => '',
@@ -446,7 +446,7 @@ sub main {
             'centos:7'            => '65902575e20b3297a5a45a6bafcc093a744e4774ea47bb1604c828dfa2eb9a8ccd63cfc4a2bffbb970540ca6f5122235c5e19f10690d898dad341c78a3977383',
             
             'centos:8'            => '6fa9349119489102decadac528b040f9919d6837a00deabb5e661f2c4f41d6c78782b677e83bf73179ccaa59eb1e85066e0bc06313e6bc0013b6f076e03496e8',
-            'centos:aarch64:8'    => '',
+            'centos:aarch64:8'    => 'c3942c442173127dfb99f08ba21c699c0abb19108703842452f54b2d8d89cb4a8c636845e8746e4316ca55388386f39f53cbf44ad49cd6cb173461dcae503dc9',
 
             'centos:9'            => '630f37a4363b42ca2256a3482009f6535680efc504e6df5ac2ea07104331803d14bc610e472b6143127eccb3315bd90a4961c1bbd13e47f2bf6be14000b3427d',
             'centos:aarch64:9'    => '',
@@ -473,7 +473,7 @@ sub main {
             'centos:7'            => '82ad83b8532cf234f9bbc6660c77a893279f8ff27c38b14484db3063a65ca15b3dd427573daf915ef2097137640fa9ff859761e6d0696978f9c120cd31099564',
             
             'centos:8'            => 'd0819b908a3deccab82aefdc50316717eb0118666c919b23638d2675b1e410f30ef110f3c687b7df709b05121e88aa9dd1a6a06ed675d29544f40cf8669bb7a8',
-            'centos:aarch64:8'    => '',            
+            'centos:aarch64:8'    => '898f6e67734dbd0bdb4a89f2ed10330d45f961edbb527dc67f424e886162b80316e58b64d66c5f381c64f46f1f49c550fbb5f50fe620143a86b5d9b172ae44b6',
 
             'centos:9'            => '2ece586671958cf8d619f6da6b6102e1ae36ffc15113d0fe9c3b151a6b15bffbf2ae957c4b74bfcf85996b6327cddf120bc1951b68376bc5d72c5609f9b63b9b',
             'centos:aarch64:9'    => '',
@@ -500,7 +500,7 @@ sub main {
             'centos:7'            => '4c77cf97c5c42dfddf002b9b453459ed28c8de3715145c8f162fed45f650400bcdf5c7fc714aa50b1fa14f486ae86b47d6d2cb03d00862281dda4482583385db',
             
             'centos:8'            => '02ccf070291c2cb1268cf3887c8e92c99ac614a757cafdf96c7235c5a2e583be5a89f8174d5fed93f3dabc17f9049a90064b9b88f465e3c1736dcf3f2505e2a3',
-            'centos:aarch64:8'    => '',
+            'centos:aarch64:8'    => '9957c8c8e66a82c245346dbfc0edb5fbee36ddf3dada7315d0529d9a2b7ac838dd173f1cfea6af1986a89aba5273d676477ff5b3c65e422c5e95daffe317f137',
 
             'centos:9'            => '0848adea41083de22470fde9ce161ca4adf005a6931095b99ad5844808c7ee09f1d5139e9c78e8b4ff5032e06a73ca0d0428f1503838eec46748625e54acf94f',
             'centos:aarch64:9'    => '',
@@ -526,7 +526,7 @@ sub main {
             'centos:7'            => '23acf9d80f72da864310f13b36b941938a841c6418c5378f6c3620a339d0f018376e52509216417ec9c0ce3d65c9a285d2c009ec5245e3ee01e9e54d2f10b2f8',
             
             'centos:8'            => '28ffbc485b5feaa3ba334d34757a9f39e2d99c97f00ca4163e2d8ce24746bf5619338c279c873ab2d28fd7156b556816ee7cc2833a12c4391f65dddfc8392a00',
-            'centos:aarch64:8'    => '',
+            'centos:aarch64:8'    => '4e6929ad6e11cc9554fc4a4aba5fe336d01b4e4a4d99f12bedeb3ca0aee021e5d59ae05b0ed184ba1f58be8c9a3e48d9422d076e048a8ef3ab70a2080e00688d',
 
             'centos:9'            => 'b518006d054e123142c186b7eeff5f0d76ea3828487da6cab46e1ad172367a92dc038b1b88dd284226909df25bec3979e400637336839a4d322cac376afda8ec',
             'centos:aarch64:9'    => '',
@@ -552,7 +552,7 @@ sub main {
             'centos:7'            => 'b6c6b072cef81b2462c280935852f085b7e09f9677723caf9bb5df08971886985446ba20a4aa984381c766ed0fc2d2b9cd2afaa7ab3d63becde566738058fd1d',
 
             'centos:8'            => '70787f1c28791e01ed1612df7bce226bd7e293f3b17ecfa22284841198a050c0422e46dc78597226c091e04198b8b0681cd1d4d5fde4f068434c45876b1dad72',
-            'centos:aarch64:8'    => '',
+            'centos:aarch64:8'    => '2682ecd75542212b8e23d63cc057b9a9ee944cd991eb20a41ae25bbc61828de440cae5927a6f34e31182a642854b91709146781b7a68cf52ae9f952b0b358e38',
 
             'centos:9'            => '6313c8ad1c6e6e070e06796807770a291d85ae6e5fb67d3045dbcb144016968e34b5256f83006be0847fcc53222b931c300b11598d7bf031d75c6284343a6db1',
             'centos:aarch64:9'    => '',
@@ -574,64 +574,11 @@ sub main {
             'ubuntu:22.04'        => 'c92b722e28624633de4e8411f89984434d4281d4e674677b800317235f5363285c5618e93a59945b90196026b0c4d061716c7e5bde817e4f4bb93efbaaeefb12',
             'ubuntu:aarch64:22.04'=> '5899eb3741c29a7c7d1e6f8a60fa08813890a60b45e5f7d0f980e74287ad48953d897263b8d3455116ac058db26e424576e1046f9c35d0c9262cd31b0ff0e4ae',
         },
-        'gobgp_3_12_0'          => {
-            'centos:7'            => 'ee4e8a976a16b4f0e49753a81e17405b3c219d979313a39e059ec99125e7a5804691c30f2989e60b404d6a9cdc5636d6d9e545e6766c3fd4bede4ff0b830f204',
-        
-            'centos:8'            => 'ca142c7a76f17e4f69ef7c14df0751425656faff8ae1309895ff295950e6fc82ecc497e060f437a45e3e8689f0c561d102f5cb8f920928d2b3ecc91430011a22',
-            'centos:aarch64:8'    => '',
-
-            'centos:9'            => '25c504c671be26066c1f370eb03bb681209c87bba0c6fce766c8416534007af8e8279b360072711326fa1d248255201adf06c0ccbd1682ab34860d21f72c190f',
-            'centos:aarch64:9'    => '',
-
-            'debian:9'            => '72305f540d838fb5c7e0b416e5c8a493033da4d9afe21ab979d619a1df69115b9036f824aff8d78145aa9742efe4e5363756b87082de6de13dfb17b856a54762',
-            'debian:10'           => '10a38076bebd3a1eb6dd81c5374f209f17808e51ac6476dc256d2a91cd904d5b15a6f9a2161099b2d1e6eaaecc1c3beb54cca1083ac11900001374f4624b38f3',
-            
-            'debian:11'           => '750102bac73ec2c1fb36f470c86d37a2ae59bd49cf76e1ea48385099d6a3bad0bc49768ee3b41ba2f85de7131e28f757d6093c6be879165e211615d50d69239a',
-            'debian:aarch64:11'   => '5569b4bac0ccfd3a372475fc03d1a4ea6eda37b0c28b8e0854b831115396b4d5618c6ccca50271691f800ece304983c2e8022e9e507f1fa0dad568d320431c61',
-
-            'debian:bookworm/sid' => '0aabe505b4ea6649043203a9f4d28dc27efb6fdef8c61bd0c21f0696dabba697a8f7568ce8455a90fb50dde87a30572e8760c66a5d90e647bc0facbe7d9ed2fa',
-
-            'ubuntu:16.04'        => 'ca142c7a76f17e4f69ef7c14df0751425656faff8ae1309895ff295950e6fc82ecc497e060f437a45e3e8689f0c561d102f5cb8f920928d2b3ecc91430011a22',
-            'ubuntu:18.04'        => '55a829e69aebe296ea1537117150982003f0a647674bfb5b4eafd298db9dc9ea6aa961642693d5e21ca737e735167cfe3ca84780144e842a9946134a99c1f4f3',
-            
-            'ubuntu:20.04'        => '750102bac73ec2c1fb36f470c86d37a2ae59bd49cf76e1ea48385099d6a3bad0bc49768ee3b41ba2f85de7131e28f757d6093c6be879165e211615d50d69239a',
-            'ubuntu:aarch64:20.04'=> '59dbd865794eae5302b908d82c5b89c3dbbd95a9fc47b78bf5e16fd1f9fe34aab03d4294d90ef3000b2aa24039bcc1c939da6c5223ef6f8011370f2024a5d22f',
-
-            'ubuntu:22.04'        => 'b3f2168c6b705804155ca944a6c7850057d50652efc57c3c4194838b147176779b98d7b2bf9af72ee141805d62f7a6c1460244ce60b570dbdffc114d5e7dc899',
-            'ubuntu:aarch64:22.04'=> '4e9114ed4c9fde74517f04fc8b79b44854ee5fc8b51b99816ad60dccbc61a682993c4321a0df6920a40164281ba24d171f9d4972e54a9f3015d993caf7d03c47',
-        },
-        # It's actually 1_1_4rc3 but we use only minor and major numbers
-        'log4cpp_1_1_4'         => {
-            'centos:7'            => 'daa469b116ecf20004163b5e222840e10bf1c52e92dd28eff6839d3366e260ee63ddddea1e3ce95034243968e52b28c879e508fd05536746010d834b63cf9346', 
-            
-            'centos:8'            => '8c46f8c02835732ded30b075dc90de0ccbd1fb7ee9b68788791f41638c0ec5fca80ed10ad8f447db7cbcf3a64e9d04bd2178a2a33319909e3a115862fbd63a91',
-            'centos:aarch64:8'    => '',
-
-            'centos:9'            => '010c54e0b62aeda78509bb404e372e85e42073b08b2d0ba90f7e7fcd8bb3d6b943acb56e9dcd8113b44bc6b3bbaa83572cbdf81a9dd7e5b555c29fc73ff46ebf',
-            'centos:aarch64:9'    => '',
-
-            'debian:9'            => 'de75b1f0397338c3167ed65d9bd36f346aaa9ebde4b4cc09cee434b7c34a0ded41263533a3ca2c13201a1418ad0cac804aa9aba18ccb800555123b9f8818d042',
-            'debian:10'           => 'tbd',
-            
-            'debian:11'           => 'efd6883dadd7ffc01464d22fc2380edf8b0356ee897a3a3cb901008ef477f9e7769f63bcf66910b3db680dd2f58cb554228454d7c41c30f8782aabc396625d3c',
-            'debian:aarch64:11'   => 'e8be2f9eb59364726062047eaaa869ee5e2d0fedf29e1039916360e9f582a9bc82fe3e6b21f5087ea20531ea5b3d79e26a901442fb85cc1c49a5c52d20805bf4',
-
-            'debian:bookworm/sid' => '4411c5d9790806e9b84b002d1cb0115629fba1cb2974ec673e94faeb6121c336c7598961744ca2c15ac4b230e9ba3b5917090e48382d4d89cf9c457a72891867',
-
-            'ubuntu:16.04'        => 'a13743d266a110f3bda44f36c80b62e92c3bf0408b5384488c61a0d42ad2e62212eb39906b33b872afdc567e72ed7b1cc94604dd6dd2c91841a73e6967d6d13e',
-            'ubuntu:18.04'        => '6d5a137f839aefaaacff43301d35351b74417e2d45dfdde705c2fc6433aa8bce939be7b727e8b02f83eb19bd4b53b0482630c9035af15856c0738335041b7e0f',
-            
-            'ubuntu:20.04'        => 'c2177531121f08279e417489f01b6867c394e4f65d27a6e3928e7377b48adfbbb50bed28eaa17afc230752720d09cb9261df25d9756aac4919923e9599f10e0c',
-            'ubuntu:aarch64:20.04'=> '04e2d04e213fca3002b3b943af76a3d32fb150508ec06030843ffd64ec11617c18228f774cf1e9c60bfc9d5d449ec0ef8546abb86154008970ff1ec1fb9fedad',
-
-            'ubuntu:22.04'        => '086e182a2ca2475d46e4a959398d52434d5ad700f2db5a568a5c77b6e91bc51fc34cd36aca7be68810ff0981d304d444bcbb5bc2fa549f8ae3f6d24d8a91157c',
-            'ubuntu:aarch64:22.04'=> '82b6229a5346d3859f3263c5a3fae403f7123b2db805e7ef8ca94d3222a5aa8d8ce79a2f6e3345a2849bb949aeb984010154e2119dc20adb5e7052271439492d',
-        },
         'rdkafka_1_7_0'           => {
             'centos:7'            => '40e01992e97b4620eb6c86def5efb69734534cf24a374f74ba9a1f640303f08a413bf5c3d2bed447bd1afee082b0bf213d4d3da9dfe696ecf3226a2058098725',
             
             'centos:8'            => '6a733ea0a86c042071cc524a6810483ccafa9a254a1f091288e862f239e95f835c727c190f5d6a9098bf0a9253c979e14012a05cfacd3df0197d1c99c232dcd2',
-            'centos:aarch64:8'    => '',
+            'centos:aarch64:8'    => '2dfc6ea5cca47649af47a781546ba2113bce5d6025efc9f6254a2970dfbef0aced3fb76bd53ac5f5dc1ba5fe47a40af9fdd25d8bf8ad5eec95c099b27d384921',
 
             'centos:9'            => '544d070e5e61e8d12bab9be9c39d040d7380308241f81f0676ddb627764066788b4a4a45693b8d656d2ed2e412501cedb797b94cea1169d18045ac541d51bf82',
             'centos:aarch64:9'    => '',
@@ -657,7 +604,7 @@ sub main {
             'centos:7'            => '47fc81102062f418a0895f2787bf337da8d7e766b178ed315284cc12913c58b99e395ad044e2e5954299c3c9cde23b3145dc43d4469d360aee66cc850b09b82e',
             
             'centos:8'            => '206b85a820f9c7f7cf4d9c2da600df0a7997706f25b356d355121136fac524eeecc2ff3bc625f796693a47af8ccbc4fc7cb8f3d23f656ee70c7ccf57e8308922',
-            'centos:aarch64:8'    => '',
+            'centos:aarch64:8'    => '5f2eb5af9579d4bbd6439f9359e9139a2d33ada050b7aa12e01a187594cf07c58da20c969cf53a594a58a6dcfe333644439e60f138861905546bce81a4f87f4e',
 
             'centos:9'            => '1b22492da81139d4f42640b43c43f2e3ca43dc51b6cb2136a80297ba20ecd28f0cfcc035f11526d1b42975558547f978bba01b418c5d9bc0d3f1e910bde5a8ca',
             'centos:aarch64:9'    => '',
@@ -679,6 +626,59 @@ sub main {
             'ubuntu:22.04'        => '9da7b3c41adc768bbfa84d82f6edca9e5c37423c9c04766e992d0473ed5bc08817be01c35dddde33ebcfc9032bfd2ea69657b259161649c23ed64ea22ce95291', 
             'ubuntu:aarch64:22.04'=> 'fda755c2fcfe73cd09c5cdb1666b7d1a33562cf920ef8b87f70e693de8b0c86b8705b9bd9313bcde4122126feda65c5d15e25db43e68f5a23de9b628025035d0',
         },
+        'gobgp_3_12_0'          => {
+            'centos:7'            => 'ee4e8a976a16b4f0e49753a81e17405b3c219d979313a39e059ec99125e7a5804691c30f2989e60b404d6a9cdc5636d6d9e545e6766c3fd4bede4ff0b830f204',
+
+            'centos:8'            => 'ca142c7a76f17e4f69ef7c14df0751425656faff8ae1309895ff295950e6fc82ecc497e060f437a45e3e8689f0c561d102f5cb8f920928d2b3ecc91430011a22',
+            'centos:aarch64:8'    => 'f701bbf7739299706799afe0f8dcf1cf9f6c6bbb2046f445b4c7b3498dacfaa3de456e7f960c3a2b07580005dc78f1b273e0c0595e8ec1c37a3f96301cb71acb',
+
+            'centos:9'            => '25c504c671be26066c1f370eb03bb681209c87bba0c6fce766c8416534007af8e8279b360072711326fa1d248255201adf06c0ccbd1682ab34860d21f72c190f',
+            'centos:aarch64:9'    => '',
+
+            'debian:9'            => '72305f540d838fb5c7e0b416e5c8a493033da4d9afe21ab979d619a1df69115b9036f824aff8d78145aa9742efe4e5363756b87082de6de13dfb17b856a54762',
+            'debian:10'           => '10a38076bebd3a1eb6dd81c5374f209f17808e51ac6476dc256d2a91cd904d5b15a6f9a2161099b2d1e6eaaecc1c3beb54cca1083ac11900001374f4624b38f3',
+
+            'debian:11'           => '750102bac73ec2c1fb36f470c86d37a2ae59bd49cf76e1ea48385099d6a3bad0bc49768ee3b41ba2f85de7131e28f757d6093c6be879165e211615d50d69239a',
+            'debian:aarch64:11'   => '5569b4bac0ccfd3a372475fc03d1a4ea6eda37b0c28b8e0854b831115396b4d5618c6ccca50271691f800ece304983c2e8022e9e507f1fa0dad568d320431c61',
+
+            'debian:bookworm/sid' => '0aabe505b4ea6649043203a9f4d28dc27efb6fdef8c61bd0c21f0696dabba697a8f7568ce8455a90fb50dde87a30572e8760c66a5d90e647bc0facbe7d9ed2fa',
+
+            'ubuntu:16.04'        => 'ca142c7a76f17e4f69ef7c14df0751425656faff8ae1309895ff295950e6fc82ecc497e060f437a45e3e8689f0c561d102f5cb8f920928d2b3ecc91430011a22',
+            'ubuntu:18.04'        => '55a829e69aebe296ea1537117150982003f0a647674bfb5b4eafd298db9dc9ea6aa961642693d5e21ca737e735167cfe3ca84780144e842a9946134a99c1f4f3',
+
+            'ubuntu:20.04'        => '750102bac73ec2c1fb36f470c86d37a2ae59bd49cf76e1ea48385099d6a3bad0bc49768ee3b41ba2f85de7131e28f757d6093c6be879165e211615d50d69239a',
+            'ubuntu:aarch64:20.04'=> '59dbd865794eae5302b908d82c5b89c3dbbd95a9fc47b78bf5e16fd1f9fe34aab03d4294d90ef3000b2aa24039bcc1c939da6c5223ef6f8011370f2024a5d22f',
+
+            'ubuntu:22.04'        => 'b3f2168c6b705804155ca944a6c7850057d50652efc57c3c4194838b147176779b98d7b2bf9af72ee141805d62f7a6c1460244ce60b570dbdffc114d5e7dc899',
+            'ubuntu:aarch64:22.04'=> '4e9114ed4c9fde74517f04fc8b79b44854ee5fc8b51b99816ad60dccbc61a682993c4321a0df6920a40164281ba24d171f9d4972e54a9f3015d993caf7d03c47',
+        },
+        # It's actually 1_1_4rc3 but we use only minor and major numbers
+        'log4cpp_1_1_4'         => {
+            'centos:7'            => 'daa469b116ecf20004163b5e222840e10bf1c52e92dd28eff6839d3366e260ee63ddddea1e3ce95034243968e52b28c879e508fd05536746010d834b63cf9346',
+
+            'centos:8'            => '8c46f8c02835732ded30b075dc90de0ccbd1fb7ee9b68788791f41638c0ec5fca80ed10ad8f447db7cbcf3a64e9d04bd2178a2a33319909e3a115862fbd63a91',
+            'centos:aarch64:8'    => 'ac080e1a74f46063d780d4355445851d41604ffc43cbc275cc0194fc327989d2cbd8e8888156768f46016ab898f72bce27cd29bd53b8350b49e72048f97b6dde',
+
+            'centos:9'            => '010c54e0b62aeda78509bb404e372e85e42073b08b2d0ba90f7e7fcd8bb3d6b943acb56e9dcd8113b44bc6b3bbaa83572cbdf81a9dd7e5b555c29fc73ff46ebf',
+            'centos:aarch64:9'    => '',
+
+            'debian:9'            => 'de75b1f0397338c3167ed65d9bd36f346aaa9ebde4b4cc09cee434b7c34a0ded41263533a3ca2c13201a1418ad0cac804aa9aba18ccb800555123b9f8818d042',
+            'debian:10'           => 'tbd',
+
+            'debian:11'           => 'efd6883dadd7ffc01464d22fc2380edf8b0356ee897a3a3cb901008ef477f9e7769f63bcf66910b3db680dd2f58cb554228454d7c41c30f8782aabc396625d3c',
+            'debian:aarch64:11'   => 'e8be2f9eb59364726062047eaaa869ee5e2d0fedf29e1039916360e9f582a9bc82fe3e6b21f5087ea20531ea5b3d79e26a901442fb85cc1c49a5c52d20805bf4',
+
+            'debian:bookworm/sid' => '4411c5d9790806e9b84b002d1cb0115629fba1cb2974ec673e94faeb6121c336c7598961744ca2c15ac4b230e9ba3b5917090e48382d4d89cf9c457a72891867',
+
+            'ubuntu:16.04'        => 'a13743d266a110f3bda44f36c80b62e92c3bf0408b5384488c61a0d42ad2e62212eb39906b33b872afdc567e72ed7b1cc94604dd6dd2c91841a73e6967d6d13e',
+            'ubuntu:18.04'        => '6d5a137f839aefaaacff43301d35351b74417e2d45dfdde705c2fc6433aa8bce939be7b727e8b02f83eb19bd4b53b0482630c9035af15856c0738335041b7e0f',
+
+            'ubuntu:20.04'        => 'c2177531121f08279e417489f01b6867c394e4f65d27a6e3928e7377b48adfbbb50bed28eaa17afc230752720d09cb9261df25d9756aac4919923e9599f10e0c',
+            'ubuntu:aarch64:20.04'=> '04e2d04e213fca3002b3b943af76a3d32fb150508ec06030843ffd64ec11617c18228f774cf1e9c60bfc9d5d449ec0ef8546abb86154008970ff1ec1fb9fedad',
+
+            'ubuntu:22.04'        => '086e182a2ca2475d46e4a959398d52434d5ad700f2db5a568a5c77b6e91bc51fc34cd36aca7be68810ff0981d304d444bcbb5bc2fa549f8ae3f6d24d8a91157c',
+            'ubuntu:aarch64:22.04'=> '82b6229a5346d3859f3263c5a3fae403f7123b2db805e7ef8ca94d3222a5aa8d8ce79a2f6e3345a2849bb949aeb984010154e2119dc20adb5e7052271439492d',
+        },
         'gtest_1_13_0' => {
             'debian:9'            => '775fbc33cd00f4d56991d860f38af9360169471e1e45ae87f75aae146d2723338cb51e3c9c99716b5f0e03bad3d9eb20b39d84beaaf8753844cc56c3f503b789',
             'debian:10'           => 'f8759bd2a908e533f56b8401464189f75938ed8ccd23b5de36f5dc5ec408d7c790cef1d594bbeb2e52b8fc526f8267fea296b7e6d159dc8f2b5c4aa7618daf5a',
@@ -697,7 +697,7 @@ sub main {
             'centos:7'            => 'de48a8b8a7403f95bac0abb18d166a48f9c1e60f2b899f1153f177eb89372b8d05ed336856a93abaf6a891b9d8b374470555d04ca3bada7b7032e44d05628c2a',
 
             'centos:8'            => '85f4f5529d72f66722658fd7e8240857b3439ebf9066eb87dab612400e9e9b7d3209e56db7cfa5d3ac64f28e75ba19bbacbf9f433e561073d41a22f40ce65b87',
-            'centos:aarch64:8'    => '',
+            'centos:aarch64:8'    => 'f4b5873c602495ad85ab16ba531ea19c3ca925d5cf9ee62b5a2eccc0b6d85523b0645b04717e1073ca92bca6de91c5cede1d96b30a2911f3c579755ea1994a77',
 
             'centos:9'            => '398948e08847b7ac09a232414dc462abe9c66d098e71de3350fcb9cca38fdf0204a302d7fc75ada4fad33072371059646c4d2167baed311143240de9a8e62091',
             'centos:aarch64:9'    => '',
