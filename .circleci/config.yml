@@ -292,9 +292,19 @@ workflows:
           centos_version: "8"
           name: "centos8"
       - build_centos:
+          docker_image: almalinux:8
+          centos_version: "8"
+          name: "centos8_arm"
+          resource_class: "arm.large"
+      - build_centos:
           docker_image: almalinux:9
           centos_version: "9"
           name: "centos9"
+      - build_centos:
+          docker_image: almalinux:9
+          centos_version: "9"
+          name: "centos9_arm"
+          resource_class: "arm.large"
       - build_debian:
           docker_image: "ubuntu:jammy"
           distro_version: "22.04"
@@ -312,6 +322,13 @@ workflows:
           distro_version: "20.04"
           name: "ubuntu2004"
           distro_name: "ubuntu"
+      - build_debian:
+          docker_image: "ubuntu:focal"
+          distro_version: "20.04"
+          name: "ubuntu2004_arm"
+          distro_name: "ubuntu"
+          resource_class: "arm.large"
+          debian_package_architecture: "arm64"
       - build_debian:
           docker_image: "ubuntu:bionic"
           distro_version: "18.04"
@@ -351,6 +368,13 @@ workflows:
           distro_version: "12"
           name: "debian12"
           distro_name: "debian"
+      - build_debian:
+          docker_image: "debian:bookworm"
+          distro_version: "12"
+          name: "debian12_arm"
+          distro_name: "debian"
+          resource_class: "arm.large"
+          debian_package_architecture: "arm64"
       - build_docker_x86_64:
           name: "Build Docker image on x86_64 platform"
       - build_debian_upstream_package:
