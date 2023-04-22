@@ -368,6 +368,9 @@ else()
 endif()
 
 
+# It can be disabled using flag: -DENABLE_AF_XDP_SUPPORT=FALSE
+option(ENABLE_AF_XDP_SUPPORT "Enables build for AF_XDP" ON)
+
 CHECK_CXX_SOURCE_COMPILES("
 #include <linux/if_xdp.h> 
 int main() {
@@ -375,26 +378,16 @@ int main() {
 }
 " HAVE_AF_XDP)
 
-# libbpf 1.x introduced plenty of API changes and we need to guess when we have support for it
-CHECK_CXX_SOURCE_COMPILES("
-#include <bpf/bpf.h>
-#include <bpf/libbpf.h>
+# If XDP build enabled then we need to confirm that system has support for it
+if (${ENABLE_AF_XDP_SUPPORT})
 
-int main() {
-    bpf_object__next_program(NULL, NULL);
-    return 1;
-}
-" HAVE_LIBBPF1_API_SUPPORT)
+  if (${HAVE_AF_XDP})
+      message(STATUS "Your system has support for AF_XDP")
+  else()
+      message(STATUS "Your system does not support AF_XDP, disabled it")
+      set (ENABLE_AF_XDP_SUPPORT FALSE)
+  endif()
 
-if (${HAVE_LIBBPF1_API_SUPPORT})
-    message(STATUS "We have libbpf 1.x support")
-endif()
-
-if (${HAVE_AF_XDP})
-    message(STATUS "Your system has support for AF_XDP")
-    set (ENABLE_AF_XDP_SUPPORT ON) 
-else()
-    message(STATUS "Your system does not support AF_XDP, disabled it")
 endif()
 
 
