@@ -381,10 +381,8 @@ CHECK_CXX_SOURCE_COMPILES("
 #include <bpf/libbpf.h>
 
 int main() {
-  bpf_object bpf_obj;
-  struct bpf_program bpf_prog;
-
-  bpf_object__next_program(&bpf_obj, &bpf_prog);
+    bpf_object__next_program(NULL, NULL);
+    return 1;
 }
 " HAVE_LIBBPF1_API_SUPPORT)
 
