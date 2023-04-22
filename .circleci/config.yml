@@ -214,7 +214,7 @@ jobs:
       - run: sudo docker exec linux_docker git clone https://github.com/pavel-odintsov/fastnetmon.git
       - run: sudo docker exec linux_docker mkdir fastnetmon/src/build
       - run: sudo docker exec linux_docker cmake -S fastnetmon/src -B fastnetmon/src/build
-      - run: sudo docker exec linux_docker cd fastnetmon/src/build && make -j
+      - run: sudo docker exec linux_docker make -C fastnetmon/src/build -j
   build_debian:
     parameters:
       docker_image:
