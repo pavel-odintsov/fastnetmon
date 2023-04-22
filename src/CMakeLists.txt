@@ -375,6 +375,22 @@ int main() {
 }
 " HAVE_AF_XDP)
 
+# libbpf 1.x introduced plenty of API changes and we need to guess when we have support for it
+CHECK_CXX_SOURCE_COMPILES("
+#include <bpf/bpf.h>
+#include <bpf/libbpf.h>
+
+int main() {
+  bpf_object bpf_obj;
+  struct bpf_program bpf_prog;
+
+  bpf_object__next_program(&bpf_obj, &bpf_prog);
+}
+" HAVE_LIBBPF1_API_SUPPORT)
+
+if (${HAVE_LIBBPF1_API_SUPPORT})
+    message(STATUS "We have libbpf 1.x support")
+endif()
 
 if (${HAVE_AF_XDP})
     message(STATUS "Your system has support for AF_XDP")
