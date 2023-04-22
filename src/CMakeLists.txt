@@ -368,7 +368,8 @@ else()
 endif()
 
 
-# It can be disabled using flag: -DENABLE_AF_XDP_SUPPORT=FALSE
+# We enable XDP plugin build for all platforms which support it
+# It can be disabled manually using flag: -DENABLE_AF_XDP_SUPPORT=FALSE
 option(ENABLE_AF_XDP_SUPPORT "Enables build for AF_XDP" ON)
 
 CHECK_CXX_SOURCE_COMPILES("
@@ -382,9 +383,10 @@ int main() {
 if (${ENABLE_AF_XDP_SUPPORT})
 
   if (${HAVE_AF_XDP})
-      message(STATUS "Your system has support for AF_XDP")
+      message(STATUS "Your system has support for AF_XDP and we will build XDP plugin")
   else()
-      message(STATUS "Your system does not support AF_XDP, disabled it")
+      # It may be old Linux, macOS, FreeBSD or Windows
+      message(STATUS "Your system does not support AF_XDP, disabling compilation of XDP plugin")
       set (ENABLE_AF_XDP_SUPPORT FALSE)
   endif()
 
