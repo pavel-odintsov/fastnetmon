@@ -195,7 +195,26 @@ jobs:
           command: cd ~/rpmbuild/SPECS && rpmbuild -bb fastnetmon.spec
       - store_artifacts:
           path: /root/rpmbuild/RPMS/x86_64
-
+  build_debian_system_dependencies:
+    parameters:
+      docker_image:
+        type: string
+      resource_class:
+        type: string
+        default: large
+    machine:
+      image: ubuntu-2204:current
+    environment:
+      DEBIAN_FRONTEND: noninteractive
+    resource_class: << parameters.resource_class >>
+    steps:
+      - run: sudo docker run --name  linux_docker -d -t << parameters.docker_image >>
+      - run: sudo docker exec linux_docker apt-get update; true
+      - run: sudo docker exec --env DEBIAN_FRONTEND linux_docker apt-get install -y perl wget git cmake
+      - run: sudo docker exec linux_docker git clone https://github.com/pavel-odintsov/fastnetmon.git
+      - run: sudo docker exec linux_docker mkdir fastnetmon/src/build
+      - run: sudo docker exec linux_docker cmake -S fastnetmon/src -B fastnetmon/src/build
+      - run: sudo docker exec linux_docker cd fastnetmon/src/build && make -j
   build_debian:
     parameters:
       docker_image:
@@ -387,6 +406,10 @@ workflows:
       - build_debian_upstream_package:
           name: "Debian Sid Upstream Build"
           debian_codename: "sid"
+      # To offer great developer experience we ensure that FastNetMon can be built on latest Ubuntu LTS 
+      - build_debian_system_dependencies:
+          docker_image: "ubuntu:jammy"
+          name: "ubuntu2204_system_dependencies"
       - build_fedora_upstream:
           name: "Fedora 36 Upstream RPM"
           docker_image: fedora:36
