@@ -364,11 +364,6 @@ workflows:
           name: "ubuntu1604"
           distro_name: "ubuntu"
       - build_debian:
-          docker_image: "debian:stretch"
-          distro_version: "9"
-          name: "debian9"
-          distro_name: "debian"
-      - build_debian:
           docker_image: "debian:buster"
           distro_version: "10"
           name: "debian10"
