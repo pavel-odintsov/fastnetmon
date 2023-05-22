@@ -373,7 +373,7 @@ workflows:
           name: "debian10"
           distro_name: "debian"
           # We do it this way because this version of Debian has no s3cmd in official repos for some reasons: https://packages.debian.org/buster-backports/s3cmd
-          s3cmd_install_command: 'apt-get install -y python3-pip && pip3 install s3cmd && find /|grep s3cmd"
+          s3cmd_install_command: "apt-get install -y python3-pip && pip3 install s3cmd && find /|grep s3cmd"
       - build_debian:
           docker_image: "debian:bullseye"
           distro_version: "11"
