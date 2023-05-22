@@ -32,7 +32,7 @@ Supported packet capture engines
 - PCAP
 - AF_PACKET (recommended)
 - AF_XDP (XDP based capture)
-- Netmap (deprecated, stil supported only for FreeBSD)
+- Netmap (deprecated, still supported only for FreeBSD)
 - PF_RING / PF_RING ZC (deprecated, available only for CentOS 6 in 1.2.0)
 
 You can check out the [comparison table](https://fastnetmon.com/docs/capture_backends/) for all available packet capture engines.
