@@ -129,7 +129,7 @@ sub get_library_binary_build_from_google_storage {
 
     # print "Will use following path to retrieve dependency: $binary_path\n";
     my $download_file_return_code =
-        system("s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket=\"%(bucket).storage.googleapis.com\" get $binary_path /tmp/$dependency_archive_name >/dev/null 2>&1");
+        system("s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket=\"%(bucket).storage.googleapis.com\" get $binary_path /tmp/$dependency_archive_name");
 
     if ($download_file_return_code != 0) {
         my $real_exit_code = $download_file_return_code >> 8;
