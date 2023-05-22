@@ -245,7 +245,7 @@ jobs:
       - run: sudo docker run --name  linux_docker -d -t << parameters.docker_image >>
       - run: sudo docker exec linux_docker apt-get update; true
       - run: sudo docker exec linux_docker apt-get install -y perl wget git
-      - run: sudo docker exec --env DEBIAN_FRONTEND linux_docker << parameters.s3cmd_install_command >>
+      - run: sudo docker exec --env DEBIAN_FRONTEND linux_docker bash -c "<< parameters.s3cmd_install_command >>"
       - run: sudo docker exec linux_docker git clone https://github.com/pavel-odintsov/fastnetmon.git
       - run:
           name: install_gcc
@@ -373,7 +373,7 @@ workflows:
           name: "debian10"
           distro_name: "debian"
           # We do it this way because this version of Debian has no s3cmd in official repos for some reasons: https://packages.debian.org/buster-backports/s3cmd
-          s3cmd_install_command: "apt-get install -y python3-pip; pip3 install s3cmd; cp /opt/circleci/.pyenv/shims/s3cmd /usr/bin/s3cmd"
+          s3cmd_install_command: 'apt-get install -y python3-pip && pip3 install s3cmd && find /|grep s3cmd"
       - build_debian:
           docker_image: "debian:bullseye"
           distro_version: "11"
