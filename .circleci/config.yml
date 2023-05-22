@@ -37,6 +37,10 @@ jobs:
           shell: << parameters.default_shell >>
           command: sed -i '/#define int64_t __int64/d' log4cpp/include/log4cpp/config-MinGW32.h
       - run:
+          name: Patch tests
+          shell: << parameters.default_shell >>
+          command: sed -i 's/typedef int64_t usec_t;/#include <cstdint>\ntypedef int64_t usec_t;/' log4cpp/tests/Clock.hh 
+      - run:
           name: Configure log4cpp
           shell: << parameters.default_shell >>
           command: cd log4cpp && ./configure
