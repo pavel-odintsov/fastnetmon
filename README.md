@@ -2,18 +2,18 @@
 
 Community Edition
 ===========
-FastNetMon - A high performance DDoS detector / sensor built on top of multiple packet capture engines: NetFlow, IPFIX, sFlow, AF_PACKET (port mirror).
+FastNetMon - A high-performance DDoS detector/sensor built on top of multiple packet capture engines: NetFlow, IPFIX, sFlow, AF_PACKET (port mirror).
 
 What do we do?
 --------------
 We detect hosts in the deployed network sending or receiving large volumes of traffic, packets/bytes/flows per second and
-perform a configurable action to handle that event. These configurable actions include notifying you, calling script or making BGP announces. 
+perform a configurable action to handle that event. These configurable actions include notifying you, calling script or making BGP announcements. 
 
 Project 
 -------
 🌏️ [Official site](https://fastnetmon.com)  
 ⭐️ [FastNetMon Advanced, Commercial Edition](https://fastnetmon.com/product-overview/)  
-🌟️ [FastNetMon Advanced, free one month trial](https://fastnetmon.com/trial/)  
+🌟️ [FastNetMon Advanced, free one-month trial](https://fastnetmon.com/trial/)  
 📜️ [FastNetMon Advanced and Community difference table](https://fastnetmon.com/compare-community-and-advanced/)  
 📘️ [Detailed reference](https://translate.google.com/translate?sl=auto&tl=en&u=https%3A%2F%2Ffastnetmon.com%2Fwp-content%2Fuploads%2F2017%2F07%2FFastNetMon_Reference_Russian.pdf)  
 🔏️ [Privacy policy](https://fastnetmon.com/privacy-policy/)  
@@ -56,7 +56,7 @@ Features
 - VLAN untagging in mirror and sFlow modes
 - Capture attack fingerprints in PCAP format
 
-We track [multiple](https://github.com/pavel-odintsov/fastnetmon/search?q=send_usage_data_to_reporting_server) platform and environment specific metrics to understand ways how our product is being used and pioritise development accordingly. 
+We track [multiple](https://github.com/pavel-odintsov/fastnetmon/search?q=send_usage_data_to_reporting_server) platform and environment-specific metrics to understand ways how our product is being used and prioritise development accordingly. 
 
 Official support groups:
 -------
