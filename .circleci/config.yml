@@ -27,11 +27,11 @@ jobs:
       - run:
           name: Download log4cpp
           shell: << parameters.default_shell >>
-          command: wget https://deac-riga.dl.sourceforge.net/project/log4cpp/log4cpp-1.1.x%20%28new%29/log4cpp-1.1/log4cpp-1.1.4rc3.tar.gz
+          command: wget https://deac-riga.dl.sourceforge.net/project/log4cpp/log4cpp-1.1.x%20%28new%29/log4cpp-1.1/log4cpp-1.1.4.tar.gz
       - run:
           name: Unpack log4cpp 
           shell: << parameters.default_shell >>
-          command: tar -xf log4cpp-1.1.4rc3.tar.gz
+          command: tar -xf log4cpp-1.1.4.tar.gz
       - run: 
           name: Patch log4cpp to compile it on msys2
           shell: << parameters.default_shell >>
