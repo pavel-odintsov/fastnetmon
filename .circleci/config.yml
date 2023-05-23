@@ -2,7 +2,7 @@ version: 2.1
 parameters:
   fastnetmon_build_version:
     type: string
-    default: "1.2.5"
+    default: "1.2.6"
 orbs:
   win: circleci/windows@4.1
 jobs:
@@ -113,10 +113,10 @@ jobs:
       image: ubuntu-2204:current
     steps:
      - checkout
-     - run: docker build -t ghcr.io/pavel-odintsov/fastnetmon-community:1.2.4 -t ghcr.io/pavel-odintsov/fastnetmon-community:latest - < src/Dockerfile
+     - run: docker build -t ghcr.io/pavel-odintsov/fastnetmon-community:<< pipeline.parameters.fastnetmon_build_version >> -t ghcr.io/pavel-odintsov/fastnetmon-community:latest - < src/Dockerfile
      - run: sudo docker images
      - run: echo $CR_PAT | sudo docker login ghcr.io -u pavel-odintsov --password-stdin
-     - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:1.2.4
+     - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:<< pipeline.parameters.fastnetmon_build_version >>
      - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:latest
   build_gce:
     machine:
