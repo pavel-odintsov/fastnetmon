@@ -3233,6 +3233,22 @@ std::vector<std::string> generate_list_of_enabled_capture_engines() {
     return list;
 }
 
+// Reads instance_id from filesystem
+bool get_instance_id(std::string& instance_id) {
+    std::string instance_id_path = "/var/lib/instance_id.fst";
+
+    // Not found and that's OK
+    if (!file_exists(instance_id_path)) {
+        return false;
+    }
+
+    // It has no newline inside
+    if (!read_file_to_string(instance_id_path, instance_id)) {
+        return false;
+    }
+
+    return true;
+}
 
 void send_usage_data_to_reporting_server() {
     extern std::string reporting_server;
@@ -3330,6 +3346,14 @@ void send_usage_data_to_reporting_server() {
         }
 
         stats["linux_distro_version"] = linux_distro_version;
+
+        std::string instance_id;
+
+        if (get_instance_id(instance_id)) {
+            stats["instance_id"] = instance_id;
+        } else {
+            // OK, it's optional
+        }
 
         stats_json_string = stats.dump();
     } catch (...) {
