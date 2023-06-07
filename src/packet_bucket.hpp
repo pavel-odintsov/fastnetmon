@@ -7,7 +7,7 @@ extern log4cpp::Category& logger;
 // Pattern of packet collection
 enum class collection_pattern_t {
     // Just fill whole buffer one time and stop collection process
-    ONCE = 1
+    ONCE = 1,
 };
 
 // In this class we are storing circular buffers with full packet payloads and with parsed packet details
@@ -39,7 +39,7 @@ class packet_bucket_t {
     std::chrono::time_point<std::chrono::system_clock> collection_start_time;
     std::chrono::time_point<std::chrono::system_clock> collection_finished_time;
 
-    // Here we are storing raw packets if they are availible (sflow, mirror)
+    // Here we are storing raw packets if they are available (sflow, mirror)
     boost::circular_buffer<fixed_size_packet_storage_t> raw_packets_circular_buffer;
 
     // Attack details information extracted at time when we detected attack
@@ -53,36 +53,54 @@ template <typename TemplateKeyType> class packet_buckets_storage_t {
         buffers_maximum_capacity = capacity;
     }
 
-    bool we_want_to_capture_data_for_this_ip(TemplateKeyType lookup_ip) {
-        std::lock_guard<std::mutex> lock_guard(packet_buckets_map_mutex);
-
-        auto itr = packet_buckets_map.find(lookup_ip);
-
-        // We haven't any records about this IP
-        if (itr == packet_buckets_map.end()) {
-            return false;
-        }
-
-        // Return internal value about
-        return itr->second.we_could_receive_new_data;
-    }
-
     // Return true if we have buckets for specified IP
-    bool we_have_bucket_for_this_ip(TemplateKeyType lookup_ip) {
+    bool we_have_bucket_for_this_ip(const TemplateKeyType& lookup_ip) {
         std::lock_guard<std::mutex> lock_guard(packet_buckets_map_mutex);
 
-        return packet_buckets_map.count(lookup_ip) > 0;
+        return packet_buckets_map.contains(lookup_ip);
     }
 
-    bool remove_packet_capture_for_ip(TemplateKeyType lookup_ip) {
+    bool remove_packet_capture_for_ip(const TemplateKeyType& lookup_ip) {
         std::lock_guard<std::mutex> lock_guard(packet_buckets_map_mutex);
 
         packet_buckets_map.erase(lookup_ip);
         return true;
     }
 
+    // It creates bucket for capture and immediately fills it with attack's sample
+    // We use it to avoid significant changes caused by adding traffic_buffer
+    void add_attack_with_sample(const TemplateKeyType& client_ip,
+                                const attack_details_t& attack_details,
+                                const std::vector<simple_packet_t>& attack_sample) {
+        // This logic will not be called if it's already banned and we can overwrite bucket without checking
+        packet_bucket_t new_packet_bucket;
+        new_packet_bucket.set_capacity(buffers_maximum_capacity);
+
+        // Specify start time
+        new_packet_bucket.collection_start_time    = std::chrono::system_clock::now();
+        new_packet_bucket.collection_finished_time = std::chrono::system_clock::now();
+
+        new_packet_bucket.we_could_receive_new_data           = false;
+        new_packet_bucket.we_collected_full_buffer_least_once = true;
+
+        new_packet_bucket.collection_pattern = collection_pattern_t::ONCE;
+        new_packet_bucket.attack_details     = attack_details;
+
+        // Copy all packets from vector to circular buffer in bucket
+        for (const auto& current_packet : attack_sample) {
+            new_packet_bucket.parsed_packets_circular_buffer.push_back(current_packet);
+        }
+
+        {
+            std::lock_guard<std::mutex> lock_guard(packet_buckets_map_mutex);
+            packet_buckets_map[client_ip] = new_packet_bucket;
+        }
+    }
+
     // We could enable packet capture for certain IP address with this function
-    bool enable_packet_capture(TemplateKeyType client_ip, attack_details_t attack_details, collection_pattern_t collection_pattern) {
+    bool enable_packet_capture(const TemplateKeyType& client_ip,
+                               const attack_details_t& attack_details,
+                               const collection_pattern_t& collection_pattern) {
         std::lock_guard<std::mutex> lock_guard(packet_buckets_map_mutex);
 
         if (packet_buckets_map.count(client_ip) > 0) {
@@ -113,7 +131,7 @@ template <typename TemplateKeyType> class packet_buckets_storage_t {
         return true;
     }
 
-    bool disable_packet_capture(TemplateKeyType client_ip) {
+    bool disable_packet_capture(const TemplateKeyType& client_ip) {
         std::lock_guard<std::mutex> lock_guard(packet_buckets_map_mutex);
 
         auto itr = packet_buckets_map.find(client_ip);
@@ -129,8 +147,20 @@ template <typename TemplateKeyType> class packet_buckets_storage_t {
         return true;
     }
 
+    // Returns true accompanied with attack details when host has bucket in place
+    bool get_attack_details(const TemplateKeyType& client_ip, attack_details_t& attack_details) {
+        auto itr = packet_buckets_map.find(client_ip);
+
+        if (itr == packet_buckets_map.end()) {
+            return false;
+        }
+
+        attack_details = itr->second.attack_details;
+        return true;
+    }
+
     // Add packet to storage if we want to receive this packet
-    bool add_packet_to_storage(TemplateKeyType client_ip, simple_packet_t& current_packet) {
+    bool add_packet_to_storage(const TemplateKeyType& client_ip, const simple_packet_t& current_packet) {
         std::lock_guard<std::mutex> lock_guard(packet_buckets_map_mutex);
 
         // We should explicitly add map element here before starting collection
@@ -161,9 +191,9 @@ template <typename TemplateKeyType> class packet_buckets_storage_t {
 
                 itr->second.collection_finished_time = std::chrono::system_clock::now();
 
-                // TODO: we could not print IP in pretty form here because we will got circullar dependency in this
+                // TODO: we could not print IP in pretty form here because we will got circular dependency in this
                 // case...
-                logger << log4cpp::Priority::INFO << "We've filled circullar buffer for ip "
+                logger << log4cpp::Priority::INFO << "We've filled circular buffer for ip "
                        << convert_any_ip_to_string(client_ip) << " with "
                        << itr->second.raw_packets_circular_buffer.capacity() << " elements in raw_packets_circular_buffer"
                        << " and " << itr->second.parsed_packets_circular_buffer.capacity()
@@ -185,14 +215,14 @@ template <typename TemplateKeyType> class packet_buckets_storage_t {
         itr->second.parsed_packets_circular_buffer.push_back(current_packet);
 
         // If we have packet payload for this packet add it to storage too
-        if (current_packet.packet_payload_length > 0 && current_packet.packet_payload_pointer != NULL) {
+        if (current_packet.captured_payload_length > 0 && current_packet.payload_pointer != NULL) {
             logger << log4cpp::Priority::DEBUG << "Add raw packet to storage with packet_payload_length "
-                   << current_packet.packet_payload_length << " and packet_payload_full_length "
-                   << current_packet.packet_payload_full_length;
+                   << current_packet.captured_payload_length << " and packet_payload_full_length "
+                   << current_packet.payload_full_length;
 
             itr->second.raw_packets_circular_buffer.push_back(
-                fixed_size_packet_storage_t(current_packet.packet_payload_pointer, current_packet.packet_payload_length,
-                                            current_packet.packet_payload_full_length));
+                fixed_size_packet_storage_t(current_packet.payload_pointer, current_packet.captured_payload_length,
+                                            current_packet.payload_full_length));
         }
 
         logger << log4cpp::Priority::DEBUG << "Buffer size after adding packet for "
