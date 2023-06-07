@@ -57,7 +57,8 @@ template <typename TemplateKeyType> class packet_buckets_storage_t {
     bool we_have_bucket_for_this_ip(const TemplateKeyType& lookup_ip) {
         std::lock_guard<std::mutex> lock_guard(packet_buckets_map_mutex);
 
-        return packet_buckets_map.contains(lookup_ip);
+        // After migration to C++ 20 we can switch it to contains: https://en.cppreference.com/w/cpp/container/map/contains
+        return packet_buckets_map.count(lookup_ip) > 0;
     }
 
     bool remove_packet_capture_for_ip(const TemplateKeyType& lookup_ip) {
