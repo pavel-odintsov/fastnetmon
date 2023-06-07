@@ -38,6 +38,9 @@ class simple_packet_t {
     in6_addr src_ipv6{};
     in6_addr dst_ipv6{};
 
+    uint8_t source_mac[6]{};
+    uint8_t destination_mac[6]{};
+
     // ASNs
     uint32_t src_asn = 0;
     uint32_t dst_asn = 0;
@@ -79,17 +82,22 @@ class simple_packet_t {
     // If IP has don't fragment flag
     bool ip_dont_fragment = false;
 
+    // Fragment offset in bytes when fragmentation involved
+    uint16_t ip_fragment_offset = 0;
+
     // Time when we actually received this packet, we use quite rough and inaccurate but very fast time source for it
     time_t arrival_time = 0;
 
     // Timestamp of packet as reported by Netflow or IPFIX agent on device, it may be very inaccurate as nobody cares about time on equipment
     struct timeval ts = { 0, 0 };
 
-    void* packet_payload_pointer  = nullptr;
-    int32_t packet_payload_length = 0;
+    void* payload_pointer  = nullptr;
 
-    // In case of cropped packets we use this field
-    uint32_t packet_payload_full_length = 0;
+    // Part of packet we captured from wire. It may not be full length of packet
+    int32_t captured_payload_length = 0;
+
+    // Full length of packet we observed. It may be larger then packet_captured_payload_length in case of cropped mirror or sFlow traffic
+    uint32_t payload_full_length = 0;
 
     // Forwarding status
     forwarding_status_t forwarding_status = forwarding_status_t::unknown;

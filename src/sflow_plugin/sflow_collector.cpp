@@ -421,9 +421,9 @@ bool process_sflow_flow_sample(uint8_t* data_pointer,
             }
 
             // Pass pointer to raw header to FastNetMon processing functions
-            packet.packet_payload_pointer     = header_payload_pointer;
-            packet.packet_payload_full_length = sflow_raw_protocol_header.frame_length_before_sampling;
-            packet.packet_payload_length      = sflow_raw_protocol_header.header_size;
+            packet.payload_pointer     = header_payload_pointer;
+            packet.payload_full_length = sflow_raw_protocol_header.frame_length_before_sampling;
+            packet.captured_payload_length      = sflow_raw_protocol_header.header_size;
 
             packet.sample_ratio = sflow_sample_header_unified_accessor.sampling_rate;
 

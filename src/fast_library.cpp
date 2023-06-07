@@ -1324,8 +1324,8 @@ bool read_simple_packet(uint8_t* buffer, size_t buffer_length, simple_packet_t& 
         packet.ip_fragmented              = root.getIpFragmented();
         packet.ts.tv_sec                  = root.getTsSec();
         packet.ts.tv_usec                 = root.getTsMsec();
-        packet.packet_payload_length      = root.getPacketPayloadLength();
-        packet.packet_payload_full_length = root.getPacketPayloadFullLength();
+        packet.captured_payload_length      = root.getPacketPayloadLength();
+        packet.payload_full_length = root.getPacketPayloadFullLength();
         packet.packet_direction           = (direction_t)root.getPacketDirection();
         packet.source                     = (source_t)root.getSource();
     } catch (kj::Exception e) {
@@ -1361,8 +1361,8 @@ bool write_simple_packet(int fd, simple_packet_t& packet, bool populate_ipv6) {
     capnp_packet.setIpFragmented(packet.ip_fragmented);
     capnp_packet.setTsSec(packet.ts.tv_sec);
     capnp_packet.setTsMsec(packet.ts.tv_usec);
-    capnp_packet.setPacketPayloadLength(packet.packet_payload_length);
-    capnp_packet.setPacketPayloadFullLength(packet.packet_payload_full_length);
+    capnp_packet.setPacketPayloadLength(packet.captured_payload_length);
+    capnp_packet.setPacketPayloadFullLength(packet.payload_full_length);
     capnp_packet.setPacketDirection(packet.packet_direction);
     capnp_packet.setSource(packet.source);
     capnp_packet.setSrcAsn(packet.src_asn);
