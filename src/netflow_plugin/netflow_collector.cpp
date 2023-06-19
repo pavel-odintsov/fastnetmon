@@ -573,23 +573,23 @@ template_t* peer_nf10_find_template(uint32_t source_id, uint32_t template_id, st
 // This function reads all available options templates
 // http://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
 bool process_netflow_v9_options_template(uint8_t* pkt, size_t len, uint32_t source_id, const std::string& client_addres_in_string_format) {
-    nf9_options_header_common_t* options_template_header = (nf9_options_header_common_t*)pkt;
+    netflow9_options_header_common_t* options_template_header = (netflow9_options_header_common_t*)pkt;
 
     if (len < sizeof(*options_template_header)) {
         logger << log4cpp::Priority::ERROR << "Short Netflow v9 options template header " << len << " bytes";
         return false;
     }
 
-    if (ntohs(options_template_header->flowset_id) != NF9_OPTIONS_FLOWSET_ID) {
+    if (ntohs(options_template_header->flowset_id) != NETFLOW9_OPTIONS_FLOWSET_ID) {
         logger << log4cpp::Priority::ERROR
                << "Function process_netflow_v9_options_template "
-                  "expects only NF9_OPTIONS_FLOWSET_ID but got "
+                  "expects only NETFLOW9_OPTIONS_FLOWSET_ID but got "
                   "another id: "
                << ntohs(options_template_header->flowset_id);
         return false;
     }
 
-    nf9_options_header_t* options_nested_header = (nf9_options_header_t*)(pkt + sizeof(*options_template_header));
+    netflow9_options_header_t* options_nested_header = (netflow9_options_header_t*)(pkt + sizeof(*options_template_header));
 
 
     if (len < sizeof(*options_template_header) + sizeof(*options_nested_header)) {
@@ -677,8 +677,8 @@ bool process_ipfix_options_template(uint8_t* pkt, size_t len, uint32_t source_id
     uint16_t flowset_id     = fast_ntoh(options_template_header->flowset_id);
     uint16_t flowset_length = fast_ntoh(options_template_header->length);
 
-    if (flowset_id != NF10_OPTIONS_FLOWSET_ID) {
-        logger << log4cpp::Priority::ERROR << "For options template we expect " << NF10_OPTIONS_FLOWSET_ID
+    if (flowset_id != IPFIX_OPTIONS_FLOWSET_ID) {
+        logger << log4cpp::Priority::ERROR << "For options template we expect " << IPFIX_OPTIONS_FLOWSET_ID
                << "flowset_id but got "
                   "another id: "
                << flowset_id << "Agent IP: " << client_addres_in_string_format;
@@ -842,10 +842,10 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
         return false;
     }
 
-    if (ntohs(template_header->flowset_id) != NF10_TEMPLATE_FLOWSET_ID) {
+    if (ntohs(template_header->flowset_id) != IPFIX_TEMPLATE_FLOWSET_ID) {
         logger << log4cpp::Priority::ERROR
                << "Function process_netflow_v10_template expects only "
-                  "NF10_TEMPLATE_FLOWSET_ID but "
+                  "IPFIX_TEMPLATE_FLOWSET_ID but "
                   "got another id: "
                << ntohs(template_header->flowset_id);
 
@@ -856,7 +856,7 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
         ipfix_template_flowset_header_t* tmplh = (ipfix_template_flowset_header_t*)(pkt + offset);
 
         uint32_t template_id = ntohs(tmplh->template_id);
-        uint32_t count       = ntohs(tmplh->count);
+        uint32_t count       = ntohs(tmplh->record_count);
         offset += sizeof(*tmplh);
 
         std::vector<template_record_t> template_records_map;
@@ -878,7 +878,7 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
             template_records_map.push_back(current_record);
 
             offset += sizeof(*tmplr);
-            if (record_type & NF10_ENTERPRISE) {
+            if (record_type & IPFIX_ENTERPRISE) {
                 offset += sizeof(uint32_t); /* XXX -- ? */
             }
 
@@ -910,10 +910,10 @@ bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, c
         return false;
     }
 
-    if (fast_ntoh(template_header->flowset_id) != NF9_TEMPLATE_FLOWSET_ID) {
+    if (fast_ntoh(template_header->flowset_id) != NETFLOW9_TEMPLATE_FLOWSET_ID) {
         logger << log4cpp::Priority::ERROR
                << "Function process_netflow_v9_template expects only "
-                  "NF9_TEMPLATE_FLOWSET_ID but "
+                  "NETFLOW9_TEMPLATE_FLOWSET_ID but "
                   "got another id: "
                << ntohs(template_header->flowset_id);
         return false;
@@ -923,7 +923,7 @@ bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, c
         netflow9_template_flowset_header_t* tmplh = (netflow9_template_flowset_header_t*)(pkt + offset);
 
         uint32_t template_id = ntohs(tmplh->template_id);
-        uint32_t count       = ntohs(tmplh->count);
+        uint32_t count       = ntohs(tmplh->fields_count);
         offset += sizeof(*tmplh);
 
         // logger<< log4cpp::Priority::INFO<<"Template template_id
@@ -1053,20 +1053,20 @@ bool be_copy_function(uint8_t* data, uint8_t* target, uint32_t target_field_leng
 int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data, simple_packet_t& packet, netflow_meta_info_t& flow_meta) {
     /* XXX: use a table-based interpreter */
     switch (record_type) {
-        V9_FIELD(NF9_IN_BYTES, OCTETS, length);
-        V9_FIELD(NF9_IN_PACKETS, PACKETS, number_of_packets);
-        V9_FIELD(NF9_IN_PROTOCOL, PROTO_FLAGS_TOS, protocol);
-        V9_FIELD(NF9_TCP_FLAGS, PROTO_FLAGS_TOS, flags);
-        V9_FIELD(NF9_L4_SRC_PORT, SRCDST_PORT, source_port);
-        V9_FIELD(NF9_L4_DST_PORT, SRCDST_PORT, destination_port);
+        V9_FIELD(NETFLOW9_IN_BYTES, OCTETS, length);
+        V9_FIELD(NETFLOW9_IN_PACKETS, PACKETS, number_of_packets);
+        V9_FIELD(NETFLOW9_IN_PROTOCOL, PROTO_FLAGS_TOS, protocol);
+        V9_FIELD(NETFLOW9_TCP_FLAGS, PROTO_FLAGS_TOS, flags);
+        V9_FIELD(NETFLOW9_L4_SRC_PORT, SRCDST_PORT, source_port);
+        V9_FIELD(NETFLOW9_L4_DST_PORT, SRCDST_PORT, destination_port);
 
-    case NF9_IPV4_SRC_ADDR:
+    case NETFLOW9_IPV4_SRC_ADDR:
         memcpy(&packet.src_ip, data, record_length);
         break;
-    case NF9_IPV4_DST_ADDR:
+    case NETFLOW9_IPV4_DST_ADDR:
         memcpy(&packet.dst_ip, data, record_length);
         break;
-    case NF9_SRC_AS:
+    case NETFLOW9_SRC_AS:
         // It could be 2 or 4 byte length
         if (record_length == 4) {
             uint32_t src_asn = 0;
@@ -1082,7 +1082,7 @@ int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data,
             packet.src_asn = src_asn;
         }
         break;
-    case NF9_IPV6_SRC_ADDR:
+    case NETFLOW9_IPV6_SRC_ADDR:
         // It should be 16 bytes only
         if (record_length == 16) {
             memcpy(&packet.src_ipv6, data, record_length);
@@ -1091,7 +1091,7 @@ int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data,
         }
 
         break;
-    case NF9_IPV6_DST_ADDR:
+    case NETFLOW9_IPV6_DST_ADDR:
         // It should be 16 bytes only
         if (record_length == 16) {
             memcpy(&packet.dst_ipv6, data, record_length);
@@ -1100,7 +1100,7 @@ int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data,
         }
 
         break;
-    case NF9_DST_AS:
+    case NETFLOW9_DST_AS:
         // It could be 2 or 4 byte length
         if (record_length == 4) {
             uint32_t dst_asn = 0;
@@ -1117,7 +1117,7 @@ int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data,
         }
 
         break;
-    case NF9_INPUT_SNMP:
+    case NETFLOW9_INPUT_SNMP:
         // According to Netflow standard this field could have 2 or more bytes
         // Juniper MX uses 4 byte encoding
         // Here we support 2 or 4 byte encoding only
@@ -1138,7 +1138,7 @@ int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data,
         }
 
         break;
-    case NF9_OUTPUT_SNMP:
+    case NETFLOW9_OUTPUT_SNMP:
         // According to Netflow standard this field could have 2 or more bytes
         // Juniper MX uses 4 byte encoding
         // Here we support 2 or 4 byte encoding only
@@ -1159,7 +1159,7 @@ int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data,
         }
 
         break;
-    case NF9_FIRST_SWITCHED:
+    case NETFLOW9_FIRST_SWITCHED:
         if (record_length == 4) {
             uint32_t flow_started = 0;
 
@@ -1172,7 +1172,7 @@ int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data,
         }
 
         break;
-    case NF9_LAST_SWITCHED:
+    case NETFLOW9_LAST_SWITCHED:
         if (record_length == 4) {
             uint32_t flow_finished = 0;
 
@@ -1185,7 +1185,7 @@ int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data,
         }
 
         break;
-    case NF9_FORWARDING_STATUS:
+    case NETFLOW9_FORWARDING_STATUS:
         // Documented here: https://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
         // Forwarding status is encoded on 1 byte with the 2 left bits giving the status and the 6 remaining bits giving the reason code.
         // This field may carry information about fragmentation but we cannot confirm it, ASR 9000 exports most of the traffic with field 64, which means unknown
@@ -1200,7 +1200,7 @@ int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data,
         }
 
         break;
-    case NF9_SELECTOR_TOTAL_PACKETS_OBSERVED:
+    case NETFLOW9_SELECTOR_TOTAL_PACKETS_OBSERVED:
         if (record_length == 8) {
             uint64_t packets_observed = 0;
 
@@ -1211,7 +1211,7 @@ int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data,
         }
 
         break;
-    case NF9_SELECTOR_TOTAL_PACKETS_SELECTED:
+    case NETFLOW9_SELECTOR_TOTAL_PACKETS_SELECTED:
         if (record_length == 8) {
             uint64_t packets_selected = 0;
 
@@ -1222,7 +1222,7 @@ int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data,
         }
 
         break;
-    case NF9_DATALINK_FRAME_SIZE:
+    case NETFLOW9_DATALINK_FRAME_SIZE:
         if (record_length == 2) {
             uint16_t datalink_frame_size = 0;
 
@@ -1233,7 +1233,7 @@ int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data,
         }
 
         break;
-    case NF9_LAYER2_PACKET_SECTION_DATA:
+    case NETFLOW9_LAYER2_PACKET_SECTION_DATA:
         bool read_packet_length_from_ip_header = true;
         bool decapsulate_tunnels               = false;
 
@@ -1268,16 +1268,16 @@ int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data,
 bool nf10_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data, simple_packet_t& packet) {
     /* XXX: use a table-based interpreter */
     switch (record_type) {
-    case NF10_IN_BYTES:
+    case IPFIX_IN_BYTES:
         BE_COPY(packet.length);
         break;
-    case NF10_IN_PACKETS:
+    case IPFIX_IN_PACKETS:
         BE_COPY(packet.number_of_packets);
         break;
-    case NF10_IN_PROTOCOL:
+    case IPFIX_IN_PROTOCOL:
         BE_COPY(packet.protocol);
         break;
-    case NF10_TCP_FLAGS:
+    case IPFIX_TCP_FLAGS:
         // Cisco NCS 55A1 encodes them as two bytes :(
         if (sizeof(packet.flags) < record_length) {
             return false;
@@ -1285,22 +1285,22 @@ bool nf10_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* dat
 
         BE_COPY(packet.flags);
         break;
-    case NF10_L4_SRC_PORT:
+    case IPFIX_L4_SRC_PORT:
         BE_COPY(packet.source_port);
         break;
-    case NF10_L4_DST_PORT:
+    case IPFIX_L4_DST_PORT:
         BE_COPY(packet.destination_port);
         break;
-    case NF10_IPV4_SRC_ADDR:
+    case IPFIX_IPV4_SRC_ADDR:
         memcpy(&packet.src_ip, data, record_length);
         break;
-    case NF10_IPV4_DST_ADDR:
+    case IPFIX_IPV4_DST_ADDR:
         memcpy(&packet.dst_ip, data, record_length);
         break;
 
     // According to https://www.iana.o > rg/assignments/ipfix/ipfix.xhtml ASN can be 4 byte only
     // Unfortunately, customer (Intermedia) shared pcap with ASNs encoded as 2 byte values :(
-    case NF10_SRC_AS:
+    case IPFIX_SRC_AS:
         if (record_length == 4) {
             uint32_t src_asn = 0;
             memcpy(&src_asn, data, record_length);
@@ -1316,7 +1316,7 @@ bool nf10_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* dat
         }
 
         break;
-    case NF10_DST_AS:
+    case IPFIX_DST_AS:
         if (record_length == 4) {
             uint32_t dst_asn = 0;
             memcpy(&dst_asn, data, record_length);
@@ -1333,7 +1333,7 @@ bool nf10_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* dat
 
         break;
     // According to https://www.iana.org/assignments/ipfix/ipfix.xhtml interfaces can be 4 byte only
-    case NF10_INPUT_SNMP:
+    case IPFIX_INPUT_SNMP:
         if (record_length == 4) {
             uint32_t input_interface = 0;
             memcpy(&input_interface, data, record_length);
@@ -1343,7 +1343,7 @@ bool nf10_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* dat
         }
 
         break;
-    case NF10_OUTPUT_SNMP:
+    case IPFIX_OUTPUT_SNMP:
         if (record_length == 4) {
             uint32_t output_interface = 0;
             memcpy(&output_interface, data, record_length);
@@ -1353,7 +1353,7 @@ bool nf10_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* dat
         }
 
         break;
-    case NF10_IPV6_SRC_ADDR:
+    case IPFIX_IPV6_SRC_ADDR:
         // It should be 16 bytes only
         if (record_length == 16) {
             memcpy(&packet.src_ipv6, data, record_length);
@@ -1361,7 +1361,7 @@ bool nf10_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* dat
             packet.ip_protocol_version = 6;
         }
         break;
-    case NF10_IPV6_DST_ADDR:
+    case IPFIX_IPV6_DST_ADDR:
         // It should be 16 bytes only
         if (record_length == 16) {
             memcpy(&packet.dst_ipv6, data, record_length);
@@ -1369,7 +1369,7 @@ bool nf10_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* dat
             packet.ip_protocol_version = 6;
         }
         break;
-    case NF10_FIRST_SWITCHED:
+    case IPFIX_FIRST_SWITCHED:
         // Mikrotik uses this encoding
         if (record_length == 4) {
             uint32_t flow_started = 0;
@@ -1383,7 +1383,7 @@ bool nf10_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* dat
         }
 
         break;
-    case NF10_LAST_SWITCHED:
+    case IPFIX_LAST_SWITCHED:
         // Mikrotik uses this encoding
         if (record_length == 4) {
             uint32_t flow_finished = 0;
@@ -1397,8 +1397,8 @@ bool nf10_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* dat
         }
 
         break;
-        // Juniper uses NF10_FLOW_START_MILLISECONDS and NF10_FLOW_END_MILLISECONDS
-    case NF10_FLOW_START_MILLISECONDS:
+        // Juniper uses IPFIX_FLOW_START_MILLISECONDS and IPFIX_FLOW_END_MILLISECONDS
+    case IPFIX_FLOW_START_MILLISECONDS:
         if (record_length == 8) {
             uint64_t flow_started = 0;
 
@@ -1409,7 +1409,7 @@ bool nf10_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* dat
             packet.flow_start = flow_started;
         }
         break;
-    case NF10_FLOW_END_MILLISECONDS:
+    case IPFIX_FLOW_END_MILLISECONDS:
         if (record_length == 8) {
             uint64_t flow_finished = 0;
 
@@ -1421,7 +1421,7 @@ bool nf10_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* dat
         }
 
         break;
-    case NF10_FLOW_END_REASON:
+    case IPFIX_FLOW_END_REASON:
         // It should be 1 byte value
         if (record_length == 1) {
             uint8_t flow_end_reason = 0;
@@ -1449,7 +1449,7 @@ bool nf10_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* dat
 }
 
 // Read options data packet with known templat
-bool nf10_options_flowset_to_store(uint8_t* pkt, size_t len, nf10_header_t* nf10_hdr, template_t* flow_template, std::string client_addres_in_string_format) {
+bool nf10_options_flowset_to_store(uint8_t* pkt, size_t len, ipfix_header_t* nf10_hdr, template_t* flow_template, std::string client_addres_in_string_format) {
     // Skip scope fields, I really do not want to parse this informations
     pkt += flow_template->option_scope_length;
 
@@ -1462,7 +1462,7 @@ bool nf10_options_flowset_to_store(uint8_t* pkt, size_t len, nf10_header_t* nf10
         uint8_t* data_shift = pkt + offset;
 
         // Time to extract sampling rate
-        if (elem.record_type == NF10_SAMPLING_INTERVAL) {
+        if (elem.record_type == IPFIX_SAMPLING_INTERVAL) {
             // RFC suggest that this field is 4 byte: https://www.iana.org/assignments/ipfix/ipfix.xhtml
             if (elem.record_length > sizeof(sampling_rate)) {
                 logger << log4cpp::Priority::ERROR << "Unexpectedly big size for IPFIX_SAMPLING_INTERVAL: " << elem.record_length;
@@ -1476,7 +1476,7 @@ bool nf10_options_flowset_to_store(uint8_t* pkt, size_t len, nf10_header_t* nf10
                        << "Prevented attempt to read outside of allowed memory region for IPFIX_SAMPLING_INTERVAL";
                 return false;
             }
-        } else if (elem.record_type == NF10_SAMPLING_PACKET_INTERVAL) {
+        } else if (elem.record_type == IPFIX_SAMPLING_PACKET_INTERVAL) {
             // RFC suggest that this field is 4 byte: https://www.iana.org/assignments/ipfix/ipfix.xhtml
             if (elem.record_length > sizeof(sampling_rate)) {
                 logger << log4cpp::Priority::ERROR
@@ -1523,7 +1523,7 @@ bool nf10_options_flowset_to_store(uint8_t* pkt, size_t len, nf10_header_t* nf10
 // We should rewrite nf9_flowset_to_store accroding to fixes here
 void nf10_flowset_to_store(uint8_t* pkt,
                            size_t len,
-                           nf10_header_t* nf10_hdr,
+                           ipfix_header_t* nf10_hdr,
                            template_t* field_template,
                            uint32_t client_ipv4_address,
                            const std::string& client_addres_in_string_format) {
@@ -1650,7 +1650,7 @@ void nf9_options_flowset_to_store(uint8_t* pkt, size_t len, netflow9_header_t* n
 
         // Time to extract sampling rate
         // Cisco ASR1000
-        if (elem.record_type == FLOW_SAMPLER_RANDOM_INTERVAL) {
+        if (elem.record_type == NETFLOW9_FLOW_SAMPLER_RANDOM_INTERVAL) {
             // Check supported length
             if (elem.record_length == FLOW_SAMPLER_RANDOM_INTERVAL_LENGTH or
                 elem.record_length == FLOW_SAMPLER_RANDOM_INTERVAL_LENGTH_ASR1000) {
@@ -1920,7 +1920,7 @@ void nf9_flowset_to_store(uint8_t* pkt,
 
 bool process_netflow_v10_data(uint8_t* pkt,
                               size_t len,
-                              nf10_header_t* nf10_hdr,
+                              ipfix_header_t* nf10_hdr,
                               uint32_t source_id,
                               const std::string& client_addres_in_string_format,
                               uint32_t client_ipv4_address) {
@@ -1935,7 +1935,7 @@ bool process_netflow_v10_data(uint8_t* pkt,
         return false;
     }
 
-    uint32_t flowset_id = ntohs(dath->c.flowset_id);
+    uint32_t flowset_id = ntohs(dath->header.flowset_id);
 
     template_t* flowset_template = peer_nf10_find_template(source_id, flowset_id, client_addres_in_string_format);
 
@@ -2009,7 +2009,7 @@ int process_netflow_v9_data(uint8_t* pkt,
     }
 
     // uint32_t is a 4 byte integer. Any reason why we convert here 16 bit flowset_id to 32 bit? ... Strange
-    uint32_t flowset_id = ntohs(dath->c.flowset_id);
+    uint32_t flowset_id = ntohs(dath->header.flowset_id);
     // logger<< log4cpp::Priority::INFO<<"We have data with flowset_id:
     // "<<flowset_id;
 
@@ -2072,7 +2072,7 @@ int process_netflow_v9_data(uint8_t* pkt,
 }
 
 bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string& client_addres_in_string_format, uint32_t client_ipv4_address) {
-    nf10_header_t* nf10_hdr = (nf10_header_t*)packet;
+    ipfix_header_t* nf10_hdr = (ipfix_header_t*)packet;
     ipfix_flowset_header_common_t* flowset;
 
     uint32_t flowset_id, flowset_len;
@@ -2082,8 +2082,6 @@ bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string
         return false;
     }
 
-    /* v10 uses pkt length, not # of flows */
-    uint32_t pktlen    = ntohs(nf10_hdr->c.flows);
     uint32_t source_id = ntohl(nf10_hdr->source_id);
 
     uint32_t offset      = sizeof(*nf10_hdr);
@@ -2125,20 +2123,20 @@ bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string
         }
 
         switch (flowset_id) {
-        case NF10_TEMPLATE_FLOWSET_ID:
+        case IPFIX_TEMPLATE_FLOWSET_ID:
             ipfix_data_templates_number++;
             if (!process_netflow_v10_template(packet + offset, flowset_len, source_id, client_addres_in_string_format)) {
                 return false;
             }
             break;
-        case NF10_OPTIONS_FLOWSET_ID:
+        case IPFIX_OPTIONS_FLOWSET_ID:
             ipfix_options_templates_number++;
             if (!process_ipfix_options_template(packet + offset, flowset_len, source_id, client_addres_in_string_format)) {
                 return false;
             }
             break;
         default:
-            if (flowset_id < NF10_MIN_RECORD_FLOWSET_ID) {
+            if (flowset_id < IPFIX_MIN_RECORD_FLOWSET_ID) {
                 logger << log4cpp::Priority::ERROR << "Received unknown IPFIX reserved flowset type " << flowset_id;
                 break; // interrupts only switch!
             }
@@ -2173,7 +2171,7 @@ bool process_netflow_packet_v9(uint8_t* packet, uint32_t len, std::string& clien
         return false;
     }
 
-    uint32_t flowset_count_total = ntohs(nf9_hdr->c.flows);
+    uint32_t flowset_count_total = ntohs(nf9_hdr->header.flowset_number);
 
     // Limit reasonable number of flow sets per packet
     if (flowset_count_total > flowsets_per_packet_maximum_number) {
@@ -2218,21 +2216,21 @@ bool process_netflow_packet_v9(uint8_t* packet, uint32_t len, std::string& clien
         }
 
         switch (flowset_id) {
-        case NF9_TEMPLATE_FLOWSET_ID:
+        case NETFLOW9_TEMPLATE_FLOWSET_ID:
             netflow9_data_templates_number++;
             // logger<< log4cpp::Priority::INFO<<"We read template";
             if (!process_netflow_v9_template(packet + offset, flowset_len, source_id, client_addres_in_string_format, flowset_number)) {
                 return false;
             }
             break;
-        case NF9_OPTIONS_FLOWSET_ID:
+        case NETFLOW9_OPTIONS_FLOWSET_ID:
             netflow9_options_templates_number++;
             if (!process_netflow_v9_options_template(packet + offset, flowset_len, source_id, client_addres_in_string_format)) {
                 return false;
             }
             break;
         default:
-            if (flowset_id < NF9_MIN_RECORD_FLOWSET_ID) {
+            if (flowset_id < NETFLOW9_MIN_RECORD_FLOWSET_ID) {
                 logger << log4cpp::Priority::ERROR << "Received unknown Netflow v9 reserved flowset type " << flowset_id
                        << " agent IP: " << client_addres_in_string_format;
                 break; // interrupts only switch!
@@ -2273,8 +2271,8 @@ bool process_netflow_packet_v5(uint8_t* packet, uint32_t len, std::string& clien
         return false;
     }
 
-    uint32_t nflows = ntohs(nf5_hdr->c.flows);
-    if (nflows == 0 || nflows > NF5_MAXFLOWS) {
+    uint32_t nflows = ntohs(nf5_hdr->header.flows);
+    if (nflows == 0 || nflows > NETFLOW5_MAXFLOWS) {
         logger << log4cpp::Priority::ERROR << "Invalid number of flows in netflow " << nflows;
         return false;
     }
@@ -2293,7 +2291,7 @@ bool process_netflow_packet_v5(uint8_t* packet, uint32_t len, std::string& clien
     }
 
     for (uint32_t i = 0; i < nflows; i++) {
-        size_t offset        = NF5_PACKET_SIZE(i);
+        size_t offset        = NETFLOW5_PACKET_SIZE(i);
         netflow5_flow_t* nf5_flow = (netflow5_flow_t*)(packet + offset);
 
         /* Check packet bounds */
