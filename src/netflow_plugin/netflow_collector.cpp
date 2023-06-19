@@ -612,7 +612,7 @@ bool process_netflow_v9_options_template(uint8_t* pkt, size_t len, uint32_t sour
 
     // Here I should read all available scopes and calculate total size!
     for (; scopes_offset < fast_ntoh(options_nested_header->option_scope_length);) {
-        nf9_template_flowset_record_t* tmplr = (nf9_template_flowset_record_t*)(zone_address + scopes_offset);
+        netflow9_template_flowset_record_t* tmplr = (netflow9_template_flowset_record_t*)(zone_address + scopes_offset);
 
         scopes_total_size += fast_ntoh(tmplr->length);
         scopes_offset += sizeof(*tmplr);
@@ -628,7 +628,7 @@ bool process_netflow_v9_options_template(uint8_t* pkt, size_t len, uint32_t sour
 
     for (; offset < fast_ntoh(options_nested_header->option_length);) {
         records_number++;
-        nf9_template_flowset_record_t* tmplr = (nf9_template_flowset_record_t*)(zone_address_without_skopes + offset);
+        netflow9_template_flowset_record_t* tmplr = (netflow9_template_flowset_record_t*)(zone_address_without_skopes + offset);
 
         uint32_t record_type   = fast_ntoh(tmplr->type);
         uint32_t record_length = fast_ntoh(tmplr->length);
@@ -901,7 +901,7 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
 }
 
 bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, const std::string& client_addres_in_string_format, uint64_t flowset_number) {
-    nf9_flowset_header_common_t* template_header = (nf9_flowset_header_common_t*)pkt;
+    netflow9_flowset_header_common_t* template_header = (netflow9_flowset_header_common_t*)pkt;
     template_t field_template;
 
     if (len < sizeof(*template_header)) {
@@ -938,7 +938,7 @@ bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, c
                 return false;
             }
 
-            nf9_template_flowset_record_t* tmplr = (nf9_template_flowset_record_t*)(pkt + offset);
+            netflow9_template_flowset_record_t* tmplr = (netflow9_template_flowset_record_t*)(pkt + offset);
 
             uint32_t record_type   = ntohs(tmplr->type);
             uint32_t record_length = ntohs(tmplr->length);
@@ -2166,7 +2166,7 @@ bool process_netflow_packet_v9(uint8_t* packet, uint32_t len, std::string& clien
     // logger<< log4cpp::Priority::INFO<<"We get v9 netflow packet!";
 
     nf9_header_t* nf9_hdr                = (nf9_header_t*)packet;
-    nf9_flowset_header_common_t* flowset = nullptr;
+    netflow9_flowset_header_common_t* flowset = nullptr;
 
     if (len < sizeof(*nf9_hdr)) {
         logger << log4cpp::Priority::ERROR << "Short Netflow v9 header";
@@ -2198,7 +2198,7 @@ bool process_netflow_packet_v9(uint8_t* packet, uint32_t len, std::string& clien
             return false;
         }
 
-        flowset = (nf9_flowset_header_common_t*)(packet + offset);
+        flowset = (netflow9_flowset_header_common_t*)(packet + offset);
 
         uint32_t flowset_id  = ntohs(flowset->flowset_id);
         uint32_t flowset_len = ntohs(flowset->length);
@@ -2266,7 +2266,7 @@ bool process_netflow_packet_v9(uint8_t* packet, uint32_t len, std::string& clien
 bool process_netflow_packet_v5(uint8_t* packet, uint32_t len, std::string& client_addres_in_string_format, uint32_t client_ipv4_address) {
     // logger<< log4cpp::Priority::INFO<<"We get v5 netflow packet!";
 
-    nf5_header_t* nf5_hdr = (nf5_header_t*)packet;
+    netflow5_header_t* nf5_hdr = (netflow5_header_t*)packet;
 
     if (len < sizeof(*nf5_hdr)) {
         logger << log4cpp::Priority::ERROR << "Short netflow v5 packet " << len;
@@ -2390,7 +2390,7 @@ bool process_netflow_packet_v5(uint8_t* packet, uint32_t len, std::string& clien
 }
 
 bool process_netflow_packet(uint8_t* packet, uint32_t len, std::string& client_addres_in_string_format, uint32_t client_ipv4_address) {
-    nf_header_common_t* hdr = (nf_header_common_t*)packet;
+    netflow_header_common_t* hdr = (netflow_header_common_t*)packet;
 
     switch (ntohs(hdr->version)) {
     case 5:

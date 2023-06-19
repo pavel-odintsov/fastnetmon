@@ -60,15 +60,15 @@
  */
 
 /* Common header fields */
-class __attribute__((__packed__)) nf_header_common_t {
+class __attribute__((__packed__)) netflow_header_common_t {
     public:
     uint16_t version, flows;
 };
 
 /* Netflow v5 */
-class __attribute__((__packed__)) nf5_header_t {
+class __attribute__((__packed__)) netflow5_header_t {
     public:
-    nf_header_common_t c;
+    netflow_header_common_t c;
     uint32_t uptime_ms;
     uint32_t time_sec;
     uint32_t time_nanosec;
@@ -122,19 +122,19 @@ class __attribute__((__packed__)) netflow5_flow_t {
 static_assert(sizeof(netflow5_flow_t) == 48, "Bad size for netflow5_flow_t");
 
 #define NF5_MAXFLOWS 30
-#define NF5_PACKET_SIZE(nflows) (sizeof(nf5_header_t) + ((nflows) * sizeof(netflow5_flow_t)))
+#define NF5_PACKET_SIZE(nflows) (sizeof(netflow5_header_t) + ((nflows) * sizeof(netflow5_flow_t)))
 
 
 /* Netflow v9 */
 class __attribute__((__packed__)) nf9_header_t {
     public:
-    nf_header_common_t c;
+    netflow_header_common_t c;
     uint32_t uptime_ms;
     uint32_t time_sec;
     uint32_t package_sequence, source_id;
 };
 
-class __attribute__((__packed__)) nf9_flowset_header_common_t {
+class __attribute__((__packed__)) netflow9_flowset_header_common_t {
     public:
     uint16_t flowset_id, length;
 };
@@ -144,14 +144,14 @@ class __attribute__((__packed__)) nf9_template_flowset_header_t {
     uint16_t template_id, count;
 };
 
-class __attribute__((__packed__)) nf9_template_flowset_record_t {
+class __attribute__((__packed__)) netflow9_template_flowset_record_t {
     public:
     uint16_t type, length;
 };
 
 class __attribute__((__packed__)) nf9_data_flowset_header_t {
     public:
-    class nf9_flowset_header_common_t c;
+    class netflow9_flowset_header_common_t c;
 };
 
 #define NF9_TEMPLATE_FLOWSET_ID 0
@@ -205,7 +205,7 @@ class __attribute__((__packed__)) nf9_data_flowset_header_t {
 /* Netflow v10 */
 class __attribute__((__packed__)) nf10_header_t {
     public:
-    nf_header_common_t c;
+    netflow_header_common_t c;
     uint32_t time_sec         = 0;
     uint32_t package_sequence = 0;
     uint32_t source_id        = 0;
