@@ -5,12 +5,12 @@
 
 extern ipfix_information_database ipfix_db_instance;
 
-bool operator==(const peer_nf9_template& lhs, const peer_nf9_template& rhs) {
+bool operator==(const template_t& lhs, const template_t& rhs) {
     return lhs.template_id == rhs.template_id && lhs.num_records == rhs.num_records && lhs.total_len == rhs.total_len &&
            lhs.records == rhs.records && lhs.type == rhs.type && lhs.option_scope_length == rhs.option_scope_length;
 }
 
-bool operator!=(const peer_nf9_template& lhs, const peer_nf9_template& rhs) {
+bool operator!=(const template_t& lhs, const template_t& rhs) {
     return !(lhs == rhs);
 }
 
@@ -32,7 +32,7 @@ std::string get_netflow9_template_type_as_string(netflow9_template_type type) {
     }
 }
 
-std::string print_peer_nf9_template(const peer_nf9_template& field_template) {
+std::string print_template_t(const template_t& field_template) {
     std::stringstream buffer;
 
     buffer << "template_id: " << field_template.template_id << "\n"

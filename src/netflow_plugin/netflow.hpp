@@ -54,7 +54,7 @@ bool operator!=(const peer_nf9_record_t& lhs, const peer_nf9_record_t& rhs);
 
 /* NetFlow v9 template record */
 /* It's used for wire data decoding. Feel free to add any new fields */
-class peer_nf9_template {
+class template_t {
     public:
     uint16_t template_id = 0;
     uint32_t num_records = 0;
@@ -76,9 +76,9 @@ class peer_nf9_template {
     }
 };
 
-std::string print_peer_nf9_template(const peer_nf9_template& field_template);
-bool operator==(const peer_nf9_template& lhs, const peer_nf9_template& rhs);
-bool operator!=(const peer_nf9_template& lhs, const peer_nf9_template& rhs);
+std::string print_template_t(const template_t& field_template);
+bool operator==(const template_t& lhs, const template_t& rhs);
+bool operator!=(const template_t& lhs, const template_t& rhs);
 
 // New ASR 1000 Netflow 9 sampling template
 // 1 byte
@@ -374,7 +374,7 @@ class __attribute__((__packed__)) nf9_options_header_t {
     }
 };
 
-typedef std::map<uint32_t, peer_nf9_template> template_storage_t;
+typedef std::map<uint32_t, template_t> template_storage_t;
 typedef std::map<std::string, template_storage_t> global_template_storage_t;
 
 std::string get_netflow9_template_type_as_string(netflow9_template_type type);

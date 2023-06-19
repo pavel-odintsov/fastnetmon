@@ -507,7 +507,7 @@ void add_update_peer_template(global_template_storage_t& table_for_add,
                               uint32_t source_id,
                               uint32_t template_id,
                               const std::string& client_addres_in_string_format,
-                              peer_nf9_template& field_template,
+                              template_t& field_template,
                               bool& updated);
 
 // This class carries information which does not need to stay in simple_packet_t because we need it only for parsing
@@ -538,7 +538,7 @@ int nf9_rec_to_flow(uint32_t record_type,
                     std::vector<peer_nf9_record_t>& template_records,
                     netflow_meta_info_t& flow_meta);
 
-peer_nf9_template* peer_find_template(global_template_storage_t& table_for_lookup,
+template_t* peer_find_template(global_template_storage_t& table_for_lookup,
                                       uint32_t source_id,
                                       uint32_t template_id,
                                       std::string client_addres_in_string_format) {
@@ -561,11 +561,11 @@ peer_nf9_template* peer_find_template(global_template_storage_t& table_for_looku
 }
 
 // Wrapper functions
-peer_nf9_template* peer_nf9_find_template(uint32_t source_id, uint32_t template_id, std::string client_addres_in_string_format) {
+template_t* peer_nf9_find_template(uint32_t source_id, uint32_t template_id, std::string client_addres_in_string_format) {
     return peer_find_template(global_netflow9_templates, source_id, template_id, client_addres_in_string_format);
 }
 
-peer_nf9_template* peer_nf10_find_template(uint32_t source_id, uint32_t template_id, std::string client_addres_in_string_format) {
+template_t* peer_nf10_find_template(uint32_t source_id, uint32_t template_id, std::string client_addres_in_string_format) {
     return peer_find_template(global_netflow10_templates, source_id, template_id, client_addres_in_string_format);
 }
 
@@ -643,7 +643,7 @@ bool process_netflow_v9_options_template(uint8_t* pkt, size_t len, uint32_t sour
         total_size += record_length;
     }
 
-    peer_nf9_template field_template;
+    template_t field_template;
 
     field_template.template_id = template_id;
     field_template.records     = template_records_map;
@@ -653,7 +653,7 @@ bool process_netflow_v9_options_template(uint8_t* pkt, size_t len, uint32_t sour
 
     field_template.option_scope_length = scopes_total_size;
 
-    // logger << log4cpp::Priority::INFO << "Read options template:" << print_peer_nf9_template(field_template);
+    // logger << log4cpp::Priority::INFO << "Read options template:" << print_template_t(field_template);
 
     // Add/update template
     bool updated = false;
@@ -807,7 +807,7 @@ bool process_ipfix_options_template(uint8_t* pkt, size_t len, uint32_t source_id
         current_pointer_in_packet = (uint8_t*)(current_pointer_in_packet + sizeof(nf10_template_flowset_record_t));
     }
 
-    peer_nf9_template field_template;
+    template_t field_template;
 
     field_template.template_id = template_id;
     field_template.records     = template_records_map;
@@ -820,7 +820,7 @@ bool process_ipfix_options_template(uint8_t* pkt, size_t len, uint32_t source_id
 
     field_template.option_scope_length = scopes_payload_total_size;
 
-    // logger << log4cpp::Priority::INFO << "Read options template:" << print_peer_nf9_template(field_template);
+    // logger << log4cpp::Priority::INFO << "Read options template:" << print_template_t(field_template);
 
     // Add/update template
     bool updated = false;
@@ -834,7 +834,7 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
     nf10_flowset_header_common_t* template_header = (nf10_flowset_header_common_t*)pkt;
     // We use same struct as netflow v9 because netflow v9 and v10 (ipfix) is
     // compatible
-    peer_nf9_template field_template;
+    template_t field_template;
 
     if (len < sizeof(*template_header)) {
         logger << log4cpp::Priority::ERROR << "Short IPFIX flowset template header " << len << " bytes";
@@ -901,7 +901,7 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
 
 bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, const std::string& client_addres_in_string_format, uint64_t flowset_number) {
     nf9_flowset_header_common_t* template_header = (nf9_flowset_header_common_t*)pkt;
-    peer_nf9_template field_template;
+    template_t field_template;
 
     if (len < sizeof(*template_header)) {
         logger << log4cpp::Priority::ERROR << "Short Netflow v9 flowset template header " << len
@@ -972,7 +972,7 @@ bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, c
 
     // for (auto elem: global_netflow9_templates) {
     //    logger << log4cpp::Priority::INFO  << "Template ident: " << elem.first << " content: " <<
-    //    print_peer_nf9_template(elem.second);
+    //    print_template_t(elem.second);
     //}
 
     return true;
@@ -982,7 +982,7 @@ void add_update_peer_template(global_template_storage_t& table_for_add,
                               uint32_t source_id,
                               uint32_t template_id,
                               const std::string& client_addres_in_string_format,
-                              peer_nf9_template& field_template,
+                              template_t& field_template,
                               bool& updated) {
 
     std::string key = client_addres_in_string_format + "_" + std::to_string(source_id);
@@ -1448,7 +1448,7 @@ bool nf10_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* dat
 }
 
 // Read options data packet with known templat
-bool nf10_options_flowset_to_store(uint8_t* pkt, size_t len, nf10_header_t* nf10_hdr, peer_nf9_template* flow_template, std::string client_addres_in_string_format) {
+bool nf10_options_flowset_to_store(uint8_t* pkt, size_t len, nf10_header_t* nf10_hdr, template_t* flow_template, std::string client_addres_in_string_format) {
     // Skip scope fields, I really do not want to parse this informations
     pkt += flow_template->option_scope_length;
 
@@ -1523,7 +1523,7 @@ bool nf10_options_flowset_to_store(uint8_t* pkt, size_t len, nf10_header_t* nf10
 void nf10_flowset_to_store(uint8_t* pkt,
                            size_t len,
                            nf10_header_t* nf10_hdr,
-                           peer_nf9_template* field_template,
+                           template_t* field_template,
                            uint32_t client_ipv4_address,
                            const std::string& client_addres_in_string_format) {
     uint32_t offset = 0;
@@ -1633,7 +1633,7 @@ void nf10_flowset_to_store(uint8_t* pkt,
 }
 
 // Read options data packet with known template
-void nf9_options_flowset_to_store(uint8_t* pkt, size_t len, nf9_header_t* nf9_hdr, peer_nf9_template* flow_template, std::string client_addres_in_string_format) {
+void nf9_options_flowset_to_store(uint8_t* pkt, size_t len, nf9_header_t* nf9_hdr, template_t* flow_template, std::string client_addres_in_string_format) {
     // Skip scope fields, I really do not want to parse this informations
     pkt += flow_template->option_scope_length;
     // logger << log4cpp::Priority::ERROR << "We have following length for option_scope_length " <<
@@ -1936,7 +1936,7 @@ bool process_netflow_v10_data(uint8_t* pkt,
 
     uint32_t flowset_id = ntohs(dath->c.flowset_id);
 
-    peer_nf9_template* flowset_template = peer_nf10_find_template(source_id, flowset_id, client_addres_in_string_format);
+    template_t* flowset_template = peer_nf10_find_template(source_id, flowset_id, client_addres_in_string_format);
 
     if (flowset_template == NULL) {
         ipfix_packets_with_unknown_templates++;
@@ -2013,7 +2013,7 @@ int process_netflow_v9_data(uint8_t* pkt,
     // "<<flowset_id;
 
     // We should find template here
-    peer_nf9_template* flowset_template = peer_nf9_find_template(source_id, flowset_id, client_addres_in_string_format);
+    template_t* flowset_template = peer_nf9_find_template(source_id, flowset_id, client_addres_in_string_format);
 
     if (flowset_template == NULL) {
         netflow9_packets_with_unknown_templates++;
