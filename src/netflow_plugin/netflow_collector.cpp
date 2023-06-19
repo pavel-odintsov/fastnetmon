@@ -624,6 +624,39 @@ class netflow_meta_info_t {
 
     // Set to true when we were able to parse nested packet
     bool nested_packet_parsed = false;
+
+    // The IPv4 address of the next IPv4 hop.
+    uint32_t ip_next_hop_ipv4 = 0;
+
+    // We set this flag when we read it from flow. We need it to distinguish one case when we receive 0.0.0.0 from
+    // device. It's impossible without explicit flag because default value is already 0
+    bool ip_next_hop_ipv4_set = false;
+
+    // The IPv4 address of the next (adjacent) BGP hop.
+    uint32_t bgp_next_hop_ipv4 = 0;
+
+    // We set this flag when we read it from flow. We need it to distinguish one case when we receive 0.0.0.0 from
+    // device. It's impossible without explicit flag because default value is already 0
+    bool bgp_next_hop_ipv4_set = false;
+
+    // Next hop flag for IPv6
+    in6_addr bgp_next_hop_ipv6{};
+
+    // Same as in case of IPv4
+    bool bgp_next_hop_ipv6_set = false;
+
+    // This flag is set when we explicitly received forwarding status
+    bool received_forwarding_status = false;
+
+    // Cisco ASA uses very unusual encoding when they encode incoming and outgoing traffic in single flow
+    uint64_t bytes_from_source_to_destination = 0;
+    uint64_t bytes_from_destination_to_source = 0;
+
+    uint64_t packets_from_source_to_destination = 0;
+    uint64_t packets_from_destination_to_source = 0;
+
+    // Cisco ASA flow identifier
+    uint64_t flow_id = 0;
 };
 
 int nf9_rec_to_flow(uint32_t record_type,
