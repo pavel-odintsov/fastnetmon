@@ -26,60 +26,6 @@
 #include <sstream>
 #include <vector>
 
-enum class netflow9_template_type { Unknown, Data, Options };
-
-/* A record in a NetFlow v9 template record */
-class peer_nf9_record_t {
-    public:
-    uint32_t record_type   = 0;
-    uint32_t record_length = 0;
-
-    peer_nf9_record_t(uint32_t record_type, uint32_t record_length) {
-        this->record_type   = record_type;
-        this->record_length = record_length;
-    }
-
-    // We created custom constructor but I still want to have default with no arguments
-    peer_nf9_record_t() = default;
-
-    // For boost serialize
-    template <typename Archive> void serialize(Archive& ar, const unsigned int version) {
-        ar& BOOST_SERIALIZATION_NVP(record_type);
-        ar& BOOST_SERIALIZATION_NVP(record_length);
-    }
-};
-
-bool operator==(const peer_nf9_record_t& lhs, const peer_nf9_record_t& rhs);
-bool operator!=(const peer_nf9_record_t& lhs, const peer_nf9_record_t& rhs);
-
-/* NetFlow v9 template record */
-/* It's used for wire data decoding. Feel free to add any new fields */
-class template_t {
-    public:
-    uint16_t template_id = 0;
-    uint32_t num_records = 0;
-    uint32_t total_len   = 0;
-
-    // Only for options templates
-    uint32_t option_scope_length = 0;
-    netflow9_template_type type  = netflow9_template_type::Unknown;
-    std::vector<peer_nf9_record_t> records;
-
-    // For boost serialize
-    template <typename Archive> void serialize(Archive& ar, const unsigned int version) {
-        ar& BOOST_SERIALIZATION_NVP(template_id);
-        ar& BOOST_SERIALIZATION_NVP(num_records);
-        ar& BOOST_SERIALIZATION_NVP(total_len);
-        ar& BOOST_SERIALIZATION_NVP(option_scope_length);
-        ar& BOOST_SERIALIZATION_NVP(type);
-        ar& BOOST_SERIALIZATION_NVP(records);
-    }
-};
-
-std::string print_template_t(const template_t& field_template);
-bool operator==(const template_t& lhs, const template_t& rhs);
-bool operator!=(const template_t& lhs, const template_t& rhs);
-
 // New ASR 1000 Netflow 9 sampling template
 // 1 byte
 #define FLOW_SAMPLER_ID 48
@@ -373,8 +319,3 @@ class __attribute__((__packed__)) nf9_options_header_t {
         return buffer.str();
     }
 };
-
-typedef std::map<uint32_t, template_t> template_storage_t;
-typedef std::map<std::string, template_storage_t> global_template_storage_t;
-
-std::string get_netflow9_template_type_as_string(netflow9_template_type type);

@@ -476,12 +476,15 @@ target_link_libraries(sflow_plugin simple_packet_parser_ng)
 # Link sFlow plugin with libsflow
 target_link_libraries(sflow_plugin libsflow)  
 
+# Netflow templates
+add_library(netflow_template STATIC netflow_plugin/netflow_template.cpp)
+
 # netflow library
 add_library(netflow STATIC netflow_plugin/netflow.cpp)
 
 # netflow plugin
 add_library(netflow_plugin STATIC netflow_plugin/netflow_collector.cpp)
-target_link_libraries(netflow_plugin ipfix_rfc netflow)
+target_link_libraries(netflow_plugin ipfix_rfc netflow netflow_template)
 
 if (ENABLE_PCAP_SUPPORT) 
   # pcap plugin
