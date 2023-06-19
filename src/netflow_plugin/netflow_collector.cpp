@@ -2294,10 +2294,10 @@ bool process_netflow_packet_v5(uint8_t* packet, uint32_t len, std::string& clien
 
     for (uint32_t i = 0; i < nflows; i++) {
         size_t offset        = NF5_PACKET_SIZE(i);
-        nf5_flow_t* nf5_flow = (nf5_flow_t*)(packet + offset);
+        netflow5_flow_t* nf5_flow = (netflow5_flow_t*)(packet + offset);
 
         /* Check packet bounds */
-        if (offset + sizeof(nf5_flow_t) > len) {
+        if (offset + sizeof(netflow5_flow_t) > len) {
             logger << log4cpp::Priority::ERROR << "Error! You will try to read outside the Netflow v5 packet";
             return false;
         }

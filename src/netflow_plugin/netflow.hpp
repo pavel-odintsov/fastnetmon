@@ -85,7 +85,7 @@ class __attribute__((__packed__)) nf5_header_t {
 
 // We are using this class for decoding messages from the wire
 // Please do not add new fields here
-class __attribute__((__packed__)) nf5_flow_t {
+class __attribute__((__packed__)) netflow5_flow_t {
     public:
     uint32_t src_ip     = 0;
     uint32_t dest_ip    = 0;
@@ -119,10 +119,10 @@ class __attribute__((__packed__)) nf5_flow_t {
     uint16_t pad2 = 0;
 };
 
-static_assert(sizeof(nf5_flow_t) == 48, "Bad size for nf5_flow_t");
+static_assert(sizeof(netflow5_flow_t) == 48, "Bad size for netflow5_flow_t");
 
 #define NF5_MAXFLOWS 30
-#define NF5_PACKET_SIZE(nflows) (sizeof(nf5_header_t) + ((nflows) * sizeof(nf5_flow_t)))
+#define NF5_PACKET_SIZE(nflows) (sizeof(nf5_header_t) + ((nflows) * sizeof(netflow5_flow_t)))
 
 
 /* Netflow v9 */
