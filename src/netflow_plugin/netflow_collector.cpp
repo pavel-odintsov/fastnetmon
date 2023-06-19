@@ -59,12 +59,48 @@ std::map<std::string, uint32_t> netflow9_sampling_rates;
 std::mutex ipfix_sampling_rates_mutex;
 std::map<std::string, uint32_t> ipfix_sampling_rates;
 
-std::string netflow_plugin_name       = "netflow";
-std::string netflow_plugin_log_prefix = netflow_plugin_name + ": ";
+// Active timeout for IPFIX
+class device_timeouts_t {
+    public:
+    // Both values use seconds
+    std::optional<uint32_t> active_timeout   = 0;
+    std::optional<uint32_t> inactive_timeout = 0;
+
+    bool operator!=(const device_timeouts_t& rhs) const {
+        return !(*this == rhs);
+    }
+
+    // We generate default == operator which compares each field in class using standard compare operators for each class
+    bool operator==(const device_timeouts_t& rhs) const = default;
+};
+
+// IPFIX per device timeouts
+std::mutex ipfix_per_device_flow_timeouts_mutex;
+std::map<std::string, device_timeouts_t> ipfix_per_device_flow_timeouts;
+
+// Netflow v9 per device timeouts
+std::mutex netflow_v9_per_device_flow_timeouts_mutex;
+std::map<std::string, device_timeouts_t> netflow_v9_per_device_flow_timeouts;
+
+// Per router packet counters
+std::mutex netflow5_packets_per_router_mutex;
+std::map<std::string, uint64_t> netflow5_packets_per_router;
+
+std::mutex netflow9_packets_per_router_mutex;
+std::map<std::string, uint64_t> netflow9_packets_per_router;
+
+std::mutex ipfix_packets_per_router_mutex;
+std::map<std::string, uint64_t> ipfix_packets_per_router;
 
 ipfix_information_database ipfix_db_instance;
 
 // Counters section start
+
+std::string netflow_ipfix_total_ipv4_packets_desc = "Total number of Netflow or IPFIX UDP packets received over IPv4 protocol";
+uint64_t netflow_ipfix_total_ipv4_packets         = 0;
+
+std::string netflow_ipfix_total_ipv6_packets_desc = "Total number of Netflow or IPFIX UDP packets received over IPv6 protocol";
+uint64_t netflow_ipfix_total_ipv6_packets         = 0;
 
 std::string netflow_ipfix_total_packets_desc = "Total number of Netflow or IPFIX UDP packets received";
 uint64_t netflow_ipfix_total_packets         = 0;
@@ -165,6 +201,24 @@ uint64_t ipfix_sampling_rate_changes         = 0;
 std::string netflow9_packets_with_unknown_templates_desc =
     "Number of dropped Netflow v9 packets due to unknown template in message";
 uint64_t netflow9_packets_with_unknown_templates = 0;
+
+std::string netflow9_duration_0_seconds_desc = "Netflow v9 flows with duration 0 seconds";
+uint64_t netflow9_duration_0_seconds         = 0;
+
+std::string netflow9_duration_less_1_seconds_desc = "Netflow v9 flows with duration less then 1 seconds";
+uint64_t netflow9_duration_less_1_seconds         = 0;
+
+std::string netflow9_duration_less_2_seconds_desc = "Netflow v9 flows with duration less then 2 seconds";
+uint64_t netflow9_duration_less_2_seconds         = 0;
+
+std::string netflow9_duration_less_3_seconds_desc = "Netflow v9 flows with duration less then 3 seconds";
+uint64_t netflow9_duration_less_3_seconds         = 0;
+
+std::string netflow9_duration_less_5_seconds_desc = "Netflow v9 flows with duration less then 5 seconds";
+uint64_t netflow9_duration_less_5_seconds         = 0;
+
+std::string netflow9_duration_less_10_seconds_desc = "Netflow v9 flows with duration less then 10 seconds";
+uint64_t netflow9_duration_less_10_seconds         = 0;
 
 std::string netflow9_duration_less_15_seconds_desc = "Netflow v9 flows with duration less then 15 seconds";
 uint64_t netflow9_duration_less_15_seconds         = 0;
@@ -322,7 +376,7 @@ uint64_t flowsets_per_packet_maximum_number = 256;
 process_packet_pointer netflow_process_func_ptr = NULL;
 
 std::map<std::string, std::map<uint32_t, template_t>> global_netflow9_templates;
-std::map<std::string, std::map<uint32_t, template_t>> global_netflow10_templates;
+std::map<std::string, std::map<uint32_t, template_t>> global_ipfix_templates;
 
 std::vector<system_counter_t> get_netflow_stats() {
     std::vector<system_counter_t> system_counter;
@@ -354,6 +408,25 @@ std::vector<system_counter_t> get_netflow_stats() {
                                               metric_type_t::counter, netflow_v9_total_ipv4_flows_desc));
     system_counter.push_back(system_counter_t("netflow_v9_total_ipv6_flows", netflow_v9_total_ipv6_flows,
                                               metric_type_t::counter, netflow_v9_total_ipv6_flows_desc));
+
+    system_counter.push_back(system_counter_t("netflow_v9_duration_0_seconds", netflow9_duration_0_seconds,
+                                              metric_type_t::counter, netflow9_duration_0_seconds_desc));
+
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_1_seconds", netflow9_duration_less_1_seconds,
+                                              metric_type_t::counter, netflow9_duration_less_1_seconds_desc));
+
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_2_seconds", netflow9_duration_less_2_seconds,
+                                              metric_type_t::counter, netflow9_duration_less_2_seconds_desc));
+
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_3_seconds", netflow9_duration_less_3_seconds,
+                                              metric_type_t::counter, netflow9_duration_less_3_seconds_desc));
+
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_5_seconds", netflow9_duration_less_5_seconds,
+                                              metric_type_t::counter, netflow9_duration_less_5_seconds_desc));
+
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_10_seconds", netflow9_duration_less_10_seconds,
+                                              metric_type_t::counter, netflow9_duration_less_10_seconds_desc));
+
 
     system_counter.push_back(system_counter_t("netflow_v9_duration_less_15_seconds", netflow9_duration_less_15_seconds,
                                               metric_type_t::counter, netflow9_duration_less_15_seconds_desc));
@@ -567,7 +640,7 @@ template_t* peer_nf9_find_template(uint32_t source_id, uint32_t template_id, std
 }
 
 template_t* peer_nf10_find_template(uint32_t source_id, uint32_t template_id, std::string client_addres_in_string_format) {
-    return peer_find_template(global_netflow10_templates, source_id, template_id, client_addres_in_string_format);
+    return peer_find_template(global_ipfix_templates, source_id, template_id, client_addres_in_string_format);
 }
 
 // This function reads all available options templates
@@ -825,7 +898,7 @@ bool process_ipfix_options_template(uint8_t* pkt, size_t len, uint32_t source_id
 
     // Add/update template
     bool updated = false;
-    add_update_peer_template(global_netflow10_templates, source_id, template_id, client_addres_in_string_format,
+    add_update_peer_template(global_ipfix_templates, source_id, template_id, client_addres_in_string_format,
                              field_template, updated);
 
     return true;
@@ -893,7 +966,7 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
         field_template.type        = netflow_template_type_t::Data;
 
         bool updated = false;
-        add_update_peer_template(global_netflow10_templates, source_id, template_id, client_addres_in_string_format,
+        add_update_peer_template(global_ipfix_templates, source_id, template_id, client_addres_in_string_format,
                                  field_template, updated);
     }
 
@@ -2455,7 +2528,7 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
 
     boost::thread_group netflow_collector_threads;
 
-    logger << log4cpp::Priority::INFO << netflow_plugin_log_prefix << "We will listen on " << netflow_ports.size() << " ports";
+    logger << log4cpp::Priority::INFO << "Netflow plugin will listen on " << netflow_ports.size() << " ports";
 
     for (const auto& netflow_port : netflow_ports) {
         bool reuse_port = false;
