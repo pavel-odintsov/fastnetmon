@@ -743,10 +743,10 @@ bool process_ipfix_options_template(uint8_t* pkt, size_t len, uint32_t source_id
 
     // Then we have scope fields in packet, I'm not going to process them, I'll just skip them
     for (int scope_index = 0; scope_index < scope_field_count; scope_index++) {
-        nf10_template_flowset_record_t* current_scopes_record = (nf10_template_flowset_record_t*)(current_pointer_in_packet);
+        ipfix_template_flowset_record_t* current_scopes_record = (ipfix_template_flowset_record_t*)(current_pointer_in_packet);
 
-        // Check that our attempt to read nf10_template_flowset_record_t will not exceed packet length
-        if (len < sizeof(ipfix_options_header_common_t) + sizeof(ipfix_options_header_t) + sizeof(nf10_template_flowset_record_t)) {
+        // Check that our attempt to read ipfix_template_flowset_record_t will not exceed packet length
+        if (len < sizeof(ipfix_options_header_common_t) + sizeof(ipfix_options_header_t) + sizeof(ipfix_template_flowset_record_t)) {
             logger << log4cpp::Priority::ERROR << "Attempt to read IPFIX flowset_record outside of packet. "
                    << "Agent IP: " << client_addres_in_string_format;
             return false;
@@ -758,13 +758,13 @@ bool process_ipfix_options_template(uint8_t* pkt, size_t len, uint32_t source_id
         logger << log4cpp::Priority::DEBUG << "Reading scope section with size " << scope_field_size << " and type: " << scope_field_type;
 
         // Increment scopes size
-        scopes_total_size += sizeof(nf10_template_flowset_record_t);
+        scopes_total_size += sizeof(ipfix_template_flowset_record_t);
 
         // Increment paylaod size
         scopes_payload_total_size += scope_field_size;
 
         // Shift pointer to the end of current scope field
-        current_pointer_in_packet = (uint8_t*)(current_pointer_in_packet + sizeof(nf10_template_flowset_record_t));
+        current_pointer_in_packet = (uint8_t*)(current_pointer_in_packet + sizeof(ipfix_template_flowset_record_t));
     }
 
     // We've reached normal fields section
@@ -776,11 +776,11 @@ bool process_ipfix_options_template(uint8_t* pkt, size_t len, uint32_t source_id
 
     // Try to read all normal fields
     for (int field_index = 0; field_index < normal_field_count; field_index++) {
-        nf10_template_flowset_record_t* current_normal_record = (nf10_template_flowset_record_t*)(current_pointer_in_packet);
+        ipfix_template_flowset_record_t* current_normal_record = (ipfix_template_flowset_record_t*)(current_pointer_in_packet);
 
-        // Check that our attempt to read nf10_template_flowset_record_t will not exceed packet length
+        // Check that our attempt to read ipfix_template_flowset_record_t will not exceed packet length
         if (len < sizeof(ipfix_options_header_common_t) + sizeof(ipfix_options_header_t) + scopes_total_size +
-                      sizeof(nf10_template_flowset_record_t)) {
+                      sizeof(ipfix_template_flowset_record_t)) {
             logger << log4cpp::Priority::ERROR << "Attempt to read IPFIX flowset_record outside of packet for normal field. "
                    << "Agent IP: " << client_addres_in_string_format;
             return false;
@@ -799,13 +799,13 @@ bool process_ipfix_options_template(uint8_t* pkt, size_t len, uint32_t source_id
                << " and type: " << normal_field_type;
 
         // Increment total field size
-        normal_fields_total_size += sizeof(nf10_template_flowset_record_t);
+        normal_fields_total_size += sizeof(ipfix_template_flowset_record_t);
 
         // Increment toital payload size
         normal_fields_payload_total_size += normal_field_size;
 
         // Shift pointer to the end of current normal field
-        current_pointer_in_packet = (uint8_t*)(current_pointer_in_packet + sizeof(nf10_template_flowset_record_t));
+        current_pointer_in_packet = (uint8_t*)(current_pointer_in_packet + sizeof(ipfix_template_flowset_record_t));
     }
 
     template_t field_template;
@@ -832,7 +832,7 @@ bool process_ipfix_options_template(uint8_t* pkt, size_t len, uint32_t source_id
 }
 
 bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, const std::string& client_addres_in_string_format) {
-    nf10_flowset_header_common_t* template_header = (nf10_flowset_header_common_t*)pkt;
+    ipfix_flowset_header_common_t* template_header = (ipfix_flowset_header_common_t*)pkt;
     // We use same struct as netflow v9 because netflow v9 and v10 (ipfix) is
     // compatible
     template_t field_template;
@@ -853,7 +853,7 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
     }
 
     for (uint32_t offset = sizeof(*template_header); offset < len;) {
-        nf10_template_flowset_header_t* tmplh = (nf10_template_flowset_header_t*)(pkt + offset);
+        ipfix_template_flowset_header_t* tmplh = (ipfix_template_flowset_header_t*)(pkt + offset);
 
         uint32_t template_id = ntohs(tmplh->template_id);
         uint32_t count       = ntohs(tmplh->count);
@@ -867,7 +867,7 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
                 return false;
             }
 
-            nf10_template_flowset_record_t* tmplr = (nf10_template_flowset_record_t*)(pkt + offset);
+            ipfix_template_flowset_record_t* tmplr = (ipfix_template_flowset_record_t*)(pkt + offset);
             uint32_t record_type                  = ntohs(tmplr->type);
             uint32_t record_length                = ntohs(tmplr->length);
 
@@ -920,7 +920,7 @@ bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, c
     }
 
     for (uint32_t offset = sizeof(*template_header); offset < len;) {
-        nf9_template_flowset_header_t* tmplh = (nf9_template_flowset_header_t*)(pkt + offset);
+        netflow9_template_flowset_header_t* tmplh = (netflow9_template_flowset_header_t*)(pkt + offset);
 
         uint32_t template_id = ntohs(tmplh->template_id);
         uint32_t count       = ntohs(tmplh->count);
@@ -1925,7 +1925,7 @@ bool process_netflow_v10_data(uint8_t* pkt,
                               const std::string& client_addres_in_string_format,
                               uint32_t client_ipv4_address) {
 
-    nf10_data_flowset_header_t* dath = (nf10_data_flowset_header_t*)pkt;
+    ipfix_data_flowset_header_t* dath = (ipfix_data_flowset_header_t*)pkt;
 
     // Store packet end, it's useful for sanity checks
     uint8_t* packet_end = pkt + len;
@@ -1998,7 +1998,7 @@ int process_netflow_v9_data(uint8_t* pkt,
                             uint32_t source_id,
                             std::string& client_addres_in_string_format,
                             uint32_t client_ipv4_address) {
-    nf9_data_flowset_header_t* dath = (nf9_data_flowset_header_t*)pkt;
+    netflow9_data_flowset_header_t* dath = (netflow9_data_flowset_header_t*)pkt;
 
     // Store packet end, it's useful for sanity checks
     uint8_t* packet_end = pkt + len;
@@ -2073,7 +2073,7 @@ int process_netflow_v9_data(uint8_t* pkt,
 
 bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string& client_addres_in_string_format, uint32_t client_ipv4_address) {
     nf10_header_t* nf10_hdr = (nf10_header_t*)packet;
-    nf10_flowset_header_common_t* flowset;
+    ipfix_flowset_header_common_t* flowset;
 
     uint32_t flowset_id, flowset_len;
 
@@ -2107,7 +2107,7 @@ bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string
             return false;
         }
 
-        flowset     = (nf10_flowset_header_common_t*)(packet + offset);
+        flowset     = (ipfix_flowset_header_common_t*)(packet + offset);
         flowset_id  = ntohs(flowset->flowset_id);
         flowset_len = ntohs(flowset->length);
 

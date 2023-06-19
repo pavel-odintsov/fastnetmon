@@ -139,7 +139,7 @@ class __attribute__((__packed__)) netflow9_flowset_header_common_t {
     uint16_t flowset_id, length;
 };
 
-class __attribute__((__packed__)) nf9_template_flowset_header_t {
+class __attribute__((__packed__)) netflow9_template_flowset_header_t {
     public:
     uint16_t template_id, count;
 };
@@ -149,7 +149,7 @@ class __attribute__((__packed__)) netflow9_template_flowset_record_t {
     uint16_t type, length;
 };
 
-class __attribute__((__packed__)) nf9_data_flowset_header_t {
+class __attribute__((__packed__)) netflow9_data_flowset_header_t {
     public:
     class netflow9_flowset_header_common_t c;
 };
@@ -211,26 +211,26 @@ class __attribute__((__packed__)) nf10_header_t {
     uint32_t source_id        = 0;
 };
 
-class __attribute__((__packed__)) nf10_flowset_header_common_t {
+class __attribute__((__packed__)) ipfix_flowset_header_common_t {
     public:
     uint16_t flowset_id = 0;
     uint16_t length     = 0;
 };
 
-class __attribute__((__packed__)) nf10_template_flowset_header_t {
+class __attribute__((__packed__)) ipfix_template_flowset_header_t {
     public:
     uint16_t template_id = 0;
     uint16_t count       = 0;
 };
 
-class __attribute__((__packed__)) nf10_template_flowset_record_t {
+class __attribute__((__packed__)) ipfix_template_flowset_record_t {
     public:
     uint16_t type, length;
 };
 
-class __attribute__((__packed__)) nf10_data_flowset_header_t {
+class __attribute__((__packed__)) ipfix_data_flowset_header_t {
     public:
-    nf10_flowset_header_common_t c;
+    ipfix_flowset_header_common_t c;
 };
 
 #define NF10_TEMPLATE_FLOWSET_ID 2
