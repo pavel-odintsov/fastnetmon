@@ -126,7 +126,7 @@ static_assert(sizeof(netflow5_flow_t) == 48, "Bad size for netflow5_flow_t");
 
 
 /* Netflow v9 */
-class __attribute__((__packed__)) nf9_header_t {
+class __attribute__((__packed__)) netflow9_header_t {
     public:
     netflow_header_common_t c;
     uint32_t uptime_ms;

@@ -1634,7 +1634,7 @@ void nf10_flowset_to_store(uint8_t* pkt,
 }
 
 // Read options data packet with known template
-void nf9_options_flowset_to_store(uint8_t* pkt, size_t len, nf9_header_t* nf9_hdr, template_t* flow_template, std::string client_addres_in_string_format) {
+void nf9_options_flowset_to_store(uint8_t* pkt, size_t len, netflow9_header_t* nf9_hdr, template_t* flow_template, std::string client_addres_in_string_format) {
     // Skip scope fields, I really do not want to parse this informations
     pkt += flow_template->option_scope_length;
     // logger << log4cpp::Priority::ERROR << "We have following length for option_scope_length " <<
@@ -1766,7 +1766,7 @@ void increment_duration_counters_netflow_v5(int64_t duration) {
 
 void nf9_flowset_to_store(uint8_t* pkt,
                           size_t len,
-                          nf9_header_t* nf9_hdr,
+                          netflow9_header_t* nf9_hdr,
                           std::vector<template_record_t>& template_records,
                           std::string& client_addres_in_string_format,
                           uint32_t client_ipv4_address) {
@@ -1994,7 +1994,7 @@ bool process_netflow_v10_data(uint8_t* pkt,
 
 int process_netflow_v9_data(uint8_t* pkt,
                             size_t len,
-                            nf9_header_t* nf9_hdr,
+                            netflow9_header_t* nf9_hdr,
                             uint32_t source_id,
                             std::string& client_addres_in_string_format,
                             uint32_t client_ipv4_address) {
@@ -2165,7 +2165,7 @@ bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string
 bool process_netflow_packet_v9(uint8_t* packet, uint32_t len, std::string& client_addres_in_string_format, uint32_t client_ipv4_address) {
     // logger<< log4cpp::Priority::INFO<<"We get v9 netflow packet!";
 
-    nf9_header_t* nf9_hdr                = (nf9_header_t*)packet;
+    netflow9_header_t* nf9_hdr                = (netflow9_header_t*)packet;
     netflow9_flowset_header_common_t* flowset = nullptr;
 
     if (len < sizeof(*nf9_hdr)) {
