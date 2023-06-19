@@ -352,8 +352,14 @@ uint64_t netflow_v9_too_large_field         = 0;
 std::string netflow_v9_lite_header_parser_error_desc = "Netflow v9 Lite header parser errors";
 uint64_t netflow_v9_lite_header_parser_error         = 0;
 
+std::string netflow_v9_lite_header_parser_success_desc = "Netflow v9 Lite header parser success";
+uint64_t netflow_v9_lite_header_parser_success         = 0;
+
 std::string ipfix_inline_header_parser_error_desc = "IPFIX inline header parser errors";
 uint64_t ipfix_inline_header_parser_error         = 0;
+
+std::string ipfix_inline_header_parser_success_desc = "IPFIX inline header parser success";
+uint64_t ipfix_inline_header_parser_success         = 0;
 
 std::string netflow_v9_lite_headers_desc = "Total number of headers in Netflow v9 lite received";
 uint64_t netflow_v9_lite_headers         = 0;
@@ -369,7 +375,7 @@ uint64_t ipfix_packets_with_padding         = 0;
 
 void increment_duration_counters_ipfix(int64_t duration);
 
-// We limit number of flowsets in packet Netflow v9 / IPFIX packets with some reasonable number to reduce possible attack's surface and reduce probablity of infinite loop
+// We limit number of flowsets in packet Netflow v9 / IPFIX packets with some reasonable number to reduce possible attack's surface and reduce probability of infinite loop
 uint64_t flowsets_per_packet_maximum_number = 256;
 
 // TODO: add per source uniq templates support
@@ -465,6 +471,10 @@ std::vector<system_counter_t> get_netflow_stats() {
                                               metric_type_t::counter, netflow_v9_lite_headers_desc));
     system_counter.push_back(system_counter_t("netflow_v9_forwarding_status", netflow_v9_forwarding_status,
                                               metric_type_t::counter, netflow_v9_forwarding_status_desc));
+
+    system_counter.push_back(system_counter_t("netflow_v9_lite_header_parser_success", netflow_v9_lite_header_parser_success,
+                                              metric_type_t::counter, netflow_v9_lite_header_parser_success_desc));
+
     system_counter.push_back(system_counter_t("netflow_v9_lite_header_parser_error", netflow_v9_lite_header_parser_error,
                                               metric_type_t::counter, netflow_v9_lite_header_parser_error_desc));
     system_counter.push_back(system_counter_t("netflow_v9_broken_packets", netflow_v9_broken_packets,
@@ -546,6 +556,10 @@ std::vector<system_counter_t> get_netflow_stats() {
                                               metric_type_t::counter, ipfix_forwarding_status_desc));
     system_counter.push_back(system_counter_t("ipfix_inline_header_parser_error", ipfix_inline_header_parser_error,
                                               metric_type_t::counter, ipfix_inline_header_parser_error_desc));
+
+    system_counter.push_back(system_counter_t("ipfix_inline_header_parser_success", ipfix_inline_header_parser_success,
+                                              metric_type_t::counter, ipfix_inline_header_parser_success_desc));
+
     system_counter.push_back(system_counter_t("ipfix_active_flow_timeout_received", ipfix_active_flow_timeout_received,
                                               metric_type_t::counter, ipfix_active_flow_timeout_received_desc));
     system_counter.push_back(system_counter_t("ipfix_inactive_flow_timeout_received", ipfix_inactive_flow_timeout_received,
@@ -555,6 +569,13 @@ std::vector<system_counter_t> get_netflow_stats() {
 
     system_counter.push_back(system_counter_t("netflow_ipfix_total_packets", netflow_ipfix_total_packets,
                                               metric_type_t::counter, netflow_ipfix_total_packets_desc));
+
+    system_counter.push_back(system_counter_t("netflow_ipfix_total_ipv4_packets", netflow_ipfix_total_ipv4_packets,
+                                              metric_type_t::counter, netflow_ipfix_total_ipv4_packets_desc));
+
+    system_counter.push_back(system_counter_t("netflow_ipfix_total_ipv6_packets", netflow_ipfix_total_ipv6_packets,
+                                              metric_type_t::counter, netflow_ipfix_total_ipv6_packets_desc));
+
     system_counter.push_back(system_counter_t("netflow_ipfix_all_protocols_total_flows", netflow_ipfix_all_protocols_total_flows,
                                               metric_type_t::counter, netflow_ipfix_all_protocols_total_flows_desc));
     system_counter.push_back(system_counter_t("netflow_ipfix_udp_packet_drops", netflow_ipfix_udp_packet_drops,
