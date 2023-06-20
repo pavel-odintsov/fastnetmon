@@ -3,7 +3,6 @@
 #include <sstream>
 
 #include "../ipfix_rfc.hpp"
-#include <vector>
 
 extern ipfix_information_database ipfix_db_instance;
 

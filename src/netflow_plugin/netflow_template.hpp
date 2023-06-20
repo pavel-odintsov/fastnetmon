@@ -1,7 +1,7 @@
 #pragma once 
 
 #include <vector>
-#include <map>
+#include <cstdint>
 #include <boost/serialization/nvp.hpp>
 
 enum class netflow_template_type_t { Unknown, Data, Options };
