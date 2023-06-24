@@ -28,6 +28,12 @@
 #include "../fastnetmon_plugin.hpp"
 
 #include "netflow.hpp"
+
+// Protocol specific things
+#include "netflow_v5.hpp"
+#include "netflow_v9.hpp"
+#include "ipfix.hpp"
+
 #include "netflow_template.hpp"
 #include "netflow_collector.hpp"
 
@@ -1779,8 +1785,8 @@ void nf9_options_flowset_to_store(uint8_t* pkt, size_t len, netflow9_header_t* n
         // Cisco ASR1000
         if (elem.record_type == NETFLOW9_FLOW_SAMPLER_RANDOM_INTERVAL) {
             // Check supported length
-            if (elem.record_length == FLOW_SAMPLER_RANDOM_INTERVAL_LENGTH or
-                elem.record_length == FLOW_SAMPLER_RANDOM_INTERVAL_LENGTH_ASR1000) {
+            if (elem.record_length == NETFLOW9_FLOW_SAMPLER_RANDOM_INTERVAL_LENGTH or
+                elem.record_length == NETFLOW9_FLOW_SAMPLER_RANDOM_INTERVAL_LENGTH_ASR1000) {
                 bool result = be_copy_function(data_shift, (uint8_t*)&sampling_rate, sizeof(sampling_rate), elem.record_length);
 
                 if (!result) {
