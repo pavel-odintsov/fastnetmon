@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "../fast_library.hpp"
-#include "../ipfix_rfc.hpp"
+#include "../ipfix_fields/ipfix_rfc.hpp"
 
 #include "../all_logcpp_libraries.hpp"
 

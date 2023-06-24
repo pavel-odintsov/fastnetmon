@@ -303,7 +303,7 @@ add_library(fastnetmon_pcap_format STATIC fastnetmon_pcap_format.cpp)
 add_library(fast_library STATIC fast_library.cpp)
 
 # Our ipfix database library
-add_library(ipfix_rfc STATIC ipfix_rfc.cpp)
+add_library(ipfix_rfc STATIC ipfix_fields/ipfix_rfc.cpp)
 
 add_library(bgp_protocol STATIC bgp_protocol.cpp)
 

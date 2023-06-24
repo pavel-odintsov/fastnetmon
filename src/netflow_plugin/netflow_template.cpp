@@ -2,7 +2,7 @@
 
 #include <sstream>
 
-#include "../ipfix_rfc.hpp"
+#include "../ipfix_fields/ipfix_rfc.hpp"
 
 extern ipfix_information_database ipfix_db_instance;
 
