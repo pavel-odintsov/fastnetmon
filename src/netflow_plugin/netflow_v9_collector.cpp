@@ -106,13 +106,16 @@ bool process_netflow_v9_options_template(const uint8_t* pkt, size_t flowset_leng
     return true;
 }
 
-bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, const std::string& client_addres_in_string_format, uint64_t flowset_number) {
-    netflow9_flowset_header_common_t* template_header = (netflow9_flowset_header_common_t*)pkt;
-    template_t field_template;
+bool process_netflow_v9_template(const uint8_t* pkt,
+                                 size_t flowset_length,
+                                 uint32_t source_id,
+                                 const std::string& client_addres_in_string_format,
+                                 uint64_t flowset_number) {
+    const netflow9_flowset_header_common_t* template_header = (const netflow9_flowset_header_common_t*)pkt;
 
-    if (len < sizeof(*template_header)) {
-        logger << log4cpp::Priority::ERROR << "Short Netflow v9 flowset template header " << len
-               << " bytes agent IP: " << client_addres_in_string_format;
+    if (flowset_length < sizeof(*template_header)) {
+        logger << log4cpp::Priority::ERROR << "Short Netflow v9 flowset template header " << flowset_length
+               << " bytes agent IP: " << client_addres_in_string_format << " flowset number: " << flowset_number;
         return false;
     }
 
@@ -121,16 +124,20 @@ bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, c
                << "Function process_netflow_v9_template expects only "
                   "NETFLOW9_TEMPLATE_FLOWSET_ID but "
                   "got another id: "
-               << ntohs(template_header->flowset_id);
+               << ntohs(template_header->flowset_id) << " agent IP: " << client_addres_in_string_format;
         return false;
     }
 
-    for (uint32_t offset = sizeof(*template_header); offset < len;) {
-        netflow9_template_flowset_header_t* tmplh = (netflow9_template_flowset_header_t*)(pkt + offset);
+    bool template_cache_update_required = false;
 
-        uint32_t template_id = ntohs(tmplh->template_id);
-        uint32_t count       = ntohs(tmplh->fields_count);
-        offset += sizeof(*tmplh);
+    for (uint32_t offset = sizeof(*template_header); offset < flowset_length;) {
+        const netflow9_template_flowset_header_t* netflow9_template_flowset_header =
+            (const netflow9_template_flowset_header_t*)(pkt + offset);
+
+        uint32_t template_id  = ntohs(netflow9_template_flowset_header->template_id);
+        uint32_t fields_count = ntohs(netflow9_template_flowset_header->fields_count);
+
+        offset += sizeof(*netflow9_template_flowset_header);
 
         // logger<< log4cpp::Priority::INFO<<"Template template_id
         // is:"<<template_id;
@@ -138,16 +145,19 @@ bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, c
         uint32_t total_size = 0;
 
         std::vector<template_record_t> template_records_map;
-        for (uint32_t i = 0; i < count; i++) {
-            if (offset >= len) {
-                logger << log4cpp::Priority::ERROR << "Short Netflow v9 flowset template";
+
+        for (uint32_t i = 0; i < fields_count; i++) {
+            if (offset >= flowset_length) {
+                logger << log4cpp::Priority::ERROR << "Short Netflow v9 flowset template. "
+                       << " agent IP: " << client_addres_in_string_format << " flowset number: " << flowset_number;
                 return false;
             }
 
-            netflow9_template_flowset_record_t* tmplr = (netflow9_template_flowset_record_t*)(pkt + offset);
+            const netflow9_template_flowset_record_t* template_record_ptr =
+                (const netflow9_template_flowset_record_t*)(pkt + offset);
 
-            uint32_t record_type   = ntohs(tmplr->type);
-            uint32_t record_length = ntohs(tmplr->length);
+            uint32_t record_type   = ntohs(template_record_ptr->type);
+            uint32_t record_length = ntohs(template_record_ptr->length);
 
             template_record_t current_record;
             current_record.record_type   = record_type;
@@ -159,29 +169,43 @@ bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, c
             // "<<ntohs(tmplr->type)<<"
             // length:"<<ntohs(tmplr->length);
 
-            offset += sizeof(*tmplr);
+            offset += sizeof(*template_record_ptr);
             total_size += record_length;
 
-            // TODO: introduce nf9_check_rec_len
+            // TODO: introduce netflow9_check_rec_len
         }
 
-        field_template.template_id = template_id;
-        field_template.num_records = count;
-        field_template.total_length   = total_size;
-        field_template.records     = template_records_map;
-        field_template.type        = netflow_template_type_t::Data;
+        template_t field_template{};
+
+        field_template.template_id  = template_id;
+        field_template.num_records  = fields_count;
+        field_template.total_length = total_size;
+        field_template.records      = template_records_map;
+        field_template.type         = netflow_template_type_t::Data;
+
+        // We need to know when we received it
+        field_template.timestamp = current_inaccurate_time;
 
         // Add/update template
-        bool updated = false;
+        bool updated                   = false;
         bool updated_existing_template = false;
 
         add_update_peer_template(netflow_protocol_version_t::netflow_v9, global_netflow9_templates, source_id, template_id, client_addres_in_string_format,
                                  field_template, updated, updated_existing_template);
+
+        // If we have any changes for this template, let's flush them to disk
+        if (updated) {
+            template_cache_update_required = true;
+        }
+
+        if (updated_existing_template) {
+            netflow_v9_template_data_updates++;
+        }
     }
 
     // for (auto elem: global_netflow9_templates) {
     //    logger << log4cpp::Priority::INFO  << "Template ident: " << elem.first << " content: " <<
-    //    print_template_t(elem.second);
+    //    print_template(elem.second);
     //}
 
     return true;
