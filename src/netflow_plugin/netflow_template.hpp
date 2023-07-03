@@ -48,6 +48,10 @@ class template_t {
     // We need this flag as it triggers special processing logic
     bool ipfix_variable_length_elements_used = false;
 
+    // When we received this template for very first time
+    time_t timestamp = 0;
+
+    // Netflow v9 or IPFIX
     netflow_template_type_t type = netflow_template_type_t::Unknown;
     std::vector<template_record_t> records;
 
@@ -57,9 +61,10 @@ class template_t {
         ar& BOOST_SERIALIZATION_NVP(num_records);
         ar& BOOST_SERIALIZATION_NVP(total_length);
         ar& BOOST_SERIALIZATION_NVP(option_scope_length);
+        ar& BOOST_SERIALIZATION_NVP(timestamp);
+        ar& BOOST_SERIALIZATION_NVP(ipfix_variable_length_elements_used);
         ar& BOOST_SERIALIZATION_NVP(type);
         ar& BOOST_SERIALIZATION_NVP(records);
-        ar& BOOST_SERIALIZATION_NVP(ipfix_variable_length_elements_used);
     }
 };
 
