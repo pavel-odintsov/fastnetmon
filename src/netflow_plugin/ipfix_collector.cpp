@@ -236,7 +236,7 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
 }
 
 
-bool nf10_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data, simple_packet_t& packet) {
+bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data, simple_packet_t& packet) {
     /* XXX: use a table-based interpreter */
     switch (record_type) {
     case IPFIX_IN_BYTES:
@@ -422,7 +422,7 @@ bool nf10_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* dat
 
 
 // Read options data packet with known templat
-bool nf10_options_flowset_to_store(uint8_t* pkt, size_t len, ipfix_header_t* nf10_hdr, template_t* flow_template, std::string client_addres_in_string_format) {
+bool ipfix_options_flowset_to_store(uint8_t* pkt, size_t len, ipfix_header_t* nf10_hdr, template_t* flow_template, std::string client_addres_in_string_format) {
     // Skip scope fields, I really do not want to parse this informations
     pkt += flow_template->option_scope_length;
 
@@ -494,7 +494,7 @@ bool nf10_options_flowset_to_store(uint8_t* pkt, size_t len, ipfix_header_t* nf1
 }
 
 // We should rewrite nf9_flowset_to_store accroding to fixes here
-void nf10_flowset_to_store(uint8_t* pkt,
+void ipfix_flowset_to_store(uint8_t* pkt,
                            size_t len,
                            ipfix_header_t* nf10_hdr,
                            template_t* field_template,
@@ -540,7 +540,7 @@ void nf10_flowset_to_store(uint8_t* pkt,
         uint32_t record_type   = iter->record_type;
         uint32_t record_length = iter->record_length;
 
-        nf10_rec_to_flow(record_type, record_length, pkt + offset, packet);
+        ipfix_record_to_flow(record_type, record_length, pkt + offset, packet);
 
         offset += record_length;
     }
@@ -628,7 +628,7 @@ void increment_duration_counters_ipfix(int64_t duration) {
 }
 
 
-bool process_netflow_v10_data(uint8_t* pkt,
+bool process_ipfix_data(uint8_t* pkt,
                               size_t len,
                               ipfix_header_t* nf10_hdr,
                               uint32_t source_id,
@@ -678,7 +678,7 @@ bool process_netflow_v10_data(uint8_t* pkt,
 
         for (uint32_t i = 0; i < num_flowsets; i++) {
             // process whole flowset
-            nf10_flowset_to_store(pkt + offset, flowset_template->total_length, nf10_hdr, flowset_template,
+            ipfix_flowset_to_store(pkt + offset, flowset_template->total_length, nf10_hdr, flowset_template,
                                   client_ipv4_address, client_addres_in_string_format);
 
             offset += flowset_template->total_length;
@@ -695,7 +695,7 @@ bool process_netflow_v10_data(uint8_t* pkt,
         }
 
         // Process options packet
-        nf10_options_flowset_to_store(pkt + offset, flowset_template->total_length, nf10_hdr, flowset_template,
+        ipfix_options_flowset_to_store(pkt + offset, flowset_template->total_length, nf10_hdr, flowset_template,
                                       client_addres_in_string_format);
     }
 
@@ -774,7 +774,7 @@ bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string
 
             ipfix_data_packet_number++;
 
-            if (!process_netflow_v10_data(packet + offset, flowset_len, nf10_hdr, source_id,
+            if (!process_ipfix_data(packet + offset, flowset_len, nf10_hdr, source_id,
                                           client_addres_in_string_format, client_ipv4_address)) {
                 return false;
             }
