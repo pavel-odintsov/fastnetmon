@@ -1,3 +1,5 @@
+void update_netflow_v9_sampling_rate(uint32_t sampling_rate, const std::string& client_addres_in_string_format);
+
 // This function reads all available options templates
 // http://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
 bool process_netflow_v9_options_template(const uint8_t* pkt, size_t flowset_length, uint32_t source_id, const std::string& client_addres_in_string_format) {
@@ -216,7 +218,7 @@ bool process_netflow_v9_template(const uint8_t* pkt,
 #define BE_COPY(a) memcpy((u_char*)&a + (sizeof(a) - record_length), data, record_length);
 
 // Safe version of BE_COPY macro
-bool be_copy_function(uint8_t* data, uint8_t* target, uint32_t target_field_length, uint32_t record_field_length) {
+bool be_copy_function(const uint8_t* data, uint8_t* target, uint32_t target_field_length, uint32_t record_field_length) {
     if (target_field_length < record_field_length) {
         return false;
     }
@@ -897,19 +899,27 @@ bool netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, const
 }
 
 // Read options data packet with known template
-void netflow9_options_flowset_to_store(uint8_t* pkt, size_t len, netflow9_header_t* nf9_hdr, template_t* flow_template, std::string client_addres_in_string_format) {
+void netflow9_options_flowset_to_store(const uint8_t* pkt,
+                                       const netflow9_header_t* netflow9_header,
+                                       const template_t* flow_template,
+                                       const std::string& client_addres_in_string_format) {
     // Skip scope fields, I really do not want to parse this informations
     pkt += flow_template->option_scope_length;
     // logger << log4cpp::Priority::ERROR << "We have following length for option_scope_length " <<
     // flow_template->option_scope_length;
 
-    auto template_records = flow_template->records;
-
     uint32_t sampling_rate = 0;
     uint32_t offset        = 0;
 
-    for (auto elem : template_records) {
-        uint8_t* data_shift = pkt + offset;
+    // We may have some fun things encoded here
+    // Cisco ASR9000 encodes mapping between interfaces IDs and interface names here
+    // It uses pairs of two types: type 10 (input SNMP) and type 83 (interface description)
+    interface_id_to_name_t interface_id_to_name;
+
+    device_timeouts_t device_timeouts{};
+
+    for (const auto& elem : flow_template->records) {
+        const uint8_t* data_shift = pkt + offset;
 
         // Time to extract sampling rate
         // Cisco ASR1000
@@ -941,35 +951,165 @@ void netflow9_options_flowset_to_store(uint8_t* pkt, size_t len, netflow9_header
             if (!result) {
                 logger << log4cpp::Priority::ERROR << "Tool tried to read outside allowed memory region, prevented fault: NETFLOW9_SAMPLING_INTERVAL";
             }
+        } else if (elem.record_type == NETFLOW9_INTERFACE_DESCRIPTION) {
+            if (elem.record_length > 128) {
+                // Apply reasonable constraints on maximum interface description field
+                netflow_v9_too_large_field++;
+
+                // logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_INTERFACE_DESCRIPTION";
+            } else {
+                // Find actual length of name ignoring zero characters
+                // In Cisco's encoding all empty symbols are zero bytes
+                size_t interface_name_length = strlen((const char*)data_shift);
+
+                // It's not clear how strings which have same string length as field itself (i.e. X non zero chars in X
+                // length field) will be encoded I assume in that case router may skip zero byte?
+
+                if (interface_name_length <= elem.record_length) {
+                    // Copy data to string using string length calculated previously
+                    interface_id_to_name.interface_description = std::string((const char*)data_shift, interface_name_length);
+                } else {
+                    // It may mean that we have no null byte which terminates string
+                    netflow_v9_too_large_field++;
+
+                    // logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_INTERFACE_DESCRIPTION";
+                }
+            }
+        } else if (elem.record_type == NETFLOW9_INPUT_SNMP) {
+            // https://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html claims that it may be 2 or more bytes
+            if (elem.record_length == 4) {
+                uint32_t input_interface = 0;
+                memcpy(&input_interface, data_shift, elem.record_length);
+
+                input_interface                   = fast_ntoh(input_interface);
+                interface_id_to_name.interface_id = input_interface;
+            } else if (elem.record_length == 2) {
+                uint16_t input_interface = 0;
+                memcpy(&input_interface, data_shift, elem.record_length);
+
+                input_interface                   = fast_ntoh(input_interface);
+                interface_id_to_name.interface_id = input_interface;
+            } else {
+                netflow_v9_too_large_field++;
+
+                // logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_INPUT_SNMP";
+            }
+        } else if (elem.record_type == NETFLOW9_ACTIVE_TIMEOUT) {
+            uint16_t active_timeout = 0;
+
+            // According to Cisco's specification it should be 2 bytes: https://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
+            if (elem.record_length == 2) {
+                memcpy(&active_timeout, data_shift, elem.record_length);
+                active_timeout = fast_ntoh(active_timeout);
+
+                netflow_v9_active_flow_timeout_received++;
+                device_timeouts.active_timeout = active_timeout;
+                // logger << log4cpp::Priority::DEBUG << "Got active timeout: " << active_timeout << " seconds";
+            } else {
+                netflow_v9_too_large_field++;
+
+                // logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_ACTIVE_TIMEOUT";
+            }
+
+        } else if (elem.record_type == NETFLOW9_INACTIVE_TIMEOUT) {
+            uint16_t inactive_timeout = 0;
+
+            // According to Cisco's specification it should be 2 bytes: https://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
+            if (elem.record_length == 2) {
+                memcpy(&inactive_timeout, data_shift, elem.record_length);
+                inactive_timeout = fast_ntoh(inactive_timeout);
+
+                netflow_v9_inactive_flow_timeout_received++;
+                device_timeouts.inactive_timeout = inactive_timeout;
+                // logger << log4cpp::Priority::DEBUG << "Got inactive timeout: " << inactive_timeout << " seconds";
+            } else {
+                netflow_v9_too_large_field++;
+
+                // logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_INACTIVE_TIMEOUT";
+            }
+        } else if (elem.record_type == NETFLOW9_FLOW_SAMPLER_ID) {
+            if (elem.record_length == 4) {
+                uint32_t sampler_id = 0;
+
+                memcpy(&sampler_id, data_shift, elem.record_length);
+
+                sampler_id = fast_ntoh(sampler_id);
+
+                // logger << log4cpp::Priority::DEBUG << "Got sampler id from options template: " << int(sampler_id);
+            } else if (elem.record_length == 2) {
+                uint16_t sampler_id = 0;
+
+                memcpy(&sampler_id, data_shift, elem.record_length);
+
+                sampler_id = fast_ntoh(sampler_id);
+
+                logger << log4cpp::Priority::DEBUG << "Got sampler id from options template: " << int(sampler_id);
+            } else {
+                netflow_v9_too_large_field++;
+
+                // logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_FLOW_SAMPLER_ID options: " << elem.record_length;
+            }
         }
+
+
+        // logger << log4cpp::Priority::ERROR << "Interface number: " << interface_id_to_name.interface_id << " name: '" << interface_id_to_name.interface_description << "'";
 
         offset += elem.record_length;
     }
 
-    if (sampling_rate != 0) {
-        auto new_sampling_rate = fast_ntoh(sampling_rate);
+    update_netflow_v9_sampling_rate(sampling_rate, client_addres_in_string_format);
 
-        netflow9_custom_sampling_rate_received++;
+    // Update flow timeouts in our store
+    update_device_flow_timeouts(device_timeouts, netflow_v9_per_device_flow_timeouts_mutex, netflow_v9_per_device_flow_timeouts,
+                                client_addres_in_string_format, netflow_protocol_version_t::netflow_v9);
+}
 
-        // logger<< log4cpp::Priority::INFO << "I extracted sampling rate: " << new_sampling_rate
-        //    << "for " << client_addres_in_string_format;
+void update_netflow_v9_sampling_rate(uint32_t sampling_rate, const std::string& client_addres_in_string_format) {
+    if (sampling_rate == 0) {
+        return;
+    }
 
-        // Replace old sampling rate value
+    // NB! Incoming sampling rate is big endian / network byte order
+    auto new_sampling_rate = fast_ntoh(sampling_rate);
+
+    netflow9_custom_sampling_rate_received++;
+
+    // logger<< log4cpp::Priority::INFO << "I extracted sampling rate: " << new_sampling_rate
+    //    << "for " << client_address_in_string_format;
+
+    bool any_changes_for_sampling = false;
+
+    {
         std::lock_guard<std::mutex> lock(netflow9_sampling_rates_mutex);
-        auto old_sampling_rate = netflow9_sampling_rates[client_addres_in_string_format];
 
-        if (old_sampling_rate != new_sampling_rate) {
+        auto known_sampling_rate = netflow9_sampling_rates.find(client_addres_in_string_format);
+
+        if (known_sampling_rate == netflow9_sampling_rates.end()) {
+            // We had no sampling rates before
             netflow9_sampling_rates[client_addres_in_string_format] = new_sampling_rate;
 
             netflow9_sampling_rate_changes++;
 
-            logger << log4cpp::Priority::DEBUG << "Change sampling rate from " << old_sampling_rate << " to "
-                   << new_sampling_rate << " for " << client_addres_in_string_format;
+            logger << log4cpp::Priority::INFO << "Learnt new Netflow v9 sampling rate " << new_sampling_rate << " for "
+                   << client_addres_in_string_format;
+
+            any_changes_for_sampling = true;
+        } else {
+            auto old_sampling_rate = known_sampling_rate->second;
+
+            if (old_sampling_rate != new_sampling_rate) {
+                netflow9_sampling_rates[client_addres_in_string_format] = new_sampling_rate;
+
+                netflow9_sampling_rate_changes++;
+
+                logger << log4cpp::Priority::INFO << "Detected sampling rate change from " << old_sampling_rate << " to "
+                       << new_sampling_rate << " for " << client_addres_in_string_format;
+
+                any_changes_for_sampling = true;
+            }
         }
     }
 }
-
-// Gap
 
 // That's kind of histogram emulation
 void increment_duration_counters_netflow_v9(int64_t duration) {
@@ -1215,7 +1355,7 @@ int process_netflow_v9_data(uint8_t* pkt,
             }
 
             // logger << log4cpp::Priority::INFO << "Process flowset: " << i;
-            netflow9_options_flowset_to_store(pkt + offset, flowset_template->total_length, nf9_hdr, flowset_template,
+            netflow9_options_flowset_to_store(pkt + offset, nf9_hdr, flowset_template,
                                          client_addres_in_string_format);
 
             offset += flowset_template->total_length;

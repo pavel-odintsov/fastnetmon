@@ -760,6 +760,68 @@ void add_update_peer_template(const netflow_protocol_version_t& netflow_version,
     return;
 }
 
+// Returns fancy name of protocol version
+std::string get_netflow_protocol_version_as_string(const netflow_protocol_version_t& netflow_protocol_version) {
+    std::string protocol_name = "unknown";
+
+    if (netflow_protocol_version == netflow_protocol_version_t::netflow_v9) {
+        protocol_name = "Netflow v9";
+    } else if (netflow_protocol_version == netflow_protocol_version_t::ipfix) {
+        protocol_name = "IPFIX";
+    }
+
+    return protocol_name;
+}
+
+// Updates flow timeouts from device
+void update_device_flow_timeouts(const device_timeouts_t& device_timeouts,
+                                 std::mutex& structure_mutex,
+                                 std::map<std::string, device_timeouts_t>& timeout_storage,
+                                 const std::string& client_addres_in_string_format,
+                                 const netflow_protocol_version_t& netflow_protocol_version) {
+
+    // We did not receive any information about timeouts
+    // We do not expect that devices reports only active or any inactive timeouts as it does not make any sense
+    if (!device_timeouts.active_timeout.has_value() && !device_timeouts.inactive_timeout.has_value()) {
+        return;
+    }
+
+    std::lock_guard<std::mutex> lock(structure_mutex);
+
+    auto current_timeouts = timeout_storage.find(client_addres_in_string_format);
+
+    if (current_timeouts == timeout_storage.end()) {
+        timeout_storage[client_addres_in_string_format] = device_timeouts;
+
+        logger << log4cpp::Priority::INFO
+               << "Learnt new active flow timeout value: " << device_timeouts.active_timeout.value_or(0) << " seconds "
+               << "and inactive flow timeout value: " << device_timeouts.inactive_timeout.value_or(0)
+               << " seconds for device " << client_addres_in_string_format << " protocol " << get_netflow_protocol_version_as_string(netflow_protocol_version);
+
+        return;
+    }
+
+    auto old_flow_timeouts = current_timeouts->second;
+
+    // They're equal with previously received, nothing to worry about
+    if (old_flow_timeouts == device_timeouts) {
+        return;
+    }
+
+    // We had values previously
+    logger << log4cpp::Priority::INFO << "Update old active flow timeout value "
+           << current_timeouts->second.active_timeout.value_or(0) << " to " << device_timeouts.active_timeout.value_or(0)
+           << " for " << client_addres_in_string_format << " protocol " << get_netflow_protocol_version_as_string(netflow_protocol_version);
+    
+    logger << log4cpp::Priority::INFO << "Update old inactive flow timeout value "
+           << current_timeouts->second.inactive_timeout.value_or(0) << " to " << device_timeouts.inactive_timeout.value_or(0)
+           << " for " << client_addres_in_string_format << " protocol " << get_netflow_protocol_version_as_string(netflow_protocol_version);
+
+    current_timeouts->second = device_timeouts;
+    return;
+}
+
+
 // Temporary during migration
 #include "netflow_v5_collector.cpp"
 
