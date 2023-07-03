@@ -181,14 +181,12 @@ bool process_ipfix_options_template(const uint8_t* pkt, size_t flowset_length, u
     return true;
 }
 
-bool process_ipfix_template(uint8_t* pkt, size_t len, uint32_t source_id, const std::string& client_addres_in_string_format) {
-    ipfix_flowset_header_common_t* template_header = (ipfix_flowset_header_common_t*)pkt;
-    // We use same struct as netflow v9 because netflow v9 and v10 (ipfix) is
-    // compatible
-    template_t field_template;
+bool process_ipfix_template(const uint8_t* pkt, size_t flowset_length, uint32_t source_id, const std::string& client_addres_in_string_format) {
+    const ipfix_flowset_header_common_t* template_header = (const ipfix_flowset_header_common_t*)pkt;
 
-    if (len < sizeof(*template_header)) {
-        logger << log4cpp::Priority::ERROR << "Short IPFIX flowset template header " << len << " bytes";
+    if (flowset_length < sizeof(*template_header)) {
+        logger << log4cpp::Priority::ERROR << "Short IPFIX flowset template header " << flowset_length
+               << " bytes. Agent IP: " << client_addres_in_string_format;
         return false;
     }
 
@@ -197,61 +195,90 @@ bool process_ipfix_template(uint8_t* pkt, size_t len, uint32_t source_id, const 
                << "Function process_ipfix_template expects only "
                   "IPFIX_TEMPLATE_FLOWSET_ID but "
                   "got another id: "
-               << ntohs(template_header->flowset_id);
+               << ntohs(template_header->flowset_id) << " Agent IP: " << client_addres_in_string_format;
 
         return false;
     }
 
-    for (uint32_t offset = sizeof(*template_header); offset < len;) {
-        ipfix_template_flowset_header_t* tmplh = (ipfix_template_flowset_header_t*)(pkt + offset);
+    bool template_cache_update_required = false;
 
-        uint32_t template_id = ntohs(tmplh->template_id);
-        uint32_t count       = ntohs(tmplh->record_count);
+    // These fields use quite complicated encoding and we need to identify them first
+    bool ipfix_variable_length_elements_used = false;
+
+    for (uint32_t offset = sizeof(*template_header); offset < flowset_length;) {
+        const ipfix_template_flowset_header_t* tmplh = (const ipfix_template_flowset_header_t*)(pkt + offset);
+
+        uint32_t template_id  = ntohs(tmplh->template_id);
+        uint32_t record_count = ntohs(tmplh->record_count);
+
         offset += sizeof(*tmplh);
 
         std::vector<template_record_t> template_records_map;
-        uint32_t total_size = 0;
-        for (uint32_t i = 0; i < count; i++) {
-            if (offset >= len) {
-                logger << log4cpp::Priority::ERROR << "short netflow v.10 flowset template";
+        uint32_t total_template_data_size = 0;
+
+        for (uint32_t i = 0; i < record_count; i++) {
+            if (offset >= flowset_length) {
+                logger << log4cpp::Priority::ERROR << "Short IPFIX flowset template. Agent IP: " << client_addres_in_string_format;
                 return false;
             }
 
-            ipfix_template_flowset_record_t* tmplr = (ipfix_template_flowset_record_t*)(pkt + offset);
-            uint32_t record_type                  = ntohs(tmplr->type);
-            uint32_t record_length                = ntohs(tmplr->length);
+            const ipfix_template_flowset_record_t* tmplr = (const ipfix_template_flowset_record_t*)(pkt + offset);
+
+            uint32_t record_type   = ntohs(tmplr->type);
+            uint32_t record_length = ntohs(tmplr->length);
 
             template_record_t current_record;
             current_record.record_type   = record_type;
             current_record.record_length = record_length;
 
+            // it's special size which actually means that variable length encoding was used for this field
+            // https://datatracker.ietf.org/doc/html/rfc7011#page-37
+            if (record_length == 65535) {
+                ipfix_variable_length_elements_used = true;
+            }
+
             template_records_map.push_back(current_record);
 
             offset += sizeof(*tmplr);
+
             if (record_type & IPFIX_ENTERPRISE) {
                 offset += sizeof(uint32_t); /* XXX -- ? */
             }
 
-            total_size += record_length;
-            // add check: if (total_size > peers->max_template_len)
+            total_template_data_size += record_length;
         }
 
-        field_template.template_id = template_id;
-        field_template.num_records = count;
-        field_template.total_length   = total_size;
-        field_template.records     = template_records_map;
-        field_template.type        = netflow_template_type_t::Data;
+        // We use same struct as Netflow v9 because Netflow v9 and IPFIX use similar fields
+        template_t field_template;
 
-        bool updated = false;
+        field_template.template_id                         = template_id;
+        field_template.num_records                         = record_count;
+        field_template.total_length                        = total_template_data_size;
+        field_template.records                             = template_records_map;
+        field_template.type                                = netflow_template_type_t::Data;
+        field_template.ipfix_variable_length_elements_used = ipfix_variable_length_elements_used;
+
+        // We need to know when we received it
+        field_template.timestamp = current_inaccurate_time;
+
+        bool updated                   = false;
         bool updated_existing_template = false;
 
         add_update_peer_template(netflow_protocol_version_t::ipfix, global_ipfix_templates, source_id, template_id, client_addres_in_string_format,
                                  field_template, updated, updated_existing_template);
+
+        // If we have any changes for this template, let's flush them to disk
+        if (updated) {
+            template_cache_update_required = true;
+        }
+
+        if (updated_existing_template) {
+            ipfix_template_data_updates++;
+        }
     }
 
     return true;
 }
-
 
 bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data, simple_packet_t& packet) {
     /* XXX: use a table-based interpreter */
