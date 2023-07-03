@@ -186,26 +186,127 @@ bool be_copy_function(uint8_t* data, uint8_t* target, uint32_t target_field_leng
     return true;
 }
 
-#define V9_FIELD(v9_field, store_field, flow_field) \
-    case v9_field:                                  \
-        BE_COPY(packet.flow_field);                 \
-        break
 
-int netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data, simple_packet_t& packet, netflow_meta_info_t& flow_meta) {
-    /* XXX: use a table-based interpreter */
+bool netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, const uint8_t* data, simple_packet_t& packet, netflow_meta_info_t& flow_meta, const std::string& client_addres_in_string_format) {
+    // Some devices such as Mikrotik may pass sampling rate in data section
+    uint32_t sampling_rate = 0;
+
     switch (record_type) {
-        V9_FIELD(NETFLOW9_IN_BYTES, OCTETS, length);
-        V9_FIELD(NETFLOW9_IN_PACKETS, PACKETS, number_of_packets);
-        V9_FIELD(NETFLOW9_IN_PROTOCOL, PROTO_FLAGS_TOS, protocol);
-        V9_FIELD(NETFLOW9_TCP_FLAGS, PROTO_FLAGS_TOS, flags);
-        V9_FIELD(NETFLOW9_L4_SRC_PORT, SRCDST_PORT, source_port);
-        V9_FIELD(NETFLOW9_L4_DST_PORT, SRCDST_PORT, destination_port);
+    case NETFLOW9_IN_BYTES:
+        if (record_length > sizeof(packet.length)) {
+            netflow_v9_too_large_field++;
 
+            // getPriority just returns private field and does not involve any locking / heavy operations
+            // We do this check to avoid overhead related with << processing
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_IN_BYTES";
+            }
+        } else {
+            BE_COPY(packet.length);
+
+            // Decode data in network byte order to host byte order
+            packet.length = fast_ntoh(packet.length);
+
+            // Netflow carries only information about number of octets including IP headers and IP payload
+            // which is exactly what we need for ip_length field
+            packet.ip_length = packet.length;
+        }
+
+        break;
+    case NETFLOW9_IN_PACKETS:
+        if (record_length > sizeof(packet.number_of_packets)) {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_IN_PACKETS";
+            }
+        } else {
+            BE_COPY(packet.number_of_packets);
+
+            // We need to decode it to host byte order
+            packet.number_of_packets = fast_ntoh(packet.number_of_packets);
+        }
+
+        break;
+    case NETFLOW9_IN_PROTOCOL:
+        if (record_length > sizeof(packet.protocol)) {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_IN_PROTOCOL";
+            }
+        } else {
+            BE_COPY(packet.protocol);
+
+            packet.protocol = fast_ntoh(packet.protocol);
+        }
+
+        break;
+    case NETFLOW9_TCP_FLAGS:
+        if (record_length > sizeof(packet.flags)) {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_TCP_FLAGS";
+            }
+        } else {
+            BE_COPY(packet.flags);
+        }
+
+        break;
+    case NETFLOW9_L4_SRC_PORT:
+        if (record_length > sizeof(packet.source_port)) {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_L4_SRC_PORT";
+            }
+        } else {
+            BE_COPY(packet.source_port);
+
+            // We should convert port to host byte order
+            packet.source_port = fast_ntoh(packet.source_port);
+        }
+
+        break;
+    case NETFLOW9_L4_DST_PORT:
+        if (record_length > sizeof(packet.destination_port)) {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_L4_DST_PORT";
+            }
+        } else {
+            BE_COPY(packet.destination_port);
+
+            // We should convert port to host byte order
+            packet.destination_port = fast_ntoh(packet.destination_port);
+        }
+
+        break;
     case NETFLOW9_IPV4_SRC_ADDR:
-        memcpy(&packet.src_ip, data, record_length);
+        if (record_length > sizeof(packet.src_ip)) {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_IPV4_SRC_ADDR";
+            }
+        } else {
+            memcpy(&packet.src_ip, data, record_length);
+        }
+
         break;
     case NETFLOW9_IPV4_DST_ADDR:
-        memcpy(&packet.dst_ip, data, record_length);
+        if (record_length > sizeof(packet.dst_ip)) {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_IPV4_DST_ADDR";
+            }
+        } else {
+            memcpy(&packet.dst_ip, data, record_length);
+        }
+
         break;
     case NETFLOW9_SRC_AS:
         // It could be 2 or 4 byte length
@@ -221,24 +322,43 @@ int netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_
 
             src_asn        = fast_ntoh(src_asn);
             packet.src_asn = src_asn;
-        }
-        break;
-    case NETFLOW9_IPV6_SRC_ADDR:
-        // It should be 16 bytes only
-        if (record_length == 16) {
-            memcpy(&packet.src_ipv6, data, record_length);
-            // Set protocol version to IPv6
-            packet.ip_protocol_version = 6;
+        } else {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_SRC_AS";
+            }
         }
 
         break;
+    case NETFLOW9_IPV6_SRC_ADDR:
+            // It should be 16 bytes only
+            if (record_length == 16) {
+                memcpy(&packet.src_ipv6, data, record_length);
+                // Set protocol version to IPv6
+                packet.ip_protocol_version = 6;
+            } else {
+                netflow_v9_too_large_field++;
+
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_IPV6_SRC_ADDR";
+                }
+            }
+
+        break;
     case NETFLOW9_IPV6_DST_ADDR:
-        // It should be 16 bytes only
-        if (record_length == 16) {
-            memcpy(&packet.dst_ipv6, data, record_length);
-            // Set protocol version to IPv6
-            packet.ip_protocol_version = 6;
-        }
+            // It should be 16 bytes only
+            if (record_length == 16) {
+                memcpy(&packet.dst_ipv6, data, record_length);
+                // Set protocol version to IPv6
+                packet.ip_protocol_version = 6;
+            } else {
+                netflow_v9_too_large_field++;
+
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_IPV6_DST_ADDR";
+                }
+            }
 
         break;
     case NETFLOW9_DST_AS:
@@ -255,6 +375,12 @@ int netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_
 
             dst_asn        = fast_ntoh(dst_asn);
             packet.dst_asn = dst_asn;
+        } else {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_DST_AS";
+            }
         }
 
         break;
@@ -275,7 +401,11 @@ int netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_
             input_interface        = fast_ntoh(input_interface);
             packet.input_interface = input_interface;
         } else {
-            // We do not support it
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_INPUT_SNMP";
+            }
         }
 
         break;
@@ -296,7 +426,11 @@ int netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_
             output_interface        = fast_ntoh(output_interface);
             packet.output_interface = output_interface;
         } else {
-            // We do not support it
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_OUTPUT_SNMP";
+            }
         }
 
         break;
@@ -309,7 +443,11 @@ int netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_
 
             packet.flow_start = flow_started;
         } else {
-            // We do not support it
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_FIRST_SWITCHED";
+            }
         }
 
         break;
@@ -322,7 +460,39 @@ int netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_
 
             packet.flow_end = flow_finished;
         } else {
-            // We do not support it
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_LAST_SWITCHED";
+            }
+        }
+
+        break;
+    case NETFLOW9_START_MILLISECONDS:
+        if (record_length == 8) {
+            uint64_t flow_started = 0;
+
+            memcpy(&flow_started, data, record_length);
+            flow_started = fast_ntoh(flow_started);
+
+            // We cast unsigned to signed and it may cause issues
+            packet.flow_start = flow_started;
+        } else {
+            netflow_v9_too_large_field++;
+        }
+
+        break;
+    case NETFLOW9_END_MILLISECONDS:
+        if (record_length == 8) {
+            uint64_t flow_finished = 0;
+
+            memcpy(&flow_finished, data, record_length);
+            flow_finished = fast_ntoh(flow_finished);
+
+            // We cast unsigned to signed and it may cause issues
+            packet.flow_end = flow_finished;
+        } else {
+            netflow_v9_too_large_field++;
         }
 
         break;
@@ -335,9 +505,22 @@ int netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_
 
             memcpy(&forwarding_status, data, record_length);
 
-            // logger << log4cpp::Priority::ERROR << "Forwarding status: " << int(forwarding_status);
+            const netflow9_forwarding_status_t* forwarding_status_structure = (const netflow9_forwarding_status_t*)&forwarding_status;
+
+            // Decode numbers into forwarding statuses
+            packet.forwarding_status             = forwarding_status_from_integer(forwarding_status_structure->status);
+            flow_meta.received_forwarding_status = true;
+
+            netflow_v9_forwarding_status++;
+
+            // logger << log4cpp::Priority::DEBUG << "Forwarding status: " << int(forwarding_status_structure->status) << " reason code: " << int(forwarding_status_structure->reason_code);
         } else {
             // It must be exactly one byte
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_FORWARDING_STATUS";
+            }
         }
 
         break;
@@ -348,7 +531,11 @@ int netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_
             memcpy(&packets_observed, data, record_length);
             flow_meta.observed_packets = fast_ntoh(packets_observed);
         } else {
-            // We do not support other length
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_SELECTOR_TOTAL_PACKETS_OBSERVED";
+            }
         }
 
         break;
@@ -359,7 +546,11 @@ int netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_
             memcpy(&packets_selected, data, record_length);
             flow_meta.selected_packets = fast_ntoh(packets_selected);
         } else {
-            // We do not support other length
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_SELECTOR_TOTAL_PACKETS_SELECTED";
+            }
         }
 
         break;
@@ -370,42 +561,301 @@ int netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_
             memcpy(&datalink_frame_size, data, record_length);
             flow_meta.data_link_frame_size = fast_ntoh(datalink_frame_size);
         } else {
-            // We do not support other length
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_DATALINK_FRAME_SIZE";
+            }
         }
 
         break;
     case NETFLOW9_LAYER2_PACKET_SECTION_DATA:
-        bool read_packet_length_from_ip_header = true;
-        bool decapsulate_tunnels               = false;
+        // We create block here as gcc does not want to compile without it with error: error: jump to case label
+        // https://stackoverflow.com/questions/5685471/error-jump-to-case-label-in-switch-statement
+        {
+            netflow_v9_lite_headers++;
 
-        // It's our safe fallback
-        uint64_t full_packet_length = record_length;
+            bool read_packet_length_from_ip_header = true;
 
-        // Device must provide this information on previous iteration, let's try to get it in case if we've got it:
-        if (flow_meta.data_link_frame_size != 0) {
-            full_packet_length = flow_meta.data_link_frame_size;
+            // It's our safe fallback
+            uint64_t full_packet_length = record_length;
+
+            // Device must provide this information on previous iteration, let's try to get it in case if we've got it:
+            if (flow_meta.data_link_frame_size != 0) {
+                full_packet_length = flow_meta.data_link_frame_size;
+            }
+
+            bool extract_tunnel_traffic = false;
+
+            auto result =
+                parse_raw_packet_to_simple_packet_full_ng((u_char*)(data), full_packet_length, record_length,
+                                                       flow_meta.nested_packet, extract_tunnel_traffic, read_packet_length_from_ip_header);
+
+            if (result != network_data_stuctures::parser_code_t::success) {
+                // Cannot decode data
+                netflow_v9_lite_header_parser_error++;
+            } else {
+                netflow_v9_lite_header_parser_success++;
+                // Successfully decoded data
+                flow_meta.nested_packet_parsed = true;
+            }
         }
 
-        bool unpack_gre = false;
+        break;
+    // There is a similar field NETFLOW9_BGP_NEXT_HOP_IPV4_ADDRESS but with slightly different meaning
+    // https://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
+    case NETFLOW9_IPV4_NEXT_HOP:
+        // Juniper MX uses this field
+        // Juniper uses this specific field (type 15) to report dropped traffic:
+        // https://apps.juniper.net/feature-explorer/feature-info.html?fKey=7679&fn=Enhancements%20to%20inline%20flow%20monitoring
+        if (record_length == 4) {
+            uint32_t ip_next_hop_ipv4 = 0;
+            memcpy(&ip_next_hop_ipv4, data, record_length);
 
-        auto result = parse_raw_packet_to_simple_packet_full_ng((u_char*)(data), full_packet_length, record_length,
-                                                                flow_meta.nested_packet, unpack_gre,
-                                                                read_packet_length_from_ip_header);
+            flow_meta.ip_next_hop_ipv4_set = true;
+            flow_meta.ip_next_hop_ipv4     = ip_next_hop_ipv4;
 
-        if (result != network_data_stuctures::parser_code_t::success) {
-            // Cannot decode data
-            // TODO: add counter for this case
+            // std::cout << "Netflow v9 IP next hop: " << convert_ip_as_uint_to_string(bgp_next_hop_ipv4) << std::endl;
         } else {
-            // Successfully decoded data!
-            flow_meta.nested_packet_parsed = true;
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_IPV4_NEXT_HOP";
+            }
+        }
+
+        break;
+    
+    // There is a similar field NETFLOW9_BGP_NEXT_HOP_IPV4_ADDRESS but with slightly different meaning
+    // https://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
+    case NETFLOW9_BGP_NEXT_HOP_IPV4_ADDRESS:
+        
+        if (record_length == 4) {
+            uint32_t bgp_next_hop_ipv4 = 0;
+            memcpy(&bgp_next_hop_ipv4, data, record_length);
+
+            flow_meta.bgp_next_hop_ipv4_set = true;
+            flow_meta.bgp_next_hop_ipv4     = bgp_next_hop_ipv4;
+
+            // std::cout << "Netflow v9 BGP next hop: " << convert_ip_as_uint_to_string(bgp_next_hop_ipv4) << std::endl;
+        } else {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_BGP_NEXT_HOP_IPV4_ADDRESS";
+            }
+        }
+
+        break;
+    case NETFLOW9_FLOW_SAMPLER_ID:
+        // NB! This field for options and data templates field may use different field length
+        if (record_length == 1) {
+            uint8_t sampler_id = 0;
+
+            memcpy(&sampler_id, data, record_length);
+
+            // logger << log4cpp::Priority::DEBUG << "Got sampler id from data template: " << int(sampler_id);
+        } else if (record_length == 2) {
+            uint16_t sampler_id = 0;
+
+            memcpy(&sampler_id, data, record_length);
+
+            sampler_id = fast_ntoh(sampler_id);
+
+            // logger << log4cpp::Priority::DEBUG << "Got sampler id from data template: " << int(sampler_id);
+        } else {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_FLOW_SAMPLER_ID data";
+            }
+        }
+        break;
+    case NETFLOW9_FLOW_ID:
+        if (record_length == 4) {
+            uint32_t flow_id = 0;
+
+            memcpy(&flow_id, data, record_length);
+            flow_id = fast_ntoh(flow_id);
+
+            flow_meta.flow_id = flow_id;
+        } else {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_FLOW_ID";
+            }
+        }
+
+        break;
+    case NETFLOW9_BYTES_FROM_SOURCE_TO_DESTINATION:
+        if (record_length == 4) {
+            uint32_t bytes_counter = 0;
+
+            memcpy(&bytes_counter, data, record_length);
+            bytes_counter = fast_ntoh(bytes_counter);
+
+            flow_meta.bytes_from_source_to_destination = bytes_counter;
+        } else if (record_length == 8) {
+            uint64_t bytes_counter = 0;
+
+            memcpy(&bytes_counter, data, record_length);
+            bytes_counter = fast_ntoh(bytes_counter);
+
+            flow_meta.bytes_from_source_to_destination = bytes_counter;
+        } else {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_BYTES_FROM_SOURCE_TO_DESTINATION";
+            }
+        }
+
+        break;
+    case NETFLOW9_BYTES_FROM_DESTINATION_TO_SOURCE:
+        if (record_length == 2) {
+            uint16_t bytes_counter = 0;
+            
+            memcpy(&bytes_counter, data, record_length);
+            bytes_counter        = fast_ntoh(bytes_counter);
+            
+            flow_meta.bytes_from_destination_to_source = bytes_counter;
+        } else if (record_length == 4) {
+            uint32_t bytes_counter = 0;
+
+            memcpy(&bytes_counter, data, record_length);
+            bytes_counter = fast_ntoh(bytes_counter);
+
+            flow_meta.bytes_from_destination_to_source = bytes_counter;
+        } else if (record_length == 8) {
+            uint64_t bytes_counter = 0;
+
+            memcpy(&bytes_counter, data, record_length);
+            bytes_counter = fast_ntoh(bytes_counter);
+
+            flow_meta.bytes_from_destination_to_source = bytes_counter;
+        } else {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_BYTES_FROM_DESTINATION_TO_SOURCE";
+            }
+        }
+
+        break;
+    case NETFLOW9_PACKETS_FROM_SOURCE_TO_DESTINATION:
+        if (record_length == 4) {
+            uint32_t packets_counter = 0;
+
+            memcpy(&packets_counter, data, record_length);
+            packets_counter = fast_ntoh(packets_counter);
+
+            flow_meta.packets_from_source_to_destination = packets_counter;
+        } else if (record_length == 8) {
+            uint64_t packets_counter = 0;
+
+            memcpy(&packets_counter, data, record_length);
+            packets_counter = fast_ntoh(packets_counter);
+
+            flow_meta.packets_from_source_to_destination = packets_counter;
+        } else {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_PACKETS_FROM_SOURCE_TO_DESTINATION";
+            }
+        }
+
+        break;
+    case NETFLOW9_PACKETS_FROM_DESTINATION_TO_SOURCE:
+        if (record_length == 4) {
+            uint32_t packets_counter = 0;
+
+            memcpy(&packets_counter, data, record_length);
+            packets_counter = fast_ntoh(packets_counter);
+
+            flow_meta.packets_from_destination_to_source = packets_counter;
+        } else if (record_length == 8) {
+            uint64_t packets_counter = 0;
+
+            memcpy(&packets_counter, data, record_length);
+            packets_counter = fast_ntoh(packets_counter);
+
+            flow_meta.packets_from_destination_to_source = packets_counter;
+        } else {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_PACKETS_FROM_DESTINATION_TO_SOURCE";
+            }
+        }
+
+        break;
+    case NETFLOW9_SOURCE_MAC_ADDRESS:
+        if (record_length == 6) {
+            // Copy it directly to packet structure
+            memcpy(&packet.source_mac, data, record_length);
+        } else {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_SOURCE_MAC_ADDRESS";
+            }
+        }
+        break;
+    case NETFLOW9_DESTINATION_MAC_ADDRESS:
+        if (record_length == 6) {
+            // Copy it directly to packet structure
+            memcpy(&packet.destination_mac, data, record_length);
+        } else {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_DESTINATION_MAC_ADDRESS";
+            }
+        }
+        break;
+    case NETFLOW9_SAMPLING_INTERVAL: 
+        // Well, this record type is expected to be only in options templates but Mikrotik in RouterOS v6.49.6 has another opinion
+        // and we have dump which clearly confirms that they send this data in data templates
+
+        if (record_length == 4) {
+            uint32_t current_sampling_rate = 0;
+
+            memcpy(&current_sampling_rate, data, record_length);
+
+            // NB! Our sampling rate update logic uses endian-less conversion directly in update_netflow_v9_sampling_rate / update_ipfix_sampling_rate 
+            // and we should not convert this value to little endian here
+
+            // We do convert it to little endian only for pretty printing
+            // logger << log4cpp::Priority::INFO << "Got sampling date from data packet: " << fast_ntoh(current_sampling_rate);
+            
+            // That's where Mikrotik quirks start 
+            // From Mikrotik routers with no sampling configured we receive 0 in this field which is not perfect but reasonable enough.
+            // 
+            // Another issue that we receive values like: 16777216 which is just 1 wrongly encoded in host byte order in their data
+            // Should I mention that in this case router had following setup: packet-sampling=yes sampling-interval=2222 sampling-space=1111 
+            // And I have no idea what is the source of "1" as sampling rate
+            // It's so broken that we agreed to suspend implementation until they fix it
+            //
+            // Fortunately in ROS7.10 it works just fine
+            //
+
+            // Pass it to global variable
+            sampling_rate = current_sampling_rate;
+        } else {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_SAMPLING_INTERVAL in data packet";
+            }
         }
 
         break;
     }
 
-    return 0;
+    return true;
 }
-
 
 // Read options data packet with known template
 void netflow9_options_flowset_to_store(uint8_t* pkt, size_t len, netflow9_header_t* nf9_hdr, template_t* flow_template, std::string client_addres_in_string_format) {
@@ -549,11 +999,11 @@ void netflow9_flowset_to_store(uint8_t* pkt,
         uint32_t record_type   = iter->record_type;
         uint32_t record_length = iter->record_length;
 
-        int nf9_rec_to_flow_result = netflow9_record_to_flow(record_type, record_length, pkt + offset, packet, flow_meta);
+        bool netflow9_rec_to_flow_result = netflow9_record_to_flow(record_type, record_length, pkt + offset, packet, flow_meta, client_addres_in_string_format);
         // logger<< log4cpp::Priority::INFO<<"Read data with type: "<<record_type<<"
         // and
         // length:"<<record_length;
-        if (nf9_rec_to_flow_result != 0) {
+        if (!netflow9_rec_to_flow_result) {
             return;
         }
 

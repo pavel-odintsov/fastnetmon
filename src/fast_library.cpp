@@ -2369,3 +2369,22 @@ bool convert_ip_as_string_to_uint_safe(const std::string& ip, uint32_t& ip_as_in
     return true;
 }
 #endif
+
+forwarding_status_t forwarding_status_from_integer(uint8_t forwarding_status_as_integer) {
+    // Decode numbers into forwarding statuses
+    // I think they're same for Netflow v9 https://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
+    // and IPFIX: https://datatracker.ietf.org/doc/html/rfc7270#section-4.12
+    if (forwarding_status_as_integer == 0) {
+        return forwarding_status_t::unknown;
+    } else if (forwarding_status_as_integer == 1) {
+        return forwarding_status_t::forwarded;
+    } else if (forwarding_status_as_integer == 2) {
+        return forwarding_status_t::dropped;
+    } else if (forwarding_status_as_integer == 3) {
+        return forwarding_status_t::consumed;
+    } else {
+        // It must not happen
+        return forwarding_status_t::unknown;
+    }
+}
+

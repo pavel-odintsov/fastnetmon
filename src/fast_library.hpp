@@ -148,3 +148,4 @@ std::string forwarding_status_to_string(forwarding_status_t status);
 std::string country_static_string_to_dynamic_string(const boost::beast::static_string<2>& country_code);
 bool serialize_simple_packet_to_json(const simple_packet_t& packet, nlohmann::json& json_packet);
 bool convert_ip_as_string_to_uint_safe(const std::string& ip, uint32_t& ip_as_integer);
+forwarding_status_t forwarding_status_from_integer(uint8_t forwarding_status_as_integer);
