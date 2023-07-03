@@ -18,23 +18,26 @@ void increment_duration_counters_netflow_v5(int64_t duration) {
 }
 
 
-bool process_netflow_packet_v5(uint8_t* packet, uint32_t len, std::string& client_addres_in_string_format, uint32_t client_ipv4_address) {
-    // logger<< log4cpp::Priority::INFO<<"We get v5 netflow packet!";
+bool process_netflow_packet_v5(const uint8_t* packet,
+                               uint32_t packet_length,
+                               const std::string& client_addres_in_string_format,
+                               uint32_t client_ipv4_address) {
+    // logger<< log4cpp::Priority::INFO<<"We got Netflow v5 packet!";
 
-    netflow5_header_t* nf5_hdr = (netflow5_header_t*)packet;
+    const netflow5_header_t* netflow5_header = (const netflow5_header_t*)packet;
 
-    if (len < sizeof(*nf5_hdr)) {
-        logger << log4cpp::Priority::ERROR << "Short netflow v5 packet " << len;
+    if (packet_length < sizeof(*netflow5_header)) {
+        logger << log4cpp::Priority::ERROR << "Short netflow v5 packet " << packet_length;
         return false;
     }
 
-    uint32_t nflows = ntohs(nf5_hdr->header.flows);
-    if (nflows == 0 || nflows > NETFLOW5_MAXFLOWS) {
-        logger << log4cpp::Priority::ERROR << "Invalid number of flows in netflow " << nflows;
+    uint32_t number_of_flows = ntohs(netflow5_header->header.flows);
+    if (number_of_flows == 0 || number_of_flows > NETFLOW5_MAXFLOWS) {
+        logger << log4cpp::Priority::ERROR << "Invalid number of flows in Netflow v5 packet: " << number_of_flows;
         return false;
     }
 
-    uint16_t netflow5_sampling_ratio = fast_ntoh(nf5_hdr->sampling_rate);
+    uint16_t netflow5_sampling_ratio = fast_ntoh(netflow5_header->sampling_rate);
 
     // In first two bits we store sampling type.
     // We are not interested in it and should zeroify it for getting correct value
@@ -47,12 +50,18 @@ bool process_netflow_packet_v5(uint8_t* packet, uint32_t len, std::string& clien
         netflow5_sampling_ratio = 1;
     }
 
-    for (uint32_t i = 0; i < nflows; i++) {
-        size_t offset        = NETFLOW5_PACKET_SIZE(i);
-        netflow5_flow_t* nf5_flow = (netflow5_flow_t*)(packet + offset);
+    // Yes, some vendors can mess up with this value and we need option to override it
+    // According to old Cisco's spec 2 bits are reserved for mode what limits us to 14 bits for storing sampling rate
+    // It's enough to carry only <16k of sampling value
+    // For example, Juniper can encode 50 000 sampling rate using two bits from mode which is not documented anywhere
+    // Juniper's docs think that this field is reserved https://www.juniper.net/documentation/en_US/junos/topics/reference/general/flowmonitoring-output-formats-version5-solutions.html
 
-        /* Check packet bounds */
-        if (offset + sizeof(netflow5_flow_t) > len) {
+    for (uint32_t i = 0; i < number_of_flows; i++) {
+        size_t offset                        = NETFLOW5_PACKET_SIZE(i);
+        const netflow5_flow_t* netflow5_flow = (const netflow5_flow_t*)(packet + offset);
+
+        // Check packet bounds
+        if (offset + sizeof(netflow5_flow_t) > packet_length) {
             logger << log4cpp::Priority::ERROR << "Error! You will try to read outside the Netflow v5 packet";
             return false;
         }
@@ -60,37 +69,29 @@ bool process_netflow_packet_v5(uint8_t* packet, uint32_t len, std::string& clien
         netflow_ipfix_all_protocols_total_flows++;
         netflow_v5_total_flows++;
 
-        /* Decode to host encoding */
-        // TODO: move to separate function
-        nf5_flow->flow_octets  = fast_ntoh(nf5_flow->flow_octets);
-        nf5_flow->flow_packets = fast_ntoh(nf5_flow->flow_packets);
-
-        // Convert to little endian
-        nf5_flow->if_index_in  = fast_ntoh(nf5_flow->if_index_in);
-        nf5_flow->if_index_out = fast_ntoh(nf5_flow->if_index_out);
-
         // convert netflow to simple packet form
         simple_packet_t current_packet;
-        current_packet.source = NETFLOW;
+        current_packet.source       = NETFLOW;
+        current_packet.arrival_time = current_inaccurate_time;
 
         current_packet.agent_ip_address = client_ipv4_address;
 
-        current_packet.src_ip     = nf5_flow->src_ip;
-        current_packet.dst_ip     = nf5_flow->dest_ip;
-        current_packet.ts.tv_sec  = ntohl(nf5_hdr->time_sec);
-        current_packet.ts.tv_usec = ntohl(nf5_hdr->time_nanosec);
-        current_packet.flags      = 0;
+        current_packet.src_ip     = netflow5_flow->src_ip;
+        current_packet.dst_ip     = netflow5_flow->dest_ip;
+        current_packet.ts.tv_sec  = ntohl(netflow5_header->time_sec);
+        current_packet.ts.tv_usec = ntohl(netflow5_header->time_nanosec);
+        current_packet.flags      = 0; //-V1048
 
         // If we have ASN information it should not be zero
-        current_packet.src_asn = fast_ntoh(nf5_flow->src_as);
-        current_packet.dst_asn = fast_ntoh(nf5_flow->dest_as);
+        current_packet.src_asn = fast_ntoh(netflow5_flow->src_as);
+        current_packet.dst_asn = fast_ntoh(netflow5_flow->dest_as);
 
-        // We do not need fast_ntoh here becasue we already converted these fields before
-        current_packet.input_interface  = nf5_flow->if_index_in;
-        current_packet.output_interface = nf5_flow->if_index_out;
+        // We do not need fast_ntoh here because we already converted these fields before
+        current_packet.input_interface  = fast_ntoh(netflow5_flow->if_index_in);
+        current_packet.output_interface = fast_ntoh(netflow5_flow->if_index_out);
 
-        current_packet.source_port      = 0;
-        current_packet.destination_port = 0;
+        current_packet.source_port      = 0; //-V1048
+        current_packet.destination_port = 0; //-V1048
 
         // TODO: we should pass data about "flow" structure of this data
         // It's pretty interesting because according to Cisco's
@@ -98,12 +99,16 @@ bool process_netflow_packet_v5(uint8_t* packet, uint32_t len, std::string& clien
         // In Netflow v5 we have "Total number of Layer 3 bytes in the packets of the flow"
         // TODO: so for full length we should use flow_octets + 14 bytes per each packet for more reliable bandwidth
         // detection
-        current_packet.length            = nf5_flow->flow_octets;
-        current_packet.ip_length         = nf5_flow->flow_octets;
-        current_packet.number_of_packets = nf5_flow->flow_packets;
+        current_packet.length = fast_ntoh(netflow5_flow->flow_octets);
+
+        // Netflow carries only information about number of octets including IP headers and IP payload
+        // which is exactly what we need for ip_length field
+        current_packet.ip_length = current_packet.length;
+
+        current_packet.number_of_packets = fast_ntoh(netflow5_flow->flow_packets);
 
         // This interval in milliseconds, convert it to seconds
-        int64_t interval_length = (fast_ntoh(nf5_flow->flow_finish) - fast_ntoh(nf5_flow->flow_start)) / 1000;
+        int64_t interval_length = (fast_ntoh(netflow5_flow->flow_finish) - fast_ntoh(netflow5_flow->flow_start)) / 1000;
 
         increment_duration_counters_netflow_v5(interval_length);
 
@@ -111,13 +116,13 @@ bool process_netflow_packet_v5(uint8_t* packet, uint32_t len, std::string& clien
         // Wireshark dump approves this idea
         current_packet.sample_ratio = netflow5_sampling_ratio;
 
-        current_packet.source_port      = fast_ntoh(nf5_flow->src_port);
-        current_packet.destination_port = fast_ntoh(nf5_flow->dest_port);
+        current_packet.source_port      = fast_ntoh(netflow5_flow->src_port);
+        current_packet.destination_port = fast_ntoh(netflow5_flow->dest_port);
 
-        // We do not support IPv6 in NetFlow v5 at all
-        current_packet.ip_protocol_version = 4;
+        // We do not support IPv6 in Netflow v5 at all
+        current_packet.ip_protocol_version = 4; //-V1048
 
-        switch (nf5_flow->protocol) {
+        switch (netflow5_flow->protocol) {
         case 1: {
             // ICMP
             current_packet.protocol = IPPROTO_ICMP;
@@ -128,7 +133,7 @@ bool process_netflow_packet_v5(uint8_t* packet, uint32_t len, std::string& clien
             current_packet.protocol = IPPROTO_TCP;
 
             // TODO: flags can be in another format!
-            current_packet.flags = nf5_flow->tcp_flags;
+            current_packet.flags = netflow5_flow->tcp_flags;
         } break;
 
         case 17: {
@@ -143,4 +148,5 @@ bool process_netflow_packet_v5(uint8_t* packet, uint32_t len, std::string& clien
 
     return true;
 }
+
 
