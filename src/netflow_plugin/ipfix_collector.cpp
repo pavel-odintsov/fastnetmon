@@ -160,8 +160,10 @@ bool process_ipfix_options_template(uint8_t* pkt, size_t len, uint32_t source_id
 
     // Add/update template
     bool updated = false;
-    add_update_peer_template(global_ipfix_templates, source_id, template_id, client_addres_in_string_format,
-                             field_template, updated);
+    bool updated_existing_template = false;
+
+    add_update_peer_template(netflow_protocol_version_t::ipfix, global_ipfix_templates, source_id, template_id, client_addres_in_string_format,
+                             field_template, updated, updated_existing_template);
 
     return true;
 }
@@ -228,8 +230,10 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
         field_template.type        = netflow_template_type_t::Data;
 
         bool updated = false;
-        add_update_peer_template(global_ipfix_templates, source_id, template_id, client_addres_in_string_format,
-                                 field_template, updated);
+        bool updated_existing_template = false;
+
+        add_update_peer_template(netflow_protocol_version_t::ipfix, global_ipfix_templates, source_id, template_id, client_addres_in_string_format,
+                                 field_template, updated, updated_existing_template);
     }
 
     return true;

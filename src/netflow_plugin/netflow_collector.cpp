@@ -604,12 +604,14 @@ std::vector<system_counter_t> get_netflow_stats() {
 }
 
 /* Prototypes */
-void add_update_peer_template(std::map<std::string, std::map<uint32_t, template_t>>& table_for_add,
+void add_update_peer_template(const netflow_protocol_version_t& netflow_version,
+                              std::map<std::string, std::map<uint32_t, template_t>>& table_for_add,
                               uint32_t source_id,
                               uint32_t template_id,
                               const std::string& client_addres_in_string_format,
-                              template_t& field_template,
-                              bool& updated);
+                              const template_t& field_template,
+                              bool& updated,
+                              bool& updated_existing_template);
 
 // This class carries information which does not need to stay in simple_packet_t because we need it only for parsing
 class netflow_meta_info_t {
@@ -703,12 +705,14 @@ template_t* peer_nf10_find_template(uint32_t source_id, uint32_t template_id, st
     return peer_find_template(global_ipfix_templates, source_id, template_id, client_addres_in_string_format);
 }
 
-void add_update_peer_template(std::map<std::string, std::map<uint32_t, template_t>>& table_for_add,
+void add_update_peer_template(const netflow_protocol_version_t& netflow_version,
+                              std::map<std::string, std::map<uint32_t, template_t>>& table_for_add,
                               uint32_t source_id,
                               uint32_t template_id,
                               const std::string& client_addres_in_string_format,
-                              template_t& field_template,
-                              bool& updated) {
+                              const template_t& field_template,
+                              bool& updated,
+                              bool& updated_existing_template) {
 
     std::string key = client_addres_in_string_format + "_" + std::to_string(source_id);
 

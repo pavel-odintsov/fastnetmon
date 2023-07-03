@@ -1,10 +1,11 @@
 // This function reads all available options templates
 // http://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
-bool process_netflow_v9_options_template(uint8_t* pkt, size_t len, uint32_t source_id, const std::string& client_addres_in_string_format) {
-    netflow9_options_header_common_t* options_template_header = (netflow9_options_header_common_t*)pkt;
+bool process_netflow_v9_options_template(const uint8_t* pkt, size_t flowset_length, uint32_t source_id, const std::string& client_addres_in_string_format) {
+    const netflow9_options_header_common_t* options_template_header = (const netflow9_options_header_common_t*)pkt;
 
-    if (len < sizeof(*options_template_header)) {
-        logger << log4cpp::Priority::ERROR << "Short Netflow v9 options template header " << len << " bytes";
+    if (flowset_length < sizeof(*options_template_header)) {
+        logger << log4cpp::Priority::ERROR << "Short Netflow v9 options template header " << flowset_length
+               << " bytes agent IP: " << client_addres_in_string_format;
         return false;
     }
 
@@ -13,27 +14,31 @@ bool process_netflow_v9_options_template(uint8_t* pkt, size_t len, uint32_t sour
                << "Function process_netflow_v9_options_template "
                   "expects only NETFLOW9_OPTIONS_FLOWSET_ID but got "
                   "another id: "
-               << ntohs(options_template_header->flowset_id);
+               << ntohs(options_template_header->flowset_id) << " agent IP: " << client_addres_in_string_format;
         return false;
     }
 
-    netflow9_options_header_t* options_nested_header = (netflow9_options_header_t*)(pkt + sizeof(*options_template_header));
+    const netflow9_options_header_t* options_nested_header =
+        (const netflow9_options_header_t*)(pkt + sizeof(*options_template_header));
 
 
-    if (len < sizeof(*options_template_header) + sizeof(*options_nested_header)) {
-        logger << log4cpp::Priority::ERROR << "Could not read specific header for netflow v9 options template";
+    if (flowset_length < sizeof(*options_template_header) + sizeof(*options_nested_header)) {
+        logger << log4cpp::Priority::ERROR << "Could not read specific header for Netflow v9 options template. "
+               << " Agent IP: " << client_addres_in_string_format;
         return false;
     }
 
     uint16_t template_id = fast_ntoh(options_nested_header->template_id);
 
-    if (len < sizeof(*options_template_header) + sizeof(*options_nested_header) + fast_ntoh(options_nested_header->option_scope_length)) {
-        logger << log4cpp::Priority::ERROR << "Could not read specific header for netflow v9 options template: need more space for scope";
+    if (flowset_length < sizeof(*options_template_header) + sizeof(*options_nested_header) +
+                             fast_ntoh(options_nested_header->option_scope_length)) {
+        logger << log4cpp::Priority::ERROR << "Could not read specific header for Netflow v9 options template: need more space for scope"
+               << " agent IP: " << client_addres_in_string_format;
         return false;
     }
 
     // I'm going to skip scope processing right now
-    uint8_t* zone_address = pkt + sizeof(*options_template_header) + sizeof(*options_nested_header);
+    const uint8_t* zone_address = pkt + sizeof(*options_template_header) + sizeof(*options_nested_header);
 
     uint32_t scopes_offset     = 0;
     uint32_t scopes_total_size = 0;
@@ -46,7 +51,7 @@ bool process_netflow_v9_options_template(uint8_t* pkt, size_t len, uint32_t sour
         scopes_offset += sizeof(*tmplr);
     }
 
-    uint8_t* zone_address_without_skopes = zone_address + fast_ntoh(options_nested_header->option_scope_length);
+    const uint8_t* zone_address_without_skopes = zone_address + fast_ntoh(options_nested_header->option_scope_length);
 
     uint32_t offset         = 0;
     uint32_t records_number = 0;
@@ -56,7 +61,8 @@ bool process_netflow_v9_options_template(uint8_t* pkt, size_t len, uint32_t sour
 
     for (; offset < fast_ntoh(options_nested_header->option_length);) {
         records_number++;
-        netflow9_template_flowset_record_t* tmplr = (netflow9_template_flowset_record_t*)(zone_address_without_skopes + offset);
+        const netflow9_template_flowset_record_t* tmplr =
+            (const netflow9_template_flowset_record_t*)(zone_address_without_skopes + offset);
 
         uint32_t record_type   = fast_ntoh(tmplr->type);
         uint32_t record_length = fast_ntoh(tmplr->length);
@@ -72,26 +78,33 @@ bool process_netflow_v9_options_template(uint8_t* pkt, size_t len, uint32_t sour
         total_size += record_length;
     }
 
-    template_t field_template;
+    template_t field_template{};
 
-    field_template.template_id = template_id;
-    field_template.records     = template_records_map;
-    field_template.num_records = records_number;
-    field_template.total_length   = total_size + scopes_total_size;
-    field_template.type        = netflow_template_type_t::Options;
-
+    field_template.template_id  = template_id;
+    field_template.records      = template_records_map;
+    field_template.num_records  = records_number;
+    field_template.total_length = total_size + scopes_total_size;
+    field_template.type         = netflow_template_type_t::Options;
     field_template.option_scope_length = scopes_total_size;
 
-    // logger << log4cpp::Priority::INFO << "Read options template:" << print_template_t(field_template);
+    // We need to know when we received it
+    field_template.timestamp = current_inaccurate_time;
+
+    // logger << log4cpp::Priority::INFO << "Read options template:" << print_template(field_template);
 
     // Add/update template
-    bool updated = false;
-    add_update_peer_template(global_netflow9_templates, source_id, template_id, client_addres_in_string_format,
-                             field_template, updated);
+    bool updated                   = false;
+    bool updated_existing_template = false;
+
+    add_update_peer_template(netflow_protocol_version_t::netflow_v9, global_netflow9_templates, source_id, template_id, client_addres_in_string_format,
+                             field_template, updated, updated_existing_template);
+
+    if (updated_existing_template) {
+        netflow_v9_template_data_updates++;
+    }
 
     return true;
 }
-
 
 bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, const std::string& client_addres_in_string_format, uint64_t flowset_number) {
     netflow9_flowset_header_common_t* template_header = (netflow9_flowset_header_common_t*)pkt;
@@ -160,8 +173,10 @@ bool process_netflow_v9_template(uint8_t* pkt, size_t len, uint32_t source_id, c
 
         // Add/update template
         bool updated = false;
-        add_update_peer_template(global_netflow9_templates, source_id, template_id, client_addres_in_string_format,
-                                 field_template, updated);
+        bool updated_existing_template = false;
+
+        add_update_peer_template(netflow_protocol_version_t::netflow_v9, global_netflow9_templates, source_id, template_id, client_addres_in_string_format,
+                                 field_template, updated, updated_existing_template);
     }
 
     // for (auto elem: global_netflow9_templates) {
