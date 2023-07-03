@@ -191,7 +191,7 @@ bool be_copy_function(uint8_t* data, uint8_t* target, uint32_t target_field_leng
         BE_COPY(packet.flow_field);                 \
         break
 
-int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data, simple_packet_t& packet, netflow_meta_info_t& flow_meta) {
+int netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data, simple_packet_t& packet, netflow_meta_info_t& flow_meta) {
     /* XXX: use a table-based interpreter */
     switch (record_type) {
         V9_FIELD(NETFLOW9_IN_BYTES, OCTETS, length);
@@ -408,7 +408,7 @@ int nf9_rec_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data,
 
 
 // Read options data packet with known template
-void nf9_options_flowset_to_store(uint8_t* pkt, size_t len, netflow9_header_t* nf9_hdr, template_t* flow_template, std::string client_addres_in_string_format) {
+void netflow9_options_flowset_to_store(uint8_t* pkt, size_t len, netflow9_header_t* nf9_hdr, template_t* flow_template, std::string client_addres_in_string_format) {
     // Skip scope fields, I really do not want to parse this informations
     pkt += flow_template->option_scope_length;
     // logger << log4cpp::Priority::ERROR << "We have following length for option_scope_length " <<
@@ -502,7 +502,7 @@ void increment_duration_counters_netflow_v9(int64_t duration) {
 }
 
 
-void nf9_flowset_to_store(uint8_t* pkt,
+void netflow9_flowset_to_store(uint8_t* pkt,
                           size_t len,
                           netflow9_header_t* nf9_hdr,
                           std::vector<template_record_t>& template_records,
@@ -549,7 +549,7 @@ void nf9_flowset_to_store(uint8_t* pkt,
         uint32_t record_type   = iter->record_type;
         uint32_t record_length = iter->record_length;
 
-        int nf9_rec_to_flow_result = nf9_rec_to_flow(record_type, record_length, pkt + offset, packet, flow_meta);
+        int nf9_rec_to_flow_result = netflow9_record_to_flow(record_type, record_length, pkt + offset, packet, flow_meta);
         // logger<< log4cpp::Priority::INFO<<"Read data with type: "<<record_type<<"
         // and
         // length:"<<record_length;
@@ -708,7 +708,7 @@ int process_netflow_v9_data(uint8_t* pkt,
     if (flowset_template->type == netflow_template_type_t::Data) {
         for (uint32_t i = 0; i < num_flowsets; i++) {
             // process whole flowset
-            nf9_flowset_to_store(pkt + offset, flowset_template->total_length, nf9_hdr, flowset_template->records,
+            netflow9_flowset_to_store(pkt + offset, flowset_template->total_length, nf9_hdr, flowset_template->records,
                                  client_addres_in_string_format, client_ipv4_address);
 
             offset += flowset_template->total_length;
@@ -726,7 +726,7 @@ int process_netflow_v9_data(uint8_t* pkt,
             }
 
             // logger << log4cpp::Priority::INFO << "Process flowset: " << i;
-            nf9_options_flowset_to_store(pkt + offset, flowset_template->total_length, nf9_hdr, flowset_template,
+            netflow9_options_flowset_to_store(pkt + offset, flowset_template->total_length, nf9_hdr, flowset_template,
                                          client_addres_in_string_format);
 
             offset += flowset_template->total_length;
