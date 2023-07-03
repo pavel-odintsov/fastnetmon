@@ -1,3 +1,4 @@
+void update_ipfix_sampling_rate(uint32_t sampling_rate, const std::string& client_addres_in_string_format);
 
 // https://tools.ietf.org/html/rfc5101#page-18
 bool process_ipfix_options_template(const uint8_t* pkt, size_t flowset_length, uint32_t source_id, const std::string& client_addres_in_string_format) {
@@ -682,24 +683,29 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, const ui
 }
 
 
-// Read options data packet with known templat
-bool ipfix_options_flowset_to_store(uint8_t* pkt, size_t len, ipfix_header_t* nf10_hdr, template_t* flow_template, std::string client_addres_in_string_format) {
-    // Skip scope fields, I really do not want to parse this informations
+// Read options data packet with known template
+bool ipfix_options_flowset_to_store(const uint8_t* pkt,
+                                    const ipfix_header_t* ipfix_header,
+                                    const template_t* flow_template,
+                                    const std::string& client_addres_in_string_format) {
+    // Skip scope fields, I really do not want to parse this information
     pkt += flow_template->option_scope_length;
-
-    auto template_records = flow_template->records;
 
     uint32_t sampling_rate = 0;
     uint32_t offset        = 0;
 
-    for (auto elem : template_records) {
-        uint8_t* data_shift = pkt + offset;
+    device_timeouts_t device_timeouts{};
+
+    for (const auto& elem : flow_template->records) {
+        const uint8_t* data_shift = pkt + offset;
 
         // Time to extract sampling rate
         if (elem.record_type == IPFIX_SAMPLING_INTERVAL) {
             // RFC suggest that this field is 4 byte: https://www.iana.org/assignments/ipfix/ipfix.xhtml
             if (elem.record_length > sizeof(sampling_rate)) {
                 logger << log4cpp::Priority::ERROR << "Unexpectedly big size for IPFIX_SAMPLING_INTERVAL: " << elem.record_length;
+                ipfix_too_large_field++;
+
                 return false;
             }
 
@@ -715,6 +721,8 @@ bool ipfix_options_flowset_to_store(uint8_t* pkt, size_t len, ipfix_header_t* nf
             if (elem.record_length > sizeof(sampling_rate)) {
                 logger << log4cpp::Priority::ERROR
                        << "Unexpectedly big size for IPFIX_SAMPLING_PACKET_INTERVAL: " << elem.record_length;
+                ipfix_too_large_field++;
+
                 return false;
             }
 
@@ -724,32 +732,60 @@ bool ipfix_options_flowset_to_store(uint8_t* pkt, size_t len, ipfix_header_t* nf
                 logger << log4cpp::Priority::ERROR << "Prevented attempt to read outside of allowed memory region for IPFIX_SAMPLING_PACKET_INTERVAL";
                 return false;
             }
+        } else if (elem.record_type == IPFIX_SAMPLING_PACKET_SPACE) {
+            uint32_t sampling_packet_space = 0;
+
+            // RFC requires this field to be 4 byte long
+            if (elem.record_length == 4) {
+                memcpy(&sampling_packet_space, data_shift, elem.record_length);
+
+                sampling_packet_space = fast_ntoh(sampling_packet_space);
+            } else {
+                logger << log4cpp::Priority::DEBUG << "Unexpected size for IPFIX_SAMPLING_PACKET_SPACE: " << elem.record_length;
+                ipfix_too_large_field++;
+
+                // We're OK to continue process, we should not stop it
+            }
+
+        } else if (elem.record_type == IPFIX_ACTIVE_TIMEOUT) {
+            uint16_t active_timeout = 0;
+
+            // J MX204 with JunOS 19 encodes it with 2 bytes as RFC requires
+            if (elem.record_length == 2) {
+                memcpy(&active_timeout, data_shift, elem.record_length);
+                active_timeout = fast_ntoh(active_timeout);
+
+                ipfix_active_flow_timeout_received++;
+                device_timeouts.active_timeout = active_timeout;
+                // logger << log4cpp::Priority::DEBUG << "Got active timeout: " << active_timeout << " seconds";
+            } else {
+                ipfix_too_large_field++;
+            }
+
+        } else if (elem.record_type == IPFIX_INACTIVE_TIMEOUT) {
+            uint16_t inactive_timeout = 0;
+
+            // J MX204 with JunOS 19 encodes it with 2 bytes as RFC requires
+            if (elem.record_length == 2) {
+                memcpy(&inactive_timeout, data_shift, elem.record_length);
+                inactive_timeout = fast_ntoh(inactive_timeout);
+
+                ipfix_inactive_flow_timeout_received++;
+                device_timeouts.inactive_timeout = inactive_timeout;
+                // logger << log4cpp::Priority::DEBUG << "Got inactive timeout: " << inactive_timeout << " seconds";
+            } else {
+                ipfix_too_large_field++;
+            }
         }
 
         offset += elem.record_length;
     }
 
-    if (sampling_rate != 0) {
-        auto new_sampling_rate = fast_ntoh(sampling_rate);
+    update_ipfix_sampling_rate(sampling_rate, client_addres_in_string_format);
 
-        ipfix_custom_sampling_rate_received++;
-
-        logger << log4cpp::Priority::DEBUG << "I extracted sampling rate: " << new_sampling_rate << " for "
-               << client_addres_in_string_format;
-
-        // Replace old sampling rate value
-        std::lock_guard<std::mutex> lock(ipfix_sampling_rates_mutex);
-        auto old_sampling_rate = ipfix_sampling_rates[client_addres_in_string_format];
-
-        if (old_sampling_rate != new_sampling_rate) {
-            ipfix_sampling_rates[client_addres_in_string_format] = new_sampling_rate;
-
-            ipfix_sampling_rate_changes++;
-
-            logger << log4cpp::Priority::DEBUG << "Change IPFIX sampling rate from " << old_sampling_rate << " to "
-                   << new_sampling_rate << " for " << client_addres_in_string_format;
-        }
-    }
+    // Update flow timeouts in our store
+    update_device_flow_timeouts(device_timeouts, ipfix_per_device_flow_timeouts_mutex, ipfix_per_device_flow_timeouts,
+                                client_addres_in_string_format, netflow_protocol_version_t::ipfix);
 
     return true;
 }
@@ -959,7 +995,7 @@ bool process_ipfix_data(uint8_t* pkt,
         }
 
         // Process options packet
-        ipfix_options_flowset_to_store(pkt + offset, flowset_template->total_length, nf10_hdr, flowset_template,
+        ipfix_options_flowset_to_store(pkt + offset, nf10_hdr, flowset_template,
                                       client_addres_in_string_format);
     }
 
@@ -1055,3 +1091,50 @@ bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string
     return true;
 }
 
+
+void update_ipfix_sampling_rate(uint32_t sampling_rate, const std::string& client_addres_in_string_format) {
+    if (sampling_rate == 0) {
+        return;
+    }
+
+    // NB! Incoming sampling rate is big endian / network byte order
+    auto new_sampling_rate = fast_ntoh(sampling_rate);
+
+    ipfix_custom_sampling_rate_received++;
+
+    logger << log4cpp::Priority::DEBUG << "I extracted sampling rate: " << new_sampling_rate << " for " << client_addres_in_string_format;
+
+    bool any_changes_for_sampling = false;
+
+    {
+        // Replace old sampling rate value
+        std::lock_guard<std::mutex> lock(ipfix_sampling_rates_mutex);
+
+        auto known_sampling_rate = ipfix_sampling_rates.find(client_addres_in_string_format);
+
+        if (known_sampling_rate == ipfix_sampling_rates.end()) {
+            // We had no sampling rates before
+            ipfix_sampling_rates[client_addres_in_string_format] = new_sampling_rate;
+
+            ipfix_sampling_rate_changes++;
+
+            logger << log4cpp::Priority::INFO << "Learnt new IPFIX sampling rate " << new_sampling_rate << " for "
+                   << client_addres_in_string_format;
+
+            any_changes_for_sampling = true;
+        } else {
+            auto old_sampling_rate = known_sampling_rate->second;
+
+            if (old_sampling_rate != new_sampling_rate) {
+                ipfix_sampling_rates[client_addres_in_string_format] = new_sampling_rate;
+
+                ipfix_sampling_rate_changes++;
+
+                logger << log4cpp::Priority::INFO << "Detected IPFIX sampling rate change from " << old_sampling_rate << " to "
+                       << new_sampling_rate << " for " << client_addres_in_string_format;
+
+                any_changes_for_sampling = true;
+            }
+        }
+    }
+}
