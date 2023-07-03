@@ -1340,21 +1340,20 @@ void netflow9_flowset_to_store(const uint8_t* pkt,
     netflow_process_func_ptr(packet);
 }
 
-
-int process_netflow_v9_data(uint8_t* pkt,
-                            size_t len,
-                            netflow9_header_t* nf9_hdr,
-                            uint32_t source_id,
-                            std::string& client_addres_in_string_format,
-                            uint32_t client_ipv4_address) {
-    netflow9_data_flowset_header_t* dath = (netflow9_data_flowset_header_t*)pkt;
+bool process_netflow_v9_data(const uint8_t* pkt,
+                             size_t flowset_length,
+                             const netflow9_header_t* netflow9_header,
+                             uint32_t source_id,
+                             const std::string& client_addres_in_string_format,
+                             uint32_t client_ipv4_address) {
+    const netflow9_data_flowset_header_t* dath = (const netflow9_data_flowset_header_t*)pkt;
 
     // Store packet end, it's useful for sanity checks
-    uint8_t* packet_end = pkt + len;
+    const uint8_t* packet_end = pkt + flowset_length;
 
-    if (len < sizeof(*dath)) {
-        logger << log4cpp::Priority::INFO << "Short netflow v9 data flowset header";
-        return 1;
+    if (flowset_length < sizeof(*dath)) {
+        logger << log4cpp::Priority::INFO << "Short Netflow v9 data flowset header";
+        return false;
     }
 
     // uint32_t is a 4 byte integer. Any reason why we convert here 16 bit flowset_id to 32 bit? ... Strange
@@ -1363,9 +1362,10 @@ int process_netflow_v9_data(uint8_t* pkt,
     // "<<flowset_id;
 
     // We should find template here
-    template_t* flowset_template = peer_nf9_find_template(source_id, flowset_id, client_addres_in_string_format);
+    const template_t* field_template =
+        peer_find_template(global_netflow9_templates, source_id, flowset_id, client_addres_in_string_format);
 
-    if (flowset_template == NULL) {
+    if (field_template == NULL) {
         netflow9_packets_with_unknown_templates++;
 
         logger << log4cpp::Priority::DEBUG << "We don't have a Netflow 9 template for flowset_id: " << flowset_id
@@ -1373,94 +1373,96 @@ int process_netflow_v9_data(uint8_t* pkt,
                << " but it's not an error if this message disappears in 5-10 "
                   "seconds. We need some "
                   "time to learn it!";
-        return 0;
+        return true;
     }
 
-    if (flowset_template->records.empty()) {
+    if (field_template->records.empty()) {
         logger << log4cpp::Priority::ERROR << "Blank records in template";
-        return 1;
+        return false;
     }
 
     uint32_t offset       = sizeof(*dath);
-    uint32_t num_flowsets = (len - offset) / flowset_template->total_length;
+    uint32_t num_flowsets = (flowset_length - offset) / field_template->total_length;
 
     if (num_flowsets == 0 || num_flowsets > 0x4000) {
         logger << log4cpp::Priority::ERROR << "Invalid number of data flowsets, strange number of flows: " << num_flowsets;
-        return 1;
+        return false;
     }
 
-    if (flowset_template->type == netflow_template_type_t::Data) {
+    if (field_template->type == netflow_template_type_t::Data) {
         for (uint32_t i = 0; i < num_flowsets; i++) {
             // process whole flowset
-            netflow9_flowset_to_store(pkt + offset, nf9_hdr, flowset_template->records,
-                                 client_addres_in_string_format, client_ipv4_address);
+            netflow9_flowset_to_store(pkt + offset, netflow9_header, field_template->records,
+                                      client_addres_in_string_format, client_ipv4_address);
 
-            offset += flowset_template->total_length;
+            offset += field_template->total_length;
         }
-    } else if (flowset_template->type == netflow_template_type_t::Options) {
+    } else if (field_template->type == netflow_template_type_t::Options) {
         // logger << log4cpp::Priority::INFO << "I have " << num_flowsets << " flowsets here";
-        // logger << log4cpp::Priority::INFO << "Flowset template total length: " << flowset_template->total_length;
+        // logger << log4cpp::Priority::INFO << "Flowset template total length: " << field_template->total_length;
 
         netflow9_options_packet_number++;
 
         for (uint32_t i = 0; i < num_flowsets; i++) {
-            if (pkt + offset + flowset_template->total_length > packet_end) {
+            if (pkt + offset + field_template->total_length > packet_end) {
                 logger << log4cpp::Priority::ERROR << "We tried to read data outside packet end";
-                return 1;
+                return false;
             }
 
             // logger << log4cpp::Priority::INFO << "Process flowset: " << i;
-            netflow9_options_flowset_to_store(pkt + offset, nf9_hdr, flowset_template,
-                                         client_addres_in_string_format);
+            netflow9_options_flowset_to_store(pkt + offset, netflow9_header, field_template, client_addres_in_string_format);
 
-            offset += flowset_template->total_length;
+            offset += field_template->total_length;
         }
     }
 
-    return 0;
+    return true;
 }
 
+bool process_netflow_packet_v9(const uint8_t* packet,
+                               uint32_t packet_length,
+                               const std::string& client_addres_in_string_format,
+                               uint32_t client_ipv4_address) {
+    // logger<< log4cpp::Priority::INFO<<"We got Netflow  v9 packet!";
 
-bool process_netflow_packet_v9(uint8_t* packet, uint32_t len, std::string& client_addres_in_string_format, uint32_t client_ipv4_address) {
-    // logger<< log4cpp::Priority::INFO<<"We get v9 netflow packet!";
+    const netflow9_header_t* netflow9_header = (const netflow9_header_t*)packet;
 
-    netflow9_header_t* nf9_hdr                = (netflow9_header_t*)packet;
-    netflow9_flowset_header_common_t* flowset = nullptr;
-
-    if (len < sizeof(*nf9_hdr)) {
-        logger << log4cpp::Priority::ERROR << "Short Netflow v9 header";
+    if (packet_length < sizeof(*netflow9_header)) {
+        logger << log4cpp::Priority::ERROR << "Short Netflow v9 header. "
+               << " Agent IP:" << client_addres_in_string_format;
         return false;
     }
 
-    uint32_t flowset_count_total = ntohs(nf9_hdr->header.flowset_number);
+    // Number of flow sets in packet, each flow set may carry multiple flows
+    uint32_t flowset_count_total = ntohs(netflow9_header->header.flowset_number);
 
     // Limit reasonable number of flow sets per packet
     if (flowset_count_total > flowsets_per_packet_maximum_number) {
         logger << log4cpp::Priority::ERROR << "We have so many flowsets inside Netflow v9 packet: " << flowset_count_total
                << " Agent IP:" << client_addres_in_string_format;
+
         return false;
     }
 
-    uint32_t source_id = ntohl(nf9_hdr->source_id);
+    uint32_t source_id = ntohl(netflow9_header->source_id);
+    uint32_t offset    = sizeof(*netflow9_header);
+
     // logger<< log4cpp::Priority::INFO<<"Template source id: "<<source_id;
-
-    uint32_t offset = sizeof(*nf9_hdr);
-
     // logger<< log4cpp::Priority::INFO<< "Total flowsets " << flowset_count_total;
 
     for (uint32_t flowset_number = 0; flowset_number < flowset_count_total; flowset_number++) {
-        /* Make sure we don't run off the end of the flow */
-        if (offset >= len) {
+        // Make sure we don't run off the end of the flow
+        if (offset >= packet_length) {
             logger << log4cpp::Priority::ERROR
                    << "We tried to read from address outside Netflow packet agent IP:" << client_addres_in_string_format
                    << " flowset number: " << flowset_number;
             return false;
         }
 
-        flowset = (netflow9_flowset_header_common_t*)(packet + offset);
+        const netflow9_flowset_header_common_t* flowset = (const netflow9_flowset_header_common_t*)(packet + offset);
 
-        uint32_t flowset_id  = ntohs(flowset->flowset_id);
-        uint32_t flowset_len = ntohs(flowset->length);
+        uint32_t flowset_id     = ntohs(flowset->flowset_id);
+        uint32_t flowset_length = ntohs(flowset->length);
 
         /*
          * Yes, this is a near duplicate of the short packet check
@@ -1469,10 +1471,10 @@ bool process_netflow_packet_v9(uint8_t* packet, uint32_t len, std::string& clien
          * handlers below.
          */
 
-        if (offset + flowset_len > len) {
+        if (offset + flowset_length > packet_length) {
             logger << log4cpp::Priority::ERROR << "We tried to read from address outside Netflow's packet flowset agent IP: "
                    << client_addres_in_string_format << " flowset number: " << flowset_number
-                   << " flowset_id: " << flowset_id << " flowset_length: " << flowset_len;
+                   << " flowset_id: " << flowset_id << " flowset_length: " << flowset_length;
             return false;
         }
 
@@ -1480,13 +1482,13 @@ bool process_netflow_packet_v9(uint8_t* packet, uint32_t len, std::string& clien
         case NETFLOW9_TEMPLATE_FLOWSET_ID:
             netflow9_data_templates_number++;
             // logger<< log4cpp::Priority::INFO<<"We read template";
-            if (!process_netflow_v9_template(packet + offset, flowset_len, source_id, client_addres_in_string_format, flowset_number)) {
+            if (!process_netflow_v9_template(packet + offset, flowset_length, source_id, client_addres_in_string_format, flowset_number)) {
                 return false;
             }
             break;
         case NETFLOW9_OPTIONS_FLOWSET_ID:
             netflow9_options_templates_number++;
-            if (!process_netflow_v9_options_template(packet + offset, flowset_len, source_id, client_addres_in_string_format)) {
+            if (!process_netflow_v9_options_template(packet + offset, flowset_length, source_id, client_addres_in_string_format)) {
                 return false;
             }
             break;
@@ -1500,8 +1502,8 @@ bool process_netflow_packet_v9(uint8_t* packet, uint32_t len, std::string& clien
             netflow9_data_packet_number++;
             // logger<< log4cpp::Priority::INFO<<"We read data";
 
-            if (process_netflow_v9_data(packet + offset, flowset_len, nf9_hdr, source_id,
-                                        client_addres_in_string_format, client_ipv4_address) != 0) {
+            if (!process_netflow_v9_data(packet + offset, flowset_length, netflow9_header, source_id,
+                                         client_addres_in_string_format, client_ipv4_address) != 0) {
                 // logger<< log4cpp::Priority::ERROR<<"Can't process function
                 // process_netflow_v9_data correctly";
                 netflow_v9_broken_packets++;
@@ -1511,10 +1513,11 @@ bool process_netflow_packet_v9(uint8_t* packet, uint32_t len, std::string& clien
             break;
         }
 
-        // This logic will stop processing if we've reached end of flow set setction before reading all flow sets
-        // It's not reliable to use alone because we may have garbadge at the end of packet. That's why we have loop over number of flowset records as main condition.
-        offset += flowset_len;
-        if (offset == len) {
+        // This logic will stop processing if we've reached end of flow set section before reading all flow sets
+        // It's not reliable to use alone because we may have garbage at the end of packet. That's why we have loop over number of flowset records as main condition.
+        offset += flowset_length;
+
+        if (offset == packet_length) {
             break;
         }
     }
