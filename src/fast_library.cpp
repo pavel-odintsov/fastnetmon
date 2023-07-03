@@ -787,6 +787,19 @@ std::string convert_prefix_to_string_representation(prefix_t* prefix) {
 // It could not be on start or end of the line
 boost::regex ipv6_address_compression_algorithm("(0000:){2,}");
 
+// Returns true when all octets of IP address are set to zero
+bool is_zero_ipv6_address(const in6_addr& ipv6_address) {
+    const uint8_t* b = ipv6_address.s6_addr;
+
+    if (b[0] == 0 && b[1] == 0 && b[2] == 0 && b[3] == 0 && b[4] == 0 && b[5] == 0 && b[6] == 0 && b[7] == 0 &&
+        b[8] == 0 && b[9] == 0 && b[10] == 0 && b[11] == 0 && b[12] == 0 && b[13] == 0 && b[14] == 0 && b[15] == 0) {
+        return true;
+    }
+
+    return false;
+}
+
+
 std::string print_ipv6_address(const in6_addr& ipv6_address) {
     char buffer[128];
 

@@ -696,6 +696,38 @@ template_t* peer_find_template(std::map<std::string, std::map<uint32_t, template
     }
 }
 
+// Overrides some fields from specified nested packet
+void override_packet_fields_from_nested_packet(simple_packet_t& packet, const simple_packet_t& nested_packet) {
+    // Copy IP addresses
+    packet.src_ip = nested_packet.src_ip;
+    packet.dst_ip = nested_packet.dst_ip;
+
+    packet.src_ipv6 = nested_packet.src_ipv6;
+    packet.dst_ipv6 = nested_packet.dst_ipv6;
+
+    packet.ip_protocol_version = nested_packet.ip_protocol_version;
+    packet.ttl                 = nested_packet.ttl;
+
+    // Ports
+    packet.source_port      = nested_packet.source_port;
+    packet.destination_port = nested_packet.destination_port;
+
+    packet.protocol          = nested_packet.protocol;
+    packet.length            = nested_packet.length;
+    packet.ip_length         = nested_packet.ip_length;
+    packet.number_of_packets = 1;
+    packet.flags             = nested_packet.flags;
+    packet.ip_fragmented     = nested_packet.ip_fragmented;
+    packet.ip_dont_fragment  = nested_packet.ip_dont_fragment;
+    packet.vlan              = nested_packet.vlan;
+
+    // Copy Ethernet MAC addresses to main packet structure using native C++ approach to avoid touching memory with memcpy
+    std::copy(std::begin(nested_packet.source_mac), std::end(nested_packet.source_mac), std::begin(packet.source_mac));
+
+    std::copy(std::begin(nested_packet.destination_mac), std::end(nested_packet.destination_mac), std::begin(packet.destination_mac));
+}
+
+
 // Wrapper functions
 template_t* peer_nf9_find_template(uint32_t source_id, uint32_t template_id, std::string client_addres_in_string_format) {
     return peer_find_template(global_netflow9_templates, source_id, template_id, client_addres_in_string_format);

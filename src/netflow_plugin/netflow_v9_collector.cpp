@@ -1127,32 +1127,31 @@ void increment_duration_counters_netflow_v9(int64_t duration) {
     return;
 }
 
-void netflow9_flowset_to_store(uint8_t* pkt,
-                          size_t len,
-                          netflow9_header_t* nf9_hdr,
-                          std::vector<template_record_t>& template_records,
-                          std::string& client_addres_in_string_format,
-                          uint32_t client_ipv4_address) {
+
+void netflow9_flowset_to_store(const uint8_t* pkt,
+                               const netflow9_header_t* netflow9_header,
+                               const std::vector<template_record_t>& template_records,
+                               const std::string& client_addres_in_string_format,
+                               uint32_t client_ipv4_address) {
     // Should be done according to
     // https://github.com/pavel-odintsov/fastnetmon/issues/147
-    // if (template->total_len > len)
+    // if (template->total_length > len)
     //    return 1;
 
-    uint32_t offset = 0;
-
     simple_packet_t packet;
-    packet.source = NETFLOW;
+    packet.source       = NETFLOW;
+    packet.arrival_time = current_inaccurate_time;
 
     packet.agent_ip_address = client_ipv4_address;
 
     // We use shifted values and should process only zeroed values
     // because we are working with little and big endian data in same time
     packet.number_of_packets = 0;
-    packet.ts.tv_sec         = ntohl(nf9_hdr->time_sec);
+    packet.ts.tv_sec         = ntohl(netflow9_header->time_sec);
 
     // By default, assume IPv4 traffic here
     // But code below can switch it to IPv6
-    packet.ip_protocol_version = 4;
+    packet.ip_protocol_version = 4; //-V1048
 
     {
         std::lock_guard<std::mutex> lock(netflow9_sampling_rates_mutex);
@@ -1169,56 +1168,69 @@ void netflow9_flowset_to_store(uint8_t* pkt,
     // Place to keep meta information which is not needed in simple_simple_packet_t structure
     netflow_meta_info_t flow_meta;
 
+    uint32_t offset = 0;
+
     // We should iterate over all available template fields
-    for (std::vector<template_record_t>::iterator iter = template_records.begin(); iter != template_records.end(); iter++) {
+    for (auto iter = template_records.begin(); iter != template_records.end(); iter++) {
         uint32_t record_type   = iter->record_type;
         uint32_t record_length = iter->record_length;
 
-        bool netflow9_rec_to_flow_result = netflow9_record_to_flow(record_type, record_length, pkt + offset, packet, flow_meta, client_addres_in_string_format);
+        bool netflow9_record_to_flow_result = netflow9_record_to_flow(record_type, record_length, pkt + offset, packet, flow_meta, client_addres_in_string_format);
         // logger<< log4cpp::Priority::INFO<<"Read data with type: "<<record_type<<"
         // and
         // length:"<<record_length;
-        if (!netflow9_rec_to_flow_result) {
+        if (!netflow9_record_to_flow_result) {
             return;
         }
 
         offset += record_length;
     }
 
-    bool netflow_lite_flow = false;
+    // logger<< log4cpp::Priority::INFO << "bytes_from_source_to_destination:" << flow_meta.bytes_from_source_to_destination;
+    // logger<< log4cpp::Priority::INFO << "bytes_from_destination_to_source:" << flow_meta.bytes_from_destination_to_source;
+
+    // logger<< log4cpp::Priority::INFO << "packets_from_source_to_destination:" << flow_meta.packets_from_source_to_destination;
+    // logger<< log4cpp::Priority::INFO << "packets_from_destination_to_source:" << flow_meta.packets_from_destination_to_source;
+
+    // logger<< log4cpp::Priority::INFO << "flow_id:" << flow_meta.flow_id;
+
+    // logger<< log4cpp::Priority::INFO << "Data link frame size: " << flow_meta.data_link_frame_size;
+
+    // Use packet length from Netflow Lite data
+    // if (packet.length == 0) {
+    //    packet.length = flow_meta.data_link_frame_size;
+    //}
 
     // If we were able to decode nested packet then it means that it was Netflow Lite and we can overwrite information in packet
     if (flow_meta.nested_packet_parsed) {
-        // Copy IP addresses
-        packet.src_ip = flow_meta.nested_packet.src_ip;
-        packet.dst_ip = flow_meta.nested_packet.dst_ip;
-
-        packet.src_ipv6 = flow_meta.nested_packet.src_ipv6;
-        packet.dst_ipv6 = flow_meta.nested_packet.dst_ipv6;
-
-        packet.ip_protocol_version = flow_meta.nested_packet.ip_protocol_version;
-        packet.ttl                 = flow_meta.nested_packet.ttl;
-
-        // Ports
-        packet.source_port      = flow_meta.nested_packet.source_port;
-        packet.destination_port = flow_meta.nested_packet.destination_port;
-
-        packet.protocol          = flow_meta.nested_packet.protocol;
-        packet.length            = flow_meta.nested_packet.length;
-        packet.ip_length         = flow_meta.nested_packet.ip_length;
-        packet.number_of_packets = 1;
-        packet.flags             = flow_meta.nested_packet.flags;
-        packet.ip_fragmented     = flow_meta.nested_packet.ip_fragmented;
-        packet.ip_dont_fragment  = flow_meta.nested_packet.ip_dont_fragment;
-        packet.vlan              = flow_meta.nested_packet.vlan;
+        // Override most of the fields from nested packet as we need to use them instead
+        override_packet_fields_from_nested_packet(packet, flow_meta.nested_packet);
 
         // Try to calculate sampling rate
         if (flow_meta.selected_packets != 0) {
             packet.sample_ratio = uint32_t(double(flow_meta.observed_packets) / double(flow_meta.selected_packets));
         }
+    }
 
-        // We need to set it to disable logic which populates and decodes data below
-        netflow_lite_flow = true;
+    bool netflow_mark_zero_next_hop_and_zero_output_as_dropped = false;
+
+    if (netflow_mark_zero_next_hop_and_zero_output_as_dropped) {
+        // For Juniper routers we need fancy logic to mark packets as dropped:
+        // https://apps.juniper.net/feature-explorer/feature-info.html?fKey=7679&fn=Enhancements%20to%20inline%20flow%20monitoring
+
+        // We will apply it only if we have no forwarding_status in packet
+        if (!flow_meta.received_forwarding_status) {
+            // We need to confirm that TWO rules are TRUE:
+            // - Output interface is 0
+            // - Next hop for IPv4 is set and set to 0 OR next hop for IPv6 set and set to zero
+            if (packet.output_interface == 0 &&
+                ((flow_meta.ip_next_hop_ipv4_set && flow_meta.ip_next_hop_ipv4 == 0) ||
+                 (is_zero_ipv6_address(flow_meta.bgp_next_hop_ipv6) && flow_meta.bgp_next_hop_ipv6_set))) {
+
+                packet.forwarding_status = forwarding_status_t::dropped;
+                netflow_v9_marked_zero_next_hop_and_zero_output_as_dropped++;
+            }
+        }
     }
 
 
@@ -1226,6 +1238,17 @@ void netflow9_flowset_to_store(uint8_t* pkt,
     netflow_v9_total_flows++;
 
     netflow_ipfix_all_protocols_total_flows++;
+
+    // We may have cases like this from previous step:
+    // :0000:443 > :0000:61444 protocol: tcp flags: psh,ack frag: 0  packets: 1 size: 205 bytes ip size: 205 bytes ttl:
+    // 0 sample ratio: 1000 It happens when router sends IPv4 and zero IPv6 fields in same packet
+    if (packet.ip_protocol_version == 6 && is_zero_ipv6_address(packet.src_ipv6) &&
+        is_zero_ipv6_address(packet.dst_ipv6) && packet.src_ip != 0 && packet.dst_ip != 0) {
+
+        netflow9_protocol_version_adjustments++;
+        packet.ip_protocol_version = 4;
+    }
+
 
     if (packet.ip_protocol_version == 4) {
         netflow_v9_total_ipv4_flows++;
@@ -1242,39 +1265,75 @@ void netflow9_flowset_to_store(uint8_t* pkt,
     // Increments duration counters
     increment_duration_counters_netflow_v9(duration);
 
-    if (!netflow_lite_flow) {
-        // logger<< log4cpp::Priority::INFO<< "Flow start: " << packet.flow_start << " end: " << packet.flow_end << " duration: " << duration;
+    // logger<< log4cpp::Priority::INFO<< "Flow start: " << packet.flow_start << " end: " << packet.flow_end << " duration: " << duration;
 
-        // decode data in network byte order to host byte order
-        packet.length = fast_ntoh(packet.length);
+    // Logical sources of this logic are unknown but I'm sure we had reasons to do so
+    if (packet.protocol == IPPROTO_ICMP) {
+        // Explicitly set ports to zeros even if device sent something in these fields
+        packet.source_port      = 0;
+        packet.destination_port = 0;
+    }
 
-        // It's tricky to distinguish IP length and full packet lenght here. Let's use same.
-        packet.ip_length         = packet.length;
-        packet.number_of_packets = fast_ntoh(packet.number_of_packets);
+    // Logic to handle Cisco ASA Netflow v9. We can identify it by zero values for both packet.length and
+    // packet.number_of_packets fields and presence of meta_info.flow_id
+    if (packet.length == 0 && packet.number_of_packets == 0 && flow_meta.flow_id != 0) {
+        // Very likely we're having deal with Cisco ASA
+        // ASA uses bi-directional flows and we need to generate two simple packets for each single one from Cisco
 
-        packet.protocol = fast_ntoh(packet.protocol);
+        //
+        // Original flow example:
+        // bytes_from_source_to_destination:1687
+        // bytes_from_destination_to_source:2221
+        // packets_from_source_to_destination:12
+        // packets_from_destination_to_source:15
+        //
+        // Examples of two flows generated by this logic:
+        // 71.105.61.155:55819 > 198.252.166.164:443 protocol: tcp flags: - frag: 0  packets: 12 size: 1687 bytes ip
+        // size: 1687 bytes ttl: 0 sample ratio: 1 198.252.166.164:443 > 71.105.61.155:55819 protocol: tcp flags: -
+        // frag: 0  packets: 15 size: 2221 bytes ip size: 2221 bytes ttl: 0 sample ratio: 1
+        //
 
-        // We should convert ports to host byte order too
-        packet.source_port      = fast_ntoh(packet.source_port);
-        packet.destination_port = fast_ntoh(packet.destination_port);
+        packet.length    = flow_meta.bytes_from_source_to_destination;
+        packet.ip_length = packet.length;
 
-        // Set protocol
-        switch (packet.protocol) {
-        case 1: {
-            packet.protocol = IPPROTO_ICMP;
+        packet.number_of_packets = flow_meta.packets_from_source_to_destination;
 
-            packet.source_port      = 0;
-            packet.destination_port = 0;
-        } break;
+        // As ASA's flows are bi-directional we need to create another flow for opposite direction
+        // Create it using original packet before passing it to traffic core for processing as traffic core may alter it
+        simple_packet_t reverse_packet = packet;
 
-        case 6: {
-            packet.protocol = IPPROTO_TCP;
-        } break;
+        // Send first packet for processing
+        netflow_process_func_ptr(packet);
 
-        case 17: {
-            packet.protocol = IPPROTO_UDP;
-        } break;
-        }
+        // Use another set of length and packet counters
+        reverse_packet.length    = flow_meta.bytes_from_destination_to_source;
+        reverse_packet.ip_length = reverse_packet.length;
+
+        reverse_packet.number_of_packets = flow_meta.packets_from_destination_to_source;
+
+        // Swap IPv4 IPs
+        std::swap(reverse_packet.src_ip, reverse_packet.dst_ip);
+
+        // Swap IPv6 IPs
+        std::swap(reverse_packet.src_ipv6, reverse_packet.dst_ipv6);
+
+        // Swap ports
+        std::swap(reverse_packet.source_port, reverse_packet.destination_port);
+
+        // Swap interfaces
+        std::swap(reverse_packet.input_interface, reverse_packet.output_interface);
+
+        // Swap ASNs
+        std::swap(reverse_packet.src_asn, reverse_packet.dst_asn);
+
+        // Swap countries
+        std::swap(reverse_packet.src_country, reverse_packet.dst_country);
+
+        // Send it for processing
+        netflow_process_func_ptr(reverse_packet);
+
+        // Stop processing here as this logic is very special and I do not think that we have dropped support for ASA
+        return;
     }
 
     // pass data to FastNetMon
@@ -1333,7 +1392,7 @@ int process_netflow_v9_data(uint8_t* pkt,
     if (flowset_template->type == netflow_template_type_t::Data) {
         for (uint32_t i = 0; i < num_flowsets; i++) {
             // process whole flowset
-            netflow9_flowset_to_store(pkt + offset, flowset_template->total_length, nf9_hdr, flowset_template->records,
+            netflow9_flowset_to_store(pkt + offset, nf9_hdr, flowset_template->records,
                                  client_addres_in_string_format, client_ipv4_address);
 
             offset += flowset_template->total_length;
