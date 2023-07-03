@@ -280,40 +280,144 @@ bool process_ipfix_template(const uint8_t* pkt, size_t flowset_length, uint32_t 
     return true;
 }
 
-bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_t* data, simple_packet_t& packet) {
-    /* XXX: use a table-based interpreter */
+
+bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, const uint8_t* data, simple_packet_t& packet, netflow_meta_info_t& flow_meta) {
     switch (record_type) {
     case IPFIX_IN_BYTES:
-        BE_COPY(packet.length);
-        break;
-    case IPFIX_IN_PACKETS:
-        BE_COPY(packet.number_of_packets);
-        break;
-    case IPFIX_IN_PROTOCOL:
-        BE_COPY(packet.protocol);
-        break;
-    case IPFIX_TCP_FLAGS:
-        // Cisco NCS 55A1 encodes them as two bytes :(
-        if (sizeof(packet.flags) < record_length) {
-            return false;
+        if (record_length > sizeof(packet.length)) {
+            ipfix_too_large_field++;
+        } else {
+            BE_COPY(packet.length);
+
+            // decode data in network byte order to host byte order
+            packet.length = fast_ntoh(packet.length);
+
+            // IPFIX carries only information about number of octets including IP headers and IP payload
+            // which is exactly what we need for ip_length field
+            packet.ip_length = packet.length;
         }
 
-        BE_COPY(packet.flags);
+        break;
+    case IPFIX_IN_PACKETS:
+        if (record_length > sizeof(packet.number_of_packets)) {
+            ipfix_too_large_field++;
+        } else {
+            BE_COPY(packet.number_of_packets);
+
+            packet.number_of_packets = fast_ntoh(packet.number_of_packets);
+        }
+
+        break;
+    case IPFIX_IN_PROTOCOL:
+        if (record_length > sizeof(packet.protocol)) {
+            ipfix_too_large_field++;
+        } else {
+            BE_COPY(packet.protocol);
+
+            packet.protocol = fast_ntoh(packet.protocol);
+        }
+
+        break;
+    case IPFIX_TCP_FLAGS:
+        if (record_length == 1) {
+            BE_COPY(packet.flags);
+        } else if (record_length == 2) {
+            // If exported as a single octet with reduced-size encoding, this Information Element covers the low-order
+            // octet of this field (i.e, bits 0x80 to 0x01), omitting the ECN Nonce Sum and the three Future Use bits.
+            // https://www.iana.org/assignments/ipfix/ipfix.xhtml
+            // So we just copy second byte which carries same information as when it encoded with 1 byte
+            memcpy(&packet.flags, data + 1, 1);
+        } else {
+            ipfix_too_large_field++;
+        }
+
         break;
     case IPFIX_L4_SRC_PORT:
-        BE_COPY(packet.source_port);
+        if (record_length > sizeof(packet.source_port)) {
+            ipfix_too_large_field++;
+        } else {
+            BE_COPY(packet.source_port);
+
+            // We should convert port to host byte order
+            packet.source_port = fast_ntoh(packet.source_port);
+        }
+
         break;
     case IPFIX_L4_DST_PORT:
-        BE_COPY(packet.destination_port);
+        if (record_length > sizeof(packet.destination_port)) {
+            ipfix_too_large_field++;
+        } else {
+            BE_COPY(packet.destination_port);
+
+            // We should convert port to host byte order
+            packet.destination_port = fast_ntoh(packet.destination_port);
+        }
+
         break;
     case IPFIX_IPV4_SRC_ADDR:
-        memcpy(&packet.src_ip, data, record_length);
+        if (record_length > sizeof(packet.src_ip)) {
+            ipfix_too_large_field++;
+        } else {
+            memcpy(&packet.src_ip, data, record_length);
+        }
+
         break;
     case IPFIX_IPV4_DST_ADDR:
-        memcpy(&packet.dst_ip, data, record_length);
-        break;
+        if (record_length > sizeof(packet.dst_ip)) {
+            ipfix_too_large_field++;
+        } else {
+            memcpy(&packet.dst_ip, data, record_length);
+        }
 
-    // According to https://www.iana.o > rg/assignments/ipfix/ipfix.xhtml ASN can be 4 byte only
+        break;
+    // There is a similar field IPFIX_BGP_NEXT_HOP_IPV4_ADDRESS but with slightly different meaning
+    case IPFIX_IPV4_NEXT_HOP:
+        if (record_length == 4) {
+            uint32_t ip_next_hop_ipv4 = 0;
+            memcpy(&ip_next_hop_ipv4, data, record_length);
+
+            flow_meta.ip_next_hop_ipv4_set = true;
+            flow_meta.ip_next_hop_ipv4     = ip_next_hop_ipv4;
+
+            // std::cout << "IP next hop: " << convert_ip_as_uint_to_string(ip_next_hop_ipv4) << std::endl;
+        } else {
+            ipfix_too_large_field++;
+        }
+
+        break;
+    // There is a similar field IPFIX_IPV4_NEXT_HOP but with slightly different meaning
+    case IPFIX_BGP_NEXT_HOP_IPV4_ADDRESS:
+        // Juniper MX uses this field
+        if (record_length == 4) {
+            uint32_t bgp_next_hop_ipv4 = 0;
+            memcpy(&bgp_next_hop_ipv4, data, record_length);
+
+            flow_meta.bgp_next_hop_ipv4_set = true;
+            flow_meta.bgp_next_hop_ipv4     = bgp_next_hop_ipv4;
+
+            // std::cout << "BGP next hop: " << convert_ip_as_uint_to_string(bgp_next_hop_ipv4) << std::endl;
+        } else {
+            ipfix_too_large_field++;
+        }
+
+        break;
+    case IPFIX_IPV6_NEXT_HOP:
+        // Juniper MX uses this field
+        if (record_length == 16) {
+            in6_addr bgp_next_hop_ipv6{};
+            memcpy(&bgp_next_hop_ipv6, data, record_length);
+
+            flow_meta.bgp_next_hop_ipv6_set = true;
+            flow_meta.bgp_next_hop_ipv6     = bgp_next_hop_ipv6;
+
+            // std::cout << "bgp next hop: " << print_ipv6_address(ipv6_next_hop) << std::endl;
+        } else {
+            ipfix_too_large_field++;
+        }
+
+
+        break;
+    // According to https://www.iana.org/assignments/ipfix/ipfix.xhtml ASN can be 4 byte only
     // Unfortunately, customer (Intermedia) shared pcap with ASNs encoded as 2 byte values :(
     case IPFIX_SRC_AS:
         if (record_length == 4) {
@@ -328,6 +432,8 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_t*
 
             src_asn        = fast_ntoh(src_asn);
             packet.src_asn = src_asn;
+        } else {
+            ipfix_too_large_field++;
         }
 
         break;
@@ -344,6 +450,8 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_t*
 
             dst_asn        = fast_ntoh(dst_asn);
             packet.dst_asn = dst_asn;
+        } else {
+            ipfix_too_large_field++;
         }
 
         break;
@@ -355,6 +463,8 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_t*
 
             input_interface        = fast_ntoh(input_interface);
             packet.input_interface = input_interface;
+        } else {
+            ipfix_too_large_field++;
         }
 
         break;
@@ -365,24 +475,31 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_t*
 
             output_interface        = fast_ntoh(output_interface);
             packet.output_interface = output_interface;
+        } else {
+            ipfix_too_large_field++;
         }
 
         break;
     case IPFIX_IPV6_SRC_ADDR:
         // It should be 16 bytes only
-        if (record_length == 16) {
-            memcpy(&packet.src_ipv6, data, record_length);
-            // Set protocol version to IPv6
-            packet.ip_protocol_version = 6;
-        }
+            if (record_length == 16) {
+                memcpy(&packet.src_ipv6, data, record_length);
+                // Set protocol version to IPv6
+                packet.ip_protocol_version = 6;
+            } else {
+                ipfix_too_large_field++;
+            }
+
         break;
     case IPFIX_IPV6_DST_ADDR:
         // It should be 16 bytes only
-        if (record_length == 16) {
-            memcpy(&packet.dst_ipv6, data, record_length);
-            // Set protocol version to IPv6
-            packet.ip_protocol_version = 6;
-        }
+            if (record_length == 16) {
+                memcpy(&packet.dst_ipv6, data, record_length);
+                // Set protocol version to IPv6
+                packet.ip_protocol_version = 6;
+            } else {
+                ipfix_too_large_field++;
+            }
         break;
     case IPFIX_FIRST_SWITCHED:
         // Mikrotik uses this encoding
@@ -394,7 +511,7 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_t*
 
             packet.flow_start = flow_started;
         } else {
-            // We do not support it
+            ipfix_too_large_field++;
         }
 
         break;
@@ -408,7 +525,7 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_t*
 
             packet.flow_end = flow_finished;
         } else {
-            // We do not support it
+            ipfix_too_large_field++;
         }
 
         break;
@@ -422,7 +539,10 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_t*
 
             // We cast unsigned to signed and it may cause issues
             packet.flow_start = flow_started;
+        } else {
+            ipfix_too_large_field++;
         }
+
         break;
     case IPFIX_FLOW_END_MILLISECONDS:
         if (record_length == 8) {
@@ -433,9 +553,105 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_t*
 
             // We cast unsigned to signed and it may cause issues
             packet.flow_end = flow_finished;
+        } else {
+            ipfix_too_large_field++;
         }
 
         break;
+    case IPFIX_FORWARDING_STATUS:
+        // TODO: we did using theoretical information and did not test it at all
+        // Documented here: https://www.iana.org/assignments/ipfix/ipfix.xhtml#forwarding-status
+        // Forwarding status is encoded on 1 byte with the 2 left bits giving the status and the 6 remaining bits giving the reason code.
+        if (record_length == 1) {
+            uint8_t forwarding_status = 0;
+
+            memcpy(&forwarding_status, data, record_length);
+
+            const netflow9_forwarding_status_t* forwarding_status_structure = (const netflow9_forwarding_status_t*)&forwarding_status;
+
+            // Decode numbers into forwarding statuses
+            packet.forwarding_status             = forwarding_status_from_integer(forwarding_status_structure->status);
+            flow_meta.received_forwarding_status = true;
+
+            ipfix_forwarding_status++;
+
+            // logger << log4cpp::Priority::DEBUG << "Forwarding status: " << int(forwarding_status_structure->status) << " reason code: " << int(forwarding_status_structure->reason_code);
+        } else {
+            // It must be exactly one byte
+            ipfix_too_large_field++;
+        }
+
+        break;
+    case IPFIX_DATALINK_FRAME_SIZE:
+        if (record_length == 2) {
+            uint16_t datalink_frame_size = 0;
+
+            memcpy(&datalink_frame_size, data, record_length);
+            flow_meta.data_link_frame_size = fast_ntoh(datalink_frame_size);
+        } else {
+            ipfix_too_large_field++;
+        }
+
+        break;
+    case IPFIX_DATALINK_FRAME_SECTION:
+        // Element 315: https://www.iana.org/assignments/ipfix/ipfix.xhtml
+
+        // We create block here as gcc does not want to compile without it with error: error: jump to case label
+        {
+        // It's packet header as is in variable length encoding
+            ipfix_inline_headers++;
+
+            // This data is encoded using following approach: https://datatracker.ietf.org/doc/html/rfc7011#section-7
+            const uint8_t* field_length_ptr = (const uint8_t*)data;
+
+            // Get rid of pointer syntax
+            uint8_t packet_header_length = *field_length_ptr;
+
+            // logger << log4cpp::Priority::DEBUG << "Packet header length is " << int(packet_header_length);
+
+            // We will support only fields which are < 255 bytes length as it simpler way of encoding
+            if (packet_header_length != 0 && packet_header_length < 255) {
+                bool read_packet_length_from_ip_header = true;
+
+                bool extract_tunnel_traffic = false;
+
+                auto result =
+                    parse_raw_packet_to_simple_packet_full_ng((u_char*)(data + sizeof(uint8_t)), packet_header_length, packet_header_length,
+                                                           flow_meta.nested_packet, extract_tunnel_traffic, read_packet_length_from_ip_header);
+
+                if (result != network_data_stuctures::parser_code_t::success) {
+                    // Cannot decode data
+                    ipfix_inline_header_parser_error++;
+                } else {
+                    // Successfully decoded data
+                    ipfix_inline_header_parser_success++;
+                    
+                    flow_meta.nested_packet_parsed = true;
+                    // logger << log4cpp::Priority::DEBUG << "IPFIX inline extracted packet: " << print_simple_packet(flow_meta.nested_packet);
+                }
+            } else {
+                // It may be zero length value or it may be 255 which means that data is longer
+            }
+        }
+
+        break;
+    case IPFIX_FLOW_DIRECTION:
+        // It should be 1 byte value
+        if (record_length == 1) {
+            uint8_t flow_direction = 0;
+            memcpy(&flow_direction, data, record_length);
+
+            // According to RFC only two values possible: https://www.iana.org/assignments/ipfix/ipfix.xhtml
+            // 0x00: ingress flow
+            // 0x01: egress flow
+            // Juniper MX uses 255 to report unknown direction
+            // std::cout << "Flow direction: " << int(flow_direction) << std::endl;
+        } else {
+            ipfix_too_large_field++;
+        }
+
+        break;
+
     case IPFIX_FLOW_END_REASON:
         // It should be 1 byte value
         if (record_length == 1) {
@@ -455,6 +671,8 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_t*
             } else if (flow_end_reason == 5) {
                 ipfix_flows_end_reason_lack_of_resource_timeout++;
             }
+        } else {
+            ipfix_too_large_field++;
         }
 
         break;
@@ -462,7 +680,6 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, uint8_t*
 
     return true;
 }
-
 
 
 // Read options data packet with known templat
@@ -584,7 +801,10 @@ void ipfix_flowset_to_store(uint8_t* pkt,
         uint32_t record_type   = iter->record_type;
         uint32_t record_length = iter->record_length;
 
-        ipfix_record_to_flow(record_type, record_length, pkt + offset, packet);
+        // Place to keep meta information which is not needed in simple_simple_packet_t structure
+        netflow_meta_info_t flow_meta;
+
+        ipfix_record_to_flow(record_type, record_length, pkt + offset, packet, flow_meta);
 
         offset += record_length;
     }
