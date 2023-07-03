@@ -1098,7 +1098,19 @@ void update_netflow_v9_sampling_rate(uint32_t sampling_rate, const std::string& 
 
 // That's kind of histogram emulation
 void increment_duration_counters_netflow_v9(int64_t duration) {
-    if (duration <= 15) {
+    if (duration == 0) {
+        netflow9_duration_0_seconds++;
+    } else if (duration <= 1) {
+        netflow9_duration_less_1_seconds++;
+    } else if (duration <= 2) {
+        netflow9_duration_less_2_seconds++;
+    } else if (duration <= 3) {
+        netflow9_duration_less_3_seconds++;
+    } else if (duration <= 5) {
+        netflow9_duration_less_5_seconds++;
+    } else if (duration <= 10) {
+        netflow9_duration_less_10_seconds++;
+    } else if (duration <= 15) {
         netflow9_duration_less_15_seconds++;
     } else if (duration <= 30) {
         netflow9_duration_less_30_seconds++;
@@ -1114,7 +1126,6 @@ void increment_duration_counters_netflow_v9(int64_t duration) {
 
     return;
 }
-
 
 void netflow9_flowset_to_store(uint8_t* pkt,
                           size_t len,
