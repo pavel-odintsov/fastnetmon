@@ -1,16 +1,17 @@
 
 // https://tools.ietf.org/html/rfc5101#page-18
-bool process_ipfix_options_template(uint8_t* pkt, size_t len, uint32_t source_id, std::string client_addres_in_string_format) {
-    ipfix_options_header_common_t* options_template_header = (ipfix_options_header_common_t*)pkt;
+bool process_ipfix_options_template(const uint8_t* pkt, size_t flowset_length, uint32_t source_id, const std::string& client_addres_in_string_format) {
+    const ipfix_options_header_common_t* options_template_header = (ipfix_options_header_common_t*)pkt;
 
-    if (len < sizeof(ipfix_options_header_common_t)) {
-        logger << log4cpp::Priority::ERROR << "Short IPFIX options template header " << len << " bytes. "
+    if (flowset_length < sizeof(ipfix_options_header_common_t)) {
+        logger << log4cpp::Priority::ERROR << "Short IPFIX options template header " << flowset_length << " bytes. "
                << "Agent IP: " << client_addres_in_string_format;
         return false;
     }
 
-    uint16_t flowset_id     = fast_ntoh(options_template_header->flowset_id);
-    uint16_t flowset_length = fast_ntoh(options_template_header->length);
+    uint16_t flowset_id = fast_ntoh(options_template_header->flowset_id);
+
+    // Yes, we have flow set length in options_template_header->length but we've read it on previous step and we can use it from argument of this function instead
 
     if (flowset_id != IPFIX_OPTIONS_FLOWSET_ID) {
         logger << log4cpp::Priority::ERROR << "For options template we expect " << IPFIX_OPTIONS_FLOWSET_ID
@@ -23,10 +24,11 @@ bool process_ipfix_options_template(uint8_t* pkt, size_t len, uint32_t source_id
 
     // logger << log4cpp::Priority::INFO << "flowset_id " << flowset_id << " flowset_length: " << flowset_length;
 
-    ipfix_options_header_t* options_nested_header = (ipfix_options_header_t*)(pkt + sizeof(ipfix_options_header_common_t));
+    const ipfix_options_header_t* options_nested_header =
+        (const ipfix_options_header_t*)(pkt + sizeof(ipfix_options_header_common_t));
 
     // Check that we have enough space in packet to read ipfix_options_header_t
-    if (len < sizeof(ipfix_options_header_common_t) + sizeof(ipfix_options_header_t)) {
+    if (flowset_length < sizeof(ipfix_options_header_common_t) + sizeof(ipfix_options_header_t)) {
         logger << log4cpp::Priority::ERROR << "Could not read specific header for IPFIX options template."
                << "Agent IP: " << client_addres_in_string_format;
         return false;
@@ -70,7 +72,8 @@ bool process_ipfix_options_template(uint8_t* pkt, size_t len, uint32_t source_id
     uint16_t normal_field_count = field_count - scope_field_count;
 
     // Shift our temporary pointer to place where scope section begins
-    uint8_t* current_pointer_in_packet = (uint8_t*)(pkt + sizeof(ipfix_options_header_common_t) + sizeof(ipfix_options_header_t));
+    const uint8_t* current_pointer_in_packet =
+        (const uint8_t*)(pkt + sizeof(ipfix_options_header_common_t) + sizeof(ipfix_options_header_t));
 
     uint32_t scopes_total_size = 0;
 
@@ -78,10 +81,12 @@ bool process_ipfix_options_template(uint8_t* pkt, size_t len, uint32_t source_id
 
     // Then we have scope fields in packet, I'm not going to process them, I'll just skip them
     for (int scope_index = 0; scope_index < scope_field_count; scope_index++) {
-        ipfix_template_flowset_record_t* current_scopes_record = (ipfix_template_flowset_record_t*)(current_pointer_in_packet);
+        const ipfix_template_flowset_record_t* current_scopes_record =
+            (const ipfix_template_flowset_record_t*)(current_pointer_in_packet);
 
         // Check that our attempt to read ipfix_template_flowset_record_t will not exceed packet length
-        if (len < sizeof(ipfix_options_header_common_t) + sizeof(ipfix_options_header_t) + sizeof(ipfix_template_flowset_record_t)) {
+        if (flowset_length < sizeof(ipfix_options_header_common_t) + sizeof(ipfix_options_header_t) +
+                                 sizeof(ipfix_template_flowset_record_t)) {
             logger << log4cpp::Priority::ERROR << "Attempt to read IPFIX flowset_record outside of packet. "
                    << "Agent IP: " << client_addres_in_string_format;
             return false;
@@ -95,11 +100,11 @@ bool process_ipfix_options_template(uint8_t* pkt, size_t len, uint32_t source_id
         // Increment scopes size
         scopes_total_size += sizeof(ipfix_template_flowset_record_t);
 
-        // Increment paylaod size
+        // Increment payload size
         scopes_payload_total_size += scope_field_size;
 
         // Shift pointer to the end of current scope field
-        current_pointer_in_packet = (uint8_t*)(current_pointer_in_packet + sizeof(ipfix_template_flowset_record_t));
+        current_pointer_in_packet = (const uint8_t*)(current_pointer_in_packet + sizeof(ipfix_template_flowset_record_t));
     }
 
     // We've reached normal fields section
@@ -111,11 +116,12 @@ bool process_ipfix_options_template(uint8_t* pkt, size_t len, uint32_t source_id
 
     // Try to read all normal fields
     for (int field_index = 0; field_index < normal_field_count; field_index++) {
-        ipfix_template_flowset_record_t* current_normal_record = (ipfix_template_flowset_record_t*)(current_pointer_in_packet);
+        const ipfix_template_flowset_record_t* current_normal_record =
+            (const ipfix_template_flowset_record_t*)(current_pointer_in_packet);
 
         // Check that our attempt to read ipfix_template_flowset_record_t will not exceed packet length
-        if (len < sizeof(ipfix_options_header_common_t) + sizeof(ipfix_options_header_t) + scopes_total_size +
-                      sizeof(ipfix_template_flowset_record_t)) {
+        if (flowset_length < sizeof(ipfix_options_header_common_t) + sizeof(ipfix_options_header_t) +
+                                 scopes_total_size + sizeof(ipfix_template_flowset_record_t)) {
             logger << log4cpp::Priority::ERROR << "Attempt to read IPFIX flowset_record outside of packet for normal field. "
                    << "Agent IP: " << client_addres_in_string_format;
             return false;
@@ -136,14 +142,14 @@ bool process_ipfix_options_template(uint8_t* pkt, size_t len, uint32_t source_id
         // Increment total field size
         normal_fields_total_size += sizeof(ipfix_template_flowset_record_t);
 
-        // Increment toital payload size
+        // Increment total payload size
         normal_fields_payload_total_size += normal_field_size;
 
         // Shift pointer to the end of current normal field
-        current_pointer_in_packet = (uint8_t*)(current_pointer_in_packet + sizeof(ipfix_template_flowset_record_t));
+        current_pointer_in_packet = (const uint8_t*)(current_pointer_in_packet + sizeof(ipfix_template_flowset_record_t));
     }
 
-    template_t field_template;
+    template_t field_template{};
 
     field_template.template_id = template_id;
     field_template.records     = template_records_map;
@@ -152,23 +158,30 @@ bool process_ipfix_options_template(uint8_t* pkt, size_t len, uint32_t source_id
     field_template.num_records = normal_field_count;
 
     field_template.total_length = normal_fields_payload_total_size + scopes_payload_total_size;
-    field_template.type      = netflow_template_type_t::Options;
+    field_template.type         = netflow_template_type_t::Options;
 
     field_template.option_scope_length = scopes_payload_total_size;
 
-    // logger << log4cpp::Priority::INFO << "Read options template:" << print_template_t(field_template);
+    // We need to know when we received it
+    field_template.timestamp = current_inaccurate_time;
+
+    // logger << log4cpp::Priority::INFO << "Read options template:" << print_template(field_template);
 
     // Add/update template
-    bool updated = false;
+    bool updated                   = false;
     bool updated_existing_template = false;
 
     add_update_peer_template(netflow_protocol_version_t::ipfix, global_ipfix_templates, source_id, template_id, client_addres_in_string_format,
                              field_template, updated, updated_existing_template);
 
+    if (updated_existing_template) {
+        ipfix_template_data_updates++;
+    }
+
     return true;
 }
 
-bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, const std::string& client_addres_in_string_format) {
+bool process_ipfix_template(uint8_t* pkt, size_t len, uint32_t source_id, const std::string& client_addres_in_string_format) {
     ipfix_flowset_header_common_t* template_header = (ipfix_flowset_header_common_t*)pkt;
     // We use same struct as netflow v9 because netflow v9 and v10 (ipfix) is
     // compatible
@@ -181,7 +194,7 @@ bool process_netflow_v10_template(uint8_t* pkt, size_t len, uint32_t source_id, 
 
     if (ntohs(template_header->flowset_id) != IPFIX_TEMPLATE_FLOWSET_ID) {
         logger << log4cpp::Priority::ERROR
-               << "Function process_netflow_v10_template expects only "
+               << "Function process_ipfix_template expects only "
                   "IPFIX_TEMPLATE_FLOWSET_ID but "
                   "got another id: "
                << ntohs(template_header->flowset_id);
@@ -760,7 +773,7 @@ bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string
         switch (flowset_id) {
         case IPFIX_TEMPLATE_FLOWSET_ID:
             ipfix_data_templates_number++;
-            if (!process_netflow_v10_template(packet + offset, flowset_len, source_id, client_addres_in_string_format)) {
+            if (!process_ipfix_template(packet + offset, flowset_len, source_id, client_addres_in_string_format)) {
                 return false;
             }
             break;
