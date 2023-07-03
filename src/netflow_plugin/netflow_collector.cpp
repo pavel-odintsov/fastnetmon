@@ -887,7 +887,7 @@ bool process_netflow_packet(uint8_t* packet, uint32_t len, std::string& client_a
         return process_netflow_packet_v9(packet, len, client_addres_in_string_format, client_ipv4_address);
     case 10:
         netflow_ipfix_total_packets++;
-        return process_netflow_packet_v10(packet, len, client_addres_in_string_format, client_ipv4_address);
+        return process_ipfix_packet(packet, len, client_addres_in_string_format, client_ipv4_address);
     default:
         netflow_ipfix_unknown_protocol_version++;
         logger << log4cpp::Priority::ERROR << "We do not support Netflow " << ntohs(hdr->version)

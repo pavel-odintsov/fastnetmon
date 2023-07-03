@@ -790,20 +790,15 @@ bool ipfix_options_flowset_to_store(const uint8_t* pkt,
     return true;
 }
 
-// We should rewrite nf9_flowset_to_store accroding to fixes here
-void ipfix_flowset_to_store(uint8_t* pkt,
-                           size_t len,
-                           ipfix_header_t* nf10_hdr,
-                           template_t* field_template,
-                           uint32_t client_ipv4_address,
-                           const std::string& client_addres_in_string_format) {
-    uint32_t offset = 0;
 
-    if (len < field_template->total_length) {
-        logger << log4cpp::Priority::ERROR << "Total len from template bigger than packet len";
-        return;
-    }
-
+// This function reads flow set using passed template
+// In case of irrecoverable errors it returns false
+bool ipfix_flowset_to_store(const uint8_t* pkt,
+                            const ipfix_header_t* ipfix_header,
+                            ssize_t flowset_maximum_length,
+                            const template_t* field_template,
+                            uint32_t client_ipv4_address,
+                            const std::string& client_addres_in_string_format) {
     simple_packet_t packet;
     packet.source       = NETFLOW;
     packet.arrival_time = current_inaccurate_time;
@@ -813,7 +808,7 @@ void ipfix_flowset_to_store(uint8_t* pkt,
     // We use shifted values and should process only zeroed values
     // because we are working with little and big endian data in same time
     packet.number_of_packets = 0;
-    packet.ts.tv_sec         = ntohl(nf10_hdr->time_sec);
+    packet.ts.tv_sec         = ntohl(ipfix_header->time_sec);
 
     {
         std::lock_guard<std::mutex> lock(ipfix_sampling_rates_mutex);
@@ -829,25 +824,124 @@ void ipfix_flowset_to_store(uint8_t* pkt,
 
     // By default, assume IPv4 traffic here
     // But code below can switch it to IPv6
-    packet.ip_protocol_version = 4;
+    packet.ip_protocol_version = 4; //-V1048
 
-    for (std::vector<template_record_t>::iterator iter = field_template->records.begin();
-         iter != field_template->records.end(); iter++) {
+    // Place to keep meta information which is not needed in simple_simple_packet_t structure
+    netflow_meta_info_t flow_meta;
 
+    uint32_t offset = 0;
+
+    for (auto iter = field_template->records.begin(); iter != field_template->records.end(); iter++) {
         uint32_t record_type   = iter->record_type;
         uint32_t record_length = iter->record_length;
 
-        // Place to keep meta information which is not needed in simple_simple_packet_t structure
-        netflow_meta_info_t flow_meta;
+        // logger << log4cpp::Priority::DEBUG << "Reading record with type " << record_type << " and length " << record_length;
 
-        ipfix_record_to_flow(record_type, record_length, pkt + offset, packet, flow_meta);
+        if (record_length == 65535) {
+            // OK, we're facing variable length field and it's damn complex
+            // It's not a perfect approach but I'm going to read field length right here as we need it for boundary checks
+
+            // We need to have at least one byte to read data
+            if (offset + sizeof(uint8_t) > flowset_maximum_length) {
+                logger << log4cpp::Priority::ERROR << "Attempt to read data after end of flowset for variable field length";
+                return false;
+            }
+
+            const uint8_t* field_length_ptr = (const uint8_t*)(pkt + offset);
+
+            if (*field_length_ptr == 0) {
+                logger << log4cpp::Priority::ERROR << "Zero length variable fields are not supported";
+                return false;
+            }
+
+            if (*field_length_ptr == 255) {
+                logger << log4cpp::Priority::ERROR << "Packet headers longer then 255 bytes are not supported, please reduce header length on device";
+                return false;
+            }
+
+            // Override field length with length extracted from leading byte
+            record_length = *field_length_ptr + sizeof(uint8_t);
+        }
+
+        // We do not need this check when we have only fixed length fields in template
+        // but this function is versatile and must handle all cases.
+        if (offset + record_length > flowset_maximum_length) {
+            logger << log4cpp::Priority::ERROR << "Attempt to read data after end of flowset";
+            return false;
+        }
+
+        bool ipfix_record_to_flow_result = ipfix_record_to_flow(record_type, record_length, pkt + offset, packet, flow_meta);
+
+        // In case of serious errors we stop loop completely:w
+        if (!ipfix_record_to_flow_result) {
+            return false;
+        }
 
         offset += record_length;
     }
 
+    // If we were able to decode nested packet then it means that it was Netflow Lite and we can overwrite information in packet
+    if (flow_meta.nested_packet_parsed) {
+        // Override most of the fields from nested packet as we need to use them instead
+        override_packet_fields_from_nested_packet(packet, flow_meta.nested_packet);
+    }
+
+    bool netflow_mark_zero_next_hop_and_zero_output_as_dropped = false;
+
+    if (netflow_mark_zero_next_hop_and_zero_output_as_dropped) {
+        //
+        // For Juniper routers we need fancy logic to mark packets as dropped as it does not use RFC compliant IPFIX field for it
+        //
+
+        //
+        // The only reliable information we have from Juniper documentation is about Netflow v9 
+        // https://apps.juniper.net/feature-explorer/feature-info.html?fKey=7679&fn=Enhancements%20to%20inline%20flow%20monitoring
+        // and we have no idea how it behaves in IPFIX mode. 
+        // 
+        // I think previously we had Juniper routers which set output interface to zero and both bgp_next_hop_ipv4 and ip_next_hop_ipv4 to zero values to report
+        // dropped and we checked only bgp_next_hop_ipv4 to identify dropped traffic. It worked well enough until we got flows explained below where 
+        // bgp_next_hop_ipv4 is not 0.0.0.0 but ip_next_hop_ipv4 and output interface were set to zeroes.
+        //
+        // In May 2023 got dumps in Google drive "MX10003 and MX 480 dropped traffic" which confirms that Juniper MX 10003 / MX480 with JUNOS 20.4R3-S4.8 encode
+        // it using zero output interface and zero ip_next_hop_ipv4. In same time these dumps have bgp_next_hop_ipv4 set to real non zero value of next router.
+        // To address this issue we added alternative section to check for zeroe 
+        //
+        // I posted question on LinkedIN: https://www.linkedin.com/feed/update/urn:li:activity:7062447441895141376/
+        //
+            
+        // We will apply it only if we have no forwarding_status in packet
+        if (!flow_meta.received_forwarding_status) {
+            // We need to confirm that TWO rules are TRUE:
+            // - Output interface is 0
+            // - Next hop for IPv4 is set and set to 0 OR next hop for IPv6 set and set to zero
+            if (packet.output_interface == 0 &&
+                (
+                 (flow_meta.bgp_next_hop_ipv4_set && flow_meta.bgp_next_hop_ipv4 == 0) ||
+                 (flow_meta.ip_next_hop_ipv4_set  && flow_meta.ip_next_hop_ipv4 == 0 ) ||
+                 (is_zero_ipv6_address(flow_meta.bgp_next_hop_ipv6) && flow_meta.bgp_next_hop_ipv6_set))) {
+
+                packet.forwarding_status = forwarding_status_t::dropped;
+                ipfix_marked_zero_next_hop_and_zero_output_as_dropped++;
+            }
+        }
+    }
+
+    // std::cout << "bgp next hop: " << convert_ip_as_uint_to_string(flow_meta.bgp_next_hop_ipv4) << " set " << flow_meta.bgp_next_hop_ipv4_set
+    //    << " " << print_ipv6_address(flow_meta.bgp_next_hop_ipv6) << " set " << flow_meta.bgp_next_hop_ipv6_set  << " output interface: " << packet.output_interface <<  std::endl;
+
     netflow_ipfix_all_protocols_total_flows++;
 
     ipfix_total_flows++;
+
+    // We may have cases like this from previous step:
+    // :0000:443 > :0000:61444 protocol: tcp flags: psh,ack frag: 0  packets: 1 size: 205 bytes ip size: 205 bytes ttl:
+    // 0 sample ratio: 1000 It happens when router sends IPv4 and zero IPv6 fields in same packet
+    if (packet.ip_protocol_version == 6 && is_zero_ipv6_address(packet.src_ipv6) &&
+        is_zero_ipv6_address(packet.dst_ipv6) && packet.src_ip != 0 && packet.dst_ip != 0) {
+
+        ipfix_protocol_version_adjustments++;
+        packet.ip_protocol_version = 4;
+    }
 
     if (packet.ip_protocol_version == 4) {
         ipfix_total_ipv4_flows++;
@@ -856,57 +950,43 @@ void ipfix_flowset_to_store(uint8_t* pkt,
     }
 
     double duration_float = packet.flow_end - packet.flow_start;
-    // Covert milliseconds to seconds
-    duration_float = duration_float / 1000;
 
-    int64_t duration = int64_t(duration_float);
+    // Well, it does happen with Juniper QFX
+    if (duration_float < 0) {
+        ipfix_duration_negative++;
 
-    // Increments duration counters
-    increment_duration_counters_ipfix(duration);
+        // I see no reasons to track duration of such cases because they're definitely broken
+    } else {
+        // Covert milliseconds to seconds
+        duration_float = duration_float / 1000;
 
-    // logger<< log4cpp::Priority::INFO<< "Flow start: " << packet.flow_start << " end: " << packet.flow_end << " duration: " << duration;
+        int64_t duration = int64_t(duration_float);
+
+        // Increments duration counters
+        increment_duration_counters_ipfix(duration);
+
+        // logger<< log4cpp::Priority::INFO<< "Flow start: " << packet.flow_start << " end: " << packet.flow_end << " duration: " << duration;
+
+        // This logic also does not make any sense with negative duration of flows
+    }
 
     // logger<< log4cpp::Priority::INFO<<"src asn: " << packet.src_asn << " " << "dst asn: " << packet.dst_asn;
 
     // logger<< log4cpp::Priority::INFO<<"output: " << packet.output_interface << " " << " input: " << packet.input_interface;
 
-    // decode data in network byte order to host byte order
-    packet.length = fast_ntoh(packet.length);
 
-    // It's tricky to distinguish IP length and full packet length here. Let's use same.
-    packet.ip_length = packet.length;
-
-    packet.number_of_packets = fast_ntoh(packet.number_of_packets);
-
-    packet.protocol = fast_ntoh(packet.protocol);
-
-    // We should convert ports to host byte order too
-    packet.source_port      = fast_ntoh(packet.source_port);
-    packet.destination_port = fast_ntoh(packet.destination_port);
-
-    // Set protocol
-    switch (packet.protocol) {
-    case 1: {
-        packet.protocol = IPPROTO_ICMP;
-
+    // Logical sources of this logic are unknown but I'm sure we had reasons to do so
+    if (packet.protocol == IPPROTO_ICMP) {
+        // Explicitly set ports to zeros even if device sent something in these fields
         packet.source_port      = 0;
         packet.destination_port = 0;
-    } break;
-
-    case 6: {
-        packet.protocol = IPPROTO_TCP;
-    } break;
-
-    case 17: {
-        packet.protocol = IPPROTO_UDP;
-    } break;
     }
+
 
     // pass data to FastNetMon
     netflow_process_func_ptr(packet);
+    return true;
 }
-
-
 
 // That's kind of histogram emulation
 void increment_duration_counters_ipfix(int64_t duration) {
@@ -928,96 +1008,157 @@ void increment_duration_counters_ipfix(int64_t duration) {
 }
 
 
-bool process_ipfix_data(uint8_t* pkt,
-                              size_t len,
-                              ipfix_header_t* nf10_hdr,
-                              uint32_t source_id,
-                              const std::string& client_addres_in_string_format,
-                              uint32_t client_ipv4_address) {
+bool process_ipfix_data(const uint8_t* pkt,
+                        size_t flowset_length,
+                        const ipfix_header_t* ipfix_header,
+                        uint32_t source_id,
+                        const std::string& client_addres_in_string_format,
+                        uint32_t client_ipv4_address) {
 
-    ipfix_data_flowset_header_t* dath = (ipfix_data_flowset_header_t*)pkt;
+    const ipfix_data_flowset_header_t* flowset_header = (const ipfix_data_flowset_header_t*)pkt;
 
-    // Store packet end, it's useful for sanity checks
-    uint8_t* packet_end = pkt + len;
-
-    if (len < sizeof(*dath)) {
-        logger << log4cpp::Priority::ERROR << "Short netflow v10 data flowset header. Agent: " << client_addres_in_string_format;
+    if (flowset_length < sizeof(ipfix_data_flowset_header_t)) {
+        logger << log4cpp::Priority::ERROR << "Too short IPFIX flowset with not enough space for flowset header: " << flowset_length
+               << " Agent: " << client_addres_in_string_format;
         return false;
     }
 
-    uint32_t flowset_id = ntohs(dath->header.flowset_id);
+    // Store packet end, it's useful for sanity checks
+    const uint8_t* flowset_end = pkt + flowset_length;
 
-    template_t* flowset_template = peer_nf10_find_template(source_id, flowset_id, client_addres_in_string_format);
+    uint32_t flowset_id = ntohs(flowset_header->header.flowset_id);
 
-    if (flowset_template == NULL) {
+    const template_t* field_template =
+        peer_find_template(global_ipfix_templates, source_id, flowset_id, client_addres_in_string_format);
+
+    if (field_template == NULL) {
         ipfix_packets_with_unknown_templates++;
 
         logger << log4cpp::Priority::DEBUG << "We don't have a IPFIX template for flowset_id: " << flowset_id
                << " client " << client_addres_in_string_format << " source_id: " << source_id
-               << " but it's not an error if this message disappears in 5-10 "
-                  "seconds. We need some "
-                  "time to learn it!";
+               << " but it's not an error if this message disappears in some time "
+                  "seconds. We need some time to learn them";
 
         return false;
     }
 
-    if (flowset_template->records.empty()) {
-        logger << log4cpp::Priority::ERROR << "Blank records in IPFIX template. Agent: " << client_addres_in_string_format;
+    if (field_template->records.empty()) {
+        logger << log4cpp::Priority::ERROR << "There are no records in IPFIX template. Agent: " << client_addres_in_string_format;
         return false;
     }
 
-    uint32_t offset       = sizeof(*dath);
-    uint32_t num_flowsets = (len - offset) / flowset_template->total_length;
+    uint32_t offset = sizeof(ipfix_data_flowset_header_t);
 
-    if (num_flowsets == 0 || num_flowsets > 0x4000) {
-        logger << log4cpp::Priority::ERROR << "Invalid number of data flowset, strange number of flows: " << num_flowsets;
-        return false;
-    }
+    if (field_template->type == netflow_template_type_t::Data) {
 
-    if (flowset_template->type == netflow_template_type_t::Data) {
+        if (field_template->ipfix_variable_length_elements_used) {
+            // Get clean flowsets length to use it as limit for our parser
+            ssize_t current_flowset_length_no_header = flowset_length - sizeof(ipfix_data_flowset_header_t);
 
-        for (uint32_t i = 0; i < num_flowsets; i++) {
-            // process whole flowset
-            ipfix_flowset_to_store(pkt + offset, flowset_template->total_length, nf10_hdr, flowset_template,
-                                  client_ipv4_address, client_addres_in_string_format);
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "IPFIX variable field element was used";
+            }
 
-            offset += flowset_template->total_length;
+            // This implementation is rather limited as we read only single flowset here
+            // In many cases we use this stuff for IPFIX Inline monitoring and it uses just single flowset but it may change in future
+            ipfix_flowset_to_store(pkt + sizeof(ipfix_data_flowset_header_t), ipfix_header, current_flowset_length_no_header,
+                                   field_template, client_ipv4_address, client_addres_in_string_format);
+        } else {
+
+            // This logic is pretty reliable but it works only if we do not have variable sized fields in template
+            // In that case it's completely not applicable
+            // But I prefer to keep it as it's very predictable and works fix for fields fields
+            // Templates with only fixed fields are 99% of our installations and variable fields are very rare
+
+            uint32_t number_flowsets = (flowset_length - offset) / field_template->total_length;
+
+            if (number_flowsets > 0x4000) {
+                logger << log4cpp::Priority::ERROR << "Very high number of IPFIX data flowsets " << number_flowsets
+                       << " Agent: " << client_addres_in_string_format
+                       << " flowset template length: " << field_template->total_length;
+
+                return false;
+            }
+
+            if (number_flowsets == 0) {
+                logger << log4cpp::Priority::ERROR << "Unexpected zero number of flowsets "
+                       << " agent: " << client_addres_in_string_format
+                       << " flowset template length: " << field_template->total_length 
+                       << " flowset length " << flowset_length
+                       << " source_id " << source_id
+                       << " flowset_id: " << flowset_id;
+
+                return false;
+            }
+
+            for (uint32_t i = 0; i < number_flowsets; i++) {
+                // We apply constraint that maximum potential length of flow set cannot exceed length of all fields in
+                // template In this case we have no fields with variable length which may affect it and we're safe
+                ipfix_flowset_to_store(pkt + offset, ipfix_header, field_template->total_length, field_template,
+                                       client_ipv4_address, client_addres_in_string_format);
+
+                offset += field_template->total_length;
+            }
         }
 
-    } else if (flowset_template->type == netflow_template_type_t::Options) {
+    } else if (field_template->type == netflow_template_type_t::Options) {
         ipfix_options_packet_number++;
 
         // Check that we will not read outside of packet
-        if (pkt + offset + flowset_template->total_length > packet_end) {
+        if (pkt + offset + field_template->total_length > flowset_end) {
             logger << log4cpp::Priority::ERROR << "We tried to read data outside packet for IPFIX options. "
                    << "Agent: " << client_addres_in_string_format;
-            return 1;
+            return false;
         }
 
         // Process options packet
-        ipfix_options_flowset_to_store(pkt + offset, nf10_hdr, flowset_template,
-                                      client_addres_in_string_format);
+        ipfix_options_flowset_to_store(pkt + offset, ipfix_header, field_template, client_addres_in_string_format);
     }
 
     return true;
 }
 
-bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string& client_addres_in_string_format, uint32_t client_ipv4_address) {
-    ipfix_header_t* nf10_hdr = (ipfix_header_t*)packet;
-    ipfix_flowset_header_common_t* flowset;
 
-    uint32_t flowset_id, flowset_len;
+// Process IPFIX packet
+bool process_ipfix_packet(const uint8_t* packet,
+                          uint32_t udp_packet_length,
+                          const std::string& client_addres_in_string_format,
+                          uint32_t client_ipv4_address) {
+    const ipfix_header_t* ipfix_header = (const ipfix_header_t*)packet;
 
-    if (len < sizeof(*nf10_hdr)) {
-        logger << log4cpp::Priority::ERROR << "Short IPFIX header " << len << " bytes";
+    if (udp_packet_length < sizeof(ipfix_header_t)) {
+        logger << log4cpp::Priority::ERROR << "Packet is too short to accomodate IPFIX header " << udp_packet_length
+               << " bytes which requires at least " << sizeof(ipfix_header_t) << " bytes";
         return false;
     }
 
-    uint32_t source_id = ntohl(nf10_hdr->source_id);
+    // In compare with Netflow v9 IPFIX uses packet length instead of explicitly specified number of flows
+    // https://datatracker.ietf.org/doc/html/rfc7011#section-3.1
+    // Total length of the IPFIX Message, measured in octets, including Message Header and Set(s).
+    uint32_t ipfix_packet_length = fast_ntoh(ipfix_header->header.length);
 
-    uint32_t offset      = sizeof(*nf10_hdr);
-    uint32_t total_flows = 0;
+    if (udp_packet_length == ipfix_packet_length) {
+        // Under normal circumstances udp_packet_length must be equal to ipfix_packet_length
+    } else {
+        // If they're different we need to do more careful checks
 
+        if (udp_packet_length > ipfix_packet_length) {
+            // Theoretically it may happen if we have some padding on the end of packet
+            logger << log4cpp::Priority::DEBUG << "udp_packet_length exceeds ipfix_packet_length, suspect padding";
+            ipfix_packets_with_padding++;
+        }
+
+        // And this case we cannot tolerate
+        if (udp_packet_length < ipfix_packet_length) {
+            logger << log4cpp::Priority::DEBUG << "UDP packet it shorter (" << udp_packet_length << ")"
+                   << " then IPFIX data (" << ipfix_packet_length << "). Assume data corruption";
+            return false;
+        }
+    }
+
+    uint32_t source_id = ntohl(ipfix_header->source_id);
+
+    uint32_t offset         = sizeof(*ipfix_header);
     uint64_t flowset_number = 0;
 
     // Yes, it's infinite loop but we apply boundaries inside to limit it
@@ -1030,15 +1171,16 @@ bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string
             return false;
         }
 
-        if (offset >= len) {
+        if (offset >= ipfix_packet_length) {
             logger << log4cpp::Priority::ERROR
                    << "We tried to read from address outside of IPFIX packet agent IP: " << client_addres_in_string_format;
             return false;
         }
 
-        flowset     = (ipfix_flowset_header_common_t*)(packet + offset);
-        flowset_id  = ntohs(flowset->flowset_id);
-        flowset_len = ntohs(flowset->length);
+        const ipfix_flowset_header_common_t* flowset = (const ipfix_flowset_header_common_t*)(packet + offset);
+
+        uint32_t flowset_id     = ntohs(flowset->flowset_id);
+        uint32_t flowset_length = ntohs(flowset->length);
 
         /*
          * Yes, this is a near duplicate of the short packet check
@@ -1047,7 +1189,7 @@ bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string
          * handlers below.
          */
 
-        if (offset + flowset_len > len) {
+        if (offset + flowset_length > ipfix_packet_length) {
             logger << log4cpp::Priority::ERROR
                    << "We tried to read from address outside IPFIX packet flowset agent IP: " << client_addres_in_string_format;
             return false;
@@ -1056,15 +1198,17 @@ bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string
         switch (flowset_id) {
         case IPFIX_TEMPLATE_FLOWSET_ID:
             ipfix_data_templates_number++;
-            if (!process_ipfix_template(packet + offset, flowset_len, source_id, client_addres_in_string_format)) {
+            if (!process_ipfix_template(packet + offset, flowset_length, source_id, client_addres_in_string_format)) {
                 return false;
             }
             break;
         case IPFIX_OPTIONS_FLOWSET_ID:
             ipfix_options_templates_number++;
-            if (!process_ipfix_options_template(packet + offset, flowset_len, source_id, client_addres_in_string_format)) {
+
+            if (!process_ipfix_options_template(packet + offset, flowset_length, source_id, client_addres_in_string_format)) {
                 return false;
             }
+
             break;
         default:
             if (flowset_id < IPFIX_MIN_RECORD_FLOWSET_ID) {
@@ -1074,16 +1218,16 @@ bool process_netflow_packet_v10(uint8_t* packet, uint32_t len, const std::string
 
             ipfix_data_packet_number++;
 
-            if (!process_ipfix_data(packet + offset, flowset_len, nf10_hdr, source_id,
-                                          client_addres_in_string_format, client_ipv4_address)) {
+            if (!process_ipfix_data(packet + offset, flowset_length, ipfix_header, source_id,
+                                    client_addres_in_string_format, client_ipv4_address)) {
                 return false;
             }
 
             break;
         }
 
-        offset += flowset_len;
-        if (offset == len) {
+        offset += flowset_length;
+        if (offset == ipfix_packet_length) {
             break;
         }
     }
