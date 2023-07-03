@@ -773,6 +773,20 @@ std::string get_netflow_protocol_version_as_string(const netflow_protocol_versio
     return protocol_name;
 }
 
+/* Copy an int (possibly shorter than the target) keeping their LSBs aligned */
+#define BE_COPY(a) memcpy((u_char*)&a + (sizeof(a) - record_length), data, record_length);
+
+// Safe version of BE_COPY macro
+bool be_copy_function(const uint8_t* data, uint8_t* target, uint32_t target_field_length, uint32_t record_field_length) {
+    if (target_field_length < record_field_length) {
+        return false;
+    }
+
+    memcpy(target + (target_field_length - record_field_length), data, record_field_length);
+    return true;
+}
+
+
 // Updates flow timeouts from device
 void update_device_flow_timeouts(const device_timeouts_t& device_timeouts,
                                  std::mutex& structure_mutex,

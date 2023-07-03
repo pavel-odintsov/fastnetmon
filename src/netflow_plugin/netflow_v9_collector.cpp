@@ -213,21 +213,6 @@ bool process_netflow_v9_template(const uint8_t* pkt,
     return true;
 }
 
-
-/* Copy an int (possibly shorter than the target) keeping their LSBs aligned */
-#define BE_COPY(a) memcpy((u_char*)&a + (sizeof(a) - record_length), data, record_length);
-
-// Safe version of BE_COPY macro
-bool be_copy_function(const uint8_t* data, uint8_t* target, uint32_t target_field_length, uint32_t record_field_length) {
-    if (target_field_length < record_field_length) {
-        return false;
-    }
-
-    memcpy(target + (target_field_length - record_field_length), data, record_field_length);
-    return true;
-}
-
-
 bool netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, const uint8_t* data, simple_packet_t& packet, netflow_meta_info_t& flow_meta, const std::string& client_addres_in_string_format) {
     // Some devices such as Mikrotik may pass sampling rate in data section
     uint32_t sampling_rate = 0;
