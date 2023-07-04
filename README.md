@@ -56,7 +56,7 @@ Features
 - VLAN untagging in mirror and sFlow modes
 - Capture attack fingerprints in PCAP format
 
-We track [multiple](https://github.com/pavel-odintsov/fastnetmon/search?q=send_usage_data_to_reporting_server) platform and environment-specific metrics to understand ways how our product is being used and prioritise development accordingly. 
+We track [multiple](https://fastnetmon.com/docs-fnm-advanced/fastnetmon-usage-analytics/) platform and environment-specific metrics to understand ways how our product is being used and prioritise development accordingly. 
 
 Official support groups:
 -------
