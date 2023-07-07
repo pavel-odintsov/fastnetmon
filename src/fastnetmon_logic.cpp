@@ -3253,6 +3253,7 @@ bool get_instance_id(std::string& instance_id) {
 void send_usage_data_to_reporting_server() {
     extern std::string reporting_server;
     extern total_speed_counters_t total_counters_ipv4;
+    extern total_speed_counters_t total_counters_ipv6;
 
     // Build query
     std::stringstream request_stream;
@@ -3265,8 +3266,21 @@ void send_usage_data_to_reporting_server() {
     try {
         nlohmann::json stats;
 
-        stats["incoming_traffic_speed"] = total_counters_ipv4.total_speed_average_counters[INCOMING].bytes;
-        stats["outgoing_traffic_speed"] = total_counters_ipv4.total_speed_average_counters[OUTGOING].bytes;
+        uint64_t incoming_ipv4 = total_counters_ipv4.total_speed_average_counters[INCOMING].bytes;
+        uint64_t outgoing_ipv4 = total_counters_ipv4.total_speed_average_counters[OUTGOING].bytes;
+
+        uint64_t incoming_ipv6 = total_counters_ipv6.total_speed_average_counters[INCOMING].bytes;
+        uint64_t outgoing_ipv6 = total_counters_ipv6.total_speed_average_counters[OUTGOING].bytes;
+
+        stats["incoming_traffic_speed"] = incoming_ipv4 + incoming_ipv6;
+        stats["outgoing_traffic_speed"] = outgoing_ipv4 + outgoing_ipv6;
+
+        stats["incoming_traffic_speed_ipv4"] = incoming_ipv4;
+        stats["outgoing_traffic_speed_ipv4"] = outgoing_ipv4;
+
+        stats["incoming_traffic_speed_ipv6"] = incoming_ipv6;
+        stats["outgoing_traffic_speed_ipv6"] = outgoing_ipv6;
+
         stats["flows_speed"]            = netflow_ipfix_all_protocols_total_flows_speed;
         stats["headers_speed"]          = sflow_raw_packet_headers_total_speed;
         stats["total_hosts"]            = total_number_of_hosts_in_our_networks;
