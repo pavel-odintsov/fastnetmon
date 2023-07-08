@@ -199,7 +199,7 @@ template <typename T, typename Counter> class abstract_subnet_counters_t {
     }
 
     // Retrieves average speed for specified key with all locks
-    bool get_average_speed_subnet(const T& key, Counter& average_speed_element) {
+    bool get_average_speed(const T& key, Counter& average_speed_element) {
         std::lock_guard<std::mutex> lock_guard(this->counter_map_mutex);
 
         auto average_speed_itr = this->average_speed_map.find(key);
