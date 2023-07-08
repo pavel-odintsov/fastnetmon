@@ -1687,6 +1687,8 @@ void traffic_draw_ipv6_program() {
 }
 
 void traffic_draw_ipv4_program() {
+    extern bool hash_counters;
+
     std::stringstream output_buffer;
 
     // logger<<log4cpp::Priority::INFO<<"Draw table call";
@@ -1713,14 +1715,24 @@ void traffic_draw_ipv4_program() {
     output_buffer << print_channel_speed("Incoming traffic", INCOMING) << std::endl;
 
     if (process_incoming_traffic) {
-        output_buffer << draw_table_ipv4(attack_detection_direction_type_t::incoming, sorter_type);
+        if (hash_counters) {
+            output_buffer << draw_table_ipv4_hash(attack_detection_direction_type_t::incoming, sorter_type);
+        } else {
+            output_buffer << draw_table_ipv4(attack_detection_direction_type_t::incoming, sorter_type);
+        }
+
         output_buffer << std::endl;
     }
 
     output_buffer << print_channel_speed("Outgoing traffic", OUTGOING) << std::endl;
 
     if (process_outgoing_traffic) {
-        output_buffer << draw_table_ipv4(attack_detection_direction_type_t::outgoing, sorter_type);
+        if (hash_counters) {
+            output_buffer << draw_table_ipv4_hash(attack_detection_direction_type_t::outgoing, sorter_type);
+        } else {
+            output_buffer << draw_table_ipv4(attack_detection_direction_type_t::outgoing, sorter_type);
+        }
+
         output_buffer << std::endl;
     }
 

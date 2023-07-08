@@ -85,6 +85,7 @@ void recalculate_speed();
 std::string draw_table_ipv4(const attack_detection_direction_type_t& sort_direction,
                             const attack_detection_threshold_type_t& sorter_type);
 std::string draw_table_ipv6(attack_detection_direction_type_t sort_direction, attack_detection_threshold_type_t sorter_type);
+std::string draw_table_ipv4_hash(attack_detection_direction_type_t sort_direction, attack_detection_threshold_type_t sorter_type);
 void print_screen_contents_into_file(std::string screen_data_stats_param, std::string file_path);
 void zeroify_all_flow_counters();
 void process_packet(simple_packet_t& current_packet);
