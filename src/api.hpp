@@ -3,25 +3,46 @@ Status FastnetmonApiServiceImpl::GetBanlist(::grpc::ServerContext* context,
                                             const ::fastmitigation::BanListRequest* request,
                                             ::grpc::ServerWriter<::fastmitigation::BanListReply>* writer) {
     extern blackhole_ban_list_t<subnet_ipv6_cidr_mask_t> ban_list_ipv6;
+    extern blackhole_ban_list_t<uint32_t> ban_list_ipv4;
+    extern bool hash_counters;
+
 
     logger << log4cpp::Priority::INFO << "API we asked for banlist";
 
-    for (std::map<uint32_t, banlist_item_t>::iterator itr = ban_list.begin(); itr != ban_list.end(); ++itr) {
-        std::string client_ip_as_string = convert_ip_as_uint_to_string(itr->first);
+    // IPv4
+    if (hash_counters) { 
+        std::map<uint32_t, banlist_item_t> ban_list_ipv4_copy;
 
-        BanListReply reply;
-        reply.set_ip_address(client_ip_as_string + "/32");
-        writer->Write(reply);
+        // Get whole ban list content atomically
+        ban_list_ipv4.get_whole_banlist(ban_list_ipv4_copy);
+
+        for (auto itr : ban_list_ipv4_copy) {
+            BanListReply reply;
+
+            reply.set_ip_address(convert_ip_as_uint_to_string(itr.first) + "/32");
+            
+            writer->Write(reply);
+        }
+    } else {
+
+        for (auto itr = ban_list.begin(); itr != ban_list.end(); ++itr) {
+            std::string client_ip_as_string = convert_ip_as_uint_to_string(itr->first);
+
+            BanListReply reply;
+            reply.set_ip_address(client_ip_as_string + "/32");
+            writer->Write(reply);
+        }
+
     }
 
     // IPv6
-    std::map<subnet_ipv6_cidr_mask_t, banlist_item_t> ban_list_copy;
+    std::map<subnet_ipv6_cidr_mask_t, banlist_item_t> ban_list_ipv6_copy;
 
     // Get whole ban list content atomically
-    ban_list_ipv6.get_whole_banlist(ban_list_copy);
+    ban_list_ipv6.get_whole_banlist(ban_list_ipv6_copy);
 
 
-    for (auto itr : ban_list_copy) {
+    for (auto itr : ban_list_ipv6_copy) {
         BanListReply reply;
         reply.set_ip_address(print_ipv6_cidr_subnet(itr.first));
         writer->Write(reply);
