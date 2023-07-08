@@ -2673,6 +2673,8 @@ void process_ipv6_packet(simple_packet_t& current_packet) {
 // Process simple unified packet
 void process_packet(simple_packet_t& current_packet) {
     extern bool kafka_traffic_export;
+    extern abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counters;
+    extern bool hash_counters;
 
     // Packets dump is very useful for bug hunting
     if (DEBUG_DUMP_ALL_PACKETS) {
@@ -2803,8 +2805,18 @@ void process_packet(simple_packet_t& current_packet) {
         }
     }
 
+    if (hash_counters) {
+        // Increment counters for all local hosts using new counters
+        if (current_packet.packet_direction == OUTGOING) {
+            ipv4_host_counters.increment_outgoing_counters_for_key(current_packet.src_ip, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
+        } else if (current_packet.packet_direction == INCOMING) {
+            ipv4_host_counters.increment_incoming_counters_for_key(current_packet.src_ip, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
+        } else {
+            // No reasons to keep locks for other or internal
+        }
+    }
 
-    // Incerement main and per protocol packet counters
+    // Increment main and per protocol packet counters
     if (current_packet.packet_direction == OUTGOING) {
         int64_t shift_in_vector = (int64_t)ntohl(current_packet.src_ip) - (int64_t)subnet_in_host_byte_order;
 
@@ -2850,7 +2862,7 @@ void process_packet(simple_packet_t& current_packet) {
     } else if (current_packet.packet_direction == INTERNAL) {
     }
 
-    // Exceute ban related processing
+    // Execute ban related processing
     if (current_packet.packet_direction == OUTGOING) {
         // Collect data when ban client
         if (ban_details_records_count != 0 && !ban_list_details.empty() && ban_list_details.count(current_packet.src_ip) > 0 &&
