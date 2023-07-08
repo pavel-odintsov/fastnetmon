@@ -139,6 +139,8 @@ cppkafka::Producer* kafka_traffic_export_producer = nullptr;
 // Traffic export to Kafka
 bool kafka_traffic_export = false;
 
+bool hash_counters = false;
+
 std::string kafka_traffic_export_topic                    = "fastnetmon";
 kafka_traffic_export_format_t kafka_traffic_export_format = kafka_traffic_export_format_t::JSON;
 std::vector<std::string> kafka_traffic_export_brokers;
@@ -380,7 +382,7 @@ abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t, subnet_counter_t> ipv6_host_
 abstract_subnet_counters_t<subnet_cidr_mask_t, subnet_counter_t> ipv4_network_counters;
 
 // Host counters for IPv4
-abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counter;
+abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counters;
 
 // Flow tracking structures
 map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
@@ -1106,23 +1108,21 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
 
     subnet_counter_t zero_map_element{};
 
-    /*
+    if (hash_counters) {
+        for (int i = 0; i < network_size_in_ips; i++) {
+            uint32_t ip = subnet_as_integer + fast_hton(i);
 
-    for (int i = 0; i < network_size_in_ips; i++) {
-        uint32_t ip = subnet_as_integer + fast_hton(i);
-
-        // logger << log4cpp::Priority::INFO << "Allocate: " << convert_ip_as_uint_to_string(ip);
-   
-        try {
-            ipv4_host_counter.average_speed_map[ip] = zero_map_element;
-            ipv4_host_counter.counter_map[ip] = zero_map_element;
-        } catch (std::bad_alloc& ba) {
-            logger << log4cpp::Priority::ERROR << "Can't allocate memory for hash counters";
-            exit(1);
+            // logger << log4cpp::Priority::INFO << "Allocate: " << convert_ip_as_uint_to_string(ip);
+       
+            try {
+                ipv4_host_counters.average_speed_map[ip] = zero_map_element;
+                ipv4_host_counters.counter_map[ip] = zero_map_element;
+            } catch (std::bad_alloc& ba) {
+                logger << log4cpp::Priority::ERROR << "Can't allocate memory for hash counters";
+                exit(1);
+            }
         }
     }
-
-    */
         
     // Initilize our counters with fill constructor
     try {

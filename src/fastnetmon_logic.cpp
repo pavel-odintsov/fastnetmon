@@ -18,6 +18,8 @@
 #include "fast_library.hpp"
 #include "fast_platform.hpp"
 
+#include "fast_endianless.hpp"
+
 // Plugins
 #include "netflow_plugin/netflow_collector.hpp"
 
@@ -2000,11 +2002,19 @@ void speed_callback_subnet_ipv6(subnet_ipv6_cidr_mask_t* subnet, subnet_counter_
     return;
 }
 
+// This function works as callback from main speed calculation thread and decides when we should block host using static thresholds
+void speed_calculation_callback_local_ipv4(const uint32_t& client_ip, const subnet_counter_t& speed_element) {
+    // TBD
+}
 
 /* Calculate speed for all connnections */
 void recalculate_speed() {
     // logger<< log4cpp::Priority::INFO<<"We run recalculate_speed";
     double speed_calc_period = recalculate_speed_timeout;
+
+    extern abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counters;
+
+    extern bool hash_counters;
 
     std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
 
@@ -2053,6 +2063,12 @@ void recalculate_speed() {
 
     ipv4_network_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, nullptr);
 
+    if (hash_counters) {
+        uint64_t flow_exists_for_ip         = 0;
+        uint64_t flow_does_not_exist_for_ip = 0;
+
+        ipv4_host_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, speed_calculation_callback_local_ipv4, nullptr);
+    }
 
     for (map_of_vector_counters_t::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); ++itr) {
         for (vector_of_counters::iterator vector_itr = itr->second.begin(); vector_itr != itr->second.end(); ++vector_itr) {
