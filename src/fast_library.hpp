@@ -150,3 +150,4 @@ bool serialize_simple_packet_to_json(const simple_packet_t& packet, nlohmann::js
 bool convert_ip_as_string_to_uint_safe(const std::string& ip, uint32_t& ip_as_integer);
 forwarding_status_t forwarding_status_from_integer(uint8_t forwarding_status_as_integer);
 bool is_zero_ipv6_address(const in6_addr& ipv6_address);
+std::string convert_ipv4_subnet_to_string(const subnet_cidr_mask_t& subnet);

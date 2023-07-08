@@ -48,6 +48,15 @@ std::string convert_ip_as_uint_to_string(uint32_t ip_as_integer) {
     return (std::string)inet_ntoa(ip_addr);
 }
 
+std::string convert_ipv4_subnet_to_string(const subnet_cidr_mask_t& subnet) {
+    std::stringstream buffer;
+
+    buffer << convert_ip_as_uint_to_string(subnet.subnet_address) << "/" << subnet.cidr_prefix_length;
+
+    return buffer.str();
+}
+
+
 // convert integer to string
 std::string convert_int_to_string(int value) {
     std::stringstream out;
