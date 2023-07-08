@@ -55,6 +55,8 @@ Status FastnetmonApiServiceImpl::ExecuteBan(ServerContext* context,
                                             const fastmitigation::ExecuteBanRequest* request,
                                             fastmitigation::ExecuteBanReply* reply) {
     extern blackhole_ban_list_t<subnet_ipv6_cidr_mask_t> ban_list_ipv6;
+    extern blackhole_ban_list_t<uint32_t> ban_list_ipv4;
+    extern bool hash_counters;
 
     logger << log4cpp::Priority::INFO << "API we asked for ban for IP: " << request->ip_address();
 
@@ -95,14 +97,30 @@ Status FastnetmonApiServiceImpl::ExecuteBan(ServerContext* context,
             return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, "Can't parse IPv4 address");
         }
 
-        {
-            std::lock_guard<std::mutex> lock_guard(ban_list_mutex);
-            ban_list[client_ip] = current_attack;
+        subnet_cidr_mask_t subnet;
+
+        bool lookup_result =
+            lookup_ip_in_integer_form_inpatricia_and_return_subnet_if_found(lookup_tree_ipv4, client_ip, subnet);
+
+        if (!lookup_result) {
+            logger << log4cpp::Priority::ERROR << "IP address " << request->ip_address() << " does not belong to our networks.";
+            return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, "This IP does not belong to our subnets");
         }
 
-        {
-            std::lock_guard<std::mutex> lock_guard(ban_list_details_mutex);
-            ban_list_details[client_ip] = std::vector<simple_packet_t>();
+        if (hash_counters) {
+            ban_list_ipv4.add_to_blackhole(client_ip, current_attack);
+        } else {
+
+            {
+                std::lock_guard<std::mutex> lock_guard(ban_list_mutex);
+                ban_list[client_ip] = current_attack;
+            }
+
+            {
+                std::lock_guard<std::mutex> lock_guard(ban_list_details_mutex);
+                ban_list_details[client_ip] = std::vector<simple_packet_t>();
+            }
+
         }
     } else {
         bool parsed_ipv6 = read_ipv6_host_from_string(request->ip_address(), ipv6_address.subnet_address);
@@ -133,6 +151,8 @@ Status FastnetmonApiServiceImpl::ExecuteUnBan(ServerContext* context,
                                               const fastmitigation::ExecuteBanRequest* request,
                                               fastmitigation::ExecuteBanReply* reply) {
     extern blackhole_ban_list_t<subnet_ipv6_cidr_mask_t> ban_list_ipv6;
+    extern blackhole_ban_list_t<uint32_t> ban_list_ipv4;
+    extern bool hash_counters;
 
     logger << log4cpp::Priority::INFO << "API: We asked for unban for IP: " << request->ip_address();
 

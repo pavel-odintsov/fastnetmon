@@ -2419,3 +2419,35 @@ std::string convert_any_ip_to_string(uint32_t client_ip) {
     return convert_ip_as_uint_to_string(client_ip);
 }
 
+// This code lookup IP in specified patricia tree and returns prefix which it
+// belongs
+bool lookup_ip_in_integer_form_inpatricia_and_return_subnet_if_found(patricia_tree_t* patricia_tree,
+                                                                     uint32_t client_ip,
+                                                                     subnet_cidr_mask_t& subnet) {
+    if (patricia_tree == NULL) {
+        return false;
+    }
+
+    prefix_t prefix_for_check_address;
+    prefix_for_check_address.add.sin.s_addr = client_ip;
+    prefix_for_check_address.family         = AF_INET;
+    prefix_for_check_address.bitlen         = 32;
+
+    patricia_node_t* found_patrica_node = patricia_search_best2(patricia_tree, &prefix_for_check_address, 1);
+
+    if (found_patrica_node == NULL) {
+        return false;
+    }
+
+    prefix_t* prefix = found_patrica_node->prefix;
+
+    if (prefix == NULL) {
+        return false;
+    }
+
+    subnet.subnet_address     = prefix->add.sin.s_addr;
+    subnet.cidr_prefix_length = prefix->bitlen;
+
+    return true;
+}
+

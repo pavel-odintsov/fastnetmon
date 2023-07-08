@@ -155,4 +155,6 @@ std::string convert_ipv4_subnet_to_string(const subnet_cidr_mask_t& subnet);
 // Represent IPv6 subnet in string form
 std::string convert_ipv6_subnet_to_string(const subnet_ipv6_cidr_mask_t& subnet);
 std::string convert_any_ip_to_string(uint32_t client_ip);
-
+bool lookup_ip_in_integer_form_inpatricia_and_return_subnet_if_found(patricia_tree_t* patricia_tree,
+                                                                     uint32_t client_ip,
+                                                                     subnet_cidr_mask_t& subnet);
