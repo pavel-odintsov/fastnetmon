@@ -186,20 +186,37 @@ Status FastnetmonApiServiceImpl::ExecuteUnBan(ServerContext* context,
             return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, "Can't parse IPv4 address");
         }   
 
-        if (ban_list.count(client_ip) == 0) {
-            logger << log4cpp::Priority::ERROR << "API: Could not find IP in ban list";
-            return Status::CANCELLED;
-        }
+        if (hash_counters) { 
+            bool is_blackholed_ipv4 = ban_list_ipv4.is_blackholed(client_ip);
 
-        current_attack = ban_list[client_ip];
+            if (!is_blackholed_ipv4) {
+                logger << log4cpp::Priority::ERROR << "API: Could not find IPv4 address in ban list";
+                return Status::CANCELLED;
+            }
 
-        logger << log4cpp::Priority::INFO << "API: call unban handlers";
+            bool get_details = ban_list_ipv4.get_blackhole_details(client_ip, current_attack);
 
-        logger << log4cpp::Priority::INFO << "API: remove IP from ban list";
+            if (!get_details) {
+                return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, "Could not get IPv4 blackhole details");
+            }
 
-        {
-            std::lock_guard<std::mutex> lock_guard(ban_list_mutex);
-            ban_list.erase(client_ip);
+            ban_list_ipv4.remove_from_blackhole(client_ip);
+        } else {
+            if (ban_list.count(client_ip) == 0) {
+                logger << log4cpp::Priority::ERROR << "API: Could not find IP in ban list";
+                return Status::CANCELLED;
+            }
+
+            current_attack = ban_list[client_ip];
+
+            logger << log4cpp::Priority::INFO << "API: call unban handlers";
+
+            logger << log4cpp::Priority::INFO << "API: remove IP from ban list";
+
+            {
+                std::lock_guard<std::mutex> lock_guard(ban_list_mutex);
+                ban_list.erase(client_ip);
+            }
         }
     } else {
         bool parsed_ipv6 = read_ipv6_host_from_string(request->ip_address(), ipv6_address.subnet_address);
