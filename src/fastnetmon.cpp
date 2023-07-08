@@ -411,8 +411,11 @@ map_of_vector_counters_t SubnetVectorMapSpeedAverage;
 map_for_counters GeoIpCounter;
 #endif
 
-// IPv6 hosts
-blackhole_ban_list_t<subnet_ipv6_cidr_mask_t> ban_list_ipv6_ng;
+// Banned IPv6 hosts
+blackhole_ban_list_t<subnet_ipv6_cidr_mask_t> ban_list_ipv6;
+
+// Banned IPv4 hosts
+blackhole_ban_list_t<uint32_t> ban_list_ipv4;
 
 // In ddos info we store attack power and direction
 std::map<uint32_t, banlist_item_t> ban_list;

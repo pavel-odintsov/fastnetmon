@@ -1685,42 +1685,6 @@ void traffic_draw_ipv6_program() {
     print_screen_contents_into_file(output_buffer.str(), cli_stats_ipv6_file_path);
 }
 
-std::string print_subnet_ipv6_load() {
-    std::stringstream buffer;
-
-    attack_detection_threshold_type_t sorter_type;
-
-    if (sort_parameter == "packets") {
-        sorter_type = attack_detection_threshold_type_t::packets_per_second;
-    } else if (sort_parameter == "bytes") {
-        sorter_type = attack_detection_threshold_type_t::bytes_per_second;
-    } else if (sort_parameter == "flows") {
-        sorter_type = attack_detection_threshold_type_t::flows_per_second;
-    } else {
-        logger << log4cpp::Priority::INFO << "Unexpected sorter type: " << sort_parameter;
-        sorter_type = attack_detection_threshold_type_t::packets_per_second;
-    }
-
-    std::vector<pair_of_map_for_ipv6_subnet_counters_elements_t> vector_for_sort;
-    ipv6_subnet_counters.get_sorted_average_speed(vector_for_sort, sorter_type, attack_detection_direction_type_t::outgoing);
-
-
-    for (std::vector<pair_of_map_for_ipv6_subnet_counters_elements_t>::iterator itr = vector_for_sort.begin();
-         itr != vector_for_sort.end(); ++itr) {
-        subnet_counter_t* speed      = &itr->second;
-        std::string subnet_as_string = print_ipv6_cidr_subnet(itr->first);
-
-        buffer << std::setw(42) << std::left << subnet_as_string;
-
-        buffer << " "
-               << "pps in: " << std::setw(8) << speed->total.in_packets << " out: " << std::setw(8)
-               << speed->total.out_packets << " mbps in: " << std::setw(5) << convert_speed_to_mbps(speed->total.in_bytes)
-               << " out: " << std::setw(5) << convert_speed_to_mbps(speed->total.out_bytes) << "\n";
-    }
-
-    return buffer.str();
-}
-
 void traffic_draw_ipv4_program() {
     std::stringstream output_buffer;
 
@@ -2260,6 +2224,64 @@ void recalculate_speed() {
         logger << log4cpp::Priority::ERROR << "Please use CPU with higher frequency and better single core performance or reduce number of monitored hosts";
     }
 }
+
+std::string draw_table_ipv4_hash(attack_detection_direction_type_t sort_direction, bool do_redis_update, attack_detection_threshold_type_t sorter_type) {
+    extern abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counters;
+    extern blackhole_ban_list_t<uint32_t> ban_list_ipv4;
+
+    std::stringstream output_buffer;
+
+    unsigned int shift_for_sort = max_ips_in_list;
+
+    // Allocate vector with size which matches number of required elements
+    std::vector<std::pair<uint32_t, subnet_counter_t>> vector_for_sort(shift_for_sort);
+
+    ipv4_host_counters.get_top_k_average_speed(vector_for_sort, sorter_type, sort_direction);
+
+    for (const auto& item: vector_for_sort) {
+        // When we do not have enough hosts in output vector we will keep all entries nil, filter out them
+        if (item.first == 0) {
+            continue;
+        }
+
+        uint32_t client_ip              = item.first;
+        std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+
+        uint64_t pps   = 0;
+        uint64_t bps   = 0;
+        uint64_t flows = 0;
+
+        // Here we could have average or instantaneous speed
+        const subnet_counter_t& current_speed_element = item.second;
+
+        // Create polymorphic pps, byte and flow counters
+        if (sort_direction == attack_detection_direction_type_t::incoming) {
+            pps   = current_speed_element.total.in_packets;
+            bps   = current_speed_element.total.in_bytes;
+            flows = current_speed_element.in_flows;
+        } else if (sort_direction == attack_detection_direction_type_t::outgoing) {
+            pps   = current_speed_element.total.out_packets;
+            bps   = current_speed_element.total.out_bytes;
+            flows = current_speed_element.out_flows;
+        }
+
+        uint64_t mbps = convert_speed_to_mbps(bps);
+
+        // We use setw for alignment
+        output_buffer << client_ip_as_string << "\t";
+
+        std::string is_banned = ban_list_ipv4.is_blackholed(client_ip) ? " *banned* " : "";
+
+        output_buffer << std::setw(6) << pps << " pps ";
+        output_buffer << std::setw(6) << mbps << " mbps ";
+        output_buffer << std::setw(6) << flows << " flows ";
+
+        output_buffer << is_banned << std::endl;
+    }
+
+    return output_buffer.str();
+}
+
 
 std::string draw_table_ipv6(attack_detection_direction_type_t sort_direction, bool do_redis_update, attack_detection_threshold_type_t sorter_type) {
     std::vector<pair_of_map_for_ipv6_subnet_counters_elements_t> vector_for_sort;
