@@ -158,7 +158,6 @@ Status FastnetmonApiServiceImpl::ExecuteUnBan(ServerContext* context,
 
         {
             std::lock_guard<std::mutex> lock_guard(ban_list_mutex);
-            ;
             ban_list.erase(client_ip);
         }
     } else {
