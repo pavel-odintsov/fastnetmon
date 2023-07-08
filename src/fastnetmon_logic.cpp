@@ -3064,8 +3064,8 @@ std::string print_channel_speed_ipv6(std::string traffic_type, direction_t packe
 }
 
 template <typename TemplateKeyType>
-void remove_orphaned_buckets(packet_buckets_storage_t<TemplateKeyType>* packet_storage, std::string protocol) {
-    std::lock_guard<std::mutex> lock_guard(packet_storage->packet_buckets_map_mutex);
+void remove_orphaned_buckets(packet_buckets_storage_t<TemplateKeyType>& packet_storage, std::string protocol) {
+    std::lock_guard<std::mutex> lock_guard(packet_storage.packet_buckets_map_mutex);
 
     // List of buckets to remove
     std::vector<TemplateKeyType> buckets_to_remove;
@@ -3074,7 +3074,7 @@ void remove_orphaned_buckets(packet_buckets_storage_t<TemplateKeyType>* packet_s
 
     // Find buckets for removal
     // We should not remove them here because it's tricky to do properly in C++
-    for (auto it = packet_storage->packet_buckets_map.begin(); it != packet_storage->packet_buckets_map.end(); ++it) {
+    for (auto it = packet_storage.packet_buckets_map.begin(); it != packet_storage.packet_buckets_map.end(); ++it) {
         if (should_remove_orphaned_bucket<TemplateKeyType>(*it)) {
             logger << log4cpp::Priority::DEBUG << "We decided to remove " << protocol << " bucket "
                    << convert_any_ip_to_string(it->first);
@@ -3087,18 +3087,18 @@ void remove_orphaned_buckets(packet_buckets_storage_t<TemplateKeyType>* packet_s
 
     for (auto client_ip : buckets_to_remove) {
         // Let's dump some data from it
-        packet_bucket_t* bucket = &packet_storage->packet_buckets_map[client_ip];
+        packet_bucket_t& bucket = packet_storage.packet_buckets_map[client_ip];
 
         logger << log4cpp::Priority::WARN << "We've found orphaned bucket for IP: " << convert_any_ip_to_string(client_ip)
-               << " it has " << bucket->parsed_packets_circular_buffer.size() << " parsed packets"
-               << " and " << bucket->raw_packets_circular_buffer.size() << " raw packets"
+               << " it has " << bucket.parsed_packets_circular_buffer.size() << " parsed packets"
+               << " and " << bucket.raw_packets_circular_buffer.size() << " raw packets"
                << " we will remove it";
 
         // Stop packet collection ASAP
-        bucket->we_could_receive_new_data = false;
+        bucket.we_could_receive_new_data = false;
 
         // Remove it completely from map
-        packet_storage->packet_buckets_map.erase(client_ip);
+        packet_storage.packet_buckets_map.erase(client_ip);
     }
 
     return;
@@ -3191,9 +3191,16 @@ void process_filled_buckets_ipv6() {
 
 // This functions will check for packet buckets availible for processing
 void check_traffic_buckets() {
+    extern bool hash_counters;
+    extern packet_buckets_storage_t<uint32_t> packet_buckets_ipv4_storage;
+
     while (true) {
+        if (hash_counters) {
+            remove_orphaned_buckets(packet_buckets_ipv4_storage, "ipv4");
+        }
+
         // Process buckets which haven't filled by packets
-        remove_orphaned_buckets(&packet_buckets_ipv6_storage, "ipv6");
+        remove_orphaned_buckets(packet_buckets_ipv6_storage, "ipv6");
 
         process_filled_buckets_ipv6();
 
