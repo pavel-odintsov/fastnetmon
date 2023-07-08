@@ -2670,11 +2670,27 @@ void process_ipv6_packet(simple_packet_t& current_packet) {
     return;
 }
 
+// Adds traffic to buckets from hot path
+template <typename T>
+void collect_traffic_to_buckets_ipv4(const simple_packet_t& current_packet, packet_buckets_storage_t<T>& packet_buckets_storage) {
+    if (current_packet.packet_direction == OUTGOING) {
+        // With this code we will add parsed packets and their raw versions (if we have they) to circular buffer to
+        // we are interested about they
+        packet_buckets_storage.add_packet_to_storage(current_packet.src_ip, current_packet);
+    } else if (current_packet.packet_direction == INCOMING) {
+        // With this code we will add parsed packets and their raw versions (if we have they) to circular buffer to
+        // we are interested about they
+        packet_buckets_storage.add_packet_to_storage(current_packet.dst_ip, current_packet);
+    }
+}
+
+
 // Process simple unified packet
 void process_packet(simple_packet_t& current_packet) {
     extern bool kafka_traffic_export;
     extern abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counters;
     extern bool hash_counters;
+    extern packet_buckets_storage_t<uint32_t> packet_buckets_ipv4_storage;
 
     // Packets dump is very useful for bug hunting
     if (DEBUG_DUMP_ALL_PACKETS) {
@@ -2806,6 +2822,9 @@ void process_packet(simple_packet_t& current_packet) {
     }
 
     if (hash_counters) {
+        // Add traffic to buckets when we have them
+        collect_traffic_to_buckets_ipv4(current_packet, packet_buckets_ipv4_storage);
+
         // Increment counters for all local hosts using new counters
         if (current_packet.packet_direction == OUTGOING) {
             ipv4_host_counters.increment_outgoing_counters_for_key(current_packet.src_ip, current_packet, sampled_number_of_packets, sampled_number_of_bytes);

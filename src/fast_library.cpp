@@ -1443,8 +1443,8 @@ std::string print_ipv6_cidr_subnet(subnet_ipv6_cidr_mask_t subnet) {
 }
 
 // Abstract function with overloads for templated classes where we use v4 and v4
-std::string convert_any_ip_to_string(subnet_ipv6_cidr_mask_t subnet) {
-    return print_ipv6_cidr_subnet(subnet);
+std::string convert_any_ip_to_string(const subnet_ipv6_cidr_mask_t& subnet) {
+    return convert_ipv6_subnet_to_string(subnet);
 }
 
 // Return true if we have this IP in patricia tree
@@ -2408,5 +2408,14 @@ forwarding_status_t forwarding_status_from_integer(uint8_t forwarding_status_as_
         // It must not happen
         return forwarding_status_t::unknown;
     }
+}
+
+// Represent IPv6 subnet in string form
+std::string convert_ipv6_subnet_to_string(const subnet_ipv6_cidr_mask_t& subnet) {
+    return print_ipv6_address(subnet.subnet_address) + "/" + std::to_string(subnet.cidr_prefix_length);
+}
+
+std::string convert_any_ip_to_string(uint32_t client_ip) {
+    return convert_ip_as_uint_to_string(client_ip);
 }
 

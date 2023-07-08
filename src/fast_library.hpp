@@ -100,7 +100,7 @@ bool set_boost_process_name(boost::thread* thread, const std::string& process_na
 std::string convert_subnet_to_string(subnet_cidr_mask_t my_subnet);
 
 std::string print_ipv6_cidr_subnet(subnet_ipv6_cidr_mask_t subnet);
-std::string convert_any_ip_to_string(subnet_ipv6_cidr_mask_t subnet);
+std::string convert_any_ip_to_string(const subnet_ipv6_cidr_mask_t& subnet);
 bool convert_string_to_positive_integer_safe(std::string line, int& value);
 bool read_ipv6_host_from_string(std::string ipv6_host_as_string, in6_addr& result);
 bool validate_ipv6_or_ipv4_host(const std::string host);
@@ -151,3 +151,8 @@ bool convert_ip_as_string_to_uint_safe(const std::string& ip, uint32_t& ip_as_in
 forwarding_status_t forwarding_status_from_integer(uint8_t forwarding_status_as_integer);
 bool is_zero_ipv6_address(const in6_addr& ipv6_address);
 std::string convert_ipv4_subnet_to_string(const subnet_cidr_mask_t& subnet);
+
+// Represent IPv6 subnet in string form
+std::string convert_ipv6_subnet_to_string(const subnet_ipv6_cidr_mask_t& subnet);
+std::string convert_any_ip_to_string(uint32_t client_ip);
+

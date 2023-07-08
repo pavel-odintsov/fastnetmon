@@ -168,6 +168,9 @@ unsigned int check_for_availible_for_processing_packets_buckets = 1;
 // Current time with pretty low precision, we use separate thread to update it
 time_t current_inaccurate_time = 0;
 
+// This is thread safe storage for captured from the wire packets for IPv4 traffic
+packet_buckets_storage_t<uint32_t> packet_buckets_ipv4_storage;
+
 // This is thread safe storage for captured from the wire packets for IPv6 traffic
 packet_buckets_storage_t<subnet_ipv6_cidr_mask_t> packet_buckets_ipv6_storage;
 
@@ -1794,6 +1797,9 @@ int main(int argc, char** argv) {
     reconfigure_logging();
 
     load_our_networks_list();
+
+    // We should specify size of circular buffers here
+    packet_buckets_ipv4_storage.set_buffers_capacity(ban_details_records_count);
 
     // Set capacity for nested buffers
     packet_buckets_ipv6_storage.set_buffers_capacity(ban_details_records_count);
