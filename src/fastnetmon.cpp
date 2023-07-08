@@ -19,6 +19,8 @@
 
 #include "fastnetmon_logic.hpp"
 
+#include "fast_endianless.hpp"
+
 #ifdef FASTNETMON_API
 
 #ifdef __GNUC__
@@ -376,6 +378,9 @@ abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t, subnet_counter_t> ipv6_host_
 
 // Here we store traffic per subnet
 abstract_subnet_counters_t<subnet_cidr_mask_t, subnet_counter_t> ipv4_network_counters;
+
+// Host counters for IPv4
+abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counter;
 
 // Flow tracking structures
 map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
@@ -1093,13 +1098,32 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
     int network_size_in_ips = pow(base, 32 - bitlen);
     // logger<< log4cpp::Priority::INFO<<"Subnet: "<<prefix->add.sin.s_addr<<" network size:
     // "<<network_size_in_ips;
-    logger << log4cpp::Priority::INFO << "I will allocate " << network_size_in_ips << " records for subnet "
-           << subnet_as_integer << " cidr mask: " << bitlen;
-
+   
     subnet_cidr_mask_t current_subnet(subnet_as_integer, bitlen);
+
+    logger << log4cpp::Priority::INFO << "I will allocate " << network_size_in_ips << " records for subnet "
+           << convert_ipv4_subnet_to_string(current_subnet);
 
     subnet_counter_t zero_map_element{};
 
+    /*
+
+    for (int i = 0; i < network_size_in_ips; i++) {
+        uint32_t ip = subnet_as_integer + fast_hton(i);
+
+        // logger << log4cpp::Priority::INFO << "Allocate: " << convert_ip_as_uint_to_string(ip);
+   
+        try {
+            ipv4_host_counter.average_speed_map[ip] = zero_map_element;
+            ipv4_host_counter.counter_map[ip] = zero_map_element;
+        } catch (std::bad_alloc& ba) {
+            logger << log4cpp::Priority::ERROR << "Can't allocate memory for hash counters";
+            exit(1);
+        }
+    }
+
+    */
+        
     // Initilize our counters with fill constructor
     try {
         SubnetVectorMap[current_subnet]             = vector_of_counters(network_size_in_ips, zero_map_element);
