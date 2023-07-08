@@ -2829,7 +2829,7 @@ void process_packet(simple_packet_t& current_packet) {
         if (current_packet.packet_direction == OUTGOING) {
             ipv4_host_counters.increment_outgoing_counters_for_key(current_packet.src_ip, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
         } else if (current_packet.packet_direction == INCOMING) {
-            ipv4_host_counters.increment_incoming_counters_for_key(current_packet.src_ip, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
+            ipv4_host_counters.increment_incoming_counters_for_key(current_packet.dst_ip, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
         } else {
             // No reasons to keep locks for other or internal
         }
