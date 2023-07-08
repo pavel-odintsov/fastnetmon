@@ -79,7 +79,6 @@ extern map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
 extern bool DEBUG_DUMP_ALL_PACKETS;
 extern bool DEBUG_DUMP_OTHER_PACKETS;
 extern uint64_t total_ipv4_packets;
-extern blackhole_ban_list_t<subnet_ipv6_cidr_mask_t> ban_list_ipv6_ng;
 extern uint64_t total_ipv6_packets;
 extern map_of_vector_counters_t SubnetVectorMapSpeed;
 extern double average_calculation_amount;
@@ -656,12 +655,14 @@ void execute_unban_operation_ipv6() {
     time_t current_time;
     time(&current_time);
 
+    extern blackhole_ban_list_t<subnet_ipv6_cidr_mask_t> ban_list_ipv6;
+
     std::vector<subnet_ipv6_cidr_mask_t> ban_list_items_for_erase;
 
     std::map<subnet_ipv6_cidr_mask_t, banlist_item_t> ban_list_copy;
 
     // Get whole ban list content atomically
-    ban_list_ipv6_ng.get_whole_banlist(ban_list_copy);
+    ban_list_ipv6.get_whole_banlist(ban_list_copy);
 
     for (auto itr : ban_list_copy) {
         // This IP should be banned permanentely and we skip any processing
@@ -700,7 +701,7 @@ void execute_unban_operation_ipv6() {
 
     // Remove all unbanned hosts from the ban list
     for (auto ban_element_for_erase : ban_list_items_for_erase) {
-        ban_list_ipv6_ng.remove_from_blackhole(ban_element_for_erase);
+        ban_list_ipv6.remove_from_blackhole(ban_element_for_erase);
     }
 }
 
@@ -1662,14 +1663,14 @@ void traffic_draw_ipv6_program() {
     output_buffer << print_channel_speed_ipv6("Incoming traffic", INCOMING) << std::endl;
 
     if (process_incoming_traffic) {
-        output_buffer << draw_table_ipv6(attack_detection_direction_type_t::incoming, true, sorter_type);
+        output_buffer << draw_table_ipv6(attack_detection_direction_type_t::incoming, sorter_type);
         output_buffer << std::endl;
     }
 
     output_buffer << print_channel_speed_ipv6("Outgoing traffic", OUTGOING) << std::endl;
 
     if (process_outgoing_traffic) {
-        output_buffer << draw_table_ipv6(attack_detection_direction_type_t::outgoing, false, sorter_type);
+        output_buffer << draw_table_ipv6(attack_detection_direction_type_t::outgoing, sorter_type);
         output_buffer << std::endl;
     }
 
@@ -1712,14 +1713,14 @@ void traffic_draw_ipv4_program() {
     output_buffer << print_channel_speed("Incoming traffic", INCOMING) << std::endl;
 
     if (process_incoming_traffic) {
-        output_buffer << draw_table_ipv4(attack_detection_direction_type_t::incoming, true, sorter_type);
+        output_buffer << draw_table_ipv4(attack_detection_direction_type_t::incoming, sorter_type);
         output_buffer << std::endl;
     }
 
     output_buffer << print_channel_speed("Outgoing traffic", OUTGOING) << std::endl;
 
     if (process_outgoing_traffic) {
-        output_buffer << draw_table_ipv4(attack_detection_direction_type_t::outgoing, false, sorter_type);
+        output_buffer << draw_table_ipv4(attack_detection_direction_type_t::outgoing, sorter_type);
         output_buffer << std::endl;
     }
 
@@ -1901,6 +1902,8 @@ void speed_callback_ipv6(const subnet_ipv6_cidr_mask_t& current_subnet, const su
         return;
     }
 
+    extern blackhole_ban_list_t<subnet_ipv6_cidr_mask_t> ban_list_ipv6;
+
     // We support only global group
     std::string host_group_name = "global";
 
@@ -1928,7 +1931,7 @@ void speed_callback_ipv6(const subnet_ipv6_cidr_mask_t& current_subnet, const su
         return;
     }
 
-    bool this_ip_is_already_banned = ban_list_ipv6_ng.is_blackholed(current_subnet);
+    bool this_ip_is_already_banned = ban_list_ipv6.is_blackholed(current_subnet);
 
     if (this_ip_is_already_banned) {
         return;
@@ -2225,7 +2228,7 @@ void recalculate_speed() {
     }
 }
 
-std::string draw_table_ipv4_hash(attack_detection_direction_type_t sort_direction, bool do_redis_update, attack_detection_threshold_type_t sorter_type) {
+std::string draw_table_ipv4_hash(attack_detection_direction_type_t sort_direction, attack_detection_threshold_type_t sorter_type) {
     extern abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counters;
     extern blackhole_ban_list_t<uint32_t> ban_list_ipv4;
 
@@ -2283,10 +2286,12 @@ std::string draw_table_ipv4_hash(attack_detection_direction_type_t sort_directio
 }
 
 
-std::string draw_table_ipv6(attack_detection_direction_type_t sort_direction, bool do_redis_update, attack_detection_threshold_type_t sorter_type) {
+std::string draw_table_ipv6(attack_detection_direction_type_t sort_direction, attack_detection_threshold_type_t sorter_type) {
     std::vector<pair_of_map_for_ipv6_subnet_counters_elements_t> vector_for_sort;
     ssize_t size_of_ipv6_counters_map = 0;
     std::stringstream output_buffer;
+
+    extern blackhole_ban_list_t<subnet_ipv6_cidr_mask_t> ban_list_ipv6;
 
     // TODO: implement method for such tasks
     {
@@ -2365,7 +2370,7 @@ std::string draw_table_ipv6(attack_detection_direction_type_t sort_direction, bo
         // We use setw for alignment
         output_buffer << client_ip_as_string << "\t";
 
-        std::string is_banned = ban_list_ipv6_ng.is_blackholed(ii->first) ? " *banned* " : "";
+        std::string is_banned = ban_list_ipv6.is_blackholed(ii->first) ? " *banned* " : "";
 
         output_buffer << std::setw(6) << pps << " pps ";
         output_buffer << std::setw(6) << mbps << " mbps ";
@@ -2378,7 +2383,6 @@ std::string draw_table_ipv6(attack_detection_direction_type_t sort_direction, bo
 }
 
 std::string draw_table_ipv4(const attack_detection_direction_type_t& data_direction,
-                            bool do_redis_update,
                             const attack_detection_threshold_type_t& sorter_type) {
     std::vector<pair_of_map_elements> vector_for_sort;
 
@@ -3072,8 +3076,10 @@ void execute_ipv6_ban(subnet_ipv6_cidr_mask_t ipv6_client,
                       attack_details_t current_attack,
                       std::string simple_packets_dump,
                       boost::circular_buffer<simple_packet_t>& simple_packets_buffer) {
+    extern blackhole_ban_list_t<subnet_ipv6_cidr_mask_t> ban_list_ipv6;
+
     // Execute ban actions
-    ban_list_ipv6_ng.add_to_blackhole(ipv6_client, current_attack);
+    ban_list_ipv6.add_to_blackhole(ipv6_client, current_attack);
 
     logger << log4cpp::Priority::INFO << "IPv6 address " << print_ipv6_cidr_subnet(ipv6_client) << " was banned";
 
