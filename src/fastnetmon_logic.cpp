@@ -1481,6 +1481,7 @@ void call_blackhole_actions_per_host(
     std::string basic_attack_information_in_json =
         get_attack_description_in_json_for_web_hooks(client_ip, subnet_ipv6_cidr_mask_t{}, false, action_name, current_attack);
 
+
     if (attack_action == attack_action_t::ban) {
 
         std::string pps_as_string            = convert_int_to_string(current_attack.attack_power);
@@ -1510,8 +1511,24 @@ void call_blackhole_actions_per_host(
 
             logger << log4cpp::Priority::INFO << "Script for ban client is finished: " << client_ip_as_string;
         }
-    }
+    } else if (attack_action == attack_action_t::unban) {
+        if (notify_script_enabled) {
+            std::string data_direction_as_string = get_direction_name(current_attack.attack_direction);
+            std::string pps_as_string            = convert_int_to_string(current_attack.attack_power);
 
+            std::string script_call_params = fastnetmon_platform_configuration.notify_script_path + " " + client_ip_as_string +
+                                             " " + data_direction_as_string + " " + pps_as_string + " unban";
+
+            logger << log4cpp::Priority::INFO << "Call script for unban client: " << client_ip_as_string;
+
+            // We should execute external script in separate thread because any lag in this
+            // code will be very distructive
+            boost::thread exec_thread(exec_no_error_check, script_call_params);
+            exec_thread.detach();
+
+            logger << log4cpp::Priority::INFO << "Script for unban client is finished: " << client_ip_as_string;
+        }
+    }
 
     if (exabgp_enabled && ipv4) {
         logger << log4cpp::Priority::INFO << "Call ExaBGP for " << action_name << " client started: " << client_ip_as_string;
