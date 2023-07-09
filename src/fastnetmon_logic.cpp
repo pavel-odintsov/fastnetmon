@@ -3172,6 +3172,90 @@ void execute_ipv4_ban(uint32_t client_ip,
 }
 
 
+/*
+// With this function we could get any element from our flow counter structure
+bool get_element_from_map_of_flow_counters(map_of_vector_counters_for_flow_t& map_of_counters,
+                                           uint32_t client_ip,
+                                           conntrack_main_struct_t& current_conntrack_structure) {
+    extern std::mutex flow_counter_mutex;
+
+    std::lock_guard<std::mutex> lock_guard(flow_counter_mutex);
+    current_conntrack_structure = map_of_counters[client_ip];
+
+    return true;
+}
+
+*/
+
+void process_filled_buckets_ipv4() {
+    extern packet_buckets_storage_t<uint32_t> packet_buckets_ipv4_storage;
+    extern map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
+
+    std::vector<uint32_t> filled_buckets;
+
+    // TODO: amount of processing we do under lock is absolutely insane
+    // We need to rework it
+    std::lock_guard<std::mutex> lock_guard(packet_buckets_ipv4_storage.packet_buckets_map_mutex);
+
+    for (auto itr = packet_buckets_ipv4_storage.packet_buckets_map.begin();
+         itr != packet_buckets_ipv4_storage.packet_buckets_map.end(); ++itr) {
+        // Find one time capture requests which filled completely
+        if (itr->second.collection_pattern == collection_pattern_t::ONCE &&
+            itr->second.we_collected_full_buffer_least_once && !itr->second.is_already_processed) {
+
+            logger << log4cpp::Priority::DEBUG << "Found filled bucket for IPv4 " << convert_any_ip_to_string(itr->first);
+
+            filled_buckets.push_back(itr->first);
+        }
+    }
+
+    // logger << log4cpp::Priority::DEBUG << "We have " << filled_buckets.size() << " filled buckets to process";
+
+    for (auto client_ip_as_integer : filled_buckets) {
+        std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip_as_integer);
+
+        packet_bucket_t& bucket = packet_buckets_ipv4_storage.packet_buckets_map[client_ip_as_integer];
+
+        // We found something, let's do processing
+        logger << log4cpp::Priority::INFO << "We've got new completely filled bucket with packets for IP " << client_ip_as_string;
+
+        std::string flow_attack_details = "";
+
+        /*
+         TODO: re-enable logic
+        if (enable_connection_tracking) {
+            conntrack_main_struct_t current_conntrack_main_struct;
+
+            bool get_flow_result = get_element_from_map_of_flow_counters(SubnetVectorMapFlow, fast_ntoh(client_ip_as_integer),
+                                                                         current_conntrack_main_struct);
+
+            if (get_flow_result) {
+                flow_attack_details = print_flow_tracking_for_ip(current_conntrack_main_struct, client_ip_as_string);
+            } else {
+                logger << log4cpp::Priority::WARN << "Could not get flow structure address";
+            }
+        }
+
+        */
+
+       // Here I extract attack details saved at time when we crossed threshold
+        attack_details_t current_attack = bucket.attack_details;
+        
+        // If we have no flow spec just do blackhole
+        execute_ipv4_ban(client_ip_as_integer, current_attack, flow_attack_details,
+                           bucket.parsed_packets_circular_buffer, bucket.raw_packets_circular_buffer);
+
+
+        // Mark it as processed. This will hide it from second call of same function
+        bucket.is_already_processed = true;
+
+        // Stop packet collection ASAP
+        bucket.we_could_receive_new_data = false;
+
+        // Remove it completely from map
+        packet_buckets_ipv4_storage.packet_buckets_map.erase(client_ip_as_integer);
+    }
+}
 
 
 void process_filled_buckets_ipv6() {
@@ -3231,6 +3315,11 @@ void check_traffic_buckets() {
 
         // Process buckets which haven't filled by packets
         remove_orphaned_buckets(packet_buckets_ipv6_storage, "ipv6");
+
+
+        if (hash_counters) {
+            process_filled_buckets_ipv4();
+        }
 
         process_filled_buckets_ipv6();
 
