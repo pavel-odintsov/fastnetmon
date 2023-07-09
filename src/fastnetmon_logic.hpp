@@ -36,9 +36,9 @@ void cleanup_ban_list();
 
 std::string print_ddos_attack_details();
 
-std::string get_attack_description(uint32_t client_ip, attack_details_t& current_attack);
+std::string get_attack_description(uint32_t client_ip, const attack_details_t& current_attack);
 
-std::string get_attack_description_in_json(uint32_t client_ip, attack_details_t& current_attack);
+std::string get_attack_description_in_json(uint32_t client_ip, const attack_details_t& current_attack);
 
 std::string generate_simple_packets_dump(std::vector<simple_packet_t>& ban_list_details);
 
@@ -63,10 +63,10 @@ void call_blackhole_actions_per_host(
                        uint32_t client_ip,
                        subnet_ipv6_cidr_mask_t client_ipv6,
                        bool ipv6,
-                       attack_details_t& current_attack,
-                       std::string flow_attack_details,
+                       const attack_details_t& current_attack,
                        attack_detection_source_t attack_detection_source,
-                       boost::circular_buffer<simple_packet_t>& simple_packets_buffer);
+                       const std::string& flow_attack_details,
+                       const boost::circular_buffer<simple_packet_t>& simple_packets_buffer);
 
 #ifdef MONGO
 void store_data_in_mongo(std::string key_name, std::string attack_details_json);

@@ -141,8 +141,8 @@ Status FastnetmonApiServiceImpl::ExecuteBan(ServerContext* context,
     }
 
     logger << log4cpp::Priority::INFO << "API call ban handlers manually";
-    call_blackhole_actions_per_host(attack_action_t::ban, client_ip, ipv6_address, ipv6, current_attack, flow_attack_details,
-                      attack_detection_source_t::Automatic, empty_simple_packets_buffer);
+    call_blackhole_actions_per_host(attack_action_t::ban, client_ip, ipv6_address, ipv6, current_attack,
+                      attack_detection_source_t::Automatic, flow_attack_details, empty_simple_packets_buffer);
 
     return Status::OK;
 }
@@ -250,7 +250,7 @@ Status FastnetmonApiServiceImpl::ExecuteUnBan(ServerContext* context,
     boost::circular_buffer<fixed_size_packet_storage_t> raw_packets_buffer;
 
     call_blackhole_actions_per_host(attack_action_t::unban, client_ip, ipv6_address, ipv6,
-            current_attack, flow_attack_details, attack_detection_source_t::Automatic, simple_packets_buffer);
+            current_attack, attack_detection_source_t::Automatic, flow_attack_details, simple_packets_buffer);
 
     return Status::OK;
 }

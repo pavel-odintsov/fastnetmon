@@ -705,7 +705,7 @@ void execute_unban_operation_ipv6() {
         boost::circular_buffer<fixed_size_packet_storage_t> raw_packets_buffer;
 
         call_blackhole_actions_per_host(attack_action_t::unban, zero_ipv4_ip_address, itr.first, true, itr.second,
-                                        flow_attack_details, attack_detection_source_t::Automatic,
+                                        attack_detection_source_t::Automatic, flow_attack_details,
                                         simple_packets_buffer);
     }
 
@@ -812,7 +812,7 @@ void cleanup_ban_list() {
             boost::circular_buffer<fixed_size_packet_storage_t> raw_packets_buffer;
 
             call_blackhole_actions_per_host(attack_action_t::unban, itr->first, zero_ipv6_address, false,
-                itr->second, flow_attack_details, attack_detection_source_t::Automatic, simple_packets_buffer);
+                itr->second,  attack_detection_source_t::Automatic, flow_attack_details, simple_packets_buffer);
         }
 
         // Remove all unbanned hosts from the ban list
@@ -847,7 +847,7 @@ std::string print_ddos_attack_details() {
     return output_buffer.str();
 }
 
-std::string get_attack_description(uint32_t client_ip, attack_details_t& current_attack) {
+std::string get_attack_description(uint32_t client_ip, const attack_details_t& current_attack) {
     std::stringstream attack_description;
 
     attack_description << "IP: " << convert_ip_as_uint_to_string(client_ip) << "\n";
@@ -1397,8 +1397,8 @@ void execute_ip_ban(uint32_t client_ip, subnet_counter_t average_speed_element, 
 
     boost::circular_buffer<simple_packet_t> empty_simple_packets_buffer;
 
-    call_blackhole_actions_per_host(attack_action_t::ban, client_ip, zero_ipv6_address, false, ban_list[client_ip], flow_attack_details,
-                      attack_detection_source_t::Automatic, empty_simple_packets_buffer);
+    call_blackhole_actions_per_host(attack_action_t::ban, client_ip, zero_ipv6_address, false, ban_list[client_ip],
+                      attack_detection_source_t::Automatic, flow_attack_details, empty_simple_packets_buffer);
 }
 
 void call_blackhole_actions_per_host(
@@ -1406,10 +1406,10 @@ void call_blackhole_actions_per_host(
                        uint32_t client_ip,
                        subnet_ipv6_cidr_mask_t client_ipv6,
                        bool ipv6,
-                       attack_details_t& current_attack,
-                       std::string flow_attack_details,
+                       const attack_details_t& current_attack,
                        attack_detection_source_t attack_detection_source,
-                       boost::circular_buffer<simple_packet_t>& simple_packets_buffer) {
+                       const std::string& flow_attack_details,
+                       const boost::circular_buffer<simple_packet_t>& simple_packets_buffer) {
 
     bool ipv4                       = !ipv6;
     std::string client_ip_as_string = "";
@@ -1434,7 +1434,7 @@ void call_blackhole_actions_per_host(
     if (simple_packets_buffer.size() != 0) {
         std::stringstream ss;
 
-        for (simple_packet_t& packet : simple_packets_buffer) {
+        for (const simple_packet_t& packet : simple_packets_buffer) {
             ss << print_simple_packet(packet);
         }
 
@@ -3127,7 +3127,7 @@ void remove_orphaned_buckets(packet_buckets_storage_t<TemplateKeyType>& packet_s
     return;
 }
 
-std::string get_attack_description_ipv6(subnet_ipv6_cidr_mask_t ipv6_address, attack_details_t& current_attack) {
+std::string get_attack_description_ipv6(subnet_ipv6_cidr_mask_t ipv6_address, const attack_details_t& current_attack) {
     std::stringstream attack_description;
 
     attack_description << "IP: " << print_ipv6_address(ipv6_address.subnet_address) << "\n";
@@ -3149,8 +3149,28 @@ void execute_ipv6_ban(subnet_ipv6_cidr_mask_t ipv6_client,
     logger << log4cpp::Priority::INFO << "IPv6 address " << print_ipv6_cidr_subnet(ipv6_client) << " was banned";
 
     uint32_t zero_ipv4_address = 0;
-    call_blackhole_actions_per_host(attack_action_t::ban, zero_ipv4_address, ipv6_client, true, current_attack, "", attack_detection_source_t::Automatic, simple_packets_buffer);
+    call_blackhole_actions_per_host(attack_action_t::ban, zero_ipv4_address, ipv6_client, true, current_attack, attack_detection_source_t::Automatic, "", simple_packets_buffer);
 }
+
+void execute_ipv4_ban(uint32_t client_ip,
+                    const attack_details_t& current_attack,
+                    const std::string& flow_attack_details,
+                    const boost::circular_buffer<simple_packet_t>& simple_packets_buffer,
+                    const boost::circular_buffer<fixed_size_packet_storage_t>& raw_packets_buffer) {
+    extern blackhole_ban_list_t<uint32_t> ban_list_ipv4;
+
+    // Execute ban actions
+    ban_list_ipv4.add_to_blackhole(client_ip, current_attack);
+
+    subnet_ipv6_cidr_mask_t zero_ipv6_address;
+
+    call_blackhole_actions_per_host(attack_action_t::ban, client_ip, zero_ipv6_address, false, current_attack,
+                                    attack_detection_source_t::Automatic, flow_attack_details, simple_packets_buffer,
+                                    raw_packets_buffer);
+}
+
+
+
 
 void process_filled_buckets_ipv6() {
     std::lock_guard<std::mutex> lock_guard(packet_buckets_ipv6_storage.packet_buckets_map_mutex);

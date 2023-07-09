@@ -87,11 +87,11 @@ bool get_interface_number_by_device_name(int socket_fd, std::string interface_na
 #endif
 
 bool ip_belongs_to_patricia_tree_ipv6(patricia_tree_t* patricia_tree, struct in6_addr client_ipv6_address);
-std::string serialize_attack_description(attack_details_t& current_attack);
-attack_type_t detect_attack_type(attack_details_t& current_attack);
+std::string serialize_attack_description(const attack_details_t& current_attack);
+attack_type_t detect_attack_type(const attack_details_t& current_attack);
 std::string get_printable_attack_name(attack_type_t attack);
 std::string serialize_network_load_to_text(subnet_counter_t& network_speed_meter, bool average);
-std::string serialize_statistic_counters_about_attack(attack_details_t& current_attack);
+std::string serialize_statistic_counters_about_attack(const attack_details_t& current_attack);
 
 std::string dns_lookup(std::string domain_name);
 bool store_data_to_stats_server(unsigned short int graphite_port, std::string graphite_host, std::string buffer_as_string);

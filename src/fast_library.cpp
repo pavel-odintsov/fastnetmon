@@ -1020,7 +1020,7 @@ bool manage_interface_promisc_mode(std::string interface_name, bool switch_on) {
 
 #endif
 
-std::string serialize_attack_description(attack_details_t& current_attack) {
+std::string serialize_attack_description(const attack_details_t& current_attack) {
     std::stringstream attack_description;
 
     attack_type_t attack_type         = detect_attack_type(current_attack);
@@ -1076,7 +1076,7 @@ std::string serialize_attack_description(attack_details_t& current_attack) {
     return attack_description.str();
 }
 
-attack_type_t detect_attack_type(attack_details_t& current_attack) {
+attack_type_t detect_attack_type(const attack_details_t& current_attack) {
     double threshold_value = 0.9;
 
     if (current_attack.attack_direction == INCOMING) {
@@ -1137,7 +1137,7 @@ std::string serialize_network_load_to_text(subnet_counter_t& network_speed_meter
     return buffer.str();
 }
 
-std::string serialize_statistic_counters_about_attack(attack_details_t& current_attack) {
+std::string serialize_statistic_counters_about_attack(const attack_details_t& current_attack) {
     std::stringstream attack_description;
 
     double average_packet_size_for_incoming_traffic = 0;
