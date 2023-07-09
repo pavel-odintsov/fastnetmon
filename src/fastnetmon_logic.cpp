@@ -3131,7 +3131,6 @@ std::string get_attack_description_ipv6(subnet_ipv6_cidr_mask_t ipv6_address, at
 
 void execute_ipv6_ban(subnet_ipv6_cidr_mask_t ipv6_client,
                       attack_details_t current_attack,
-                      std::string simple_packets_dump,
                       boost::circular_buffer<simple_packet_t>& simple_packets_buffer) {
     extern blackhole_ban_list_t<subnet_ipv6_cidr_mask_t> ban_list_ipv6;
 
@@ -3139,6 +3138,20 @@ void execute_ipv6_ban(subnet_ipv6_cidr_mask_t ipv6_client,
     ban_list_ipv6.add_to_blackhole(ipv6_client, current_attack);
 
     logger << log4cpp::Priority::INFO << "IPv6 address " << print_ipv6_cidr_subnet(ipv6_client) << " was banned";
+
+        // For all attack types at this moment we could prepare simple packet dump
+        std::string simple_packets_dump;
+
+        if (simple_packets_buffer.size() != 0) {
+            std::stringstream ss;
+
+            for (simple_packet_t& packet : simple_packets_buffer) {
+                ss << print_simple_packet(packet);
+            }
+
+            simple_packets_dump = ss.str();
+        }
+
 
     uint32_t zero_ipv4_address = 0;
     call_ban_handlers(zero_ipv4_address, ipv6_client, true, current_attack, "", attack_detection_source_t::Automatic,
@@ -3175,21 +3188,8 @@ void process_filled_buckets_ipv6() {
 
         std::string basic_attack_information = get_attack_description_ipv6(ipv6_address, current_attack);
 
-        // For all attack types at this moment we could prepare simple packet dump
-        std::string simple_packet_dump;
-
-        if (bucket->parsed_packets_circular_buffer.size() != 0) {
-            std::stringstream ss;
-
-            for (simple_packet_t& packet : bucket->parsed_packets_circular_buffer) {
-                ss << print_simple_packet(packet);
-            }
-
-            simple_packet_dump = ss.str();
-        }
-
         // For IPv6 we support only blackhole at this moment. BGP Flow spec for IPv6 isn't so populare and we will skip implementation for some future
-        execute_ipv6_ban(ipv6_address, current_attack, simple_packet_dump, bucket->parsed_packets_circular_buffer);
+        execute_ipv6_ban(ipv6_address, current_attack, bucket->parsed_packets_circular_buffer);
 
         // Mark it as processed. This will hide it from second call of same function
         bucket->is_already_processed = true;
