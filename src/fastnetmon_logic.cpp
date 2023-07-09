@@ -1481,21 +1481,26 @@ void call_blackhole_actions_per_host(
     std::string basic_attack_information_in_json =
         get_attack_description_in_json_for_web_hooks(client_ip, subnet_ipv6_cidr_mask_t{}, false, action_name, current_attack);
 
+    bool store_attack_details_to_file = true;
+
+    if (store_attack_details_to_file && attack_action == attack_action_t::ban) {
+        std::string basic_attack_information = get_attack_description(client_ip, current_attack);
+
+        std::string full_attack_description = basic_attack_information + flow_attack_details;
+
+        if (store_attack_details_to_file && ipv4) {
+            print_attack_details_to_file(full_attack_description, client_ip_as_string, current_attack);
+        }
+    }
+
     if (notify_script_enabled) {
+        std::string pps_as_string            = convert_int_to_string(current_attack.attack_power);
+        std::string data_direction_as_string = get_direction_name(current_attack.attack_direction);
 
         if (attack_action == attack_action_t::ban) {
-            std::string pps_as_string            = convert_int_to_string(current_attack.attack_power);
-            std::string data_direction_as_string = get_direction_name(current_attack.attack_direction);
-
-            bool store_attack_details_to_file = true;
-
             std::string basic_attack_information = get_attack_description(client_ip, current_attack);
 
             std::string full_attack_description = basic_attack_information + flow_attack_details;
-
-            if (store_attack_details_to_file && ipv4) {
-                print_attack_details_to_file(full_attack_description, client_ip_as_string, current_attack);
-            }
 
             std::string script_call_params = fastnetmon_platform_configuration.notify_script_path + " " + client_ip_as_string +
                                              " " + data_direction_as_string + " " + pps_as_string + " " + "ban";
@@ -1510,9 +1515,6 @@ void call_blackhole_actions_per_host(
 
             logger << log4cpp::Priority::INFO << "Script for ban client is finished: " << client_ip_as_string;
         } else if (attack_action == attack_action_t::unban) {
-            std::string data_direction_as_string = get_direction_name(current_attack.attack_direction);
-            std::string pps_as_string            = convert_int_to_string(current_attack.attack_power);
-
             std::string script_call_params = fastnetmon_platform_configuration.notify_script_path + " " + client_ip_as_string +
                                              " " + data_direction_as_string + " " + pps_as_string + " unban";
 
