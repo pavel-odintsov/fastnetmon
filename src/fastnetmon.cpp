@@ -1128,6 +1128,8 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
                 exit(1);
             }
         }
+
+        logger << log4cpp::Priority::INFO << "Successfully allocated " << ipv4_host_counters.average_speed_map.size() << " counters";
     }
         
     // Initilize our counters with fill constructor
