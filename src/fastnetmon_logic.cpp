@@ -1457,19 +1457,28 @@ void call_blackhole_actions_per_host(
         client_ip_as_string = print_ipv6_address(client_ipv6.subnet_address);
     }
 
-        // For all attack types at this moment we could prepare simple packet dump
-        std::string simple_packets_dump;
+    std::string action_name;
 
-        if (simple_packets_buffer.size() != 0) {
-            std::stringstream ss;
+    if (attack_action == attack_action_t::ban) {
+        action_name = "ban";
+    } else if (attack_action == attack_action_t::unban) {
+        action_name = "unban";
+    }
 
-            for (simple_packet_t& packet : simple_packets_buffer) {
-                ss << print_simple_packet(packet);
-            }
+    // For all attack types at this moment we could prepare simple packet dump
+    std::string simple_packets_dump;
 
-            simple_packets_dump = ss.str();
+    if (simple_packets_buffer.size() != 0) {
+        std::stringstream ss;
+
+        for (simple_packet_t& packet : simple_packets_buffer) {
+            ss << print_simple_packet(packet);
         }
 
+        simple_packets_dump = ss.str();
+    }
+
+if (attack_action == attack_action_t::ban) {
 
     std::string pps_as_string            = convert_int_to_string(current_attack.attack_power);
     std::string data_direction_as_string = get_direction_name(current_attack.attack_direction);
@@ -1565,6 +1574,7 @@ void call_blackhole_actions_per_host(
         logger << log4cpp::Priority::INFO << "Finish data save in Mongo in key: " << mongo_key_name;
     }
 #endif
+    }
 }
 
 
