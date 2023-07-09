@@ -71,7 +71,6 @@ void call_ban_handlers(uint32_t client_ip,
                        attack_details_t& current_attack,
                        std::string flow_attack_details,
                        attack_detection_source_t attack_detection_source,
-                       std::string simple_packets_dump,
                        boost::circular_buffer<simple_packet_t>& simple_packets_buffer);
 
 #ifdef MONGO

@@ -1434,7 +1434,7 @@ void execute_ip_ban(uint32_t client_ip, subnet_counter_t average_speed_element, 
     boost::circular_buffer<simple_packet_t> empty_simple_packets_buffer;
 
     call_ban_handlers(client_ip, zero_ipv6_address, false, ban_list[client_ip], flow_attack_details,
-                      attack_detection_source_t::Automatic, "", empty_simple_packets_buffer);
+                      attack_detection_source_t::Automatic, empty_simple_packets_buffer);
 }
 
 void call_ban_handlers(uint32_t client_ip,
@@ -1443,7 +1443,6 @@ void call_ban_handlers(uint32_t client_ip,
                        attack_details_t& current_attack,
                        std::string flow_attack_details,
                        attack_detection_source_t attack_detection_source,
-                       std::string simple_packets_dump,
                        boost::circular_buffer<simple_packet_t>& simple_packets_buffer) {
 
     bool ipv4                       = !ipv6;
@@ -1454,6 +1453,19 @@ void call_ban_handlers(uint32_t client_ip,
     } else {
         client_ip_as_string = print_ipv6_address(client_ipv6.subnet_address);
     }
+
+        // For all attack types at this moment we could prepare simple packet dump
+        std::string simple_packets_dump;
+
+        if (simple_packets_buffer.size() != 0) {
+            std::stringstream ss;
+
+            for (simple_packet_t& packet : simple_packets_buffer) {
+                ss << print_simple_packet(packet);
+            }
+
+            simple_packets_dump = ss.str();
+        }
 
 
     std::string pps_as_string            = convert_int_to_string(current_attack.attack_power);
@@ -3139,23 +3151,8 @@ void execute_ipv6_ban(subnet_ipv6_cidr_mask_t ipv6_client,
 
     logger << log4cpp::Priority::INFO << "IPv6 address " << print_ipv6_cidr_subnet(ipv6_client) << " was banned";
 
-        // For all attack types at this moment we could prepare simple packet dump
-        std::string simple_packets_dump;
-
-        if (simple_packets_buffer.size() != 0) {
-            std::stringstream ss;
-
-            for (simple_packet_t& packet : simple_packets_buffer) {
-                ss << print_simple_packet(packet);
-            }
-
-            simple_packets_dump = ss.str();
-        }
-
-
     uint32_t zero_ipv4_address = 0;
-    call_ban_handlers(zero_ipv4_address, ipv6_client, true, current_attack, "", attack_detection_source_t::Automatic,
-                      simple_packets_dump, simple_packets_buffer);
+    call_ban_handlers(zero_ipv4_address, ipv6_client, true, current_attack, "", attack_detection_source_t::Automatic, simple_packets_buffer);
 }
 
 void process_filled_buckets_ipv6() {
