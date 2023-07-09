@@ -1513,15 +1513,13 @@ void call_blackhole_actions_per_host(
     }
 
 
-    if (attack_action == attack_action_t::ban) {
-        if (exabgp_enabled && ipv4) {
-            logger << log4cpp::Priority::INFO << "Call ExaBGP for ban client started: " << client_ip_as_string;
+    if (exabgp_enabled && ipv4) {
+        logger << log4cpp::Priority::INFO << "Call ExaBGP for " << action_name << " client started: " << client_ip_as_string;
 
-            boost::thread exabgp_thread(exabgp_ban_manage, "ban", client_ip_as_string, current_attack);
-            exabgp_thread.detach();
+        boost::thread exabgp_thread(exabgp_ban_manage, action_name, client_ip_as_string, current_attack);
+        exabgp_thread.detach();
 
-            logger << log4cpp::Priority::INFO << "Call to ExaBGP for ban client is finished: " << client_ip_as_string;
-        }
+        logger << log4cpp::Priority::INFO << "Call to ExaBGP for " << action_name << "client is finished: " << client_ip_as_string;
     }
 
     if (attack_action == attack_action_t::ban) {
