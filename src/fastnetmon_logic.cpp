@@ -1478,101 +1478,110 @@ void call_blackhole_actions_per_host(
         simple_packets_dump = ss.str();
     }
 
-if (attack_action == attack_action_t::ban) {
-
-    std::string pps_as_string            = convert_int_to_string(current_attack.attack_power);
-    std::string data_direction_as_string = get_direction_name(current_attack.attack_direction);
-
-    bool store_attack_details_to_file = true;
-
-    std::string basic_attack_information = get_attack_description(client_ip, current_attack);
-
     std::string basic_attack_information_in_json =
-        get_attack_description_in_json_for_web_hooks(client_ip, subnet_ipv6_cidr_mask_t{}, false, "ban", current_attack);
+        get_attack_description_in_json_for_web_hooks(client_ip, subnet_ipv6_cidr_mask_t{}, false, action_name, current_attack);
 
-    std::string full_attack_description = basic_attack_information + flow_attack_details;
+    if (attack_action == attack_action_t::ban) {
 
-    if (store_attack_details_to_file && ipv4) {
-        print_attack_details_to_file(full_attack_description, client_ip_as_string, current_attack);
-    }
+        std::string pps_as_string            = convert_int_to_string(current_attack.attack_power);
+        std::string data_direction_as_string = get_direction_name(current_attack.attack_direction);
 
-    if (notify_script_enabled) {
-        std::string script_call_params = fastnetmon_platform_configuration.notify_script_path + " " + client_ip_as_string +
-                                         " " + data_direction_as_string + " " + pps_as_string + " " + "ban";
-        logger << log4cpp::Priority::INFO << "Call script for ban client: " << client_ip_as_string;
+        bool store_attack_details_to_file = true;
 
-        // We should execute external script in separate thread because any lag in this code will be
-        // very destructive
+        std::string basic_attack_information = get_attack_description(client_ip, current_attack);
 
-        // We will pass attack details over stdin
-        boost::thread exec_thread(exec_with_stdin_params, script_call_params, full_attack_description);
-        exec_thread.detach();
+        std::string full_attack_description = basic_attack_information + flow_attack_details;
 
-        logger << log4cpp::Priority::INFO << "Script for ban client is finished: " << client_ip_as_string;
-    }
-
-    if (exabgp_enabled && ipv4) {
-        logger << log4cpp::Priority::INFO << "Call ExaBGP for ban client started: " << client_ip_as_string;
-
-        boost::thread exabgp_thread(exabgp_ban_manage, "ban", client_ip_as_string, current_attack);
-        exabgp_thread.detach();
-
-        logger << log4cpp::Priority::INFO << "Call to ExaBGP for ban client is finished: " << client_ip_as_string;
-    }
-
-#ifdef ENABLE_GOBGP
-    if (gobgp_enabled) {
-        logger << log4cpp::Priority::INFO << "Call GoBGP for ban client started: " << client_ip_as_string;
-
-        boost::thread gobgp_thread(gobgp_ban_manage, "ban", ipv6, client_ip_as_string, client_ipv6, current_attack);
-        gobgp_thread.detach();
-
-        logger << log4cpp::Priority::INFO << "Call to GoBGP for ban client is finished: " << client_ip_as_string;
-    }
-#endif
-
-#ifdef REDIS
-    if (redis_enabled && ipv4) {
-        std::string redis_key_name = client_ip_as_string + "_information";
-
-        if (!redis_prefix.empty()) {
-            redis_key_name = redis_prefix + "_" + client_ip_as_string + "_information";
+        if (store_attack_details_to_file && ipv4) {
+            print_attack_details_to_file(full_attack_description, client_ip_as_string, current_attack);
         }
 
-        logger << log4cpp::Priority::INFO << "Start data save in Redis in key: " << redis_key_name;
-        boost::thread redis_store_thread(store_data_in_redis, redis_key_name, basic_attack_information_in_json);
-        redis_store_thread.detach();
-        logger << log4cpp::Priority::INFO << "Finish data save in Redis in key: " << redis_key_name;
+        if (notify_script_enabled) {
+            std::string script_call_params = fastnetmon_platform_configuration.notify_script_path + " " + client_ip_as_string +
+                                             " " + data_direction_as_string + " " + pps_as_string + " " + "ban";
+            logger << log4cpp::Priority::INFO << "Call script for ban client: " << client_ip_as_string;
 
-        // If we have flow dump put in redis too
-        if (!flow_attack_details.empty()) {
-            std::string redis_key_name = client_ip_as_string + "_flow_dump";
+            // We should execute external script in separate thread because any lag in this code will be
+            // very destructive
+
+            // We will pass attack details over stdin
+            boost::thread exec_thread(exec_with_stdin_params, script_call_params, full_attack_description);
+            exec_thread.detach();
+
+            logger << log4cpp::Priority::INFO << "Script for ban client is finished: " << client_ip_as_string;
+        }
+    }
+
+
+    if (attack_action == attack_action_t::ban) {
+        if (exabgp_enabled && ipv4) {
+            logger << log4cpp::Priority::INFO << "Call ExaBGP for ban client started: " << client_ip_as_string;
+
+            boost::thread exabgp_thread(exabgp_ban_manage, "ban", client_ip_as_string, current_attack);
+            exabgp_thread.detach();
+
+            logger << log4cpp::Priority::INFO << "Call to ExaBGP for ban client is finished: " << client_ip_as_string;
+        }
+    }
+
+    if (attack_action == attack_action_t::ban) {
+#ifdef ENABLE_GOBGP
+        if (gobgp_enabled) {
+            logger << log4cpp::Priority::INFO << "Call GoBGP for ban client started: " << client_ip_as_string;
+
+            boost::thread gobgp_thread(gobgp_ban_manage, "ban", ipv6, client_ip_as_string, client_ipv6, current_attack);
+            gobgp_thread.detach();
+
+            logger << log4cpp::Priority::INFO << "Call to GoBGP for ban client is finished: " << client_ip_as_string;
+        }
+#endif
+    }
+
+    if (attack_action == attack_action_t::ban) { 
+#ifdef REDIS
+        if (redis_enabled && ipv4) {
+            std::string redis_key_name = client_ip_as_string + "_information";
 
             if (!redis_prefix.empty()) {
-                redis_key_name = redis_prefix + "_" + client_ip_as_string + "_flow_dump";
+                redis_key_name = redis_prefix + "_" + client_ip_as_string + "_information";
             }
 
-            logger << log4cpp::Priority::INFO << "Start data save in redis in key: " << redis_key_name;
-            boost::thread redis_store_thread(store_data_in_redis, redis_key_name, flow_attack_details);
+            logger << log4cpp::Priority::INFO << "Start data save in Redis in key: " << redis_key_name;
+            boost::thread redis_store_thread(store_data_in_redis, redis_key_name, basic_attack_information_in_json);
             redis_store_thread.detach();
-            logger << log4cpp::Priority::INFO << "Finish data save in redis in key: " << redis_key_name;
+            logger << log4cpp::Priority::INFO << "Finish data save in Redis in key: " << redis_key_name;
+
+            // If we have flow dump put in redis too
+            if (!flow_attack_details.empty()) {
+                std::string redis_key_name = client_ip_as_string + "_flow_dump";
+
+                if (!redis_prefix.empty()) {
+                    redis_key_name = redis_prefix + "_" + client_ip_as_string + "_flow_dump";
+                }
+
+                logger << log4cpp::Priority::INFO << "Start data save in redis in key: " << redis_key_name;
+                boost::thread redis_store_thread(store_data_in_redis, redis_key_name, flow_attack_details);
+                redis_store_thread.detach();
+                logger << log4cpp::Priority::INFO << "Finish data save in redis in key: " << redis_key_name;
+            }
         }
-    }
 #endif
-
-#ifdef MONGO
-    if (mongodb_enabled && ipv4) {
-        std::string mongo_key_name =
-            client_ip_as_string + "_information_" + print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
-
-        // We could not use dot in key names: http://docs.mongodb.org/manual/core/document/#dot-notation
-        std::replace(mongo_key_name.begin(), mongo_key_name.end(), '.', '_');
-
-        logger << log4cpp::Priority::INFO << "Start data save in Mongo in key: " << mongo_key_name;
-        boost::thread mongo_store_thread(store_data_in_mongo, mongo_key_name, basic_attack_information_in_json);
-        mongo_store_thread.detach();
-        logger << log4cpp::Priority::INFO << "Finish data save in Mongo in key: " << mongo_key_name;
     }
+
+    if (attack_action == attack_action_t::ban) { 
+#ifdef MONGO
+        if (mongodb_enabled && ipv4) {
+            std::string mongo_key_name =
+                client_ip_as_string + "_information_" + print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
+
+            // We could not use dot in key names: http://docs.mongodb.org/manual/core/document/#dot-notation
+            std::replace(mongo_key_name.begin(), mongo_key_name.end(), '.', '_');
+
+            logger << log4cpp::Priority::INFO << "Start data save in Mongo in key: " << mongo_key_name;
+            boost::thread mongo_store_thread(store_data_in_mongo, mongo_key_name, basic_attack_information_in_json);
+            mongo_store_thread.detach();
+            logger << log4cpp::Priority::INFO << "Finish data save in Mongo in key: " << mongo_key_name;
+        }
 #endif
     }
 }
