@@ -58,15 +58,15 @@ redisContext* redis_init_connection();
 
 void execute_ip_ban(uint32_t client_ip, subnet_counter_t average_speed_element, std::string flow_attack_details, subnet_cidr_mask_t customer_subnet);
 
-void call_blackhole_actions_per_host(
-                       attack_action_t attack_action,
-                       uint32_t client_ip,
-                       subnet_ipv6_cidr_mask_t client_ipv6,
-                       bool ipv6,
-                       const attack_details_t& current_attack,
-                       attack_detection_source_t attack_detection_source,
-                       const std::string& flow_attack_details,
-                       const boost::circular_buffer<simple_packet_t>& simple_packets_buffer);
+void call_blackhole_actions_per_host(attack_action_t attack_action,
+                                     uint32_t client_ip,
+                                     const subnet_ipv6_cidr_mask_t& client_ipv6,
+                                     bool ipv6,
+                                     const attack_details_t& current_attack,
+                                     attack_detection_source_t attack_detection_source,
+                                     const std::string& flow_attack_details,
+                                     const boost::circular_buffer<simple_packet_t>& simple_packets_buffer,
+                                     const boost::circular_buffer<fixed_size_packet_storage_t>& raw_packets_buffer);
 
 #ifdef MONGO
 void store_data_in_mongo(std::string key_name, std::string attack_details_json);
