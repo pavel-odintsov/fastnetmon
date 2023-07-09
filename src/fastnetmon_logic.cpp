@@ -2642,15 +2642,12 @@ void process_ipv6_packet(simple_packet_t& current_packet) {
     // Here I use counters allocated per /128. In some future we could offer option to count them in diffenrent way
     // (/64, /96)
     {
-        std::lock_guard<std::mutex> lock_guard(ipv6_host_counters.counter_map_mutex);
-
         if (current_packet.packet_direction == OUTGOING) {
             subnet_ipv6_cidr_mask_t ipv6_address;
             ipv6_address.set_cidr_prefix_length(128);
             ipv6_address.set_subnet_address(&current_packet.src_ipv6);
 
-            subnet_counter_t& counter_ptr = ipv6_host_counters.counter_map[ipv6_address];
-            increment_outgoing_counters(counter_ptr, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
+            ipv6_host_counters.increment_outgoing_counters_for_key(ipv6_address, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
 
             // Collect packets for DDoS analytics engine
             packet_buckets_ipv6_storage.add_packet_to_storage(ipv6_address, current_packet);
@@ -2659,8 +2656,7 @@ void process_ipv6_packet(simple_packet_t& current_packet) {
             ipv6_address.set_cidr_prefix_length(128);
             ipv6_address.set_subnet_address(&current_packet.dst_ipv6);
 
-            subnet_counter_t& counter_ptr = ipv6_host_counters.counter_map[ipv6_address];
-            increment_incoming_counters(counter_ptr, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
+            ipv6_host_counters.increment_incoming_counters_for_key(ipv6_address, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
 
             // Collect packets for DDoS analytics engine
             packet_buckets_ipv6_storage.add_packet_to_storage(ipv6_address, current_packet);
