@@ -2592,6 +2592,27 @@ void export_to_kafka(const simple_packet_t& current_packet) {
 }
 #endif
 
+// Adds traffic to buckets from hot path
+template <typename T>
+void collect_traffic_to_buckets_ipv6(const simple_packet_t& current_packet, packet_buckets_storage_t<T>& packet_buckets_storage) {
+    // Yes, it's not very optimal to construct subnet_ipv6_cidr_mask_t again but it offers way clearer logic
+    // In future we should get rid of subnet_ipv6_cidr_mask_t and use subnet_address directly
+    //
+    if (current_packet.packet_direction == OUTGOING) {
+        subnet_ipv6_cidr_mask_t ipv6_address;
+        ipv6_address.set_cidr_prefix_length(128);
+        ipv6_address.set_subnet_address(&current_packet.src_ipv6);
+
+        packet_buckets_storage.add_packet_to_storage(ipv6_address, current_packet);
+    } else if (current_packet.packet_direction == INCOMING) {
+        subnet_ipv6_cidr_mask_t ipv6_address;
+        ipv6_address.set_cidr_prefix_length(128);
+        ipv6_address.set_subnet_address(&current_packet.dst_ipv6);
+
+        packet_buckets_storage.add_packet_to_storage(ipv6_address, current_packet);
+    }
+}
+
 // Process IPv6 traffic
 void process_ipv6_packet(simple_packet_t& current_packet) {
     extern bool kafka_traffic_export;
@@ -2648,19 +2669,16 @@ void process_ipv6_packet(simple_packet_t& current_packet) {
             ipv6_address.set_subnet_address(&current_packet.src_ipv6);
 
             ipv6_host_counters.increment_outgoing_counters_for_key(ipv6_address, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
-
-            // Collect packets for DDoS analytics engine
-            packet_buckets_ipv6_storage.add_packet_to_storage(ipv6_address, current_packet);
         } else if (current_packet.packet_direction == INCOMING) {
             subnet_ipv6_cidr_mask_t ipv6_address;
             ipv6_address.set_cidr_prefix_length(128);
             ipv6_address.set_subnet_address(&current_packet.dst_ipv6);
 
             ipv6_host_counters.increment_incoming_counters_for_key(ipv6_address, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
-
-            // Collect packets for DDoS analytics engine
-            packet_buckets_ipv6_storage.add_packet_to_storage(ipv6_address, current_packet);
         }
+
+        // Collect packets for DDoS analytics engine
+        collect_traffic_to_buckets_ipv6(current_packet, packet_buckets_ipv6_storage);
     }
 
     return;

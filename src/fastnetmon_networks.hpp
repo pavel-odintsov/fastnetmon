@@ -28,7 +28,7 @@ class subnet_ipv6_cidr_mask_t {
     }
 
     // Just copy this data by pointer
-    void set_subnet_address(in6_addr* ipv6_host_address_param) {
+    void set_subnet_address(const in6_addr* ipv6_host_address_param) {
         memcpy(&subnet_address, ipv6_host_address_param, sizeof(in6_addr));
     }
 
