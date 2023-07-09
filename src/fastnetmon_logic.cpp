@@ -1522,18 +1522,16 @@ void call_blackhole_actions_per_host(
         logger << log4cpp::Priority::INFO << "Call to ExaBGP for " << action_name << "client is finished: " << client_ip_as_string;
     }
 
-    if (attack_action == attack_action_t::ban) {
 #ifdef ENABLE_GOBGP
-        if (gobgp_enabled) {
-            logger << log4cpp::Priority::INFO << "Call GoBGP for ban client started: " << client_ip_as_string;
+    if (gobgp_enabled) {
+        logger << log4cpp::Priority::INFO << "Call GoBGP for " << action_name << " client started: " << client_ip_as_string;
 
-            boost::thread gobgp_thread(gobgp_ban_manage, "ban", ipv6, client_ip_as_string, client_ipv6, current_attack);
-            gobgp_thread.detach();
+        boost::thread gobgp_thread(gobgp_ban_manage, action_name, ipv6, client_ip_as_string, client_ipv6, current_attack);
+        gobgp_thread.detach();
 
-            logger << log4cpp::Priority::INFO << "Call to GoBGP for ban client is finished: " << client_ip_as_string;
-        }
-#endif
+        logger << log4cpp::Priority::INFO << "Call to GoBGP for " << action_name << " client is finished: " << client_ip_as_string;
     }
+#endif
 
     if (attack_action == attack_action_t::ban) { 
 #ifdef REDIS
