@@ -331,6 +331,9 @@ class attack_details_t : public subnet_counter_t {
     uint64_t max_attack_power    = 0;
     unsigned int attack_protocol = 0;
 
+    // Separate section with traffic counters
+    subnet_counter_t traffic_counters{};
+
     // Average counters
     uint64_t average_in_bytes    = 0;
     uint64_t average_out_bytes   = 0;

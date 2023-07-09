@@ -158,3 +158,4 @@ std::string convert_any_ip_to_string(uint32_t client_ip);
 bool lookup_ip_in_integer_form_inpatricia_and_return_subnet_if_found(patricia_tree_t* patricia_tree,
                                                                      uint32_t client_ip,
                                                                      subnet_cidr_mask_t& subnet);
+bool ip_belongs_to_patricia_tree(patricia_tree_t* patricia_tree, uint32_t client_ip);

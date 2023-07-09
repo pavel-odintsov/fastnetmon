@@ -2451,3 +2451,13 @@ bool lookup_ip_in_integer_form_inpatricia_and_return_subnet_if_found(patricia_tr
     return true;
 }
 
+// Return true if we have this IP in patricia tree
+bool ip_belongs_to_patricia_tree(patricia_tree_t* patricia_tree, uint32_t client_ip) {
+    prefix_t prefix_for_check_address;
+    prefix_for_check_address.add.sin.s_addr = client_ip;
+    prefix_for_check_address.family         = AF_INET;
+    prefix_for_check_address.bitlen         = 32;
+
+    return patricia_search_best2(patricia_tree, &prefix_for_check_address, 1) != NULL;
+}
+

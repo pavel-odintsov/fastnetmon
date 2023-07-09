@@ -48,7 +48,7 @@ void call_attack_details_handlers(uint32_t client_ip, attack_details_t& current_
 uint64_t convert_conntrack_hash_struct_to_integer(packed_conntrack_hash_t* struct_value);
 bool process_flow_tracking_table(conntrack_main_struct_t& conntrack_element, std::string client_ip);
 bool exec_with_stdin_params(std::string cmd, std::string params);
-ban_settings_t get_ban_settings_for_this_subnet(subnet_cidr_mask_t subnet, std::string& host_group_name);
+ban_settings_t get_ban_settings_for_this_subnet(const subnet_cidr_mask_t& subnet, std::string& host_group_name);
 void exabgp_prefix_ban_manage(std::string action, std::string prefix_as_string_with_mask, std::string exabgp_next_hop, std::string exabgp_community);
 
 #ifdef REDIS
@@ -107,6 +107,7 @@ bool should_remove_orphaned_bucket(const std::pair<TemplatedKeyType, packet_buck
 void inaccurate_time_generator();
 void collect_stats();
 void start_prometheus_web_server();
+std::string get_human_readable_attack_detection_direction(attack_detection_direction_type_t attack_detection_direction);
 
 // API declaration
 using fastmitigation::BanListReply;

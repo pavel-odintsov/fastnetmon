@@ -1163,7 +1163,7 @@ bool exec_with_stdin_params(std::string cmd, std::string params) {
 }
 
 // Get ban settings for this subnet or return global ban settings
-ban_settings_t get_ban_settings_for_this_subnet(subnet_cidr_mask_t subnet, std::string& host_group_name) {
+ban_settings_t get_ban_settings_for_this_subnet(const subnet_cidr_mask_t& subnet, std::string& host_group_name) {
     // Try to find host group for this subnet
     subnet_to_host_group_map_t::iterator host_group_itr = subnet_to_host_groups.find(subnet);
 
@@ -1177,7 +1177,7 @@ ban_settings_t get_ban_settings_for_this_subnet(subnet_cidr_mask_t subnet, std::
     host_group_name = host_group_itr->second;
 
     // We found host group for this subnet
-    host_group_ban_settings_map_t::iterator hostgroup_settings_itr = host_group_ban_settings_map.find(host_group_itr->second);
+    auto hostgroup_settings_itr = host_group_ban_settings_map.find(host_group_itr->second);
 
     if (hostgroup_settings_itr == host_group_ban_settings_map.end()) {
         logger << log4cpp::Priority::ERROR << "We can't find ban settings for host group " << host_group_itr->second;
@@ -1918,7 +1918,7 @@ bool fill_attack_information(subnet_counter_t average_speed_element,
 
 
 // Speed recalculation function for IPv6 hosts calls it for each host during speed recalculation
-void speed_callback_ipv6(const subnet_ipv6_cidr_mask_t& current_subnet, const subnet_counter_t& current_average_speed_element) {
+void speed_calculation_callback_local_ipv6(const subnet_ipv6_cidr_mask_t& current_subnet, const subnet_counter_t& current_average_speed_element) {
     // We should check thresholds only for per host counters for IPv6 and only when any ban actions for IPv6 traffic were enabled
     if (!global_ban_settings.enable_ban_ipv6) {
         return;
@@ -1993,7 +1993,118 @@ void speed_callback_subnet_ipv6(subnet_ipv6_cidr_mask_t* subnet, subnet_counter_
 
 // This function works as callback from main speed calculation thread and decides when we should block host using static thresholds
 void speed_calculation_callback_local_ipv4(const uint32_t& client_ip, const subnet_counter_t& speed_element) {
-    // TBD
+    extern abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counters;
+    extern blackhole_ban_list_t<uint32_t> ban_list_ipv4;
+    extern packet_buckets_storage_t<uint32_t> packet_buckets_ipv4_storage;
+    extern patricia_tree_t* whitelist_tree_ipv4;
+    extern patricia_tree_t* lookup_tree_ipv4;
+
+    extern std::mutex ipv4_packets_circular_buffer_mutex;
+    extern boost::circular_buffer<simple_packet_t> ipv4_packets_circular_buffer;
+
+    // Check global ban settings
+    if (!global_ban_settings.enable_ban) {
+        return;
+    }
+
+    // Lookup network for IP as we need it for hostgorup lookup logic
+    subnet_cidr_mask_t customer_subnet;
+    bool lookup_result =
+        lookup_ip_in_integer_form_inpatricia_and_return_subnet_if_found(lookup_tree_ipv4, client_ip, customer_subnet);
+
+    if (!lookup_result) {
+        // It's not critical, we can ignore it
+        logger << log4cpp::Priority::WARN << "Could not get customer's network for IP " << convert_ip_as_uint_to_string(client_ip);
+    }
+
+    std::string host_group_name;
+    ban_settings_t current_ban_settings = get_ban_settings_for_this_subnet(customer_subnet, host_group_name);
+
+    // Hostgroup has blocks disabled
+    if (!current_ban_settings.enable_ban) {
+        return;
+    }
+
+    attack_details_t attack_details;
+
+    // Static thresholds
+    attack_detection_threshold_type_t attack_detection_source;
+    attack_detection_direction_type_t attack_detection_direction;
+
+    bool should_block = we_should_ban_this_entity(speed_element, current_ban_settings,
+                                                  attack_detection_source, attack_detection_direction);
+
+    if (!should_block) {
+        return;
+    }
+
+    // We should execute check over whitelist
+    // In common case, this check is pretty complicated and we should execute it only for hosts which exceed
+    // threshold
+    bool in_white_list = ip_belongs_to_patricia_tree(whitelist_tree_ipv4, client_ip);
+
+    // And if we found host here disable any actions about blocks
+    if (in_white_list) {
+        return;
+    }
+
+    // If we decided to block this host we should check two cases:
+    // 1) Already banned
+    // 2) We already started packets collection for this IP address
+
+    // They could be filled or not yet filled
+    // TODO: with this check we should REMOVE items from bucket storage when attack handled
+    bool we_already_have_buckets_for_this_ip = packet_buckets_ipv4_storage.we_have_bucket_for_this_ip(client_ip);
+
+    if (we_already_have_buckets_for_this_ip) {
+        return;
+    }
+
+    bool this_ip_is_already_banned = ban_list_ipv4.is_blackholed(client_ip);
+
+    if (this_ip_is_already_banned) {
+        return;
+    }
+
+    std::string ddos_detection_threshold_as_string = get_human_readable_threshold_type(attack_detection_source);
+    std::string ddos_detection_direction = get_human_readable_attack_detection_direction(attack_detection_direction);
+
+    logger << log4cpp::Priority::INFO << "We have detected attack for " << convert_ip_as_uint_to_string(client_ip)
+           << " using " << ddos_detection_threshold_as_string << " threshold "
+           << "in direction " << ddos_detection_direction << " "
+           << "host group: " << host_group_name;
+
+    
+    attack_details.traffic_counters = speed_element;
+
+    // Set threshold direction
+    attack_details.attack_detection_direction = attack_detection_direction;
+
+    // Set threshold type
+    attack_details.attack_detection_threshold = attack_detection_source;
+
+    // Fill attack details. This operation is pretty simple and involves only long prefix match lookup +
+    // field copy
+    std::string parent_group;
+   
+    fill_attack_information(attack_details.traffic_counters, attack_details, host_group_name,
+                            parent_group, unban_enabled,
+                            global_ban_time);
+
+    attack_details.customer_network = customer_subnet;
+
+    bool enable_backet_capture =
+        packet_buckets_ipv4_storage.enable_packet_capture(client_ip, attack_details, collection_pattern_t::ONCE);
+
+    if (!enable_backet_capture) {
+        logger << log4cpp::Priority::ERROR << "Could not enable packet capture for deep analytics for IP "
+               << convert_ip_as_uint_to_string(client_ip);
+        return;
+    }
+
+    logger << log4cpp::Priority::INFO << "Enabled packet capture for IP " << convert_ip_as_uint_to_string(client_ip);
+
+    return;
 }
 
 /* Calculate speed for all connnections */
@@ -2153,7 +2264,7 @@ void recalculate_speed() {
     ipv6_subnet_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, nullptr);
 
     // Recalculate traffic for hosts
-    ipv6_host_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, speed_callback_ipv6);
+    ipv6_host_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, speed_calculation_callback_local_ipv6);
 
 
     // Calculate global flow speed
@@ -3887,3 +3998,16 @@ void start_prometheus_web_server() {
         logger << log4cpp::Priority::ERROR << "Prometheus server exception: " << e.what();
     }
 }
+
+std::string get_human_readable_attack_detection_direction(attack_detection_direction_type_t attack_detection_direction) {
+    if (attack_detection_direction == attack_detection_direction_type_t::unknown) {
+        return "unknown";
+    } else if (attack_detection_direction == attack_detection_direction_type_t::incoming) {
+        return "incoming";
+    } else if (attack_detection_direction == attack_detection_direction_type_t::outgoing) {
+        return "outgoing";
+    } else {
+        return "unknown";
+    }
+}
+
