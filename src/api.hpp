@@ -242,7 +242,15 @@ Status FastnetmonApiServiceImpl::ExecuteUnBan(ServerContext* context,
         ban_list_ipv6.remove_from_blackhole(ipv6_address);
     }
 
-    call_unban_handlers(client_ip, ipv6_address, ipv6, current_attack, attack_detection_source_t::Automatic);
+    // It's empty for unban
+    std::string flow_attack_details;
+
+    // These are empty too
+    boost::circular_buffer<simple_packet_t> simple_packets_buffer;
+    boost::circular_buffer<fixed_size_packet_storage_t> raw_packets_buffer;
+
+    call_blackhole_actions_per_host(attack_action_t::unban, client_ip, ipv6_address, ipv6,
+            current_attack, flow_attack_details, attack_detection_source_t::Automatic, simple_packets_buffer);
 
     return Status::OK;
 }

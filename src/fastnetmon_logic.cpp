@@ -691,12 +691,22 @@ void execute_unban_operation_ipv6() {
         }
 
         // Add this IP to remove list
-        // We will remove keyas really after this loop
+        // We will remove keys really after this loop
         ban_list_items_for_erase.push_back(itr.first);
 
         // Call all hooks for unban
         uint32_t zero_ipv4_ip_address = 0;
-        call_unban_handlers(zero_ipv4_ip_address, itr.first, true, itr.second, attack_detection_source_t::Automatic);
+
+        // It's empty for unban
+        std::string flow_attack_details;
+
+        // These are empty too
+        boost::circular_buffer<simple_packet_t> simple_packets_buffer;
+        boost::circular_buffer<fixed_size_packet_storage_t> raw_packets_buffer;
+
+        call_blackhole_actions_per_host(attack_action_t::unban, zero_ipv4_ip_address, itr.first, true, itr.second,
+                                        flow_attack_details, attack_detection_source_t::Automatic,
+                                        simple_packets_buffer);
     }
 
     // Remove all unbanned hosts from the ban list
@@ -805,62 +815,6 @@ void cleanup_ban_list() {
         // Unban IPv6 bans
         execute_unban_operation_ipv6();
     }
-}
-
-void call_unban_handlers(uint32_t client_ip,
-                         subnet_ipv6_cidr_mask_t client_ipv6,
-                         bool ipv6,
-                         attack_details_t& current_attack,
-                         attack_detection_source_t attack_detection_source) {
-    bool ipv4 = !ipv6;
-
-    std::string client_ip_as_string;
-
-    if (ipv4) {
-        client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
-    } else {
-        client_ip_as_string = print_ipv6_address(client_ipv6.subnet_address);
-    }
-
-    logger << log4cpp::Priority::INFO << "We will unban banned IP: " << client_ip_as_string << " because it ban time "
-           << current_attack.ban_time << " seconds is ended";
-
-    if (notify_script_enabled) {
-        std::string data_direction_as_string = get_direction_name(current_attack.attack_direction);
-        std::string pps_as_string            = convert_int_to_string(current_attack.attack_power);
-
-        std::string script_call_params = fastnetmon_platform_configuration.notify_script_path + " " + client_ip_as_string +
-                                         " " + data_direction_as_string + " " + pps_as_string + " unban";
-
-        logger << log4cpp::Priority::INFO << "Call script for unban client: " << client_ip_as_string;
-
-        // We should execute external script in separate thread because any lag in this
-        // code will be very distructive
-        boost::thread exec_thread(exec_no_error_check, script_call_params);
-        exec_thread.detach();
-
-        logger << log4cpp::Priority::INFO << "Script for unban client is finished: " << client_ip_as_string;
-    }
-
-    if (exabgp_enabled && ipv4) {
-        logger << log4cpp::Priority::INFO << "Call ExaBGP for unban client started: " << client_ip_as_string;
-
-        boost::thread exabgp_thread(exabgp_ban_manage, "unban", client_ip_as_string, current_attack);
-        exabgp_thread.detach();
-
-        logger << log4cpp::Priority::INFO << "Call to ExaBGP for unban client is finished: " << client_ip_as_string;
-    }
-
-#ifdef ENABLE_GOBGP
-    if (gobgp_enabled) {
-        logger << log4cpp::Priority::INFO << "Call GoBGP for unban client started: " << client_ip_as_string;
-
-        boost::thread gobgp_thread(gobgp_ban_manage, "unban", ipv6, client_ip_as_string, client_ipv6, current_attack);
-        gobgp_thread.detach();
-
-        logger << log4cpp::Priority::INFO << "Call to GoBGP for unban client is finished: " << client_ip_as_string;
-    }
-#endif
 }
 
 // This code is a source of race conditions of worst kind, we had to rework it ASAP
