@@ -798,12 +798,21 @@ void cleanup_ban_list() {
             }
 
             // Add this IP to remove list
-            // We will remove keyas really after this loop
+            // We will remove keys really after this loop
             ban_list_items_for_erase.push_back(itr->first);
 
             // Call all hooks for unban
             subnet_ipv6_cidr_mask_t zero_ipv6_address;
-            call_unban_handlers(itr->first, zero_ipv6_address, false, itr->second, attack_detection_source_t::Automatic);
+
+            // It's empty for unban
+            std::string flow_attack_details;
+
+            // These are empty too
+            boost::circular_buffer<simple_packet_t> simple_packets_buffer;
+            boost::circular_buffer<fixed_size_packet_storage_t> raw_packets_buffer;
+
+            call_blackhole_actions_per_host(attack_action_t::unban, itr->first, zero_ipv6_address, false,
+                itr->second, flow_attack_details, attack_detection_source_t::Automatic, simple_packets_buffer);
         }
 
         // Remove all unbanned hosts from the ban list
