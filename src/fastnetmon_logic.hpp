@@ -65,7 +65,9 @@ redisContext* redis_init_connection();
 
 void execute_ip_ban(uint32_t client_ip, subnet_counter_t average_speed_element, std::string flow_attack_details, subnet_cidr_mask_t customer_subnet);
 
-void call_ban_handlers(uint32_t client_ip,
+void call_blackhole_actions_per_host(
+                       attack_action_t attack_action,
+                       uint32_t client_ip,
                        subnet_ipv6_cidr_mask_t client_ipv6,
                        bool ipv6,
                        attack_details_t& current_attack,

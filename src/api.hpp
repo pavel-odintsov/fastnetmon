@@ -141,7 +141,7 @@ Status FastnetmonApiServiceImpl::ExecuteBan(ServerContext* context,
     }
 
     logger << log4cpp::Priority::INFO << "API call ban handlers manually";
-    call_ban_handlers(client_ip, ipv6_address, ipv6, current_attack, flow_attack_details,
+    call_blackhole_actions_per_host(attack_action_t::ban, client_ip, ipv6_address, ipv6, current_attack, flow_attack_details,
                       attack_detection_source_t::Automatic, empty_simple_packets_buffer);
 
     return Status::OK;

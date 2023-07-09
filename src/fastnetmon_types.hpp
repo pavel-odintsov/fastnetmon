@@ -30,6 +30,8 @@
 
 enum attack_severity_t { ATTACK_SEVERITY_LOW, ATTACK_SEVERITY_MIDDLE, ATTACK_SEVERITY_HIGH };
 
+// Attack action types
+enum class attack_action_t { ban, unban };
 
 // Kafka traffic export formats
 enum class kafka_traffic_export_format_t : uint32_t { Unknown = 0, JSON = 1, Protobuf = 2 };

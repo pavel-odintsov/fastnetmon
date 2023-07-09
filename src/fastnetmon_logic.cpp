@@ -863,6 +863,7 @@ void call_unban_handlers(uint32_t client_ip,
 #endif
 }
 
+// This code is a source of race conditions of worst kind, we had to rework it ASAP
 std::string print_ddos_attack_details() {
     std::stringstream output_buffer;
 
@@ -1433,11 +1434,13 @@ void execute_ip_ban(uint32_t client_ip, subnet_counter_t average_speed_element, 
 
     boost::circular_buffer<simple_packet_t> empty_simple_packets_buffer;
 
-    call_ban_handlers(client_ip, zero_ipv6_address, false, ban_list[client_ip], flow_attack_details,
+    call_blackhole_actions_per_host(attack_action_t::ban, client_ip, zero_ipv6_address, false, ban_list[client_ip], flow_attack_details,
                       attack_detection_source_t::Automatic, empty_simple_packets_buffer);
 }
 
-void call_ban_handlers(uint32_t client_ip,
+void call_blackhole_actions_per_host(
+                       attack_action_t attack_action,
+                       uint32_t client_ip,
                        subnet_ipv6_cidr_mask_t client_ipv6,
                        bool ipv6,
                        attack_details_t& current_attack,
@@ -3152,7 +3155,7 @@ void execute_ipv6_ban(subnet_ipv6_cidr_mask_t ipv6_client,
     logger << log4cpp::Priority::INFO << "IPv6 address " << print_ipv6_cidr_subnet(ipv6_client) << " was banned";
 
     uint32_t zero_ipv4_address = 0;
-    call_ban_handlers(zero_ipv4_address, ipv6_client, true, current_attack, "", attack_detection_source_t::Automatic, simple_packets_buffer);
+    call_blackhole_actions_per_host(attack_action_t::ban, zero_ipv4_address, ipv6_client, true, current_attack, "", attack_detection_source_t::Automatic, simple_packets_buffer);
 }
 
 void process_filled_buckets_ipv6() {
