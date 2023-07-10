@@ -2031,6 +2031,7 @@ void speed_calculation_callback_local_ipv4(const uint32_t& client_ip, const subn
 void recalculate_speed() {
     // logger<< log4cpp::Priority::INFO<<"We run recalculate_speed";
     double speed_calc_period = recalculate_speed_timeout;
+    extern bool hash_counters;
 
     extern abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counters;
 
@@ -2153,25 +2154,30 @@ void recalculate_speed() {
             }
 
             /* Moving average recalculation end */
-            std::string host_group_name;
-            ban_settings_t current_ban_settings = get_ban_settings_for_this_subnet(itr->first, host_group_name);
 
-            attack_detection_threshold_type_t attack_detection_source;
-            attack_detection_direction_type_t attack_detection_direction;
+            if (!hash_counters) {
+
+                std::string host_group_name;
+                ban_settings_t current_ban_settings = get_ban_settings_for_this_subnet(itr->first, host_group_name);
+
+                attack_detection_threshold_type_t attack_detection_source;
+                attack_detection_direction_type_t attack_detection_direction;
 
 
-            if (we_should_ban_this_entity(current_average_speed_element, current_ban_settings, attack_detection_source,
-                                          attack_detection_direction)) {
-                logger << log4cpp::Priority::DEBUG << "We have found host group for this host as: " << host_group_name;
+                if (we_should_ban_this_entity(current_average_speed_element, current_ban_settings, attack_detection_source,
+                                              attack_detection_direction)) {
+                    logger << log4cpp::Priority::DEBUG << "We have found host group for this host as: " << host_group_name;
 
-                std::string flow_attack_details = "";
+                    std::string flow_attack_details = "";
 
-                if (enable_connection_tracking) {
-                    flow_attack_details = print_flow_tracking_for_ip(*flow_counter_ptr, convert_ip_as_uint_to_string(client_ip));
+                    if (enable_connection_tracking) {
+                        flow_attack_details = print_flow_tracking_for_ip(*flow_counter_ptr, convert_ip_as_uint_to_string(client_ip));
+                    }
+
+                    // TODO: we should pass type of ddos ban source (pps, flowd, bandwidth)!
+                    execute_ip_ban(client_ip, current_average_speed_element, flow_attack_details, itr->first);
                 }
 
-                // TODO: we should pass type of ddos ban source (pps, flowd, bandwidth)!
-                execute_ip_ban(client_ip, current_average_speed_element, flow_attack_details, itr->first);
             }
 
             SubnetVectorMapSpeed[itr->first][current_index] = new_speed_element;
