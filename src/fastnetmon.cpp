@@ -1116,13 +1116,21 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
 
     if (hash_counters) {
         for (int i = 0; i < network_size_in_ips; i++) {
-            uint32_t ip = subnet_as_integer + fast_hton(i);
+            // We need to increment IP address by X but we have to do so in little endian / host byte order
+            // incrementing big endian will not work as we expect
+            uint32_t ip_as_little_endian = fast_ntoh(subnet_as_integer);
 
-            // logger << log4cpp::Priority::INFO << "Allocate: " << convert_ip_as_uint_to_string(ip);
-       
+            // Increment it for specific number
+            ip_as_little_endian += i;
+
+            uint32_t result_ip_as_big_endian = fast_hton(ip_as_little_endian);
+
+            logger << log4cpp::Priority::INFO << "Allocate: " << convert_ip_as_uint_to_string(result_ip_as_big_endian);
+      
+            // We use big endian values as keys
             try {
-                ipv4_host_counters.average_speed_map[ip] = zero_map_element;
-                ipv4_host_counters.counter_map[ip] = zero_map_element;
+                ipv4_host_counters.average_speed_map[result_ip_as_big_endian] = zero_map_element;
+                ipv4_host_counters.counter_map[result_ip_as_big_endian] = zero_map_element;
             } catch (std::bad_alloc& ba) {
                 logger << log4cpp::Priority::ERROR << "Can't allocate memory for hash counters";
                 exit(1);
@@ -1132,7 +1140,7 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
         logger << log4cpp::Priority::INFO << "Successfully allocated " << ipv4_host_counters.average_speed_map.size() << " counters";
     }
         
-    // Initilize our counters with fill constructor
+    // Initialize our counters with fill constructor
     try {
         SubnetVectorMap[current_subnet]             = vector_of_counters(network_size_in_ips, zero_map_element);
         SubnetVectorMapSpeed[current_subnet]        = vector_of_counters(network_size_in_ips, zero_map_element);
