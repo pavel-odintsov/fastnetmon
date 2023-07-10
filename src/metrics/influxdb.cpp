@@ -136,6 +136,50 @@ bool push_total_traffic_counters_to_influxdb(std::string influx_database,
     return true;
 }
 
+// Push host traffic to InfluxDB
+bool push_hosts_ipv6_traffic_counters_to_influxdb(std::string influx_database,
+                                                  std::string influx_host,
+                                                  std::string influx_port,
+                                                  bool enable_auth,
+                                                  std::string influx_user,
+                                                  std::string influx_password) {
+    std::vector<std::pair<subnet_ipv6_cidr_mask_t, subnet_counter_t>> speed_elements;
+
+    // TODO: preallocate memory here for this array to avoid memory allocations under the lock
+    ipv6_host_counters.get_all_non_zero_average_speed_elements_as_pairs(speed_elements);
+
+    // Structure for InfluxDB
+    std::vector<std::pair<std::string, std::map<std::string, uint64_t>>> hosts_vector;
+
+    for (const auto& speed_element : speed_elements) {
+        std::map<std::string, uint64_t> plain_total_counters_map;
+
+        std::string client_ip_as_string = print_ipv6_address(speed_element.first.subnet_address);
+
+        fill_main_counters_for_influxdb(&speed_element.second, plain_total_counters_map, true);
+
+        hosts_vector.push_back(std::make_pair(client_ip_as_string, plain_total_counters_map));
+    }
+
+    // TODO: For big networks it will cause HUGE batches, it will make sense to split them in 5-10k batches
+    if (hosts_vector.size() > 0) {
+        influxdb_writes_total++;
+
+        bool result = write_batch_of_data_to_influxdb(influx_database, influx_host, influx_port, enable_auth, influx_user,
+                                                      influx_password, "hosts_ipv6_traffic", "host", hosts_vector);
+
+        if (!result) {
+            influxdb_writes_failed++;
+            logger << log4cpp::Priority::DEBUG << "InfluxDB batch operation failed for hosts_traffic";
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
+
 // This thread pushes data to InfluxDB
 void influxdb_push_thread() {
     // Sleep for a half second for shift against calculation thread
@@ -196,50 +240,6 @@ void influxdb_push_thread() {
                                                 total_counters_ipv6.total_speed_average_counters, true);
     }
 }
-
-
-// Push host traffic to InfluxDB
-bool push_hosts_ipv6_traffic_counters_to_influxdb(std::string influx_database,
-                                                  std::string influx_host,
-                                                  std::string influx_port,
-                                                  bool enable_auth,
-                                                  std::string influx_user,
-                                                  std::string influx_password) {
-    std::vector<std::pair<subnet_ipv6_cidr_mask_t, subnet_counter_t>> speed_elements;
-
-    // TODO: preallocate memory here for this array to avoid memory allocations under the lock
-    ipv6_host_counters.get_all_non_zero_average_speed_elements_as_pairs(speed_elements);
-
-    // Structure for InfluxDB
-    std::vector<std::pair<std::string, std::map<std::string, uint64_t>>> hosts_vector;
-
-    for (const auto& speed_element : speed_elements) {
-        std::map<std::string, uint64_t> plain_total_counters_map;
-
-        std::string client_ip_as_string = print_ipv6_address(speed_element.first.subnet_address);
-
-        fill_main_counters_for_influxdb(&speed_element.second, plain_total_counters_map, true);
-
-        hosts_vector.push_back(std::make_pair(client_ip_as_string, plain_total_counters_map));
-    }
-
-    // TODO: For big networks it will cause HUGE batches, it will make sense to split them in 5-10k batches
-    if (hosts_vector.size() > 0) {
-        influxdb_writes_total++;
-
-        bool result = write_batch_of_data_to_influxdb(influx_database, influx_host, influx_port, enable_auth, influx_user,
-                                                      influx_password, "hosts_ipv6_traffic", "host", hosts_vector);
-
-        if (!result) {
-            influxdb_writes_failed++;
-            logger << log4cpp::Priority::DEBUG << "InfluxDB batch operation failed for hosts_traffic";
-            return false;
-        }
-    }
-
-    return true;
-}
-
 
 // Push host traffic to InfluxDB
 bool push_hosts_traffic_counters_to_influxdb(std::string influx_database,
