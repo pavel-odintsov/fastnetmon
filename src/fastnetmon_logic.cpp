@@ -828,21 +828,41 @@ void cleanup_ban_list() {
 
 // This code is a source of race conditions of worst kind, we had to rework it ASAP
 std::string print_ddos_attack_details() {
+    extern blackhole_ban_list_t<uint32_t> ban_list_ipv4;
+    extern bool hash_counters;
+
     std::stringstream output_buffer;
 
-    for (std::map<uint32_t, banlist_item_t>::iterator ii = ban_list.begin(); ii != ban_list.end(); ++ii) {
-        uint32_t client_ip = (*ii).first;
+    if (hash_counters) {
+        std::map<uint32_t, banlist_item_t> ban_list_ipv4_copy;
 
-        std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
-        std::string max_pps_as_string   = convert_int_to_string(((*ii).second).max_attack_power);
-        std::string attack_direction    = get_direction_name(((*ii).second).attack_direction);
+        // Get whole ban list content atomically
+        ban_list_ipv4.get_whole_banlist(ban_list_ipv4_copy);
 
-        output_buffer << client_ip_as_string << "/" << max_pps_as_string << " pps " << attack_direction << " at "
-                      << print_time_t_in_fastnetmon_format(ii->second.ban_timestamp) << std::endl;
+        for (auto itr : ban_list_ipv4_copy) {
+            uint32_t client_ip = itr.first;
 
-        send_attack_details(client_ip, (*ii).second);
+            std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+
+            output_buffer << client_ip_as_string << " at " << print_time_t_in_fastnetmon_format(itr.second.ban_timestamp) << std::endl;
+        }
+    } else {
+
+        for (std::map<uint32_t, banlist_item_t>::iterator ii = ban_list.begin(); ii != ban_list.end(); ++ii) {
+            uint32_t client_ip = (*ii).first;
+
+            std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+            std::string max_pps_as_string   = convert_int_to_string(((*ii).second).max_attack_power);
+            std::string attack_direction    = get_direction_name(((*ii).second).attack_direction);
+
+            output_buffer << client_ip_as_string << "/" << max_pps_as_string << " pps " << attack_direction << " at "
+                          << print_time_t_in_fastnetmon_format(ii->second.ban_timestamp) << std::endl;
+
+            // This logic is evil side effect of this function
+            send_attack_details(client_ip, (*ii).second);
+        }
+
     }
-
 
     return output_buffer.str();
 }
@@ -1722,9 +1742,16 @@ void traffic_draw_ipv4_program() {
 
     output_buffer << "Not processed packets: " << total_unparsed_packets_speed << " pps\n";
 
-    if (!ban_list.empty()) {
+    if (hash_counters) {
         output_buffer << std::endl << "Ban list:" << std::endl;
         output_buffer << print_ddos_attack_details();
+    } else {
+
+        if (!ban_list.empty()) {
+            output_buffer << std::endl << "Ban list:" << std::endl;
+            output_buffer << print_ddos_attack_details();
+        }
+
     }
 
     // Print screen contents into file
@@ -2330,7 +2357,7 @@ std::string draw_table_ipv4_hash(attack_detection_direction_type_t sort_directio
         uint64_t mbps = convert_speed_to_mbps(bps);
 
         // We use setw for alignment
-        output_buffer << client_ip_as_string << "\t";
+        output_buffer << client_ip_as_string << "\t\t";
 
         std::string is_banned = ban_list_ipv4.is_blackholed(client_ip) ? " *banned* " : "";
 
