@@ -333,7 +333,7 @@ void gobgp_action_shutdown() {
     delete gobgp_client;
 }
 
-void gobgp_ban_manage(std::string action, bool ipv6, std::string ip_as_string, subnet_ipv6_cidr_mask_t client_ipv6, attack_details_t current_attack) {
+void gobgp_ban_manage(const std::string& action, bool ipv6, const std::string& ip_as_string, const subnet_ipv6_cidr_mask_t& client_ipv6, const subnet_cidr_mask_t& customer_network) {
     bool is_withdrawal = false;
 
     std::string action_name;
@@ -360,17 +360,17 @@ void gobgp_ban_manage(std::string action, bool ipv6, std::string ip_as_string, s
         }
     } else {
         if (gobgp_announce_whole_subnet) {
-            std::string subnet_as_string_with_mask = convert_subnet_to_string(current_attack.customer_network);
+            std::string subnet_as_string_with_mask = convert_subnet_to_string(customer_network);
             logger << log4cpp::Priority::INFO << action_name << " "
-                   << convert_subnet_to_string(current_attack.customer_network) << " to GoBGP";
+                   << convert_subnet_to_string(customer_network) << " to GoBGP";
 
             // https://github.com/osrg/gobgp/blob/0aff30a74216f499b8abfabc50016b041b319749/internal/pkg/table/policy_test.go#L2870
             uint32_t community_as_32bit_int =
                 uint32_t(bgp_community_subnet.asn_number << 16 | bgp_community_subnet.community_number);
 
-            gobgp_client->AnnounceUnicastPrefixIPv4(convert_ip_as_uint_to_string(current_attack.customer_network.subnet_address),
+            gobgp_client->AnnounceUnicastPrefixIPv4(convert_ip_as_uint_to_string(customer_network.subnet_address),
                                                     gobgp_nexthop, is_withdrawal,
-                                                    current_attack.customer_network.cidr_prefix_length, community_as_32bit_int);
+                                                    customer_network.cidr_prefix_length, community_as_32bit_int);
         }
 
         if (gobgp_announce_host) {

@@ -17,6 +17,8 @@
 
 #include "fastnetmon_networks.hpp"
 
+#include "attack_details.hpp"
+
 #define TCP_FIN_FLAG_SHIFT 1
 #define TCP_SYN_FLAG_SHIFT 2
 #define TCP_RST_FLAG_SHIFT 3

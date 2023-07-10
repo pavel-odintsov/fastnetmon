@@ -48,10 +48,10 @@ void exabgp_prefix_ban_manage(std::string action, std::string prefix_as_string_w
     close(exabgp_pipe);
 }
 
-void exabgp_ban_manage(std::string action, std::string ip_as_string, attack_details_t current_attack) {
-    // We will announce whole subent here
+void exabgp_ban_manage(const std::string& action, const std::string& ip_as_string, const subnet_cidr_mask_t& customer_network) {
+    // We will announce whole subnet here
     if (exabgp_announce_whole_subnet) {
-        std::string subnet_as_string_with_mask = convert_subnet_to_string(current_attack.customer_network);
+        std::string subnet_as_string_with_mask = convert_subnet_to_string(customer_network);
 
         exabgp_prefix_ban_manage(action, subnet_as_string_with_mask, exabgp_next_hop, exabgp_community_subnet);
     }
