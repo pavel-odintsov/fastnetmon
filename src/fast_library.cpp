@@ -1032,46 +1032,45 @@ std::string serialize_attack_description(const attack_details_t& current_attack)
                        << "Attack direction: " << get_direction_name(current_attack.attack_direction) << "\n"
                        << "Attack protocol: " << get_printable_protocol_name(current_attack.attack_protocol) << "\n";
 
-    attack_description << "Total incoming traffic: " << convert_speed_to_mbps(current_attack.total.in_bytes) << " mbps\n"
-                       << "Total outgoing traffic: " << convert_speed_to_mbps(current_attack.total.out_bytes) << " mbps\n"
-                       << "Total incoming pps: " << current_attack.total.in_packets << " packets per second\n"
-                       << "Total outgoing pps: " << current_attack.total.out_packets << " packets per second\n"
-                       << "Total incoming flows: " << current_attack.in_flows << " flows per second\n"
-                       << "Total outgoing flows: " << current_attack.out_flows << " flows per second\n";
-
-
-    // Add average counters
-    attack_description << "Average incoming traffic: " << convert_speed_to_mbps(current_attack.average_in_bytes) << " mbps\n"
-                       << "Average outgoing traffic: " << convert_speed_to_mbps(current_attack.average_out_bytes) << " mbps\n"
-                       << "Average incoming pps: " << current_attack.average_in_packets << " packets per second\n"
-                       << "Average outgoing pps: " << current_attack.average_out_packets << " packets per second\n"
-                       << "Average incoming flows: " << current_attack.average_in_flows << " flows per second\n"
-                       << "Average outgoing flows: " << current_attack.average_out_flows << " flows per second\n";
+    attack_description
+        << "Total incoming traffic: " << convert_speed_to_mbps(current_attack.traffic_counters.total.in_bytes) << " mbps\n"
+        << "Total outgoing traffic: " << convert_speed_to_mbps(current_attack.traffic_counters.total.out_bytes) << " mbps\n"
+        << "Total incoming pps: " << current_attack.traffic_counters.total.in_packets << " packets per second\n"
+        << "Total outgoing pps: " << current_attack.traffic_counters.total.out_packets << " packets per second\n"
+        << "Total incoming flows: " << current_attack.traffic_counters.in_flows << " flows per second\n"
+        << "Total outgoing flows: " << current_attack.traffic_counters.out_flows << " flows per second\n";
 
     attack_description
-        << "Incoming ip fragmented traffic: " << convert_speed_to_mbps(current_attack.fragmented.in_bytes) << " mbps\n"
-        << "Outgoing ip fragmented traffic: " << convert_speed_to_mbps(current_attack.fragmented.out_bytes) << " mbps\n"
-        << "Incoming ip fragmented pps: " << current_attack.fragmented.in_packets << " packets per second\n"
-        << "Outgoing ip fragmented pps: " << current_attack.fragmented.out_packets << " packets per second\n"
+        << "Incoming ip fragmented traffic: " << convert_speed_to_mbps(current_attack.traffic_counters.fragmented.in_bytes) << " mbps\n"
+        << "Outgoing ip fragmented traffic: " << convert_speed_to_mbps(current_attack.traffic_counters.fragmented.out_bytes)
+        << " mbps\n"
+        << "Incoming ip fragmented pps: " << current_attack.traffic_counters.fragmented.in_packets << " packets per second\n"
+        << "Outgoing ip fragmented pps: " << current_attack.traffic_counters.fragmented.out_packets << " packets per second\n"
 
-        << "Incoming tcp traffic: " << convert_speed_to_mbps(current_attack.tcp.in_bytes) << " mbps\n"
-        << "Outgoing tcp traffic: " << convert_speed_to_mbps(current_attack.tcp.out_bytes) << " mbps\n"
-        << "Incoming tcp pps: " << current_attack.tcp.in_packets << " packets per second\n"
-        << "Outgoing tcp pps: " << current_attack.tcp.out_packets << " packets per second\n"
-        << "Incoming syn tcp traffic: " << convert_speed_to_mbps(current_attack.tcp_syn.in_bytes) << " mbps\n"
-        << "Outgoing syn tcp traffic: " << convert_speed_to_mbps(current_attack.tcp_syn.out_bytes) << " mbps\n"
-        << "Incoming syn tcp pps: " << current_attack.tcp_syn.in_packets << " packets per second\n"
-        << "Outgoing syn tcp pps: " << current_attack.tcp_syn.out_packets << " packets per second\n"
+        << "Incoming dropped traffic: " << convert_speed_to_mbps(current_attack.traffic_counters.dropped.in_bytes) << " mbps\n"
+        << "Outgoing dropped traffic: " << convert_speed_to_mbps(current_attack.traffic_counters.dropped.out_bytes) << " mbps\n"
+        << "Incoming dropped pps: " << current_attack.traffic_counters.dropped.in_packets << " packets per second\n"
+        << "Outgoing dropped pps: " << current_attack.traffic_counters.dropped.out_packets << " packets per second\n"
 
-        << "Incoming udp traffic: " << convert_speed_to_mbps(current_attack.udp.in_bytes) << " mbps\n"
-        << "Outgoing udp traffic: " << convert_speed_to_mbps(current_attack.udp.out_bytes) << " mbps\n"
-        << "Incoming udp pps: " << current_attack.udp.in_packets << " packets per second\n"
-        << "Outgoing udp pps: " << current_attack.udp.out_packets << " packets per second\n"
+        << "Incoming tcp traffic: " << convert_speed_to_mbps(current_attack.traffic_counters.tcp.in_bytes) << " mbps\n"
+        << "Outgoing tcp traffic: " << convert_speed_to_mbps(current_attack.traffic_counters.tcp.out_bytes) << " mbps\n"
+        << "Incoming tcp pps: " << current_attack.traffic_counters.tcp.in_packets << " packets per second\n"
+        << "Outgoing tcp pps: " << current_attack.traffic_counters.tcp.out_packets << " packets per second\n"
+        << "Incoming syn tcp traffic: " << convert_speed_to_mbps(current_attack.traffic_counters.tcp_syn.in_bytes) << " mbps\n"
+        << "Outgoing syn tcp traffic: " << convert_speed_to_mbps(current_attack.traffic_counters.tcp_syn.out_bytes) << " mbps\n"
+        << "Incoming syn tcp pps: " << current_attack.traffic_counters.tcp_syn.in_packets << " packets per second\n"
+        << "Outgoing syn tcp pps: " << current_attack.traffic_counters.tcp_syn.out_packets << " packets per second\n"
 
-        << "Incoming icmp traffic: " << convert_speed_to_mbps(current_attack.icmp.in_bytes) << " mbps\n"
-        << "Outgoing icmp traffic: " << convert_speed_to_mbps(current_attack.icmp.out_bytes) << " mbps\n"
-        << "Incoming icmp pps: " << current_attack.icmp.in_packets << " packets per second\n"
-        << "Outgoing icmp pps: " << current_attack.icmp.out_packets << " packets per second\n";
+        << "Incoming udp traffic: " << convert_speed_to_mbps(current_attack.traffic_counters.udp.in_bytes) << " mbps\n"
+        << "Outgoing udp traffic: " << convert_speed_to_mbps(current_attack.traffic_counters.udp.out_bytes) << " mbps\n"
+        << "Incoming udp pps: " << current_attack.traffic_counters.udp.in_packets << " packets per second\n"
+        << "Outgoing udp pps: " << current_attack.traffic_counters.udp.out_packets << " packets per second\n"
+
+        << "Incoming icmp traffic: " << convert_speed_to_mbps(current_attack.traffic_counters.icmp.in_bytes) << " mbps\n"
+        << "Outgoing icmp traffic: " << convert_speed_to_mbps(current_attack.traffic_counters.icmp.out_bytes) << " mbps\n"
+        << "Incoming icmp pps: " << current_attack.traffic_counters.icmp.in_packets << " packets per second\n"
+        << "Outgoing icmp pps: " << current_attack.traffic_counters.icmp.out_packets << " packets per second\n";
+
 
     return attack_description.str();
 }
@@ -1080,29 +1079,37 @@ attack_type_t detect_attack_type(const attack_details_t& current_attack) {
     double threshold_value = 0.9;
 
     if (current_attack.attack_direction == INCOMING) {
-        if (current_attack.tcp_syn.in_packets > threshold_value * current_attack.total.in_packets) {
+        if (current_attack.traffic_counters.tcp_syn.in_packets > threshold_value * current_attack.traffic_counters.total.in_packets) {
             return ATTACK_SYN_FLOOD;
-        } else if (current_attack.icmp.in_packets > threshold_value * current_attack.total.in_packets) {
+        } else if (current_attack.traffic_counters.icmp.in_packets >
+                   threshold_value * current_attack.traffic_counters.total.in_packets) {
             return ATTACK_ICMP_FLOOD;
-        } else if (current_attack.fragmented.in_packets > threshold_value * current_attack.total.in_packets) {
+        } else if (current_attack.traffic_counters.fragmented.in_packets >
+                   threshold_value * current_attack.traffic_counters.total.in_packets) {
             return ATTACK_IP_FRAGMENTATION_FLOOD;
-        } else if (current_attack.udp.in_packets > threshold_value * current_attack.total.in_packets) {
+        } else if (current_attack.traffic_counters.udp.in_packets >
+                   threshold_value * current_attack.traffic_counters.total.in_packets) {
             return ATTACK_UDP_FLOOD;
         }
     } else if (current_attack.attack_direction == OUTGOING) {
-        if (current_attack.tcp_syn.out_packets > threshold_value * current_attack.total.out_packets) {
+        if (current_attack.traffic_counters.tcp_syn.out_packets >
+            threshold_value * current_attack.traffic_counters.total.out_packets) {
             return ATTACK_SYN_FLOOD;
-        } else if (current_attack.icmp.out_packets > threshold_value * current_attack.total.out_packets) {
+        } else if (current_attack.traffic_counters.icmp.out_packets >
+                   threshold_value * current_attack.traffic_counters.total.out_packets) {
             return ATTACK_ICMP_FLOOD;
-        } else if (current_attack.fragmented.out_packets > threshold_value * current_attack.total.out_packets) {
+        } else if (current_attack.traffic_counters.fragmented.out_packets >
+                   threshold_value * current_attack.traffic_counters.total.out_packets) {
             return ATTACK_IP_FRAGMENTATION_FLOOD;
-        } else if (current_attack.udp.out_packets > threshold_value * current_attack.total.out_packets) {
+        } else if (current_attack.traffic_counters.udp.out_packets >
+                   threshold_value * current_attack.traffic_counters.total.out_packets) {
             return ATTACK_UDP_FLOOD;
         }
     }
 
     return ATTACK_UNKNOWN;
 }
+
 
 std::string get_printable_attack_name(attack_type_t attack) {
     if (attack == ATTACK_SYN_FLOOD) {
@@ -1135,30 +1142,6 @@ std::string serialize_network_load_to_text(subnet_counter_t& network_speed_meter
            << prefix << " outgoing pps: " << network_speed_meter.total.out_packets << " packets per second\n";
 
     return buffer.str();
-}
-
-std::string serialize_statistic_counters_about_attack(const attack_details_t& current_attack) {
-    std::stringstream attack_description;
-
-    double average_packet_size_for_incoming_traffic = 0;
-    double average_packet_size_for_outgoing_traffic = 0;
-
-    if (current_attack.average_in_packets > 0) {
-        average_packet_size_for_incoming_traffic = (double)current_attack.average_in_bytes / (double)current_attack.average_in_packets;
-    }
-
-    if (current_attack.average_out_packets > 0) {
-        average_packet_size_for_outgoing_traffic = (double)current_attack.average_out_bytes / (double)current_attack.average_out_packets;
-    }
-
-    // We do not need very accurate size
-    attack_description.precision(1);
-    attack_description << "Average packet size for incoming traffic: " << std::fixed
-                       << average_packet_size_for_incoming_traffic << " bytes \n"
-                       << "Average packet size for outgoing traffic: " << std::fixed
-                       << average_packet_size_for_outgoing_traffic << " bytes \n";
-
-    return attack_description.str();
 }
 
 std::string dns_lookup(std::string domain_name) {

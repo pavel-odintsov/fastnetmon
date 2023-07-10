@@ -93,7 +93,6 @@ std::string serialize_attack_description(const attack_details_t& current_attack)
 attack_type_t detect_attack_type(const attack_details_t& current_attack);
 std::string get_printable_attack_name(attack_type_t attack);
 std::string serialize_network_load_to_text(subnet_counter_t& network_speed_meter, bool average);
-std::string serialize_statistic_counters_about_attack(const attack_details_t& current_attack);
 
 std::string dns_lookup(std::string domain_name);
 bool store_data_to_stats_server(unsigned short int graphite_port, std::string graphite_host, std::string buffer_as_string);

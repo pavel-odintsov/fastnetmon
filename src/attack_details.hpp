@@ -4,7 +4,7 @@
 #include <boost/serialization/nvp.hpp>
 
 // structure with attack details
-class attack_details_t : public subnet_counter_t {
+class attack_details_t {
     public:
     // This operation is very heavy, it may crash in case of entropy shortage and it actually happened to our customer
     bool generate_uuid() {
@@ -44,14 +44,6 @@ class attack_details_t : public subnet_counter_t {
 
     // Separate section with traffic counters
     subnet_counter_t traffic_counters{};
-
-    // Average counters
-    uint64_t average_in_bytes    = 0;
-    uint64_t average_out_bytes   = 0;
-    uint64_t average_in_packets  = 0;
-    uint64_t average_out_packets = 0;
-    uint64_t average_in_flows    = 0;
-    uint64_t average_out_flows   = 0;
 
     // Time when we ban this IP
     time_t ban_timestamp = 0;

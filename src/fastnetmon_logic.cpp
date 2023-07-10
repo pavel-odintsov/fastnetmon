@@ -853,13 +853,11 @@ std::string get_attack_description(uint32_t client_ip, const attack_details_t& c
     attack_description << "IP: " << convert_ip_as_uint_to_string(client_ip) << "\n";
     attack_description << serialize_attack_description(current_attack) << "\n";
 
-    attack_description << serialize_statistic_counters_about_attack(current_attack);
-
     return attack_description.str();
 }
 
 // Serialises traffic counters to JSON
-bool serialize_traffic_counters_to_json(const attack_details_t& traffic_counters, nlohmann::json& json_details) {
+bool serialize_traffic_counters_to_json(const subnet_counter_t& traffic_counters, nlohmann::json& json_details) {
     try {
         json_details["total_incoming_traffic"]      = traffic_counters.total.in_bytes;
         json_details["total_incoming_traffic_bits"] = traffic_counters.total.in_bytes * 8;
@@ -936,6 +934,7 @@ bool serialize_traffic_counters_to_json(const attack_details_t& traffic_counters
     return true;
 }
 
+
 bool serialize_attack_description_to_json(const attack_details_t& current_attack, nlohmann::json& json_details) {
     // We need to catch exceptions as code may raise them here
     try {
@@ -947,7 +946,7 @@ bool serialize_attack_description_to_json(const attack_details_t& current_attack
         return false;
     }
 
-    if (!serialize_traffic_counters_to_json(current_attack, json_details)) {
+    if (!serialize_traffic_counters_to_json(current_attack.traffic_counters, json_details)) {
         logger << log4cpp::Priority::ERROR << "Cannot add traffic counters to JSON document";
         return false;
     }
@@ -1329,47 +1328,8 @@ void execute_ip_ban(uint32_t client_ip, subnet_counter_t average_speed_element, 
     current_attack.attack_power     = pps;
     current_attack.max_attack_power = pps;
 
-    current_attack.total.in_packets  = in_pps;
-    current_attack.total.out_packets = out_pps;
-
-    current_attack.total.in_bytes  = in_bps;
-    current_attack.total.out_bytes = out_bps;
-
-    // pass flow information
-    current_attack.in_flows  = in_flows;
-    current_attack.out_flows = out_flows;
-
-    current_attack.fragmented.in_packets = average_speed_element.fragmented.in_packets;
-    current_attack.tcp.in_packets        = average_speed_element.tcp.in_packets;
-    current_attack.tcp_syn.in_packets    = average_speed_element.tcp_syn.in_packets;
-    current_attack.udp.in_packets        = average_speed_element.udp.in_packets;
-    current_attack.icmp.in_packets       = average_speed_element.icmp.in_packets;
-
-    current_attack.fragmented.out_packets = average_speed_element.fragmented.out_packets;
-    current_attack.tcp.out_packets        = average_speed_element.tcp.out_packets;
-    current_attack.tcp_syn.out_packets    = average_speed_element.tcp_syn.out_packets;
-    current_attack.udp.out_packets        = average_speed_element.udp.out_packets;
-    current_attack.icmp.out_packets       = average_speed_element.icmp.out_packets;
-
-    current_attack.fragmented.out_bytes = average_speed_element.fragmented.out_bytes;
-    current_attack.tcp.out_bytes        = average_speed_element.tcp.out_bytes;
-    current_attack.tcp_syn.out_bytes    = average_speed_element.tcp_syn.out_bytes;
-    current_attack.udp.out_bytes        = average_speed_element.udp.out_bytes;
-    current_attack.icmp.out_bytes       = average_speed_element.icmp.out_bytes;
-
-    current_attack.fragmented.in_bytes = average_speed_element.fragmented.in_bytes;
-    current_attack.tcp.in_bytes        = average_speed_element.tcp.in_bytes;
-    current_attack.tcp_syn.in_bytes    = average_speed_element.tcp_syn.in_bytes;
-    current_attack.udp.in_bytes        = average_speed_element.udp.in_bytes;
-    current_attack.icmp.in_bytes       = average_speed_element.icmp.in_bytes;
-
-    current_attack.average_in_packets = average_speed_element.total.in_packets;
-    current_attack.average_in_bytes   = average_speed_element.total.in_bytes;
-    current_attack.average_in_flows   = average_speed_element.in_flows;
-
-    current_attack.average_out_packets = average_speed_element.total.out_packets;
-    current_attack.average_out_bytes   = average_speed_element.total.out_bytes;
-    current_attack.average_out_flows   = average_speed_element.out_flows;
+    // Copy traffic metrics
+    current_attack.traffic_counters = average_speed_element;
 
     if (collect_attack_pcap_dumps) {
         bool buffer_allocation_result = current_attack.pcap_attack_dump.allocate_buffer(number_of_packets_for_pcap_attack_dump);
@@ -1807,7 +1767,7 @@ std::string get_human_readable_threshold_type(attack_detection_threshold_type_t 
 
 
 // This function fills attack information from different information sources
-bool fill_attack_information(subnet_counter_t average_speed_element,
+bool fill_attack_information(
                              attack_details_t& current_attack,
                              std::string& host_group_name,
                              std::string& parent_host_group_name,
@@ -1815,12 +1775,12 @@ bool fill_attack_information(subnet_counter_t average_speed_element,
                              int ban_time) {
     uint64_t pps = 0;
 
-    uint64_t in_pps    = average_speed_element.total.in_packets;
-    uint64_t out_pps   = average_speed_element.total.out_packets;
-    uint64_t in_bps    = average_speed_element.total.in_bytes;
-    uint64_t out_bps   = average_speed_element.total.out_bytes;
-    uint64_t in_flows  = average_speed_element.in_flows;
-    uint64_t out_flows = average_speed_element.out_flows;
+    uint64_t in_pps    = current_attack.traffic_counters.total.in_packets;
+    uint64_t out_pps   = current_attack.traffic_counters.total.out_packets;
+    uint64_t in_bps    = current_attack.traffic_counters.total.in_bytes;
+    uint64_t out_bps   = current_attack.traffic_counters.total.out_bytes;
+    uint64_t in_flows  = current_attack.traffic_counters.in_flows;
+    uint64_t out_flows = current_attack.traffic_counters.out_flows;
 
     direction_t data_direction;
 
@@ -1848,7 +1808,7 @@ bool fill_attack_information(subnet_counter_t average_speed_element,
         }
     }
 
-    current_attack.attack_protocol = detect_attack_protocol(average_speed_element, data_direction);
+    current_attack.attack_protocol = detect_attack_protocol(current_attack.traffic_counters, data_direction);
 
     current_attack.host_group        = host_group_name;
     current_attack.parent_host_group = parent_host_group_name;
@@ -1870,48 +1830,6 @@ bool fill_attack_information(subnet_counter_t average_speed_element,
     current_attack.attack_direction = data_direction;
     current_attack.attack_power     = pps;
     current_attack.max_attack_power = pps;
-
-    current_attack.total.in_packets  = in_pps;
-    current_attack.total.out_packets = out_pps;
-
-    current_attack.total.in_bytes  = in_bps;
-    current_attack.total.out_bytes = out_bps;
-
-    // pass flow information
-    current_attack.in_flows  = in_flows;
-    current_attack.out_flows = out_flows;
-
-    current_attack.fragmented.in_packets = average_speed_element.fragmented.in_packets;
-    current_attack.tcp.in_packets        = average_speed_element.tcp.in_packets;
-    current_attack.tcp_syn.in_packets    = average_speed_element.tcp_syn.in_packets;
-    current_attack.udp.in_packets        = average_speed_element.udp.in_packets;
-    current_attack.icmp.in_packets       = average_speed_element.icmp.in_packets;
-
-    current_attack.fragmented.out_packets = average_speed_element.fragmented.out_packets;
-    current_attack.tcp.out_packets        = average_speed_element.tcp.out_packets;
-    current_attack.tcp_syn.out_packets    = average_speed_element.tcp_syn.out_packets;
-    current_attack.udp.out_packets        = average_speed_element.udp.out_packets;
-    current_attack.icmp.out_packets       = average_speed_element.icmp.out_packets;
-
-    current_attack.fragmented.out_bytes = average_speed_element.fragmented.out_bytes;
-    current_attack.tcp.out_bytes        = average_speed_element.tcp.out_bytes;
-    current_attack.tcp_syn.out_bytes    = average_speed_element.tcp_syn.out_bytes;
-    current_attack.udp.out_bytes        = average_speed_element.udp.out_bytes;
-    current_attack.icmp.out_bytes       = average_speed_element.icmp.out_bytes;
-
-    current_attack.fragmented.in_bytes = average_speed_element.fragmented.in_bytes;
-    current_attack.tcp.in_bytes        = average_speed_element.tcp.in_bytes;
-    current_attack.tcp_syn.in_bytes    = average_speed_element.tcp_syn.in_bytes;
-    current_attack.udp.in_bytes        = average_speed_element.udp.in_bytes;
-    current_attack.icmp.in_bytes       = average_speed_element.icmp.in_bytes;
-
-    current_attack.average_in_packets = average_speed_element.total.in_packets;
-    current_attack.average_in_bytes   = average_speed_element.total.in_bytes;
-    current_attack.average_in_flows   = average_speed_element.in_flows;
-
-    current_attack.average_out_packets = average_speed_element.total.out_packets;
-    current_attack.average_out_bytes   = average_speed_element.total.out_bytes;
-    current_attack.average_out_flows   = average_speed_element.out_flows;
 
     return true;
 }
@@ -1967,7 +1885,9 @@ void speed_calculation_callback_local_ipv6(const subnet_ipv6_cidr_mask_t& curren
     std::string parent_group;
 
     attack_details_t attack_details;
-    fill_attack_information(current_average_speed_element, attack_details, host_group_name, parent_group, unban_enabled, global_ban_time);
+    attack_details.traffic_counters = current_average_speed_element;
+    
+    fill_attack_information(attack_details, host_group_name, parent_group, unban_enabled, global_ban_time);
 
     attack_details.ipv6 = true;
     // TODO: Also, we should find IPv6 network for attack here
@@ -2087,7 +2007,7 @@ void speed_calculation_callback_local_ipv4(const uint32_t& client_ip, const subn
     // field copy
     std::string parent_group;
    
-    fill_attack_information(attack_details.traffic_counters, attack_details, host_group_name,
+    fill_attack_information(attack_details, host_group_name,
                             parent_group, unban_enabled,
                             global_ban_time);
 
@@ -3244,8 +3164,6 @@ std::string get_attack_description_ipv6(subnet_ipv6_cidr_mask_t ipv6_address, co
 
     attack_description << "IP: " << print_ipv6_address(ipv6_address.subnet_address) << "\n";
     attack_description << serialize_attack_description(current_attack) << "\n";
-
-    attack_description << serialize_statistic_counters_about_attack(current_attack);
 
     return attack_description.str();
 }
