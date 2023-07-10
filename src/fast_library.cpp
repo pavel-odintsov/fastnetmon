@@ -1898,7 +1898,7 @@ uint64_t get_current_unix_time_in_nanoseconds() {
 }
 
 // Joins data to format a=b,d=f
-std::string join_by_comma_and_equal(std::map<std::string, std::string>& data) {
+std::string join_by_comma_and_equal(const std::map<std::string, std::string>& data) {
     std::stringstream buffer;
 
     for (auto itr = data.begin(); itr != data.end(); ++itr) {

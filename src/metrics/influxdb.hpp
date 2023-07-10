@@ -80,12 +80,12 @@ bool write_line_of_data_to_influxdb(std::string influx_database,
 void fill_per_protocol_countres_for_influxdb(const subnet_counter_t* current_speed_element,
                                              std::map<std::string, uint64_t>& plain_total_counters_map);
 
-void fill_main_counters_for_influxdb(const subnet_counter_t* current_speed_element,
+void fill_main_counters_for_influxdb(const subnet_counter_t& current_speed_element,
                                      std::map<std::string, uint64_t>& plain_total_counters_map,
                                      bool populate_flow);
 
 // Prepare string to insert data into InfluxDB
 std::string craft_line_for_influxdb_line_protocol(uint64_t unix_timestamp_nanoseconds,
                                                   std::string measurement,
-                                                  std::map<std::string, std::string>& tags,
-                                                  std::map<std::string, uint64_t>& plain_total_counters_map);
+                                                  const std::map<std::string, std::string>& tags,
+                                                  const std::map<std::string, uint64_t>& plain_total_counters_map);
