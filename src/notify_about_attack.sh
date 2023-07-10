@@ -37,7 +37,7 @@ if [ "$4" = "ban" ]; then
 fi
 
 # Advanced edition does not use this action and passes all details in ban action
-if [ "$4" == "attack_details" ]; then
+if [ "$4" = "attack_details" ]; then
     cat | mail -s "FastNetMon Guard: IP $1 blocked because $2 attack with power $3 pps" $email_notify;
 
     exit 0
