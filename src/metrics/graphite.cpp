@@ -117,6 +117,91 @@ bool push_hosts_traffic_counters_to_graphite() {
     return true;
 }
 
+// Push host traffic to Graphite
+bool push_hosts_traffic_counters_to_graphite_hash() {
+    extern abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counters;
+
+    std::vector<direction_t> processed_directions = { INCOMING, OUTGOING };
+
+    graphite_data_t graphite_data;
+
+    std::vector<std::pair<uint32_t, subnet_counter_t>> speed_elements;
+    ipv4_host_counters.get_all_non_zero_average_speed_elements_as_pairs(speed_elements);
+
+    for (const auto& speed_element : speed_elements) {
+        std::string client_ip_as_string = convert_ip_as_uint_to_string(speed_element.first);
+
+        const subnet_counter_t* current_speed_element = &speed_element.second;
+
+        // Skip elements with zero speed
+        if (current_speed_element->is_zero()) {
+            continue;
+        }
+
+        std::string ip_as_string_with_dash_delimiters = client_ip_as_string;
+        // Replace dots by dashes
+        std::replace(ip_as_string_with_dash_delimiters.begin(), ip_as_string_with_dash_delimiters.end(), '.', '_');
+
+        for (auto data_direction : processed_directions) {
+            std::string direction_as_string;
+
+            if (data_direction == INCOMING) {
+                direction_as_string = "incoming";
+            } else if (data_direction == OUTGOING) {
+                direction_as_string = "outgoing";
+            }
+
+            std::string graphite_current_prefix = graphite_prefix + ".hosts." +
+                                                  ip_as_string_with_dash_delimiters + "." + direction_as_string;
+
+
+            if (data_direction == INCOMING) {
+                // Prepare incoming traffic data
+
+                // We do not store zero data to Graphite
+                if (current_speed_element->total.in_packets != 0) {
+                    graphite_data[graphite_current_prefix + ".pps"] = current_speed_element->total.in_packets;
+                }
+
+                if (current_speed_element->total.in_bytes != 0) {
+                    graphite_data[graphite_current_prefix + ".bps"] = current_speed_element->total.in_bytes * 8;
+                }
+
+                if (current_speed_element->in_flows != 0) {
+                    graphite_data[graphite_current_prefix + ".flows"] = current_speed_element->in_flows;
+                }
+
+            } else if (data_direction == OUTGOING) {
+                // Prepare outgoing traffic data
+
+                // We do not store zero data to Graphite
+                if (current_speed_element->total.out_packets != 0) {
+                    graphite_data[graphite_current_prefix + ".pps"] = current_speed_element->total.out_packets;
+                }
+
+                if (current_speed_element->total.out_bytes != 0) {
+                    graphite_data[graphite_current_prefix + ".bps"] = current_speed_element->total.out_bytes * 8;
+                }
+
+                if (current_speed_element->out_flows != 0) {
+                    graphite_data[graphite_current_prefix + ".flows"] = current_speed_element->out_flows;
+                }
+            }
+        }
+    }
+
+    bool graphite_put_result = store_data_to_graphite(graphite_port, graphite_host, graphite_data);
+
+    if (!graphite_put_result) {
+        logger << log4cpp::Priority::ERROR << "Can't store host load data to Graphite server "
+               << graphite_host << " port: " << graphite_port;
+        return false;
+    }
+
+    return true;
+}
+
+
 // Push total counters to graphite
 bool push_total_traffic_counters_to_graphite() {
     std::vector<direction_t> directions = { INCOMING, OUTGOING, INTERNAL, OTHER };
@@ -198,6 +283,8 @@ bool push_network_traffic_counters_to_graphite() {
 
 // This thread pushes speed counters to graphite
 void graphite_push_thread() {
+    extern bool hash_counters;
+
     // Sleep for a half second for shift against calculatiuon thread
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 
@@ -213,7 +300,11 @@ void graphite_push_thread() {
         push_network_traffic_counters_to_graphite();
 
         // Push per host counters to graphite
-        push_hosts_traffic_counters_to_graphite();
+        if (hash_counters) {
+            push_hosts_traffic_counters_to_graphite_hash();
+        } else {
+            push_hosts_traffic_counters_to_graphite();
+        }
 
         std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
 
