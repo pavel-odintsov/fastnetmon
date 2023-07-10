@@ -923,18 +923,18 @@ bool load_configuration_file() {
 
     logging_configuration = read_logging_settings(configuration_map);
 
-    // logger << log4cpp::Priority::INFO << "We read global ban settings: " << print_ban_thresholds(global_ban_settings);
+    logger << log4cpp::Priority::INFO << "We read global ban settings: " << print_ban_thresholds(global_ban_settings);
 
     // Read host group ban settings
-    for (host_group_map_t::iterator hostgroup_itr = host_groups.begin(); hostgroup_itr != host_groups.end(); ++hostgroup_itr) {
+    for (auto hostgroup_itr = host_groups.begin(); hostgroup_itr != host_groups.end(); ++hostgroup_itr) {
         std::string host_group_name = hostgroup_itr->first;
 
-        logger << log4cpp::Priority::INFO << "We will read ban settings for " << host_group_name;
+        logger << log4cpp::Priority::DEBUG << "We will read ban settings for " << host_group_name;
 
         host_group_ban_settings_map[host_group_name] = read_ban_settings(configuration_map, host_group_name);
 
-        // logger << log4cpp::Priority::INFO << "We read " << host_group_name << " ban settings "
-        //    << print_ban_thresholds(host_group_ban_settings_map[ host_group_name ]);
+        logger << log4cpp::Priority::DEBUG << "We read " << host_group_name << " ban settings "
+            << print_ban_thresholds(host_group_ban_settings_map[ host_group_name ]);
     }
 
     if (configuration_map.count("white_list_path") != 0) {
@@ -1125,7 +1125,7 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
 
             uint32_t result_ip_as_big_endian = fast_hton(ip_as_little_endian);
 
-            logger << log4cpp::Priority::INFO << "Allocate: " << convert_ip_as_uint_to_string(result_ip_as_big_endian);
+            // logger << log4cpp::Priority::INFO << "Allocate: " << convert_ip_as_uint_to_string(result_ip_as_big_endian);
       
             // We use big endian values as keys
             try {
