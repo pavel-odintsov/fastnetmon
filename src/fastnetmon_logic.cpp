@@ -650,6 +650,137 @@ void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_
     memcpy(unpacked_data, packed_connection_data, sizeof(uint64_t));
 }
 
+// This function returns true when attack for particular IPv6 or IPv4 address is finished
+template <typename T>
+    requires std::is_same_v<T, subnet_ipv6_cidr_mask_t> ||
+    std::is_same_v<T, uint32_t> bool
+    attack_is_finished(const T& current_subnet,
+                       abstract_subnet_counters_t<T, subnet_counter_t>& host_counters) {
+
+    std::string client_ip_as_string = convert_any_ip_to_string(current_subnet);
+
+    subnet_counter_t average_speed_element;
+
+    // Retrieve static counters
+    bool result = host_counters.get_average_speed(current_subnet, average_speed_element);
+
+    // I think it's fine even if we run in flexible counters mode as we must have some traffic tracked by static counters in any case
+    if (!result) {
+        logger << log4cpp::Priority::INFO << "Could not find traffic speed for " << client_ip_as_string
+               << " in traffic structure. But that's fine because it may be removed by cleanup logic. It means that "
+                  "traffic is "
+                  "zero for long time and we can unban host";
+
+        return true;
+    }
+
+    // Lookup network for IP as we need it for hostgorup lookup logic
+    subnet_cidr_mask_t customer_subnet;
+    bool lookup_result =
+        lookup_ip_in_integer_form_inpatricia_and_return_subnet_if_found(lookup_tree_ipv4, current_subnet, customer_subnet);
+
+    if (!lookup_result) {
+        // It's not critical, we can ignore it
+        logger << log4cpp::Priority::WARN << "Could not get customer's network for IP " << convert_ip_as_uint_to_string(current_subnet);
+    }
+
+    std::string host_group_name;
+    ban_settings_t current_ban_settings = get_ban_settings_for_this_subnet(customer_subnet, host_group_name);
+
+    attack_detection_threshold_type_t attack_detection_source;
+    attack_detection_direction_type_t attack_detection_direction;
+
+    bool should_block_static_thresholds = we_should_ban_this_entity(average_speed_element, current_ban_settings,
+                                                                    attack_detection_source, attack_detection_direction);
+
+    if (should_block_static_thresholds) {
+        logger << log4cpp::Priority::DEBUG << "Attack to IP " << client_ip_as_string
+               << " is still going. We should not unblock this host";
+
+        // Well, we still see an attack, skip to next iteration
+        return false;
+    }
+
+    return true;
+}
+
+
+// Unbans host which are ready to it
+void execute_unban_operation_ipv4() {
+    extern abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counters;
+    extern blackhole_ban_list_t<uint32_t> ban_list_ipv4;
+
+    time_t current_time;
+    time(&current_time);
+
+    std::vector<uint32_t> ban_list_items_for_erase;
+
+    std::map<uint32_t, attack_details_t> ban_list_copy;
+
+    // Get whole ban list content atomically
+    ban_list_ipv4.get_whole_banlist(ban_list_copy);
+
+    for (auto itr = ban_list_copy.begin(); itr != ban_list_copy.end(); ++itr) {
+        uint32_t client_ip = itr->first;
+
+        // This IP should be banned permanently and we skip any processing
+        if (!itr->second.unban_enabled) {
+            continue;
+        }
+
+        // This IP banned manually and we should not unban it automatically
+        if (itr->second.attack_detection_source == attack_detection_source_t::Manual) {
+            continue;
+        }
+
+        double time_difference = difftime(current_time, itr->second.ban_timestamp);
+        int current_ban_time   = itr->second.ban_time;
+
+        // Yes, we reached end of ban time for this customer
+        bool we_could_unban_this_ip = time_difference > current_ban_time;
+
+        // We haven't reached time for unban yet
+        if (!we_could_unban_this_ip) {
+            continue;
+        }
+
+        // Check about ongoing attack
+        if (unban_only_if_attack_finished) {
+            std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
+
+            if (!attack_is_finished(client_ip, ipv4_host_counters)) {
+                logger << log4cpp::Priority::INFO << "Skip unban operation for " << client_ip_as_string
+                       << " because attack is still active";
+                continue;
+            }
+        }
+
+        // Add this IP to remove list
+        // We will remove keys really after this loop
+        ban_list_items_for_erase.push_back(itr->first);
+
+        // Call all hooks for unban
+        subnet_ipv6_cidr_mask_t zero_ipv6_address;
+
+        // It's empty for unban
+        std::string flow_attack_details;
+
+        // These are empty too
+        boost::circular_buffer<simple_packet_t> simple_packets_buffer;
+        boost::circular_buffer<fixed_size_packet_storage_t> raw_packets_buffer;
+
+        call_blackhole_actions_per_host(attack_action_t::unban, itr->first, zero_ipv6_address, false, itr->second,
+                                        attack_detection_source_t::Automatic, flow_attack_details,
+                                        simple_packets_buffer, raw_packets_buffer);
+    }
+
+    // Remove all unbanned hosts from the ban list
+    for (auto ban_element_for_erase : ban_list_items_for_erase) {
+        ban_list_ipv4.remove_from_blackhole(ban_element_for_erase);
+    }
+}
+
+
 // Unbans host which are ready to it
 void execute_unban_operation_ipv6() {
     time_t current_time;
@@ -717,6 +848,8 @@ void execute_unban_operation_ipv6() {
 
 /* Thread for cleaning up ban list */
 void cleanup_ban_list() {
+    extern bool hash_counters;
+
     // If we use very small ban time we should call ban_cleanup thread more often
     if (unban_iteration_sleep_time > global_ban_time) {
         unban_iteration_sleep_time = int(global_ban_time / 2);
@@ -732,6 +865,14 @@ void cleanup_ban_list() {
 
         time_t current_time;
         time(&current_time);
+
+
+
+        if (hash_counters) {
+
+            execute_unban_operation_ipv4(); 
+
+        } else {
 
         std::vector<uint32_t> ban_list_items_for_erase;
 
@@ -819,6 +960,8 @@ void cleanup_ban_list() {
         for (std::vector<uint32_t>::iterator itr = ban_list_items_for_erase.begin(); itr != ban_list_items_for_erase.end(); ++itr) {
             std::lock_guard<std::mutex> lock_guard(ban_list_mutex);
             ban_list.erase(*itr);
+        }
+
         }
 
         // Unban IPv6 bans
