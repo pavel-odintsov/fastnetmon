@@ -33,7 +33,7 @@ bool push_hosts_ipv6_traffic_counters_to_influxdb(std::string influx_database,
                                                   std::string influx_user,
                                                   std::string influx_password);
 
-bool push_hosts_traffic_counters_to_influxdb(std::string influx_database,
+bool push_hosts_ipv4_traffic_counters_to_influxdb(std::string influx_database,
                                              std::string influx_host,
                                              std::string influx_port,
                                              bool enable_auth,

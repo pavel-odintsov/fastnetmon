@@ -224,7 +224,7 @@ void influxdb_push_thread() {
                                                   influxdb_auth, influxdb_user, influxdb_password);
 
         // Push per host counters to InfluxDB
-        push_hosts_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
+        push_hosts_ipv4_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
                                                 influxdb_auth, influxdb_user, influxdb_password);
 
         push_system_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
@@ -242,7 +242,7 @@ void influxdb_push_thread() {
 }
 
 // Push host traffic to InfluxDB
-bool push_hosts_traffic_counters_to_influxdb(std::string influx_database,
+bool push_hosts_ipv4_traffic_counters_to_influxdb(std::string influx_database,
                                              std::string influx_host,
                                              std::string influx_port,
                                              bool enable_auth,
