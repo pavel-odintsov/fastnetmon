@@ -50,10 +50,10 @@ if (MINGW)
   set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive")
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++20")
-
-# Looks like two previous lines are not enough in some cases
+# We use this approach instead of following:
 # set (CMAKE_CXX_STANDARD 20)
+# Because it allows us to specify intermediate releases and releases not yet supported by cmake
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++20")
 
 # With this flag we can enable GoBGP build via console: cmake .. -DENABLE_GOBGP_SUPPORT=ON
 option(ENABLE_GOBGP_SUPPORT "Enable GoBGP support build" ON)
@@ -132,7 +132,8 @@ else()
    # We do not need any RPATH alterations when we want to link with system libraries (i.e. upstream builds for Debian or RedHat family)
 endif()
 
-message(STATUS "C++ compilation flags: ${CMAKE_CXX_FLAGS_RELEASE}")
+message(STATUS "C++ default compilation flags: ${CMAKE_CXX_FLAGS}")
+message(STATUS "C++ release compilation flags: ${CMAKE_CXX_FLAGS_RELEASE}")
 message(STATUS "C++ debug compilation flags: ${CMAKE_CXX_FLAGS_DEBUG}")
 
 set(FASTNETMON_PROFILER OFF)
