@@ -1,7 +1,7 @@
 #pragma once
 
-#include <functional>
 #include <mutex>
+#include <functional>
 
 #include "speed_counters.hpp"
 
@@ -19,14 +19,14 @@
 #include <boost/serialization/unordered_map.hpp>
 
 // Class for abstract per key counters
-template <typename T, typename Counter> class abstract_subnet_counters_t {
+template <typename T, typename Counter, typename UM = std::unordered_map<T, Counter>> class abstract_subnet_counters_t {
     public:
-    std::unordered_map<T, Counter> counter_map;
+    UM counter_map;
     std::mutex counter_map_mutex;
 
-    std::unordered_map<T, Counter> average_speed_map;
+    UM average_speed_map;
 
-    // By using single map for speed and data we can accomplish imprevement from 3-4 seconds for 14m hosts to 2-3 seconds
+    // By using single map for speed and data we can accomplish improvement from 3-4 seconds for 14m hosts to 2-3 seconds
 
     template <class Archive> void serialize(Archive& ar, [[maybe_unused]] const unsigned int version) {
         ar& BOOST_SERIALIZATION_NVP(counter_map);
@@ -102,7 +102,7 @@ template <typename T, typename Counter> class abstract_subnet_counters_t {
     }
 
     // Retrieves all elements
-    void get_all_average_speed_elements(std::unordered_map<T, Counter>& copy_of_average_speed_map) {
+    void get_all_average_speed_elements(UM& copy_of_average_speed_map) {
         std::lock_guard<std::mutex> lock_guard(counter_map_mutex);
 
         copy_of_average_speed_map = this->average_speed_map;
