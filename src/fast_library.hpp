@@ -160,3 +160,8 @@ bool lookup_ip_in_integer_form_inpatricia_and_return_subnet_if_found(patricia_tr
                                                                      uint32_t client_ip,
                                                                      subnet_cidr_mask_t& subnet);
 bool ip_belongs_to_patricia_tree(patricia_tree_t* patricia_tree, uint32_t client_ip);
+
+// Overloaded function which works with any IP protocol version, we use it for templated applications
+std::string convert_any_subnet_to_string(const subnet_ipv6_cidr_mask_t& subnet);
+std::string convert_any_subnet_to_string(const subnet_cidr_mask_t& subnet);
+

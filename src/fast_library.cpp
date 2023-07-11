@@ -2444,3 +2444,12 @@ bool ip_belongs_to_patricia_tree(patricia_tree_t* patricia_tree, uint32_t client
     return patricia_search_best2(patricia_tree, &prefix_for_check_address, 1) != NULL;
 }
 
+// Overloaded function which works with any IP protocol version, we use it for templated applications
+std::string convert_any_subnet_to_string(const subnet_ipv6_cidr_mask_t& subnet) {
+    return convert_ipv6_subnet_to_string(subnet);
+}
+
+std::string convert_any_subnet_to_string(const subnet_cidr_mask_t& subnet) {
+    return convert_ipv4_subnet_to_string(subnet);
+}
+

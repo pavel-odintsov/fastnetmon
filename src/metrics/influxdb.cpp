@@ -223,7 +223,7 @@ template <typename T, typename C>
         std::string error_text;
 
         bool result = write_batch_of_data_to_influxdb(influx_database, influx_host, influx_port, enable_auth, influx_user,
-                                                      influx_password, measurement, tag_name, hosts_vector);
+                                                      influx_password, measurement, tag_name, hosts_vector, error_text);
 
         if (!result) {
             influxdb_writes_failed++;
@@ -235,40 +235,52 @@ template <typename T, typename C>
     return true;
 }
 
+// Push network traffic to InfluxDB
+template <typename T, typename C>
+requires std::is_same_v<C, subnet_counter_t> bool
+push_network_traffic_counters_to_influxdb(abstract_subnet_counters_t<T, C>& network_counters,
+                                          const std::string& influx_database,
+                                          const std::string& influx_host,
+                                          const std::string& influx_port,
+                                          bool enable_auth,
+                                          const std::string& influx_user,
+                                          const std::string& influx_password,
+                                          const std::string& measurement,
+                                          const std::string& tag_name) {
 
-// Push per subnet traffic counters to influxDB
-bool push_network_traffic_counters_to_influxdb(std::string influx_database,
-                                               std::string influx_host,
-                                               std::string influx_port,
-                                               bool enable_auth,
-                                               std::string influx_user,
-                                               std::string influx_password) {
+    std::vector<std::pair<T, C>> speed_elements;
 
-    std::vector<std::pair<subnet_cidr_mask_t, subnet_counter_t>> speed_elements;
-    ipv4_network_counters.get_all_non_zero_average_speed_elements_as_pairs(speed_elements);
+    // Retrieve copy of all counters
+    network_counters.get_all_non_zero_average_speed_elements_as_pairs(speed_elements);
 
-    for (const auto& itr : speed_elements) {
+    // Structure for InfluxDB
+    std::vector<std::pair<std::string, std::map<std::string, uint64_t>>> networks_vector;
+
+    for (const auto& speed_element : speed_elements) {
         std::map<std::string, uint64_t> plain_total_counters_map;
 
-        const subnet_counter_t* speed = &itr.second;
-        std::string subnet_as_string  = convert_subnet_to_string(itr.first);
+        // This function can convert both IPv4 and IPv6 subnets to text format
+        std::string network_as_cidr_string = convert_any_subnet_to_string(speed_element.first);
 
-        fill_main_counters_for_influxdb(*speed, plain_total_counters_map, false);
+        fill_fixed_counters_for_influxdb(speed_element.second, plain_total_counters_map, true);
 
+        networks_vector.push_back(std::make_pair(network_as_cidr_string, plain_total_counters_map));
+    }
+
+    if (networks_vector.size() > 0) {
         influxdb_writes_total++;
 
-        std::map<std::string, std::string> tags = { { "network", subnet_as_string } };
+        std::string error_text;
 
-        bool result = write_line_of_data_to_influxdb(influx_database, influx_host, influx_port, enable_auth, influx_user,
-                                                     influx_password, "networks_traffic", tags, plain_total_counters_map);
+        bool result = write_batch_of_data_to_influxdb(influx_database, influx_host, influx_port, enable_auth, influx_user,
+                                                      influx_password, measurement, tag_name, networks_vector, error_text);
 
         if (!result) {
             influxdb_writes_failed++;
-            logger << log4cpp::Priority::DEBUG << "InfluxDB write operation failed for networks_traffic";
+            logger << log4cpp::Priority::DEBUG << "InfluxDB batch operation failed for " << measurement << " with error " << error_text;
             return false;
         }
     }
-
 
     return true;
 }
@@ -317,8 +329,9 @@ void influxdb_push_thread() {
                                                 total_counters_ipv4.total_speed_average_counters, false);
 
         // Push per subnet counters to InfluxDB
-        push_network_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
-                                                  influxdb_auth, influxdb_user, influxdb_password);
+        push_network_traffic_counters_to_influxdb(ipv4_network_counters, influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
+                                                  influxdb_auth, influxdb_user, influxdb_password, "networks_traffic", "network");
+
         // Push per host counters to InfluxDB
         if (hash_counters) {
             push_hosts_traffic_counters_to_influxdb(ipv4_host_counters, influxdb_database,
@@ -394,8 +407,10 @@ bool push_hosts_ipv4_traffic_counters_to_influxdb(std::string influx_database,
         }
 
         if (hosts_vector.size() > 0) {
+            std::string error_text;
+
             bool result = write_batch_of_data_to_influxdb(influx_database, influx_host, influx_port, enable_auth, influx_user,
-                                                          influx_password, "hosts_traffic", "host", hosts_vector);
+                                                          influx_password, "hosts_traffic", "host", hosts_vector, error_text);
 
             if (!result) {
                 influxdb_writes_failed++;
@@ -417,7 +432,8 @@ bool write_batch_of_data_to_influxdb(std::string influx_database,
                                      std::string influx_password,
                                      std::string measurement,
                                      std::string tag_name,
-                                     std::vector<std::pair<std::string, std::map<std::string, uint64_t>>>& hosts_vector) {
+                                     std::vector<std::pair<std::string, std::map<std::string, uint64_t>>>& hosts_vector,
+                                     std::string& error_text) {
     // Nothing to write
     if (hosts_vector.size() == 0) {
         return true;

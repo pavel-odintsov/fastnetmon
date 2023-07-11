@@ -55,7 +55,8 @@ bool write_batch_of_data_to_influxdb(std::string influx_database,
                                      std::string influx_password,
                                      std::string measurement,
                                      std::string tag_name,
-                                     std::vector<std::pair<std::string, std::map<std::string, uint64_t>>>& hosts_vector);
+                                     std::vector<std::pair<std::string, std::map<std::string, uint64_t>>>& hosts_vector,
+                                     std::string& error_text);
 
 
 // Set block of data into InfluxDB
