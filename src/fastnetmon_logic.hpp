@@ -86,18 +86,16 @@ void process_packet(simple_packet_t& current_packet);
 void system_counters_speed_thread_handler();
 
 void increment_outgoing_flow_counters(
-                                      int64_t shift_in_vector,
-                                      simple_packet_t& packet,
+                                      uint32_t client_ip,
+                                      const simple_packet_t& packet,
                                       uint64_t sampled_number_of_packets,
-                                      uint64_t sampled_number_of_bytes,
-                                      const subnet_cidr_mask_t& current_subnet);
+                                      uint64_t sampled_number_of_bytes);
 
 void increment_incoming_flow_counters(
-                                      int64_t shift_in_vector,
-                                      simple_packet_t& packet,
+                                      uint32_t client_ip,
+                                      const simple_packet_t& packet,
                                       uint64_t sampled_number_of_packets,
-                                      uint64_t sampled_number_of_bytes,
-                                      const subnet_cidr_mask_t& current_subnet);
+                                      uint64_t sampled_number_of_bytes);
 
 void traffic_draw_ipv6_program();
 void check_traffic_buckets();

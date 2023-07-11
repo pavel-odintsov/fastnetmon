@@ -326,9 +326,7 @@ typedef std::vector<subnet_counter_t> vector_of_counters;
 typedef std::map<subnet_cidr_mask_t, vector_of_counters> map_of_vector_counters_t;
 
 // Flow tracking structures
-typedef std::vector<conntrack_main_struct_t> vector_of_flow_counters_t;
-typedef std::map<subnet_cidr_mask_t, vector_of_flow_counters_t> map_of_vector_counters_for_flow_t;
-
+typedef std::map<uint32_t, conntrack_main_struct_t> map_of_vector_counters_for_flow_t;
 
 typedef subnet_counter_t subnet_counter_t;
 typedef std::pair<subnet_cidr_mask_t, subnet_counter_t> pair_of_map_for_subnet_counters_elements_t;

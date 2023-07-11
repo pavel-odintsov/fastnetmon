@@ -1114,7 +1114,6 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
 
     subnet_counter_t zero_map_element{};
 
-    if (hash_counters) {
         for (int i = 0; i < network_size_in_ips; i++) {
             // We need to increment IP address by X but we have to do so in little endian / host byte order
             // incrementing big endian will not work as we expect
@@ -1123,23 +1122,35 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
             // Increment it for specific number
             ip_as_little_endian += i;
 
+            if (enable_connection_tracking) {
+                // On creating it initializes by zeros
+                conntrack_main_struct_t zero_conntrack_main_struct{};
+
+                SubnetVectorMapFlow[ip_as_little_endian] = zero_conntrack_main_struct;
+            }
+
             uint32_t result_ip_as_big_endian = fast_hton(ip_as_little_endian);
 
             // logger << log4cpp::Priority::INFO << "Allocate: " << convert_ip_as_uint_to_string(result_ip_as_big_endian);
-      
-            // We use big endian values as keys
-            try {
-                ipv4_host_counters.average_speed_map[result_ip_as_big_endian] = zero_map_element;
-                ipv4_host_counters.counter_map[result_ip_as_big_endian] = zero_map_element;
-            } catch (std::bad_alloc& ba) {
-                logger << log4cpp::Priority::ERROR << "Can't allocate memory for hash counters";
-                exit(1);
+     
+            if (hash_counters) {
+
+                // We use big endian values as keys
+                try {
+                    ipv4_host_counters.average_speed_map[result_ip_as_big_endian] = zero_map_element;
+                    ipv4_host_counters.counter_map[result_ip_as_big_endian] = zero_map_element;
+                } catch (std::bad_alloc& ba) {
+                    logger << log4cpp::Priority::ERROR << "Can't allocate memory for hash counters";
+                    exit(1);
+                }
+
             }
         }
 
+    if (hash_counters) {
         logger << log4cpp::Priority::INFO << "Successfully allocated " << ipv4_host_counters.average_speed_map.size() << " counters";
     }
-        
+
     // Initialize our counters with fill constructor
     try {
         SubnetVectorMap[current_subnet]             = vector_of_counters(network_size_in_ips, zero_map_element);
@@ -1149,13 +1160,6 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
         logger << log4cpp::Priority::ERROR << "Can't allocate memory for counters";
         exit(1);
     }
-
-    // Initilize map element
-    SubnetVectorMapFlow[current_subnet] = vector_of_flow_counters_t(network_size_in_ips);
-
-    // On creating it initializes by zeros
-    conntrack_main_struct_t zero_conntrack_main_struct;
-    std::fill(SubnetVectorMapFlow[current_subnet].begin(), SubnetVectorMapFlow[current_subnet].end(), zero_conntrack_main_struct);
 }
 
 void zeroify_all_counters() {
