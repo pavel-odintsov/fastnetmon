@@ -417,6 +417,9 @@ workflows:
       - build_debian_system_dependencies:
           docker_image: "ubuntu:jammy"
           name: "ubuntu2204_system_dependencies"
+      - build_debian_system_dependencies:
+          docker_image: "debian:sid"
+          name: "debian_sid_system_dependencies"
       - build_fedora_upstream:
           name: "Fedora 36 Upstream RPM"
           docker_image: fedora:36
