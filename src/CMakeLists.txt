@@ -50,11 +50,10 @@ if (MINGW)
   set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive")
 endif()
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} --std=c++20")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} --std=c++20")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++20")
 
 # Looks like two previous lines are not enough in some cases
-set (CMAKE_CXX_STANDARD 20)
+# set (CMAKE_CXX_STANDARD 20)
 
 # With this flag we can enable GoBGP build via console: cmake .. -DENABLE_GOBGP_SUPPORT=ON
 option(ENABLE_GOBGP_SUPPORT "Enable GoBGP support build" ON)
