@@ -139,7 +139,7 @@ cppkafka::Producer* kafka_traffic_export_producer = nullptr;
 // Traffic export to Kafka
 bool kafka_traffic_export = false;
 
-bool hash_counters = true;
+bool hash_counters = false;
 
 std::string kafka_traffic_export_topic                    = "fastnetmon";
 kafka_traffic_export_format_t kafka_traffic_export_format = kafka_traffic_export_format_t::JSON;
