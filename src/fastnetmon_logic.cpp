@@ -75,7 +75,6 @@ extern std::string cli_stats_file_path;
 extern unsigned int total_number_of_hosts_in_our_networks;
 extern abstract_subnet_counters_t<subnet_cidr_mask_t, subnet_counter_t> ipv4_network_counters;
 extern unsigned int recalculate_speed_timeout;
-extern map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
 extern bool DEBUG_DUMP_ALL_PACKETS;
 extern bool DEBUG_DUMP_OTHER_PACKETS;
 extern uint64_t total_ipv4_packets;
@@ -2204,6 +2203,7 @@ void recalculate_speed() {
     extern bool hash_counters;
 
     extern abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counters;
+    extern map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
 
     extern bool hash_counters;
 
@@ -2729,6 +2729,8 @@ void print_screen_contents_into_file(std::string screen_data_stats_param, std::s
 }
 
 void zeroify_all_flow_counters() {
+    extern map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
+
     // On creating it initilizes by zeros
     conntrack_main_struct_t zero_conntrack_main_struct;
 
@@ -2923,6 +2925,8 @@ void process_packet(simple_packet_t& current_packet) {
     extern bool hash_counters;
     extern packet_buckets_storage_t<uint32_t> packet_buckets_ipv4_storage;
 
+    extern map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
+
     // Packets dump is very useful for bug hunting
     if (DEBUG_DUMP_ALL_PACKETS) {
         logger << log4cpp::Priority::INFO << "Dump: " << print_simple_packet(current_packet);
@@ -3085,7 +3089,7 @@ void process_packet(simple_packet_t& current_packet) {
         increment_outgoing_counters(current_element, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
 
         if (enable_connection_tracking) {
-            increment_outgoing_flow_counters(SubnetVectorMapFlow, shift_in_vector, current_packet,
+            increment_outgoing_flow_counters(shift_in_vector, current_packet,
                                              sampled_number_of_packets, sampled_number_of_bytes, current_subnet);
         }
     } else if (current_packet.packet_direction == INCOMING) {
@@ -3106,7 +3110,7 @@ void process_packet(simple_packet_t& current_packet) {
         increment_incoming_counters(current_element, current_packet, sampled_number_of_packets, sampled_number_of_bytes);
 
         if (enable_connection_tracking) {
-            increment_incoming_flow_counters(SubnetVectorMapFlow, shift_in_vector, current_packet,
+            increment_incoming_flow_counters(shift_in_vector, current_packet,
                                              sampled_number_of_packets, sampled_number_of_bytes, current_subnet);
         }
     } else if (current_packet.packet_direction == INTERNAL) {
@@ -3195,12 +3199,13 @@ void init_incoming_flow_counting_structure(packed_conntrack_hash_t& flow_trackin
 }
 
 
-void increment_incoming_flow_counters(map_of_vector_counters_for_flow_t& SubnetVectorMapFlow,
+void increment_incoming_flow_counters(
                                       int64_t shift_in_vector,
                                       simple_packet_t& current_packet,
                                       uint64_t sampled_number_of_packets,
                                       uint64_t sampled_number_of_bytes,
                                       const subnet_cidr_mask_t& current_subnet) {
+    extern map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
 
     map_of_vector_counters_for_flow_t::iterator itr_flow = SubnetVectorMapFlow.find(current_subnet);
 
@@ -3240,12 +3245,14 @@ void init_outgoing_flow_counting_structure(packed_conntrack_hash_t& flow_trackin
 }
 
 // Increment all flow counters using specified packet
-void increment_outgoing_flow_counters(map_of_vector_counters_for_flow_t& SubnetVectorMapFlow,
+void increment_outgoing_flow_counters(
                                       int64_t shift_in_vector,
                                       simple_packet_t& current_packet,
                                       uint64_t sampled_number_of_packets,
                                       uint64_t sampled_number_of_bytes,
                                       const subnet_cidr_mask_t& current_subnet) {
+    extern map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
+
     map_of_vector_counters_for_flow_t::iterator itr_flow = SubnetVectorMapFlow.find(current_subnet);
 
     if (itr_flow == SubnetVectorMapFlow.end()) {
