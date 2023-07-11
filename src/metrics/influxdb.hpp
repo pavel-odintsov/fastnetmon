@@ -58,14 +58,6 @@ bool write_batch_of_data_to_influxdb(std::string influx_database,
                                      std::vector<std::pair<std::string, std::map<std::string, uint64_t>>>& hosts_vector);
 
 
-bool push_network_traffic_counters_to_influxdb(std::string influx_database,
-                                               std::string influx_host,
-                                               std::string influx_port,
-                                               bool enable_auth,
-                                               std::string influx_user,
-                                               std::string influx_password);
-
-
 // Set block of data into InfluxDB
 bool write_line_of_data_to_influxdb(std::string influx_database,
                                     std::string influx_host,
