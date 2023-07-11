@@ -78,6 +78,8 @@ jobs:
       image: ubuntu-2204:current
     resource_class: large
     parameters:
+      docker_image:
+        type: string
       debian_codename:
         type: string
     steps:
@@ -86,7 +88,7 @@ jobs:
           command: sudo mkdir /data; sudo chmod 777 /data
       - run:
           name: Docker with priviledged mode to run chroot inside and we use tail -f to keep container running
-          command: sudo docker run -d -v /sys/fs/cgroup/:/sys/fs/cgroup:ro -v /data:/data:rw --privileged --cap-add SYS_ADMIN  --name linux_priviledged_container debian:bookworm tail -f /dev/null
+          command: sudo docker run -d -v /sys/fs/cgroup/:/sys/fs/cgroup:ro -v /data:/data:rw --privileged --cap-add SYS_ADMIN  --name linux_priviledged_container << parameters.docker_image >> tail -f /dev/null
       - run: sudo docker exec -it linux_priviledged_container apt-get update; true
       - run: sudo docker exec -it linux_priviledged_container apt install -y dpkg-dev git pbuilder
       - run: sudo docker exec -it linux_priviledged_container git clone https://github.com/pavel-odintsov/fastnetmon
@@ -406,6 +408,7 @@ workflows:
       - build_debian_upstream_package:
           name: "Debian Sid Upstream Build"
           debian_codename: "sid"
+          docker_image: "debian:bookworm"
       # To offer great developer experience we ensure that FastNetMon can be built on latest Ubuntu LTS 
       - build_debian_system_dependencies:
           docker_image: "ubuntu:jammy"
