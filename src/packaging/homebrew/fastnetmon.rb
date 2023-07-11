@@ -53,7 +53,7 @@ class Fastnetmon < Formula
       "--configuration_file",
       etc/"fastnetmon.conf",
       "--log_to_console",
-      "--disable_pid_logic",
+      "--disable_pid_logic", # need to be removed in upstream as we do not need it
     ]
     keep_alive false
     working_dir HOMEBREW_PREFIX
