@@ -73,6 +73,7 @@ jobs:
       - run: cp src/packaging/homebrew/fastnetmon.rb /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/fastnetmon.rb
       - run: brew install --build-from-source --HEAD --verbose --debug fastnetmon
   build_debian_upstream_package:
+    # NB! TODO: we have hardcoded Debian version below
     machine:
       image: ubuntu-2204:current
     resource_class: large
@@ -85,7 +86,7 @@ jobs:
           command: sudo mkdir /data; sudo chmod 777 /data
       - run:
           name: Docker with priviledged mode to run chroot inside and we use tail -f to keep container running
-          command: sudo docker run -d -v /sys/fs/cgroup/:/sys/fs/cgroup:ro -v /data:/data:rw --privileged --cap-add SYS_ADMIN  --name linux_priviledged_container debian:bullseye tail -f /dev/null
+          command: sudo docker run -d -v /sys/fs/cgroup/:/sys/fs/cgroup:ro -v /data:/data:rw --privileged --cap-add SYS_ADMIN  --name linux_priviledged_container debian:bookworm tail -f /dev/null
       - run: sudo docker exec -it linux_priviledged_container apt-get update; true
       - run: sudo docker exec -it linux_priviledged_container apt install -y dpkg-dev git pbuilder
       - run: sudo docker exec -it linux_priviledged_container git clone https://github.com/pavel-odintsov/fastnetmon
