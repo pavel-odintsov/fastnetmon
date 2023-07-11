@@ -90,6 +90,10 @@ jobs:
           name: Docker with priviledged mode to run chroot inside and we use tail -f to keep container running
           command: sudo docker run -d -v /sys/fs/cgroup/:/sys/fs/cgroup:ro -v /data:/data:rw --privileged --cap-add SYS_ADMIN  --name linux_priviledged_container << parameters.docker_image >> tail -f /dev/null
       - run: sudo docker exec -it linux_priviledged_container apt-get update; true
+      - run:
+          name: Explicitly specify mirror to avoid pbuilder failure on configuration step
+          command: echo "MIRRORSITE=http://http.us.debian.org/debian"|  sudo docker exec -i linux_priviledged_container tee /etc/pbuilderrc
+      - run: udo docker exec -it linux_priviledged_container  cat /etc/pbuilderrc
       - run: sudo docker exec -it linux_priviledged_container apt install -y dpkg-dev git pbuilder
       - run: sudo docker exec -it linux_priviledged_container git clone https://github.com/pavel-odintsov/fastnetmon
       - run: sudo docker exec -it linux_priviledged_container git clone https://salsa.debian.org/debian/fastnetmon.git fastnetmon-debian-salsa
