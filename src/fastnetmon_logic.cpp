@@ -2197,6 +2197,38 @@ void speed_calculation_callback_local_ipv4(const uint32_t& client_ip, const subn
     return;
 }
 
+// Increments in and out flow counters
+// Returns false when we cannot find flow for this IP
+bool increment_flow_counters(subnet_counter_t& new_speed_element, uint32_t client_ip, double speed_calc_period) {
+    extern map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
+    extern std::mutex flow_counter_mutex;
+
+    std::lock_guard<std::mutex> lock_guard(flow_counter_mutex);
+
+    auto current_flow_counter = SubnetVectorMapFlow.find(client_ip);
+
+    if (current_flow_counter == SubnetVectorMapFlow.end()) {
+        // We have no entries for this IP
+        return false;
+    }
+
+    uint64_t total_out_flows =
+        (uint64_t)current_flow_counter->second.out_tcp.size() + (uint64_t)current_flow_counter->second.out_udp.size() +
+        (uint64_t)current_flow_counter->second.out_icmp.size() + (uint64_t)current_flow_counter->second.out_other.size();
+
+    uint64_t total_in_flows =
+        (uint64_t)current_flow_counter->second.in_tcp.size() + (uint64_t)current_flow_counter->second.in_udp.size() +
+        (uint64_t)current_flow_counter->second.in_icmp.size() + (uint64_t)current_flow_counter->second.in_other.size();
+
+    // logger << log4cpp::Priority::DEBUG << "total out flows: " << total_out_flows << " total in flows: " << total_in_flows << " speed calc period: " << speed_calc_period;
+
+    new_speed_element.out_flows = uint64_t((double)total_out_flows / speed_calc_period);
+    new_speed_element.in_flows  = uint64_t((double)total_in_flows / speed_calc_period);
+
+    return true;
+}
+
+
 /* Calculate speed for all connnections */
 void recalculate_speed() {
     // logger<< log4cpp::Priority::INFO<<"We run recalculate_speed";
@@ -2259,7 +2291,28 @@ void recalculate_speed() {
         uint64_t flow_exists_for_ip         = 0;
         uint64_t flow_does_not_exist_for_ip = 0;
 
-        ipv4_host_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, speed_calculation_callback_local_ipv4, nullptr);
+        ipv4_host_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, speed_calculation_callback_local_ipv4, [&outgoing_total_flows, &incoming_total_flows, &flow_exists_for_ip,
+         &flow_does_not_exist_for_ip](const uint32_t& ip, subnet_counter_t& new_speed_element, double speed_calc_period) {
+            if (enable_connection_tracking) {
+                bool res = increment_flow_counters(new_speed_element, fast_ntoh(ip), speed_calc_period);
+
+                if (res) {
+                    // Increment global counter
+                    outgoing_total_flows += new_speed_element.out_flows;
+                    incoming_total_flows += new_speed_element.in_flows;
+
+                    flow_exists_for_ip++;
+
+                    // logger << log4cpp::Priority::DEBUG << convert_ipv4_subnet_to_string(subnet)
+                    //    << "in flows: " << new_speed_element.in_flows << " out flows: " <<
+                    //    new_speed_element.out_flows;
+                } else {
+                    // We did not find record
+                    flow_does_not_exist_for_ip++;
+                }
+            }
+        });
+
     }
 
     for (map_of_vector_counters_t::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); ++itr) {
@@ -3368,7 +3421,6 @@ void execute_ipv4_ban(uint32_t client_ip,
 }
 
 
-/*
 // With this function we could get any element from our flow counter structure
 bool get_element_from_map_of_flow_counters(map_of_vector_counters_for_flow_t& map_of_counters,
                                            uint32_t client_ip,
@@ -3380,8 +3432,6 @@ bool get_element_from_map_of_flow_counters(map_of_vector_counters_for_flow_t& ma
 
     return true;
 }
-
-*/
 
 void process_filled_buckets_ipv4() {
     extern packet_buckets_storage_t<uint32_t> packet_buckets_ipv4_storage;
@@ -3416,9 +3466,7 @@ void process_filled_buckets_ipv4() {
         logger << log4cpp::Priority::INFO << "We've got new completely filled bucket with packets for IP " << client_ip_as_string;
 
         std::string flow_attack_details = "";
-
-        /*
-         TODO: re-enable logic
+        
         if (enable_connection_tracking) {
             conntrack_main_struct_t current_conntrack_main_struct;
 
@@ -3431,8 +3479,6 @@ void process_filled_buckets_ipv4() {
                 logger << log4cpp::Priority::WARN << "Could not get flow structure address";
             }
         }
-
-        */
 
        // Here I extract attack details saved at time when we crossed threshold
         attack_details_t current_attack = bucket.attack_details;
