@@ -399,7 +399,7 @@ int64_t sflow_raw_packet_headers_total_speed          = 0;
 /* End of our data structs */
 std::mutex ban_list_details_mutex;
 std::mutex ban_list_mutex;
-std::mutex flow_counter;
+std::mutex flow_counter_mutex;
 
 // map for flows
 std::map<uint64_t, int> FlowCounter;
