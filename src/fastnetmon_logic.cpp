@@ -3209,7 +3209,7 @@ void increment_incoming_flow_counters(map_of_vector_counters_for_flow_t& SubnetV
         return;
     }
 
-    conntrack_main_struct_t* current_element_flow = &itr_flow->second[shift_in_vector];
+    conntrack_main_struct_t& current_element_flow = itr_flow->second[shift_in_vector];
 
     packed_conntrack_hash_t flow_tracking_structure;
     init_incoming_flow_counting_structure(flow_tracking_structure, current_packet);
@@ -3219,16 +3219,16 @@ void increment_incoming_flow_counters(map_of_vector_counters_for_flow_t& SubnetV
 
     if (current_packet.protocol == IPPROTO_TCP) {
         std::lock_guard<std::mutex> lock_guard(flow_counter_mutex);
-        conntrack_key_struct_t* conntrack_key_struct_ptr = &current_element_flow->in_tcp[connection_tracking_hash];
+        conntrack_key_struct_t& conntrack_key_struct_ptr = current_element_flow.in_tcp[connection_tracking_hash];
 
-        conntrack_key_struct_ptr->packets += sampled_number_of_packets;
-        conntrack_key_struct_ptr->bytes += sampled_number_of_bytes;
+        conntrack_key_struct_ptr.packets += sampled_number_of_packets;
+        conntrack_key_struct_ptr.bytes += sampled_number_of_bytes;
     } else if (current_packet.protocol == IPPROTO_UDP) {
         std::lock_guard<std::mutex> lock_guard(flow_counter_mutex);
-        conntrack_key_struct_t* conntrack_key_struct_ptr = &current_element_flow->in_udp[connection_tracking_hash];
+        conntrack_key_struct_t& conntrack_key_struct_ptr = current_element_flow.in_udp[connection_tracking_hash];
 
-        conntrack_key_struct_ptr->packets += sampled_number_of_packets;
-        conntrack_key_struct_ptr->bytes += sampled_number_of_bytes;
+        conntrack_key_struct_ptr.packets += sampled_number_of_packets;
+        conntrack_key_struct_ptr.bytes += sampled_number_of_bytes;
     }
 }
 
@@ -3253,7 +3253,7 @@ void increment_outgoing_flow_counters(map_of_vector_counters_for_flow_t& SubnetV
         return;
     }
 
-    conntrack_main_struct_t* current_element_flow = &itr_flow->second[shift_in_vector];
+    conntrack_main_struct_t& current_element_flow = itr_flow->second[shift_in_vector];
 
     packed_conntrack_hash_t flow_tracking_structure;
     init_outgoing_flow_counting_structure(flow_tracking_structure, current_packet);
@@ -3263,16 +3263,16 @@ void increment_outgoing_flow_counters(map_of_vector_counters_for_flow_t& SubnetV
 
     if (current_packet.protocol == IPPROTO_TCP) {
         std::lock_guard<std::mutex> lock_guard(flow_counter_mutex);
-        conntrack_key_struct_t* conntrack_key_struct_ptr = &current_element_flow->out_tcp[connection_tracking_hash];
+        conntrack_key_struct_t& conntrack_key_struct_ptr = current_element_flow.out_tcp[connection_tracking_hash];
 
-        conntrack_key_struct_ptr->packets += sampled_number_of_packets;
-        conntrack_key_struct_ptr->bytes += sampled_number_of_bytes;
+        conntrack_key_struct_ptr.packets += sampled_number_of_packets;
+        conntrack_key_struct_ptr.bytes += sampled_number_of_bytes;
     } else if (current_packet.protocol == IPPROTO_UDP) {
         std::lock_guard<std::mutex> lock_guard(flow_counter_mutex);
-        conntrack_key_struct_t* conntrack_key_struct_ptr = &current_element_flow->out_udp[connection_tracking_hash];
+        conntrack_key_struct_t& conntrack_key_struct_ptr = current_element_flow.out_udp[connection_tracking_hash];
 
-        conntrack_key_struct_ptr->packets += sampled_number_of_packets;
-        conntrack_key_struct_ptr->bytes += sampled_number_of_bytes;
+        conntrack_key_struct_ptr.packets += sampled_number_of_packets;
+        conntrack_key_struct_ptr.bytes += sampled_number_of_bytes;
     }
 }
 
