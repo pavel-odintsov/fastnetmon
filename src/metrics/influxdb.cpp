@@ -19,15 +19,12 @@ extern abstract_subnet_counters_t<subnet_cidr_mask_t, subnet_counter_t> ipv4_net
 extern uint64_t influxdb_writes_total;
 extern uint64_t influxdb_writes_failed;
 extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t, subnet_counter_t> ipv6_host_counters;
-extern abstract_subnet_counters_t<subnet_cidr_mask_t, subnet_counter_t> ipv4_host_counters;
-extern abstract_subnet_counters_t<subnet_cidr_mask_t, subnet_counter_t> ipv4_remote_host_counters;
 extern std::vector<ban_settings_t> hostgroup_list_total_calculation;
 extern std::mutex hostgroup_list_total_calculation_mutex;
 extern abstract_subnet_counters_t<int64_t, subnet_counter_t> per_hostgroup_total_counters;
 extern log4cpp::Category& logger;
 extern total_speed_counters_t total_counters_ipv4;
 extern total_speed_counters_t total_counters_ipv6;
-
 
 extern std::string influxdb_database;
 extern std::string influxdb_host;
@@ -37,7 +34,7 @@ extern std::string influxdb_user;
 extern std::string influxdb_password;
 extern unsigned int influxdb_push_period;
 
-// I do this delcaration here to avoid circuclar dependencies between fastnetmon_logic and this file
+// I do this declaration here to avoid circular dependencies between fastnetmon_logic and this file
 bool get_statistics(std::vector<system_counter_t>& system_counters);
 
 // Push system counters to InfluxDB
@@ -241,6 +238,9 @@ template <typename T, typename C>
 
 // This thread pushes data to InfluxDB
 void influxdb_push_thread() {
+    extern bool hash_counters;
+    extern abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counters;
+
     // Sleep for a half second for shift against calculation thread
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 
@@ -281,10 +281,15 @@ void influxdb_push_thread() {
         // Push per subnet counters to InfluxDB
         push_network_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
                                                   influxdb_auth, influxdb_user, influxdb_password);
-
         // Push per host counters to InfluxDB
-        push_hosts_ipv4_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
-                                                influxdb_auth, influxdb_user, influxdb_password);
+        if (hash_counters) {
+            push_hosts_traffic_counters_to_influxdb(ipv4_host_counters, influxdb_database,
+                                                    current_influxdb_ip_address, std::to_string(influxdb_port), influxdb_auth,
+                                                    influxdb_user, influxdb_password, "hosts_traffic", "host");
+        } else {
+            push_hosts_ipv4_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
+                                                    influxdb_auth, influxdb_user, influxdb_password);
+        }
 
         push_system_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
                                          influxdb_auth, influxdb_user, influxdb_password);
