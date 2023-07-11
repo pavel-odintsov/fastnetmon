@@ -3013,19 +3013,6 @@ void process_packet(simple_packet_t& current_packet) {
         }
     }
 
-    map_of_vector_counters_for_flow_t::iterator itr_flow;
-
-    if (enable_connection_tracking) {
-        if (current_packet.packet_direction == OUTGOING or current_packet.packet_direction == INCOMING) {
-            itr_flow = SubnetVectorMapFlow.find(current_subnet);
-
-            if (itr_flow == SubnetVectorMapFlow.end()) {
-                logger << log4cpp::Priority::ERROR << "Can't find vector address in subnet flow map";
-                return;
-            }
-        }
-    }
-
     /* Because we support mirroring, sflow and netflow we should support different cases:
         - One packet passed for processing (mirror)
         - Multiple packets ("flows") passed for processing (netflow)
@@ -3207,7 +3194,7 @@ void increment_incoming_flow_counters(
                                       const subnet_cidr_mask_t& current_subnet) {
     extern map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
 
-    map_of_vector_counters_for_flow_t::iterator itr_flow = SubnetVectorMapFlow.find(current_subnet);
+    auto itr_flow = SubnetVectorMapFlow.find(current_subnet);
 
     if (itr_flow == SubnetVectorMapFlow.end()) {
         logger << log4cpp::Priority::ERROR << "Can't find vector address in subnet flow map";
@@ -3253,7 +3240,7 @@ void increment_outgoing_flow_counters(
                                       const subnet_cidr_mask_t& current_subnet) {
     extern map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
 
-    map_of_vector_counters_for_flow_t::iterator itr_flow = SubnetVectorMapFlow.find(current_subnet);
+    auto itr_flow = SubnetVectorMapFlow.find(current_subnet);
 
     if (itr_flow == SubnetVectorMapFlow.end()) {
         logger << log4cpp::Priority::ERROR << "Can't find vector address in subnet flow map";
