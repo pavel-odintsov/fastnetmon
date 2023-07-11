@@ -3187,6 +3187,13 @@ void inaccurate_time_generator() {
     }
 }
 
+// Creates compressed flow tracking structure
+void init_incoming_flow_counting_structure(packed_conntrack_hash_t& flow_tracking_structure, const simple_packet_t& current_packet) {
+    flow_tracking_structure.opposite_ip = current_packet.src_ip;
+    flow_tracking_structure.src_port    = current_packet.source_port;
+    flow_tracking_structure.dst_port    = current_packet.destination_port;
+}
+
 
 void increment_incoming_flow_counters(map_of_vector_counters_for_flow_t& SubnetVectorMapFlow,
                                       int64_t shift_in_vector,
@@ -3205,9 +3212,7 @@ void increment_incoming_flow_counters(map_of_vector_counters_for_flow_t& SubnetV
     conntrack_main_struct_t* current_element_flow = &itr_flow->second[shift_in_vector];
 
     packed_conntrack_hash_t flow_tracking_structure;
-    flow_tracking_structure.opposite_ip = current_packet.src_ip;
-    flow_tracking_structure.src_port    = current_packet.source_port;
-    flow_tracking_structure.dst_port    = current_packet.destination_port;
+    init_incoming_flow_counting_structure(flow_tracking_structure, current_packet);
 
     // convert this struct to 64 bit integer
     uint64_t connection_tracking_hash = convert_conntrack_hash_struct_to_integer(&flow_tracking_structure);
