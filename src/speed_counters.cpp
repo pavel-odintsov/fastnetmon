@@ -2,10 +2,68 @@
 
 #include "fast_library.hpp"
 
+#include "iana_ip_protocols.hpp"
+
 extern time_t current_inaccurate_time;
 
+// This function increments all our accumulators according to data from packet
+void increment_incoming_counters(subnet_counter_t& current_element,
+                                 const simple_packet_t& current_packet,
+                                 uint64_t sampled_number_of_packets,
+                                 uint64_t sampled_number_of_bytes) {
 
-#ifdef USE_NEW_ATOMIC_BUILTINS
+    // Update last update time
+    current_element.last_update_time = current_inaccurate_time;
+
+    // Main packet/bytes counter
+    current_element.total.in_packets += sampled_number_of_packets;
+    current_element.total.in_bytes += sampled_number_of_bytes;
+
+    // Count fragmented IP packets
+    if (current_packet.ip_fragmented) {
+        current_element.fragmented.in_packets += sampled_number_of_packets;
+        current_element.fragmented.in_bytes += sampled_number_of_bytes;
+    }
+
+    // Count dropped packets
+    if (current_packet.forwarding_status == forwarding_status_t::dropped) {
+        current_element.dropped.in_packets += sampled_number_of_packets;
+        current_element.dropped.in_bytes += sampled_number_of_bytes;
+    }
+
+    // Count per protocol packets
+    if (current_packet.protocol == IPPROTO_TCP) {
+        current_element.tcp.in_packets += sampled_number_of_packets;
+        current_element.tcp.in_bytes += sampled_number_of_bytes;
+
+        if (extract_bit_value(current_packet.flags, TCP_SYN_FLAG_SHIFT)) {
+            current_element.tcp_syn.in_packets += sampled_number_of_packets;
+            current_element.tcp_syn.in_bytes += sampled_number_of_bytes;
+        }
+    } else if (current_packet.protocol == IPPROTO_UDP) {
+        current_element.udp.in_packets += sampled_number_of_packets;
+        current_element.udp.in_bytes += sampled_number_of_bytes;
+    } else {
+        // TBD
+    }
+
+    // ICMP uses different protocol numbers for IPv4 and IPv6 and we need handle it
+    if (current_packet.ip_protocol_version == 4) {
+        if (current_packet.protocol == IpProtocolNumberICMP) {
+            current_element.icmp.in_packets += sampled_number_of_packets;
+            current_element.icmp.in_bytes += sampled_number_of_bytes;
+        }
+
+    } else if (current_packet.ip_protocol_version == 6) {
+
+        if (current_packet.protocol == IpProtocolNumberIPV6_ICMP) {
+            current_element.icmp.in_packets += sampled_number_of_packets;
+            current_element.icmp.in_bytes += sampled_number_of_bytes;
+        }
+
+    }
+}
+
 // Increment fields using data from specified packet
 void increment_outgoing_counters(subnet_counter_t& current_element,
                                  const simple_packet_t& current_packet,
@@ -16,156 +74,56 @@ void increment_outgoing_counters(subnet_counter_t& current_element,
     current_element.last_update_time = current_inaccurate_time;
 
     // Main packet/bytes counter
-    __atomic_add_fetch(&current_element.total.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-    __atomic_add_fetch(&current_element.total.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+    current_element.total.out_packets += sampled_number_of_packets;
+    current_element.total.out_bytes += sampled_number_of_bytes;
 
     // Fragmented IP packets
     if (current_packet.ip_fragmented) {
-        __atomic_add_fetch(&current_element.fragmented.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element.fragmented.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+        current_element.fragmented.out_packets += sampled_number_of_packets;
+        current_element.fragmented.out_bytes += sampled_number_of_bytes;
+    }
+
+    // Count dropped packets
+    if (current_packet.forwarding_status == forwarding_status_t::dropped) {
+        current_element.dropped.out_packets += sampled_number_of_packets;
+        current_element.dropped.out_bytes += sampled_number_of_bytes;
     }
 
     if (current_packet.protocol == IPPROTO_TCP) {
-        __atomic_add_fetch(&current_element.tcp.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element.tcp.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+        current_element.tcp.out_packets += sampled_number_of_packets;
+        current_element.tcp.out_bytes += sampled_number_of_bytes;
 
         if (extract_bit_value(current_packet.flags, TCP_SYN_FLAG_SHIFT)) {
-            __atomic_add_fetch(&current_element.tcp_syn.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-            __atomic_add_fetch(&current_element.tcp_syn.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+            current_element.tcp_syn.out_packets += sampled_number_of_packets;
+            current_element.tcp_syn.out_bytes += sampled_number_of_bytes;
         }
     } else if (current_packet.protocol == IPPROTO_UDP) {
-        __atomic_add_fetch(&current_element.udp.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element.udp.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-    } else if (current_packet.protocol == IPPROTO_ICMP) {
-        __atomic_add_fetch(&current_element.icmp.out_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element.icmp.out_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-        // no flow tracking for icmp
+        current_element.udp.out_packets += sampled_number_of_packets;
+        current_element.udp.out_bytes += sampled_number_of_bytes;
     } else {
     }
-}
-#else
-// Increment fields using data from specified packet
-void increment_outgoing_counters(subnet_counter_t& current_element,
-                                 const simple_packet_t& current_packet,
-                                 uint64_t sampled_number_of_packets,
-                                 uint64_t sampled_number_of_bytes) {
 
-    // Update last update time
-    current_element.last_update_time = current_inaccurate_time;
-
-    // Main packet/bytes counter
-    __sync_fetch_and_add(&current_element.total.out_packets, sampled_number_of_packets);
-    __sync_fetch_and_add(&current_element.total.out_bytes, sampled_number_of_bytes);
-
-    // Fragmented IP packets
-    if (current_packet.ip_fragmented) {
-        __sync_fetch_and_add(&current_element.fragmented.out_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element.fragmented.out_bytes, sampled_number_of_bytes);
-    }
-
-    if (current_packet.protocol == IPPROTO_TCP) {
-        __sync_fetch_and_add(&current_element.tcp.out_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element.tcp.out_bytes, sampled_number_of_bytes);
-
-        if (extract_bit_value(current_packet.flags, TCP_SYN_FLAG_SHIFT)) {
-            __sync_fetch_and_add(&current_element.tcp_syn.out_packets, sampled_number_of_packets);
-            __sync_fetch_and_add(&current_element.tcp_syn.out_bytes, sampled_number_of_bytes);
+    // ICMP uses different protocol numbers for IPv4 and IPv6 and we need handle it
+    if (current_packet.ip_protocol_version == 4) {
+        if (current_packet.protocol == IpProtocolNumberICMP) {
+            current_element.icmp.out_packets += sampled_number_of_packets;
+            current_element.icmp.out_bytes += sampled_number_of_bytes;
         }
-    } else if (current_packet.protocol == IPPROTO_UDP) {
-        __sync_fetch_and_add(&current_element.udp.out_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element.udp.out_bytes, sampled_number_of_bytes);
-    } else if (current_packet.protocol == IPPROTO_ICMP) {
-        __sync_fetch_and_add(&current_element.icmp.out_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element.icmp.out_bytes, sampled_number_of_bytes);
-        // no flow tracking for icmp
-    } else {
-    }
-}
-#endif
 
-#ifdef USE_NEW_ATOMIC_BUILTINS
+    } else if (current_packet.ip_protocol_version == 6) {
 
-// This function increments all our accumulators according to data from packet
-void increment_incoming_counters(subnet_counter_t& current_element,
-                                 const simple_packet_t& current_packet,
-                                 uint64_t sampled_number_of_packets,
-                                 uint64_t sampled_number_of_bytes) {
-
-    // Uodate last update time
-    current_element.last_update_time = current_inaccurate_time;
-
-    // Main packet/bytes counter
-    __atomic_add_fetch(&current_element.total.in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-    __atomic_add_fetch(&current_element.total.in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-
-    // Count fragmented IP packets
-    if (current_packet.ip_fragmented) {
-        __atomic_add_fetch(&current_element.fragmented.in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element.fragmented.in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-    }
-
-    // Count per protocol packets
-    if (current_packet.protocol == IPPROTO_TCP) {
-        __atomic_add_fetch(&current_element.tcp.in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element.tcp.in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-
-        if (extract_bit_value(current_packet.flags, TCP_SYN_FLAG_SHIFT)) {
-            __atomic_add_fetch(&current_element.tcp_syn.in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-            __atomic_add_fetch(&current_element.tcp_syn.in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
+        if (current_packet.protocol == IpProtocolNumberIPV6_ICMP) {
+            current_element.icmp.out_packets += sampled_number_of_packets;
+            current_element.icmp.out_bytes += sampled_number_of_bytes;
         }
-    } else if (current_packet.protocol == IPPROTO_UDP) {
-        __atomic_add_fetch(&current_element.udp.in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element.udp.in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-    } else if (current_packet.protocol == IPPROTO_ICMP) {
-        __atomic_add_fetch(&current_element.icmp.in_packets, sampled_number_of_packets, __ATOMIC_RELAXED);
-        __atomic_add_fetch(&current_element.icmp.in_bytes, sampled_number_of_bytes, __ATOMIC_RELAXED);
-    } else {
-        // TBD
+
     }
 }
 
-#else
 
-// This function increments all our accumulators according to data from packet
-void increment_incoming_counters(subnet_counter_t& current_element,
-                                 const simple_packet_t& current_packet,
-                                 uint64_t sampled_number_of_packets,
-                                 uint64_t sampled_number_of_bytes) {
-
-    // Uodate last update time
-    current_element.last_update_time = current_inaccurate_time;
-
-    // Main packet/bytes counter
-    __sync_fetch_and_add(&current_element.total.in_packets, sampled_number_of_packets);
-    __sync_fetch_and_add(&current_element.total.in_bytes, sampled_number_of_bytes);
-
-    // Count fragmented IP packets
-    if (current_packet.ip_fragmented) {
-        __sync_fetch_and_add(&current_element.fragmented.in_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element.fragmented.in_bytes, sampled_number_of_bytes);
-    }
-
-    // Count per protocol packets
-    if (current_packet.protocol == IPPROTO_TCP) {
-        __sync_fetch_and_add(&current_element.tcp.in_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element.tcp.in_bytes, sampled_number_of_bytes);
-
-        if (extract_bit_value(current_packet.flags, TCP_SYN_FLAG_SHIFT)) {
-            __sync_fetch_and_add(&current_element.tcp_syn.in_packets, sampled_number_of_packets);
-            __sync_fetch_and_add(&current_element.tcp_syn.in_bytes, sampled_number_of_bytes);
-        }
-    } else if (current_packet.protocol == IPPROTO_UDP) {
-        __sync_fetch_and_add(&current_element.udp.in_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element.udp.in_bytes, sampled_number_of_bytes);
-    } else if (current_packet.protocol == IPPROTO_ICMP) {
-        __sync_fetch_and_add(&current_element.icmp.in_packets, sampled_number_of_packets);
-        __sync_fetch_and_add(&current_element.icmp.in_bytes, sampled_number_of_bytes);
-    } else {
-        // TBD
-    }
-}
-
-#endif
+// These build_* functions are called from our heavy computation path in recalculate_speed()
+// and you may have an idea that making them inline will help
+// We did this experiment and inlining clearly did speed calculation performance 1-2% worse
 
 // We calculate speed from packet counters here
 void build_speed_counters_from_packet_counters(subnet_counter_t& new_speed_element, const subnet_counter_t& data_counters, double speed_calc_period) {
