@@ -2380,7 +2380,6 @@ void recalculate_speed() {
 
                 /* Moving average recalculation end */
 
-                if (!hash_counters) {
 
                     std::string host_group_name;
                     ban_settings_t current_ban_settings = get_ban_settings_for_this_subnet(itr->first, host_group_name);
@@ -2403,7 +2402,6 @@ void recalculate_speed() {
                         execute_ip_ban(client_ip, current_average_speed_element, flow_attack_details, itr->first);
                     }
 
-                }
 
                 SubnetVectorMapSpeed[itr->first][current_index] = new_speed_element;
 
