@@ -279,7 +279,7 @@ bool enable_connection_tracking = true;
 
 bool enable_afpacket_collection         = false;
 bool enable_af_xdp_collection           = false;
-bool enable_data_collection_from_mirror = true;
+bool enable_data_collection_from_mirror = false;
 bool enable_netmap_collection           = false;
 bool enable_sflow_collection            = false;
 bool enable_netflow_collection          = false;
