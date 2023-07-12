@@ -139,8 +139,6 @@ cppkafka::Producer* kafka_traffic_export_producer = nullptr;
 // Traffic export to Kafka
 bool kafka_traffic_export = false;
 
-bool hash_counters = false;
-
 std::string kafka_traffic_export_topic                    = "fastnetmon";
 kafka_traffic_export_format_t kafka_traffic_export_format = kafka_traffic_export_format_t::JSON;
 std::vector<std::string> kafka_traffic_export_brokers;
@@ -373,8 +371,6 @@ uint64_t our_ipv6_packets = 0;
 uint64_t incoming_total_flows_speed = 0;
 uint64_t outgoing_total_flows_speed = 0;
 
-map_of_vector_counters_t SubnetVectorMap;
-
 // Network counters for IPv6
 abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t, subnet_counter_t> ipv6_subnet_counters;
 
@@ -396,19 +392,7 @@ int64_t netflow_ipfix_all_protocols_total_flows_speed          = 0;
 std::string sflow_raw_packet_headers_total_speed_desc = "Number of sFlow headers per second";
 int64_t sflow_raw_packet_headers_total_speed          = 0;
 
-/* End of our data structs */
-std::mutex ban_list_details_mutex;
-std::mutex ban_list_mutex;
 std::mutex flow_counter_mutex;
-
-// map for flows
-std::map<uint64_t, int> FlowCounter;
-
-// Struct for string speed per IP
-map_of_vector_counters_t SubnetVectorMapSpeed;
-
-// Struct for storing average speed per IP for specified interval
-map_of_vector_counters_t SubnetVectorMapSpeedAverage;
 
 #ifdef GEOIP
 map_for_counters GeoIpCounter;
@@ -419,10 +403,6 @@ blackhole_ban_list_t<subnet_ipv6_cidr_mask_t> ban_list_ipv6;
 
 // Banned IPv4 hosts
 blackhole_ban_list_t<uint32_t> ban_list_ipv4;
-
-// In ddos info we store attack power and direction
-std::map<uint32_t, banlist_item_t> ban_list;
-std::map<uint32_t, std::vector<simple_packet_t>> ban_list_details;
 
 host_group_map_t host_groups;
 
@@ -1132,43 +1112,18 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
         uint32_t result_ip_as_big_endian = fast_hton(ip_as_little_endian);
 
         // logger << log4cpp::Priority::INFO << "Allocate: " << convert_ip_as_uint_to_string(result_ip_as_big_endian);
- 
-        if (hash_counters) {
 
-            // We use big endian values as keys
-            try {
-                ipv4_host_counters.average_speed_map[result_ip_as_big_endian] = zero_map_element;
-                ipv4_host_counters.counter_map[result_ip_as_big_endian] = zero_map_element;
-            } catch (std::bad_alloc& ba) {
-                logger << log4cpp::Priority::ERROR << "Can't allocate memory for hash counters";
-                exit(1);
-            }
-
+        // We use big endian values as keys
+        try {
+            ipv4_host_counters.average_speed_map[result_ip_as_big_endian] = zero_map_element;
+            ipv4_host_counters.counter_map[result_ip_as_big_endian] = zero_map_element;
+        } catch (std::bad_alloc& ba) {
+            logger << log4cpp::Priority::ERROR << "Can't allocate memory for hash counters";
+            exit(1);
         }
     }
 
-    if (hash_counters) {
-        logger << log4cpp::Priority::INFO << "Successfully allocated " << ipv4_host_counters.average_speed_map.size() << " counters";
-    }
-
-    // Initialize our counters with fill constructor
-    try {
-        SubnetVectorMap[current_subnet]             = vector_of_counters(network_size_in_ips, zero_map_element);
-        SubnetVectorMapSpeed[current_subnet]        = vector_of_counters(network_size_in_ips, zero_map_element);
-        SubnetVectorMapSpeedAverage[current_subnet] = vector_of_counters(network_size_in_ips, zero_map_element);
-    } catch (std::bad_alloc& ba) {
-        logger << log4cpp::Priority::ERROR << "Can't allocate memory for counters";
-        exit(1);
-    }
-}
-
-void zeroify_all_counters() {
-    subnet_counter_t zero_map_element{};
-
-    for (map_of_vector_counters_t::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); ++itr) {
-        // logger<< log4cpp::Priority::INFO<<"Zeroify "<<itr->first;
-        std::fill(itr->second.begin(), itr->second.end(), zero_map_element);
-    }
+    logger << log4cpp::Priority::INFO << "Successfully allocated " << ipv4_host_counters.average_speed_map.size() << " counters";
 }
 
 bool load_our_networks_list() {
@@ -1336,10 +1291,6 @@ bool load_our_networks_list() {
 
     /* Preallocate data structures */
     patricia_process(lookup_tree_ipv4, subnet_vectors_allocator);
-
-    logger << log4cpp::Priority::INFO << "We start total zerofication of counters";
-    zeroify_all_counters();
-    logger << log4cpp::Priority::INFO << "We finished zerofication";
 
     logger << log4cpp::Priority::INFO << "We loaded " << networks_list_ipv4_as_string.size()
            << " IPv4 subnets to our in-memory list of networks";

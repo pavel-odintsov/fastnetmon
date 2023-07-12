@@ -11,8 +11,6 @@
 #include <vector>
 
 extern struct timeval graphite_thread_execution_time;
-extern map_of_vector_counters_t SubnetVectorMapSpeed;
-extern map_of_vector_counters_t SubnetVectorMapSpeedAverage;
 extern uint64_t incoming_total_flows_speed;
 extern uint64_t outgoing_total_flows_speed;
 extern abstract_subnet_counters_t<subnet_cidr_mask_t, subnet_counter_t> ipv4_network_counters;
@@ -288,7 +286,6 @@ push_network_traffic_counters_to_influxdb(abstract_subnet_counters_t<T, C>& netw
 
 // This thread pushes data to InfluxDB
 void influxdb_push_thread() {
-    extern bool hash_counters;
     extern abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counters;
 
     // Sleep for a half second for shift against calculation thread
@@ -333,14 +330,9 @@ void influxdb_push_thread() {
                                                   influxdb_auth, influxdb_user, influxdb_password, "networks_traffic", "network");
 
         // Push per host counters to InfluxDB
-        if (hash_counters) {
-            push_hosts_traffic_counters_to_influxdb(ipv4_host_counters, influxdb_database,
-                                                    current_influxdb_ip_address, std::to_string(influxdb_port), influxdb_auth,
-                                                    influxdb_user, influxdb_password, "hosts_traffic", "host");
-        } else {
-            push_hosts_ipv4_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
-                                                    influxdb_auth, influxdb_user, influxdb_password);
-        }
+        push_hosts_traffic_counters_to_influxdb(ipv4_host_counters, influxdb_database,
+                                                current_influxdb_ip_address, std::to_string(influxdb_port), influxdb_auth,
+                                                influxdb_user, influxdb_password, "hosts_traffic", "host");
 
         push_system_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
                                          influxdb_auth, influxdb_user, influxdb_password);
@@ -355,72 +347,6 @@ void influxdb_push_thread() {
                                                 influxdb_auth, influxdb_user, influxdb_password, "total_traffic_ipv6",
                                                 total_counters_ipv6.total_speed_average_counters, true);
     }
-}
-
-// Push host traffic to InfluxDB
-bool push_hosts_ipv4_traffic_counters_to_influxdb(std::string influx_database,
-                                             std::string influx_host,
-                                             std::string influx_port,
-                                             bool enable_auth,
-                                             std::string influx_user,
-                                             std::string influx_password) {
-    /* https://docs.influxdata.com/influxdb/v1.7/concepts/glossary/:
-     A collection of points in line protocol format, separated by newlines (0x0A). A batch of points may be submitted to
-     the database using a single HTTP request to the write endpoint. This makes writes via the HTTP API much more
-     performant by drastically reducing the HTTP overhead. InfluxData recommends batch sizes of 5,000-10,000 points,
-     although different use cases may be better served by significantly smaller or larger batches.
-     */
-
-    map_of_vector_counters_t* current_speed_map = &SubnetVectorMapSpeedAverage;
-
-    // Iterate over all networks
-    for (map_of_vector_counters_t::iterator itr = current_speed_map->begin(); itr != current_speed_map->end(); ++itr) {
-        std::vector<std::pair<std::string, std::map<std::string, uint64_t>>> hosts_vector;
-
-        // Iterate over all hosts in network
-        for (vector_of_counters_t::iterator vector_itr = itr->second.begin(); vector_itr != itr->second.end(); ++vector_itr) {
-            std::map<std::string, uint64_t> plain_total_counters_map;
-
-            int current_index = vector_itr - itr->second.begin();
-
-            // Convert to host order for math operations
-            uint32_t subnet_ip                     = ntohl(itr->first.subnet_address);
-            uint32_t client_ip_in_host_bytes_order = subnet_ip + current_index;
-
-            // Convert to our standard network byte order
-            uint32_t client_ip = htonl(client_ip_in_host_bytes_order);
-
-            std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
-
-            // Here we could have average or instantaneous speed
-            subnet_counter_t* current_speed_element = &*vector_itr;
-
-            // Skip elements with zero speed
-            if (current_speed_element->is_zero()) {
-                continue;
-            }
-
-            fill_main_counters_for_influxdb(*current_speed_element, plain_total_counters_map, true);
-
-            // Key: client_ip_as_string
-            hosts_vector.push_back(std::make_pair(client_ip_as_string, plain_total_counters_map));
-        }
-
-        if (hosts_vector.size() > 0) {
-            std::string error_text;
-
-            bool result = write_batch_of_data_to_influxdb(influx_database, influx_host, influx_port, enable_auth, influx_user,
-                                                          influx_password, "hosts_traffic", "host", hosts_vector, error_text);
-
-            if (!result) {
-                influxdb_writes_failed++;
-                logger << log4cpp::Priority::DEBUG << "InfluxDB batch operation failed for hosts_traffic";
-                return false;
-            }
-        }
-    }
-
-    return true;
 }
 
 // Write batch of data for particular InfluxDB database
