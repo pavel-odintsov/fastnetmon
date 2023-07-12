@@ -2417,14 +2417,11 @@ void recalculate_speed() {
     // Recalculate traffic for hosts
     ipv6_host_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, speed_calculation_callback_local_ipv6);
 
-
-    // Calculate global flow speed
-    incoming_total_flows_speed = uint64_t((double)incoming_total_flows / (double)speed_calc_period);
-    outgoing_total_flows_speed = uint64_t((double)outgoing_total_flows / (double)speed_calc_period);
-
     if (enable_connection_tracking) {
-        // Clean Flow Counter
-        std::lock_guard<std::mutex> lock_guard(flow_counter_mutex);
+        // Calculate global flow speed
+        incoming_total_flows_speed = uint64_t((double)incoming_total_flows / (double)speed_calc_period);
+        outgoing_total_flows_speed = uint64_t((double)outgoing_total_flows / (double)speed_calc_period);
+
         zeroify_all_flow_counters();
     }
 
