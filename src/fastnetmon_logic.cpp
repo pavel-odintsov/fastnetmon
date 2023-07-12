@@ -2313,102 +2313,104 @@ void recalculate_speed() {
             }
         });
 
-    }
+    } else { 
 
-    for (map_of_vector_counters_t::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); ++itr) {
-        for (vector_of_counters::iterator vector_itr = itr->second.begin(); vector_itr != itr->second.end(); ++vector_itr) {
-            int current_index = vector_itr - itr->second.begin();
+        for (map_of_vector_counters_t::iterator itr = SubnetVectorMap.begin(); itr != SubnetVectorMap.end(); ++itr) {
+            for (vector_of_counters::iterator vector_itr = itr->second.begin(); vector_itr != itr->second.end(); ++vector_itr) {
+                int current_index = vector_itr - itr->second.begin();
 
-            // New element
-            subnet_counter_t new_speed_element;
+                // New element
+                subnet_counter_t new_speed_element;
 
-            // convert to host order for math operations
-            uint32_t subnet_ip                     = ntohl(itr->first.subnet_address);
-            uint32_t client_ip_in_host_bytes_order = subnet_ip + current_index;
+                // convert to host order for math operations
+                uint32_t subnet_ip                     = ntohl(itr->first.subnet_address);
+                uint32_t client_ip_in_host_bytes_order = subnet_ip + current_index;
 
-            // covnert to our standard network byte order
-            uint32_t client_ip = htonl(client_ip_in_host_bytes_order);
+                // covnert to our standard network byte order
+                uint32_t client_ip = htonl(client_ip_in_host_bytes_order);
 
-            // Calculate speed for IP or whole subnet
-            build_speed_counters_from_packet_counters(new_speed_element, *vector_itr, speed_calc_period);
+                // Calculate speed for IP or whole subnet
+                build_speed_counters_from_packet_counters(new_speed_element, *vector_itr, speed_calc_period);
 
-            // It uses host byte order for key
-            conntrack_main_struct_t& flow_counter = SubnetVectorMapFlow[client_ip_in_host_bytes_order];
+                // It uses host byte order for key
+                conntrack_main_struct_t& flow_counter = SubnetVectorMapFlow[client_ip_in_host_bytes_order];
 
-            if (enable_connection_tracking) {
-                // todo: optimize this operations!
-                // it's really bad and SLOW CODE
-                uint64_t total_out_flows =
-                    (uint64_t)flow_counter.out_tcp.size() + (uint64_t)flow_counter.out_udp.size() +
-                    (uint64_t)flow_counter.out_icmp.size() + (uint64_t)flow_counter.out_other.size();
+                if (enable_connection_tracking) {
+                    // todo: optimize this operations!
+                    // it's really bad and SLOW CODE
+                    uint64_t total_out_flows =
+                        (uint64_t)flow_counter.out_tcp.size() + (uint64_t)flow_counter.out_udp.size() +
+                        (uint64_t)flow_counter.out_icmp.size() + (uint64_t)flow_counter.out_other.size();
 
-                uint64_t total_in_flows =
-                    (uint64_t)flow_counter.in_tcp.size() + (uint64_t)flow_counter.in_udp.size() +
-                    (uint64_t)flow_counter.in_icmp.size() + (uint64_t)flow_counter.in_other.size();
+                    uint64_t total_in_flows =
+                        (uint64_t)flow_counter.in_tcp.size() + (uint64_t)flow_counter.in_udp.size() +
+                        (uint64_t)flow_counter.in_icmp.size() + (uint64_t)flow_counter.in_other.size();
 
-                new_speed_element.out_flows = uint64_t((double)total_out_flows / speed_calc_period);
-                new_speed_element.in_flows  = uint64_t((double)total_in_flows / speed_calc_period);
+                    new_speed_element.out_flows = uint64_t((double)total_out_flows / speed_calc_period);
+                    new_speed_element.in_flows  = uint64_t((double)total_in_flows / speed_calc_period);
 
-                // Increment global counter
-                outgoing_total_flows += new_speed_element.out_flows;
-                incoming_total_flows += new_speed_element.in_flows;
-            } else {
-                new_speed_element.out_flows = 0;
-                new_speed_element.in_flows  = 0;
-            }
-
-            /* Moving average recalculation */
-            // http://en.wikipedia.org/wiki/Moving_average#Application_to_measuring_computer_performance
-            // double speed_calc_period = 1;
-            double exp_power = -speed_calc_period / average_calculation_amount;
-            double exp_value = exp(exp_power);
-
-            subnet_counter_t& current_average_speed_element = SubnetVectorMapSpeedAverage[itr->first][current_index];
-
-            // Calculate average speed from per-second speed
-            build_average_speed_counters_from_speed_counters(current_average_speed_element, new_speed_element, exp_value);
-
-            if (enable_connection_tracking) {
-                current_average_speed_element.out_flows =
-                    uint64_t(new_speed_element.out_flows + exp_value * ((double)current_average_speed_element.out_flows -
-                                                                        (double)new_speed_element.out_flows));
-
-                current_average_speed_element.in_flows =
-                    uint64_t(new_speed_element.in_flows + exp_value * ((double)current_average_speed_element.in_flows -
-                                                                       (double)new_speed_element.in_flows));
-            }
-
-            /* Moving average recalculation end */
-
-            if (!hash_counters) {
-
-                std::string host_group_name;
-                ban_settings_t current_ban_settings = get_ban_settings_for_this_subnet(itr->first, host_group_name);
-
-                attack_detection_threshold_type_t attack_detection_source;
-                attack_detection_direction_type_t attack_detection_direction;
-
-
-                if (we_should_ban_this_entity(current_average_speed_element, current_ban_settings, attack_detection_source,
-                                              attack_detection_direction)) {
-                    logger << log4cpp::Priority::DEBUG << "We have found host group for this host as: " << host_group_name;
-
-                    std::string flow_attack_details = "";
-
-                    if (enable_connection_tracking) {
-                        flow_attack_details = print_flow_tracking_for_ip(flow_counter, convert_ip_as_uint_to_string(client_ip));
-                    }
-
-                    // TODO: we should pass type of ddos ban source (pps, flowd, bandwidth)!
-                    execute_ip_ban(client_ip, current_average_speed_element, flow_attack_details, itr->first);
+                    // Increment global counter
+                    outgoing_total_flows += new_speed_element.out_flows;
+                    incoming_total_flows += new_speed_element.in_flows;
+                } else {
+                    new_speed_element.out_flows = 0;
+                    new_speed_element.in_flows  = 0;
                 }
 
+                /* Moving average recalculation */
+                // http://en.wikipedia.org/wiki/Moving_average#Application_to_measuring_computer_performance
+                // double speed_calc_period = 1;
+                double exp_power = -speed_calc_period / average_calculation_amount;
+                double exp_value = exp(exp_power);
+
+                subnet_counter_t& current_average_speed_element = SubnetVectorMapSpeedAverage[itr->first][current_index];
+
+                // Calculate average speed from per-second speed
+                build_average_speed_counters_from_speed_counters(current_average_speed_element, new_speed_element, exp_value);
+
+                if (enable_connection_tracking) {
+                    current_average_speed_element.out_flows =
+                        uint64_t(new_speed_element.out_flows + exp_value * ((double)current_average_speed_element.out_flows -
+                                                                            (double)new_speed_element.out_flows));
+
+                    current_average_speed_element.in_flows =
+                        uint64_t(new_speed_element.in_flows + exp_value * ((double)current_average_speed_element.in_flows -
+                                                                           (double)new_speed_element.in_flows));
+                }
+
+                /* Moving average recalculation end */
+
+                if (!hash_counters) {
+
+                    std::string host_group_name;
+                    ban_settings_t current_ban_settings = get_ban_settings_for_this_subnet(itr->first, host_group_name);
+
+                    attack_detection_threshold_type_t attack_detection_source;
+                    attack_detection_direction_type_t attack_detection_direction;
+
+
+                    if (we_should_ban_this_entity(current_average_speed_element, current_ban_settings, attack_detection_source,
+                                                  attack_detection_direction)) {
+                        logger << log4cpp::Priority::DEBUG << "We have found host group for this host as: " << host_group_name;
+
+                        std::string flow_attack_details = "";
+
+                        if (enable_connection_tracking) {
+                            flow_attack_details = print_flow_tracking_for_ip(flow_counter, convert_ip_as_uint_to_string(client_ip));
+                        }
+
+                        // TODO: we should pass type of ddos ban source (pps, flowd, bandwidth)!
+                        execute_ip_ban(client_ip, current_average_speed_element, flow_attack_details, itr->first);
+                    }
+
+                }
+
+                SubnetVectorMapSpeed[itr->first][current_index] = new_speed_element;
+
+                *vector_itr = zero_map_element;
             }
-
-            SubnetVectorMapSpeed[itr->first][current_index] = new_speed_element;
-
-            *vector_itr = zero_map_element;
         }
+
     }
 
     // Calculate IPv6 per network traffic
