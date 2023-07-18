@@ -457,24 +457,32 @@ class __attribute__((__packed__)) tcp_flags_as_uint16_t {
     }
 };
 
-// It's another version of previous code suitable for nice casting from 32 bit
-class __attribute__((__packed__)) tcp_flags_as_uint32_t {
-    public:
-    tcp_flags_as_uint16_t data{};
-    uint16_t not_used1i = 0;
-    uint8_t not_used2   = 0;
-
-    std::string print() {
-        return data.print();
-    }
-};
-
 class __attribute__((__packed__)) tcp_flags_t {
     public:
     uint16_t fin : 1, syn : 1, rst : 1, psh : 1, ack : 1, urg : 1, ece : 1, cwr : 1, ns : 1, reserved : 3, data_offset : 4;
 };
 
 static_assert(sizeof(tcp_flags_t) == 2, "Bad size for tcp_flags_t");
+
+// It's cropped TCP header and we use it only in cases when data was cropped (sFlow, inline monitoring services or cropped mirror)
+class __attribute__((__packed__)) cropped_tcp_header_only_ports_t {
+    // These fields must not be accessed directly as they need decoding
+    private:
+    uint16_t source_port      = 0;
+    uint16_t destination_port = 0;
+
+    public:
+
+    uint16_t get_source_port_host_byte_order() const {
+        return fast_ntoh(source_port);
+    }
+
+    uint16_t get_destination_port_host_byte_order() const {
+        return fast_ntoh(destination_port);
+    }
+};
+
+static_assert(sizeof(cropped_tcp_header_only_ports_t) == 4, "Bad size for cropped_tcp_header_only_ports_t");
 
 class __attribute__((__packed__)) tcp_header_t {
     // These fields must not be accessed directly as they need decoding
@@ -865,17 +873,6 @@ class __attribute__((__packed__)) ipv4_header_fragmentation_flags_t {
 
 static_assert(sizeof(ipv4_header_fragmentation_flags_t) == 2, "Bad size for ipv4_header_fragmentation_flags_t");
 
-// It's another version of previous code suitable for nice casting from 32 bit
-class __attribute__((__packed__)) ipv4_header_fragmentation_flags_as_32bit_t {
-    public:
-    ipv4_header_fragmentation_flags_t data;
-    uint16_t not_used1 = 0;
-
-    std::string print() {
-        return data.print();
-    }
-};
-
 class __attribute__((__packed__)) ipv4_header_t {
     // We must not access these fields directly as they need conversion
     private:
@@ -1089,5 +1086,4 @@ enum class parser_code_t {
 };
 
 std::string parser_code_to_string(parser_code_t code);
-parser_code_t parse_ipv4_to_map(std::map<std::string, uint32_t>& map, uint8_t* pointer, size_t length, bool ignore_do_not_fragment);
 } // namespace network_data_stuctures
