@@ -2463,3 +2463,50 @@ std::string print_binary_string_as_hex_with_leading_0x(const uint8_t* data_ptr, 
     return buffer.str();
 }
 
+bool read_ipv6_subnet_from_string(subnet_ipv6_cidr_mask_t& ipv6_address, const std::string& ipv6_subnet_as_string) {
+    extern log4cpp::Category& logger;
+
+    std::vector<std::string> subnet_as_string;
+
+    split(subnet_as_string, ipv6_subnet_as_string, boost::is_any_of("/"), boost::token_compress_on);
+
+    if (subnet_as_string.size() != 2) {
+        return false;
+    }
+
+    int cidr = 0;
+
+    bool conversion_result = convert_string_to_any_integer_safe(subnet_as_string[1], cidr);
+
+    if (!conversion_result) {
+        return false;
+    }
+
+    ipv6_address.cidr_prefix_length = cidr;
+
+    bool parsed_ipv6 = read_ipv6_host_from_string(subnet_as_string[0], ipv6_address.subnet_address);
+
+    if (!parsed_ipv6) {
+        logger << log4cpp::Priority::ERROR << "Can't parse IPv6 address: " << ipv6_subnet_as_string;
+        return false;
+    }
+
+    return true;
+}
+
+// Return true if we have this subnet in patricia tree
+bool subnet_belongs_to_patricia_tree(patricia_tree_t* patricia_tree, const subnet_cidr_mask_t& subnet) {
+    prefix_t prefix_for_check_adreess;
+    prefix_for_check_adreess.add.sin.s_addr = subnet.subnet_address;
+    prefix_for_check_adreess.family         = AF_INET;
+    prefix_for_check_adreess.bitlen         = subnet.cidr_prefix_length;
+
+    patricia_node_t* found_patrica_node = patricia_search_best2(patricia_tree, &prefix_for_check_adreess, 1);
+
+    if (found_patrica_node != NULL) {
+        return true;
+    } else {
+        return false;
+    }
+}
+

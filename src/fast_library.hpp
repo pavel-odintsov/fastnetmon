@@ -165,3 +165,5 @@ bool ip_belongs_to_patricia_tree(patricia_tree_t* patricia_tree, uint32_t client
 std::string convert_any_subnet_to_string(const subnet_ipv6_cidr_mask_t& subnet);
 std::string convert_any_subnet_to_string(const subnet_cidr_mask_t& subnet);
 std::string print_binary_string_as_hex_with_leading_0x(const uint8_t* data_ptr, uint32_t data_length);
+bool read_ipv6_subnet_from_string(subnet_ipv6_cidr_mask_t& ipv6_address, const std::string& ipv6_subnet_as_string);
+bool subnet_belongs_to_patricia_tree(patricia_tree_t* patricia_tree, const subnet_cidr_mask_t& subnet);
