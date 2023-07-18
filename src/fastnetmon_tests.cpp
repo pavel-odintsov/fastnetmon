@@ -4,6 +4,7 @@
 #include "fast_library.hpp"
 
 #include "bgp_protocol.hpp"
+#include "bgp_protocol_flow_spec.hpp"
 
 #include <fstream>
 
