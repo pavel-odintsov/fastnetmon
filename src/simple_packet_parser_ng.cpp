@@ -2,6 +2,8 @@
 #include "all_logcpp_libraries.hpp"
 #include "network_data_structures.hpp"
 
+#include "fast_library.hpp"
+
 #include <algorithm>
 #include <iterator>
 #include <cstring>
@@ -221,7 +223,24 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
 
     if (protocol == IpProtocolNumberTCP) {
         if (local_pointer + sizeof(tcp_header_t) > end_pointer) {
-            return parser_code_t::memory_violation;
+            // We observed that Huawei routers may send only first 52 bytes of header in sFlow mode
+            // and it's not enough to accommodate whole TCP header which has length of 20 bytes and we can observe only first 14 bytes 
+            // and it happened in case of vlan presence
+
+            // To offer better experience we will try retrieving only ports from TCP header as they're located in the beginning of packet
+            if (local_pointer + sizeof(cropped_tcp_header_only_ports_t) > end_pointer) {
+                // Sadly we cannot even retrieve port numbers and we have to discard this packet 
+                // Idea of reporting this packet as TCP protocol without ports information is not reasonable
+                return parser_code_t::memory_violation;
+            }
+
+            // Use short TCP header which has only access to source and destination ports
+            cropped_tcp_header_only_ports_t* tcp_header = (cropped_tcp_header_only_ports_t*)local_pointer;
+
+            packet.source_port      = tcp_header->get_source_port_host_byte_order();
+            packet.destination_port = tcp_header->get_destination_port_host_byte_order();
+
+            return parser_code_t::success;
         }
 
         tcp_header_t* tcp_header = (tcp_header_t*)local_pointer;
@@ -390,3 +409,4 @@ parser_code_t parse_raw_ipv4_packet_to_simple_packet_full_ng(const uint8_t* poin
 
     return parser_code_t::success;
 }
+
