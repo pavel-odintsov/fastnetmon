@@ -2453,3 +2453,13 @@ std::string convert_any_subnet_to_string(const subnet_cidr_mask_t& subnet) {
     return convert_ipv4_subnet_to_string(subnet);
 }
 
+std::string print_binary_string_as_hex_with_leading_0x(const uint8_t* data_ptr, uint32_t data_length) {
+    std::stringstream buffer;
+
+    for (uint32_t i = 0; i < data_length; i++) {
+        buffer << "0x" << std::setfill('0') << std::setw(2) << std::hex << uint32_t(data_ptr[i]) << " ";
+    }
+
+    return buffer.str();
+}
+
