@@ -4,11 +4,15 @@
 
 #include "fast_library.hpp"
 
-// inet_ntoa
 #include "network_data_structures.hpp"
+
+#ifdef _WIN32
+#include <winsock2.h>
+#else
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#endif 
 
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/join.hpp>
