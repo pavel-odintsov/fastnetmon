@@ -62,7 +62,7 @@ jobs:
           command: cd src/build && ninja
   build_macos:
     macos:
-      xcode: 13.2.1
+      xcode: 13.4.1
     environment:
       # We need it to address Error: No head is defined for fastnetmon
       # https://github.com/Homebrew/discussions/discussions/4136
@@ -73,7 +73,6 @@ jobs:
       - run: cp src/packaging/homebrew/fastnetmon.rb /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/fastnetmon.rb
       - run: brew install --build-from-source --HEAD --verbose --debug fastnetmon
   build_debian_upstream_package:
-    # NB! TODO: we have hardcoded Debian version below
     machine:
       image: ubuntu-2204:current
     resource_class: large
