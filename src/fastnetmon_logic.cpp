@@ -2361,6 +2361,10 @@ void process_ipv6_packet(simple_packet_t& current_packet) {
     uint64_t sampled_number_of_packets = current_packet.number_of_packets * current_packet.sample_ratio;
     uint64_t sampled_number_of_bytes   = current_packet.length * current_packet.sample_ratio;
 
+#ifdef KAFKA
+    extern bool kafka_traffic_export;
+#endif
+
     subnet_ipv6_cidr_mask_t ipv6_cidr_subnet;
 
     current_packet.packet_direction =
@@ -2446,6 +2450,10 @@ void process_packet(simple_packet_t& current_packet) {
     extern packet_buckets_storage_t<uint32_t> packet_buckets_ipv4_storage;
 
     extern map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
+
+#ifdef KAFKA
+    extern bool kafka_traffic_export;
+#endif
 
     // Packets dump is very useful for bug hunting
     if (DEBUG_DUMP_ALL_PACKETS) {
