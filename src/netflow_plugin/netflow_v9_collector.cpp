@@ -130,8 +130,6 @@ bool process_netflow_v9_template(const uint8_t* pkt,
         return false;
     }
 
-    bool template_cache_update_required = false;
-
     for (uint32_t offset = sizeof(*template_header); offset < flowset_length;) {
         const netflow9_template_flowset_header_t* netflow9_template_flowset_header =
             (const netflow9_template_flowset_header_t*)(pkt + offset);
@@ -197,7 +195,6 @@ bool process_netflow_v9_template(const uint8_t* pkt,
 
         // If we have any changes for this template, let's flush them to disk
         if (updated) {
-            template_cache_update_required = true;
         }
 
         if (updated_existing_template) {
@@ -1062,8 +1059,6 @@ void update_netflow_v9_sampling_rate(uint32_t sampling_rate, const std::string& 
     // logger<< log4cpp::Priority::INFO << "I extracted sampling rate: " << new_sampling_rate
     //    << "for " << client_address_in_string_format;
 
-    bool any_changes_for_sampling = false;
-
     {
         std::lock_guard<std::mutex> lock(netflow9_sampling_rates_mutex);
 
@@ -1078,7 +1073,6 @@ void update_netflow_v9_sampling_rate(uint32_t sampling_rate, const std::string& 
             logger << log4cpp::Priority::INFO << "Learnt new Netflow v9 sampling rate " << new_sampling_rate << " for "
                    << client_addres_in_string_format;
 
-            any_changes_for_sampling = true;
         } else {
             auto old_sampling_rate = known_sampling_rate->second;
 
@@ -1090,7 +1084,6 @@ void update_netflow_v9_sampling_rate(uint32_t sampling_rate, const std::string& 
                 logger << log4cpp::Priority::INFO << "Detected sampling rate change from " << old_sampling_rate << " to "
                        << new_sampling_rate << " for " << client_addres_in_string_format;
 
-                any_changes_for_sampling = true;
             }
         }
     }

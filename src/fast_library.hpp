@@ -55,7 +55,6 @@ int set_bit_value(uint8_t& num, int bit);
 int set_bit_value(uint16_t& num, int bit);
 
 std::string print_tcp_flags(uint8_t flag_value);
-uint64_t MurmurHash64A(const void* key, int len, uint64_t seed);
 std::string print_tcp_flags(uint8_t flag_value);
 int timeval_subtract(struct timeval* result, struct timeval* x, struct timeval* y);
 bool folder_exists(std::string path);

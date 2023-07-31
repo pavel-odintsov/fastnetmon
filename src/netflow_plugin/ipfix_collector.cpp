@@ -201,8 +201,6 @@ bool process_ipfix_template(const uint8_t* pkt, size_t flowset_length, uint32_t 
         return false;
     }
 
-    bool template_cache_update_required = false;
-
     // These fields use quite complicated encoding and we need to identify them first
     bool ipfix_variable_length_elements_used = false;
 
@@ -270,7 +268,6 @@ bool process_ipfix_template(const uint8_t* pkt, size_t flowset_length, uint32_t 
 
         // If we have any changes for this template, let's flush them to disk
         if (updated) {
-            template_cache_update_required = true;
         }
 
         if (updated_existing_template) {
@@ -1248,8 +1245,6 @@ void update_ipfix_sampling_rate(uint32_t sampling_rate, const std::string& clien
 
     logger << log4cpp::Priority::DEBUG << "I extracted sampling rate: " << new_sampling_rate << " for " << client_addres_in_string_format;
 
-    bool any_changes_for_sampling = false;
-
     {
         // Replace old sampling rate value
         std::lock_guard<std::mutex> lock(ipfix_sampling_rates_mutex);
@@ -1265,7 +1260,6 @@ void update_ipfix_sampling_rate(uint32_t sampling_rate, const std::string& clien
             logger << log4cpp::Priority::INFO << "Learnt new IPFIX sampling rate " << new_sampling_rate << " for "
                    << client_addres_in_string_format;
 
-            any_changes_for_sampling = true;
         } else {
             auto old_sampling_rate = known_sampling_rate->second;
 
@@ -1277,7 +1271,6 @@ void update_ipfix_sampling_rate(uint32_t sampling_rate, const std::string& clien
                 logger << log4cpp::Priority::INFO << "Detected IPFIX sampling rate change from " << old_sampling_rate << " to "
                        << new_sampling_rate << " for " << client_addres_in_string_format;
 
-                any_changes_for_sampling = true;
             }
         }
     }

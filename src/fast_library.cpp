@@ -225,65 +225,6 @@ bool folder_exists(std::string path) {
     return false;
 }
 
-#define BIG_CONSTANT(x) (x##LLU)
-
-/*
-
-    // calculate hash
-    unsigned int seed = 11;
-    uint64_t hash = MurmurHash64A(&current_packet, sizeof(current_packet), seed);
-
-*/
-
-// https://code.google.com/p/smhasher/source/browse/trunk/MurmurHash2.cpp
-// 64-bit hash for 64-bit platforms
-uint64_t MurmurHash64A(const void* key, int len, uint64_t seed) {
-    const uint64_t m = BIG_CONSTANT(0xc6a4a7935bd1e995);
-    const int r      = 47;
-
-    uint64_t h = seed ^ (len * m);
-
-    const uint64_t* data = (const uint64_t*)key;
-    const uint64_t* end  = data + (len / 8);
-
-    while (data != end) {
-        uint64_t k = *data++;
-
-        k *= m;
-        k ^= k >> r;
-        k *= m;
-
-        h ^= k;
-        h *= m;
-    }
-
-    const unsigned char* data2 = (const unsigned char*)data;
-
-    switch (len & 7) {
-    case 7:
-        h ^= uint64_t(data2[6]) << 48;
-    case 6:
-        h ^= uint64_t(data2[5]) << 40;
-    case 5:
-        h ^= uint64_t(data2[4]) << 32;
-    case 4:
-        h ^= uint64_t(data2[3]) << 24;
-    case 3:
-        h ^= uint64_t(data2[2]) << 16;
-    case 2:
-        h ^= uint64_t(data2[1]) << 8;
-    case 1:
-        h ^= uint64_t(data2[0]);
-        h *= m;
-    };
-
-    h ^= h >> r;
-    h *= m;
-    h ^= h >> r;
-
-    return h;
-}
-
 // http://www.gnu.org/software/libc/manual/html_node/Elapsed-Time.html
 int timeval_subtract(struct timeval* result, struct timeval* x, struct timeval* y) {
     /* Perform the carry for the later subtraction by updating y. */
@@ -1333,7 +1274,7 @@ bool read_simple_packet(uint8_t* buffer, size_t buffer_length, simple_packet_t& 
         packet.payload_full_length = root.getPacketPayloadFullLength();
         packet.packet_direction           = (direction_t)root.getPacketDirection();
         packet.source                     = (source_t)root.getSource();
-    } catch (kj::Exception e) {
+    } catch (kj::Exception& e) {
         logger << log4cpp::Priority::WARN
                << "Exception happened during attempt to parse tera flow packet: " << e.getDescription().cStr();
         return false;
