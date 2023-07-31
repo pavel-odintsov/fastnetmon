@@ -39,6 +39,12 @@ set(LIB_CPP_KAFKA_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/cppkafka_0_3
 set(LIB_RDKAFKA_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/rdkafka_1_7_0")
 set(GTEST_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/gtest_1_13_0")
 
+# -Wunused includes more warnings than -Wall
+# In order to get a warning about an unused function parameter, you must either specify -Wextra -Wunused (note that -Wall implies -Wunused), or separately specify -Wunused-parameter.
+# TODO: return -Wunused-parameter and address all warning later, I started it but did not finish as we have too many of them
+# catch-value is documented here: https://patchwork.ozlabs.org/project/gcc/patch/tkrat.8c7b4260a533be2f@netcologne.de/#1680619
+add_definitions("-Wreorder -Wunused -Wparentheses -Wimplicit-fallthrough -Wreturn-type -Wuninitialized -Winit-self -Wmaybe-uninitialized -Wcatch-value=3 -Wclass-memaccess")
+
 # On Windows we need to build libgcc and libstdc++ statically to avoid need to carry dlls with us
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(CMAKE_CXX_STANDARD_LIBRARIES "-static-libgcc -static-libstdc++ ${CMAKE_CXX_STANDARD_LIBRARIES}")

@@ -619,7 +619,7 @@ std::string print_flow_tracking_for_specified_protocol(contrack_map_type& protoc
 
         uint64_t packed_connection_data = itr->first;
         packed_conntrack_hash_t unpacked_key_struct;
-        convert_integer_to_conntrack_hash_struct(&packed_connection_data, &unpacked_key_struct);
+        convert_integer_to_conntrack_hash_struct(packed_connection_data, unpacked_key_struct);
 
         std::string opposite_ip_as_string = convert_ip_as_uint_to_string(unpacked_key_struct.opposite_ip);
         if (flow_direction == INCOMING) {
@@ -639,8 +639,14 @@ std::string print_flow_tracking_for_specified_protocol(contrack_map_type& protoc
     return buffer.str();
 }
 
-void convert_integer_to_conntrack_hash_struct(packed_session* packed_connection_data, packed_conntrack_hash_t* unpacked_data) {
-    memcpy(unpacked_data, packed_connection_data, sizeof(uint64_t));
+void convert_integer_to_conntrack_hash_struct(const uint64_t& packed_connection_data, packed_conntrack_hash_t& unpacked_data) {
+    // Normally this code will trigger
+    // warning: ‘void* memcpy(void*, const void*, size_t)’ copying an object of non-trivial type ‘class
+    // packed_conntrack_hash_t’ from an array of ‘const uint64_t’ {aka ‘const long unsigned int’} [-Wclass-memaccess]
+    // Yes, it's very bad practice to overwrite struct memory that way but we have enough safe guards (such as
+    // explicitly packed structure and static_assert with sizeof check for structure size) in place to do it We apply
+    // void* for target argument to suppress this warning
+    memcpy((void*)&unpacked_data, &packed_connection_data, sizeof(uint64_t));
 }
 
 // This function returns true when attack for particular IPv6 or IPv4 address is finished
@@ -1109,7 +1115,7 @@ bool process_flow_tracking_table(conntrack_main_struct_t& conntrack_element, std
     for (contrack_map_type::iterator itr = conntrack_element.in_tcp.begin(); itr != conntrack_element.in_tcp.end(); ++itr) {
         uint64_t packed_connection_data = itr->first;
         packed_conntrack_hash_t unpacked_key_struct;
-        convert_integer_to_conntrack_hash_struct(&packed_connection_data, &unpacked_key_struct);
+        convert_integer_to_conntrack_hash_struct(packed_connection_data, unpacked_key_struct);
 
         uniq_remote_hosts_which_generate_requests_to_us[unpacked_key_struct.opposite_ip]++;
         uniq_local_ports_which_target_of_connectiuons_from_inside[unpacked_key_struct.dst_port]++;
@@ -1639,8 +1645,6 @@ bool fill_attack_information(
     uint64_t out_pps   = current_attack.traffic_counters.total.out_packets;
     uint64_t in_bps    = current_attack.traffic_counters.total.in_bytes;
     uint64_t out_bps   = current_attack.traffic_counters.total.out_bytes;
-    uint64_t in_flows  = current_attack.traffic_counters.in_flows;
-    uint64_t out_flows = current_attack.traffic_counters.out_flows;
 
     direction_t data_direction;
 
@@ -1779,7 +1783,6 @@ void speed_calculation_callback_local_ipv4(const uint32_t& client_ip, const subn
     extern patricia_tree_t* whitelist_tree_ipv4;
     extern patricia_tree_t* lookup_tree_ipv4;
 
-    extern std::mutex ipv4_packets_circular_buffer_mutex;
     extern boost::circular_buffer<simple_packet_t> ipv4_packets_circular_buffer;
 
     // Check global ban settings
@@ -1966,8 +1969,6 @@ void recalculate_speed() {
         // time_difference << " seconds";
         speed_calc_period = time_difference;
     }
-
-    subnet_counter_t zero_map_element{};
 
     uint64_t incoming_total_flows = 0;
     uint64_t outgoing_total_flows = 0;
@@ -2357,8 +2358,6 @@ void collect_traffic_to_buckets_ipv6(const simple_packet_t& current_packet, pack
 
 // Process IPv6 traffic
 void process_ipv6_packet(simple_packet_t& current_packet) {
-    extern bool kafka_traffic_export;
-
     uint64_t sampled_number_of_packets = current_packet.number_of_packets * current_packet.sample_ratio;
     uint64_t sampled_number_of_bytes   = current_packet.length * current_packet.sample_ratio;
 
@@ -2443,7 +2442,6 @@ void collect_traffic_to_buckets_ipv4(const simple_packet_t& current_packet, pack
 
 // Process simple unified packet
 void process_packet(simple_packet_t& current_packet) {
-    extern bool kafka_traffic_export;
     extern abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counters;
     extern packet_buckets_storage_t<uint32_t> packet_buckets_ipv4_storage;
 
@@ -2514,12 +2512,6 @@ void process_packet(simple_packet_t& current_packet) {
     if ((current_packet.packet_direction == INCOMING && !process_incoming_traffic) or
         (current_packet.packet_direction == OUTGOING && !process_outgoing_traffic)) {
         return;
-    }
-
-    uint32_t subnet_in_host_byte_order = 0;
-    // We operate in host bytes order and need to convert subnet
-    if (!current_subnet.is_zero_subnet()) {
-        subnet_in_host_byte_order = ntohl(current_subnet.subnet_address);
     }
 
     if (current_packet.packet_direction == OUTGOING or current_packet.packet_direction == INCOMING) {

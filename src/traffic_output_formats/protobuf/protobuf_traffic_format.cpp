@@ -4,8 +4,6 @@
 
 // Encode simple packet into Protobuf
 bool write_simple_packet_to_protobuf(const simple_packet_t& packet, TrafficData& traffic_data) {
-    extern log4cpp::Category& logger;
-
     // Numbers before field match fields from proto file: traffic_data.proto
 
     // 1 we use arrival_time as traffic telemetry protocols do not provide this time in a reliable manner
