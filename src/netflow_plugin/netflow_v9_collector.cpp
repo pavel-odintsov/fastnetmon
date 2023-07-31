@@ -877,6 +877,16 @@ bool netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, const
         break;
     }
 
+    bool netflow_v9_read_sampling_rate_in_data_section = false;
+
+    // We keep this logic under the fence flag because RouterOS v6 sampling implementation is exceptionally broken and enabling it by default will
+    // not make any good
+    if (netflow_v9_read_sampling_rate_in_data_section) {
+        // TODO: another issue with this logic that we will run it for each flow in packet which may cause additional overhead during processing
+        // It's not significant and we will keep it that way for now
+        update_netflow_v9_sampling_rate(sampling_rate, client_addres_in_string_format);
+    }
+
     return true;
 }
 
