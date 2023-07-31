@@ -1032,67 +1032,6 @@ std::string get_attack_description_in_json_for_web_hooks(uint32_t client_ip,
     return json_as_text;
 }
 
-void call_attack_details_handlers(uint32_t client_ip, attack_details_t& current_attack, std::string attack_fingerprint) {
-    std::string client_ip_as_string = convert_ip_as_uint_to_string(client_ip);
-    std::string attack_direction    = get_direction_name(current_attack.attack_direction);
-    std::string pps_as_string       = convert_int_to_string(current_attack.attack_power);
-
-    std::string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
-    std::string attack_pcap_dump_path   = fastnetmon_platform_configuration.attack_details_folder + "/" +
-                                        client_ip_as_string + "_" + ban_timestamp_as_string + ".pcap";
-
-    if (collect_attack_pcap_dumps) {
-        int pcap_fump_filedesc = open(attack_pcap_dump_path.c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
-        if (pcap_fump_filedesc <= 0) {
-            logger << log4cpp::Priority::ERROR << "Can't open file for storing pcap dump: " << attack_pcap_dump_path;
-        } else {
-            ssize_t wrote_bytes = write(pcap_fump_filedesc, (void*)current_attack.pcap_attack_dump.get_buffer_pointer(),
-                                        current_attack.pcap_attack_dump.get_used_memory());
-
-            if (wrote_bytes != current_attack.pcap_attack_dump.get_used_memory()) {
-                logger << log4cpp::Priority::ERROR << "Can't wrote all attack details to the disk correctly";
-            }
-
-            close(pcap_fump_filedesc);
-
-            // Freeup memory
-            current_attack.pcap_attack_dump.deallocate_buffer();
-        }
-    }
-
-    print_attack_details_to_file(attack_fingerprint, client_ip_as_string, current_attack);
-
-    // Pass attack details to script
-    if (notify_script_enabled) {
-        logger << log4cpp::Priority::INFO << "Call script for notify about attack details for: " << client_ip_as_string;
-
-        std::string script_params = fastnetmon_platform_configuration.notify_script_path + " " + client_ip_as_string +
-                                    " " + attack_direction + " " + pps_as_string + " attack_details";
-
-        // We should execute external script in separate thread because any lag in this code
-        // will be very destructive
-        boost::thread exec_with_params_thread(exec_with_stdin_params, script_params, attack_fingerprint);
-        exec_with_params_thread.detach();
-
-        logger << log4cpp::Priority::INFO << "Script for notify about attack details is finished: " << client_ip_as_string;
-    }
-
-#ifdef REDIS
-    if (redis_enabled) {
-        std::string redis_key_name = client_ip_as_string + "_packets_dump";
-
-        if (!redis_prefix.empty()) {
-            redis_key_name = redis_prefix + "_" + client_ip_as_string + "_packets_dump";
-        }
-
-        logger << log4cpp::Priority::INFO << "Start data save in redis for key: " << redis_key_name;
-        boost::thread redis_store_thread(store_data_in_redis, redis_key_name, attack_fingerprint);
-        redis_store_thread.detach();
-        logger << log4cpp::Priority::INFO << "Finish data save in redis for key: " << redis_key_name;
-    }
-#endif
-}
-
 uint64_t convert_conntrack_hash_struct_to_integer(const packed_conntrack_hash_t& struct_value) {
     uint64_t unpacked_data = 0;
     memcpy(&unpacked_data, &struct_value, sizeof(uint64_t));
@@ -1368,6 +1307,7 @@ void call_blackhole_actions_per_host(attack_action_t attack_action,
                 redis_store_thread.detach();
                 logger << log4cpp::Priority::INFO << "Finish data save in redis in key: " << redis_key_name;
             }
+
         }
 #endif
     }
