@@ -1217,7 +1217,7 @@ void call_blackhole_actions_per_host(attack_action_t attack_action,
     if (store_attack_details_to_file && attack_action == attack_action_t::ban) {
         std::string basic_attack_information = get_attack_description(client_ip, current_attack);
 
-        std::string full_attack_description = basic_attack_information + flow_attack_details;
+        std::string full_attack_description = basic_attack_information + "\n\nAttack traffic dump\n\n" + simple_packets_dump + "\n\nFlow dump\n\n" + flow_attack_details;
 
         if (store_attack_details_to_file && ipv4) {
             print_attack_details_to_file(full_attack_description, client_ip_as_string, current_attack);
@@ -1231,10 +1231,11 @@ void call_blackhole_actions_per_host(attack_action_t attack_action,
         if (attack_action == attack_action_t::ban) {
             std::string basic_attack_information = get_attack_description(client_ip, current_attack);
 
-            std::string full_attack_description = basic_attack_information + flow_attack_details;
+            std::string full_attack_description = basic_attack_information + "\n\nAttack traffic dump\n\n" + simple_packets_dump + "\n\nFlow dump\n\n" + flow_attack_details;
 
             std::string script_call_params = fastnetmon_platform_configuration.notify_script_path + " " + client_ip_as_string +
                                              " " + data_direction_as_string + " " + pps_as_string + " " + "ban";
+            
             logger << log4cpp::Priority::INFO << "Call script for ban client: " << client_ip_as_string;
 
             // We should execute external script in separate thread because any lag in this code will be
