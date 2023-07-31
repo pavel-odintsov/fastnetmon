@@ -1267,18 +1267,8 @@ void call_blackhole_actions_per_host(attack_action_t attack_action,
         action_name = "unban";
     }
 
-    // For all attack types at this moment we could prepare simple packet dump
     std::string simple_packets_dump;
-
-    if (simple_packets_buffer.size() != 0) {
-        std::stringstream ss;
-
-        for (const simple_packet_t& packet : simple_packets_buffer) {
-            ss << print_simple_packet(packet);
-        }
-
-        simple_packets_dump = ss.str();
-    }
+    print_simple_packet_buffer_to_string(simple_packets_buffer, simple_packets_dump);
 
     std::string basic_attack_information_in_json =
         get_attack_description_in_json_for_web_hooks(client_ip, subnet_ipv6_cidr_mask_t{}, false, action_name, current_attack);

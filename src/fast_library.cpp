@@ -2451,3 +2451,17 @@ bool subnet_belongs_to_patricia_tree(patricia_tree_t* patricia_tree, const subne
     }
 }
 
+// Prepares textual dump of simple packets buffer
+void print_simple_packet_buffer_to_string(const boost::circular_buffer<simple_packet_t>& simple_packets_buffer, std::string& output) {
+    if (simple_packets_buffer.size() != 0) {
+        std::stringstream ss;
+
+        for (const simple_packet_t& packet : simple_packets_buffer) {
+            ss << print_simple_packet(packet);
+        }
+
+        output = ss.str();
+    }
+}
+
+
