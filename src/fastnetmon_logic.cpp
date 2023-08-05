@@ -2307,6 +2307,12 @@ void process_ipv6_packet(simple_packet_t& current_packet) {
     }
 #endif
 
+    // Skip processing of specific traffic direction
+    if ((current_packet.packet_direction == INCOMING && !process_incoming_traffic) or
+        (current_packet.packet_direction == OUTGOING && !process_outgoing_traffic)) {
+        return;
+    }
+
 #ifdef USE_NEW_ATOMIC_BUILTINS
     __atomic_add_fetch(&total_counters_ipv6.total_counters[current_packet.packet_direction].packets,
                        sampled_number_of_packets, __ATOMIC_RELAXED);
