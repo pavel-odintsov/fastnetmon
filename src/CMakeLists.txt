@@ -624,11 +624,11 @@ if (ENABLE_GOBGP_SUPPORT)
 
     message(STATUS "Building protobuf and gRPC mappings for C++")
 
-    execute_process(COMMAND ${Protobuf_PROTOC_EXECUTABLE} -I ${PROJECT_SOURCE_DIR}/actions --grpc_out=${PROJECT_SOURCE_DIR}/actions --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} ${PROJECT_SOURCE_DIR}/actions/gobgp.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${Protobuf_PROTOC_EXECUTABLE} -I ${PROJECT_SOURCE_DIR}/gobgp_client --grpc_out=${PROJECT_SOURCE_DIR}/gobgp_client --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} ${PROJECT_SOURCE_DIR}/gobgp_client/gobgp.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     message(STATUS "Protoc return code for gobgp.proto gRPC: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
 
-    execute_process(COMMAND ${Protobuf_PROTOC_EXECUTABLE} -I  ${PROJECT_SOURCE_DIR}/actions --cpp_out=${PROJECT_SOURCE_DIR}/actions ${PROJECT_SOURCE_DIR}/actions/gobgp.proto ${PROJECT_SOURCE_DIR}/actions/attribute.proto  ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${Protobuf_PROTOC_EXECUTABLE} -I  ${PROJECT_SOURCE_DIR}/gobgp_client --cpp_out=${PROJECT_SOURCE_DIR}/gobgp_client ${PROJECT_SOURCE_DIR}/gobgp_client/gobgp.proto ${PROJECT_SOURCE_DIR}/gobgp_client/attribute.proto  ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     message(STATUS "Protoc return code for gobgp.proto and attribute.proto Protobuf: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
 
@@ -645,8 +645,8 @@ if (ENABLE_GOBGP_SUPPORT)
     target_link_libraries(protobuf_traffic_format traffic_data_library)
 
     # Build gRPC and protocol buffers libraries and link they to gobgp_action
-    add_library(gobgp_api_client_pb_cc STATIC actions/gobgp.pb.cc)
-    add_library(gobgp_api_client_grpc_pb_cc STATIC actions/gobgp.grpc.pb.cc)
+    add_library(gobgp_api_client_pb_cc STATIC gobgp_client/gobgp.pb.cc)
+    add_library(gobgp_api_client_grpc_pb_cc STATIC gobgp_client/gobgp.grpc.pb.cc)
 
     # It does not work without on Windows but works fine on *nix
     if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
@@ -657,7 +657,7 @@ if (ENABLE_GOBGP_SUPPORT)
     target_link_libraries(gobgp_action gobgp_api_client_grpc_pb_cc)
 
     # Add attributes
-    add_library(attribute_pb_cc STATIC actions/attribute.pb.cc)
+    add_library(attribute_pb_cc STATIC gobgp_client/attribute.pb.cc)
 
     target_link_libraries(attribute_pb_cc protobuf::libprotobuf)
 

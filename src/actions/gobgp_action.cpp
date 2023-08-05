@@ -32,8 +32,8 @@
 #endif
 
 
-#include "attribute.pb.h"
-#include "gobgp.grpc.pb.h"
+#include "../gobgp_client/attribute.pb.h"
+#include "../gobgp_client/gobgp.grpc.pb.h"
 
 #ifdef _WIN32
 
