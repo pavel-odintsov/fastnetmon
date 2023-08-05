@@ -1,16 +1,10 @@
 #include "gobgp_action.hpp"
 #include "../fastnetmon_actions.hpp"
 
-#include <grpc++/client_context.h>
 #include <grpc++/create_channel.h>
 #include <grpc++/security/credentials.h>
-#include <grpc/grpc.h>
 
-unsigned int gobgp_client_connection_timeout = 5;
-
-using grpc::Channel;
-using grpc::ClientContext;
-using grpc::Status;
+#include "../bgp_protocol.hpp"
 
 #include "../gobgp_client/gobgp_client.hpp"
 

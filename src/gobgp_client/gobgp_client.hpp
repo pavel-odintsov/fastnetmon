@@ -1,15 +1,9 @@
 #pragma once
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif // __GNUC__
+#include <grpc/grpc.h>
+#include <grpc++/channel.h>
 
-
-
-using grpc::Channel;
-using grpc::ClientContext;
-using grpc::Status;
+#include "../fastnetmon_networks.hpp"
 
 //
 // MinGW has quite weird definitions which clash with field names in gRPC bindinds
@@ -31,7 +25,6 @@ using grpc::Status;
 #endif
 
 
-#include "../gobgp_client/attribute.pb.h"
 #include "../gobgp_client/gobgp.grpc.pb.h"
 
 #ifdef _WIN32
@@ -43,166 +36,27 @@ using grpc::Status;
 
 #endif
 
-#include "../bgp_protocol.hpp"
-
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif // __GNUC__
 
-using apipb::GobgpApi;
-
 
 class GrpcClient {
     public:
-    GrpcClient(std::shared_ptr<Channel> channel) : stub_(GobgpApi::NewStub(channel)) {
-    }
+    GrpcClient(std::shared_ptr<grpc::Channel> channel);
 
     bool AnnounceUnicastPrefixIPv4(std::string announced_address,
                                    std::string announced_prefix_nexthop,
                                    bool is_withdrawal,
                                    unsigned int cidr_mask,
-                                   uint32_t community_as_32bit_int) {
-        grpc::ClientContext context;
-
-        // Set timeout for API
-        std::chrono::system_clock::time_point deadline =
-            std::chrono::system_clock::now() + std::chrono::seconds(gobgp_client_connection_timeout);
-        context.set_deadline(deadline);
-
-        auto gobgp_ipv4_unicast_route_family = new apipb::Family;
-        gobgp_ipv4_unicast_route_family->set_afi(apipb::Family::AFI_IP);
-        gobgp_ipv4_unicast_route_family->set_safi(apipb::Family::SAFI_UNICAST);
-
-        apipb::AddPathRequest request;
-        request.set_table_type(apipb::TableType::GLOBAL);
-
-        apipb::Path* current_path = new apipb::Path;
-
-        current_path->set_allocated_family(gobgp_ipv4_unicast_route_family);
-
-        if (is_withdrawal) {
-            current_path->set_is_withdraw(true);
-        }
-
-        // Configure required announce
-        google::protobuf::Any* current_nlri = new google::protobuf::Any;
-        apipb::IPAddressPrefix current_ipaddrprefix;
-        current_ipaddrprefix.set_prefix(announced_address);
-        current_ipaddrprefix.set_prefix_len(cidr_mask);
-
-        current_nlri->PackFrom(current_ipaddrprefix);
-        current_path->set_allocated_nlri(current_nlri);
-
-        // Updating OriginAttribute info for current_path
-        google::protobuf::Any* current_origin = current_path->add_pattrs();
-        apipb::OriginAttribute current_origin_t;
-        current_origin_t.set_origin(0);
-        current_origin->PackFrom(current_origin_t);
-
-        // Updating NextHopAttribute info for current_path
-        google::protobuf::Any* current_next_hop = current_path->add_pattrs();
-        apipb::NextHopAttribute current_next_hop_t;
-        current_next_hop_t.set_next_hop(announced_prefix_nexthop);
-        current_next_hop->PackFrom(current_next_hop_t);
-
-        // Updating CommunitiesAttribute for current_path
-        google::protobuf::Any* current_communities = current_path->add_pattrs();
-        apipb::CommunitiesAttribute current_communities_t;
-        current_communities_t.add_communities(community_as_32bit_int);
-        current_communities->PackFrom(current_communities_t);
-
-        request.set_allocated_path(current_path);
-
-        apipb::AddPathResponse response;
-
-        // Don't be confused by name, it also can withdraw announces
-        auto status = stub_->AddPath(&context, request, &response);
-
-        if (!status.ok()) {
-            logger << log4cpp::Priority::ERROR << "AddPath request to BGP daemon failed with code: " << status.error_code()
-                   << " message " << status.error_message();
-
-            return false;
-        }
-
-
-        return true;
-    }
+                                   uint32_t community_as_32bit_int);
 
     bool AnnounceUnicastPrefixIPv6(const subnet_ipv6_cidr_mask_t& client_ipv6,
                                    const subnet_ipv6_cidr_mask_t& ipv6_next_hop,
                                    bool is_withdrawal,
-                                   uint32_t community_as_32bit_int) {
-        grpc::ClientContext context;
-
-        // Set timeout for API
-        std::chrono::system_clock::time_point deadline =
-            std::chrono::system_clock::now() + std::chrono::seconds(gobgp_client_connection_timeout);
-        context.set_deadline(deadline);
-
-        auto gobgp_ipv6_unicast_route_family = new apipb::Family;
-        gobgp_ipv6_unicast_route_family->set_afi(apipb::Family::AFI_IP6);
-        gobgp_ipv6_unicast_route_family->set_safi(apipb::Family::SAFI_UNICAST);
-
-        apipb::AddPathRequest request;
-        request.set_table_type(apipb::TableType::GLOBAL);
-
-        apipb::Path* current_path = new apipb::Path;
-
-        current_path->set_allocated_family(gobgp_ipv6_unicast_route_family);
-
-        if (is_withdrawal) {
-            current_path->set_is_withdraw(true);
-        }
-
-        // Configure required announce
-        google::protobuf::Any* current_nlri = new google::protobuf::Any;
-        apipb::IPAddressPrefix current_ipaddrprefix;
-        current_ipaddrprefix.set_prefix(print_ipv6_address(client_ipv6.subnet_address));
-        current_ipaddrprefix.set_prefix_len(client_ipv6.cidr_prefix_length);
-
-        current_nlri->PackFrom(current_ipaddrprefix);
-        current_path->set_allocated_nlri(current_nlri);
-
-        // Updating OriginAttribute info for current_path
-        google::protobuf::Any* current_origin = current_path->add_pattrs();
-        apipb::OriginAttribute current_origin_t;
-        current_origin_t.set_origin(0);
-        current_origin->PackFrom(current_origin_t);
-
-        // Updating NextHopAttribute info for current_path
-        google::protobuf::Any* current_next_hop = current_path->add_pattrs();
-        apipb::NextHopAttribute current_next_hop_t;
-        current_next_hop_t.set_next_hop(print_ipv6_address(ipv6_next_hop.subnet_address));
-        current_next_hop->PackFrom(current_next_hop_t);
-
-        // Updating CommunitiesAttribute for current_path
-        google::protobuf::Any* current_communities = current_path->add_pattrs();
-        apipb::CommunitiesAttribute current_communities_t;
-        current_communities_t.add_communities(community_as_32bit_int);
-        current_communities->PackFrom(current_communities_t);
-
-        request.set_allocated_path(current_path);
-
-        apipb::AddPathResponse response;
-
-        // Don't be confused by name, it also can withdraw announces
-        auto status = stub_->AddPath(&context, request, &response);
-
-        if (!status.ok()) {
-            logger << log4cpp::Priority::ERROR << "AddPath request to BGP daemon failed with code: " << status.error_code()
-                   << " message " << status.error_message();
-
-            return false;
-        }
-
-
-        return true;
-    }
-
-
+                                   uint32_t community_as_32bit_int);
     private:
-    std::unique_ptr<GobgpApi::Stub> stub_;
+    std::unique_ptr<apipb::GobgpApi::Stub> stub_;
 };
 
 

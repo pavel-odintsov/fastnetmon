@@ -521,6 +521,10 @@ endif()
 
 if (ENABLE_GOBGP_SUPPORT)
     add_definitions(-DENABLE_GOBGP)
+
+    # GoBGP client library
+    add_library(gobgp_client STATIC gobgp_client/gobgp_client.cpp)
+
     add_library(gobgp_action STATIC actions/gobgp_action.cpp)
 
     # We use find_package for Windows as our approach for *nix platforms leads to bunch of linking errors
@@ -542,7 +546,9 @@ if (ENABLE_GOBGP_SUPPORT)
         message(FATAL_ERROR "NOT Found gRPC module")
       endif()
 
-       target_link_libraries(gobgp_action gRPC::grpc gRPC::grpc++)
+        target_link_libraries(gobgp_client gRPC::grpc gRPC::grpc++)
+
+        target_link_libraries(gobgp_action gRPC::grpc gRPC::grpc++ gobgp_client)
 
     else()
 
@@ -556,7 +562,12 @@ if (ENABLE_GOBGP_SUPPORT)
         target_link_libraries(gobgp_action ${GRPC_LIBRARY_GRPC_PATH})
         target_link_libraries(gobgp_action ${GRPC_LIBRARY_GPR_PATH})
         target_link_libraries(gobgp_action ${GRPC_LIBRARY_GRPC_CPP_PATH})
-        
+        target_link_libraries(gobgp_action gobgp_client)
+
+        target_link_libraries(gobgp_client ${GRPC_LIBRARY_GRPC_PATH})
+        target_link_libraries(gobgp_client ${GRPC_LIBRARY_GPR_PATH})
+        target_link_libraries(gobgp_client ${GRPC_LIBRARY_GRPC_CPP_PATH})
+
 	    message(STATUS "Found gRPC library: ${GRPC_LIBRARY_GRPC_PATH} ${GRPC_LIBRARY_GPR_PATH} ${GRPC_LIBRARY_GRPC_CPP_PATH}")
       else()
         message(FATAL_ERROR "Could not find gRPC library")
