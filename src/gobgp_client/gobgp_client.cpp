@@ -5,12 +5,6 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif // __GNUC__
 
-
-
-using grpc::Channel;
-using grpc::ClientContext;
-using grpc::Status;
-
 //
 // MinGW has quite weird definitions which clash with field names in gRPC bindinds
 // We need to apply some trickery to avoid complilation errors: 
@@ -46,8 +40,6 @@ using grpc::Status;
 #pragma GCC diagnostic pop
 #endif // __GNUC__
 
-using apipb::GobgpApi;
-
 #include "../all_logcpp_libraries.hpp"
 
 #include "../fast_library.hpp"
@@ -56,7 +48,7 @@ unsigned int gobgp_client_connection_timeout = 5;
 
 extern log4cpp::Category& logger;
 
-GrpcClient::GrpcClient(std::shared_ptr<Channel> channel) : stub_(GobgpApi::NewStub(channel)) {
+GrpcClient::GrpcClient(std::shared_ptr<grpc::Channel> channel) : stub_(apipb::GobgpApi::NewStub(channel)) {
 
 }
 
