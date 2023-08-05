@@ -319,12 +319,12 @@ std::string print_ban_thresholds(ban_settings_t current_ban_settings) {
     return output_buffer.str();
 }
 
-void print_attack_details_to_file(std::string details, std::string client_ip_as_string, attack_details_t current_attack) {
+void print_attack_details_to_file(const std::string& details, const std::string& client_ip_as_string, const attack_details_t& current_attack) {
     std::ofstream my_attack_details_file;
 
     std::string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
-    std::string attack_dump_path = fastnetmon_platform_configuration.attack_details_folder + "/" + client_ip_as_string +
-                                   "_" + ban_timestamp_as_string + ".txt";
+    std::string attack_dump_path =
+        fastnetmon_platform_configuration.attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string + ".txt";
 
     my_attack_details_file.open(attack_dump_path.c_str(), std::ios::app);
 
@@ -332,9 +332,10 @@ void print_attack_details_to_file(std::string details, std::string client_ip_as_
         my_attack_details_file << details << "\n\n";
         my_attack_details_file.close();
     } else {
-        logger << log4cpp::Priority::ERROR << "Can't print attack details to file";
+        logger << log4cpp::Priority::ERROR << "Can't print attack details to file" << attack_dump_path;
     }
 }
+
 
 logging_configuration_t read_logging_settings(configuration_map_t configuration_map) {
     logging_configuration_t logging_configuration_temp;

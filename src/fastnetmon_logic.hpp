@@ -24,7 +24,7 @@ bool exceed_flow_speed(uint64_t in_counter, uint64_t out_counter, unsigned int t
 bool exceed_pps_speed(uint64_t in_counter, uint64_t out_counter, unsigned int threshold);
 ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::string host_group_name);
 logging_configuration_t read_logging_settings(configuration_map_t configuration_map);
-void print_attack_details_to_file(std::string details, std::string client_ip_as_string, attack_details_t current_attack);
+void print_attack_details_to_file(const std::string& details, const std::string& client_ip_as_string, const attack_details_t& current_attack);
 std::string print_ban_thresholds(ban_settings_t current_ban_settings);
 std::string print_subnet_ipv4_load();
 std::string print_flow_tracking_for_ip(conntrack_main_struct_t& conntrack_element, std::string client_ip);
