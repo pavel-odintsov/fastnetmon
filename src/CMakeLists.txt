@@ -39,6 +39,10 @@ set(LIB_CPP_KAFKA_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/cppkafka_0_3
 set(LIB_RDKAFKA_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/rdkafka_1_7_0")
 set(GTEST_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/gtest_1_13_0")
 
+# Enable time profiling for compilation phase
+# https://stackoverflow.com/questions/5962285/cmake-compilation-statistics-per-transation-unit
+# set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
+
 # -Wunused includes more warnings than -Wall
 # In order to get a warning about an unused function parameter, you must either specify -Wextra -Wunused (note that -Wall implies -Wunused), or separately specify -Wunused-parameter.
 # TODO: return -Wunused-parameter and address all warning later, I started it but did not finish as we have too many of them
