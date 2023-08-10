@@ -16,7 +16,14 @@ Project
 🌟️ [FastNetMon Advanced, free one-month trial](https://fastnetmon.com/trial/)  
 📜️ [FastNetMon Advanced and Community difference table](https://fastnetmon.com/compare-community-and-advanced/)  
 📘️ [Detailed reference](https://fastnetmon.com/wp-content/uploads/2023/07/fastnetmon_community_book_20_jul_2023.pdf)  
-🔏️ [Privacy policy](https://fastnetmon.com/privacy-policy/)  
+
+Legal
+--------------
+📖 [FastNetMon Community Edition Terms and Conditions](https://fastnetmon.com/fastnetmon-community-edition-terms-and-conditions/)  
+🔏️ [FastNetMon Community Edition Privacy Notice](https://fastnetmon.com/fastnetmon-community-edition-privacy-notice/)  
+
+FastNetMon is a product of FastNetMon LTD, UK. FastNetMon ® is a registered trademark in the UK and EU.
+
 
 ### Installation
 - [Linux install instructions](https://fastnetmon.com/install/)
@@ -96,9 +103,6 @@ Example deployment scheme
 
 ![Network diagramm](docs/images/deploy.png)
 
-Legal
---------------
-FastNetMon is a product of FastNetMon LTD, UK. FastNetMon ® is a registered trademark in the UK and EU.
 
 CI build status
 --------------
