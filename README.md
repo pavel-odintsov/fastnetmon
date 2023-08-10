@@ -24,6 +24,7 @@ Legal
 
 FastNetMon is a product of FastNetMon LTD, UK. FastNetMon ® is a registered trademark in the UK and EU.
 
+By installing or using this software, you confirm that you have read and agree to the FastNetMon Community Edition T&Cs and Privacy Notice, which will apply to your installation and use of the software
 
 ### Installation
 - [Linux install instructions](https://fastnetmon.com/install/)
