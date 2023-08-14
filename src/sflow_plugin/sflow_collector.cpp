@@ -325,7 +325,7 @@ bool process_sflow_flow_sample(uint8_t* data_pointer,
 
     uint8_t* flow_record_zone_start = data_pointer + sflow_sample_header_unified_accessor.get_original_payload_length();
 
-    vector_tuple_t vector_tuple;
+    std::vector<record_tuple_t> vector_tuple;
     vector_tuple.reserve(sflow_sample_header_unified_accessor.get_number_of_flow_records());
 
     bool padding_found = false;
@@ -500,7 +500,7 @@ void parse_sflow_v5_packet(uint8_t* payload_ptr, unsigned int payload_length, ui
         return;
     }
 
-    vector_sample_tuple_t samples_vector;
+    std::vector<sample_tuple_t> samples_vector;
     samples_vector.reserve(sflow_header_accessor.get_datagram_samples_count());
 
     uint8_t* samples_block_start = payload_ptr + sflow_header_accessor.get_original_payload_length();
@@ -587,7 +587,7 @@ bool process_sflow_counter_sample(uint8_t* data_pointer,
         return false;
     }
 
-    counter_record_sample_vector_t counter_record_sample_vector;
+    std::vector<counter_record_sample_t> counter_record_sample_vector;
     counter_record_sample_vector.reserve(sflow_counter_header_unified_accessor.get_number_of_counter_records());
 
     bool get_all_counter_records_result =
