@@ -30,7 +30,7 @@ enum sflow_header_protocol {
     SFLOW_HEADER_PROTOCOL_IPv6     = 12,
 };
 
-// Old fashioned not typed enum for fast comparisons and assignments to
+// Old fashioned not typed enums for fast comparisons and assignments to
 // integers
 enum sflow_sample_type_not_typed_t {
     SFLOW_SAMPLE_TYPE_FLOW_SAMPLE             = 1,
@@ -52,52 +52,22 @@ enum class sample_counter_types_t : unsigned int {
     BROKEN_COUNTER              = UINT_MAX
 };
 
+// These types are not sFlow protocol specific, we use them only in our own logic
+
 // enterprise, format, length, pointer
 typedef std::tuple<uint32_t, uint32_t, ssize_t, uint8_t*> counter_record_sample_t;
-typedef std::vector<counter_record_sample_t> counter_record_sample_vector_t;
-
-std::string print_counter_record_sample_vector(counter_record_sample_vector_t counter_record_sample_vector);
 
 // Element type, pointer, length
 typedef std::tuple<int32_t, uint8_t*, int32_t> record_tuple_t;
-typedef std::vector<record_tuple_t> vector_tuple_t;
-
-std::string print_vector_tuple(vector_tuple_t vector_tuple);
 
 // Enterprise, integer_format, data_block_start, sample_length
 typedef std::tuple<int32_t, int32_t, uint8_t*, size_t> sample_tuple_t;
-typedef std::vector<sample_tuple_t> vector_sample_tuple_t;
 
-std::string print_vector_sample_tuple(vector_sample_tuple_t vector_sample_tuple);
-
-// Create scoped enum from integer with sanity check
-sflow_sample_type_t sflow_sample_type_from_integer(int32_t format_as_integer);
-
+// We keep these prototypes here because we use them from our class definitions
+std::tuple<uint32_t, uint32_t> split_32bit_integer_by_2_and_30_bits(uint32_t original_data);
 std::tuple<uint32_t, uint32_t> split_32bit_integer_by_8_and_24_bits(uint32_t original_data);
-std::tuple<int32_t, int32_t> split_mixed_enterprise_and_format(int32_t enterprise_and_format);
 void build_ipv4_address_from_array(std::array<uint8_t, 4> ipv4_array_address, std::string& output_string);
 std::string build_ipv6_address_from_array(std::array<uint8_t, 16> ipv6_array_address);
-unsigned int get_flow_enum_type_as_number(const sflow_sample_type_t& value);
-
-bool get_all_samples(vector_sample_tuple_t& vector_sample,
-                     uint8_t* samples_block_start,
-                     uint8_t* total_packet_end,
-                     int32_t samples_count,
-                     bool& discovered_padding);
-bool get_records(vector_tuple_t& vector_tuple,
-                 uint8_t* flow_record_zone_start,
-                 uint32_t number_of_flow_records,
-                 uint8_t* current_packet_end,
-                 bool& padding_found);
-bool get_all_counter_records(counter_record_sample_vector_t& counter_record_sample_vector,
-                             uint8_t* data_block_start,
-                             uint8_t* data_block_end,
-                             uint32_t number_of_records);
-
-int32_t get_int_value_by_32bit_shift(uint8_t* payload_ptr, unsigned int shift);
-
-// pretty popular encoding way in sflow
-std::tuple<uint32_t, uint32_t> split_32bit_integer_by_2_and_30_bits(uint32_t original_data);
 
 class __attribute__((__packed__)) sflow_sample_header_as_struct_t {
     public:
@@ -109,10 +79,12 @@ class __attribute__((__packed__)) sflow_sample_header_as_struct_t {
     uint32_t sample_length = 0;
 
     void host_byte_order_to_network_byte_order() {
-        enterprise_and_sample_type_as_integer = htonl(enterprise_and_sample_type_as_integer);
-        sample_length                         = htonl(sample_length);
+        enterprise_and_sample_type_as_integer = fast_hton(enterprise_and_sample_type_as_integer);
+        sample_length                         = fast_hton(sample_length);
     }
 };
+
+static_assert(sizeof(sflow_sample_header_as_struct_t) == 8, "Bad size for sflow_sample_header_as_struct_t");
 
 class __attribute__((__packed__)) sflow_record_header_t {
     public:
@@ -120,12 +92,11 @@ class __attribute__((__packed__)) sflow_record_header_t {
     uint32_t record_length = 0;
 
     void host_byte_order_to_network_byte_order() {
-        record_type   = htonl(record_type);
-        record_length = htonl(record_length);
+        record_type   = fast_hton(record_type);
+        record_length = fast_hton(record_length);
     }
 };
 
-static_assert(sizeof(sflow_sample_header_as_struct_t) == 8, "Bad size for sflow_sample_header_as_struct_t");
 static_assert(sizeof(sflow_record_header_t) == 8, "Bad size for sflow_record_header_t");
 
 // Structure which describes sampled raw ethernet packet from switch
@@ -163,6 +134,8 @@ class __attribute__((__packed__)) sflow_raw_protocol_header_t {
         return buffer.str();
     }
 };
+
+static_assert(sizeof(sflow_raw_protocol_header_t) == 16, "Broken size for sflow_raw_protocol_header_t");
 
 class __attribute__((__packed__)) sflow_sample_header_t {
     public:
@@ -217,6 +190,8 @@ class __attribute__((__packed__)) sflow_sample_header_t {
     }
 };
 
+static_assert(sizeof(sflow_sample_header_t) == 32, "Broken size for sflow_sample_header_t");
+
 // This header format is really close to "sflow_sample_header_t" but we do not
 // encode formats in
 // value
@@ -263,6 +238,8 @@ class __attribute__((__packed__)) sflow_sample_expanded_header_t {
         return buffer.str();
     }
 };
+
+static_assert(sizeof(sflow_sample_expanded_header_t) == 44, "Broken size for sflow_sample_expanded_header_t");
 
 // Unified accessor for sflow_sample_header_t sflow_sample_expanded_header_t
 // classes.
@@ -353,7 +330,7 @@ class sflow_sample_header_unified_accessor_t {
         original_payload_length = sizeof(sflow_sample_expanded_header_t);
     }
 
-    std::string print() {
+    std::string print() const {
         std::stringstream buffer;
 
         buffer << "sample_sequence_number: " << sample_sequence_number << " "
@@ -419,7 +396,7 @@ template <std::size_t address_length> class __attribute__((__packed__)) sflow_pa
         datagram_samples_count   = fast_hton(datagram_samples_count);
     }
 
-    std::string print() {
+    std::string print() const {
         std::stringstream buffer;
 
         buffer << "sflow_version: " << sflow_version << std::endl
@@ -445,6 +422,9 @@ template <std::size_t address_length> class __attribute__((__packed__)) sflow_pa
 
 using sflow_packet_header_v4_t = sflow_packet_header<4>;
 using sflow_packet_header_v6_t = sflow_packet_header<16>;
+
+static_assert(sizeof(sflow_packet_header_v4_t) == 28, "Broken size for packed IPv4 structure");
+static_assert(sizeof(sflow_packet_header_v6_t) == 40, "Broken size for packed IPv6 structure");
 
 class sflow_packet_header_unified_accessor {
     private:
@@ -560,6 +540,8 @@ class __attribute__((__packed__)) sflow_counter_header_t {
     }
 };
 
+static_assert(sizeof(sflow_counter_header_t) == 12, "Broken size for sflow_counter_header_t");
+
 // Expanded form of sflow_counter_header_t
 class __attribute__((__packed__)) sflow_counter_expanded_header_t {
     public:
@@ -586,6 +568,8 @@ class __attribute__((__packed__)) sflow_counter_expanded_header_t {
         return buffer.str();
     }
 };
+
+static_assert(sizeof(sflow_counter_expanded_header_t) == 16, "Broken size for sflow_counter_expanded_header_t");
 
 // Unified accessor for sflow_counter_header_t and
 // sflow_counter_expanded_header_t
@@ -713,6 +697,8 @@ class __attribute__((__packed__)) ethernet_sflow_interface_counters_t {
     }
 };
 
+static_assert(sizeof(ethernet_sflow_interface_counters_t) == 52, "Broken size for ethernet_sflow_interface_counters_t");
+
 // http://www.sflow.org/SFLOW-STRUCTS5.txt
 class __attribute__((__packed__)) generic_sflow_interface_counters_t {
     public:
@@ -787,6 +773,8 @@ class __attribute__((__packed__)) generic_sflow_interface_counters_t {
     }
 };
 
+static_assert(sizeof(generic_sflow_interface_counters_t) == 88, "Broken size for generic_sflow_interface_counters_t");
+
 // High level processing functions. They uses classes defined upper
 bool read_sflow_header(uint8_t* payload_ptr, unsigned int payload_length, sflow_packet_header_unified_accessor& sflow_header_accessor);
 bool read_sflow_counter_header(uint8_t* data_pointer,
@@ -798,13 +786,32 @@ bool read_sflow_sample_header_unified(sflow_sample_header_unified_accessor_t& sf
                                       size_t data_length,
                                       bool expanded);
 
-static_assert(sizeof(sflow_raw_protocol_header_t) == 16, "Broken size for sflow_raw_protocol_header_t");
-static_assert(sizeof(sflow_sample_expanded_header_t) == 44, "Broken size for sflow_sample_expanded_header_t");
-static_assert(sizeof(sflow_counter_header_t) == 12, "Broken size for sflow_counter_header_t");
-static_assert(sizeof(sflow_counter_expanded_header_t) == 16, "Broken size for sflow_counter_expanded_header_t");
-static_assert(sizeof(ethernet_sflow_interface_counters_t) == 52, "Broken size for ethernet_sflow_interface_counters_t");
-static_assert(sizeof(generic_sflow_interface_counters_t) == 88, "Broken size for generic_sflow_interface_counters_t");
+std::string print_counter_record_sample_vector(const std::vector<counter_record_sample_t>& counter_record_sample_vector);
+std::string print_vector_tuple(const std::vector<record_tuple_t>& vector_tuple);
 
-static_assert(sizeof(sflow_sample_header_t) == 32, "Broken size for sflow_sample_header_t");
-static_assert(sizeof(sflow_packet_header_v4_t) == 28, "Broken size for packed IPv4 structure");
-static_assert(sizeof(sflow_packet_header_v6_t) == 40, "Broken size for packed IPv6 structure");
+
+std::string print_vector_sample_tuple(const std::vector<sample_tuple_t>& vector_sample_tuple);
+
+// Create scoped enum from integer with sanity check
+sflow_sample_type_t sflow_sample_type_from_integer(int32_t format_as_integer);
+
+std::tuple<int32_t, int32_t> split_mixed_enterprise_and_format(int32_t enterprise_and_format);
+unsigned int get_flow_enum_type_as_number(const sflow_sample_type_t& value);
+
+bool get_all_samples(std::vector<sample_tuple_t>& vector_sample,
+                     uint8_t* samples_block_start,
+                     uint8_t* total_packet_end,
+                     int32_t samples_count,
+                     bool& discovered_padding);
+bool get_records(std::vector<record_tuple_t>& vector_tuple,
+                 uint8_t* flow_record_zone_start,
+                 uint32_t number_of_flow_records,
+                 uint8_t* current_packet_end,
+                 bool& padding_found);
+bool get_all_counter_records(std::vector<counter_record_sample_t>& counter_record_sample_vector,
+                             uint8_t* data_block_start,
+                             uint8_t* data_block_end,
+                             uint32_t number_of_records);
+
+int32_t get_int_value_by_32bit_shift(uint8_t* payload_ptr, unsigned int shift);
+

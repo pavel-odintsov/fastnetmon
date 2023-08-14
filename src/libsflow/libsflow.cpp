@@ -57,7 +57,7 @@ std::tuple<int32_t, int32_t> split_mixed_enterprise_and_format(int32_t enterpris
 
 // Convert arbitrary flow record structure with record samples to well formed
 // data
-bool get_records(vector_tuple_t& vector_tuple,
+bool get_records(std::vector<record_tuple_t>& vector_tuple,
                  uint8_t* flow_record_zone_start,
                  uint32_t number_of_flow_records,
                  uint8_t* current_packet_end,
@@ -122,7 +122,7 @@ bool get_records(vector_tuple_t& vector_tuple,
 
 // Convert arbitrary data structure with samples to vector with meta data and
 // pointers to real data
-bool get_all_samples(vector_sample_tuple_t& vector_sample,
+bool get_all_samples(std::vector<sample_tuple_t>& vector_sample,
                      uint8_t* samples_block_start,
                      uint8_t* total_packet_end,
                      int32_t samples_count,
@@ -190,7 +190,7 @@ int32_t get_int_value_by_32bit_shift(uint8_t* payload_ptr, unsigned int shift) {
     return fast_ntoh(*(int32_t*)(payload_ptr + shift * 4));
 }
 
-bool get_all_counter_records(counter_record_sample_vector_t& counter_record_sample_vector,
+bool get_all_counter_records(std::vector<counter_record_sample_t>& counter_record_sample_vector,
                              uint8_t* data_block_start,
                              uint8_t* data_block_end,
                              uint32_t number_of_records) {
@@ -315,7 +315,7 @@ bool read_sflow_header(uint8_t* payload_ptr, unsigned int payload_length, sflow_
     return true;
 }
 
-std::string print_counter_record_sample_vector(counter_record_sample_vector_t counter_record_sample_vector) {
+std::string print_counter_record_sample_vector(const std::vector<counter_record_sample_t>& counter_record_sample_vector) {
     std::stringstream buffer;
 
     int index = 0;
@@ -337,7 +337,7 @@ std::string print_counter_record_sample_vector(counter_record_sample_vector_t co
     return buffer.str();
 }
 
-std::string print_vector_sample_tuple(vector_sample_tuple_t vector_sample_tuple) {
+std::string print_vector_sample_tuple(const std::vector<sample_tuple_t>& vector_sample_tuple) {
     std::stringstream buffer;
 
     int index = 0;
@@ -446,7 +446,7 @@ bool read_sflow_sample_header_unified(sflow_sample_header_unified_accessor_t& sf
     return true;
 }
 
-std::string print_vector_tuple(vector_tuple_t vector_tuple) {
+std::string print_vector_tuple(const std::vector<record_tuple_t>& vector_tuple) {
     std::stringstream buffer;
 
     int index = 0;
