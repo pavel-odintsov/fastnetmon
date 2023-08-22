@@ -36,7 +36,7 @@ unless ($temp_folder_for_building_project && -e $temp_folder_for_building_projec
 }
 
 # Pass log path to module
-$Fastnetmon::install_log_path = '/tmp/fastnetmon_install.log';
+$Fastnetmon::install_log_path = "/tmp/fastnetmon_install_$$.log";
 
 # We do not need default very safe permissions
 exec_command("chmod 755 $temp_folder_for_building_project");
@@ -81,6 +81,7 @@ sub main {
     # We use target folder names in this list for clarity
     # Versions may be in different formats and we do not use them yet
     my @required_packages = (
+        'pcap_1_10_4',
         # 'gcc', # we build it separately as it requires excessive amount of time
         'openssl_1_1_1q',
         'cmake_3_23_4',
@@ -712,6 +713,9 @@ sub main {
 
             'centos:9'            => '398948e08847b7ac09a232414dc462abe9c66d098e71de3350fcb9cca38fdf0204a302d7fc75ada4fad33072371059646c4d2167baed311143240de9a8e62091',
             'centos:aarch64:9'    => 'c441a2450669fb06cc2a237a1098ab1976a49b521069e021fc81de0c34f4de97f954ac3449120f3f80963ce72a7594a449b7cd94ba89b7645397a7a8df469124',
+        },
+        'pcap_1_10_4' => {
+
         },
     };
 
