@@ -459,6 +459,19 @@ if (ENABLE_LIBBPF_SUPPORT)
 
 endif()
 
+### Look for libpcap
+
+find_path(LIBPCAP_INCLUDES_FOLDER NAMES pcap.h PATHS "${LIBPCAP_CUSTOM_INSTALL_PATH}/include" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
+
+find_library(LIBPCAP_LIBRARY_PATH NAMES pcap PATHS "${LIBPCAP_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
+
+if (LIBPCAP_INCLUDES_FOLDER AND LIBPCAP_LIBRARY_PATH)
+    message(STATUS "We found pcap library ${LIBPCAP_LIBRARY_PATH}")
+
+    include_directories(${LIBPCAP_INCLUDES_FOLDER})
+else()
+    message(FATAL_ERROR "We can't find pcap library")
+endif()
 
 
 if (ENABLE_AF_XDP_SUPPORT)
@@ -870,20 +883,6 @@ if (ENABLE_MONGODB_SUPPORT)
         message(FATAL_ERROR "We can't find Mongo C library")
     endif()
 
-endif()
-
-### Look for libpcap
-
-find_path(LIBPCAP_INCLUDES_FOLDER NAMES pcap.h PATHS "${LIBPCAP_CUSTOM_INSTALL_PATH}/include" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
-
-find_library(LIBPCAP_LIBRARY_PATH NAMES pcap PATHS "${LIBPCAP_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
-
-if (LIBPCAP_INCLUDES_FOLDER AND LIBPCAP_LIBRARY_PATH) 
-    message(STATUS "We found pcap library ${LIBPCAP_LIBRARY_PATH}")
-
-    include_directories(${LIBPCAP_INCLUDES_FOLDER})
-else()
-    message(FATAL_ERROR "We can't find pcap library")    
 endif()
 
 ### Look for log4cpp
