@@ -24,7 +24,7 @@ set (FASTNETMON_VERSION_PATCH 6)
 
 set(HIREDIS_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/hiredis_0_14")
 set(LOG4CPP_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/log4cpp_1_1_4")
-# set(LIBPCAP_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/pcap_1.7.4")
+set(LIBPCAP_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/pcap_1_10_4")
 set(MONGO_C_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/mongo_c_driver_1_23_0")
 set(CAPNP_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/capnproto_0_8_0")
 set(OPENSSL_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/openssl_1_1_1q")
@@ -502,7 +502,7 @@ target_link_libraries(netflow_plugin ipfix_rfc netflow netflow_template)
 if (ENABLE_PCAP_SUPPORT) 
   # pcap plugin
   add_library(pcap_plugin STATIC pcap_plugin/pcap_collector.cpp)
-  target_link_libraries(pcap_plugin pcap)
+  target_link_libraries(pcap_plugin ${LIBPCAP_LIBRARY_PATH})
 endif()
 
 find_package(Threads)
@@ -874,17 +874,17 @@ endif()
 
 ### Look for libpcap
 
-#find_path(LIBPCAP_INCLUDES_FOLDER NAMES pcap.h PATHS "${LIBPCAP_CUSTOM_INSTALL_PATH}/include" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
+find_path(LIBPCAP_INCLUDES_FOLDER NAMES pcap.h PATHS "${LIBPCAP_CUSTOM_INSTALL_PATH}/include" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
 
-#find_library(LIBPCAP_LIBRARY_PATH NAMES pcap PATHS "${LIBPCAP_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
+find_library(LIBPCAP_LIBRARY_PATH NAMES pcap PATHS "${LIBPCAP_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
 
-#if (LIBPCAP_INCLUDES_FOLDER AND LIBPCAP_LIBRARY_PATH) 
-#    message(STATUS "We found pcap library ${LIBPCAP_LIBRARY_PATH}")
+if (LIBPCAP_INCLUDES_FOLDER AND LIBPCAP_LIBRARY_PATH) 
+    message(STATUS "We found pcap library ${LIBPCAP_LIBRARY_PATH}")
 
-#    include_directories(${LIBPCAP_INCLUDES_FOLDER})
-#else()
-#    message(FATAL_ERROR "We can't find pcap library")    
-#endif()
+    include_directories(${LIBPCAP_INCLUDES_FOLDER})
+else()
+    message(FATAL_ERROR "We can't find pcap library")    
+endif()
 
 ### Look for log4cpp
 
