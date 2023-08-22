@@ -4,6 +4,7 @@
 
 #ifdef _WIN32
 #include <winsock2.h>
+#include <in6addr.h>    // in6_addr
 #else
 
 #include <netinet/in.h>
