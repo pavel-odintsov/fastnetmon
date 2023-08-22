@@ -237,9 +237,10 @@ sub upload_binary_build_to_google_storage {
 sub exec_command {
     my $command = shift;
 
-    open my $fl, ">>", $install_log_path;
+    open my $fl, ">>", $install_log_path or warn "Cannot open $install_log_path $!";;
+    
     print {$fl} "We are calling command: $command\n\n";
- 
+
     my $output = `$command 2>&1`;
   
     print {$fl} "Command finished with code $?\n\n";
@@ -784,6 +785,31 @@ sub install_log4cpp {
     }
 
     1;
+}
+
+sub install_pcap {
+    my $folder_name = shift;
+
+    print "Install packages\n";
+
+    if ($distro_type eq 'ubuntu' or $distro_type eq 'debian') {
+        print "Update package manager cache\n";
+        exec_command("apt-get update");
+        apt_get('flex', 'bison');
+    } elsif ( $distro_type eq 'centos') {
+        print "Install packages\n";
+        yum('flex', 'bison');
+    }   
+
+    my $res = install_configure_based_software("https://www.tcpdump.org/release/libpcap-1.10.4.tar.gz",
+        "818cbe70179c73eebfe1038854665f33aac64245", "$library_install_folder/$folder_name", "--disable-usb --disable-netmap --disable-bluetooth --disable-dbus --disable-rdma "); 
+
+    unless ($res) {
+        warn "Cannot install libpcap\n";
+        return '';
+    }    
+
+    return 1;
 }
 
 sub install_cares {
