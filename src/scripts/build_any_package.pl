@@ -137,7 +137,7 @@ DOC
     my $spec_file_summary_section = <<'DOC';
 Release:           1%{?dist}
 
-Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, netmap, PCAP).
+Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, Netmap, PCAP).
 Group:             System Environment/Daemons
 License:           GPLv2
 URL:               https://fastnetmon.com
@@ -153,7 +153,6 @@ DOC
 
     my $spec_file_requires_systemd_section = <<'DOC';
 
-Requires:          libpcap
 Requires(pre):     shadow-utils
 Requires(post):    systemd
 Requires(preun):   systemd
@@ -321,7 +320,6 @@ Section: misc
 Priority: optional
 Architecture: $debian_architecture_name
 Version: $package_version
-Depends: libpcap0.8
 Description: Very fast DDoS analyzer with sFlow/Netflow/IPFIX and mirror support
  FastNetMon - A high performance DoS/DDoS attack sensor.
 DOC
