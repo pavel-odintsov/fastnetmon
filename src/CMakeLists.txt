@@ -138,6 +138,8 @@ if (DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
 
     SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${LIB_CPP_KAFKA_INSTALL_PATH}/lib")
     SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${LIB_RDKAFKA_INSTALL_PATH}/lib")
+
+    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${LIBPCAP_CUSTOM_INSTALL_PATH}/lib")
 else()
    # We do not need any RPATH alterations when we want to link with system libraries (i.e. upstream builds for Debian or RedHat family)
 endif()
