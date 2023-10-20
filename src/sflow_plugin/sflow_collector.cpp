@@ -11,6 +11,7 @@
 #include <ws2ipdef.h> // sockaddr_in6
 #include <ws2tcpip.h> // socklen_t
 #else
+#include <netdb.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -137,7 +138,7 @@ bool process_sflow_counter_sample(uint8_t* data_pointer,
                                   const sflow_packet_header_unified_accessor& sflow_header_accessor);
 process_packet_pointer sflow_process_func_ptr = NULL;
 
-void start_sflow_collector(std::string interface_for_binding, unsigned int sflow_port);
+void start_sflow_collector(const std::string& sflow_host, unsigned int sflow_port);
 
 // Initialize sflow module, we need it for allocation per module structures
 void init_sflow_module() {
@@ -202,36 +203,47 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
     sflow_collector_threads.join_all();
 }
 
-void start_sflow_collector(std::string interface_for_binding, unsigned int sflow_port) {
+void start_sflow_collector(const std::string& sflow_host, unsigned int sflow_port) {
 
-    logger << log4cpp::Priority::INFO << plugin_log_prefix << "plugin will listen on " << interface_for_binding << ":"
+    logger << log4cpp::Priority::INFO << plugin_log_prefix << "plugin will listen on " << sflow_host << ":"
            << sflow_port << " udp port";
 
-    unsigned int udp_buffer_size = 65536;
-    char udp_buffer[udp_buffer_size];
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof hints);
 
-    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    hints.ai_family   = AF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
 
-    struct sockaddr_in servaddr;
-    memset(&servaddr, 0, sizeof(servaddr));
+    // AI_PASSIVE to handle empty sflow_host as bind on all interfaces
+    // AI_NUMERICHOST to allow only numerical host
+    hints.ai_flags = AI_PASSIVE | AI_NUMERICHOST;
 
-    servaddr.sin_family = AF_INET;
+    addrinfo* servinfo = NULL;
 
-    if (interface_for_binding == "0.0.0.0") {
-        servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    } else {
-        servaddr.sin_addr.s_addr = inet_addr(interface_for_binding.c_str());
+    int getaddrinfo_result = getaddrinfo(sflow_host.c_str(), std::to_string(sflow_port).c_str(), &hints, &servinfo);
+
+    if (getaddrinfo_result != 0) {
+        logger << log4cpp::Priority::ERROR << "sFlow getaddrinfo function failed with code: " << getaddrinfo_result
+               << " please check sflow_host syntax";
+        return;
     }
 
-    servaddr.sin_port = htons(sflow_port);
+    int sockfd = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol);
 
-    int bind_result = bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
+    if (sockfd == -1) {
+        logger << log4cpp::Priority::ERROR << "Cannot create socket with error " << errno << " error message: " << strerror(errno);
+        return;
+    }
+
+    int bind_result = bind(sockfd, servinfo->ai_addr, servinfo->ai_addrlen);
 
     if (bind_result != 0) {
         logger << log4cpp::Priority::ERROR << plugin_log_prefix << "cannot bind on " << sflow_port << ":"
-               << interface_for_binding << " with errno: " << errno << " error: " << strerror(errno);
+               << sflow_host << " with errno: " << errno << " error: " << strerror(errno);
         return;
     }
+
+    freeaddrinfo(servinfo);
 
     struct sockaddr_in6 peer;
     memset(&peer, 0, sizeof(peer));
@@ -261,6 +273,9 @@ void start_sflow_collector(std::string interface_for_binding, unsigned int sflow
     }
 
     while (true) {
+        unsigned int udp_buffer_size = 65536;
+        char udp_buffer[udp_buffer_size];
+
         struct sockaddr_in client_addr;
         socklen_t address_len = sizeof(client_addr);
 
