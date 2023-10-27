@@ -31,10 +31,6 @@ if [ "$fastnetmon_action" = "ban" ]; then
     # Read data from stdin
     cat > /dev/null
     color="14425373"
-elif [ "$fastnetmon_action" = "attack_details" ]; then
-    # Read data from stdin
-    cat > /dev/null
-    color="16765184"
 elif [ "$fastnetmon_action" = "unban" ]; then
     color="3857437"
 else

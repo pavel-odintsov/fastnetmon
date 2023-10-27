@@ -21,12 +21,12 @@
 # Redhat: yum install bind-utils
 
 #
-# For ban and attack_details actions we will receive attack details to stdin
+# For ban action we will receive attack details to stdin
 # Please do not remove the following command because
 # FastNetMon will crash in this case (it expect read of data from script side).
 #
 
-if [ "$4" = "ban" ] || [ "$4" = "attack_details" ]; then
+if [ "$4" = "ban" ]; then
     fastnetmon_output=$(</dev/stdin)
 fi
 
@@ -51,8 +51,6 @@ slack_action=${4}
 function slackalert () {
     if [ ! -z $slack_url  ] && [ "$slack_action" = "ban" ]; then
         local slack_color="danger"
-    elif [ ! -z $slack_url  ] && [ "$slack_action" = "attack_details" ]; then
-        local slack_color="warning"
     elif [ ! -z $slack_url  ] && [ "$slack_action" = "unban" ]; then
         local slack_color="good"
     else
@@ -77,13 +75,5 @@ if [ "$4" = "ban" ]; then
     # You can add ban code here!
     # iptables -A INPUT -s $1 -j DROP
     # iptables -A INPUT -d $1 -j DROP
-    exit 0
-fi
-
-if [ "$4" = "attack_details" ]; then
-    # Email Alert:
-    echo "${fastnetmon_output}" | mail -s "FastNetMon Analysis: IP $1 blocked because of $2 attack with power $3 pps" $email_notify;
-    # Slack Alert:
-    slackalert
     exit 0
 fi

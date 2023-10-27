@@ -53,7 +53,7 @@ if action == "unban":
  
     sys.exit(0)
 
-elif action == "ban" or action == "attack_details":
+elif action == "ban":
     
     r = axapi_action(mitigator_base_url+ddos_dst_zone_path, method='GET', signature=signature)
     try: 

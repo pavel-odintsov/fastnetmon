@@ -11,7 +11,7 @@
 
 email_notify="please_fix_this_email@domain.com"
 
-# For ban and attack_details actions we will receive attack details to stdin
+# For ban action we will receive attack details to stdin
 # Please do not remove "cat" command because
 # FastNetMon will crash in this case as it expects read of data from script side
 #
