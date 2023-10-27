@@ -53,7 +53,7 @@ def mail(subject, body):
 
 
 if action == "unban":
-    subject = "Fastnetmon Guard: IP %(client_ip_as_string)s unblocked because %(data_direction)s attack with power %(pps_as_string)d pps" % {
+    subject = "FastNetMon Community: IP %(client_ip_as_string)s unblocked because %(data_direction)s attack with power %(pps_as_string)d pps" % {
         'client_ip_as_string': client_ip_as_string,
         'data_direction': data_direction,
         'pps_as_string' : pps_as_string,
@@ -63,7 +63,7 @@ if action == "unban":
     mail(subject, "unban")
     sys.exit(0)
 elif action == "ban":
-    subject = "Fastnetmon Guard: IP %(client_ip_as_string)s blocked because %(data_direction)s attack with power %(pps_as_string)d pps" % {
+    subject = "FastNetMon Community: IP %(client_ip_as_string)s blocked because %(data_direction)s attack with power %(pps_as_string)d pps" % {
         'client_ip_as_string': client_ip_as_string,
         'data_direction': data_direction,
         'pps_as_string' : pps_as_string,
