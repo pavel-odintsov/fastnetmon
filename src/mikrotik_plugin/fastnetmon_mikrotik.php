@@ -65,7 +65,7 @@ $API = new RouterosAPI();
 if ( $API->connect( $cfg[ ip_mikrotik ], $cfg[ api_user ], $cfg[ api_pass ] ) ) {
     //add Blocking by route blackhole
     if ( $ACTION_ATTACK == "ban" ) {
-        $comment_rule = 'FastNetMon Guard: IP ' . $IP_ATTACK . ' blocked because ' . $DIRECTION_ATTACK . ' attack with power ' . $POWER_ATTACK . ' pps | at '.$fecha_now;
+        $comment_rule = 'FastNetMon Community: IP ' . $IP_ATTACK . ' blocked because ' . $DIRECTION_ATTACK . ' attack with power ' . $POWER_ATTACK . ' pps | at '.$fecha_now;
         $API->write( '/ip/route/add', false );
         $API->write( '=dst-address=' . $IP_ATTACK, false );
         $API->write( '=type=blackhole', false );
