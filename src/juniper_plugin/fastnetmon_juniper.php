@@ -61,7 +61,7 @@ $conn = new Device($cfg);
 switch($ACTION_ATTACK){
     case 'ban':
         try{
-            $desc = 'FastNetMon Guard: IP '. $IP_ATTACK .' unblocked because '. $DIRECTION_ATTACK .' attack with power '. $POWER_ATTACK .' pps | at '.$fecha_now;
+            $desc = 'FastNetMon Community: IP '. $IP_ATTACK .' unblocked because '. $DIRECTION_ATTACK .' attack with power '. $POWER_ATTACK .' pps | at '.$fecha_now;
             $conn->connect(); //Try conect or catch NetconfException (Wrong username, Timeout, Device not found, etc)
             $locked = $conn->lock_config(); //Equivalent of "configure exclusive" on Juniper CLI
             if($locked){
