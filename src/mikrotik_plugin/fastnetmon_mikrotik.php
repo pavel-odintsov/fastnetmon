@@ -79,7 +79,7 @@ if ( $API->connect( $cfg[ ip_mikrotik ], $cfg[ api_user ], $cfg[ api_pass ] ) ) 
     }
     if ( $ACTION_ATTACK == "unban" ) {
         // remove the blackhole rule 
-        $comment_rule = 'FastNetMon Guard: IP ' . $IP_ATTACK . ' remove from blacklist ';
+        $comment_rule = 'FastNetMon Community: IP ' . $IP_ATTACK . ' remove from blacklist ';
         $API->write( '/ip/route/print', false );
         $API->write( '?dst-address=' . $IP_ATTACK . "/32" );
         $ID_ARRAY = $API->read();

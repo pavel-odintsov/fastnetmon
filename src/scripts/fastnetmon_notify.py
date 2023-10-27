@@ -75,7 +75,7 @@ elif action == "ban":
 
     sys.exit(0)
 elif action == "attack_details":
-    subject = "Fastnetmon Guard: IP %(client_ip_as_string)s blocked because %(data_direction)s attack with power %(pps_as_string)d pps" % {
+    subject = "Fastnetmon Community: IP %(client_ip_as_string)s blocked because %(data_direction)s attack with power %(pps_as_string)d pps" % {
         'client_ip_as_string': client_ip_as_string,
         'data_direction': data_direction,
         'pps_as_string' : pps_as_string,

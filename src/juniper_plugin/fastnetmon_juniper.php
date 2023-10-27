@@ -83,7 +83,7 @@ switch($ACTION_ATTACK){
         break;
     case 'unban':
         try{
-            $desc = 'FastNetMon Guard: IP '. $IP_ATTACK .' remove from blacklist.';
+            $desc = 'FastNetMon Community: IP '. $IP_ATTACK .' remove from blacklist.';
             $conn->connect(); //Try conect or catch NetconfException (Wrong username, Timeout, Device not found, etc)
             $locked = $conn->lock_config(); //Equivalent of "configure exclusive" on Juniper CLI
             if($locked){
