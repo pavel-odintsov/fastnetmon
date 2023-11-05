@@ -1124,7 +1124,7 @@ bool process_ipfix_packet(const uint8_t* packet,
     const ipfix_header_t* ipfix_header = (const ipfix_header_t*)packet;
 
     if (udp_packet_length < sizeof(ipfix_header_t)) {
-        logger << log4cpp::Priority::ERROR << "Packet is too short to accomodate IPFIX header " << udp_packet_length
+        logger << log4cpp::Priority::ERROR << "Packet is too short to accommodate IPFIX header " << udp_packet_length
                << " bytes which requires at least " << sizeof(ipfix_header_t) << " bytes";
         return false;
     }
