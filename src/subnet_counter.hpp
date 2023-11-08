@@ -92,6 +92,12 @@ class subnet_counter_t {
     traffic_counter_element_t fragmented;
     traffic_counter_element_t tcp_syn;
 
+    // // rafael decoders p0, p53, p123, p1900
+    traffic_counter_element_t decoder_p0;
+    traffic_counter_element_t decoder_p53;
+    traffic_counter_element_t decoder_p123;
+    traffic_counter_element_t decoder_p1900;
+
     // Total number of dropped traffic
     traffic_counter_element_t dropped;
 
@@ -105,6 +111,11 @@ class subnet_counter_t {
 
         this->fragmented.update_if_larger(another_value.fragmented);
         this->tcp_syn.update_if_larger(another_value.tcp_syn);
+
+        this->decoder_p0.update_if_larger(another_value.decoder_p0);
+        this->decoder_p53.update_if_larger(another_value.decoder_p53);
+        this->decoder_p123.update_if_larger(another_value.decoder_p123);
+        this->decoder_p1900.update_if_larger(another_value.decoder_p1900);
 
         this->dropped.update_if_larger(another_value.dropped);
 
@@ -140,6 +151,11 @@ class subnet_counter_t {
         fragmented.zeroify();
         tcp_syn.zeroify();
 
+        decoder_p0.zeroify();
+        decoder_p123.zeroify();
+        decoder_p1900.zeroify();
+        decoder_p53.zeroify();
+
         in_flows  = 0;
         out_flows = 0;
     }
@@ -157,5 +173,10 @@ class subnet_counter_t {
 
         ar& BOOST_SERIALIZATION_NVP(in_flows);
         ar& BOOST_SERIALIZATION_NVP(out_flows);
+
+        ar& BOOST_SERIALIZATION_NVP(decoder_p0);
+        ar& BOOST_SERIALIZATION_NVP(decoder_p53);
+        ar& BOOST_SERIALIZATION_NVP(decoder_p123);
+        ar& BOOST_SERIALIZATION_NVP(decoder_p1900);
     }
 };

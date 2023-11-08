@@ -5,6 +5,7 @@
 #include "iana_ip_protocols.hpp"
 
 extern time_t current_inaccurate_time;
+extern log4cpp::Category& logger;
 
 // This function increments all our accumulators according to data from packet
 void increment_incoming_counters(subnet_counter_t& current_element,
@@ -40,9 +41,55 @@ void increment_incoming_counters(subnet_counter_t& current_element,
             current_element.tcp_syn.in_packets += sampled_number_of_packets;
             current_element.tcp_syn.in_bytes += sampled_number_of_bytes;
         }
+
+        // // rafael decoders
+        if(current_packet.source_port == 0 || current_packet.destination_port == 0)
+        {
+            current_element.decoder_p0.in_packets += sampled_number_of_packets;
+            current_element.decoder_p0.in_bytes += sampled_number_of_bytes;
+        }
+        if(current_packet.source_port == 53 || current_packet.destination_port == 53)
+        {
+            current_element.decoder_p53.in_packets += sampled_number_of_packets;
+            current_element.decoder_p53.in_bytes += sampled_number_of_bytes;
+        }
+        if(current_packet.source_port == 123 || current_packet.destination_port == 123)
+        {
+            current_element.decoder_p123.in_packets += sampled_number_of_packets;
+            current_element.decoder_p123.in_bytes += sampled_number_of_bytes;
+        }
+        if(current_packet.source_port == 1900 || current_packet.destination_port == 1900)
+        {
+            current_element.decoder_p1900.in_packets += sampled_number_of_packets;
+            current_element.decoder_p1900.in_bytes += sampled_number_of_bytes;
+        }
+
     } else if (current_packet.protocol == IPPROTO_UDP) {
         current_element.udp.in_packets += sampled_number_of_packets;
         current_element.udp.in_bytes += sampled_number_of_bytes;
+
+        // // rafael decoders
+        if(current_packet.source_port == 0 || current_packet.destination_port == 0)
+        {
+            current_element.decoder_p0.in_packets += sampled_number_of_packets;
+            current_element.decoder_p0.in_bytes += sampled_number_of_bytes;
+        }
+        if(current_packet.source_port == 53 || current_packet.destination_port == 53)
+        {
+            current_element.decoder_p53.in_packets += sampled_number_of_packets;
+            current_element.decoder_p53.in_bytes += sampled_number_of_bytes;
+        }
+        if(current_packet.source_port == 123 || current_packet.destination_port == 123)
+        {
+            current_element.decoder_p123.in_packets += sampled_number_of_packets;
+            current_element.decoder_p123.in_bytes += sampled_number_of_bytes;
+        }
+        if(current_packet.source_port == 1900 || current_packet.destination_port == 1900)
+        {
+            current_element.decoder_p1900.in_packets += sampled_number_of_packets;
+            current_element.decoder_p1900.in_bytes += sampled_number_of_bytes;
+        }
+
     } else {
         // TBD
     }
@@ -97,9 +144,56 @@ void increment_outgoing_counters(subnet_counter_t& current_element,
             current_element.tcp_syn.out_packets += sampled_number_of_packets;
             current_element.tcp_syn.out_bytes += sampled_number_of_bytes;
         }
+
+        // // rafael decoders
+        if(current_packet.source_port == 0 || current_packet.destination_port == 0)
+        {
+            current_element.decoder_p0.out_packets += sampled_number_of_packets;
+            current_element.decoder_p0.out_bytes += sampled_number_of_bytes;
+        }
+        if(current_packet.source_port == 53 || current_packet.destination_port == 53)
+        {
+            current_element.decoder_p53.out_packets += sampled_number_of_packets;
+            current_element.decoder_p53.out_bytes += sampled_number_of_bytes;
+        }
+        if(current_packet.source_port == 123 || current_packet.destination_port == 123)
+        {
+            current_element.decoder_p123.out_packets += sampled_number_of_packets;
+            current_element.decoder_p123.out_bytes += sampled_number_of_bytes;
+        }
+        if(current_packet.source_port == 1900 || current_packet.destination_port == 1900)
+        {
+            current_element.decoder_p1900.out_packets += sampled_number_of_packets;
+            current_element.decoder_p1900.out_bytes += sampled_number_of_bytes;
+        }
+
     } else if (current_packet.protocol == IPPROTO_UDP) {
         current_element.udp.out_packets += sampled_number_of_packets;
         current_element.udp.out_bytes += sampled_number_of_bytes;
+
+        // rafael decoders
+        if(current_packet.source_port == 0 || current_packet.destination_port == 0)
+        {
+            current_element.decoder_p0.out_packets += sampled_number_of_packets;
+            current_element.decoder_p0.out_bytes += sampled_number_of_bytes;
+        }
+        if(current_packet.source_port == 53 || current_packet.destination_port == 53)
+        {
+            //logger << log4cpp::Priority::ERROR << "Dentro da porta 53";
+            current_element.decoder_p53.out_packets += sampled_number_of_packets;
+            current_element.decoder_p53.out_bytes += sampled_number_of_bytes;
+        }
+        if(current_packet.source_port == 123 || current_packet.destination_port == 123)
+        {
+            current_element.decoder_p123.out_packets += sampled_number_of_packets;
+            current_element.decoder_p123.out_bytes += sampled_number_of_bytes;
+        }
+        if(current_packet.source_port == 1900 || current_packet.destination_port == 1900)
+        {
+            current_element.decoder_p1900.out_packets += sampled_number_of_packets;
+            current_element.decoder_p1900.out_bytes += sampled_number_of_bytes;
+        }
+
     } else {
     }
 
@@ -133,6 +227,11 @@ void build_speed_counters_from_packet_counters(subnet_counter_t& new_speed_eleme
     new_speed_element.fragmented.calculate_speed(data_counters.fragmented, speed_calc_period);
     new_speed_element.tcp_syn.calculate_speed(data_counters.tcp_syn, speed_calc_period);
 
+    new_speed_element.decoder_p0.calculate_speed(data_counters.decoder_p0, speed_calc_period);
+    new_speed_element.decoder_p53.calculate_speed(data_counters.decoder_p53, speed_calc_period);
+    new_speed_element.decoder_p123.calculate_speed(data_counters.decoder_p123, speed_calc_period);
+    new_speed_element.decoder_p1900.calculate_speed(data_counters.decoder_p1900, speed_calc_period);
+
     new_speed_element.tcp.calculate_speed(data_counters.tcp, speed_calc_period);
     new_speed_element.udp.calculate_speed(data_counters.udp, speed_calc_period);
     new_speed_element.icmp.calculate_speed(data_counters.icmp, speed_calc_period);
@@ -148,6 +247,11 @@ void build_average_speed_counters_from_speed_counters(subnet_counter_t& current_
 
     current_average_speed_element.fragmented.calulate_exponential_moving_average_speed(new_speed_element.fragmented, exp_value);
     current_average_speed_element.tcp_syn.calulate_exponential_moving_average_speed(new_speed_element.tcp_syn, exp_value);
+    
+    current_average_speed_element.decoder_p0.calulate_exponential_moving_average_speed(new_speed_element.decoder_p0, exp_value);
+    current_average_speed_element.decoder_p53.calulate_exponential_moving_average_speed(new_speed_element.decoder_p53, exp_value);
+    current_average_speed_element.decoder_p123.calulate_exponential_moving_average_speed(new_speed_element.decoder_p123, exp_value);
+    current_average_speed_element.decoder_p1900.calulate_exponential_moving_average_speed(new_speed_element.decoder_p1900, exp_value);
 
     current_average_speed_element.tcp.calulate_exponential_moving_average_speed(new_speed_element.tcp, exp_value);
     current_average_speed_element.udp.calulate_exponential_moving_average_speed(new_speed_element.udp, exp_value);

@@ -150,6 +150,10 @@ void fill_per_protocol_countres_for_influxdb(const subnet_counter_t& current_spe
     add_counter_to_influxdb(plain_total_counters_map, current_speed_element.fragmented, "fragmented");
     add_counter_to_influxdb(plain_total_counters_map, current_speed_element.tcp, "tcp");
     add_counter_to_influxdb(plain_total_counters_map, current_speed_element.tcp_syn, "tcp_syn");
+    add_counter_to_influxdb(plain_total_counters_map, current_speed_element.decoder_p0, "decoder_p0");
+    add_counter_to_influxdb(plain_total_counters_map, current_speed_element.decoder_p123, "decoder_p123");
+    add_counter_to_influxdb(plain_total_counters_map, current_speed_element.decoder_p1900, "decoder_p1900");
+    add_counter_to_influxdb(plain_total_counters_map, current_speed_element.decoder_p53, "decoder_p53");
     add_counter_to_influxdb(plain_total_counters_map, current_speed_element.udp, "udp");
     add_counter_to_influxdb(plain_total_counters_map, current_speed_element.icmp, "icmp");
 }
@@ -160,7 +164,7 @@ void fill_fixed_counters_for_influxdb(const subnet_counter_t& counter,
                                       bool populate_flow) {
     fill_main_counters_for_influxdb(counter, plain_total_counters_map, populate_flow);
 
-    bool influxdb_per_protocol_counters = false;
+    bool influxdb_per_protocol_counters = true;
 
     if (influxdb_per_protocol_counters) {
         fill_per_protocol_countres_for_influxdb(counter, plain_total_counters_map);

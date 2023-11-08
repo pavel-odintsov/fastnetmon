@@ -76,6 +76,19 @@ enum class attack_detection_threshold_type_t {
 
     ip_fragments_packets_per_second,
     ip_fragments_bytes_per_second,
+
+    port0_packets_per_second,
+    port0_bytes_per_second,
+
+    port53_packets_per_second,
+    port53_bytes_per_second,
+
+    port123_packets_per_second,
+    port123_bytes_per_second,
+
+    port1900_packets_per_second,
+    port1900_bytes_per_second
+
 };
 
 // Types of metrics as in Prometheus:
@@ -356,7 +369,11 @@ class ban_settings_t {
       enable_ban_for_udp_pps(false), enable_ban_for_udp_bandwidth(false), enable_ban_for_icmp_pps(false),
       enable_ban_for_icmp_bandwidth(false), ban_threshold_tcp_mbps(0), ban_threshold_tcp_pps(0),
       ban_threshold_udp_mbps(0), ban_threshold_udp_pps(0), ban_threshold_icmp_mbps(0), ban_threshold_icmp_pps(0),
-      ban_threshold_mbps(0), ban_threshold_flows(0), ban_threshold_pps(0) {
+      ban_threshold_mbps(0), ban_threshold_flows(0), ban_threshold_pps(0),
+      enable_ban_for_p0_pps(false), enable_ban_for_p0_bandwidth(false), ban_threshold_p0_mbps(0), ban_threshold_p0_pps(0),
+      enable_ban_for_p53_pps(false), enable_ban_for_p53_bandwidth(false), ban_threshold_p53_mbps(0), ban_threshold_p53_pps(0),
+      enable_ban_for_p123_pps(false), enable_ban_for_p123_bandwidth(false), ban_threshold_p123_mbps(0), ban_threshold_p123_pps(0),
+      enable_ban_for_p1900_pps(false), enable_ban_for_p1900_bandwidth(false), ban_threshold_p1900_mbps(0), ban_threshold_p1900_pps(0) {
     }
     bool enable_ban;
     bool enable_ban_ipv6;
@@ -386,6 +403,27 @@ class ban_settings_t {
     unsigned int ban_threshold_mbps;
     unsigned int ban_threshold_flows;
     unsigned int ban_threshold_pps;
+
+    // rafael decoders 
+    bool enable_ban_for_p0_pps;
+    bool enable_ban_for_p0_bandwidth;
+    unsigned int ban_threshold_p0_mbps;
+    unsigned int ban_threshold_p0_pps;
+
+    bool enable_ban_for_p53_pps;
+    bool enable_ban_for_p53_bandwidth;
+    unsigned int ban_threshold_p53_mbps;
+    unsigned int ban_threshold_p53_pps;
+
+    bool enable_ban_for_p123_pps;
+    bool enable_ban_for_p123_bandwidth;
+    unsigned int ban_threshold_p123_mbps;
+    unsigned int ban_threshold_p123_pps;
+
+    bool enable_ban_for_p1900_pps;
+    bool enable_ban_for_p1900_bandwidth;
+    unsigned int ban_threshold_p1900_mbps;
+    unsigned int ban_threshold_p1900_pps;
 };
 
 

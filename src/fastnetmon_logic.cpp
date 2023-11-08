@@ -316,6 +316,80 @@ std::string print_ban_thresholds(ban_settings_t current_ban_settings) {
     }
 
     output_buffer << "\n";
+
+    // rafael decoders
+    output_buffer << "P0 Mbps per second: ";
+    if (current_ban_settings.enable_ban_for_p0_bandwidth) {
+        output_buffer << current_ban_settings.ban_threshold_p0_mbps;
+    } else {
+        output_buffer << "disabled";
+    }
+
+    output_buffer << "\n";
+
+     output_buffer << "P0 Packets per second: ";
+    if (current_ban_settings.enable_ban_for_p0_pps) {
+        output_buffer << current_ban_settings.ban_threshold_p0_pps;
+    } else {
+        output_buffer << "disabled";
+    }
+
+    output_buffer << "\n";
+
+    output_buffer << "P53 Mbps per second: ";
+    if (current_ban_settings.enable_ban_for_p53_bandwidth) {
+        output_buffer << current_ban_settings.ban_threshold_p53_mbps;
+    } else {
+        output_buffer << "disabled";
+    }
+
+    output_buffer << "\n";
+
+     output_buffer << "P53 Packets per second: ";
+    if (current_ban_settings.enable_ban_for_p53_pps) {
+        output_buffer << current_ban_settings.ban_threshold_p53_pps;
+    } else {
+        output_buffer << "disabled";
+    }
+
+    output_buffer << "\n";
+
+    output_buffer << "P123 Mbps per second: ";
+    if (current_ban_settings.enable_ban_for_p123_bandwidth) {
+        output_buffer << current_ban_settings.ban_threshold_p123_mbps;
+    } else {
+        output_buffer << "disabled";
+    }
+
+    output_buffer << "\n";
+
+     output_buffer << "P123 Packets per second: ";
+    if (current_ban_settings.enable_ban_for_p123_pps) {
+        output_buffer << current_ban_settings.ban_threshold_p123_pps;
+    } else {
+        output_buffer << "disabled";
+    }
+
+    output_buffer << "\n";
+
+    output_buffer << "P1900 Mbps per second: ";
+    if (current_ban_settings.enable_ban_for_p1900_bandwidth) {
+        output_buffer << current_ban_settings.ban_threshold_p1900_mbps;
+    } else {
+        output_buffer << "disabled";
+    }
+
+    output_buffer << "\n";
+
+     output_buffer << "P1900 Packets per second: ";
+    if (current_ban_settings.enable_ban_for_p1900_pps) {
+        output_buffer << current_ban_settings.ban_threshold_p1900_pps;
+    } else {
+        output_buffer << "disabled";
+    }
+
+    output_buffer << "\n";
+
     return output_buffer.str();
 }
 
@@ -473,6 +547,80 @@ ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::str
         ban_settings.ban_threshold_flows = convert_string_to_integer(configuration_map[prefix + "threshold_flows"]);
     }
 
+    // rafael decoders
+    if (configuration_map.count(prefix + "ban_for_p0_pps") != 0) {
+        ban_settings.enable_ban_for_p0_pps = configuration_map[prefix + "ban_for_p0_pps"] == "on";
+    }
+
+    if (configuration_map.count(prefix + "ban_for_p0_bandwidth") != 0) {
+        ban_settings.enable_ban_for_p0_bandwidth = configuration_map[prefix + "ban_for_p0_bandwidth"] == "on";
+    }
+
+    if (configuration_map.count(prefix + "threshold_p0_pps") != 0) {
+            ban_settings.ban_threshold_p0_pps =
+                convert_string_to_integer(configuration_map[prefix + "threshold_p0_pps"]);
+    }
+
+    if (configuration_map.count(prefix + "threshold_p0_mbps") != 0) {
+            ban_settings.ban_threshold_p0_mbps =
+                convert_string_to_integer(configuration_map[prefix + "threshold_p0_mbps"]);
+    }
+    
+    if (configuration_map.count(prefix + "ban_for_p53_pps") != 0) {
+        ban_settings.enable_ban_for_p53_pps = configuration_map[prefix + "ban_for_p53_pps"] == "on";
+    }
+
+    if (configuration_map.count(prefix + "ban_for_p53_bandwidth") != 0) {
+        ban_settings.enable_ban_for_p53_bandwidth = configuration_map[prefix + "ban_for_p53_bandwidth"] == "on";
+    }
+
+    if (configuration_map.count(prefix + "threshold_p53_pps") != 0) {
+            ban_settings.ban_threshold_p53_pps =
+                convert_string_to_integer(configuration_map[prefix + "threshold_p53_pps"]);
+    }
+
+    if (configuration_map.count(prefix + "threshold_p53_mbps") != 0) {
+            ban_settings.ban_threshold_p53_mbps =
+                convert_string_to_integer(configuration_map[prefix + "threshold_p53_mbps"]);
+    }
+
+    if (configuration_map.count(prefix + "ban_for_p123_pps") != 0) {
+        ban_settings.enable_ban_for_p123_pps = configuration_map[prefix + "ban_for_p123_pps"] == "on";
+    }
+
+    if (configuration_map.count(prefix + "ban_for_p123_bandwidth") != 0) {
+        ban_settings.enable_ban_for_p123_bandwidth = configuration_map[prefix + "ban_for_p123_bandwidth"] == "on";
+    }
+
+    if (configuration_map.count(prefix + "threshold_p123_pps") != 0) {
+            ban_settings.ban_threshold_p123_pps =
+                convert_string_to_integer(configuration_map[prefix + "threshold_p123_pps"]);
+    }
+
+    if (configuration_map.count(prefix + "threshold_p123_mbps") != 0) {
+            ban_settings.ban_threshold_p123_mbps =
+                convert_string_to_integer(configuration_map[prefix + "threshold_p123_mbps"]);
+    }
+
+    if (configuration_map.count(prefix + "ban_for_p1900_pps") != 0) {
+        ban_settings.enable_ban_for_p1900_pps = configuration_map[prefix + "ban_for_p1900_pps"] == "on";
+    }
+
+    if (configuration_map.count(prefix + "threshold_p1900_pps") != 0) {
+            ban_settings.ban_threshold_p1900_pps =
+                convert_string_to_integer(configuration_map[prefix + "threshold_p1900_pps"]);
+    }
+
+    if (configuration_map.count(prefix + "threshold_p1900_pps") != 0) {
+            ban_settings.ban_threshold_p1900_pps =
+                convert_string_to_integer(configuration_map[prefix + "threshold_p1900_pps"]);
+    }
+
+    if (configuration_map.count(prefix + "threshold_p1900_mbps") != 0) {
+            ban_settings.ban_threshold_p1900_mbps =
+                convert_string_to_integer(configuration_map[prefix + "threshold_p1900_mbps"]);
+    }
+
     return ban_settings;
 }
 
@@ -583,6 +731,64 @@ bool we_should_ban_this_entity(const subnet_counter_t& average_speed_element,
         attack_detection_source = attack_detection_threshold_type_t::icmp_bytes_per_second;
         return true;
     }
+
+    // rafael decoders
+    if (current_ban_settings.enable_ban_for_p0_pps &&
+        exceed_pps_speed(average_speed_element.decoder_p0.in_packets, average_speed_element.decoder_p0.out_packets,
+                         current_ban_settings.ban_threshold_p0_pps)) {
+        attack_detection_source = attack_detection_threshold_type_t::port0_packets_per_second;
+        return true;
+    }
+
+    if (current_ban_settings.enable_ban_for_p0_bandwidth &&
+        exceed_mbps_speed(average_speed_element.decoder_p0.in_bytes, average_speed_element.decoder_p0.out_bytes,
+                          current_ban_settings.ban_threshold_p0_mbps)) {
+        attack_detection_source = attack_detection_threshold_type_t::port0_bytes_per_second;
+        return true;
+    }
+
+    if (current_ban_settings.enable_ban_for_p53_pps &&
+        exceed_pps_speed(average_speed_element.decoder_p53.in_packets, average_speed_element.decoder_p53.out_packets,
+                         current_ban_settings.ban_threshold_p53_pps)) {
+        attack_detection_source = attack_detection_threshold_type_t::port53_packets_per_second;
+        return true;
+    }
+
+    if (current_ban_settings.enable_ban_for_p53_bandwidth &&
+        exceed_mbps_speed(average_speed_element.decoder_p53.in_bytes, average_speed_element.decoder_p53.out_bytes,
+                          current_ban_settings.ban_threshold_p53_mbps)) {
+        attack_detection_source = attack_detection_threshold_type_t::port53_bytes_per_second;
+        return true;
+    }
+
+    if (current_ban_settings.enable_ban_for_p123_pps &&
+        exceed_pps_speed(average_speed_element.decoder_p123.in_packets, average_speed_element.decoder_p123.out_packets,
+                         current_ban_settings.ban_threshold_p123_pps)) {
+        attack_detection_source = attack_detection_threshold_type_t::port123_packets_per_second;
+        return true;
+    }
+
+    if (current_ban_settings.enable_ban_for_p123_bandwidth &&
+        exceed_mbps_speed(average_speed_element.decoder_p123.in_bytes, average_speed_element.decoder_p123.out_bytes,
+                          current_ban_settings.ban_threshold_p123_mbps)) {
+        attack_detection_source = attack_detection_threshold_type_t::port123_bytes_per_second;
+        return true;
+    }
+
+    if (current_ban_settings.enable_ban_for_p1900_pps &&
+        exceed_pps_speed(average_speed_element.decoder_p1900.in_packets, average_speed_element.decoder_p1900.out_packets,
+                         current_ban_settings.ban_threshold_p1900_pps)) {
+        attack_detection_source = attack_detection_threshold_type_t::port1900_packets_per_second;
+        return true;
+    }
+
+    if (current_ban_settings.enable_ban_for_p1900_bandwidth &&
+        exceed_mbps_speed(average_speed_element.decoder_p1900.in_bytes, average_speed_element.decoder_p1900.out_bytes,
+                          current_ban_settings.ban_threshold_p1900_mbps)) {
+        attack_detection_source = attack_detection_threshold_type_t::port1900_bytes_per_second;
+        return true;
+    }
+
 
     return false;
 }
@@ -953,6 +1159,42 @@ bool serialize_traffic_counters_to_json(const subnet_counter_t& traffic_counters
 
         json_details["incoming_syn_tcp_pps"] = traffic_counters.tcp_syn.in_packets;
         json_details["outgoing_syn_tcp_pps"] = traffic_counters.tcp_syn.out_packets;
+
+        json_details["incoming_decoder_p0_traffic"]      = traffic_counters.decoder_p0.in_bytes;
+        json_details["incoming_decoder0_traffic_bits"] = traffic_counters.decoder_p0.in_bytes * 8;
+
+        json_details["outgoing_decoder_p0_traffic"]      = traffic_counters.decoder_p0.out_bytes;
+        json_details["outgoing_decoder_p0_traffic_bits"] = traffic_counters.decoder_p0.out_bytes * 8;
+
+        json_details["incoming_decoder_p0_pps"] = traffic_counters.decoder_p0.in_packets;
+        json_details["outgoing_decoder_p0_pps"] = traffic_counters.decoder_p0.out_packets;
+
+        json_details["incoming_decoder_p53_traffic"]      = traffic_counters.decoder_p53.in_bytes;
+        json_details["incoming_decoder_p53_traffic_bits"] = traffic_counters.decoder_p53.in_bytes * 8;
+
+        json_details["outgoing_decoder_p53_traffic"]      = traffic_counters.decoder_p53.out_bytes;
+        json_details["outgoing_decoder_p53_traffic_bits"] = traffic_counters.decoder_p53.out_bytes * 8;
+
+        json_details["incoming_decoder_p53_pps"] = traffic_counters.decoder_p53.in_packets;
+        json_details["outgoing_decoder_p53_pps"] = traffic_counters.decoder_p53.out_packets;
+
+        json_details["incoming_decoder_p123_traffic"]      = traffic_counters.decoder_p123.in_bytes;
+        json_details["incoming_decoder_p123_traffic_bits"] = traffic_counters.decoder_p123.in_bytes * 8;
+
+        json_details["outgoing_decoder_p123_traffic"]      = traffic_counters.decoder_p123.out_bytes;
+        json_details["outgoing_decoder_p123_traffic_bits"] = traffic_counters.decoder_p123.out_bytes * 8;
+
+        json_details["incoming_decoder_p123_pps"] = traffic_counters.decoder_p123.in_packets;
+        json_details["outgoing_decoder_p123_pps"] = traffic_counters.decoder_p123.out_packets;
+
+        json_details["incoming_decoder_p1900_traffic"]      = traffic_counters.decoder_p1900.in_bytes;
+        json_details["incoming_decoder_p1900_traffic_bits"] = traffic_counters.decoder_p1900.in_bytes * 8;
+
+        json_details["outgoing_decoder_p1900_traffic"]      = traffic_counters.decoder_p1900.out_bytes;
+        json_details["outgoing_decoder_p1900_traffic_bits"] = traffic_counters.decoder_p1900.out_bytes * 8;
+
+        json_details["incoming_decoder_p1900_pps"] = traffic_counters.decoder_p1900.in_packets;
+        json_details["outgoing_decoder_p1900_pps"] = traffic_counters.decoder_p1900.out_packets;
 
         json_details["incoming_udp_traffic"]      = traffic_counters.udp.in_bytes;
         json_details["incoming_udp_traffic_bits"] = traffic_counters.udp.in_bytes * 8;
@@ -1558,6 +1800,22 @@ std::string get_human_readable_threshold_type(attack_detection_threshold_type_t 
         return "udp bytes per second";
     } else if (detecttion_type == attack_detection_threshold_type_t::icmp_bytes_per_second) {
         return "icmp bytes per second";
+    } else if (detecttion_type == attack_detection_threshold_type_t::port0_packets_per_second) {
+        return "port 0 packets per second";
+    } else if (detecttion_type == attack_detection_threshold_type_t::port0_bytes_per_second) {
+        return "port 0 bytes per second";
+    } else if (detecttion_type == attack_detection_threshold_type_t::port53_packets_per_second) {
+        return "port 53 packets per second";
+    } else if (detecttion_type == attack_detection_threshold_type_t::port53_bytes_per_second) {
+        return "port 53 bytes per second";
+    } else if (detecttion_type == attack_detection_threshold_type_t::port123_packets_per_second) {
+        return "port 123 packets per second";
+    } else if (detecttion_type == attack_detection_threshold_type_t::port123_bytes_per_second) {
+        return "port 123 bytes per second";
+    } else if (detecttion_type == attack_detection_threshold_type_t::port1900_packets_per_second) {
+        return "port 1900 packets per second";
+    } else if (detecttion_type == attack_detection_threshold_type_t::port1900_bytes_per_second) {
+        return "port 1900 bytes per second";
     }
 
     return "unknown";

@@ -271,6 +271,25 @@ void init_global_ban_settings() {
 
     // Ban enable/disable flag
     global_ban_settings.enable_ban = true;
+
+    // rafael decoders
+    global_ban_settings.enable_ban_for_p0_pps=false;
+    global_ban_settings.enable_ban_for_p0_bandwidth=false;
+    global_ban_settings.enable_ban_for_p53_pps=false;
+    global_ban_settings.enable_ban_for_p53_bandwidth=false;
+    global_ban_settings.enable_ban_for_p123_pps=false;
+    global_ban_settings.enable_ban_for_p123_bandwidth=false;
+    global_ban_settings.enable_ban_for_p1900_pps=false;
+    global_ban_settings.enable_ban_for_p1900_bandwidth=false;
+
+    global_ban_settings.ban_threshold_p0_mbps=1000;
+    global_ban_settings.ban_threshold_p0_pps=20000;
+    global_ban_settings.ban_threshold_p53_mbps=1000;
+    global_ban_settings.ban_threshold_p53_pps=20000;
+    global_ban_settings.ban_threshold_p123_mbps=1000;
+    global_ban_settings.ban_threshold_p123_pps=20000;
+    global_ban_settings.ban_threshold_p1900_mbps=1000;
+    global_ban_settings.ban_threshold_p1900_pps=20000;
 }
 
 bool enable_connection_tracking = true;
