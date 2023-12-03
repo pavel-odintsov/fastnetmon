@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
 #define KBUILD_MODNAME "foo"
-#include "bpf/bpf_helpers.h"
+
+#include <linux/types.h>
+#include <bpf/bpf_helpers.h>
 #include <linux/bpf.h>
 
 //
