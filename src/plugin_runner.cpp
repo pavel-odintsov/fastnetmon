@@ -66,7 +66,7 @@ void init_logging() {
 
     logger.setPriority(log4cpp::Priority::INFO);
     logger.addAppender(appender);
-    logger.info("Logger initialized!");
+    logger.info("Logger initialized");
 }
 
 void process_packet(simple_packet& current_packet) {

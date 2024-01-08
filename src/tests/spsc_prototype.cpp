@@ -74,7 +74,7 @@ void init_logging() {
 
     logger.setPriority(log4cpp::Priority::INFO);
     logger.addAppender(appender);
-    logger.info("Logger initialized!");
+    logger.info("Logger initialized");
 }
 
 uint64_t received_packets = 0;

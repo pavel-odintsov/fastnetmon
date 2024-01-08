@@ -63,7 +63,7 @@ void init_logging() {
 
     logger.setPriority(log4cpp::Priority::INFO);
     logger.addAppender(appender);
-    logger.info("Logger initialized!");
+    logger.info("Logger initialized");
 }
 
 void pcap_parse_packet(const char* flow_type, char* buffer, uint32_t len);

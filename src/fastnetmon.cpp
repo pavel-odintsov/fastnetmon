@@ -1413,7 +1413,7 @@ void init_logging(bool log_to_console) {
         logger.addAppender(appender);
     }
 
-    logger << log4cpp::Priority::INFO << "Logger initialized!";
+    logger << log4cpp::Priority::INFO << "Logger initialized";
 }
 
 void reconfigure_logging_level(const std::string& logging_level) {
