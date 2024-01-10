@@ -11,7 +11,7 @@ Group=fastnetmon
 Restart=on-failure
 RestartSec=3
 LimitNOFILE=65535
-# We need it to use AF_PACKET when run under non root user
+# We need it to use AF_PACKET and AF_XDP when run under non root user
 AmbientCapabilities=CAP_NET_RAW CAP_IPC_LOCK
 
 [Install]
