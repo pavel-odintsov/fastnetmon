@@ -17,6 +17,7 @@ extern abstract_subnet_counters_t<subnet_cidr_mask_t, subnet_counter_t> ipv4_net
 extern uint64_t influxdb_writes_total;
 extern uint64_t influxdb_writes_failed;
 extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t, subnet_counter_t> ipv6_host_counters;
+extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t, subnet_counter_t> ipv6_subnet_counters;
 extern std::vector<ban_settings_t> hostgroup_list_total_calculation;
 extern std::mutex hostgroup_list_total_calculation_mutex;
 extern abstract_subnet_counters_t<int64_t, subnet_counter_t> per_hostgroup_total_counters;
@@ -341,6 +342,11 @@ void influxdb_push_thread() {
         push_hosts_traffic_counters_to_influxdb(ipv6_host_counters, influxdb_database,
                                                 current_influxdb_ip_address, std::to_string(influxdb_port), influxdb_auth,
                                                 influxdb_user, influxdb_password, "hosts_ipv6_traffic", "host");
+
+        // Push per network IPv6 counters to InfluxDB
+        push_network_traffic_counters_to_influxdb(ipv6_subnet_counters, influxdb_database,
+                                                current_influxdb_ip_address, std::to_string(influxdb_port), influxdb_auth,
+                                                influxdb_user, influxdb_password, "networks_ipv6_traffic", "network");
 
         // Push total IPv6 counters
         push_total_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
