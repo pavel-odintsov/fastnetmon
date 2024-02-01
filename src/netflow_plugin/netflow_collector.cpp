@@ -80,6 +80,10 @@ class device_timeouts_t {
     bool operator==(const device_timeouts_t& rhs) const = default;
 };
 
+// Variable encoding may be single or two byte and we need to distinguish them explicitly
+enum class variable_length_encoding_t { unknown, single_byte, two_byte };
+
+
 // IPFIX per device timeouts
 std::mutex ipfix_per_device_flow_timeouts_mutex;
 std::map<std::string, device_timeouts_t> ipfix_per_device_flow_timeouts;
@@ -152,6 +156,9 @@ uint64_t ipfix_total_flows         = 0;
 
 std::string ipfix_total_ipv4_flows_desc = "Total number of IPFIX IPv4 flows (multiple in each packet)";
 uint64_t ipfix_total_ipv4_flows         = 0;
+
+std::string ipfix_flowsets_with_anomaly_padding_desc = "IPFIX flowsets with anomaly padding more then 7 bytes";
+uint64_t ipfix_flowsets_with_anomaly_padding         = 0;
 
 std::string ipfix_active_flow_timeout_received_desc = "Total number of received active IPFIX flow timeouts";
 uint64_t ipfix_active_flow_timeout_received         = 0;
@@ -243,6 +250,24 @@ uint64_t netflow9_duration_less_180_seconds         = 0;
 
 std::string netflow9_duration_exceed_180_seconds_desc = "Netflow v9 flows with duration more then 180 seconds";
 uint64_t netflow9_duration_exceed_180_seconds         = 0;
+
+std::string ipfix_duration_0_seconds_desc = "IPFIX flows with duration 0 seconds";
+uint64_t ipfix_duration_0_seconds         = 0;
+
+std::string ipfix_duration_less_1_seconds_desc = "IPFIX flows with duration less then 1 seconds";
+uint64_t ipfix_duration_less_1_seconds         = 0;
+
+std::string ipfix_duration_less_2_seconds_desc = "IPFIX flows with duration less then 2 seconds";
+uint64_t ipfix_duration_less_2_seconds         = 0;
+
+std::string ipfix_duration_less_3_seconds_desc = "IPFIX flows with duration less then 3 seconds";
+uint64_t ipfix_duration_less_3_seconds         = 0;
+
+std::string ipfix_duration_less_5_seconds_desc = "IPFIX flows with duration less then 5 seconds";
+uint64_t ipfix_duration_less_5_seconds         = 0;
+
+std::string ipfix_duration_less_10_seconds_desc = "IPFIX flows with duration less then 10 seconds";
+uint64_t ipfix_duration_less_10_seconds         = 0;
 
 std::string ipfix_duration_less_15_seconds_desc = "IPFIX flows with duration less then 15 seconds";
 uint64_t ipfix_duration_less_15_seconds         = 0;
@@ -373,6 +398,9 @@ uint64_t netflow_v9_lite_headers         = 0;
 std::string ipfix_inline_headers_desc = "Total number of headers in IPFIX received";
 uint64_t ipfix_inline_headers         = 0;
 
+std::string ipfix_inline_encoding_error_desc = "IPFIX inline encoding issues";
+uint64_t  ipfix_inline_encoding_error         = 0;
+
 std::string ipfix_packets_with_padding_desc = "Total number of IPFIX packets with padding";
 uint64_t ipfix_packets_with_padding         = 0;
 
@@ -387,7 +415,10 @@ uint64_t flowsets_per_packet_maximum_number = 256;
 // TODO: add per source uniq templates support
 process_packet_pointer netflow_process_func_ptr = NULL;
 
+std::mutex global_netflow9_templates_mutex;
 std::map<std::string, std::map<uint32_t, template_t>> global_netflow9_templates;
+
+std::mutex global_ipfix_templates_mutex;
 std::map<std::string, std::map<uint32_t, template_t>> global_ipfix_templates;
 
 std::vector<system_counter_t> get_netflow_stats() {
@@ -620,6 +651,7 @@ std::string get_netflow_protocol_version_as_string(const netflow_protocol_versio
 /* Prototypes */
 void add_update_peer_template(const netflow_protocol_version_t& netflow_version,
                               std::map<std::string, std::map<uint32_t, template_t>>& table_for_add,
+                              std::mutex& table_for_add_mutex,
                               uint32_t source_id,
                               uint32_t template_id,
                               const std::string& client_addres_in_string_format,
@@ -679,6 +711,11 @@ class netflow_meta_info_t {
 
     // Cisco ASA flow identifier
     uint64_t flow_id = 0;
+
+    variable_length_encoding_t variable_field_length_encoding = variable_length_encoding_t::unknown;
+
+    // Store variable field length here to avoid repeating parsing
+    uint16_t variable_field_length = 0;
 };
 
 int nf9_rec_to_flow(uint32_t record_type,
@@ -689,12 +726,15 @@ int nf9_rec_to_flow(uint32_t record_type,
                     netflow_meta_info_t& flow_meta);
 
 template_t* peer_find_template(std::map<std::string, std::map<uint32_t, template_t>>& table_for_lookup,
+                                      std::mutex& table_for_lookup_mutex,
                                       uint32_t source_id,
                                       uint32_t template_id,
                                       std::string client_addres_in_string_format) {
 
     // We use source_id for distinguish multiple netflow agents with same IP
     std::string key = client_addres_in_string_format + "_" + std::to_string(source_id);
+
+    std::lock_guard<std::mutex> lock(table_for_lookup_mutex);
 
     auto itr = table_for_lookup.find(key);
 
@@ -744,6 +784,7 @@ void override_packet_fields_from_nested_packet(simple_packet_t& packet, const si
 void add_update_peer_template(
                               const netflow_protocol_version_t& netflow_protocol_version,
                               std::map<std::string, std::map<uint32_t, template_t>>& table_for_add,
+                              std::mutex& table_for_add_mutex,
                               uint32_t source_id,
                               uint32_t template_id,
                               const std::string& client_address_in_string_format,
@@ -758,6 +799,9 @@ void add_update_peer_template(
             << " template with id " << template_id << " from host " << client_address_in_string_format
             << " source id: " << source_id;  
     }
+
+    // We need to put lock on it
+    std::lock_guard<std::mutex> lock(table_for_add_mutex);
 
     auto itr = table_for_add.find(key);
 

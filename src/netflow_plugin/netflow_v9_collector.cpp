@@ -98,7 +98,7 @@ bool process_netflow_v9_options_template(const uint8_t* pkt, size_t flowset_leng
     bool updated                   = false;
     bool updated_existing_template = false;
 
-    add_update_peer_template(netflow_protocol_version_t::netflow_v9, global_netflow9_templates, source_id, template_id, client_addres_in_string_format,
+    add_update_peer_template(netflow_protocol_version_t::netflow_v9, global_netflow9_templates, global_netflow9_templates_mutex,  source_id, template_id, client_addres_in_string_format,
                              field_template, updated, updated_existing_template);
 
     if (updated_existing_template) {
@@ -190,7 +190,7 @@ bool process_netflow_v9_template(const uint8_t* pkt,
         bool updated                   = false;
         bool updated_existing_template = false;
 
-        add_update_peer_template(netflow_protocol_version_t::netflow_v9, global_netflow9_templates, source_id, template_id, client_addres_in_string_format,
+        add_update_peer_template(netflow_protocol_version_t::netflow_v9, global_netflow9_templates, global_netflow9_templates_mutex,  source_id, template_id, client_addres_in_string_format,
                                  field_template, updated, updated_existing_template);
 
         // If we have any changes for this template, let's flush them to disk
@@ -1366,7 +1366,7 @@ bool process_netflow_v9_data(const uint8_t* pkt,
 
     // We should find template here
     const template_t* field_template =
-        peer_find_template(global_netflow9_templates, source_id, flowset_id, client_addres_in_string_format);
+        peer_find_template(global_netflow9_templates, global_netflow9_templates_mutex, source_id, flowset_id, client_addres_in_string_format);
 
     if (field_template == NULL) {
         netflow9_packets_with_unknown_templates++;
