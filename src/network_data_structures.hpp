@@ -33,7 +33,7 @@ namespace network_data_stuctures {
 
 // We are using this structure as pretty interface for IPv4 address bytes in host byte order (little  endian)
 class __attribute__((__packed__)) ipv4_octets_form_little_endian_t {
-public:
+    public:
     uint8_t fourth = 0;
     uint8_t third  = 0;
     uint8_t second = 0;
@@ -130,7 +130,7 @@ class __attribute__((__packed__)) mpls_label_t {
     public:
     uint32_t label : 20 = 0, qos : 3 = 0, bottom_of_stack : 1 = 0, ttl : 8 = 0;
 
-    std::string print() {
+    std::string print() const {
         std::stringstream buffer;
 
         buffer << "label: " << uint32_t(label) << " "
@@ -145,7 +145,7 @@ class __attribute__((__packed__)) mpls_label_t {
 static_assert(sizeof(mpls_label_t) == 4, "Bad size for mpls_label_t");
 
 // In this class we keep vlan id, priority and cfi
-class __attribute__((__packed__))  ethernet_vlan_metadata_t {
+class __attribute__((__packed__)) ethernet_vlan_metadata_t {
     public:
     uint16_t vlan_id : 12, cfi : 1, priority : 3;
 };
@@ -157,12 +157,11 @@ static_assert(sizeof(ethernet_vlan_metadata_t) == 2, "Bad size for ethernet_vlan
 class __attribute__((__packed__)) ethernet_vlan_header_t {
     // We must not access these fields directly as it requires explicit byte order conversion
     private:
-        uint16_t vlan_metadata_as_integer = 0;
-        uint16_t ethertype = 0;
+    uint16_t vlan_metadata_as_integer = 0;
+    uint16_t ethertype                = 0;
 
     // We can access data in packet only using special methods which can do all required format conversions
     public:
-
     // Returns ethertype in host byte order
     uint16_t get_ethertype_host_byte_order() const {
         return fast_ntoh(ethertype);
@@ -230,7 +229,7 @@ class __attribute__((__packed__)) ethernet_header_t {
 
     public:
     // Returns ethertype in host byte order
-    uint16_t get_ethertype_host_byte_order() {
+    uint16_t get_ethertype_host_byte_order() const {
         return fast_ntoh(ethertype);
     }
 
@@ -270,7 +269,6 @@ class __attribute__((__packed__)) arp_header_t {
     uint32_t target_protocol_address = 0;
 
     public:
-
     uint8_t get_hardware_address_length() const {
         return hardware_address_length;
     }
@@ -310,9 +308,11 @@ class __attribute__((__packed__)) arp_header_t {
                << "protocol_address_length: " << uint32_t(get_protocol_address_length()) << " "
                << "operation: " << get_operation_host_byte_order() << " "
                << "sender_hardware_address: " << convert_mac_to_string(sender_hardware_address) << " "
-               << "sender_protocol_address: " << convert_ip_as_big_endian_to_string(get_sender_protocol_address_network_byte_order()) << " "
+               << "sender_protocol_address: "
+               << convert_ip_as_big_endian_to_string(get_sender_protocol_address_network_byte_order()) << " "
                << "target_hardware_address: " << convert_mac_to_string(target_hardware_address) << " "
-               << "target_protocol_address: " << convert_ip_as_big_endian_to_string(get_target_protocol_address_network_byte_order());
+               << "target_protocol_address: "
+               << convert_ip_as_big_endian_to_string(get_target_protocol_address_network_byte_order());
 
         return buffer.str();
     }
@@ -364,15 +364,15 @@ class __attribute__((__packed__)) udp_header_t {
     uint16_t get_source_port_host_byte_order() const {
         return fast_ntoh(source_port);
     }
-    
+
     uint16_t get_destination_port_host_byte_order() const {
         return fast_ntoh(destination_port);
     }
-    
+
     uint16_t get_length_host_byte_order() const {
         return fast_ntoh(length);
     }
-    
+
     uint16_t get_checksum_host_byte_order() const {
         return fast_ntoh(checksum);
     }
@@ -394,14 +394,13 @@ static_assert(sizeof(udp_header_t) == 8, "Bad size for udp_header_t");
 // https://datatracker.ietf.org/doc/html/rfc2784
 class __attribute__((__packed__)) gre_header_t {
     // We must not access these fields directly as they may need conversion
-   private:
+    private:
     // TODO: we have no pcaps where these fields are no zeros and we did not test this case
     // For some reasons PVS thinks that we did not initialised all members. I think they're not that great with bitfields
     uint16_t checksum : 1 = 0, reserved : 12 = 0, version : 3 = 0; //-V730
     uint16_t protocol_type = 0;
 
     public:
-
     uint16_t get_protocol_type_host_byte_order() const {
         return fast_ntoh(protocol_type);
     }
@@ -413,7 +412,7 @@ class __attribute__((__packed__)) gre_header_t {
     uint16_t get_checksum() const {
         return checksum;
     }
-    
+
     uint16_t get_version() const {
         return version;
     }
@@ -472,7 +471,6 @@ class __attribute__((__packed__)) cropped_tcp_header_only_ports_t {
     uint16_t destination_port = 0;
 
     public:
-
     uint16_t get_source_port_host_byte_order() const {
         return fast_ntoh(source_port);
     }
@@ -491,18 +489,16 @@ class __attribute__((__packed__)) tcp_header_t {
     uint16_t destination_port = 0;
     uint32_t sequence_number  = 0;
     uint32_t ack_number       = 0;
-    
+
     // Flags here encoded as tcp_flags_t
     uint16_t data_offset_and_flags_as_integer = 0;
 
     private:
-
     uint16_t window_size = 0;
     uint16_t checksum    = 0;
     uint16_t urgent      = 0;
 
     public:
-
     uint16_t get_source_port_host_byte_order() const {
         return fast_ntoh(source_port);
     }
@@ -510,23 +506,23 @@ class __attribute__((__packed__)) tcp_header_t {
     uint16_t get_destination_port_host_byte_order() const {
         return fast_ntoh(destination_port);
     }
-    
+
     uint32_t get_sequence_number_host_byte_order() const {
         return fast_ntoh(sequence_number);
     }
-    
+
     uint32_t get_ack_number_host_byte_order() const {
         return fast_ntoh(ack_number);
     }
-    
+
     uint16_t get_window_size_host_byte_order() const {
         return fast_ntoh(window_size);
     }
-    
+
     uint16_t get_checksum_host_byte_order() const {
         return fast_ntoh(checksum);
     }
-    
+
     uint16_t get_urgent_host_byte_order() const {
         return fast_ntoh(urgent);
     }
@@ -586,7 +582,7 @@ class __attribute__((__packed__)) tcp_header_t {
         return tcp_flags->ack == 1;
     }
 
-    bool get_urg ()const  {
+    bool get_urg() const {
         uint16_t data_offset_and_flags_as_integer_litle_endian = fast_ntoh(data_offset_and_flags_as_integer);
 
         tcp_flags_t* tcp_flags = (tcp_flags_t*)&data_offset_and_flags_as_integer_litle_endian;
@@ -594,7 +590,7 @@ class __attribute__((__packed__)) tcp_header_t {
         return tcp_flags->urg == 1;
     }
 
-    bool get_ece ()  const {
+    bool get_ece() const {
         uint16_t data_offset_and_flags_as_integer_litle_endian = fast_ntoh(data_offset_and_flags_as_integer);
 
         tcp_flags_t* tcp_flags = (tcp_flags_t*)&data_offset_and_flags_as_integer_litle_endian;
@@ -602,7 +598,7 @@ class __attribute__((__packed__)) tcp_header_t {
         return tcp_flags->ece == 1;
     }
 
-    bool get_cwr () const {
+    bool get_cwr() const {
         uint16_t data_offset_and_flags_as_integer_litle_endian = fast_ntoh(data_offset_and_flags_as_integer);
 
         tcp_flags_t* tcp_flags = (tcp_flags_t*)&data_offset_and_flags_as_integer_litle_endian;
@@ -618,7 +614,7 @@ class __attribute__((__packed__)) tcp_header_t {
         return tcp_flags->ns == 1;
     }
 
-    uint8_t get_reserved() const{
+    uint8_t get_reserved() const {
         uint16_t data_offset_and_flags_as_integer_litle_endian = fast_ntoh(data_offset_and_flags_as_integer);
 
         tcp_flags_t* tcp_flags = (tcp_flags_t*)&data_offset_and_flags_as_integer_litle_endian;
@@ -696,9 +692,9 @@ inline std::string convert_ipv6_in_byte_array_to_string(const uint8_t (&v6_addre
 */
 
 class __attribute__((__packed__)) ipv6_fragment_header_flags {
-     public:
-        // fragment_offset is a number of 8byte chunk
-        uint16_t more_fragments : 1, reserved2 : 2, fragment_offset : 13;
+    public:
+    // fragment_offset is a number of 8byte chunk
+    uint16_t more_fragments : 1, reserved2 : 2, fragment_offset : 13;
 };
 
 static_assert(sizeof(ipv6_fragment_header_flags) == 2, "Bad size for ipv6_header_flags_t");
@@ -717,7 +713,6 @@ class __attribute__((__packed__)) ipv6_extension_header_fragment_t {
     uint32_t identification = 0;
 
     public:
-
     uint16_t get_more_fragments() const {
         uint16_t flags_little_endian = fast_ntoh(fragmentation_and_flags_as_integer);
 
@@ -787,7 +782,7 @@ static_assert(sizeof(ipv6_header_flags_t) == 4, "Bad size for ipv6_header_flags_
 
 class __attribute__((__packed__)) ipv6_header_t {
     // We must not access these fields directly as they need decoding
-    private:    
+    private:
     // Multiple flags carried in ipv6_header_flags_t
     uint32_t version_and_traffic_class_as_integer = 0;
 
@@ -801,13 +796,13 @@ class __attribute__((__packed__)) ipv6_header_t {
 
     uint32_t get_flow_label() const {
         uint32_t version_and_traffic_class_little_endian = fast_ntoh(version_and_traffic_class_as_integer);
-    
+
         ipv6_header_flags_t* header_flags = (ipv6_header_flags_t*)&version_and_traffic_class_little_endian;
 
         return header_flags->flow_label;
     }
 
-    uint32_t get_traffic_class() const { 
+    uint32_t get_traffic_class() const {
         uint32_t version_and_traffic_class_little_endian = fast_ntoh(version_and_traffic_class_as_integer);
 
         ipv6_header_flags_t* header_flags = (ipv6_header_flags_t*)&version_and_traffic_class_little_endian;
@@ -835,7 +830,7 @@ class __attribute__((__packed__)) ipv6_header_t {
         return hop_limit;
     }
 
-    std::string print() const  {
+    std::string print() const {
         std::stringstream buffer;
 
         buffer << "version: " << get_version() << " "
@@ -856,8 +851,8 @@ static_assert(sizeof(ipv6_header_t) == 40, "Bad size for ipv6_header_t");
 // It's class for fragmentation flag representation. It's pretty useful in some cases
 class __attribute__((__packed__)) ipv4_header_fragmentation_flags_t {
     public:
-        // The offset value is the number of 8 byte blocks of data
-        uint16_t fragment_offset : 13, more_fragments_flag : 1, dont_fragment_flag : 1, reserved_flag : 1;
+    // The offset value is the number of 8 byte blocks of data
+    uint16_t fragment_offset : 13, more_fragments_flag : 1, dont_fragment_flag : 1, reserved_flag : 1;
 
     std::string print() {
 
@@ -876,7 +871,6 @@ static_assert(sizeof(ipv4_header_fragmentation_flags_t) == 2, "Bad size for ipv4
 class __attribute__((__packed__)) ipv4_header_t {
     // We must not access these fields directly as they need conversion
     private:
-
     uint8_t ihl : 4 = 0, version : 4 = 0;
     uint8_t ecn : 2 = 0, dscp : 6 = 0;
 
@@ -887,16 +881,15 @@ class __attribute__((__packed__)) ipv4_header_t {
     // There we have plenty of fragmentation specific fields encoded in ipv4_header_fragmentation_flags_t
     uint16_t fragmentation_details_as_integer = 0;
 
-    uint8_t ttl             = 0;
-    uint8_t protocol        = 0;
+    uint8_t ttl      = 0;
+    uint8_t protocol = 0;
 
-    uint16_t checksum       = 0;
+    uint16_t checksum = 0;
 
     uint32_t source_ip      = 0;
     uint32_t destination_ip = 0;
 
     public:
-
     ipv4_header_t()
     : ihl(0), version(0), ecn(0), dscp(0), total_length(0), identification(0), fragmentation_details_as_integer(0),
       ttl(0), protocol(0), checksum(0), source_ip(0), destination_ip(0) {
@@ -910,7 +903,7 @@ class __attribute__((__packed__)) ipv4_header_t {
         return fast_ntoh(total_length);
     }
 
-    bool is_fragmented() {
+    bool is_fragmented() const {
         if (this->get_more_fragments_flag()) {
             return true;
         }
@@ -923,20 +916,20 @@ class __attribute__((__packed__)) ipv4_header_t {
     }
 
     uint8_t get_ihl() const {
-    	return ihl;
-    }	
-     
-    uint8_t get_version() const {
-    	return version; 
+        return ihl;
     }
-    
+
+    uint8_t get_version() const {
+        return version;
+    }
+
     uint8_t get_ecn() const {
-    	return ecn;
-    } 
-    
+        return ecn;
+    }
+
     uint8_t get_dscp() const {
-    	return dscp;
-    } 
+        return dscp;
+    }
 
     uint16_t get_fragmentation_details_host_byte_order() {
         return fast_ntoh(fragmentation_details_as_integer);
@@ -965,10 +958,10 @@ class __attribute__((__packed__)) ipv4_header_t {
         uint16_t fragmenation_details_little_endian = fast_ntoh(fragmentation_details_as_integer);
 
         ipv4_header_fragmentation_flags_t* fragmentation_flags = (ipv4_header_fragmentation_flags_t*)&fragmenation_details_little_endian;
-    
+
         return fragmentation_flags->more_fragments_flag == 1;
     }
-     
+
     bool get_dont_fragment_flag() const {
         uint16_t fragmenation_details_little_endian = fast_ntoh(fragmentation_details_as_integer);
 
@@ -1009,7 +1002,7 @@ class __attribute__((__packed__)) ipv4_header_t {
         fragmentation_details_as_integer = fast_hton(fragmenation_details_little_endian);
     }
 
-    // Value is a number of 8 byte blocks 
+    // Value is a number of 8 byte blocks
     void set_fragment_offset_8byte_chunks(uint16_t value) {
         uint16_t fragmenation_details_little_endian = fast_ntoh(fragmentation_details_as_integer);
 
@@ -1032,7 +1025,7 @@ class __attribute__((__packed__)) ipv4_header_t {
     uint32_t get_source_ip_host_byte_order() const {
         return fast_ntoh(source_ip);
     }
-    
+
     uint32_t get_destination_ip_host_byte_order() const {
         return fast_ntoh(destination_ip);
     }
@@ -1082,7 +1075,8 @@ enum class parser_code_t {
     no_ipv6_support,
     no_ipv6_options_support,
     unknown_ethertype,
-    arp
+    arp,
+    too_many_nested_vlans,
 };
 
 std::string parser_code_to_string(parser_code_t code);

@@ -5,14 +5,17 @@
 #include "fast_library.hpp"
 
 #include <algorithm>
-#include <iterator>
 #include <cstring>
+#include <iterator>
 
 using namespace network_data_stuctures;
 
 // By default, we do not touch MPLS
 // TODO: it's not working code yet
 bool decode_mpls = false;
+
+// We can strip only 3 nested vlans
+const uint32_t maximum_vlans_to_strip = 3;
 
 // Our own native function to convert wire packet into simple_packet_t
 parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
@@ -32,29 +35,43 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
         return parser_code_t::memory_violation;
     }
 
-    ethernet_header_t* ethernet_header = (ethernet_header_t*)local_pointer;
+    const ethernet_header_t* ethernet_header = (const ethernet_header_t*)local_pointer;
 
     // Copy Ethernet MAC addresses to packet structure using native C++ approach to avoid touching memory with memcpy
     std::copy(std::begin(ethernet_header->source_mac), std::end(ethernet_header->source_mac), std::begin(packet.source_mac));
 
-    std::copy(std::begin(ethernet_header->destination_mac), std::end(ethernet_header->destination_mac), std::begin(packet.destination_mac));
+    std::copy(std::begin(ethernet_header->destination_mac), std::end(ethernet_header->destination_mac),
+              std::begin(packet.destination_mac));
 
     local_pointer += sizeof(ethernet_header_t);
 
     // Copy ethertype as we may need to change it below
     uint16_t ethertype = ethernet_header->get_ethertype_host_byte_order();
 
-    if (ethertype == IanaEthertypeVLAN) {
-        // Return error if it shorter then vlan header
+    uint32_t number_of_stripped_vlans = 0;
+
+    // This loop will not start if ethertype is not VLAN
+    while (ethertype == IanaEthertypeVLAN) { 
+        // Return error if it's shorter than vlan header
         if (local_pointer + sizeof(ethernet_vlan_header_t) > end_pointer) {
             return parser_code_t::memory_violation;
         }
 
-        ethernet_vlan_header_t* ethernet_vlan_header = (ethernet_vlan_header_t*)local_pointer;
+        const ethernet_vlan_header_t* ethernet_vlan_header = (const ethernet_vlan_header_t*)local_pointer;
 
-        packet.vlan = ethernet_vlan_header->get_vlan_id_host_byte_order();
-
+        // We've agreed that this field keeps only outermost vlan
+        if (number_of_stripped_vlans == 0) {
+            packet.vlan = ethernet_vlan_header->get_vlan_id_host_byte_order();
+        }
+    
         local_pointer += sizeof(ethernet_vlan_header_t);
+
+        number_of_stripped_vlans++;
+
+        // We need to limit it to avoid possibility of attack which uses too many vlans tags to overload our parser
+        if (number_of_stripped_vlans > maximum_vlans_to_strip) {
+            return parser_code_t::too_many_nested_vlans;
+        }
 
         // Change ethertype to vlan's ethertype
         ethertype = ethernet_vlan_header->get_ethertype_host_byte_order();
@@ -67,7 +84,7 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
                 return parser_code_t::memory_violation;
             }
 
-            mpls_label_t* mpls_label_header = (mpls_label_t*)local_pointer;
+            const mpls_label_t* mpls_label_header = (const mpls_label_t*)local_pointer;
 
             std::cout << "MPLS header: " << mpls_label_header->print() << std::endl;
 
@@ -90,7 +107,7 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
             return parser_code_t::memory_violation;
         }
 
-        ipv4_header_t* ipv4_header = (ipv4_header_t*)local_pointer;
+        const ipv4_header_t* ipv4_header = (const ipv4_header_t*)local_pointer;
 
         // Use network representation of addresses
         packet.src_ip = ipv4_header->get_source_ip_network_byte_order();
@@ -114,8 +131,8 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
         packet.ip_fragment_offset = ipv4_header->get_fragment_offset_bytes();
 
         // We keep these variables to maintain backward compatibility with parse_raw_packet_to_simple_packet_full()
-        packet.captured_payload_length      = length_before_sampling;
-        packet.payload_full_length = length_before_sampling;
+        packet.captured_payload_length = length_before_sampling;
+        packet.payload_full_length     = length_before_sampling;
 
         // Pointer to payload
         packet.payload_pointer = (void*)pointer;
@@ -145,7 +162,7 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
             return parser_code_t::memory_violation;
         }
 
-        ipv6_header_t* ipv6_header = (ipv6_header_t*)local_pointer;
+        const ipv6_header_t* ipv6_header = (const ipv6_header_t*)local_pointer;
 
         // TODO: we may use std::copy for it to avoid touching memory with memcpy
         memcpy(&packet.src_ipv6, ipv6_header->source_address, sizeof(packet.src_ipv6));
@@ -159,8 +176,8 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
         packet.ip_length = ipv6_header->get_payload_length();
 
         // We keep these variables to maintain backward compatibility with parse_raw_packet_to_simple_packet_full()
-        packet.captured_payload_length      = length_before_sampling;
-        packet.payload_full_length = length_before_sampling;
+        packet.captured_payload_length = length_before_sampling;
+        packet.payload_full_length     = length_before_sampling;
 
         // Pointer to payload
         packet.payload_pointer = (void*)pointer;
@@ -196,7 +213,7 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
 
             // We decided to parse only fragmentation header option as only this field may be found in the Wild
             if (protocol == IpProtocolNumberIPV6_FRAG) {
-                ipv6_extension_header_fragment_t* ipv6_extension_header_fragment = (ipv6_extension_header_fragment_t*)local_pointer;
+                const ipv6_extension_header_fragment_t* ipv6_extension_header_fragment = (const ipv6_extension_header_fragment_t*)local_pointer;
 
                 // If we received this header then we assume that packet was fragmented
                 packet.ip_fragmented = true;
@@ -224,18 +241,18 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
     if (protocol == IpProtocolNumberTCP) {
         if (local_pointer + sizeof(tcp_header_t) > end_pointer) {
             // We observed that Huawei routers may send only first 52 bytes of header in sFlow mode
-            // and it's not enough to accommodate whole TCP header which has length of 20 bytes and we can observe only first 14 bytes 
-            // and it happened in case of vlan presence
+            // and it's not enough to accommodate whole TCP header which has length of 20 bytes and we can observe only
+            // first 14 bytes and it happened in case of vlan presence
 
             // To offer better experience we will try retrieving only ports from TCP header as they're located in the beginning of packet
             if (local_pointer + sizeof(cropped_tcp_header_only_ports_t) > end_pointer) {
-                // Sadly we cannot even retrieve port numbers and we have to discard this packet 
+                // Sadly we cannot even retrieve port numbers and we have to discard this packet
                 // Idea of reporting this packet as TCP protocol without ports information is not reasonable
                 return parser_code_t::memory_violation;
             }
 
             // Use short TCP header which has only access to source and destination ports
-            cropped_tcp_header_only_ports_t* tcp_header = (cropped_tcp_header_only_ports_t*)local_pointer;
+            const cropped_tcp_header_only_ports_t* tcp_header = (const cropped_tcp_header_only_ports_t*)local_pointer;
 
             packet.source_port      = tcp_header->get_source_port_host_byte_order();
             packet.destination_port = tcp_header->get_destination_port_host_byte_order();
@@ -243,7 +260,7 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
             return parser_code_t::success;
         }
 
-        tcp_header_t* tcp_header = (tcp_header_t*)local_pointer;
+        const tcp_header_t* tcp_header = (const tcp_header_t*)local_pointer;
 
         packet.source_port      = tcp_header->get_source_port_host_byte_order();
         packet.destination_port = tcp_header->get_destination_port_host_byte_order();
@@ -257,7 +274,7 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
             return parser_code_t::memory_violation;
         }
 
-        udp_header_t* udp_header = (udp_header_t*)local_pointer;
+        const udp_header_t* udp_header = (const udp_header_t*)local_pointer;
 
         packet.source_port      = udp_header->get_source_port_host_byte_order();
         packet.destination_port = udp_header->get_destination_port_host_byte_order();
@@ -271,7 +288,7 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
             return parser_code_t::memory_violation;
         }
 
-        gre_header_t* gre_header = (gre_header_t*)local_pointer;
+        const gre_header_t* gre_header = (const gre_header_t*)local_pointer;
 
         // Current version of parser does not handle these special codes and we just fail parsing process
         // These flags may extend length of GRE header and current logic is not ready to decode any of them
@@ -361,8 +378,8 @@ parser_code_t parse_raw_ipv4_packet_to_simple_packet_full_ng(const uint8_t* poin
     packet.ip_fragmented = ipv4_header->is_fragmented();
 
     // We keep these variables to maintain backward compatibility with parse_raw_packet_to_simple_packet_full()
-    packet.captured_payload_length      = length_before_sampling;
-    packet.payload_full_length = length_before_sampling;
+    packet.captured_payload_length = length_before_sampling;
+    packet.payload_full_length     = length_before_sampling;
 
     // Pointer to payload
     packet.payload_pointer = (void*)pointer;
@@ -409,4 +426,3 @@ parser_code_t parse_raw_ipv4_packet_to_simple_packet_full_ng(const uint8_t* poin
 
     return parser_code_t::success;
 }
-
