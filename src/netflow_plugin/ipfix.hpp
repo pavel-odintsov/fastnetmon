@@ -45,8 +45,14 @@
 #define IPFIX_ENGINE_TYPE 38
 #define IPFIX_ENGINE_ID 39
 
+#define IPFIX_FRAGMENT_IDENTIFICATION 54
+
+#define IPFIX_SOURCE_MAC_ADDRESS 56
+
 #define IPFIX_FLOW_DIRECTION 61
 #define IPFIX_IPV6_NEXT_HOP 62
+
+#define IPFIX_DESTINATION_MAC_ADDRESS 80
 
 #define IPFIX_FORWARDING_STATUS 89
 
@@ -55,6 +61,12 @@
 // We use 8 byte encoding for "dateTimeMilliseconds" https://tools.ietf.org/html/rfc7011#page-35
 #define IPFIX_FLOW_START_MILLISECONDS 152
 #define IPFIX_FLOW_END_MILLISECONDS 153
+
+// We use 8 byte encoding: https://datatracker.ietf.org/doc/html/rfc7011#section-6.1.10
+#define IPFIX_FLOW_START_NANOSECONDS 156
+#define IPFIX_FLOW_END_NANOSECONDS 157
+
+#define IPFIX_SAMPLING_SELECTOR_ALGORITHM 304
 
 #define IPFIX_SAMPLING_PACKET_INTERVAL 305
 
@@ -65,7 +77,8 @@
 #define IPFIX_SELECTOR_TOTAL_PACKETS_OBSERVED 318
 #define IPFIX_SELECTOR_TOTAL_PACKETS_SELECTED 319
 
-
+// Sampler types https://www.iana.org/assignments/psamp-parameters/psamp-parameters.xhtml
+#define IPFIX_SAMPLER_TYPE_SYSTEMATIC_COUNT_BASED_SAMPLING 1
 
 class __attribute__((__packed__)) ipfix_header_common_t {
     public:
@@ -118,5 +131,3 @@ class __attribute__((__packed__)) ipfix_options_header_t {
     uint16_t field_count       = 0;
     uint16_t scope_field_count = 0;
 };
-
-
