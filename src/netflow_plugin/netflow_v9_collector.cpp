@@ -1,4 +1,7 @@
-void update_netflow_v9_sampling_rate(uint32_t sampling_rate, const std::string& client_addres_in_string_format);
+// That's not a module as we do refactoring right now in small steps
+// TODO: place make it proper module
+
+void update_netflow_v9_sampling_rate(uint32_t new_sampling_rate, const std::string& client_addres_in_string_format);
 
 // This function reads all available options templates
 // http://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
@@ -82,11 +85,11 @@ bool process_netflow_v9_options_template(const uint8_t* pkt, size_t flowset_leng
 
     template_t field_template{};
 
-    field_template.template_id  = template_id;
-    field_template.records      = template_records_map;
-    field_template.num_records  = records_number;
-    field_template.total_length = total_size + scopes_total_size;
-    field_template.type         = netflow_template_type_t::Options;
+    field_template.template_id         = template_id;
+    field_template.records             = template_records_map;
+    field_template.num_records         = records_number;
+    field_template.total_length        = total_size + scopes_total_size;
+    field_template.type                = netflow_template_type_t::Options;
     field_template.option_scope_length = scopes_total_size;
 
     // We need to know when we received it
@@ -98,8 +101,13 @@ bool process_netflow_v9_options_template(const uint8_t* pkt, size_t flowset_leng
     bool updated                   = false;
     bool updated_existing_template = false;
 
-    add_update_peer_template(netflow_protocol_version_t::netflow_v9, global_netflow9_templates, global_netflow9_templates_mutex,  source_id, template_id, client_addres_in_string_format,
+    add_update_peer_template(netflow_protocol_version_t::netflow_v9, global_netflow9_templates,
+                             global_netflow9_templates_mutex, source_id, template_id, client_addres_in_string_format,
                              field_template, updated, updated_existing_template);
+
+    // This code is not perfect from locks perspective as we read global_netflow9_templates without any locks below
+
+    // NB! Please be careful with changing name of variable as it's part of serialisation protocol
 
     if (updated_existing_template) {
         netflow_v9_template_data_updates++;
@@ -190,12 +198,9 @@ bool process_netflow_v9_template(const uint8_t* pkt,
         bool updated                   = false;
         bool updated_existing_template = false;
 
-        add_update_peer_template(netflow_protocol_version_t::netflow_v9, global_netflow9_templates, global_netflow9_templates_mutex,  source_id, template_id, client_addres_in_string_format,
-                                 field_template, updated, updated_existing_template);
-
-        // If we have any changes for this template, let's flush them to disk
-        if (updated) {
-        }
+        add_update_peer_template(netflow_protocol_version_t::netflow_v9, global_netflow9_templates,
+                                 global_netflow9_templates_mutex, source_id, template_id,
+                                 client_addres_in_string_format, field_template, updated, updated_existing_template);
 
         if (updated_existing_template) {
             netflow_v9_template_data_updates++;
@@ -210,7 +215,12 @@ bool process_netflow_v9_template(const uint8_t* pkt,
     return true;
 }
 
-bool netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, const uint8_t* data, simple_packet_t& packet, netflow_meta_info_t& flow_meta, const std::string& client_addres_in_string_format) {
+bool netflow9_record_to_flow(uint32_t record_type,
+                             uint32_t record_length,
+                             const uint8_t* data,
+                             simple_packet_t& packet,
+                             netflow_meta_info_t& flow_meta,
+                             const std::string& client_addres_in_string_format) {
     // Some devices such as Mikrotik may pass sampling rate in data section
     uint32_t sampling_rate = 0;
 
@@ -592,10 +602,23 @@ bool netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, const
         }
 
         break;
+    case NETFLOW9_LAYER2_PACKET_SECTION_SIZE:
+        if (record_length == 2) { 
+            uint16_t datalink_frame_size = 0; 
+
+            memcpy(&datalink_frame_size, data, record_length);
+            flow_meta.data_link_frame_size = fast_ntoh(datalink_frame_size);
+        } else {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_LAYER2_PACKET_SECTION_SIZE";
+            }
+        }
+
+        break;
     case NETFLOW9_LAYER2_PACKET_SECTION_DATA:
-        // We create block here as gcc does not want to compile without it with error: error: jump to case label
-        // https://stackoverflow.com/questions/5685471/error-jump-to-case-label-in-switch-statement
-        {
+        if (true) {
             netflow_v9_lite_headers++;
 
             bool read_packet_length_from_ip_header = true;
@@ -610,13 +633,17 @@ bool netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, const
 
             bool extract_tunnel_traffic = false;
 
-            auto result =
-                parse_raw_packet_to_simple_packet_full_ng((u_char*)(data), full_packet_length, record_length,
-                                                       flow_meta.nested_packet, extract_tunnel_traffic, read_packet_length_from_ip_header);
+            auto result = parse_raw_packet_to_simple_packet_full_ng((u_char*)(data), full_packet_length, record_length,
+                                                                    flow_meta.nested_packet, extract_tunnel_traffic,
+                                                                    read_packet_length_from_ip_header);
 
             if (result != network_data_stuctures::parser_code_t::success) {
                 // Cannot decode data
                 netflow_v9_lite_header_parser_error++;
+
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG << "Cannot parse packet header with error: " << network_data_stuctures::parser_code_to_string(result); 
+                }
             } else {
                 netflow_v9_lite_header_parser_success++;
                 // Successfully decoded data
@@ -648,11 +675,11 @@ bool netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, const
         }
 
         break;
-    
+
     // There is a similar field NETFLOW9_BGP_NEXT_HOP_IPV4_ADDRESS but with slightly different meaning
     // https://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
     case NETFLOW9_BGP_NEXT_HOP_IPV4_ADDRESS:
-        
+
         if (record_length == 4) {
             uint32_t bgp_next_hop_ipv4 = 0;
             memcpy(&bgp_next_hop_ipv4, data, record_length);
@@ -738,10 +765,10 @@ bool netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, const
     case NETFLOW9_BYTES_FROM_DESTINATION_TO_SOURCE:
         if (record_length == 2) {
             uint16_t bytes_counter = 0;
-            
+
             memcpy(&bytes_counter, data, record_length);
-            bytes_counter        = fast_ntoh(bytes_counter);
-            
+            bytes_counter = fast_ntoh(bytes_counter);
+
             flow_meta.bytes_from_destination_to_source = bytes_counter;
         } else if (record_length == 4) {
             uint32_t bytes_counter = 0;
@@ -838,34 +865,36 @@ bool netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, const
             }
         }
         break;
-    case NETFLOW9_SAMPLING_INTERVAL: 
-        // Well, this record type is expected to be only in options templates but Mikrotik in RouterOS v6.49.6 has another opinion
-        // and we have dump which clearly confirms that they send this data in data templates
+    case NETFLOW9_SAMPLING_INTERVAL:
+        // Well, this record type is expected to be only in options templates but Mikrotik in RouterOS v6.49.6 has
+        // another opinion and we have dump which clearly confirms that they send this data in data templates
 
         if (record_length == 4) {
             uint32_t current_sampling_rate = 0;
 
             memcpy(&current_sampling_rate, data, record_length);
 
-            // NB! Our sampling rate update logic uses endian-less conversion directly in update_netflow_v9_sampling_rate / update_ipfix_sampling_rate 
-            // and we should not convert this value to little endian here
+            current_sampling_rate = fast_ntoh(current_sampling_rate);
 
-            // We do convert it to little endian only for pretty printing
-            // logger << log4cpp::Priority::INFO << "Got sampling date from data packet: " << fast_ntoh(current_sampling_rate);
-            
-            // That's where Mikrotik quirks start 
+            // Pass it to global variable
+            sampling_rate = current_sampling_rate;
+
+            // As we have it in data section it may overflow logs but that's best we can do and I think we need to have such information
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Got sampling date from data packet: " << current_sampling_rate;
+            }
+
+            //
+            // That's where Mikrotik quirks start
             // From Mikrotik routers with no sampling configured we receive 0 in this field which is not perfect but reasonable enough.
-            // 
+            //
             // Another issue that we receive values like: 16777216 which is just 1 wrongly encoded in host byte order in their data
-            // Should I mention that in this case router had following setup: packet-sampling=yes sampling-interval=2222 sampling-space=1111 
+            // Should I mention that in this case router had following setup: packet-sampling=yes sampling-interval=2222 sampling-space=1111
             // And I have no idea what is the source of "1" as sampling rate
             // It's so broken that we agreed to suspend implementation until they fix it
             //
             // Fortunately in ROS7.10 it works just fine
             //
-
-            // Pass it to global variable
-            sampling_rate = current_sampling_rate;
         } else {
             netflow_v9_too_large_field++;
 
@@ -877,13 +906,11 @@ bool netflow9_record_to_flow(uint32_t record_type, uint32_t record_length, const
         break;
     }
 
-    bool netflow_v9_read_sampling_rate_in_data_section = false;
-
-    // We keep this logic under the fence flag because RouterOS v6 sampling implementation is exceptionally broken and enabling it by default will
-    // not make any good
-    if (netflow_v9_read_sampling_rate_in_data_section) {
-        // TODO: another issue with this logic that we will run it for each flow in packet which may cause additional overhead during processing
-        // It's not significant and we will keep it that way for now
+    // We keep this logic under the fence flag because RouterOS v6 sampling implementation is exceptionally broken and
+    // enabling it by default will not make any good
+    if (false) {
+        // TODO: another issue with this logic that we will run it for each flow in packet which may cause additional
+        // overhead during processing It's not significant and we will keep it that way for now
         update_netflow_v9_sampling_rate(sampling_rate, client_addres_in_string_format);
     }
 
@@ -916,39 +943,82 @@ void netflow9_options_flowset_to_store(const uint8_t* pkt,
         // Time to extract sampling rate
         // Cisco ASR1000
         if (elem.record_type == NETFLOW9_FLOW_SAMPLER_RANDOM_INTERVAL) {
-            // Check supported length
-            if (elem.record_length == NETFLOW9_FLOW_SAMPLER_RANDOM_INTERVAL_LENGTH or
-                elem.record_length == NETFLOW9_FLOW_SAMPLER_RANDOM_INTERVAL_LENGTH_ASR1000) {
-                bool result = be_copy_function(data_shift, (uint8_t*)&sampling_rate, sizeof(sampling_rate), elem.record_length);
+            // According to spec it should be 4 bytes: http://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
+            // but in real world we saw 2 byte encoding for Cisco ASR1000
+            if (elem.record_length == 2) {
+                uint16_t current_sampling_rate = 0;
+                memcpy(&current_sampling_rate, data_shift, elem.record_length);
 
-                if (!result) {
-                    logger << log4cpp::Priority::ERROR
-                           << "Tool tried to read outside allowed memory region, prevented "
-                              "fault: FLOW_SAMPLER_RANDOM_INTERVAL";
+                // Convert 2 byte representation to little endian byte order
+                current_sampling_rate = fast_ntoh(current_sampling_rate);
+
+                sampling_rate = current_sampling_rate;
+
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG
+                           << "2 byte encoded NETFLOW9_FLOW_SAMPLER_RANDOM_INTERVAL sampling rate: " << sampling_rate
+                           << " from " << client_addres_in_string_format;
                 }
+            } else if (elem.record_length == 4) {
+                uint32_t current_sampling_rate = 0;
+                memcpy(&current_sampling_rate, data_shift, elem.record_length);
 
-                // logger << log4cpp::Priority::ERROR << "sampling rate: " << fast_ntoh(sampling_rate);
+                // Convert 4 byte representation to little endian byte order
+                current_sampling_rate = fast_ntoh(current_sampling_rate);
+
+                sampling_rate = current_sampling_rate;
+
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG
+                           << "4 byte encoded NETFLOW9_FLOW_SAMPLER_RANDOM_INTERVAL sampling rate: " << sampling_rate
+                           << " from " << client_addres_in_string_format;
+                }
             } else {
-                logger << log4cpp::Priority::ERROR << "Incorrect length for FLOW_SAMPLER_RANDOM_INTERVAL: " << elem.record_length;
+                netflow_v9_too_large_field++;
+                logger << log4cpp::Priority::ERROR
+                       << "Incorrect length for NETFLOW9_FLOW_SAMPLER_RANDOM_INTERVAL: " << elem.record_length;
             }
         } else if (elem.record_type == NETFLOW9_SAMPLING_INTERVAL) {
-            // Juniper MX
-            if (elem.record_length > sizeof(sampling_rate)) {
-                logger << log4cpp::Priority::ERROR << "Unexpectedly big size for NETFLOW9_SAMPLING_INTERVAL: " << elem.record_length;
-                continue;
-            }
+            // Juniper MX uses this type to encode sampling rate
 
-            bool result = be_copy_function(data_shift, (uint8_t*)&sampling_rate, sizeof(sampling_rate), elem.record_length);
+            if (elem.record_length == 2) {
+                uint16_t current_sampling_rate = 0;
+                memcpy(&current_sampling_rate, data_shift, elem.record_length);
 
-            if (!result) {
-                logger << log4cpp::Priority::ERROR << "Tool tried to read outside allowed memory region, prevented fault: NETFLOW9_SAMPLING_INTERVAL";
+                // Convert 2 byte representation to little endian byte order
+                current_sampling_rate = fast_ntoh(current_sampling_rate);
+
+                sampling_rate = current_sampling_rate;
+
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG << "2 byte encoded NETFLOW9_SAMPLING_INTERVAL sampling rate: " << sampling_rate
+                           << " from " << client_addres_in_string_format;
+                }
+            } else if (elem.record_length == 4) {
+                uint32_t current_sampling_rate = 0;
+                memcpy(&current_sampling_rate, data_shift, elem.record_length);
+
+                // Convert 4 byte representation to little endian byte order
+                current_sampling_rate = fast_ntoh(current_sampling_rate);
+
+                sampling_rate = current_sampling_rate;
+
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG << "4 byte encoded NETFLOW9_SAMPLING_INTERVAL sampling rate: " << sampling_rate
+                           << " from " << client_addres_in_string_format;
+                }
+            } else {
+                netflow_v9_too_large_field++;
+                logger << log4cpp::Priority::ERROR << "Incorrect length for NETFLOW9_SAMPLING_INTERVAL: " << elem.record_length;
             }
         } else if (elem.record_type == NETFLOW9_INTERFACE_DESCRIPTION) {
             if (elem.record_length > 128) {
                 // Apply reasonable constraints on maximum interface description field
                 netflow_v9_too_large_field++;
 
-                // logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_INTERFACE_DESCRIPTION";
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_INTERFACE_DESCRIPTION";
+                }
             } else {
                 // Find actual length of name ignoring zero characters
                 // In Cisco's encoding all empty symbols are zero bytes
@@ -964,7 +1034,9 @@ void netflow9_options_flowset_to_store(const uint8_t* pkt,
                     // It may mean that we have no null byte which terminates string
                     netflow_v9_too_large_field++;
 
-                    // logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_INTERFACE_DESCRIPTION";
+                    if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                        logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_INTERFACE_DESCRIPTION";
+                    }
                 }
             }
         } else if (elem.record_type == NETFLOW9_INPUT_SNMP) {
@@ -984,7 +1056,9 @@ void netflow9_options_flowset_to_store(const uint8_t* pkt,
             } else {
                 netflow_v9_too_large_field++;
 
-                // logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_INPUT_SNMP";
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_INPUT_SNMP";
+                }
             }
         } else if (elem.record_type == NETFLOW9_ACTIVE_TIMEOUT) {
             uint16_t active_timeout = 0;
@@ -996,11 +1070,16 @@ void netflow9_options_flowset_to_store(const uint8_t* pkt,
 
                 netflow_v9_active_flow_timeout_received++;
                 device_timeouts.active_timeout = active_timeout;
-                // logger << log4cpp::Priority::DEBUG << "Got active timeout: " << active_timeout << " seconds";
+
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG << "Got active timeout: " << active_timeout << " seconds";
+                }
             } else {
                 netflow_v9_too_large_field++;
 
-                // logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_ACTIVE_TIMEOUT";
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_ACTIVE_TIMEOUT";
+                }
             }
 
         } else if (elem.record_type == NETFLOW9_INACTIVE_TIMEOUT) {
@@ -1013,11 +1092,16 @@ void netflow9_options_flowset_to_store(const uint8_t* pkt,
 
                 netflow_v9_inactive_flow_timeout_received++;
                 device_timeouts.inactive_timeout = inactive_timeout;
-                // logger << log4cpp::Priority::DEBUG << "Got inactive timeout: " << inactive_timeout << " seconds";
+
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG << "Got inactive timeout: " << inactive_timeout << " seconds";
+                }
             } else {
                 netflow_v9_too_large_field++;
 
-                // logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_INACTIVE_TIMEOUT";
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_INACTIVE_TIMEOUT";
+                }
             }
         } else if (elem.record_type == NETFLOW9_FLOW_SAMPLER_ID) {
             if (elem.record_length == 4) {
@@ -1027,7 +1111,9 @@ void netflow9_options_flowset_to_store(const uint8_t* pkt,
 
                 sampler_id = fast_ntoh(sampler_id);
 
-                // logger << log4cpp::Priority::DEBUG << "Got sampler id from options template: " << int(sampler_id);
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG << "Got sampler id from options template: " << int(sampler_id);
+                }
             } else if (elem.record_length == 2) {
                 uint16_t sampler_id = 0;
 
@@ -1039,15 +1125,22 @@ void netflow9_options_flowset_to_store(const uint8_t* pkt,
             } else {
                 netflow_v9_too_large_field++;
 
-                // logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_FLOW_SAMPLER_ID options: " << elem.record_length;
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG
+                           << "Too large field for NETFLOW9_FLOW_SAMPLER_ID options: " << elem.record_length;
+                }
             }
         }
 
-
-        // logger << log4cpp::Priority::ERROR << "Interface number: " << interface_id_to_name.interface_id << " name: '" << interface_id_to_name.interface_description << "'";
-
         offset += elem.record_length;
     }
+
+    // We print only non zero numbers to distinguish cases when we did not receive anything
+    if (logger.getPriority() == log4cpp::Priority::DEBUG && interface_id_to_name.interface_id != 0) {
+        logger << log4cpp::Priority::DEBUG << "Interface number: " << interface_id_to_name.interface_id << " on "
+               << client_addres_in_string_format << " name: '" << interface_id_to_name.interface_description << "'";
+    }
+
 
     update_netflow_v9_sampling_rate(sampling_rate, client_addres_in_string_format);
 
@@ -1056,13 +1149,11 @@ void netflow9_options_flowset_to_store(const uint8_t* pkt,
                                 client_addres_in_string_format, netflow_protocol_version_t::netflow_v9);
 }
 
-void update_netflow_v9_sampling_rate(uint32_t sampling_rate, const std::string& client_addres_in_string_format) {
-    if (sampling_rate == 0) {
+// Incoming sampling rate uses little endian
+void update_netflow_v9_sampling_rate(uint32_t new_sampling_rate, const std::string& client_addres_in_string_format) {
+    if (new_sampling_rate == 0) {
         return;
     }
-
-    // NB! Incoming sampling rate is big endian / network byte order
-    auto new_sampling_rate = fast_ntoh(sampling_rate);
 
     netflow9_custom_sampling_rate_received++;
 
@@ -1091,8 +1182,8 @@ void update_netflow_v9_sampling_rate(uint32_t sampling_rate, const std::string& 
 
                 netflow9_sampling_rate_changes++;
 
-                logger << log4cpp::Priority::INFO << "Detected sampling rate change from " << old_sampling_rate << " to "
-                       << new_sampling_rate << " for " << client_addres_in_string_format;
+                logger << log4cpp::Priority::INFO << "Detected sampling rate change from " << old_sampling_rate
+                       << " to " << new_sampling_rate << " for " << client_addres_in_string_format;
 
             }
         }
@@ -1129,7 +1220,6 @@ void increment_duration_counters_netflow_v9(int64_t duration) {
 
     return;
 }
-
 
 void netflow9_flowset_to_store(const uint8_t* pkt,
                                const netflow9_header_t* netflow9_header,
@@ -1178,7 +1268,8 @@ void netflow9_flowset_to_store(const uint8_t* pkt,
         uint32_t record_type   = iter->record_type;
         uint32_t record_length = iter->record_length;
 
-        bool netflow9_record_to_flow_result = netflow9_record_to_flow(record_type, record_length, pkt + offset, packet, flow_meta, client_addres_in_string_format);
+        bool netflow9_record_to_flow_result = netflow9_record_to_flow(record_type, record_length, pkt + offset, packet,
+                                                                      flow_meta, client_addres_in_string_format);
         // logger<< log4cpp::Priority::INFO<<"Read data with type: "<<record_type<<"
         // and
         // length:"<<record_length;
@@ -1215,9 +1306,7 @@ void netflow9_flowset_to_store(const uint8_t* pkt,
         }
     }
 
-    bool netflow_mark_zero_next_hop_and_zero_output_as_dropped = false;
-
-    if (netflow_mark_zero_next_hop_and_zero_output_as_dropped) {
+    if (false) {
         // For Juniper routers we need fancy logic to mark packets as dropped:
         // https://apps.juniper.net/feature-explorer/feature-info.html?fKey=7679&fn=Enhancements%20to%20inline%20flow%20monitoring
 
@@ -1365,8 +1454,8 @@ bool process_netflow_v9_data(const uint8_t* pkt,
     // "<<flowset_id;
 
     // We should find template here
-    const template_t* field_template =
-        peer_find_template(global_netflow9_templates, global_netflow9_templates_mutex, source_id, flowset_id, client_addres_in_string_format);
+    const template_t* field_template = peer_find_template(global_netflow9_templates, global_netflow9_templates_mutex,
+                                                          source_id, flowset_id, client_addres_in_string_format);
 
     if (field_template == NULL) {
         netflow9_packets_with_unknown_templates++;
@@ -1421,6 +1510,7 @@ bool process_netflow_v9_data(const uint8_t* pkt,
 
     return true;
 }
+
 
 bool process_netflow_packet_v9(const uint8_t* packet,
                                uint32_t packet_length,
@@ -1527,4 +1617,3 @@ bool process_netflow_packet_v9(const uint8_t* packet,
 
     return true;
 }
-

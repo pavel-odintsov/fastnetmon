@@ -1,14 +1,11 @@
 // Netflow v9
 
-#include <cstdint>
-
 #include "../fast_endianless.hpp"
 
 #define NETFLOW9_TEMPLATE_FLOWSET_ID 0
 #define NETFLOW9_OPTIONS_FLOWSET_ID 1
 #define NETFLOW9_MIN_RECORD_FLOWSET_ID 256
 
-/* Flowset record types the we care about */
 #define NETFLOW9_IN_BYTES 1
 #define NETFLOW9_IN_PACKETS 2
 #define NETFLOW9_IN_PROTOCOL 4
@@ -63,6 +60,11 @@
 #define NETFLOW9_SAMPLER_NAME 84
 
 #define NETFLOW9_FORWARDING_STATUS 89
+
+// Legacy field. Recommended replacement is NETFLOW9_DATALINK_FRAME_SIZE
+// Cisco Catalyst 4500 uses this field with field NETFLOW9_LAYER2_PACKET_SECTION_DATA to deliver Netflow v9 lite
+#define NETFLOW9_LAYER2_PACKET_SECTION_SIZE 103
+
 #define NETFLOW9_LAYER2_PACKET_SECTION_DATA 104
 
 #define NETFLOW9_FLOW_ID 148
@@ -82,17 +84,6 @@
 #define NETFLOW9_DATALINK_FRAME_SIZE 312
 #define NETFLOW9_SELECTOR_TOTAL_PACKETS_OBSERVED 318
 #define NETFLOW9_SELECTOR_TOTAL_PACKETS_SELECTED 319
-
-
-// TODO: we need to move away from this logic
-
-// According to spec it should be 4 bytes:
-// http://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
-#define NETFLOW9_FLOW_SAMPLER_RANDOM_INTERVAL_LENGTH 4
-
-// But in real world I saw this one for Cisco ASR1000
-#define NETFLOW9_FLOW_SAMPLER_RANDOM_INTERVAL_LENGTH_ASR1000 2
-
 
 class __attribute__((__packed__)) netflow9_header_common_t {
     public:
@@ -164,4 +155,3 @@ class __attribute__((__packed__)) netflow9_forwarding_status_t {
     public:
     uint8_t reason_code : 6, status : 2;
 };
-
