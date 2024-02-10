@@ -181,6 +181,16 @@ execute_process(COMMAND git rev-list HEAD COMMAND head -n 1 COMMAND cut -c1-8 OU
 message(STATUS "Commit hash: ${GIT_LAST_COMMIT_HASH_SHORT}")
 
 set(FASTNETMON_APPLICATION_VERSION "${FASTNETMON_VERSION_MAJOR}.${FASTNETMON_VERSION_MINOR}.${FASTNETMON_VERSION_PATCH} ${GIT_LAST_COMMIT_HASH_SHORT}")
+
+# Set standard values which work for majority of platforms
+set(FASTNETMON_PID_PATH "/var/run/fastnetmon.pid")
+set(FASTNETMON_CONFIGURATION_PATH "/etc/fastnetmon.conf")
+set(FASTNETMON_LOG_FILE_PATH "/var/log/fastnetmon.log")
+set(FASTNETMON_ATTACK_DETAILS_FOLDER "/var/log/fastnetmon_attacks")
+set(FASTNETMON_NOTIFY_SCRIPT_PATH_DEFAULT "/usr/local/bin/notify_about_attack.sh")
+set(FASTNETMON_NETWORK_WHITELIST_PATH "/etc/networks_whitelist")
+set(FASTNETMON_NETWORKS_LIST_PATH "/etc/networks_list")
+
 configure_file(fast_platform.h.template "${PROJECT_SOURCE_DIR}/fast_platform.hpp")
 
 # Use new Memory Model Aware Atomic Operations

@@ -8,20 +8,20 @@ class FastnetmonPlatformConfigurtion {
     /* Platform specific paths */
     std::string fastnetmon_version = "${FASTNETMON_APPLICATION_VERSION}";
 
-    std::string pid_path = "/var/run/fastnetmon.pid";
-    std::string global_config_path = "/etc/fastnetmon.conf";
+    std::string pid_path = "${FASTNETMON_PID_PATH}";
+    std::string global_config_path = "${FASTNETMON_CONFIGURATION_PATH}";
 
-    std::string log_file_path = "/var/log/fastnetmon.log";
-    std::string attack_details_folder = "/var/log/fastnetmon_attacks";
+    std::string log_file_path = "${FASTNETMON_LOG_FILE_PATH}";
+    std::string attack_details_folder = "${FASTNETMON_ATTACK_DETAILS_FOLDER}";
 
     // Default path to notify script
-    std::string notify_script_path = "/usr/local/bin/notify_about_attack.sh";
+    std::string notify_script_path = "${FASTNETMON_NOTIFY_SCRIPT_PATH_DEFAULT}";
 
     // Default path to file with networks for whitelising
-    std::string white_list_path = "/etc/networks_whitelist";
+    std::string white_list_path = "${FASTNETMON_NETWORK_WHITELIST_PATH}";
 
     // Default path to file with all networks listing
-    std::string networks_list_path = "/etc/networks_list";
+    std::string networks_list_path = "${FASTNETMON_NETWORKS_LIST_PATH}";
 
     /* Platform specific paths end */
 };
