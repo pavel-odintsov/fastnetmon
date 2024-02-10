@@ -191,6 +191,19 @@ set(FASTNETMON_NOTIFY_SCRIPT_PATH_DEFAULT "/usr/local/bin/notify_about_attack.sh
 set(FASTNETMON_NETWORK_WHITELIST_PATH "/etc/networks_whitelist")
 set(FASTNETMON_NETWORKS_LIST_PATH "/etc/networks_list")
 
+# For FreeBSD based platforms we need to adjust them
+if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" OR ${CMAKE_SYSTEM_NAME} STREQUAL "DragonFly")
+  set(FREEBSD_DEFAULT_PREFIX "/usr/local")
+
+  set(FASTNETMON_PID_PATH "/var/run/fastnetmon/fastnetmon.pid")
+  set(FASTNETMON_CONFIGURATION_PATH "${FREEBSD_DEFAULT_PREFIX}/etc/fastnetmon.conf")
+  set(FASTNETMON_LOG_FILE_PATH "/var/log/fastnetmon/fastnetmon.log")
+  set(FASTNETMON_ATTACK_DETAILS_FOLDER "/var/log/fastnetmon_attacks")
+  set(FASTNETMON_NOTIFY_SCRIPT_PATH_DEFAULT "${FREEBSD_DEFAULT_PREFIX}/bin/notify_about_attack.sh")
+  set(FASTNETMON_NETWORK_WHITELIST_PATH "${FREEBSD_DEFAULT_PREFIX}/etc/networks_whitelist")
+  set(FASTNETMON_NETWORKS_LIST_PATH "${FREEBSD_DEFAULT_PREFIX}/etc/networks_list")
+endif()
+
 configure_file(fast_platform.h.template "${PROJECT_SOURCE_DIR}/fast_platform.hpp")
 
 # Use new Memory Model Aware Atomic Operations
