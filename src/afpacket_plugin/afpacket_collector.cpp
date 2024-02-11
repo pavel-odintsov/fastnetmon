@@ -421,8 +421,6 @@ void start_af_packet_capture_for_interface(std::string capture_interface, int fa
             logger << log4cpp::Priority::INFO << "Start AF_PACKET worker process for " << capture_interface
                    << " with fanout group id " << fanout_group_id << " on CPU " << cpu;
 
-// Well, we have thread attributes from Boost 1.50
-#if defined(BOOST_THREAD_PLATFORM_PTHREAD) && BOOST_VERSION / 100 % 1000 >= 50 && defined(__GLIBC__)
             boost::thread::attributes thread_attrs;
 
             if (afpacket_execute_strict_cpu_affinity) {
@@ -445,14 +443,6 @@ void start_af_packet_capture_for_interface(std::string capture_interface, int fa
 
             packet_receiver_thread_group.add_thread(
                 new boost::thread(thread_attrs, boost::bind(start_af_packet_capture, capture_interface, fanout, fanout_group_id)));
-#else
-            bool fanout = true;
-
-            logger.error("Sorry but CPU affinity did not supported for your platform");
-
-            packet_receiver_thread_group.add_thread(
-                new boost::thread(start_af_packet_capture, capture_interface, fanout, fanout_group_id));
-#endif
         }
 
         // Wait all processes for finish
