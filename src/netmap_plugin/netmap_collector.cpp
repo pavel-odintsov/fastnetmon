@@ -206,9 +206,7 @@ void receiver(std::string interface_for_listening) {
 
         logger.info("Start new netmap thread %d", i);
 
-        // Well, we have thread attributes from Boost 1.50
-
-#if defined(BOOST_THREAD_PLATFORM_PTHREAD) && BOOST_VERSION / 100 % 1000 >= 50 && !defined(__APPLE__) && defined(__GLIBC__)
+#if defined(BOOST_THREAD_PLATFORM_PTHREAD) && !defined(__APPLE__)
         /* Bind to certain core */
         boost::thread::attributes thread_attrs;
 
