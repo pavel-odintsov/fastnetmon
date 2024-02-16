@@ -45,8 +45,6 @@ class Fastnetmon < Formula
 
   def install
     system "cmake", "-S", "src", "-B", "build",
-                    "-DENABLE_CUSTOM_BOOST_BUILD=FALSE",             # need to be removed in upstream as we do not need it
-                    "-DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE", # need to be removed in upstream as we do not need it
                     "-DLINK_WITH_ABSL=TRUE",
                     "-DSET_ABSOLUTE_INSTALL_PATH=OFF",
                     *std_cmake_args
@@ -59,8 +57,7 @@ class Fastnetmon < Formula
       opt_sbin/"fastnetmon",
       "--configuration_file",
       etc/"fastnetmon.conf",
-      "--log_to_console",
-      "--disable_pid_logic", # need to be removed in upstream as we do not need it
+      "--log_to_console"
     ]
     keep_alive false
     working_dir HOMEBREW_PREFIX
