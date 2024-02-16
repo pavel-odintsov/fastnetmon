@@ -36,13 +36,6 @@ class Fastnetmon < Formula
 
   fails_with gcc: "5"
 
-  # Fix build with newer `protobuf` using open PR.
-  # PR ref: https://github.com/pavel-odintsov/fastnetmon/pull/997
-  patch do
-    url "https://github.com/pavel-odintsov/fastnetmon/commit/fad8757b8986226024d549a6dfb40abbab01643e.patch?full_index=1"
-    sha256 "2da8dbdf9dc63df9f17067aef20d198123ce1338559d394f29461761e6b85f85"
-  end
-
   def install
     system "cmake", "-S", "src", "-B", "build",
                     "-DLINK_WITH_ABSL=TRUE",
