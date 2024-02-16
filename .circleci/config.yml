@@ -68,10 +68,10 @@ jobs:
       # https://github.com/Homebrew/discussions/discussions/4136
       HOMEBREW_NO_INSTALL_FROM_API: 1
     steps:
+      - run: env
       - checkout
       - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
       - run: cp src/packaging/homebrew/fastnetmon.rb /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/fastnetmon.rb
-      - run: env
       - run: brew install --build-from-source --HEAD --verbose --debug fastnetmon
   build_debian_upstream_package:
     machine:
