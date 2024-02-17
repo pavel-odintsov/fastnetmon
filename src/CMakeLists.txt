@@ -190,6 +190,8 @@ set(FASTNETMON_ATTACK_DETAILS_FOLDER "/var/log/fastnetmon_attacks")
 set(FASTNETMON_NOTIFY_SCRIPT_PATH_DEFAULT "/usr/local/bin/notify_about_attack.sh")
 set(FASTNETMON_NETWORK_WHITELIST_PATH "/etc/networks_whitelist")
 set(FASTNETMON_NETWORKS_LIST_PATH "/etc/networks_list")
+set(FASTNETMON_COMMAND_PIPE_PATH "/var/run/exabgp.cmd")
+set(FASTNETMON_BACKTRACE_PATH "/var/log/fastnetmon_backtrace.dump")
 
 # For FreeBSD based platforms we need to adjust them
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" OR ${CMAKE_SYSTEM_NAME} STREQUAL "DragonFly")
@@ -202,6 +204,8 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Dr
   set(FASTNETMON_NOTIFY_SCRIPT_PATH_DEFAULT "${FREEBSD_DEFAULT_PREFIX}/bin/notify_about_attack.sh")
   set(FASTNETMON_NETWORK_WHITELIST_PATH "${FREEBSD_DEFAULT_PREFIX}/etc/networks_whitelist")
   set(FASTNETMON_NETWORKS_LIST_PATH "${FREEBSD_DEFAULT_PREFIX}/etc/networks_list")
+  set(FASTNETMON_COMMAND_PIPE_PATH "/var/run/fastnetmon/exabgp.cmd")
+  set(FASTNETMON_BACKTRACE_PATH "/var/log/fastnetmon/fastnetmon_backtrace.dump")
 endif()
 
 configure_file(fast_platform.h.template "${PROJECT_SOURCE_DIR}/fast_platform.hpp")
