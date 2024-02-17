@@ -22,9 +22,6 @@ class FastnetmonPlatformConfigurtion {
     // Default path to file with all networks listing
     std::string networks_list_path = "${FASTNETMON_NETWORKS_LIST_PATH}";
 
-    // Path to ExaBGP pipe
-    std::string exabgp_command_pipe = "${FASTNETMON_COMMAND_PIPE_PATH}";
-
     // Path to temporarily store backtrace when fatal failure happened
     std::string backtrace_path = "${FASTNETMON_BACKTRACE_PATH}";
 };

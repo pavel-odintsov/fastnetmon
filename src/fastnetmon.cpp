@@ -236,6 +236,8 @@ bool monitor_openvz_vps_ip_addresses = false;
 // We will announce whole subnet instead single IP with BGP if this flag enabled
 bool exabgp_announce_whole_subnet = false;
 
+std::string exabgp_command_pipe = "";
+
 // We will announce only /32 host
 bool exabgp_announce_host = false;
 
@@ -1515,7 +1517,7 @@ void redirect_fds() {
 // Handles fatal failure of FastNetMon's daemon
 void fatal_signal_handler(int signum) {
     ::signal(signum, SIG_DFL);
-    boost::stacktrace::safe_dump_to(backtrace_path.c_str());
+    boost::stacktrace::safe_dump_to(fastnetmon_platform_configuration.backtrace_path.c_str());
     ::raise(SIGABRT);
 }
 
