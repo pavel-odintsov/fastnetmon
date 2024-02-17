@@ -157,9 +157,6 @@ unsigned int stats_thread_initial_call_delay = 30;
 
 std::string reporting_server = "community-stats.fastnetmon.com";
 
-// Path to temporarily store backtrace when fatal failure happened
-std::string backtrace_path = "/var/log/fastnetmon_backtrace.dump";
-
 // Each this seconds we will check about available data in bucket
 unsigned int check_for_availible_for_processing_packets_buckets = 1;
 
@@ -423,7 +420,6 @@ std::string exabgp_community_subnet = "";
 std::string exabgp_community_host   = "";
 
 
-std::string exabgp_command_pipe = "/var/run/exabgp.cmd";
 std::string exabgp_next_hop     = "";
 
 // Graphite monitoring
