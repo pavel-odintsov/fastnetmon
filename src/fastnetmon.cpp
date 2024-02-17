@@ -1648,9 +1648,9 @@ int main(int argc, char** argv) {
 
     init_logging(log_to_console);
 
-    if (std::filesystem::exists(backtrace_path)) {
+    if (std::filesystem::exists(fastnetmon_platform_configuration.backtrace_path)) {
         // there is a backtrace
-        std::ifstream ifs(backtrace_path);
+        std::ifstream ifs(fastnetmon_platform_configuration.backtrace_path);
 
         boost::stacktrace::stacktrace st = boost::stacktrace::stacktrace::from_dump(ifs);
         logger << log4cpp::Priority::ERROR << "Previous run crashed, you can find stack trace below";
@@ -1658,7 +1658,7 @@ int main(int argc, char** argv) {
 
         // cleaning up
         ifs.close();
-        std::filesystem::remove(backtrace_path);
+        std::filesystem::remove(fastnetmon_platform_configuration.backtrace_path);
     }
 
 #ifdef FASTNETMON_API
