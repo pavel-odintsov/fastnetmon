@@ -322,7 +322,9 @@ std::string print_ban_thresholds(ban_settings_t current_ban_settings) {
 void print_attack_details_to_file(const std::string& details, const std::string& client_ip_as_string, const attack_details_t& current_attack) {
     std::ofstream my_attack_details_file;
 
+    // TODO: it may not work well with systems which do not allow ":" as part of file name (macOS)
     std::string ban_timestamp_as_string = print_time_t_in_fastnetmon_format(current_attack.ban_timestamp);
+    
     std::string attack_dump_path =
         fastnetmon_platform_configuration.attack_details_folder + "/" + client_ip_as_string + "_" + ban_timestamp_as_string + ".txt";
 
@@ -1220,7 +1222,7 @@ void call_blackhole_actions_per_host(attack_action_t attack_action,
 
         std::string full_attack_description = basic_attack_information + "\n\nAttack traffic dump\n\n" + simple_packets_dump + "\n\nFlow dump\n\n" + flow_attack_details;
 
-        if (store_attack_details_to_file && ipv4) {
+        if (store_attack_details_to_file) {
             print_attack_details_to_file(full_attack_description, client_ip_as_string, current_attack);
         }
     }
