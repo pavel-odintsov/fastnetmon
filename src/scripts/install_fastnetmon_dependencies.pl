@@ -109,6 +109,8 @@ sub main {
         'rdkafka_1_7_0',
         'cppkafka_0_3_1',
 
+        'clickhouse_2_3_0',
+
         'gobgp_3_12_0',
         'log4cpp_1_1_4',
         'gtest_1_13_0'
@@ -604,6 +606,17 @@ sub main {
 
             'ubuntu:22.04'        => 'c547ecc1e5d94f557184fe7a9202a56065edc5afcb71d8b803be7d864c20422af889a7ed693623280ee0a0991cabde99901edfa5ed02a352d9bd63f716277f42',
             'ubuntu:aarch64:22.04'=> 'c51ac309888e879d303f4aefaaeba1d86c1e2159a77dc9f0c8e8e0638c1a80f133f32b197cd4aca7e7ca49142ad7e96d964542444de94817eeb2bb608c8e348c',
+        },
+        'clickhouse_2_3_0' => {
+            'centos:7'            => 'tbd',
+            'centos:8'            => 'tbd',
+            'centos:aarch64:8'    => 'tbd',
+            'centos:9'            => 'tbd',
+            'centos:aarch64:9'    => 'tbd',
+            'debian:9'            => 'tbd',
+            'debian:10'           => 'tbd',
+            'debian:11'           => 'tbd',
+            'debian:aarch64:11'   => 'tbd'
         },
         'cppkafka_0_3_1'          => {
             'centos:7'            => '47fc81102062f418a0895f2787bf337da8d7e766b178ed315284cc12913c58b99e395ad044e2e5954299c3c9cde23b3145dc43d4469d360aee66cc850b09b82e',

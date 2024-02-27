@@ -1021,6 +1021,20 @@ sub install_rdkafka {
     return 1;
 }
 
+sub install_clickhouse {
+    my $folder_name = shift;
+
+    my $clickhouse_install_path = "$library_install_folder/$folder_name";
+
+    my $res = install_cmake_based_software("https://github.com/ClickHouse/clickhouse-cpp/archive/refs/tags/v2.3.0.tar.gz", "08a4a2e45ddcb33941c22f5e02177805d7fdd664",
+        $clickhouse_install_path, "$ld_library_path_for_make $cmake_path -DCMAKE_INSTALL_PREFIX:STRING=$clickhouse_install_path -DCMAKE_C_COMPILER=$default_c_compiler_path -DCMAKE_CXX_COMPILER=$default_cpp_compiler_path -DBUILD_SHARED_LIBS:BOOL=ON ..");
+
+    if (!$res) {
+        die "Could not install libclickhouse\n";
+    }
+
+    1;
+}
 
 
 sub install_elfutils {
