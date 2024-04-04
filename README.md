@@ -50,7 +50,6 @@ Features
 - Detects DoS/DDoS in as little as 1-2 seconds
 - Scales up to terabits on single server (sFlow, Netflow, IPFIX) or to 40G + in mirror mode
 - Trigger block/notify script if an IP exceeds defined thresholds for packets/bytes/flows per second
-- [Complete support](https://fastnetmon.com/docs/detected_attack_types/) for most popular attack types
 - Thresholds can be configured per-subnet basis with the hostgroups feature
 - [Email notifications](https://fastnetmon.com/docs/attack_report_example/) about detected attack
 - Complete IPv6 support
