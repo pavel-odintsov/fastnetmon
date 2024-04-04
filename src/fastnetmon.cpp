@@ -1193,11 +1193,11 @@ bool load_our_networks_list() {
     }
 
     if (monitor_local_ip_addresses && file_exists("/sbin/ip")) {
-        logger << log4cpp::Priority::INFO << "We are working on Linux and could use ip tool for detecting local IP's";
+        logger << log4cpp::Priority::INFO << "On Linux we can use ip tool to detect local IPs";
 
         ip_addresses_list_t ip_list = get_local_ip_v4_addresses_list();
 
-        logger << log4cpp::Priority::INFO << "We found " << ip_list.size() << " local IP addresses and will monitor they";
+        logger << log4cpp::Priority::INFO << "We found " << ip_list.size() << " local IP addresses";
 
         for (ip_addresses_list_t::iterator iter = ip_list.begin(); iter != ip_list.end(); ++iter) {
             // TODO: add IPv6 here
