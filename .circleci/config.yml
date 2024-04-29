@@ -346,9 +346,21 @@ workflows:
           name: "ubuntu2204"
           distro_name: "ubuntu"
       - build_debian:
+          docker_image: "ubuntu:noble"
+          distro_version: "24.04"
+          name: "ubuntu2404"
+          distro_name: "ubuntu"
+      - build_debian:
           docker_image: "ubuntu:jammy"
           distro_version: "22.04"
           name: "ubuntu2204_arm"
+          distro_name: "ubuntu"
+          resource_class: "arm.large"
+          debian_package_architecture: "arm64"
+      - build_debian:
+          docker_image: "ubuntu:noble"
+          distro_version: "24.04"
+          name: "ubuntu2404_arm"
           distro_name: "ubuntu"
           resource_class: "arm.large"
           debian_package_architecture: "arm64"
