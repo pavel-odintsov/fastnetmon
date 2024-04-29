@@ -124,6 +124,7 @@ sub main {
     # To guarantee that binary dependencies are not altered in storage side we store their hashes in repository
     my $binary_build_hashes = { 
         'gcc_12_1_0' => {
+            'ubuntu:aarch64:24.04' => '4416ba59762859550b854b5c0ff0af65cc3e9bd78bda631068504b2535f10dbc85a401588d1653556117937a0c4d82bea491eb771d7d97a704a90f92bff091f0',
             'debian:10'           => '2c18964400a6660eae4ee36369c50829fda4ad4ee049c29aa1fd925bf96c3f8eed3ecb619cc02c6f470d0170d56aee1c840a4ca58d8132ca7ae395759aa49fc7',
             
             'debian:11'           => '3ad28bf950a7be070f1de9b3184f1fe9f42405cdbc0f980ab97e13d571a5be1441963a43304d784c135a43278454149039bd2a6252035c7755d4ba5e0eb41480',
@@ -150,6 +151,7 @@ sub main {
             'centos:aarch64:9'    => 'b8d18c9b682c91e1cebb0cf3b1efb2281c6bcea067261e63cff2dee076d4842db3cb213b8ef3d986e03491ddf38e59d4b7ccab5dbe9f82bb7e3d4ef9ddaa772a',
         },
         'openssl_1_1_1q'        => {
+            'ubuntu:aarch64:24.04'=> '6a504201bf3190597a5c923a73ec7e7a33093f622ee107905d3725a85b2ec0c8eba70994db0ad23b46fcb055847f28526e3e92aa777b36eabc1288186d6a9e44',
             'centos:7'            => 'ab9dde43afc7b6bcc4399b6fbd746727e0ce72cf254e9b7f6abcc5c22b319ab82c051546decc6804e508654975089888c544258514e30dc18385ad1dd59d63fb',
             
             'centos:8'            => 'c4c1fe35008606bc65bff4c125fae83738c397fb14081d59cb1e83ad5b8a69b9f80b7c91318c52613f00a7cf5b7a64dd6d23d2956c2ce083fc4c7502e81714cb',
@@ -713,6 +715,7 @@ sub main {
             'centos:aarch64:9'    => 'c441a2450669fb06cc2a237a1098ab1976a49b521069e021fc81de0c34f4de97f954ac3449120f3f80963ce72a7594a449b7cd94ba89b7645397a7a8df469124',
         },
         'pcap_1_10_4' => {
+            'ubuntu:aarch64:24.04'=> 'b65d7aeb1a7f4189d3cf047545270f688c2b9f6bca8a62aababd68121e0e8369efa283bc1290486f188d8f225b1f7c2bf741fd27f2848bae938efbdfac72855d',
             'centos:7'            => '24f30e6d52cf7a76c059734a8feb5e8e8123584cf5bc0be0097a15e3035b984b7c7c74244115b6799dad36a074c69e4aa325113d3d12912ce9719488639e8d36',
 
             'centos:8'            => 'd83e92009cf5f3144b0dccd95e5acd90d7620d3c68f6ce58b5f3b5b71eea7711de986d61b5a9c2544fcae6f4df8259150f031d5c08e9b312b2eed3c6816364f6',
