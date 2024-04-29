@@ -312,7 +312,7 @@ sub main {
             'ubuntu:aarch64:22.04'=> '9f29fd8e1ee6065929c0fc6ab1c39e924a4a9062d4a2fdd060a03885f26d30927d538e6d7cdfea21f1577fb6259c53e7bf25148ba250226f0dff0f6dcd5e1ece',
         },
         'hiredis_0_14'          => {
-            'ubuntu:aarch64:24.04'=>'536b931fd0e8abe22f0bab54f113db5689e2c28b6efdae786696436f0cb796c1a989b1f7a587afbd563f3333bf3f4faa477754d107d22ca04955e5620baec713',
+            'ubuntu:aarch64:24.04'=>'6fe1ced6859c750e05250af05ea386e0166c1b3c54dcd5497310274e8859a8cd7fdc2a298182e19643a3e3c48ac3eea385ec4ee74e7487cd6b159383d57f47cc',
             'centos:7'            => '03afc34178805b87ef5559ead86c70b5ae315dd407fe7627d6d283f46cf94fd7c41b38c75099703531ae5a08f08ec79a349feef905654de265a7f56b16a129f1',
             
             'centos:8'            => 'ccd1828c397ed56e4ea53dd63931bddd24c0164def64ceedca8d477eb0cafd7db12ae07a4da9584331b1af9ef33792da1cb082b3a93df9372df5ad233c5f231e',
