@@ -178,6 +178,7 @@ sub main {
             'ubuntu:aarch64:22.04'=> '303c01b34d86609341dfe6a77c6c0d51192ba654d71a142e2a1ae42c8085073c489586c6fb743f20a18f4d1128001cc15eb2a5d98c6523cad1bfbaef0bed089c',
         }, 
         'cmake_3_23_4'          => {
+            'ubuntu:aarch64:24.04' => 'a8d8af073d6af91ea5a257cbebd6ad4f5fa2aa2f9cf2160272ca7e7463d4b42e6ddb2f3c63b9d8f42a54f057a55fbcd05d96f1cdc9fa0ccd07ceefc465747383',
             'centos:7'            => 'f19d35583461af4a8e90a2c6d3751c586eaae3d18dcf849f992af9add78cf190afe2c5e010ddb9f5913634539222ceb218c2c04861b71691c38f231b3f49f6c5',
             
             'centos:8'            => 'dbe18cd4555aa60783554dcd06d84edac69640d15ef3ec7b4e2ff29e58b643fa8a0bcc2b838d6ae3c52a45043382e40a51888eaf1b45b2de3788931affc9e1c7',
