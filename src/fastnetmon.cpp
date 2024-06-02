@@ -1132,18 +1132,31 @@ bool load_our_networks_list() {
         uint32_t ipv4_whitelists = 0;
         uint32_t ipv6_whitelists = 0;
 
-        for (const auto& subnet : network_list_from_config) {
+        for (const auto& subnet_raw : network_list_from_config) {
+	    // Trim leading and trailing spaces
+	    std::string subnet = boost::algorithm::trim_copy(subnet_raw);
+
             if (subnet.empty()) {
                 continue;
-            }
+	    }
 
-	    // We need to introduce logic to explicitly verify correctness of prefix format
+	    // Ignore comments
+            if (subnet.find("#") == 0) {
+		continue;
+	    }
+
             if (strstr(subnet.c_str(), ":") == NULL) {
-                // IPv4
+                if (!is_cidr_subnet(subnet)) {
+		    logger << log4cpp::Priority::ERROR << "Cannot parse " << subnet << " as IPv4 prefix";
+                    continue;
+		}
+		    
+		// IPv4
                 ipv4_whitelists++;
                 make_and_lookup(whitelist_tree_ipv4, subnet.c_str());
             } else {
                 // IPv6
+		// We need to introduce logic to explicitly verify correctness of IPv6 prefix format
                 ipv6_whitelists++;
                 make_and_lookup_ipv6(whitelist_tree_ipv6, subnet.c_str());
             }
