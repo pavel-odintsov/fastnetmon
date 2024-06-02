@@ -1246,10 +1246,10 @@ bool load_our_networks_list() {
                 continue;
             }
 
-            if (strstr(line_itr->c_str(), ":") == NULL) {
-                networks_list_ipv4_as_string.push_back(*line_itr);
+            if (strstr(subnet.c_str(), ":") == NULL) {
+                networks_list_ipv4_as_string.push_back(subnet);
             } else {
-                networks_list_ipv6_as_string.push_back(*line_itr);
+                networks_list_ipv6_as_string.push_back(subnet);
             }
         }
 
