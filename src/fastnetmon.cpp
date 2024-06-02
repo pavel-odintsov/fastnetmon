@@ -1126,26 +1126,31 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
 
 bool load_our_networks_list() {
     if (file_exists(fastnetmon_platform_configuration.white_list_path)) {
-        unsigned int network_entries                      = 0;
-        std::vector<std::string> network_list_from_config = read_file_to_vector(fastnetmon_platform_configuration.white_list_path);
+        std::vector<std::string> network_list_from_config =
+	    read_file_to_vector(fastnetmon_platform_configuration.white_list_path);
 
-        for (std::vector<std::string>::iterator ii = network_list_from_config.begin(); ii != network_list_from_config.end(); ++ii) {
-            std::string text_subnet = *ii;
-            if (text_subnet.empty()) {
+        uint32_t ipv4_whitelists = 0;
+        uint32_t ipv6_whitelists = 0;
+
+        for (const auto& subnet : network_list_from_config) {
+            if (subnet.empty()) {
                 continue;
             }
-            if (is_v4_host(text_subnet)) {
-                logger << log4cpp::Priority::INFO << "Assuming /32 netmask for " << text_subnet;
-                text_subnet += "/32";
-            } else if (!is_cidr_subnet(text_subnet)) {
-                logger << log4cpp::Priority::ERROR << "Can't parse line from whitelist: " << text_subnet;
-                continue;
+
+	    // We need to introduce logic to explicitly verify correctness of prefix format
+            if (strstr(subnet.c_str(), ":") == NULL) {
+                // IPv4
+                ipv4_whitelists++;
+                make_and_lookup(whitelist_tree_ipv4, subnet.c_str());
+            } else {
+                // IPv6
+                ipv6_whitelists++;
+                make_and_lookup_ipv6(whitelist_tree_ipv6, subnet.c_str());
             }
-            network_entries++;
-            make_and_lookup(whitelist_tree_ipv4, text_subnet.c_str());
         }
 
-        logger << log4cpp::Priority::INFO << "We loaded " << network_entries << " networks from whitelist file";
+        logger << log4cpp::Priority::INFO << "We loaded " << ipv4_whitelists << " IPv4 networks and " << ipv6_whitelists
+           << " IPv6 networks from whitelist";
     }
 
     std::vector<std::string> networks_list_ipv4_as_string;
