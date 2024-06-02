@@ -1227,11 +1227,22 @@ bool load_our_networks_list() {
         std::vector<std::string> network_list_from_config =
             read_file_to_vector(fastnetmon_platform_configuration.networks_list_path);
 
-        for (std::vector<std::string>::iterator line_itr = network_list_from_config.begin();
-             line_itr != network_list_from_config.end(); ++line_itr) {
+        for (const auto& subnet_raw : network_list_from_config) {
+            // Trim leading and trailing spaces
+            std::string subnet = boost::algorithm::trim_copy(subnet_raw);
 
-            if (line_itr->length() == 0) {
+            if (subnet.empty()) {
+                // Empty line
+                continue;
+            }
+
+            if (subnet.length() == 0) {
                 // Skip blank lines in subnet list file silently
+                continue;
+            }
+
+            // Ignore comments
+            if (subnet.find("#") == 0) {
                 continue;
             }
 
