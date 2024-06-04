@@ -71,11 +71,11 @@ option(ENABLE_GOBGP_SUPPORT "Enable GoBGP support build" ON)
 # It can be disabled this way: cmake .. -DENABLE_PCAP_SUPPORT=OFF
 option(ENABLE_PCAP_SUPPORT "Enable PCAP support" ON)
 
-# On some platforms like Fedora we need to explicitly link with libabseil / libabsl.
+# We need to explicitly link with libabsl.
 # We do not use it directly but gRPC uses it for libgpr and we need to link with absl explicitly to avoid linker errors like this:
 # libgpr.so: undefined reference to symbol '_ZN4absl12lts_202103245Mutex4LockEv'
 # /usr/lib64/libabsl_synchronization.so.2103.0.1: error adding symbols: DSO missing from command line
-option(LINK_WITH_ABSL "Enable optonal linking with ABSL" OFF)
+option(LINK_WITH_ABSL "Enable optonal linking with ABSL" ON)
 
 # Kafka support is optional and we do not enable it for build by default
 option(KAFKA_SUPPORT "Enables Kafka support" OFF)
