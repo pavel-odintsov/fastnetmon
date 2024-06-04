@@ -429,6 +429,9 @@ workflows:
       - build_debian_system_dependencies:
           docker_image: "ubuntu:jammy"
           name: "ubuntu2204_system_dependencies"
+      - build_debian_system_dependencies:
+          docker_image: "ubuntu:noble"
+          name: "ubuntu2404_system_dependencies"
       # it's broken due to some changes in Sid
       #- build_debian_system_dependencies:
       #    docker_image: "debian:sid"
