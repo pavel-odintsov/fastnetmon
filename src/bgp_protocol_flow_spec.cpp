@@ -19,6 +19,34 @@
 
 #include "bgp_protocol_flow_spec.hpp"
 
+// We use this encoding in FastNetMon code
+void uint8t_representation_of_tcp_flags_to_flow_spec(uint8_t tcp_flags, flow_spec_tcp_flagset_t& flagset) {
+    if (extract_bit_value(tcp_flags, TCP_SYN_FLAG_SHIFT)) {
+        flagset.syn_flag = true;
+    }
+
+    if (extract_bit_value(tcp_flags, TCP_FIN_FLAG_SHIFT)) {
+        flagset.fin_flag = true;
+    }
+
+    if (extract_bit_value(tcp_flags, TCP_RST_FLAG_SHIFT)) {
+        flagset.rst_flag = true;
+    }
+
+    if (extract_bit_value(tcp_flags, TCP_PSH_FLAG_SHIFT)) {
+        flagset.psh_flag = true;
+    }
+
+    if (extract_bit_value(tcp_flags, TCP_ACK_FLAG_SHIFT)) {
+        flagset.ack_flag = true;
+    }
+
+    if (extract_bit_value(tcp_flags, TCP_URG_FLAG_SHIFT)) {
+        flagset.urg_flag = true;
+    }
+}
+
+
 bool read_flow_spec_fragmentation_types_from_string(const std::string& string_form, flow_spec_fragmentation_types_t& fragment_flag) {
     // Unify case for better experience with this function
     std::string string_form_lowercase = boost::algorithm::to_lower_copy(string_form);

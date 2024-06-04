@@ -355,6 +355,10 @@ add_library(iana_ip_protocols STATIC iana_ip_protocols.cpp)
 add_library(bgp_protocol_flow_spec STATIC bgp_protocol_flow_spec.cpp)
 target_link_libraries(bgp_protocol_flow_spec iana_ip_protocols bgp_protocol)
 
+# Our filtering library
+add_library(filter STATIC filter.cpp)
+target_link_libraries(filter bgp_protocol bgp_protocol_flow_spec)
+
 # Our logic library
 add_library(fastnetmon_logic STATIC fastnetmon_logic.cpp)
 

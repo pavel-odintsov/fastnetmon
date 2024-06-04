@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include "fast_endianless.hpp"
+
 #include "dynamic_binary_buffer.hpp"
 #include "fast_library.hpp"
 #include "fastnetmon_networks.hpp"
@@ -739,3 +741,5 @@ bool valid_port(int32_t port);
 bool encode_flow_spec_to_json_raw(const flow_spec_rule_t& flow_spec_rule, bool add_uuid, nlohmann::json& flow_json);
 std::string flow_spec_fragmentation_flags_to_string(flow_spec_fragmentation_types_t const& fragment_flag);
 std::string flow_spec_tcp_flagset_to_string(flow_spec_tcp_flagset_t const& tcp_flagset);
+void uint8t_representation_of_tcp_flags_to_flow_spec(uint8_t tcp_flags, flow_spec_tcp_flagset_t& flagset);
+
