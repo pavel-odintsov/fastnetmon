@@ -75,7 +75,7 @@ option(ENABLE_PCAP_SUPPORT "Enable PCAP support" ON)
 # We do not use it directly but gRPC uses it for libgpr and we need to link with absl explicitly to avoid linker errors like this:
 # libgpr.so: undefined reference to symbol '_ZN4absl12lts_202103245Mutex4LockEv'
 # /usr/lib64/libabsl_synchronization.so.2103.0.1: error adding symbols: DSO missing from command line
-option(LINK_WITH_ABSL "Enable optonal linking with ABSL" ON)
+option(LINK_WITH_ABSL "Enable optonal linking with ABSL" OFF)
 
 # Kafka support is optional and we do not enable it for build by default
 option(KAFKA_SUPPORT "Enables Kafka support" OFF)
