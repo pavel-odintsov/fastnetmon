@@ -191,6 +191,7 @@ set(FASTNETMON_NOTIFY_SCRIPT_PATH_DEFAULT "/usr/local/bin/notify_about_attack.sh
 set(FASTNETMON_NETWORK_WHITELIST_PATH "/etc/networks_whitelist")
 set(FASTNETMON_NETWORKS_LIST_PATH "/etc/networks_list")
 set(FASTNETMON_BACKTRACE_PATH "/var/log/fastnetmon_backtrace.dump")
+set(FASTNETMON_WHITELIST_RULES_PATH "/etc/whitelist_rules")
 
 # For FreeBSD based platforms we need to adjust them
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" OR ${CMAKE_SYSTEM_NAME} STREQUAL "DragonFly")
@@ -346,6 +347,13 @@ add_library(fast_library STATIC fast_library.cpp)
 add_library(ipfix_rfc STATIC ipfix_fields/ipfix_rfc.cpp)
 
 add_library(bgp_protocol STATIC bgp_protocol.cpp)
+
+# Here we store some service code for getting IP protocol name by number
+add_library(iana_ip_protocols STATIC iana_ip_protocols.cpp)
+
+# BGP Flow Spec
+add_library(bgp_protocol_flow_spec STATIC bgp_protocol_flow_spec.cpp)
+target_link_libraries(bgp_protocol_flow_spec iana_ip_protocols bgp_protocol)
 
 # Our logic library
 add_library(fastnetmon_logic STATIC fastnetmon_logic.cpp)
@@ -944,7 +952,7 @@ target_link_libraries(fastnetmon fastnetmon_pcap_format)
 
 target_link_libraries(fastnetmon ipfix_rfc)
 
-target_link_libraries(fastnetmon_logic bgp_protocol exabgp_action)
+target_link_libraries(fastnetmon_logic bgp_protocol bgp_protocol_flow_spec exabgp_action)
 
 target_link_libraries(fastnetmon_logic protobuf_traffic_format)
 
