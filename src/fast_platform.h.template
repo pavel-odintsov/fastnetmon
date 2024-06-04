@@ -24,4 +24,7 @@ class FastnetmonPlatformConfigurtion {
 
     // Path to temporarily store backtrace when fatal failure happened
     std::string backtrace_path = "${FASTNETMON_BACKTRACE_PATH}";
+
+    // Path to whitelist rules
+    std::string whitelist_rules_path = "${FASTNETMON_WHITELIST_RULES_PATH}";
 };

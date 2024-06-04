@@ -956,7 +956,7 @@ target_link_libraries(fastnetmon fastnetmon_pcap_format)
 
 target_link_libraries(fastnetmon ipfix_rfc)
 
-target_link_libraries(fastnetmon_logic bgp_protocol bgp_protocol_flow_spec exabgp_action)
+target_link_libraries(fastnetmon_logic filter bgp_protocol bgp_protocol_flow_spec exabgp_action)
 
 target_link_libraries(fastnetmon_logic protobuf_traffic_format)
 

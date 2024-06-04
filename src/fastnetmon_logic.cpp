@@ -18,6 +18,10 @@
 #include "fast_library.hpp"
 #include "fast_platform.hpp"
 
+#include "bgp_protocol_flow_spec.hpp"
+
+#include "filter.hpp"
+
 #include "fast_endianless.hpp"
 
 // Plugins
@@ -2388,8 +2392,9 @@ void collect_traffic_to_buckets_ipv4(const simple_packet_t& current_packet, pack
 void process_packet(simple_packet_t& current_packet) {
     extern abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counters;
     extern packet_buckets_storage_t<uint32_t> packet_buckets_ipv4_storage;
-
+    extern std::vector<flow_spec_rule_t> static_flowspec_based_whitelist;
     extern map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
+    extern uint64_t total_flowspec_whitelist_packets;
 
 #ifdef KAFKA
     extern bool kafka_traffic_export;
@@ -2450,6 +2455,19 @@ void process_packet(simple_packet_t& current_packet) {
         export_to_kafka(current_packet);
     }
 #endif
+
+    // Check against static flow spec based whitelist
+    if ((current_packet.packet_direction == INCOMING or current_packet.packet_direction == OUTGOING) &&
+        static_flowspec_based_whitelist.size() > 0) {
+        // We do not use mutex here because we load this list only on startup
+        bool should_we_whitelist_this_packet = filter_packet_by_flowspec_rule_list(current_packet, static_flowspec_based_whitelist);
+
+        if (should_we_whitelist_this_packet) {
+            total_flowspec_whitelist_packets++;
+            return;
+        }
+    }
+
 
     // It's useful in case when we can't find what packets do not processed correctly
     if (DEBUG_DUMP_OTHER_PACKETS && current_packet.packet_direction == OTHER) {

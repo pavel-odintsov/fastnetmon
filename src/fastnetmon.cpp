@@ -64,6 +64,8 @@
 #include "actions/gobgp_action.hpp"
 #endif
 
+#include "bgp_protocol_flow_spec.hpp"
+
 // Yes, maybe it's not an good idea but with this we can guarantee working code in example plugin
 #include "example_plugin/example_collector.hpp"
 
@@ -243,6 +245,9 @@ bool exabgp_announce_host = false;
 
 ban_settings_t global_ban_settings;
 
+// We use these flow spec rules as custom whitelist
+std::vector<flow_spec_rule_t> static_flowspec_based_whitelist;
+
 void init_global_ban_settings() {
     // ban Configuration params
     global_ban_settings.enable_ban_for_pps              = false;
@@ -369,6 +374,8 @@ uint64_t our_ipv6_packets = 0;
 
 uint64_t incoming_total_flows_speed = 0;
 uint64_t outgoing_total_flows_speed = 0;
+
+uint64_t total_flowspec_whitelist_packets         = 0;
 
 // Network counters for IPv6
 abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t, subnet_counter_t> ipv6_subnet_counters;
@@ -1124,6 +1131,46 @@ void subnet_vectors_allocator(prefix_t* prefix, void* data) {
     logger << log4cpp::Priority::INFO << "Successfully allocated " << ipv4_host_counters.average_speed_map.size() << " counters";
 }
 
+// Load flow spec based whitelist
+bool load_whitelist_rules() {
+    if (!file_exists(fastnetmon_platform_configuration.whitelist_rules_path)) {
+	return true;
+    }
+
+    auto whitelist_rules_json = read_file_to_vector(fastnetmon_platform_configuration.whitelist_rules_path);
+
+    logger << log4cpp::Priority::INFO << "Read " << whitelist_rules_json.size() << " whitelist rules from configuration";
+
+    for (auto json_encoded_flow_spec : whitelist_rules_json) {
+        flow_spec_rule_t flow_spec_rule;
+
+        bool need_action_section = false;
+
+        bool parse_result =
+	    read_flow_spec_from_json_to_native_format(json_encoded_flow_spec, flow_spec_rule, need_action_section);
+    
+        if (!parse_result) {
+	    logger << log4cpp::Priority::ERROR << "Cannot parse flowspec whitelist rule: " << json_encoded_flow_spec;
+	    continue;
+        }
+
+        // Print rule to verify that parser worked correctly
+        std::string flow_spec_rule_as_json_to_print;
+
+        if (encode_flow_spec_to_json(flow_spec_rule, flow_spec_rule_as_json_to_print, false)) {
+	    logger << log4cpp::Priority::DEBUG << "Loaded rule " << flow_spec_rule_as_json_to_print;
+        } else {
+	    logger << log4cpp::Priority::ERROR << "Cannot encode flow spec rule for printing";
+        }
+
+        static_flowspec_based_whitelist.push_back(flow_spec_rule);
+    }
+
+    logger << log4cpp::Priority::INFO << "Loaded " << static_flowspec_based_whitelist.size() << " whitelist rules";
+
+    return true;
+}
+
 bool load_our_networks_list() {
     if (file_exists(fastnetmon_platform_configuration.white_list_path)) {
         std::vector<std::string> network_list_from_config =
@@ -1789,6 +1836,8 @@ int main(int argc, char** argv) {
     reconfigure_logging();
 
     load_our_networks_list();
+
+    load_whitelist_rules();
 
     // We should specify size of circular buffers here
     packet_buckets_ipv4_storage.set_buffers_capacity(ban_details_records_count);
