@@ -1203,8 +1203,16 @@ bool load_our_networks_list() {
                 make_and_lookup(whitelist_tree_ipv4, subnet.c_str());
             } else {
                 // IPv6
-		// We need to introduce logic to explicitly verify correctness of IPv6 prefix format
-                ipv6_whitelists++;
+		
+		// Verify IPv6 prefix format    
+		subnet_ipv6_cidr_mask_t ipv6_subnet;
+
+		if (!read_ipv6_subnet_from_string(ipv6_subnet, subnet)) {
+                    logger << log4cpp::Priority::ERROR << "Cannot parse " << subnet << " as IPv6 prefix";
+		    continue;
+		}
+                
+		ipv6_whitelists++;
                 make_and_lookup_ipv6(whitelist_tree_ipv6, subnet.c_str());
             }
         }
