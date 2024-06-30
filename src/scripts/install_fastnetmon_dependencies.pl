@@ -462,8 +462,8 @@ sub main {
 	    'ubuntu:22.04'        => '',
             'ubuntu:aarch64:22.04'=> '',
 
-            'ubuntu:24.04' => '0c5a58e9349acd0250b0fcbc5c39f095c14806ab0743e0650ccfd831e5f8f568517143ba24ffb97401be2743f7d91010c46268cd649acc2bb79c169ad3ca8ac4',
-            'ubuntu:aarch64:24.04'=> '5c4248ef746369f2a995cb7a79d21eb4e4d55b06a824c2fbb5ee4a195462fb96fbafbdb719bdc11a2b3e7b67e09b043ced83842a421006ad9bfa45defefd9b06',
+            'ubuntu:24.04' => '5c4248ef746369f2a995cb7a79d21eb4e4d55b06a824c2fbb5ee4a195462fb96fbafbdb719bdc11a2b3e7b67e09b043ced83842a421006ad9bfa45defefd9b06',
+            'ubuntu:aarch64:24.04'=> '0c5a58e9349acd0250b0fcbc5c39f095c14806ab0743e0650ccfd831e5f8f568517143ba24ffb97401be2743f7d91010c46268cd649acc2bb79c169ad3ca8ac4',
         },
         'cares_1_18_1'          => {
             'centos:7'            => '65902575e20b3297a5a45a6bafcc093a744e4774ea47bb1604c828dfa2eb9a8ccd63cfc4a2bffbb970540ca6f5122235c5e19f10690d898dad341c78a3977383',
