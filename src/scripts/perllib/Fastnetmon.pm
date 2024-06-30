@@ -138,6 +138,17 @@ sub get_library_binary_build_from_google_storage {
         return 0;
     }
 
+    # print "Start sha-512 calculation\n";
+    # Calculate hash of downloaded file
+    my $sha512 = get_sha_512_sum("/tmp/$dependency_archive_name");
+
+    unless ($sha512) {
+        warn "Cannot calculate SHA512 for file from S3\n";
+        return 2;
+    }
+
+    # print "Calculated sha-512 for $dependency_name $sha512\n";
+
     # Hashes for all distros
     my $data_hashes = shift;
 
@@ -152,19 +163,9 @@ sub get_library_binary_build_from_google_storage {
 
     # Hash must exist for all our existing dependencies
     unless ($current_build_hash) {
-        warn "Cannot get $dependency_name hash for Distro $distro_type $distro_version architecture $machine_architecture, please add it to build configuration";
+        warn "Cannot get $dependency_name hash for Distro $distro_type $distro_version architecture $machine_architecture, please add it to build configuration. Retrieved file with hash: $sha512";
         return 2;
     }
-
-    #print "Start sha-512 calculation\n";
-    my $sha512 = get_sha_512_sum("/tmp/$dependency_archive_name");
-
-    unless ($sha512) {
-        warn "Cannot calculate SHA512 for file from S3\n";
-        return 2;
-    }
-
-    # print "Calculated sha-512 for $dependency_name $sha512\n";
 
     if ($sha512 ne $current_build_hash) {
         warn "Hash mismatch. Expected: $current_build_hash got: $sha512. It may be sign of data tampering, please validate data source\n";
