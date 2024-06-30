@@ -27,6 +27,7 @@ set(LOG4CPP_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/log4cpp_1_1
 set(LIBPCAP_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/pcap_1_10_4")
 set(MONGO_C_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/mongo_c_driver_1_23_0")
 set(CAPNP_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/capnproto_0_8_0")
+set(CLICKHOUSE_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/libclickhouse_2_3_0")
 set(OPENSSL_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/openssl_1_1_1q")
 set(GRPC_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/grpc_1_49_2")
 set(LIBBPF_CUSTOM_INSTALL_PATH "${FASTNETMON_LIBRARIES_GLOBAL_PATH}/bpf_1_0_1")
@@ -132,7 +133,7 @@ if (DO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD)
     SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${PROTOCOL_BUFFERS_CUSTOM_INSTALL_PATH}/lib64")
     
     SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${CAPNP_CUSTOM_INSTALL_PATH}/lib")
-    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${OPENSSL_CUSTOM_INSTALL_PATH}/lib")
+    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${CLICKHOUSE_CUSTOM_INSTALL_PATH}/lib")
     SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${LIBBPF_CUSTOM_INSTALL_PATH}/lib64")
     SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${LIBELF_CUSTOM_INSTALL_PATH}/lib")
 
@@ -327,6 +328,26 @@ add_library(simple_packet_capnp STATIC simple_packet_capnp/simple_packet.capnp.c
 
 endif()
 
+# It's disabled by default as we have no CLickhouse support in system repos on many platforms but can be enabled using: 
+# cmake .. -DENABLE_CLICKHOUSE_SUPPORT=ON
+option(ENABLE_CLICKHOUSE_SUPPORT "Enable Cap'N'Proto support build" OFF)
+
+if (ENABLE_CLICKHOUSE_SUPPORT)
+    find_library(CLICKHOUSE_LIBRARY_PATH NAMES clickhouse-cpp-lib PATHS "${CLICKHOUSE_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
+
+    if (CLICKHOUSE_LIBRARY_PATH)
+        message(STATUS "Found libclickhouse library: ${CLICKHOUSE_LIBRARY_PATH}")
+
+	# Enable Clickhouse define in code
+	add_definitions(-DENABLE_CLICKHOUSE_SUPPORT)
+
+    else()
+        message(FATAL_ERROR "We could not find libclickhouse library")
+    endif()
+
+    include_directories("${CLICKHOUSE_CUSTOM_INSTALL_PATH}/include")
+endif()
+
 # Our LPM library
 add_library(patricia STATIC libpatricia/patricia.cpp)
 
@@ -337,6 +358,12 @@ target_link_libraries(fastnetmon graphite_metrics)
 # InfluxDB metrics
 add_library(influxdb_metrics STATIC metrics/influxdb.cpp)
 target_link_libraries(fastnetmon influxdb_metrics)
+
+# Clickhouse metrics
+if (ENABLE_CLICKHOUSE_SUPPORT)
+add_library(clickhouse_metrics STATIC metrics/clickhouse.cpp)
+target_link_libraries(fastnetmon clickhouse_metrics)
+endif()
 
 add_library(fastnetmon_pcap_format STATIC fastnetmon_pcap_format.cpp)
 

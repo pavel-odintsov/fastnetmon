@@ -117,6 +117,11 @@
 #include "metrics/graphite.hpp"
 #include "metrics/influxdb.hpp"
 
+// It's not enabled by default and we enable it only when we have Clickhouse libraries on platform
+#ifdef ENABLE_CLICKHOUSE_SUPPORT
+#include "metrics/clickhouse.hpp"
+#endif
+
 #ifdef KAFKA
 #include <cppkafka/cppkafka.h>
 #endif
