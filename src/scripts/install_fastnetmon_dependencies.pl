@@ -97,7 +97,7 @@ sub main {
         # gRPC dependencies 
         're2_2022_12_01',
         'abseil_2024_01_16',        
-        'zlib_1_2_13',,
+        'zlib_1_3_1',
         'cares_1_18_1',
 
         'protobuf_21_12',
@@ -432,32 +432,35 @@ sub main {
 
             'ubuntu:22.04'        => '',
             'ubuntu:aarch64:22.04'=> '',
+
+	    'ubuntu:22.04'        => '241a7e96c6617993d25e986d63d1d0b62327edcf66497314e30af1bf3e36dac12d4d368f6201e2f72085c5f36766e8bfef413842924bdb79ed9f1ebd95582cbc',
+	    'ubuntu:aarch64:22.04'=> 'fa98a23203d982230fba7235942c4d287d7e066f42a1aed0417503981c44ed83f1a6fd614094ba1ef15f8b58b13cfe29bd5fda822f6b2d157fda8af992e7da78',
         },
-        'zlib_1_2_13'           => {
-            'centos:7'            => '649e8353e1c7ad7597378b25a81e3bccda28441a80a40d12a3e5e5bee34b88681e90157118736358e858a964b1bdc8cb1c35c6df3bdc2aeafe31664abcabb93f',
+	'zlib_1_3_1' => {
+            'centos:7'            => ''
             
-            'centos:8'            => 'f4fa12d80f9a56ecf8dd8ed09de98c1204b8755f7426495ab5671d7dd42828dc31a790e0bab2a4a69224bf8bb6a8f1cdd1bf1444e596d58a08345b98e4ce6f89',
-            'centos:aarch64:8'    => 'f1f417d99472c8c1b2d56ab706867c3b027078dcb6050741750015ff14827ddba30d73adb9f35c1fa0892125872bbe32d2d30e99874b5d7ef36e1b70107593d1',
+            'centos:8'            => '',
+            'centos:aarch64:8'    => '',
 
-            'centos:9'            => 'd0a58e00541a2808db3e701d7f1148e1d68527802a4a63d6b305bf37aca2e39045b28d0527b46d75b9d008c7e8730eddca6c567e8b1d5c7c9381fa71fcaea3ec',
-            'centos:aarch64:9'    => '2eea56c656faa4c1e6668644a3ab5793482f4b645a57163697a63a12769113a21c85a71dab747118d498a3658d359b6934d1c7a9dd533f9e782ef6450abbf3af',
+            'centos:9'            => '',
+            'centos:aarch64:9'    => '',
 
-            'debian:10'           => '8f7d5ae6b8922b0da22c94ad6dac2bde9c30e4902db93666c8dd1e8985c7c658a581a296bd160c5fff9c52c969b95aa806a8ae7dd4ee94eeb165d62a7fa499f8',
+            'debian:10'           => '',
             
-            'debian:11'           => 'f44a69f274b8bad567b197248587c35dfb1ae0a58f921075d79b0c855df347b796593435f6a0ab6af92fd1464ef0a8032e7f2e8889c7844a38a2a04705bf6f5c', 
-            'debian:aarch64:11'   => '1af74cc8d2f7efd29393867475460ead42dad622386ff86cb48b74a8961c5091c3ddcf95968f60f8918f795ab609e24478f1154b6833dbf1fdfa2ed5062266d1',
+            'debian:11'           => '',
+            'debian:aarch64:11'   => '',
 
-            'debian:12' => '83d8a2b298fcb154a842888a28fcd0d000218919a4f28c132eb78c6a4b0f7bf10d80995a0079128957359202ed36ab01178b927a1b428bc6cf74b0bd81e81f11',
-            'debian:aarch64:12' => '9f6ce5568f71dd26258ca7d9c6a0a3fd05381b9b419486f016e29d50cb93762f13eda5d26103059c868739ff92e67dcc9f013d6afbe8d0fbe01e95ed94986a75',
+            'debian:12' => '',
+            'debian:aarch64:12' => '',
 
-            'ubuntu:16.04'        => 'e4a3e89bd72bef42a2fdc3a13559966924361593bd03318532cbe81a5f70ef1991f8e5ab245e4740ef97deae75b907b27d9a8c4ed33d2be88ed912a31d0e7b2e',
-            'ubuntu:18.04'        => '0bfe299e2d99ad9a163e1e32e1f23f0126237f171a05dcbffbe86e2d76ee770a739794e9148d25b66916ce0531eb2811da682f99b1dc9405ec7c5b88db49dd26',
+            'ubuntu:16.04'        => '',
+            'ubuntu:18.04'        => '',
             
-            'ubuntu:20.04'        => 'ad51fa641299a4a72f2c767e0d3c3b754b89482591fb0381a2ebfe6465825b03907203af4384ef85515410ae31be0daf6573c9c381de5a3748ed19ffd56db0e3',
-            'ubuntu:aarch64:20.04'=> '918141f90f74f92aa9ec4194a5cea22baefdfaac601401cf9ab382b5f35707c3e9f005a4f05c79b362a1b5216b4d46fbffadda70158391049991c4174cd81a73',
-
-            'ubuntu:22.04'        => '3458922d32fe306526b48400f5f75dc756f04a2edea355c8e2fa9041d7c3577808e575f648eff1dc0f3e8ef88121efd5ed8fdeaf9a9a89de801ae607ce30f624',
-            'ubuntu:aarch64:22.04'=> '3e7b7250efd933aa8a58b9560b7e231a3496fc8969bb36a97b748a4ae59c9de296679aa1bbed7bd9fdfce7e97f97340e241afd93f2b6c472569a6c7158101953',
+            'ubuntu:20.04'        => '',
+            'ubuntu:aarch64:20.04'=> '',
+            
+	    'ubuntu:22.04'        => '',
+            'ubuntu:aarch64:22.04'=> '',
         },
         'cares_1_18_1'          => {
             'centos:7'            => '65902575e20b3297a5a45a6bafcc093a744e4774ea47bb1604c828dfa2eb9a8ccd63cfc4a2bffbb970540ca6f5122235c5e19f10690d898dad341c78a3977383',

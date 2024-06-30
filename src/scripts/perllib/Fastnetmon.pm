@@ -491,7 +491,7 @@ sub install_bpf {
     }
 
     my $elfutils_install_path = "$library_install_folder/elfutils_0_186";
-    my $zlib_path             = "$library_install_folder/zlib_1_2_13";
+    my $zlib_path             = "$library_install_folder/zlib_1_3_1";
 
     my $archive_file_name = 'v1.0.1.tar.gz ';
 
@@ -830,8 +830,8 @@ sub install_cares {
 sub install_zlib {
     my $folder_name = shift;
 
-    my $res = install_configure_based_software("https://zlib.net/zlib-1.2.13.tar.gz",
-        "55eaa84906f31ac20d725aa26cd20839196b6ba6", "$library_install_folder/$folder_name", "");
+    my $res = install_configure_based_software("https://zlib.net/zlib-1.3.1.tar.gz",
+        "f535367b1a11e2f9ac3bec723fb007fbc0d189e5", "$library_install_folder/$folder_name", "");
 
     unless ($res) {
         warn "Cannot install zlib\n";
