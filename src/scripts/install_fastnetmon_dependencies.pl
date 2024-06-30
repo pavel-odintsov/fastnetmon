@@ -433,7 +433,7 @@ sub main {
             'ubuntu:22.04'        => '',
             'ubuntu:aarch64:22.04'=> '',
 
-	    'ubuntu:24.04'        => '241a7e96c6617993d25e986d63d1d0b62327edcf66497314e30af1bf3e36dac12d4d368f6201e2f72085c5f36766e8bfef413842924bdb79ed9f1ebd95582cbc',
+	    'ubuntu:24.04'        => '1ad4265bde0cee2a25c2a6585277712476979e82245ef8784364804215e1864b2a5931f410c85a65e7aee47b2db494d58e2916278689c6028ff95d1fd56e3056',
 	    'ubuntu:aarch64:24.04'=> '',
         },
 	'zlib_1_3_1' => {
