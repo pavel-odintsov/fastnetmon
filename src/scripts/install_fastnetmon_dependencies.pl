@@ -96,7 +96,7 @@ sub main {
         
         # gRPC dependencies 
         're2_2022_12_01',
-        'abseil_2022_06_23',        
+        'abseil_2024_01_16',        
         'zlib_1_2_13',,
         'cares_1_18_1',
 
@@ -407,31 +407,31 @@ sub main {
             'ubuntu:22.04'        => '6cda2a6653881a8a06af7f7d4b8e16be09bbe5e3ce463a2e62d8f479aa028e81e7eb8489035b55dfedbe5dd223a27f4673337073a216062d7499992153448a5b',
             'ubuntu:aarch64:22.04'=> '530bd200ab98edf4fcaf74f407ff53788a0de676a5a383eef067e819263945bb5e883029a7ae4596b72542e6b7a17af3128592cab8f519dd6d646cd7e6bd5b54',
         },
-        'abseil_2022_06_23'     => {
-            'centos:7'            => '671a77966a021fe8ca8f25d6510a4ddd7bea78815c9952126fcfabe583315d68ae6c9257bca4c0ad351ff15ae9a7f27c4dab0a4dff6b9f296713b4dfdef4573d',
+        'abseil_2024_01_16'     => {
+            'centos:7'            => '',
             
-            'centos:8'            => 'a81445b63bcb97541c39a1afdc330ad15840cd8fdc1fc004ac934cd8acf4b4a50a0755ed8a0e7e64c4fa6f3d99725fc67b9d35f4da4753c597a37f6cf0d0ee5d',
-            'centos:aarch64:8'    => '421aecf02072129c92e47e91edbc550d2cb399d5aa8eb44021262f72d3aaecdb8247d4936a6452af7b48d5f23434d55e9df3927912357a58e05d972896d8b347',
+            'centos:8'            => '',
+            'centos:aarch64:8'    => '',
 
-            'centos:9'            => '247dfe1699a3bb00e57fe3764d2a69f452f4fabf887c8a0134b73afb5516996518e631c23d59fa998cdf992e6e4f364adb54b3479d6bc4ebbe868d21655e1235',
-            'centos:aarch64:9'    => 'c8f7e9a3e065de4c56736fea43d7f55d0fa2e1e2104688616c1bdb5b018d1faed601c00da3207b4b785acd5ec1a6182c015f1897f7e164884eaf84ab52a06607',
+            'centos:9'            => '',
+            'centos:aarch64:9'    => '',
 
-            'debian:10'           => '5256e2da02b15e8e69aadb0a96bbffd03858f3aa37cb08c029d726627ee26b0428fc086e94d8a0ce2c6a402b8484b96b3ccb5aa3a15af800348b26ce4873068a',
+            'debian:10'           => '',
             
-            'debian:11'           => '68be5a422e7b22cc10da9daca3cfe34d33d53f18093c36008eb236b868a6e52e97a4a6b3dc35ce0a4224689d711bbbd63073653622b06cc745294f53bed7ef18', 
-            'debian:aarch64:11'   => '2493497f388797c68154b462660c848067b49d45ef24943d9edac3653a263d6c6129371cc0db07bcfde4bc5533fd45f7a17a792ee4dd4d999872f490962931dd',
+            'debian:11'           => '',
+            'debian:aarch64:11'   => '',
 
-            'debian:12' => '12687c75a8cd4dc99d26963be71dd0b922194f64fa31267a40d6aed7b73de02dbf0bd2a006219abdf0021065821308d9106a6b6a4aa44dbe911299bbe9766777',
-            'debian:aarch64:12' => 'a9d7ec1cd626c6954e24fd0be0979b909fdd4c203bcee967428bc209877e4aec8b6c6b494bfc12b875b523e4fe70b8f25391939c85b2a61ec2293869112f767b',
+            'debian:12' => '',
+            'debian:aarch64:12' => '',
 
-            'ubuntu:16.04'        => '2346e76308afeb174d0825921e2e0b417f268745ceef99ce38f148a00f02ca0763256025245aea56ff4f65922ab63ca037857e9b53377c6be972048e94767cb9',
-            'ubuntu:18.04'        => '4e6da7f81d195e61c92189e3382021ba9180ca25e91067be91d3fb681d35804bce0fbbe7afc82a0d988a063de29895dbef1ce2c3c3a36458f64219ba7eae5792',
+            'ubuntu:16.04'        => '',
+            'ubuntu:18.04'        => '',
             
-            'ubuntu:20.04'        => '08723db3b20b948a8eb2e7e98e548c5030ac44e79b7561e3a9994865eaeec24f48f9904f3d1005e0b7b8818055ffa3d197cc6cd53dbdc7cdca7f1de8f242b245',
-            'ubuntu:aarch64:20.04'=> '23001ad8d467e167d2d287acb8ab50551cb18256a3404afffd8d1e247fa2b390203c4328361ea4e1d3e3bf8342bdd71f34bfddbac90b99e8a652ee730ef7d794',
+            'ubuntu:20.04'        => '',
+            'ubuntu:aarch64:20.04'=> '',
 
-            'ubuntu:22.04'        => '9ba3803665cab932e033721c6be78850453a3db9cfa0b248c1f754f6287d8a6dfe959b6eb967c95b475168d3a4ec41685725a52b8466145b2d9892b79f97283b',
-            'ubuntu:aarch64:22.04'=> 'e0742a48ab2b775c0978a698a672fb4bf4a2f94e73be4a38976e68141c5e71b3c6c38734dfcedc405774eb2e3d175b169cefd73873475d6ccfeed582715643e8',
+            'ubuntu:22.04'        => '',
+            'ubuntu:aarch64:22.04'=> '',
         },
         'zlib_1_2_13'           => {
             'centos:7'            => '649e8353e1c7ad7597378b25a81e3bccda28441a80a40d12a3e5e5bee34b88681e90157118736358e858a964b1bdc8cb1c35c6df3bdc2aeafe31664abcabb93f',
