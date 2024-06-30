@@ -434,7 +434,7 @@ sub main {
             'ubuntu:aarch64:22.04'=> '',
 
 	    'ubuntu:24.04'        => '241a7e96c6617993d25e986d63d1d0b62327edcf66497314e30af1bf3e36dac12d4d368f6201e2f72085c5f36766e8bfef413842924bdb79ed9f1ebd95582cbc',
-	    'ubuntu:aarch64:24.04'=> 'fa98a23203d982230fba7235942c4d287d7e066f42a1aed0417503981c44ed83f1a6fd614094ba1ef15f8b58b13cfe29bd5fda822f6b2d157fda8af992e7da78',
+	    'ubuntu:aarch64:24.04'=> '',
         },
 	'zlib_1_3_1' => {
             'centos:7'            => '',
