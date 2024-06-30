@@ -547,7 +547,7 @@ sub main {
             'ubuntu:22.04'        => '32e28500c2ad633a7780ae514383bdaf91766db0a50c5fbba5079869beedbf1d2fb4c8fe67b05aea7ae9460a7269dde2adc54f1e4c1a6b393ffa84d49a26c885',
             'ubuntu:aarch64:22.04'=> '10ed552dcc8b414e17ef6950c47a75e75ffc1511bc082ebc11a6bcaf07789a8425ec65136a8ae6c9920af60b9e195bd9dd7ff252610bcfdc236dc3021d1b22a5',
             'ubuntu:24.04' => '876dc319e9aab49ba268e853adb9a006b539bea00d8c1ca6d599a6892f525db41369252470c9454ecf0da154e82389495b6c14e4d7c5779a536b59731bc76af4',
-            'ubuntu:aarch64:24.04'=> '1',
+            'ubuntu:aarch64:24.04'=> '100465fb2031673382de62b341c51d543e13e07bbe4806a515560068bed4f157dded45de591c0a33d8c6470d1afa28525003ec1a6b5fcf0ead79d9592d0e8987',
         },
         'elfutils_0_186'        => {
             'centos:7'            => '23acf9d80f72da864310f13b36b941938a841c6418c5378f6c3620a339d0f018376e52509216417ec9c0ce3d65c9a285d2c009ec5245e3ee01e9e54d2f10b2f8',
@@ -763,8 +763,8 @@ sub main {
 
             'centos:9'            => '398948e08847b7ac09a232414dc462abe9c66d098e71de3350fcb9cca38fdf0204a302d7fc75ada4fad33072371059646c4d2167baed311143240de9a8e62091',
             'centos:aarch64:9'    => 'c441a2450669fb06cc2a237a1098ab1976a49b521069e021fc81de0c34f4de97f954ac3449120f3f80963ce72a7594a449b7cd94ba89b7645397a7a8df469124',
-	    'ubuntu:24.04' => '',
-            'ubuntu:aarch64:24.04'=> '',
+	    'ubuntu:24.04' => '1',
+            'ubuntu:aarch64:24.04'=> '1',
         },
         'pcap_1_10_4' => {
 	    'ubuntu:24.04' => 'a6b09826c7b180a84ab5eb6add7e433fd37772610d7f31634e3637f7c6397232bbf558bbcf8d63aa1cab5357297d996dcdfe2da04179c705649156633c0263b5',
