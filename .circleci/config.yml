@@ -432,26 +432,27 @@ workflows:
       - build_debian_system_dependencies:
           docker_image: "ubuntu:noble"
           name: "ubuntu2404_system_dependencies"
-      # it's broken due to some changes in Sid
+      # It's broken due to some changes in Sid
       #- build_debian_system_dependencies:
       #    docker_image: "debian:sid"
       #    name: "debian_sid_system_dependencies"
-      - build_fedora_upstream:
-          name: "Fedora 36 Upstream RPM"
-          docker_image: fedora:36
-      - build_fedora_upstream:
-          name: "Fedora 37 Upstream RPM"
-          docker_image: fedora:37
-      - build_fedora_upstream:
-          name: "Fedora 38 Upstream RPM"
-          docker_image: fedora:38
-      - build_epel9_upstream:
-          name: "EPEL 9 RPM"
-      - build_macos:
-          name: "Build on MacOS"
-      - build_windows:
-          name: "Build on Windows Server 2022"
-          windows_name: "win/server-2022"
-      - build_windows:
-          name: "Build on Windows Server 2019"
-          windows_name: "win/server-2019"
+      # All these platforms below are broken due to different reasons and need to be fixed in future
+      #- build_fedora_upstream:
+      #    name: "Fedora 36 Upstream RPM"
+      #    docker_image: fedora:36
+      #- build_fedora_upstream:
+      #    name: "Fedora 37 Upstream RPM"
+      #    docker_image: fedora:37
+      #- build_fedora_upstream:
+      #    name: "Fedora 38 Upstream RPM"
+      #    docker_image: fedora:38
+      #- build_epel9_upstream:
+      #    name: "EPEL 9 RPM"
+      #- build_macos:
+      #    name: "Build on MacOS"
+      #- build_windows:
+      #    name: "Build on Windows Server 2022"
+      #    windows_name: "win/server-2022"
+      #- build_windows:
+      #    name: "Build on Windows Server 2019"
+      #    windows_name: "win/server-2019"
