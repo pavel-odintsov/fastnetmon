@@ -437,7 +437,7 @@ sub main {
 	    'ubuntu:aarch64:22.04'=> 'fa98a23203d982230fba7235942c4d287d7e066f42a1aed0417503981c44ed83f1a6fd614094ba1ef15f8b58b13cfe29bd5fda822f6b2d157fda8af992e7da78',
         },
 	'zlib_1_3_1' => {
-            'centos:7'            => ''
+            'centos:7'            => '',
             
             'centos:8'            => '',
             'centos:aarch64:8'    => '',
