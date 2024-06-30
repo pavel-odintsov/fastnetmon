@@ -631,7 +631,7 @@ sub main {
             'ubuntu:22.04'        => 'c547ecc1e5d94f557184fe7a9202a56065edc5afcb71d8b803be7d864c20422af889a7ed693623280ee0a0991cabde99901edfa5ed02a352d9bd63f716277f42',
             'ubuntu:aarch64:22.04'=> 'c51ac309888e879d303f4aefaaeba1d86c1e2159a77dc9f0c8e8e0638c1a80f133f32b197cd4aca7e7ca49142ad7e96d964542444de94817eeb2bb608c8e348c',
 	    'ubuntu:24.04' => '17b7aee8a36cbe12029dbe9cbb19857a77147f89f294b3e730cdf0ed2cadf0dc1f34d98e2404b48f130f83d632529bcbf85b8479ed774425cf18f72e1400a3eb',
-            'ubuntu:aarch64:24.04'=> '',
+            'ubuntu:aarch64:24.04'=> '4e518fbb0594447250b7242ab3210c191ef009e2d8f22ec70335d84fdd37b86b07802b20bfdc1e5f6caa89e90b0704b2c35ded3768385a71296b249355c1a92f',
         },
         'clickhouse_2_3_0' => {
             'centos:7'             => 'd265d32ecb417f881c8cef21e6c3d4849105565e4b912feddcbcccf78676caa8afbfccfbb48e3783510ffccdb41cdc76b117d0b953d5455b9cd0aecd1c3b7b0b',
