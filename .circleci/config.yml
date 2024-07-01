@@ -317,10 +317,6 @@ workflows:
   all_distros:
     jobs:
       - build_centos:
-          docker_image: centos:centos7
-          centos_version: "7"
-          name: "centos7"
-      - build_centos:
           docker_image: almalinux:8
           centos_version: "8"
           name: "centos8"
