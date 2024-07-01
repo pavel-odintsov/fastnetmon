@@ -373,23 +373,6 @@ workflows:
           resource_class: "arm.large"
           debian_package_architecture: "arm64"
       - build_debian:
-          docker_image: "ubuntu:bionic"
-          distro_version: "18.04"
-          name: "ubuntu1804"
-          distro_name: "ubuntu"
-      - build_debian:
-          docker_image: "ubuntu:xenial"
-          distro_version: "16.04"
-          name: "ubuntu1604"
-          distro_name: "ubuntu"
-      - build_debian:
-          docker_image: "debian:buster"
-          distro_version: "10"
-          name: "debian10"
-          distro_name: "debian"
-          # We do it this way because this version of Debian has no s3cmd in official repos for some reasons: https://packages.debian.org/buster-backports/s3cmd
-          s3cmd_install_command: "apt-get install -y python3-pip && pip3 install s3cmd"
-      - build_debian:
           docker_image: "debian:bullseye"
           distro_version: "11"
           name: "debian11"
