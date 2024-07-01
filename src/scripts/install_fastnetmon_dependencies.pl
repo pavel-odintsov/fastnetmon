@@ -527,12 +527,12 @@ sub main {
             'centos:8'            => 'acbaea6e9522a860ec11d59c8a28d54f08a8d8d7400d4f14c9bbe711685d612f9f5aa063b07bbf8ce9b886ccfb295a2fde7f0410d4ecc9daa67e03c4f15fbff0',
             'centos:aarch64:8'    => '458281ec94a6421cb43f2fdb0ab3d5f0a4124f6cabcaa53ad3fea65236149eeaafd117e8471605d4fb6ccd7727b6a9c874fc977db5ac59f61d6a2075a923ee91',
 
-            'centos:9'            => '',
+            'centos:9'            => '9bf7bc55e267d3d70ebe784391f955e3f0d72c23708b542d3786944e55936eac0291acbe4fe2bcd36545329aaa27cc105016e3cfd4580130706d8ab55c919fbb',
             'centos:aarch64:9'    => '33d67cdc11e563c64f810dc446232710f29a09704e8dc5618e1b45aa6cc028bd6e8f43337ec07a614c2f2b8680573e5a78b6dda243fdbb8a2e41e37ee2bcf8f1',
 
             'debian:10'           => 'f62b27dafca95ef4bf9ae4177b3d1ac25cb17d5e6b64816694ebc234b3653e64555a953398f86f6652f4ff2038d81a5cee4b828472bb900155999e62c2a9b128',
             
-            'debian:11'           => '',
+            'debian:11'           => '327548fe0b1b5419779a4ee16c4e09b5b6cb19af397720018d8af7755c33850693b1e56c4b422654f0c56d25bcd2d7230cf630a7034360a4315d853b2851b636',
             'debian:aarch64:11'   => 'aead130b4e3fc1bd846ed4260ad54bc6ca56bc60aaef32995074027ca049ed6010afe66df559e1276f37cb112321ee7f56c7962f54cf5851ff0973e4a3a2ee4b',
 
             'debian:12' => 'fd96041122531ff450a42d59110fc729149f52178e3922ccfa45abd3b91d53b57f250410282a3a26f1e5ddb896d6ecd6eb4d23c3fb3bd89423427d5dde5ff970',
