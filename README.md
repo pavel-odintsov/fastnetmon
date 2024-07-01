@@ -111,4 +111,4 @@ CI build status
 Upstream versions in different distributions
 --------------
 
-[![FastNetMon upstream distro packaging status](https://repology.org/badge/vertical-allrepos/fastnetmon.svg)](https://repology.org/project/fastnetmon/versions)
+[![FastNetMon upstream distro packaging status](https://repology.org/badge/vertical-allrepos/fastnetmon.svg)](https://repology.org/project/fastnetmon/versions) 
