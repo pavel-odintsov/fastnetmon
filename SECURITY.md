@@ -8,4 +8,4 @@ Debian, Ubuntu, Fedora, FreeBSD packages in their official repositories have the
 
 ## Reporting a Vulnerability
 
-To report vulkhnerability please use this interface https://support.fastnetmon.com/hc/en-gb/requests/new We guarantee initial feedback in 48 hours. 
+To report vulnerability please use this interface https://support.fastnetmon.com/hc/en-gb/requests/new We guarantee initial feedback in 48 hours. 
