@@ -330,17 +330,17 @@ add_library(simple_packet_capnp STATIC simple_packet_capnp/simple_packet.capnp.c
 endif()
 
 # It's disabled by default as we have no CLickhouse support in system repos on many platforms but can be enabled using: 
-# cmake .. -DENABLE_CLICKHOUSE_SUPPORT=ON
-option(ENABLE_CLICKHOUSE_SUPPORT "Enable Cap'N'Proto support build" OFF)
+# cmake .. -DCLICKHOUSE_SUPPORT=ON
+option(CLICKHOUSE_SUPPORT "Enable Cap'N'Proto support build" OFF)
 
-if (ENABLE_CLICKHOUSE_SUPPORT)
+if (CLICKHOUSE_SUPPORT)
     find_library(CLICKHOUSE_LIBRARY_PATH NAMES clickhouse-cpp-lib PATHS "${CLICKHOUSE_CUSTOM_INSTALL_PATH}/lib" ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
 
     if (CLICKHOUSE_LIBRARY_PATH)
         message(STATUS "Found libclickhouse library: ${CLICKHOUSE_LIBRARY_PATH}")
 
 	# Enable Clickhouse define in code
-	add_definitions(-DENABLE_CLICKHOUSE_SUPPORT)
+	add_definitions(-DCLICKHOUSE_SUPPORT)
 
     else()
         message(FATAL_ERROR "We could not find libclickhouse library")
@@ -361,7 +361,7 @@ add_library(influxdb_metrics STATIC metrics/influxdb.cpp)
 target_link_libraries(fastnetmon influxdb_metrics)
 
 # Clickhouse metrics
-if (ENABLE_CLICKHOUSE_SUPPORT)
+if (CLICKHOUSE_SUPPORT)
 add_library(clickhouse_metrics STATIC metrics/clickhouse.cpp)
 target_link_libraries(fastnetmon clickhouse_metrics)
 endif()
