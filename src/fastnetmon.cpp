@@ -386,6 +386,12 @@ uint64_t outgoing_total_flows_speed = 0;
 
 uint64_t total_flowspec_whitelist_packets         = 0;
 
+std::string clickhouse_metrics_writes_total_desc = "Total number of Clickhouse writes";
+uint64_t clickhouse_metrics_writes_total         = 0; 
+
+std::string clickhouse_metrics_writes_failed_desc = "Total number of failed Clickhouse writes";
+uint64_t clickhouse_metrics_writes_failed         = 0;
+
 // Network counters for IPv6
 abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t, subnet_counter_t> ipv6_subnet_counters;
 
