@@ -6,10 +6,14 @@
 #include "../fast_library.hpp"
 #include "../fastnetmon_types.hpp"
 
+#include "../all_logcpp_libraries.hpp"
+
 extern fastnetmon_configuration_t fastnetmon_global_configuration;
 
 extern uint64_t clickhouse_metrics_writes_total;
 extern uint64_t clickhouse_metrics_writes_failed;
+
+extern log4cpp::Category& logger;
 
 // I do this declaration here to avoid circular dependencies between fastnetmon_logic and this file
 bool get_statistics(std::vector<system_counter_t>& system_counters);
@@ -726,21 +730,20 @@ bool push_total_traffic_counters_to_clickhouse(clickhouse::Client* clickhouse_me
     block.AppendColumn("packets", metrics.packets);
     block.AppendColumn("bits", metrics.bits);
 
-    if (per_protocol_counters) {
-        block.AppendColumn("tcp_packets", metrics.tcp_packets);
-        block.AppendColumn("udp_packets", metrics.udp_packets);
-        block.AppendColumn("icmp_packets", metrics.icmp_packets);
-        block.AppendColumn("fragmented_packets", metrics.fragmented_packets);
-        block.AppendColumn("tcp_syn_packets", metrics.tcp_syn_packets);
-        block.AppendColumn("dropped_packets", metrics.dropped_packets);
+    // Per protocol
+    block.AppendColumn("tcp_packets", metrics.tcp_packets);
+    block.AppendColumn("udp_packets", metrics.udp_packets);
+    block.AppendColumn("icmp_packets", metrics.icmp_packets);
+    block.AppendColumn("fragmented_packets", metrics.fragmented_packets);
+    block.AppendColumn("tcp_syn_packets", metrics.tcp_syn_packets);
+    block.AppendColumn("dropped_packets", metrics.dropped_packets);
 
-        block.AppendColumn("tcp_bits", metrics.tcp_bits);
-        block.AppendColumn("udp_bits", metrics.udp_bits);
-        block.AppendColumn("icmp_bits", metrics.icmp_bits);
-        block.AppendColumn("fragmented_bits", metrics.fragmented_bits);
-        block.AppendColumn("tcp_syn_bits", metrics.tcp_syn_bits);
-        block.AppendColumn("dropped_bits", metrics.dropped_bits);
-    }
+    block.AppendColumn("tcp_bits", metrics.tcp_bits);
+    block.AppendColumn("udp_bits", metrics.udp_bits);
+    block.AppendColumn("icmp_bits", metrics.icmp_bits);
+    block.AppendColumn("fragmented_bits", metrics.fragmented_bits);
+    block.AppendColumn("tcp_syn_bits", metrics.tcp_syn_bits);
+    block.AppendColumn("dropped_bits", metrics.dropped_bits);
 
     clickhouse_metrics_writes_total++;
 
