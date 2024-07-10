@@ -85,6 +85,8 @@
 
 #include <boost/program_options.hpp>
 
+#include "fastnetmon_configuration_scheme.hpp"
+
 #include "all_logcpp_libraries.hpp"
 
 // We do not have syslog.h on Windows
@@ -142,6 +144,8 @@ bool enable_api = false;
 #ifdef KAFKA
 cppkafka::Producer* kafka_traffic_export_producer = nullptr;
 #endif
+
+fastnetmon_configuration_t fastnetmon_global_configuration;
 
 // Traffic export to Kafka
 bool kafka_traffic_export = false;
