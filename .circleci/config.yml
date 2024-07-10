@@ -347,6 +347,9 @@ jobs:
       - run: sudo docker commit `sudo docker ps | tail -1 | awk '{print $1}'` ghcr.io/pavel-odintsov/fastnetmon-community-developer-<< parameters.pretty_tag_name >>:latest
       - run: sudo docker images
       - run: echo $CR_PAT | sudo docker login ghcr.io -u pavel-odintsov --password-stdin
+      # Please be sure that you do not use flag -E for sudo command below as it breaks all things and leads to error:
+      # unauthorized: unauthenticated: User cannot be authenticated with the token provided.
+      # I have no explanation but that's only way how it works correctly
       - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community-developer-<< parameters.pretty_tag_name >>:latest
 
 workflows:
