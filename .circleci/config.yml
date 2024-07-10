@@ -329,7 +329,7 @@ jobs:
       DEBIAN_FRONTEND: noninteractive
     resource_class: << parameters.resource_class >>
     steps:
-      - run: sudo docker run --name  linux_docker --label "org.opencontainers.image.source https://github.com/pavel-odintsov/fastnetmon" -d -t << parameters.docker_image >>
+      - run: sudo docker run --name  linux_docker --label "org.opencontainers.image.source=https://github.com/pavel-odintsov/fastnetmon" -d -t << parameters.docker_image >>
       - run: sudo docker exec linux_docker apt-get update; true
       - run: sudo docker exec linux_docker apt-get install -y perl wget git s3cmd
       - run: sudo docker exec linux_docker git clone https://github.com/pavel-odintsov/fastnetmon.git
