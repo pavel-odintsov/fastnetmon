@@ -456,7 +456,7 @@ workflows:
           docker_image: "ubuntu:24.04"
           name: "ubuntu2404_system_dependencies"
       - build_ubuntu_developer_docker_image:
-           docker_image: "ubuntu:24.04"
+          docker_image: "ubuntu:24.04"
           name: "Ubuntu 24.04 developer images"
       # It's broken due to some changes in Sid
       #- build_debian_system_dependencies:
