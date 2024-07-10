@@ -855,6 +855,35 @@ bool load_configuration_file() {
         influxdb_password = configuration_map["influxdb_password"];
     }
 
+    // Clickhouse
+    if (configuration_map.contains("clickhouse_metrics")) {
+        fastnetmon_global_configuration.clickhouse_metrics = configuration_map["clickhouse_metrics"] == "on" ? true : false;
+    }
+
+    if (configuration_map.contains("clickhouse_metrics_database")) {
+        fastnetmon_global_configuration.clickhouse_metrics_database = configuration_map["clickhouse_metrics_database"];
+    }
+
+    if (configuration_map.contains("clickhouse_metrics_username")) {
+        fastnetmon_global_configuration.clickhouse_metrics_username = configuration_map["clickhouse_metrics_username"];
+    }
+
+    if (configuration_map.contains("clickhouse_metrics_password")) {
+        fastnetmon_global_configuration.clickhouse_metrics_password = configuration_map["clickhouse_metrics_password"];
+    }
+
+    if (configuration_map.contains("clickhouse_metrics_host")) {
+        fastnetmon_global_configuration.clickhouse_metrics_host = configuration_map["clickhouse_metrics_host"];
+    }
+
+    if (configuration_map.contains("clickhouse_metrics_port") != 0) {
+        fastnetmon_global_configuration.clickhouse_metrics_port = convert_string_to_integer(configuration_map["clickhouse_metrics_port"]);
+    }
+
+    if (configuration_map.contains("clickhouse_metrics_push_period") != 0) {
+        fastnetmon_global_configuration.clickhouse_metrics_push_period = convert_string_to_integer(configuration_map["clickhouse_metrics_push_period"]);
+    }
+
     if (configuration_map.count("process_incoming_traffic") != 0) {
         process_incoming_traffic = configuration_map["process_incoming_traffic"] == "on" ? true : false;
     }
