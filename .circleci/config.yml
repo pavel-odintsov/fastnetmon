@@ -317,10 +317,6 @@ jobs:
       docker_image:
         type: string
         default: "ubuntu:24.04"
-      distro_version:
-        type: string
-      distro_name: 
-        type: string
       resource_class:
         type: string
         default: large
