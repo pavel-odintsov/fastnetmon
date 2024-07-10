@@ -873,10 +873,8 @@ push_network_traffic_counters_to_clickhouse(clickhouse::Client* clickhouse_metri
 
     register_clickhouse_network_metrics_block(block, metrics);
 
-    // Register these fields only if we have enabled per protocol metrics
-    if (per_protocol_counters) {
-        register_clickhouse_per_protocol_metrics_block(block, metrics.pp);
-    }
+    // Per protocol metrics
+    register_clickhouse_per_protocol_metrics_block(block, metrics.pp);
 
     clickhouse_metrics_writes_total++;
 
