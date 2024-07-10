@@ -312,6 +312,50 @@ jobs:
       - run: sudo docker exec linux_docker /opt/fastnetmon-community/app/bin/fastnetmon_api_client --help
       - run: sudo docker exec linux_docker /opt/fastnetmon-community/app/bin/fastnetmon_client --help
       - run: sudo docker exec linux_docker /opt/fastnetmon-community/app/bin/fastnetmon --configuration_check
+  build_ubuntu_developer_docker_image:
+    parameters:
+      docker_image:
+        type: string
+        default: "ubuntu:24.04"
+      distro_version:
+        type: string
+      distro_name: 
+        type: string
+      resource_class:
+        type: string
+        default: large
+      pretty_tag_name:
+        type: string
+        default: "24-04"
+    machine:
+      image: ubuntu-2204:current
+    environment:
+      DEBIAN_FRONTEND: noninteractive
+    resource_class: << parameters.resource_class >>
+    steps:
+      - run: sudo docker run --name  linux_docker -d -t << parameters.docker_image >>
+      - run: sudo docker exec linux_docker apt-get update; true
+      - run: sudo docker exec linux_docker apt-get install -y perl wget git
+      - run: sudo docker exec linux_docker git clone https://github.com/pavel-odintsov/fastnetmon.git
+      - run:
+          name: install_gcc
+          no_output_timeout: 120m 
+          command: sudo -E docker exec --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY linux_docker perl fastnetmon/src/scripts/install_fastnetmon_dependencies.pl gcc_12_1_0
+      - run:
+          name: install_dependencies
+          no_output_timeout: 180m
+          command: sudo -E docker exec --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY linux_docker perl fastnetmon/src/scripts/install_fastnetmon_dependencies.pl
+      - run: sudo docker exec linux_docker ..
+
+      - run: sudo docker images
+      - run: sudo docker ps
+      - run: sudo docker ps | tail -1 | awk '{print $1}'
+      - run: sudo docker commit `sudo docker ps | tail -1 | awk '{print $1}'` ghcr.io/pavel-odintsov/fastnetmon-community-developer-<< parameters.pretty_tag_name >>:latest
+      - run: sudo docker images
+      - run: sudo docker images
+      - run: echo $CR_PAT | sudo docker login ghcr.io -u pavel-odintsov --password-stdin
+      - run: sudo -E docker push ghcr.io/pavel-odintsov/fastnetmon-community-developer-<< parameters.pretty_tag_name >>:latest
+
 workflows:
   version: 2
   all_distros:
@@ -409,8 +453,11 @@ workflows:
           docker_image: "ubuntu:jammy"
           name: "ubuntu2204_system_dependencies"
       - build_debian_system_dependencies:
-          docker_image: "ubuntu:noble"
+          docker_image: "ubuntu:24.04"
           name: "ubuntu2404_system_dependencies"
+      - build_ubuntu_developer_docker_image:
+           docker_image: "ubuntu:24.04"
+          name: "Ubuntu 24.04 developer images"
       # It's broken due to some changes in Sid
       #- build_debian_system_dependencies:
       #    docker_image: "debian:sid"
