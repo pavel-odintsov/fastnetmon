@@ -341,13 +341,10 @@ jobs:
           name: install_dependencies
           no_output_timeout: 180m
           command: sudo -E docker exec --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY linux_docker perl fastnetmon/src/scripts/install_fastnetmon_dependencies.pl
-      - run: sudo docker exec linux_docker ..
-
       - run: sudo docker images
       - run: sudo docker ps
       - run: sudo docker ps | tail -1 | awk '{print $1}'
       - run: sudo docker commit `sudo docker ps | tail -1 | awk '{print $1}'` ghcr.io/pavel-odintsov/fastnetmon-community-developer-<< parameters.pretty_tag_name >>:latest
-      - run: sudo docker images
       - run: sudo docker images
       - run: echo $CR_PAT | sudo docker login ghcr.io -u pavel-odintsov --password-stdin
       - run: sudo -E docker push ghcr.io/pavel-odintsov/fastnetmon-community-developer-<< parameters.pretty_tag_name >>:latest
