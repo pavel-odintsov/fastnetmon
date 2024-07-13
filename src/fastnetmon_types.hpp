@@ -264,18 +264,58 @@ enum amplification_attack_type_t {
     AMPLIFICATION_ATTACK_CHARGEN = 6,
 };
 
-class total_counter_element_t {
+class single_counter_element_t {
     public:
-    uint64_t bytes;
-    uint64_t packets;
-    uint64_t flows;
+    uint64_t bytes   = 0;
+    uint64_t packets = 0;
+    uint64_t flows   = 0;
 
     void zeroify() {
         bytes   = 0;
         packets = 0;
         flows   = 0;
     }
+
+    template <class Archive> void serialize(Archive& ar, [[maybe_unused]] const unsigned int version) {
+        ar& BOOST_SERIALIZATION_NVP(bytes);
+        ar& BOOST_SERIALIZATION_NVP(packets);
+        ar& BOOST_SERIALIZATION_NVP(flows);
+    }
 };
+
+
+class total_counter_element_t {
+    public:
+    single_counter_element_t total{};
+    single_counter_element_t tcp;
+    single_counter_element_t udp;
+    single_counter_element_t icmp;
+    single_counter_element_t fragmented;
+    single_counter_element_t tcp_syn;
+    single_counter_element_t dropped;
+
+
+    void zeroify() {
+        total.zeroify();
+        tcp.zeroify();
+        udp.zeroify();
+        icmp.zeroify();
+        fragmented.zeroify();
+        tcp_syn.zeroify();
+        dropped.zeroify();
+    }
+
+    template <class Archive> void serialize(Archive& ar, [[maybe_unused]] const unsigned int version) {
+        ar& BOOST_SERIALIZATION_NVP(total);
+        ar& BOOST_SERIALIZATION_NVP(tcp);
+        ar& BOOST_SERIALIZATION_NVP(udp);
+        ar& BOOST_SERIALIZATION_NVP(icmp);
+        ar& BOOST_SERIALIZATION_NVP(fragmented);
+        ar& BOOST_SERIALIZATION_NVP(tcp_syn);
+        ar& BOOST_SERIALIZATION_NVP(dropped);
+    }
+};
+
 
 // Set of structures for calculating total traffic counters
 class total_speed_counters_t {

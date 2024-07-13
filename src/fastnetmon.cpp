@@ -257,6 +257,9 @@ ban_settings_t global_ban_settings;
 // We use these flow spec rules as custom whitelist
 std::vector<flow_spec_rule_t> static_flowspec_based_whitelist;
 
+std::string graphite_thread_execution_time_desc = "Time consumed by pushing data to Graphite";
+struct timeval graphite_thread_execution_time;
+
 void init_global_ban_settings() {
     // ban Configuration params
     global_ban_settings.enable_ban_for_pps              = false;
@@ -1986,14 +1989,21 @@ int main(int argc, char** argv) {
     service_thread_group.add_thread(new boost::thread(screen_draw_ipv6_thread));
 
     // Graphite export thread
-    if (graphite_enabled) {
+    if (fastnetmon_global_configuration.graphite) {
         service_thread_group.add_thread(new boost::thread(graphite_push_thread));
     }
 
     // InfluxDB export thread
-    if (influxdb_enabled) {
+    if (fastnetmon_global_configuration.influxdb) {
         service_thread_group.add_thread(new boost::thread(influxdb_push_thread));
     }
+
+#ifdef ENABLE_CLICKHOUSE_SUPPORT
+    // Clickhouse metrics export therad
+    if (fastnetmon_global_configuration.clickhouse_metrics) {
+        service_thread_group.add_thread(new boost::thread(clickhouse_push_thread));
+    }
+#endif
 
     // start thread for recalculating speed in realtime
     service_thread_group.add_thread(new boost::thread(recalculate_speed_thread_handler));

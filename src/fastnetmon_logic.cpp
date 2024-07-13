@@ -1392,8 +1392,8 @@ void store_data_in_mongo(std::string key_name, std::string attack_details_json) 
 
 // pretty print channel speed in pps and MBit
 std::string print_channel_speed(std::string traffic_type, direction_t packet_direction) {
-    uint64_t speed_in_pps = total_counters_ipv4.total_speed_average_counters[packet_direction].packets;
-    uint64_t speed_in_bps = total_counters_ipv4.total_speed_average_counters[packet_direction].bytes;
+    uint64_t speed_in_pps = total_counters_ipv4.total_speed_average_counters[packet_direction].total.packets;
+    uint64_t speed_in_bps = total_counters_ipv4.total_speed_average_counters[packet_direction].total.bytes;
 
     unsigned int number_of_tabs = 1;
     // We need this for correct alignment of blocks
@@ -1957,49 +1957,49 @@ void recalculate_speed() {
 
     // Calculate IPv4 total traffic speed
     for (unsigned int index = 0; index < 4; index++) {
-        total_counters_ipv4.total_speed_counters[index].bytes =
-            uint64_t((double)total_counters_ipv4.total_counters[index].bytes / (double)speed_calc_period);
+        total_counters_ipv4.total_speed_counters[index].total.bytes =
+            uint64_t((double)total_counters_ipv4.total_counters[index].total.bytes / (double)speed_calc_period);
 
-        total_counters_ipv4.total_speed_counters[index].packets =
-            uint64_t((double)total_counters_ipv4.total_counters[index].packets / (double)speed_calc_period);
+        total_counters_ipv4.total_speed_counters[index].total.packets =
+            uint64_t((double)total_counters_ipv4.total_counters[index].total.packets / (double)speed_calc_period);
 
         double exp_power = -speed_calc_period / average_calculation_amount;
         double exp_value = exp(exp_power);
 
-        total_counters_ipv4.total_speed_average_counters[index].bytes =
-            uint64_t(total_counters_ipv4.total_speed_counters[index].bytes +
-                     exp_value * ((double)total_counters_ipv4.total_speed_average_counters[index].bytes -
-                                  (double)total_counters_ipv4.total_speed_counters[index].bytes));
+        total_counters_ipv4.total_speed_average_counters[index].total.bytes =
+            uint64_t(total_counters_ipv4.total_speed_counters[index].total.bytes +
+                     exp_value * ((double)total_counters_ipv4.total_speed_average_counters[index].total.bytes -
+                                  (double)total_counters_ipv4.total_speed_counters[index].total.bytes));
 
-        total_counters_ipv4.total_speed_average_counters[index].packets =
-            uint64_t(total_counters_ipv4.total_speed_counters[index].packets +
-                     exp_value * ((double)total_counters_ipv4.total_speed_average_counters[index].packets -
-                                  (double)total_counters_ipv4.total_speed_counters[index].packets));
+        total_counters_ipv4.total_speed_average_counters[index].total.packets =
+            uint64_t(total_counters_ipv4.total_speed_counters[index].total.packets +
+                     exp_value * ((double)total_counters_ipv4.total_speed_average_counters[index].total.packets -
+                                  (double)total_counters_ipv4.total_speed_counters[index].total.packets));
 
         // nullify data counters after speed calculation
-        total_counters_ipv4.total_counters[index].bytes   = 0;
-        total_counters_ipv4.total_counters[index].packets = 0;
+        total_counters_ipv4.total_counters[index].total.bytes   = 0;
+        total_counters_ipv4.total_counters[index].total.packets = 0;
     }
 
     // Do same for IPv6
     for (unsigned int index = 0; index < 4; index++) {
-        total_counters_ipv6.total_speed_counters[index].bytes =
-            uint64_t((double)total_counters_ipv6.total_counters[index].bytes / (double)speed_calc_period);
-        total_counters_ipv6.total_speed_counters[index].packets =
-            uint64_t((double)total_counters_ipv6.total_counters[index].packets / (double)speed_calc_period);
+        total_counters_ipv6.total_speed_counters[index].total.bytes =
+            uint64_t((double)total_counters_ipv6.total_counters[index].total.bytes / (double)speed_calc_period);
+        total_counters_ipv6.total_speed_counters[index].total.packets =
+            uint64_t((double)total_counters_ipv6.total_counters[index].total.packets / (double)speed_calc_period);
 
         double exp_power = -speed_calc_period / average_calculation_amount;
         double exp_value = exp(exp_power);
 
-        total_counters_ipv6.total_speed_average_counters[index].bytes =
-            uint64_t(total_counters_ipv6.total_speed_counters[index].bytes +
-                     exp_value * ((double)total_counters_ipv6.total_speed_average_counters[index].bytes -
-                                  (double)total_counters_ipv6.total_speed_counters[index].bytes));
+        total_counters_ipv6.total_speed_average_counters[index].total.bytes =
+            uint64_t(total_counters_ipv6.total_speed_counters[index].total.bytes +
+                     exp_value * ((double)total_counters_ipv6.total_speed_average_counters[index].total.bytes -
+                                  (double)total_counters_ipv6.total_speed_counters[index].total.bytes));
 
-        total_counters_ipv6.total_speed_average_counters[index].packets =
-            uint64_t(total_counters_ipv6.total_speed_counters[index].packets +
-                     exp_value * ((double)total_counters_ipv6.total_speed_average_counters[index].packets -
-                                  (double)total_counters_ipv6.total_speed_counters[index].packets));
+        total_counters_ipv6.total_speed_average_counters[index].total.packets =
+            uint64_t(total_counters_ipv6.total_speed_counters[index].total.packets +
+                     exp_value * ((double)total_counters_ipv6.total_speed_average_counters[index].total.packets -
+                                  (double)total_counters_ipv6.total_speed_counters[index].total.packets));
 
         // nullify data counters after speed calculation
         total_counters_ipv6.total_counters[index].zeroify();
@@ -2328,8 +2328,8 @@ void process_ipv6_packet(simple_packet_t& current_packet) {
 
     __atomic_add_fetch(&total_ipv6_packets, 1, __ATOMIC_RELAXED);
 #else
-    __sync_fetch_and_add(&total_counters_ipv6.total_counters[current_packet.packet_direction].packets, sampled_number_of_packets);
-    __sync_fetch_and_add(&total_counters_ipv6.total_counters[current_packet.packet_direction].bytes, sampled_number_of_bytes);
+    __sync_fetch_and_add(&total_counters_ipv6.total_counters[current_packet.packet_direction].total.packets, sampled_number_of_packets);
+    __sync_fetch_and_add(&total_counters_ipv6.total_counters[current_packet.packet_direction].total.bytes, sampled_number_of_bytes);
 
     __sync_fetch_and_add(&total_ipv6_packets, 1);
 #endif
@@ -2506,8 +2506,8 @@ void process_packet(simple_packet_t& current_packet) {
     __atomic_add_fetch(&total_counters_ipv4.total_counters[current_packet.packet_direction].bytes,
                        sampled_number_of_bytes, __ATOMIC_RELAXED);
 #else
-    __sync_fetch_and_add(&total_counters_ipv4.total_counters[current_packet.packet_direction].packets, sampled_number_of_packets);
-    __sync_fetch_and_add(&total_counters_ipv4.total_counters[current_packet.packet_direction].bytes, sampled_number_of_bytes);
+    __sync_fetch_and_add(&total_counters_ipv4.total_counters[current_packet.packet_direction].total.packets, sampled_number_of_packets);
+    __sync_fetch_and_add(&total_counters_ipv4.total_counters[current_packet.packet_direction].total.bytes, sampled_number_of_bytes);
 #endif
 
     // Add traffic to buckets when we have them
@@ -2663,8 +2663,8 @@ void increment_outgoing_flow_counters(uint32_t client_ip,
 
 // pretty print channel speed in pps and MBit
 std::string print_channel_speed_ipv6(std::string traffic_type, direction_t packet_direction) {
-    uint64_t speed_in_pps = total_counters_ipv6.total_speed_average_counters[packet_direction].packets;
-    uint64_t speed_in_bps = total_counters_ipv6.total_speed_average_counters[packet_direction].bytes;
+    uint64_t speed_in_pps = total_counters_ipv6.total_speed_average_counters[packet_direction].total.packets;
+    uint64_t speed_in_bps = total_counters_ipv6.total_speed_average_counters[packet_direction].total.bytes;
 
     unsigned int number_of_tabs = 3;
 
@@ -3066,11 +3066,11 @@ void send_usage_data_to_reporting_server() {
     try {
         nlohmann::json stats;
 
-        uint64_t incoming_ipv4 = total_counters_ipv4.total_speed_average_counters[INCOMING].bytes;
-        uint64_t outgoing_ipv4 = total_counters_ipv4.total_speed_average_counters[OUTGOING].bytes;
+        uint64_t incoming_ipv4 = total_counters_ipv4.total_speed_average_counters[INCOMING].total.bytes;
+        uint64_t outgoing_ipv4 = total_counters_ipv4.total_speed_average_counters[OUTGOING].total.bytes;
 
-        uint64_t incoming_ipv6 = total_counters_ipv6.total_speed_average_counters[INCOMING].bytes;
-        uint64_t outgoing_ipv6 = total_counters_ipv6.total_speed_average_counters[OUTGOING].bytes;
+        uint64_t incoming_ipv6 = total_counters_ipv6.total_speed_average_counters[INCOMING].total.bytes;
+        uint64_t outgoing_ipv6 = total_counters_ipv6.total_speed_average_counters[OUTGOING].total.bytes;
 
         stats["incoming_traffic_speed"] = incoming_ipv4 + incoming_ipv6;
         stats["outgoing_traffic_speed"] = outgoing_ipv4 + outgoing_ipv6;
@@ -3234,7 +3234,7 @@ void add_total_traffic_to_prometheus(const total_speed_counters_t& total_counter
         output << "# HELP Total traffic in packets\n";
         output << "# TYPE " << packet_metric_name << " gauge\n";
         output << packet_metric_name << "{traffic_direction=\"" << direction_as_string << "\",protocol_version=\""
-               << protocol_version << "\"} " << total_counters.total_speed_average_counters[packet_direction].packets << "\n";
+               << protocol_version << "\"} " << total_counters.total_speed_average_counters[packet_direction].total.packets << "\n";
 
         // Bytes
         std::string bits_metric_name = "fastnetmon_total_traffic_bits";
@@ -3242,7 +3242,7 @@ void add_total_traffic_to_prometheus(const total_speed_counters_t& total_counter
         output << "# HELP Total traffic in bits\n";
         output << "# TYPE " << bits_metric_name << " gauge\n";
         output << bits_metric_name << "{traffic_direction=\"" << direction_as_string << "\",protocol_version=\"" << protocol_version
-               << "\"} " << total_counters.total_speed_average_counters[packet_direction].bytes * 8 << "\n";
+               << "\"} " << total_counters.total_speed_average_counters[packet_direction].total.bytes * 8 << "\n";
 
         // Flows
         if (protocol_version == "ipv4" && enable_connection_tracking &&
