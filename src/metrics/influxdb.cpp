@@ -8,6 +8,8 @@
 
 #include "../abstract_subnet_counters.hpp"
 
+#include "../fastnetmon_configuration_scheme.hpp"
+
 #include <vector>
 
 extern struct timeval graphite_thread_execution_time;
@@ -25,13 +27,7 @@ extern log4cpp::Category& logger;
 extern total_speed_counters_t total_counters_ipv4;
 extern total_speed_counters_t total_counters_ipv6;
 
-extern std::string influxdb_database;
-extern std::string influxdb_host;
-extern unsigned short int influxdb_port;
-extern bool influxdb_auth;
-extern std::string influxdb_user;
-extern std::string influxdb_password;
-extern unsigned int influxdb_push_period;
+extern fastnetmon_configuration_t fastnetmon_global_configuration;
 
 // I do this declaration here to avoid circular dependencies between fastnetmon_logic and this file
 bool get_statistics(std::vector<system_counter_t>& system_counters);
@@ -90,8 +86,8 @@ bool push_total_traffic_counters_to_influxdb(std::string influx_database,
     for (auto packet_direction : directions) {
         std::map<std::string, uint64_t> plain_total_counters_map;
 
-        uint64_t speed_in_pps             = total_speed_average_counters_param[packet_direction].packets;
-        uint64_t speed_in_bits_per_second = total_speed_average_counters_param[packet_direction].bytes * 8;
+        uint64_t speed_in_pps             = total_speed_average_counters_param[packet_direction].total.packets;
+        uint64_t speed_in_bits_per_second = total_speed_average_counters_param[packet_direction].total.bytes * 8;
 
         // We do not have this counter for IPv6
         if (!ipv6) {
@@ -295,62 +291,62 @@ void influxdb_push_thread() {
     bool do_dns_resolution = false;
 
     // If address does not look like IPv4 or IPv6 then we will use DNS resolution for it
-    if (!validate_ipv6_or_ipv4_host(influxdb_host)) {
+    if (!validate_ipv6_or_ipv4_host(fastnetmon_global_configuration.influxdb_host)) {
         logger << log4cpp::Priority::INFO << "You set InfluxDB server address as hostname and we will use DNS to resolve it";
         do_dns_resolution = true;
     }
 
     while (true) {
-        boost::this_thread::sleep(boost::posix_time::seconds(influxdb_push_period));
+        boost::this_thread::sleep(boost::posix_time::seconds(fastnetmon_global_configuration.influxdb_push_period));
 
         std::string current_influxdb_ip_address = "";
 
         if (do_dns_resolution) {
-            std::string ip_address = dns_lookup(influxdb_host);
+            std::string ip_address = dns_lookup(fastnetmon_global_configuration.influxdb_host);
 
             if (ip_address.empty()) {
-                logger << log4cpp::Priority::ERROR << "Cannot resolve " << influxdb_host << " to address";
+                logger << log4cpp::Priority::ERROR << "Cannot resolve " << fastnetmon_global_configuration.influxdb_host << " to address";
                 continue;
             }
 
-            logger << log4cpp::Priority::DEBUG << "Resolved " << influxdb_host << " to " << ip_address;
+            logger << log4cpp::Priority::DEBUG << "Resolved " << fastnetmon_global_configuration.influxdb_host << " to " << ip_address;
 
             current_influxdb_ip_address = ip_address;
         } else {
             // We do not need DNS resolution here, use address as is
-            current_influxdb_ip_address = influxdb_host;
+            current_influxdb_ip_address = fastnetmon_global_configuration.influxdb_host;
         }
 
         // First of all push total counters to InfluxDB
-        push_total_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
-                                                influxdb_auth, influxdb_user, influxdb_password, "total_traffic",
+        push_total_traffic_counters_to_influxdb(fastnetmon_global_configuration.influxdb_database, current_influxdb_ip_address, std::to_string(fastnetmon_global_configuration.influxdb_port),
+                                                fastnetmon_global_configuration.influxdb_auth, fastnetmon_global_configuration.influxdb_user, fastnetmon_global_configuration.influxdb_password, "total_traffic",
                                                 total_counters_ipv4.total_speed_average_counters, false);
 
         // Push per subnet counters to InfluxDB
-        push_network_traffic_counters_to_influxdb(ipv4_network_counters, influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
-                                                  influxdb_auth, influxdb_user, influxdb_password, "networks_traffic", "network");
+        push_network_traffic_counters_to_influxdb(ipv4_network_counters, fastnetmon_global_configuration.influxdb_database, current_influxdb_ip_address, std::to_string(fastnetmon_global_configuration.influxdb_port),
+                                                  fastnetmon_global_configuration.influxdb_auth, fastnetmon_global_configuration.influxdb_user, fastnetmon_global_configuration.influxdb_password, "networks_traffic", "network");
 
         // Push per host counters to InfluxDB
-        push_hosts_traffic_counters_to_influxdb(ipv4_host_counters, influxdb_database,
-                                                current_influxdb_ip_address, std::to_string(influxdb_port), influxdb_auth,
-                                                influxdb_user, influxdb_password, "hosts_traffic", "host");
+        push_hosts_traffic_counters_to_influxdb(ipv4_host_counters, fastnetmon_global_configuration.influxdb_database,
+                                                current_influxdb_ip_address, std::to_string(fastnetmon_global_configuration.influxdb_port), fastnetmon_global_configuration.influxdb_auth,
+                                                fastnetmon_global_configuration.influxdb_user, fastnetmon_global_configuration.influxdb_password, "hosts_traffic", "host");
 
-        push_system_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
-                                         influxdb_auth, influxdb_user, influxdb_password);
+        push_system_counters_to_influxdb(fastnetmon_global_configuration.influxdb_database, current_influxdb_ip_address, std::to_string(fastnetmon_global_configuration.influxdb_port),
+                                         fastnetmon_global_configuration.influxdb_auth, fastnetmon_global_configuration.influxdb_user, fastnetmon_global_configuration.influxdb_password);
 
         // Push per host IPv6 counters to InfluxDB
-        push_hosts_traffic_counters_to_influxdb(ipv6_host_counters, influxdb_database,
-                                                current_influxdb_ip_address, std::to_string(influxdb_port), influxdb_auth,
-                                                influxdb_user, influxdb_password, "hosts_ipv6_traffic", "host");
+        push_hosts_traffic_counters_to_influxdb(ipv6_host_counters, fastnetmon_global_configuration.influxdb_database,
+                                                current_influxdb_ip_address, std::to_string(fastnetmon_global_configuration.influxdb_port), fastnetmon_global_configuration.influxdb_auth,
+                                                fastnetmon_global_configuration.influxdb_user, fastnetmon_global_configuration.influxdb_password, "hosts_ipv6_traffic", "host");
 
         // Push per network IPv6 counters to InfluxDB
-        push_network_traffic_counters_to_influxdb(ipv6_subnet_counters, influxdb_database,
-                                                current_influxdb_ip_address, std::to_string(influxdb_port), influxdb_auth,
-                                                influxdb_user, influxdb_password, "networks_ipv6_traffic", "network");
+        push_network_traffic_counters_to_influxdb(ipv6_subnet_counters, fastnetmon_global_configuration.influxdb_database,
+                                                current_influxdb_ip_address, std::to_string(fastnetmon_global_configuration.influxdb_port), fastnetmon_global_configuration.influxdb_auth,
+                                                fastnetmon_global_configuration.influxdb_user, fastnetmon_global_configuration.influxdb_password, "networks_ipv6_traffic", "network");
 
         // Push total IPv6 counters
-        push_total_traffic_counters_to_influxdb(influxdb_database, current_influxdb_ip_address, std::to_string(influxdb_port),
-                                                influxdb_auth, influxdb_user, influxdb_password, "total_traffic_ipv6",
+        push_total_traffic_counters_to_influxdb(fastnetmon_global_configuration.influxdb_database, current_influxdb_ip_address, std::to_string(fastnetmon_global_configuration.influxdb_port),
+                                                fastnetmon_global_configuration.influxdb_auth, fastnetmon_global_configuration.influxdb_user, fastnetmon_global_configuration.influxdb_password, "total_traffic_ipv6",
                                                 total_counters_ipv6.total_speed_average_counters, true);
     }
 }
