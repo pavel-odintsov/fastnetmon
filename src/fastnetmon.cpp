@@ -30,7 +30,7 @@
 
 #include "abstract_subnet_counters.hpp"
 
-#include "fastnetmon.grpc.pb.h"
+#include "fastnetmon_internal_api.grpc.pb.h"
 #include <grpc++/grpc++.h>
 
 #ifdef __GNUC__
@@ -128,12 +128,10 @@
 #include <cppkafka/cppkafka.h>
 #endif
 
+#ifdef FASTNETMON_API
+
 #include "api.hpp"
 
-#ifdef FASTNETMON_API
-using fastmitigation::BanListReply;
-using fastmitigation::BanListRequest;
-using fastmitigation::Fastnetmon;
 using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
