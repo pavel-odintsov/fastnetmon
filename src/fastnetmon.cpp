@@ -446,15 +446,6 @@ std::string exabgp_community_host   = "";
 
 std::string exabgp_next_hop     = "";
 
-// Graphite monitoring
-bool graphite_enabled             = false;
-std::string graphite_host         = "127.0.0.1";
-unsigned short int graphite_port  = 2003;
-unsigned int graphite_push_period = 1;
-
-// Default graphite namespace
-std::string graphite_prefix = "fastnetmon";
-
 std::string influxdb_writes_total_desc = "Total number of InfluxDB writes";
 uint64_t influxdb_writes_total         = 0;
 
@@ -687,7 +678,7 @@ bool load_configuration_file() {
     }
 
     if (configuration_map.count("graphite_prefix") != 0) {
-        graphite_prefix = configuration_map["graphite_prefix"];
+        fastnetmon_global_configuration.graphite_prefix = configuration_map["graphite_prefix"];
     }
 
     if (configuration_map.count("average_calculation_time") != 0) {
@@ -813,19 +804,19 @@ bool load_configuration_file() {
 
     // Graphite
     if (configuration_map.count("graphite") != 0) {
-        graphite_enabled = configuration_map["graphite"] == "on" ? true : false;
+        fastnetmon_global_configuration.graphite = configuration_map["graphite"] == "on" ? true : false;
     }
 
     if (configuration_map.count("graphite_host") != 0) {
-        graphite_host = configuration_map["graphite_host"];
+        fastnetmon_global_configuration.graphite_host = configuration_map["graphite_host"];
     }
 
     if (configuration_map.count("graphite_port") != 0) {
-        graphite_port = convert_string_to_integer(configuration_map["graphite_port"]);
+        fastnetmon_global_configuration.graphite_port = convert_string_to_integer(configuration_map["graphite_port"]);
     }
 
     if (configuration_map.count("graphite_push_period") != 0) {
-        graphite_push_period = convert_string_to_integer(configuration_map["graphite_push_period"]);
+        fastnetmon_global_configuration.graphite_push_period = convert_string_to_integer(configuration_map["graphite_push_period"]);
     }
 
     // InfluxDB
