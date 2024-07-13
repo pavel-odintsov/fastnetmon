@@ -1790,13 +1790,14 @@ bool execute_web_request(std::string address,
 }
 
 // Write data to influxdb
-bool write_data_to_influxdb(std::string database,
-                            std::string host,
-                            std::string port,
+bool write_data_to_influxdb(const std::string& database,
+                            const std::string& host,
+                            const std::string& port,
                             bool enable_auth,
-                            std::string influx_user,
-                            std::string influx_password,
-                            std::string query) {
+                            const std::string& influx_user,
+                            const std::string& influx_password,
+                            const std::string& query,
+			    std::string& error_text) {
     uint32_t response_code = 0;
 
     std::string address = host + ":" + port;
@@ -1818,7 +1819,6 @@ bool write_data_to_influxdb(std::string database,
     std::string response_body;
 
     std::map<std::string, std::string> headers;
-    std::string error_text;
     bool result = execute_web_request(influxdb_query_string, "post", query, response_code, response_body, headers, error_text);
 
     if (!result) {
@@ -1826,6 +1826,7 @@ bool write_data_to_influxdb(std::string database,
     }
 
     if (response_code != 204) {
+	error_text = "Unexpected response code: " + std::to_string(response_code);
         return false;
     }
 

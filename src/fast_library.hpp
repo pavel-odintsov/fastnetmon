@@ -108,13 +108,14 @@ bool read_ipv6_host_from_string(std::string ipv6_host_as_string, in6_addr& resul
 bool validate_ipv6_or_ipv4_host(const std::string host);
 uint64_t get_current_unix_time_in_nanoseconds();
 
-bool write_data_to_influxdb(std::string database,
-                            std::string host,
-                            std::string port,
+bool write_data_to_influxdb(const std::string& database,
+                            const std::string& host,
+                            const std::string& port,
                             bool enable_auth,
-                            std::string influx_user,
-                            std::string influx_password,
-                            std::string query);
+                            const std::string& influx_user,
+                            const std::string& influx_password,
+                            const std::string& query,
+                            std::string& error_text);
 
 std::string join_by_comma_and_equal(const std::map<std::string, std::string>& data);
 bool parse_meminfo_into_map(std::map<std::string, uint64_t>& parsed_meminfo);
