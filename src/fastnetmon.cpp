@@ -359,8 +359,13 @@ log4cpp::Category& logger = log4cpp::Category::getRoot();
 
 /* Configuration block ends */
 
-// We count total number of incoming/outgoing/internal and other traffic type packets/bytes
+// Total IPv4 + IPv6 traffic
+total_speed_counters_t total_counters;
+
+// Total IPv4 traffic
 total_speed_counters_t total_counters_ipv4;
+
+// Total IPv6 traffic
 total_speed_counters_t total_counters_ipv6;
 
 std::string total_unparsed_packets_desc = "Total number of packets we failed to parse";
@@ -396,7 +401,7 @@ std::string clickhouse_metrics_writes_failed_desc = "Total number of failed Clic
 uint64_t clickhouse_metrics_writes_failed         = 0;
 
 // Network counters for IPv6
-abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t, subnet_counter_t> ipv6_subnet_counters;
+abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t, subnet_counter_t> ipv6_network_counters;
 
 // Host counters for IPv6
 abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t, subnet_counter_t> ipv6_host_counters;

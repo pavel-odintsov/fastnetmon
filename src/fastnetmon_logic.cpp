@@ -96,7 +96,7 @@ extern std::chrono::steady_clock::time_point last_call_of_traffic_recalculation;
 extern std::string cli_stats_ipv6_file_path;
 extern unsigned int check_for_availible_for_processing_packets_buckets;
 extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t, subnet_counter_t> ipv6_host_counters;
-extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t, subnet_counter_t> ipv6_subnet_counters;
+extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t, subnet_counter_t> ipv6_network_counters;
 extern bool process_incoming_traffic;
 extern bool process_outgoing_traffic;
 extern uint64_t total_unparsed_packets;
@@ -113,6 +113,7 @@ extern uint64_t incoming_total_flows_speed;
 extern uint64_t outgoing_total_flows_speed;
 extern total_speed_counters_t total_counters_ipv4;
 extern total_speed_counters_t total_counters_ipv6;
+extern total_speed_counters_t total_counters;
 extern host_group_ban_settings_map_t host_group_ban_settings_map;
 extern bool exabgp_announce_whole_subnet;
 extern subnet_to_host_group_map_t subnet_to_host_groups;
@@ -1939,7 +1940,7 @@ void recalculate_speed() {
     });
 
     // Calculate IPv6 per network traffic
-    ipv6_subnet_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, nullptr);
+    ipv6_network_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, nullptr);
 
     // Recalculate traffic for hosts
     ipv6_host_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, speed_calculation_callback_local_ipv6);
@@ -1956,54 +1957,13 @@ void recalculate_speed() {
     total_unparsed_packets       = 0;
 
     // Calculate IPv4 total traffic speed
-    for (unsigned int index = 0; index < 4; index++) {
-        total_counters_ipv4.total_speed_counters[index].total.bytes =
-            uint64_t((double)total_counters_ipv4.total_counters[index].total.bytes / (double)speed_calc_period);
-
-        total_counters_ipv4.total_speed_counters[index].total.packets =
-            uint64_t((double)total_counters_ipv4.total_counters[index].total.packets / (double)speed_calc_period);
-
-        double exp_power = -speed_calc_period / average_calculation_amount;
-        double exp_value = exp(exp_power);
-
-        total_counters_ipv4.total_speed_average_counters[index].total.bytes =
-            uint64_t(total_counters_ipv4.total_speed_counters[index].total.bytes +
-                     exp_value * ((double)total_counters_ipv4.total_speed_average_counters[index].total.bytes -
-                                  (double)total_counters_ipv4.total_speed_counters[index].total.bytes));
-
-        total_counters_ipv4.total_speed_average_counters[index].total.packets =
-            uint64_t(total_counters_ipv4.total_speed_counters[index].total.packets +
-                     exp_value * ((double)total_counters_ipv4.total_speed_average_counters[index].total.packets -
-                                  (double)total_counters_ipv4.total_speed_counters[index].total.packets));
-
-        // nullify data counters after speed calculation
-        total_counters_ipv4.total_counters[index].total.bytes   = 0;
-        total_counters_ipv4.total_counters[index].total.packets = 0;
-    }
+    total_counters_ipv4.calculate_speed(speed_calc_period, (double)average_calculation_amount);
 
     // Do same for IPv6
-    for (unsigned int index = 0; index < 4; index++) {
-        total_counters_ipv6.total_speed_counters[index].total.bytes =
-            uint64_t((double)total_counters_ipv6.total_counters[index].total.bytes / (double)speed_calc_period);
-        total_counters_ipv6.total_speed_counters[index].total.packets =
-            uint64_t((double)total_counters_ipv6.total_counters[index].total.packets / (double)speed_calc_period);
+    total_counters_ipv6.calculate_speed(speed_calc_period, (double)average_calculation_amount);
 
-        double exp_power = -speed_calc_period / average_calculation_amount;
-        double exp_value = exp(exp_power);
-
-        total_counters_ipv6.total_speed_average_counters[index].total.bytes =
-            uint64_t(total_counters_ipv6.total_speed_counters[index].total.bytes +
-                     exp_value * ((double)total_counters_ipv6.total_speed_average_counters[index].total.bytes -
-                                  (double)total_counters_ipv6.total_speed_counters[index].total.bytes));
-
-        total_counters_ipv6.total_speed_average_counters[index].total.packets =
-            uint64_t(total_counters_ipv6.total_speed_counters[index].total.packets +
-                     exp_value * ((double)total_counters_ipv6.total_speed_average_counters[index].total.packets -
-                                  (double)total_counters_ipv6.total_speed_counters[index].total.packets));
-
-        // nullify data counters after speed calculation
-        total_counters_ipv6.total_counters[index].zeroify();
-    }
+    // Calculate total IPv4 + IPv6 traffic
+    total_counters.calculate_speed(speed_calc_period, (double)average_calculation_amount);
 
     // Set time of previous startup
     last_call_of_traffic_recalculation = std::chrono::steady_clock::now();
@@ -2335,10 +2295,10 @@ void process_ipv6_packet(simple_packet_t& current_packet) {
 #endif
 
     {
-        std::lock_guard<std::mutex> lock_guard(ipv6_subnet_counters.counter_map_mutex);
+        std::lock_guard<std::mutex> lock_guard(ipv6_network_counters.counter_map_mutex);
 
         // We will create keys for new subnet here on demand
-        subnet_counter_t* counter_ptr = &ipv6_subnet_counters.counter_map[ipv6_cidr_subnet];
+        subnet_counter_t* counter_ptr = &ipv6_network_counters.counter_map[ipv6_cidr_subnet];
 
         if (current_packet.packet_direction == OUTGOING) {
             counter_ptr->total.out_packets += sampled_number_of_packets;

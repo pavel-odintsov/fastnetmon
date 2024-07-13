@@ -317,19 +317,146 @@ class total_counter_element_t {
 };
 
 
+
 // Set of structures for calculating total traffic counters
 class total_speed_counters_t {
     public:
     total_counter_element_t total_counters[4];
-    total_counter_element_t total_speed_counters[4];
     total_counter_element_t total_speed_average_counters[4];
+
+    // Calculates speed
+    void calculate_speed(double speed_calc_period, double average_calculation_time) {
+        for (unsigned int index = 0; index < 4; index++) {
+            total_counter_element_t total_speed_counters;
+
+            // Calculate instant speed
+            total_speed_counters.total.bytes = uint64_t((double)total_counters[index].total.bytes / (double)speed_calc_period);
+
+            total_speed_counters.total.packets = uint64_t((double)total_counters[index].total.packets / (double)speed_calc_period);
+
+
+            // tcp
+            total_speed_counters.tcp.bytes = uint64_t((double)total_counters[index].tcp.bytes / (double)speed_calc_period);
+
+            total_speed_counters.tcp.packets = uint64_t((double)total_counters[index].tcp.packets / (double)speed_calc_period);
+
+            // udp
+
+            total_speed_counters.udp.bytes = uint64_t((double)total_counters[index].udp.bytes / (double)speed_calc_period);
+
+            total_speed_counters.udp.packets = uint64_t((double)total_counters[index].udp.packets / (double)speed_calc_period);
+
+            // icmp
+            total_speed_counters.icmp.bytes = uint64_t((double)total_counters[index].icmp.bytes / (double)speed_calc_period);
+
+            total_speed_counters.icmp.packets = uint64_t((double)total_counters[index].icmp.packets / (double)speed_calc_period);
+
+            // fragmented
+            total_speed_counters.fragmented.bytes =
+                uint64_t((double)total_counters[index].fragmented.bytes / (double)speed_calc_period);
+
+            total_speed_counters.fragmented.packets =
+                uint64_t((double)total_counters[index].fragmented.packets / (double)speed_calc_period);
+
+
+            // tcp_syn
+            total_speed_counters.tcp_syn.bytes = uint64_t((double)total_counters[index].tcp_syn.bytes / (double)speed_calc_period);
+
+            total_speed_counters.tcp_syn.packets =
+                uint64_t((double)total_counters[index].tcp_syn.packets / (double)speed_calc_period);
+
+            // dropped
+            total_speed_counters.dropped.bytes = uint64_t((double)total_counters[index].dropped.bytes / (double)speed_calc_period);
+
+            total_speed_counters.dropped.packets =
+                uint64_t((double)total_counters[index].dropped.packets / (double)speed_calc_period);
+
+            // Calculate average speed
+            double exp_power = -speed_calc_period / average_calculation_time;
+            double exp_value = exp(exp_power);
+
+            // Total
+            total_speed_average_counters[index].total.bytes = uint64_t(
+                total_speed_counters.total.bytes + exp_value * ((double)total_speed_average_counters[index].total.bytes -
+                                                                (double)total_speed_counters.total.bytes));
+
+            total_speed_average_counters[index].total.packets = uint64_t(
+                total_speed_counters.total.packets + exp_value * ((double)total_speed_average_counters[index].total.packets -
+                                                                  (double)total_speed_counters.total.packets));
+
+            // tcp
+            total_speed_average_counters[index].tcp.bytes =
+                uint64_t(total_speed_counters.tcp.bytes + exp_value * ((double)total_speed_average_counters[index].tcp.bytes -
+                                                                       (double)total_speed_counters.tcp.bytes));
+
+            total_speed_average_counters[index].tcp.packets =
+                uint64_t(total_speed_counters.tcp.packets + exp_value * ((double)total_speed_average_counters[index].tcp.packets -
+                                                                         (double)total_speed_counters.tcp.packets));
+
+
+            // udp
+            total_speed_average_counters[index].udp.bytes =
+                uint64_t(total_speed_counters.udp.bytes + exp_value * ((double)total_speed_average_counters[index].udp.bytes -
+                                                                       (double)total_speed_counters.udp.bytes));
+
+            total_speed_average_counters[index].udp.packets =
+                uint64_t(total_speed_counters.udp.packets + exp_value * ((double)total_speed_average_counters[index].udp.packets -
+                                                                         (double)total_speed_counters.udp.packets));
+
+
+            // icmp
+            total_speed_average_counters[index].icmp.bytes =
+                uint64_t(total_speed_counters.icmp.bytes + exp_value * ((double)total_speed_average_counters[index].icmp.bytes -
+                                                                        (double)total_speed_counters.icmp.bytes));
+
+            total_speed_average_counters[index].icmp.packets = uint64_t(
+                total_speed_counters.icmp.packets + exp_value * ((double)total_speed_average_counters[index].icmp.packets -
+                                                                 (double)total_speed_counters.icmp.packets));
+
+
+            // fragmented
+            total_speed_average_counters[index].fragmented.bytes =
+                uint64_t(total_speed_counters.fragmented.bytes +
+                         exp_value * ((double)total_speed_average_counters[index].fragmented.bytes -
+                                      (double)total_speed_counters.fragmented.bytes));
+
+            total_speed_average_counters[index].fragmented.packets =
+                uint64_t(total_speed_counters.fragmented.packets +
+                         exp_value * ((double)total_speed_average_counters[index].fragmented.packets -
+                                      (double)total_speed_counters.fragmented.packets));
+
+
+            // tcp_syn
+            total_speed_average_counters[index].tcp_syn.bytes = uint64_t(
+                total_speed_counters.tcp_syn.bytes + exp_value * ((double)total_speed_average_counters[index].tcp_syn.bytes -
+                                                                  (double)total_speed_counters.tcp_syn.bytes));
+
+            total_speed_average_counters[index].tcp_syn.packets = uint64_t(
+                total_speed_counters.tcp_syn.packets + exp_value * ((double)total_speed_average_counters[index].tcp_syn.packets -
+                                                                    (double)total_speed_counters.tcp_syn.packets));
+
+
+            // dropped
+            total_speed_average_counters[index].dropped.bytes = uint64_t(
+                total_speed_counters.dropped.bytes + exp_value * ((double)total_speed_average_counters[index].dropped.bytes -
+                                                                  (double)total_speed_counters.dropped.bytes));
+
+            total_speed_average_counters[index].dropped.packets = uint64_t(
+                total_speed_counters.dropped.packets + exp_value * ((double)total_speed_average_counters[index].dropped.packets -
+                                                                    (double)total_speed_counters.dropped.packets));
+
+
+            // nullify data counters after speed calculation
+            total_counters[index].zeroify();
+        }
+    }
 
     template <class Archive> void serialize(Archive& ar, [[maybe_unused]] const unsigned int version) {
         ar& BOOST_SERIALIZATION_NVP(total_counters);
-        ar& BOOST_SERIALIZATION_NVP(total_speed_counters);
         ar& BOOST_SERIALIZATION_NVP(total_speed_average_counters);
     }
 };
+
 
 
 // struct for save per direction and per protocol details for flow
