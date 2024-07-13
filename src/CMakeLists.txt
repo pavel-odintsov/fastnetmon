@@ -761,13 +761,13 @@ if (ENABLE_GOBGP_SUPPORT)
     # FastNetMon API
     add_definitions(-DFASTNETMON_API)    
 
-    execute_process(COMMAND ${Protobuf_PROTOC_EXECUTABLE} -I ${PROJECT_SOURCE_DIR} --grpc_out=${PROJECT_SOURCE_DIR} --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} ${PROJECT_SOURCE_DIR}/fastnetmon.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${Protobuf_PROTOC_EXECUTABLE} -I ${PROJECT_SOURCE_DIR} --grpc_out=${PROJECT_SOURCE_DIR} --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} ${PROJECT_SOURCE_DIR}/fastnetmon_internal_api.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-    message(STATUS "Protoc return code for gRPC fastnetmon.proto: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
+    message(STATUS "Protoc return code for gRPC fastnetmon_internal_api.proto: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
 
-    execute_process(COMMAND ${Protobuf_PROTOC_EXECUTABLE} -I ${PROJECT_SOURCE_DIR} --cpp_out=${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/fastnetmon.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE) 
+    execute_process(COMMAND ${Protobuf_PROTOC_EXECUTABLE} -I ${PROJECT_SOURCE_DIR} --cpp_out=${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/fastnetmon_internal_api.proto ERROR_VARIABLE PROTOC_STDERR RESULT_VARIABLE PROTOC_RETURN_CODE OUTPUT_STRIP_TRAILING_WHITESPACE) 
 
-    message(STATUS "Protoc return code for protobuf fastnetmon.proto: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
+    message(STATUS "Protoc return code for Protobuf fastnetmon_internal_api.proto: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
 
     add_library(fastnetmon_grpc_pb_cc STATIC fastnetmon.grpc.pb.cc)
     add_library(fastnetmon_pb_cc STATIC fastnetmon.pb.cc)

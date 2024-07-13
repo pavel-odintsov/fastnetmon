@@ -1,0 +1,232 @@
+syntax = "proto3";
+
+package fastnetmoninternal;
+
+option go_package = "./;fastnetmoninternal";
+
+service Fastnetmon {
+    // Pings gRPC server to check availability
+    rpc Ping(PingRequest) returns (PingReply) {}
+
+    // Returns current running version of FastNetMon
+    rpc GetRunningVersion(GetRunningVersionRequest) returns (GetRunningVersionReply) {}
+
+    // Get standard blacklist
+    rpc GetBanlist(BanListRequest) returns (stream BanListReply) {}
+    
+    // Block hosts
+    rpc ExecuteBan(ExecuteBanRequest) returns (ExecuteBanReply) {}
+
+    // For local hosts
+    rpc DisableMitigation(DisableMitigationRequest) returns (DisableMitigationReply) {}
+
+    // This method will return total counters
+    rpc GetTotalTrafficCounters(GetTotalTrafficCountersRequest) returns (stream SixtyFourNamedCounter) {}
+
+    // This method will return total counters only for IPv4 traffic
+    rpc GetTotalTrafficCountersV4(GetTotalTrafficCountersRequest) returns (stream SixtyFourNamedCounter) {}
+
+    // This method will return total counters only for IPv6 traffic
+    rpc GetTotalTrafficCountersV6(GetTotalTrafficCountersRequest) returns (stream SixtyFourNamedCounter) {}
+
+    // This method will return arbitrary counters related with FastNetMon internals
+    rpc GetSystemCounters(GetSystemCountersRequest) returns  (stream SystemCounter) {}
+  
+    // Return per subnet traffic stats
+    rpc GetNetworkCounters(GetNetworkCountersRequest) returns (stream NetworkCounter) {}
+
+    // Return per subnet IPv6 traffic stats
+    rpc GetNetworkCountersV6(GetNetworkCountersV6Request) returns (stream NetworkCounter) {}
+
+    // Return per host IPv4 traffic stats
+    rpc GetHostCountersV4(GetHostCountersRequest) returns (stream HostCounter) {}
+
+    // Return per IPv6 host traffic stats
+    rpc GetHostCountersV6(GetHostCountersV6Request) returns (stream HostCounter) {}
+}
+
+// We will reuse these enums all the way around
+
+enum OrderingType {
+    BYTES = 0;
+    PACKETS = 1;
+    FLOWS = 2;
+}
+
+enum OrderingDirection {
+    INCOMING = 0;
+    OUTGOING = 1;
+}   
+
+message GetRunningVersionRequest {
+
+}
+
+message GetRunningVersionReply {
+    string version_main = 1;
+    string version_git = 2;
+}   
+
+message PingRequest {
+
+}
+
+message PingReply {
+
+}
+
+message HostGroup {
+    string host_group_name = 1;
+}
+
+message GetSystemCountersRequest {
+
+};
+
+message Network {
+    string network = 1;
+};
+
+message GetNetworkCountersV6Request {
+    OrderingDirection order_by_direction = 1;
+    OrderingType order_by = 2;
+}
+
+message GetNetworkCountersRequest {
+    OrderingDirection order_by_direction = 1;
+    OrderingType order_by = 2;
+}
+
+message GetHostCountersV6Request {
+    OrderingDirection order_by_direction = 1;
+    OrderingType order_by = 2;
+    uint32 number_of_hosts = 3;
+}
+
+message GetHostCountersRequest {
+    OrderingDirection order_by_direction = 1;
+    OrderingType order_by = 2;
+    uint32 number_of_hosts = 3;
+}
+
+message NetworkCounter {
+    string network_name = 1;
+    PerProtocolCounters metrics = 2;
+}
+
+message PerProtocolCounters {
+    uint64 in_bytes = 1;
+    uint64 out_bytes = 2;
+    
+    uint64 in_packets = 3;
+    uint64 out_packets = 4;
+    
+    uint64 in_flows = 5;
+    uint64 out_flows = 6;; 
+
+    // Per protocol
+    uint64 fragmented_in_packets = 7;
+    uint64 fragmented_out_packets = 8;
+    uint64 fragmented_in_bytes = 9;
+    uint64 fragmented_out_bytes = 10;
+
+    uint64 dropped_in_packets = 11;
+    uint64 dropped_out_packets = 12;
+    uint64 dropped_in_bytes = 13;
+    uint64 dropped_out_bytes = 14;
+
+    uint64 tcp_in_packets = 15; 
+    uint64 tcp_out_packets = 16;
+    uint64 tcp_in_bytes = 17;
+    uint64 tcp_out_bytes = 18;
+
+    uint64 tcp_syn_in_packets = 19;
+    uint64 tcp_syn_out_packets = 20;
+    uint64 tcp_syn_in_bytes = 21;
+    uint64 tcp_syn_out_bytes = 22;
+
+    uint64 udp_in_packets = 23;
+    uint64 udp_out_packets = 24;
+    uint64 udp_in_bytes = 25;
+    uint64 udp_out_bytes = 26;;
+
+    uint64 icmp_in_packets = 27;
+    uint64 icmp_out_packets = 28;
+    uint64 icmp_in_bytes = 29;
+    uint64 icmp_out_bytes = 30;
+}
+
+
+message HostCounter {
+    string host_name = 1;
+    PerProtocolCounters metrics = 2;
+}
+
+message GetTotalTrafficCountersRequest {
+    bool get_per_protocol_metrics = 1;
+    string unit = 2;
+}   
+
+
+message SixtyFourNamedCounter {
+    string counter_name = 1;
+    uint64 counter_value = 2;
+    // mbits, flows, packets
+    string counter_unit = 3;
+    string counter_description = 4;
+}
+
+message SystemCounter {
+    string counter_name = 1;
+    
+    // counter, gauge, double_gauge
+    string counter_type = 2;
+    
+    // Our counters can be integer or double
+    uint64 counter_value = 3;
+   
+    // We use this field only for type double_gauge
+    double counter_value_double = 4;
+   
+    // mbits, flows, packets
+    string counter_unit = 5;
+    string counter_description = 6;
+}
+
+
+message DisableMitigationRequest {
+    string mitigation_uuid = 1; 
+}
+
+message DisableMitigationReply {
+
+}
+
+
+// We could not create RPC method without params
+message BanListRequest {
+
+}
+
+message BanListReply {
+    string ip_address = 1;
+    string announce_uuid = 2;
+}
+
+message BanListHostgroupRequest {
+
+}
+
+message BanListHostgroupReply {
+    string hostgroup_name = 1;
+    string announce_uuid = 2;
+}
+
+message ExecuteBanRequest {
+    string ip_address = 1;
+}
+
+message ExecuteBanReply {
+    bool result = 1;
+}
+
