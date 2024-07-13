@@ -1,15 +1,12 @@
 #include "graphite.hpp"
 
 
+#include "../abstract_subnet_counters.hpp"
 #include "../fast_library.hpp"
 #include "../fastnetmon_types.hpp"
 #include "../fastnetmon_configuration_scheme.hpp"
 
 #include <vector>
-
-#include "../all_logcpp_libraries.hpp"
-
-#include "../abstract_subnet_counters.hpp"
 
 extern log4cpp::Category& logger;
 
@@ -88,7 +85,8 @@ bool push_hosts_traffic_counters_to_graphite() {
         }
     }
 
-    bool graphite_put_result = store_data_to_graphite(fastnetmon_global_configuration.graphite_port, fastnetmon_global_configuration.graphite_host, graphite_data);
+    bool graphite_put_result = store_data_to_graphite(fastnetmon_global_configuration.graphite_port,
+                                                      fastnetmon_global_configuration.graphite_host, graphite_data);
 
     if (!graphite_put_result) {
         logger << log4cpp::Priority::ERROR << "Can't store host load data to Graphite server "
@@ -98,7 +96,6 @@ bool push_hosts_traffic_counters_to_graphite() {
 
     return true;
 }
-
 
 // Push total counters to graphite
 bool push_total_traffic_counters_to_graphite() {
@@ -126,18 +123,20 @@ bool push_total_traffic_counters_to_graphite() {
                 flow_counter_for_this_direction = outgoing_total_flows_speed;
             }
 
-            graphite_data[fastnetmon_global_configuration.graphite_prefix + ".total." + direction_as_string + ".flows"] = flow_counter_for_this_direction;
+            graphite_data[fastnetmon_global_configuration.graphite_prefix + ".total." + direction_as_string + ".flows"] =
+                flow_counter_for_this_direction;
         }
 
         graphite_data[fastnetmon_global_configuration.graphite_prefix + ".total." + direction_as_string + ".pps"] = speed_in_pps;
-        graphite_data[fastnetmon_global_configuration.graphite_prefix + ".total." + direction_as_string + ".bps"] = speed_in_bps * 8;
+        graphite_data[fastnetmon_global_configuration.graphite_prefix + ".total." + direction_as_string + ".bps"] =
+            speed_in_bps * 8;
 
-        bool graphite_put_result = store_data_to_graphite(fastnetmon_global_configuration.graphite_port, fastnetmon_global_configuration.graphite_host, graphite_data);
+        bool graphite_put_result = store_data_to_graphite(fastnetmon_global_configuration.graphite_port,
+                                                          fastnetmon_global_configuration.graphite_host, graphite_data);
 
         if (!graphite_put_result) {
-            logger << log4cpp::Priority::ERROR << "Can't store total load data to Graphite server " << fastnetmon_global_configuration.graphite_host
-                   << " port: " << fastnetmon_global_configuration.graphite_port;
-            ;
+            logger << log4cpp::Priority::ERROR << "Can't store total load data to Graphite server "
+                   << fastnetmon_global_configuration.graphite_host << " port: " << fastnetmon_global_configuration.graphite_port;
             return false;
         }
     }
@@ -148,6 +147,7 @@ bool push_total_traffic_counters_to_graphite() {
 // Push per subnet traffic counters to graphite
 bool push_network_traffic_counters_to_graphite() {
     extern abstract_subnet_counters_t<subnet_cidr_mask_t, subnet_counter_t> ipv4_network_counters;
+
     graphite_data_t graphite_data;
 
     std::vector<std::pair<subnet_cidr_mask_t, subnet_counter_t>> speed_elements;
@@ -155,7 +155,7 @@ bool push_network_traffic_counters_to_graphite() {
 
     for (const auto& itr : speed_elements) {
         const subnet_counter_t* speed                   = &itr.second;
-        std::string subnet_as_string_as_dash_delimiters = convert_subnet_to_string(itr.first);
+        std::string subnet_as_string_as_dash_delimiters = convert_ipv4_subnet_to_string(itr.first);
 
         // Replace dots by dashes
         std::replace(subnet_as_string_as_dash_delimiters.begin(), subnet_as_string_as_dash_delimiters.end(), '.', '_');
@@ -163,7 +163,8 @@ bool push_network_traffic_counters_to_graphite() {
         // Replace / by dashes too
         std::replace(subnet_as_string_as_dash_delimiters.begin(), subnet_as_string_as_dash_delimiters.end(), '/', '_');
 
-        std::string current_prefix = fastnetmon_global_configuration.graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".";
+        std::string current_prefix =
+            fastnetmon_global_configuration.graphite_prefix + ".networks." + subnet_as_string_as_dash_delimiters + ".";
 
         graphite_data[current_prefix + "incoming.pps"] = speed->total.in_packets;
         graphite_data[current_prefix + "outgoing.pps"] = speed->total.out_packets;
@@ -172,11 +173,12 @@ bool push_network_traffic_counters_to_graphite() {
     }
 
 
-    bool graphite_put_result = store_data_to_graphite(fastnetmon_global_configuration.graphite_port, fastnetmon_global_configuration.graphite_host, graphite_data);
+    bool graphite_put_result = store_data_to_graphite(fastnetmon_global_configuration.graphite_port,
+                                                      fastnetmon_global_configuration.graphite_host, graphite_data);
 
     if (!graphite_put_result) {
-        logger << log4cpp::Priority::ERROR << "Can't store network load data to Graphite server " << fastnetmon_global_configuration.graphite_host
-               << " port: " << fastnetmon_global_configuration.graphite_port;
+        logger << log4cpp::Priority::ERROR << "Can't store network load data to Graphite server "
+               << fastnetmon_global_configuration.graphite_host << " port: " << fastnetmon_global_configuration.graphite_port;
         return false;
     }
 
@@ -186,14 +188,14 @@ bool push_network_traffic_counters_to_graphite() {
 
 // This thread pushes speed counters to graphite
 void graphite_push_thread() {
-    
-    // Sleep for a half second for shift against calculatiuon thread
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    extern struct timeval graphite_thread_execution_time;
+
+    // Sleep less then 1 second to capture speed calculated for very first time by speed calculation logic
+    boost::this_thread::sleep(boost::posix_time::milliseconds(700));
 
     while (true) {
-        boost::this_thread::sleep(boost::posix_time::seconds(fastnetmon_global_configuration.graphite_push_period));
-
-        std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
+        struct timeval start_calc_time;
+        gettimeofday(&start_calc_time, NULL);
 
         // First of all push total counters to Graphite
         push_total_traffic_counters_to_graphite();
@@ -204,8 +206,14 @@ void graphite_push_thread() {
         // Push per host counters to graphite
         push_hosts_traffic_counters_to_graphite();
 
-        std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
+        struct timeval end_calc_time;
+        gettimeofday(&end_calc_time, NULL);
 
-        logger << log4cpp::Priority::DEBUG << "Graphite data pushed in: " << diff.count() << " seconds";
+        timeval_subtract(&graphite_thread_execution_time, &end_calc_time, &start_calc_time);
+
+        logger << log4cpp::Priority::DEBUG << "Graphite data pushed in: " << graphite_thread_execution_time.tv_sec
+               << " sec " << graphite_thread_execution_time.tv_usec << " microseconds\n";
+
+        boost::this_thread::sleep(boost::posix_time::seconds(fastnetmon_global_configuration.clickhouse_metrics_push_period));
     }
 }
