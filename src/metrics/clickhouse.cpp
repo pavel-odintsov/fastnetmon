@@ -375,51 +375,6 @@ bool create_clickhouse_tables_for_metrics(fastnetmon_configuration_t& fastnetmon
         "schema_version UInt8 Default 0 COMMENT '1'"
         ") ENGINE = MergeTree ORDER BY (network, metricDate) PARTITION BY metricDate TTL metricDate + toIntervalDay(7) SETTINGS index_granularity=8192;";
 
-    // This schema has per protocol counters as we clearly need to have them
-    std::string network_24_metrics_schema =
-        "CREATE TABLE IF NOT EXISTS " + fastnetmon_global_configuration.clickhouse_metrics_database +
-        ".network_24_metrics_ipv4"
-        "(metricDate Date DEFAULT toDate(metricDateTime),"
-        "metricDateTime DateTime,"
-        "network String,"
-        "packets_incoming UInt64,     packets_outgoing UInt64,"
-        "bits_incoming UInt64,        bits_outgoing UInt64,"
-        "tcp_packets_incoming         UInt64, tcp_packets_outgoing        UInt64,"
-        "udp_packets_incoming         UInt64, udp_packets_outgoing        UInt64,"
-        "icmp_packets_incoming        UInt64, icmp_packets_outgoing       UInt64,"
-        "fragmented_packets_incoming  UInt64, fragmented_packets_outgoing UInt64,"
-        "tcp_syn_packets_incoming     UInt64, tcp_syn_packets_outgoing    UInt64,"
-
-        "tcp_bits_incoming            UInt64, tcp_bits_outgoing           UInt64,"
-        "udp_bits_incoming            UInt64, udp_bits_outgoing           UInt64,"
-        "icmp_bits_incoming           UInt64, icmp_bits_outgoing          UInt64,"
-        "fragmented_bits_incoming     UInt64, fragmented_bits_outgoing    UInt64,"
-        "tcp_syn_bits_incoming        UInt64, tcp_syn_bits_outgoing       UInt64,"
-        "schema_version UInt8 Default 0 COMMENT '1'"
-        ") ENGINE = MergeTree ORDER BY (network, metricDate) PARTITION BY metricDate TTL metricDate + toIntervalDay(7) SETTINGS index_granularity=8192;"; 
-
-    std::string total_hostgroup_metrics_schema =
-        "CREATE TABLE IF NOT EXISTS " + fastnetmon_global_configuration.clickhouse_metrics_database +
-        ".total_hostgroup_metrics"
-        "(metricDate Date DEFAULT toDate(metricDateTime),"
-        "metricDateTime DateTime,"
-        "hostgroup_name String,"
-        "packets_incoming UInt64,     packets_outgoing UInt64,"
-        "bits_incoming UInt64,        bits_outgoing UInt64,"
-        "tcp_packets_incoming         UInt64, tcp_packets_outgoing        UInt64,"
-        "udp_packets_incoming         UInt64, udp_packets_outgoing        UInt64,"
-        "icmp_packets_incoming        UInt64, icmp_packets_outgoing       UInt64,"
-        "fragmented_packets_incoming  UInt64, fragmented_packets_outgoing UInt64,"
-        "tcp_syn_packets_incoming     UInt64, tcp_syn_packets_outgoing    UInt64,"
-
-        "tcp_bits_incoming            UInt64, tcp_bits_outgoing           UInt64,"
-        "udp_bits_incoming            UInt64, udp_bits_outgoing           UInt64,"
-        "icmp_bits_incoming           UInt64, icmp_bits_outgoing          UInt64,"
-        "fragmented_bits_incoming     UInt64, fragmented_bits_outgoing    UInt64,"
-        "tcp_syn_bits_incoming        UInt64, tcp_syn_bits_outgoing       UInt64,"
-        "schema_version UInt8 Default 0 COMMENT '1'"
-        ") ENGINE = MergeTree ORDER BY (hostgroup_name, metricDate) PARTITION BY metricDate TTL metricDate + toIntervalDay(7) SETTINGS index_granularity=8192;";
-
     std::string network_metrics_ipv6_schema =
         "CREATE TABLE IF NOT EXISTS " + fastnetmon_global_configuration.clickhouse_metrics_database +
         ".network_metrics_ipv6("
@@ -451,14 +406,6 @@ bool create_clickhouse_tables_for_metrics(fastnetmon_configuration_t& fastnetmon
     // clang-format on
 
     if (!create_clickhouse_table_using_schema(network_metrics_schema, "network_metrics", clickhouse_metrics_client)) {
-        return false;
-    }
-
-    if (!create_clickhouse_table_using_schema(total_hostgroup_metrics_schema, "total_hostgroup_metrics", clickhouse_metrics_client)) {
-        return false;
-    }
-
-    if (!create_clickhouse_table_using_schema(network_24_metrics_schema, "network_24_metrics_ipv4", clickhouse_metrics_client)) {
         return false;
     }
 
