@@ -363,6 +363,7 @@ target_link_libraries(fastnetmon influxdb_metrics)
 # Clickhouse metrics
 if (CLICKHOUSE_SUPPORT)
 add_library(clickhouse_metrics STATIC metrics/clickhouse.cpp)
+target_link_libraries(clickhouse_metrics ${CLICKHOUSE_LIBRARY_PATH})
 target_link_libraries(fastnetmon clickhouse_metrics)
 endif()
 

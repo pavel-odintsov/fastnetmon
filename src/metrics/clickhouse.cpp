@@ -906,7 +906,6 @@ void clickhouse_push_thread() {
     extern total_speed_counters_t total_counters_ipv6;
 
     extern abstract_subnet_counters_t<subnet_cidr_mask_t, subnet_counter_t> ipv4_network_counters;
-    extern abstract_subnet_counters_t<subnet_cidr_mask_t, subnet_counter_t> ipv4_network_24_counters;
     extern abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t, subnet_counter_t> ipv6_network_counters;
 
     extern abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counters;
@@ -984,10 +983,6 @@ void clickhouse_push_thread() {
 
         // Push per subnet counters to ClickHouse
         push_network_traffic_counters_to_clickhouse(clickhouse_metrics_client, ipv4_network_counters, "network_metrics");
-
-        // Push per /24 subnet counters to Clickhouse
-        push_network_traffic_counters_to_clickhouse(clickhouse_metrics_client, ipv4_network_24_counters,
-                                                    "network_24_metrics_ipv4");
 
     	push_network_traffic_counters_to_clickhouse(clickhouse_metrics_client, ipv6_network_counters,
 						"network_metrics_ipv6");

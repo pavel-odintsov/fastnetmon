@@ -120,7 +120,7 @@
 #include "metrics/influxdb.hpp"
 
 // It's not enabled by default and we enable it only when we have Clickhouse libraries on platform
-#ifdef ENABLE_CLICKHOUSE_SUPPORT
+#ifdef CLICKHOUSE_SUPPORT
 #include "metrics/clickhouse.hpp"
 #endif
 
@@ -2003,9 +2003,10 @@ int main(int argc, char** argv) {
         service_thread_group.add_thread(new boost::thread(influxdb_push_thread));
     }
 
-#ifdef ENABLE_CLICKHOUSE_SUPPORT
+#ifdef CLICKHOUSE_SUPPORT
     // Clickhouse metrics export therad
     if (fastnetmon_global_configuration.clickhouse_metrics) {
+	    logger << log4cpp::Priority::INFO << "Starting Clickhouse metrics export thread";
         service_thread_group.add_thread(new boost::thread(clickhouse_push_thread));
     }
 #endif
