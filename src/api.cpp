@@ -8,9 +8,9 @@
 
 #include "ban_list.hpp"
 
-Status FastnetmonApiServiceImpl::GetBanlist(::grpc::ServerContext* context,
-                                            const ::fastmitigation::BanListRequest* request,
-                                            ::grpc::ServerWriter<::fastmitigation::BanListReply>* writer) {
+::grpc::Status FastnetmonApiServiceImpl::GetBanlist(::grpc::ServerContext* context,
+                                            const ::fastnetmoninternal::BanListRequest* request,
+                                            ::grpc::ServerWriter<::fastnetmoninternal::BanListReply>* writer) {
     extern blackhole_ban_list_t<subnet_ipv6_cidr_mask_t> ban_list_ipv6;
     extern blackhole_ban_list_t<uint32_t> ban_list_ipv4;
 
@@ -24,7 +24,7 @@ Status FastnetmonApiServiceImpl::GetBanlist(::grpc::ServerContext* context,
     ban_list_ipv4.get_whole_banlist(ban_list_ipv4_copy);
 
     for (auto itr : ban_list_ipv4_copy) {
-        BanListReply reply;
+        fastnetmoninternal::BanListReply reply;
 
         reply.set_ip_address(convert_ip_as_uint_to_string(itr.first) + "/32");
         
@@ -39,17 +39,17 @@ Status FastnetmonApiServiceImpl::GetBanlist(::grpc::ServerContext* context,
 
 
     for (auto itr : ban_list_ipv6_copy) {
-        BanListReply reply;
+        fastnetmoninternal::BanListReply reply;
         reply.set_ip_address(print_ipv6_cidr_subnet(itr.first));
         writer->Write(reply);
     }
 
-    return Status::OK;
+    return grpc::Status::OK;
 }
 
-Status FastnetmonApiServiceImpl::ExecuteBan(ServerContext* context,
-                                            const fastmitigation::ExecuteBanRequest* request,
-                                            fastmitigation::ExecuteBanReply* reply) {
+::grpc::Status FastnetmonApiServiceImpl::ExecuteBan(ServerContext* context,
+                                            const fastnetmoninternal::ExecuteBanRequest* request,
+                                            fastnetmoninternal::ExecuteBanReply* reply) {
     extern blackhole_ban_list_t<subnet_ipv6_cidr_mask_t> ban_list_ipv6;
     extern blackhole_ban_list_t<uint32_t> ban_list_ipv4;
     extern patricia_tree_t *lookup_tree_ipv4;
@@ -131,12 +131,12 @@ Status FastnetmonApiServiceImpl::ExecuteBan(ServerContext* context,
     call_blackhole_actions_per_host(attack_action_t::ban, client_ip, ipv6_address, ipv6, current_attack,
                       attack_detection_source_t::Automatic, flow_attack_details, empty_simple_packets_buffer, empty_raw_packets_buffer);
 
-    return Status::OK;
+    return grpc::Status::OK;
 }
 
-Status FastnetmonApiServiceImpl::ExecuteUnBan(ServerContext* context,
-                                              const fastmitigation::ExecuteBanRequest* request,
-                                              fastmitigation::ExecuteBanReply* reply) {
+::grpc::Status FastnetmonApiServiceImpl::ExecuteUnBan(ServerContext* context,
+                                              const fastnetmoninternal::ExecuteBanRequest* request,
+                                              fastnetmoninternal::ExecuteBanReply* reply) {
     extern blackhole_ban_list_t<subnet_ipv6_cidr_mask_t> ban_list_ipv6;
     extern blackhole_ban_list_t<uint32_t> ban_list_ipv4;
 
@@ -176,7 +176,7 @@ Status FastnetmonApiServiceImpl::ExecuteUnBan(ServerContext* context,
 
         if (!is_blackholed_ipv4) {
             logger << log4cpp::Priority::ERROR << "API: Could not find IPv4 address in ban list";
-            return Status::CANCELLED;
+            return grpc::Status::CANCELLED;
         }
 
         bool get_details = ban_list_ipv4.get_blackhole_details(client_ip, current_attack);
@@ -198,7 +198,7 @@ Status FastnetmonApiServiceImpl::ExecuteUnBan(ServerContext* context,
 
         if (!is_blackholed_ipv6) {
             logger << log4cpp::Priority::ERROR << "API: Could not find IPv6 address in ban list";
-            return Status::CANCELLED;
+            return grpc::Status::CANCELLED;
         }
 
         bool get_details = ban_list_ipv6.get_blackhole_details(ipv6_address, current_attack);
@@ -220,5 +220,288 @@ Status FastnetmonApiServiceImpl::ExecuteUnBan(ServerContext* context,
     call_blackhole_actions_per_host(attack_action_t::unban, client_ip, ipv6_address, ipv6,
             current_attack, attack_detection_source_t::Automatic, flow_attack_details, simple_packets_buffer, raw_packets_buffer);
 
-    return Status::OK;
+    return grpc::Status::OK;
 }
+
+void fill_total_traffic_counters_api(::grpc::ServerWriter<::fastnetmoninternal::SixtyFourNamedCounter>* writer,
+                                     const direction_t& packet_direction,
+                                     const total_speed_counters_t& total_counters,
+                                     bool return_per_protocol_metrics,
+                                     const std::string& unit) {
+    std::string direction_as_string = get_direction_name(packet_direction);
+
+    fastnetmoninternal::SixtyFourNamedCounter reply;
+    reply.set_counter_name(direction_as_string + " traffic");
+    reply.set_counter_value(total_counters.total_speed_average_counters[packet_direction].total.packets);
+    reply.set_counter_unit("pps");
+
+    writer->Write(reply);
+
+    if (return_per_protocol_metrics) {
+
+        // tcp
+        reply.set_counter_name(direction_as_string + " tcp traffic");
+        reply.set_counter_value(total_counters.total_speed_average_counters[packet_direction].tcp.packets);
+        reply.set_counter_unit("pps");
+
+        writer->Write(reply);
+
+        // udp
+        reply.set_counter_name(direction_as_string + " udp traffic");
+        reply.set_counter_value(total_counters.total_speed_average_counters[packet_direction].udp.packets);
+        reply.set_counter_unit("pps");
+
+        writer->Write(reply);
+
+        // icmp
+        reply.set_counter_name(direction_as_string + " icmp traffic");
+        reply.set_counter_value(total_counters.total_speed_average_counters[packet_direction].icmp.packets);
+        reply.set_counter_unit("pps");
+
+        writer->Write(reply);
+
+        // fragmented
+        reply.set_counter_name(direction_as_string + " fragmented traffic");
+        reply.set_counter_value(total_counters.total_speed_average_counters[packet_direction].fragmented.packets);
+        reply.set_counter_unit("pps");
+
+        writer->Write(reply);
+
+        // tcp_syn
+        reply.set_counter_name(direction_as_string + " tcp_syn traffic");
+        reply.set_counter_value(total_counters.total_speed_average_counters[packet_direction].tcp_syn.packets);
+        reply.set_counter_unit("pps");
+
+        writer->Write(reply);
+
+        // dropped
+        reply.set_counter_name(direction_as_string + " dropped traffic");
+        reply.set_counter_value(total_counters.total_speed_average_counters[packet_direction].dropped.packets);
+        reply.set_counter_unit("pps");
+
+        writer->Write(reply);
+    }
+
+    // Write traffic speed with same name but with other unit
+    reply.set_counter_name(direction_as_string + " traffic");
+
+    if (unit == "bps") {
+        reply.set_counter_value(total_counters.total_speed_average_counters[packet_direction].total.bytes * 8);
+        reply.set_counter_unit("bps");
+    } else {
+        reply.set_counter_value(
+            convert_speed_to_mbps(total_counters.total_speed_average_counters[packet_direction].total.bytes));
+        reply.set_counter_unit("mbps");
+    }
+
+    writer->Write(reply);
+
+    if (return_per_protocol_metrics) {
+
+        // tcp
+        reply.set_counter_name(direction_as_string + " tcp traffic");
+
+        if (unit == "bps") {
+            reply.set_counter_value(total_counters.total_speed_average_counters[packet_direction].tcp.bytes * 8);
+            reply.set_counter_unit("bps");
+        } else {
+            reply.set_counter_value(
+                convert_speed_to_mbps(total_counters.total_speed_average_counters[packet_direction].tcp.bytes));
+            reply.set_counter_unit("mbps");
+        }
+
+        writer->Write(reply);
+
+        // udp
+        reply.set_counter_name(direction_as_string + " udp traffic");
+
+        if (unit == "bps") {
+            reply.set_counter_unit("bps");
+            reply.set_counter_value(total_counters.total_speed_average_counters[packet_direction].udp.bytes * 8);
+        } else {
+            reply.set_counter_value(
+                convert_speed_to_mbps(total_counters.total_speed_average_counters[packet_direction].udp.bytes));
+            reply.set_counter_unit("mbps");
+        }
+
+        writer->Write(reply);
+
+        // icmp
+        reply.set_counter_name(direction_as_string + " icmp traffic");
+
+        if (unit == "bps") {
+            reply.set_counter_value(total_counters.total_speed_average_counters[packet_direction].icmp.bytes * 8);
+            reply.set_counter_unit("bps");
+        } else {
+            reply.set_counter_value(
+                convert_speed_to_mbps(total_counters.total_speed_average_counters[packet_direction].icmp.bytes));
+            reply.set_counter_unit("mbps");
+        }
+
+        writer->Write(reply);
+
+        // fragmented
+        reply.set_counter_name(direction_as_string + " fragmented traffic");
+
+        if (unit == "bps") {
+            reply.set_counter_value(total_counters.total_speed_average_counters[packet_direction].fragmented.bytes * 8);
+            reply.set_counter_unit("bps");
+        } else {
+            reply.set_counter_value(
+                convert_speed_to_mbps(total_counters.total_speed_average_counters[packet_direction].fragmented.bytes));
+            reply.set_counter_unit("mbps");
+        }
+
+        writer->Write(reply);
+
+        // tcp_syn
+        reply.set_counter_name(direction_as_string + " tcp_syn traffic");
+
+        if (unit == "bps") {
+            reply.set_counter_value(total_counters.total_speed_average_counters[packet_direction].tcp_syn.bytes * 8);
+            reply.set_counter_unit("bps");
+        } else {
+            reply.set_counter_value(
+                convert_speed_to_mbps(total_counters.total_speed_average_counters[packet_direction].tcp_syn.bytes));
+            reply.set_counter_unit("mbps");
+        }
+
+        writer->Write(reply);
+
+        // dropped
+        reply.set_counter_name(direction_as_string + " dropped traffic");
+
+        if (unit == "bps") {
+            reply.set_counter_value(total_counters.total_speed_average_counters[packet_direction].dropped.bytes * 8);
+            reply.set_counter_unit("bps");
+        } else {
+            reply.set_counter_value(
+                convert_speed_to_mbps(total_counters.total_speed_average_counters[packet_direction].dropped.bytes));
+            reply.set_counter_unit("mbps");
+        }
+
+        writer->Write(reply);
+    }
+}
+
+
+::grpc::Status
+FastnetmonApiServiceImpl::GetTotalTrafficCounters([[maybe_unused]] ::grpc::ServerContext* context,
+                                                  const ::fastnetmoninternal::GetTotalTrafficCountersRequest* request,
+                                                  ::grpc::ServerWriter<::fastnetmoninternal::SixtyFourNamedCounter>* writer) {
+    extern uint64_t incoming_total_flows_speed;
+    extern uint64_t outgoing_total_flows_speed;
+
+    extern total_speed_counters_t total_counters;
+
+    logger << log4cpp::Priority::DEBUG << "API we asked for GetTotalTrafficCounters";
+    extern total_speed_counters_t total_counters;
+
+    std::vector<direction_t> directions = { INCOMING, OUTGOING, INTERNAL, OTHER };
+
+    bool get_per_protocol_metrics = request->get_per_protocol_metrics();
+
+    extern bool enable_connection_tracking;
+
+    std::string unit = request->unit();
+
+    for (auto packet_direction : directions) {
+        // Forward our total counters to API format
+        fill_total_traffic_counters_api(writer, packet_direction, total_counters, get_per_protocol_metrics, unit);
+
+        if (enable_connection_tracking) {
+            fastnetmoninternal::SixtyFourNamedCounter reply;
+
+            std::string direction_as_string = get_direction_name(packet_direction);
+
+            reply.set_counter_name(direction_as_string + " traffic");
+
+            // Populate flow per second rates
+            if (packet_direction == INCOMING) {
+                reply.set_counter_unit("flows");
+                reply.set_counter_value(incoming_total_flows_speed);
+
+                writer->Write(reply);
+            } else if (packet_direction == OUTGOING) {
+                reply.set_counter_unit("flows");
+                reply.set_counter_value(outgoing_total_flows_speed);
+
+                writer->Write(reply);
+            }
+        }
+    }
+
+    return grpc::Status::OK;
+}
+
+::grpc::Status
+FastnetmonApiServiceImpl::GetTotalTrafficCountersV6([[maybe_unused]] ::grpc::ServerContext* context,
+                                                    const ::fastnetmoninternal::GetTotalTrafficCountersRequest* request,
+                                                    ::grpc::ServerWriter<::fastnetmoninternal::SixtyFourNamedCounter>* writer) {
+    extern total_speed_counters_t total_counters_ipv6;
+
+    logger << log4cpp::Priority::DEBUG << "API we asked for GetTotalTrafficCountersV6";
+
+    std::vector<direction_t> directions = { INCOMING, OUTGOING, INTERNAL, OTHER };
+
+    bool get_per_protocol_metrics = request->get_per_protocol_metrics();
+
+    std::string unit = request->unit();
+
+    for (auto packet_direction : directions) {
+        // Forward our total counters to API format
+        fill_total_traffic_counters_api(writer, packet_direction, total_counters_ipv6, get_per_protocol_metrics, unit);
+    }
+
+    return grpc::Status::OK;
+}
+
+::grpc::Status
+FastnetmonApiServiceImpl::GetTotalTrafficCountersV4([[maybe_unused]] ::grpc::ServerContext* context,
+                                                    const ::fastnetmoninternal::GetTotalTrafficCountersRequest* request,
+                                                    ::grpc::ServerWriter<::fastnetmoninternal::SixtyFourNamedCounter>* writer) {
+
+    extern uint64_t incoming_total_flows_speed;
+    extern uint64_t outgoing_total_flows_speed;
+
+    extern total_speed_counters_t total_counters_ipv4;
+
+    logger << log4cpp::Priority::DEBUG << "API we asked for GetTotalTrafficCounters";
+    extern total_speed_counters_t total_counters_ipv4;
+    extern bool enable_connection_tracking;
+
+    std::vector<direction_t> directions = { INCOMING, OUTGOING, INTERNAL, OTHER };
+
+    bool get_per_protocol_metrics = request->get_per_protocol_metrics();
+
+    std::string unit = request->unit();
+
+    for (auto packet_direction : directions) {
+        fill_total_traffic_counters_api(writer, packet_direction, total_counters_ipv4, get_per_protocol_metrics, unit);
+
+        if (enable_connection_tracking) {
+            fastnetmoninternal::SixtyFourNamedCounter reply;
+
+            std::string direction_as_string = get_direction_name(packet_direction);
+
+            reply.set_counter_name(direction_as_string + " traffic");
+
+            // Populate flow per second rates
+            if (packet_direction == INCOMING) {
+                reply.set_counter_unit("flows");
+                reply.set_counter_value(incoming_total_flows_speed);
+
+                writer->Write(reply);
+            } else if (packet_direction == OUTGOING) {
+                reply.set_counter_unit("flows");
+                reply.set_counter_value(outgoing_total_flows_speed);
+
+                writer->Write(reply);
+            }
+        }
+    }
+
+    return grpc::Status::OK;
+}
+
+

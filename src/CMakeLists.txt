@@ -769,8 +769,8 @@ if (ENABLE_GOBGP_SUPPORT)
 
     message(STATUS "Protoc return code for Protobuf fastnetmon_internal_api.proto: ${PROTOC_RETURN_CODE} std err: ${PROTOC_STDERR}")
 
-    add_library(fastnetmon_grpc_pb_cc STATIC fastnetmon.grpc.pb.cc)
-    add_library(fastnetmon_pb_cc STATIC fastnetmon.pb.cc)
+    add_library(fastnetmon_grpc_pb_cc STATIC fastnetmon_internal_api.grpc.pb.cc)
+    add_library(fastnetmon_pb_cc STATIC fastnetmon_internal_api.pb.cc)
 
     add_executable(fastnetmon_api_client fastnetmon_api_client.cpp)
 

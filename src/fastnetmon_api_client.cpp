@@ -4,11 +4,11 @@
 
 #include <grpc++/grpc++.h>
 
-#include "fastnetmon.grpc.pb.h"
+#include "fastnetmon_internal_api.grpc.pb.h"
 
-using fastmitigation::BanListReply;
-using fastmitigation::BanListRequest;
-using fastmitigation::Fastnetmon;
+using fastnetmoninternal::BanListReply;
+using fastnetmoninternal::BanListRequest;
+using fastnetmoninternal::Fastnetmon;
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
@@ -22,8 +22,8 @@ class FastnetmonClient {
 
     void ExecuteBan(std::string host, bool is_ban) {
         ClientContext context;
-        fastmitigation::ExecuteBanRequest request;
-        fastmitigation::ExecuteBanReply reply;
+        fastnetmoninternal::ExecuteBanRequest request;
+        fastnetmoninternal::ExecuteBanReply reply;
 
         request.set_ip_address(host);
 

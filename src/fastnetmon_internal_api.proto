@@ -5,6 +5,9 @@ package fastnetmoninternal;
 option go_package = "./;fastnetmoninternal";
 
 service Fastnetmon {
+    // TODO: legacy to remove and replace by DisableMitigation
+    rpc ExecuteUnBan(ExecuteBanRequest) returns (ExecuteBanReply) {}
+
     // Pings gRPC server to check availability
     rpc Ping(PingRequest) returns (PingReply) {}
 
