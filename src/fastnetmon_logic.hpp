@@ -8,8 +8,8 @@
 #include "all_logcpp_libraries.hpp"
 #include "packet_bucket.hpp"
 
-#include "fastnetmon.grpc.pb.h"
-#include <grpc++/grpc++.h>
+//#include "fastnetmon.grpc.pb.h"
+//#include <grpc++/grpc++.h>
 
 std::string get_amplification_attack_type(amplification_attack_type_t attack_type);
 std::string generate_flow_spec_for_amplification_attack(amplification_attack_type_t amplification_attack_type, std::string destination_ip);
@@ -106,23 +106,3 @@ void inaccurate_time_generator();
 void collect_stats();
 void start_prometheus_web_server();
 std::string get_human_readable_attack_detection_direction(attack_detection_direction_type_t attack_detection_direction);
-
-// API declaration
-using fastmitigation::BanListReply;
-using fastmitigation::BanListRequest;
-using fastmitigation::Fastnetmon;
-using grpc::Server;
-using grpc::ServerBuilder;
-using grpc::ServerContext;
-using grpc::Status;
-
-class FastnetmonApiServiceImpl final : public Fastnetmon::Service {
-    Status GetBanlist(::grpc::ServerContext* context,
-                      const ::fastmitigation::BanListRequest* request,
-                      ::grpc::ServerWriter<::fastmitigation::BanListReply>* writer) override;
-
-    Status ExecuteBan(ServerContext* context, const fastmitigation::ExecuteBanRequest* request, fastmitigation::ExecuteBanReply* reply) override;
-    Status ExecuteUnBan(ServerContext* context,
-                        const fastmitigation::ExecuteBanRequest* request,
-                        fastmitigation::ExecuteBanReply* reply) override;
-};

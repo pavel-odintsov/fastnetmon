@@ -128,6 +128,8 @@
 #include <cppkafka/cppkafka.h>
 #endif
 
+#include "api.hpp"
+
 #ifdef FASTNETMON_API
 using fastmitigation::BanListReply;
 using fastmitigation::BanListRequest;

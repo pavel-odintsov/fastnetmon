@@ -390,6 +390,10 @@ target_link_libraries(filter bgp_protocol bgp_protocol_flow_spec)
 # Our logic library
 add_library(fastnetmon_logic STATIC fastnetmon_logic.cpp)
 
+# API library
+add_library(fastnetmon_api STATIC api.cpp)
+
+
 CHECK_CXX_SOURCE_COMPILES("
 #include <linux/if_packet.h>
 int main() {
@@ -974,6 +978,8 @@ target_link_libraries(fastnetmon ${LOG4CPP_LIBRARY_PATH})
 
 target_link_libraries(fastnetmon ${CMAKE_THREAD_LIBS_INIT})
 
+target_link_libraries(fastnetmon fastnetmon_api)
+
 # We need it for boost::stacktrace
 # To address undefined reference to symbol 'dladdr@@GLIBC_2.2.5
 target_link_libraries(fastnetmon ${CMAKE_DL_LIBS})
@@ -992,6 +998,8 @@ target_link_libraries(fastnetmon_logic speed_counters)
 
 # Link to our functions
 target_link_libraries(fastnetmon fast_library)
+
+
 
 # link to our unified parser
 target_link_libraries(fastnetmon ${OPENSSL_LIBRARY_PATH})
