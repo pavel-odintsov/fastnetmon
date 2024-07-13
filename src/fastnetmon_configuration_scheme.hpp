@@ -23,7 +23,6 @@ class fastnetmon_configuration_t {
     std::string influxdb_database{ "fastnetmon" };
     std::string influxdb_host{ "127.0.0.1" };
     unsigned int influxdb_port{ 8086 };
-    bool influxdb_skip_host_counters{ false };
     std::string influxdb_user{ "fastnetmon" };
     std::string influxdb_password{ "fastnetmon" };
     bool influxdb_auth{ false };
