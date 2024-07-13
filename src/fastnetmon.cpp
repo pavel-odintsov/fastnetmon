@@ -452,16 +452,6 @@ uint64_t influxdb_writes_total         = 0;
 std::string influxdb_writes_failed_desc = "Total number of failed InfluxDB writes";
 uint64_t influxdb_writes_failed         = 0;
 
-// InfluxDB
-bool influxdb_enabled             = false;
-std::string influxdb_database     = "fastnetmon";
-std::string influxdb_host         = "127.0.0.1";
-unsigned short int influxdb_port  = 8086;
-bool influxdb_auth                = false;
-std::string influxdb_user         = "";
-std::string influxdb_password     = "";
-unsigned int influxdb_push_period = 1;
-
 bool process_incoming_traffic = true;
 bool process_outgoing_traffic = true;
 
@@ -821,35 +811,35 @@ bool load_configuration_file() {
 
     // InfluxDB
     if (configuration_map.count("influxdb") != 0) {
-        influxdb_enabled = configuration_map["influxdb"] == "on" ? true : false;
+        fastnetmon_global_configuration.influxdb = configuration_map["influxdb"] == "on" ? true : false;
     }
 
     if (configuration_map.count("influxdb_port") != 0) {
-        influxdb_port = convert_string_to_integer(configuration_map["influxdb_port"]);
+        fastnetmon_global_configuration.influxdb_port = convert_string_to_integer(configuration_map["influxdb_port"]);
     }
 
     if (configuration_map.count("influxdb_push_period") != 0) {
-        influxdb_push_period = convert_string_to_integer(configuration_map["influxdb_push_period"]);
+        fastnetmon_global_configuration.influxdb_push_period = convert_string_to_integer(configuration_map["influxdb_push_period"]);
     }
 
     if (configuration_map.count("influxdb_host") != 0) {
-        influxdb_host = configuration_map["influxdb_host"];
+        fastnetmon_global_configuration.influxdb_host = configuration_map["influxdb_host"];
     }
 
     if (configuration_map.count("influxdb_database") != 0) {
-        influxdb_database = configuration_map["influxdb_database"];
+        fastnetmon_global_configuration.influxdb_database = configuration_map["influxdb_database"];
     }
 
     if (configuration_map.count("influxdb_auth") != 0) {
-        influxdb_auth = configuration_map["influxdb_auth"] == "on" ? true : false;
+        fastnetmon_global_configuration.influxdb_auth = configuration_map["influxdb_auth"] == "on" ? true : false;
     }
 
     if (configuration_map.count("influxdb_user") != 0) {
-        influxdb_user = configuration_map["influxdb_user"];
+        fastnetmon_global_configuration.influxdb_user = configuration_map["influxdb_user"];
     }
 
     if (configuration_map.count("influxdb_password") != 0) {
-        influxdb_password = configuration_map["influxdb_password"];
+        fastnetmon_global_configuration.influxdb_password = configuration_map["influxdb_password"];
     }
 
     // Clickhouse
