@@ -8,7 +8,6 @@
 
 #include "../gobgp_client/gobgp_client.hpp"
 
-GrpcClient* gobgp_client         = NULL;
 std::string gobgp_nexthop        = "0.0.0.0";
 bool gobgp_announce_whole_subnet = false;
 bool gobgp_announce_host         = false;
@@ -28,7 +27,6 @@ subnet_ipv6_cidr_mask_t ipv6_next_hop;
 
 void gobgp_action_init() {
     logger << log4cpp::Priority::INFO << "GoBGP action module loaded";
-    gobgp_client = new GrpcClient(grpc::CreateChannel("localhost:50051", grpc::InsecureChannelCredentials()));
 
     if (configuration_map.count("gobgp_next_hop")) {
         gobgp_nexthop = configuration_map["gobgp_next_hop"];
@@ -126,10 +124,11 @@ void gobgp_action_init() {
 }
 
 void gobgp_action_shutdown() {
-    delete gobgp_client;
 }
 
 void gobgp_ban_manage(const std::string& action, bool ipv6, const std::string& ip_as_string, const subnet_ipv6_cidr_mask_t& client_ipv6, const subnet_cidr_mask_t& customer_network) {
+    GrpcClient gobgp_client = GrpcClient(grpc::CreateChannel("localhost:50051", grpc::InsecureChannelCredentials()));
+
     bool is_withdrawal = false;
 
     std::string action_name;
@@ -152,7 +151,7 @@ void gobgp_ban_manage(const std::string& action, bool ipv6, const std::string& i
             uint32_t community_as_32bit_int =
                 uint32_t(bgp_community_host_ipv6.asn_number << 16 | bgp_community_host_ipv6.community_number);
 
-            gobgp_client->AnnounceUnicastPrefixIPv6(client_ipv6, ipv6_next_hop, is_withdrawal, community_as_32bit_int);
+            gobgp_client.AnnounceUnicastPrefixIPv6(client_ipv6, ipv6_next_hop, is_withdrawal, community_as_32bit_int);
         }
     } else {
         if (gobgp_announce_whole_subnet) {
@@ -164,7 +163,7 @@ void gobgp_ban_manage(const std::string& action, bool ipv6, const std::string& i
             uint32_t community_as_32bit_int =
                 uint32_t(bgp_community_subnet.asn_number << 16 | bgp_community_subnet.community_number);
 
-            gobgp_client->AnnounceUnicastPrefixIPv4(convert_ip_as_uint_to_string(customer_network.subnet_address),
+            gobgp_client.AnnounceUnicastPrefixIPv4(convert_ip_as_uint_to_string(customer_network.subnet_address),
                                                     gobgp_nexthop, is_withdrawal,
                                                     customer_network.cidr_prefix_length, community_as_32bit_int);
         }
@@ -176,7 +175,7 @@ void gobgp_ban_manage(const std::string& action, bool ipv6, const std::string& i
 
             uint32_t community_as_32bit_int = uint32_t(bgp_community_host.asn_number << 16 | bgp_community_host.community_number);
 
-            gobgp_client->AnnounceUnicastPrefixIPv4(ip_as_string, gobgp_nexthop, is_withdrawal, 32, community_as_32bit_int);
+            gobgp_client.AnnounceUnicastPrefixIPv4(ip_as_string, gobgp_nexthop, is_withdrawal, 32, community_as_32bit_int);
         }
     }
 }
