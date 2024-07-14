@@ -53,11 +53,7 @@ class GrpcClient {
                               bool is_withdrawal,
                               unsigned int afi,
                               unsigned int safi);
-    bool AnnounceUnicastPrefixIPv4(std::string announced_address,
-                                   std::string announced_prefix_nexthop,
-                                   bool is_withdrawal,
-                                   unsigned int cidr_mask,
-                                   uint32_t community_as_32bit_int);
+    bool AnnounceUnicastPrefixLowLevelIPv4(const IPv4UnicastAnnounce& unicast_ipv4_announce, bool is_withdrawal);
     bool AnnounceUnicastPrefixLowLevelIPv6(const IPv6UnicastAnnounce& unicast_ipv6_announce, bool is_withdrawal);
 
     private:

@@ -215,10 +215,6 @@ int unban_iteration_sleep_time = 60;
 
 bool unban_enabled = true;
 
-#ifdef ENABLE_GOBGP
-bool gobgp_enabled = false;
-#endif
-
 #ifdef MONGO
 std::string mongodb_host  = "localhost";
 unsigned int mongodb_port = 27017;
@@ -704,7 +700,7 @@ bool load_configuration_file() {
 #ifdef ENABLE_GOBGP
     // GoBGP configuration
     if (configuration_map.count("gobgp") != 0) {
-        gobgp_enabled = configuration_map["gobgp"] == "on";
+        fastnetmon_global_configuration.gobgp = configuration_map["gobgp"] == "on";
     }
 #endif
 
@@ -1913,7 +1909,7 @@ int main(int argc, char** argv) {
 
     // We call init for each action
 #ifdef ENABLE_GOBGP
-    if (gobgp_enabled) {
+    if (fastnetmon_global_configuration.gobgp) {
         gobgp_action_init();
     }
 #endif

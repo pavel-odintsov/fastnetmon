@@ -44,7 +44,6 @@ class lookup_tree_128bit_t {
         }
 
         return true;
-
     }
 
     // TODO: rework get_packet_direction_ipv6 and make it public
@@ -88,7 +87,7 @@ class lookup_tree_32bit_t {
     // Lookup this network in Patricia tree
     bool lookup_network(const subnet_cidr_mask_t& subnet) const {
         prefix_t prefix_for_check_adreess;
-        
+
         prefix_for_check_adreess.add.sin.s_addr = subnet.subnet_address;
         prefix_for_check_adreess.family         = AF_INET;
         prefix_for_check_adreess.bitlen         = subnet.cidr_prefix_length;
@@ -138,7 +137,7 @@ class lookup_tree_32bit_t {
             patricia_tree = nullptr;
         }
     }
-    
+
     // Allow access to private variables from tests
     friend class patricia_process_ipv4_Test;
     friend class patricia_positive_lookup_ipv4_check_data_field_value_Test;
@@ -152,4 +151,3 @@ class lookup_tree_32bit_t {
     private:
     patricia_tree_t* patricia_tree = nullptr;
 };
-

@@ -72,6 +72,10 @@
 #include <cppkafka/cppkafka.h>
 #endif
 
+#include "fastnetmon_configuration_scheme.hpp"
+
+extern fastnetmon_configuration_t fastnetmon_global_configuration;
+
 extern uint64_t influxdb_writes_total;
 extern uint64_t influxdb_writes_failed;
 extern packet_buckets_storage_t<subnet_ipv6_cidr_mask_t> packet_buckets_ipv6_storage;
@@ -146,7 +150,6 @@ extern patricia_tree_t *lookup_tree_ipv4, *whitelist_tree_ipv4;
 extern patricia_tree_t *lookup_tree_ipv6, *whitelist_tree_ipv6;
 extern ban_settings_t global_ban_settings;
 extern bool exabgp_enabled;
-extern bool gobgp_enabled;
 extern int global_ban_time;
 extern bool notify_script_enabled;
 extern std::map<uint32_t, banlist_item_t> ban_list;
@@ -1279,7 +1282,7 @@ void call_blackhole_actions_per_host(attack_action_t attack_action,
     }
 
 #ifdef ENABLE_GOBGP
-    if (gobgp_enabled) {
+    if (fastnetmon_global_configuration.gobgp) {
         logger << log4cpp::Priority::INFO << "Call GoBGP for " << action_name << " client started: " << client_ip_as_string;
 
         boost::thread gobgp_thread(gobgp_ban_manage, action_name, ipv6, client_ip, client_ipv6, current_attack);

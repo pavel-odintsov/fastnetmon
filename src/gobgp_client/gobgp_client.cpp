@@ -52,77 +52,6 @@ GrpcClient::GrpcClient(std::shared_ptr<grpc::Channel> channel) : stub_(apipb::Go
 
 }
 
-bool GrpcClient::AnnounceUnicastPrefixIPv4(std::string announced_address,
-                               std::string announced_prefix_nexthop,
-                               bool is_withdrawal,
-                               unsigned int cidr_mask,
-                               uint32_t community_as_32bit_int) {
-    grpc::ClientContext context;
-
-    // Set timeout for API
-    std::chrono::system_clock::time_point deadline =
-        std::chrono::system_clock::now() + std::chrono::seconds(gobgp_client_connection_timeout);
-    context.set_deadline(deadline);
-
-    auto gobgp_ipv4_unicast_route_family = new apipb::Family;
-    gobgp_ipv4_unicast_route_family->set_afi(apipb::Family::AFI_IP);
-    gobgp_ipv4_unicast_route_family->set_safi(apipb::Family::SAFI_UNICAST);
-
-    apipb::AddPathRequest request;
-    request.set_table_type(apipb::TableType::GLOBAL);
-
-    apipb::Path* current_path = new apipb::Path;
-
-    current_path->set_allocated_family(gobgp_ipv4_unicast_route_family);
-
-    if (is_withdrawal) {
-        current_path->set_is_withdraw(true);
-    }
-
-    // Configure required announce
-    google::protobuf::Any* current_nlri = new google::protobuf::Any;
-    apipb::IPAddressPrefix current_ipaddrprefix;
-    current_ipaddrprefix.set_prefix(announced_address);
-    current_ipaddrprefix.set_prefix_len(cidr_mask);
-
-    current_nlri->PackFrom(current_ipaddrprefix);
-    current_path->set_allocated_nlri(current_nlri);
-
-    // Updating OriginAttribute info for current_path
-    google::protobuf::Any* current_origin = current_path->add_pattrs();
-    apipb::OriginAttribute current_origin_t;
-    current_origin_t.set_origin(0);
-    current_origin->PackFrom(current_origin_t);
-
-    // Updating NextHopAttribute info for current_path
-    google::protobuf::Any* current_next_hop = current_path->add_pattrs();
-    apipb::NextHopAttribute current_next_hop_t;
-    current_next_hop_t.set_next_hop(announced_prefix_nexthop);
-    current_next_hop->PackFrom(current_next_hop_t);
-
-    // Updating CommunitiesAttribute for current_path
-    google::protobuf::Any* current_communities = current_path->add_pattrs();
-    apipb::CommunitiesAttribute current_communities_t;
-    current_communities_t.add_communities(community_as_32bit_int);
-    current_communities->PackFrom(current_communities_t);
-
-    request.set_allocated_path(current_path);
-
-    apipb::AddPathResponse response;
-
-    // Don't be confused by name, it also can withdraw announces
-    auto status = stub_->AddPath(&context, request, &response);
-
-    if (!status.ok()) {
-        logger << log4cpp::Priority::ERROR << "AddPath request to BGP daemon failed with code: " << status.error_code()
-               << " message " << status.error_message();
-
-        return false;
-    }
-
-
-    return true;
-}
 
 // Announce unicast or flow spec
 bool GrpcClient::AnnounceCommonPrefix(dynamic_binary_buffer_t binary_nlri,
@@ -194,6 +123,36 @@ bool GrpcClient::AnnounceCommonPrefix(dynamic_binary_buffer_t binary_nlri,
 
     return true;
 }
+
+bool GrpcClient::AnnounceUnicastPrefixLowLevelIPv4(const IPv4UnicastAnnounce& unicast_ipv4_announce, bool is_withdrawal) {
+    logger << log4cpp::Priority::INFO << "Send IPv4 " << (is_withdrawal ? "withdrawal " : "")
+           << "unicast announce to BGP daemon: " << unicast_ipv4_announce.print();
+
+    dynamic_binary_buffer_t binary_nlri;
+    auto binary_nlri_generation_result = unicast_ipv4_announce.generate_nlri(binary_nlri);
+
+    if (!binary_nlri_generation_result) {
+        logger << log4cpp::Priority::ERROR << "Could not encode NLRI for IPv4 unicast announce due to unsuccessful error code";
+        return false;
+    }
+
+    if (binary_nlri.get_used_size() == 0 or binary_nlri.get_pointer() == NULL) {
+        logger << log4cpp::Priority::ERROR << "Could not encode NLRI for IPv4 unicast announce";
+        return false;
+    }
+
+    auto bgp_attributes = unicast_ipv4_announce.get_attributes();
+
+    if (bgp_attributes.size() == 0) {
+        logger << log4cpp::Priority::ERROR << "We got zero number of attributes";
+        return false;
+    }
+
+    logger << log4cpp::Priority::DEBUG << "Got " << bgp_attributes.size() << " BGP attributes";
+
+    return AnnounceCommonPrefix(binary_nlri, bgp_attributes, is_withdrawal, AFI_IP, SAFI_UNICAST);
+}
+
 
 
 bool GrpcClient::AnnounceUnicastPrefixLowLevelIPv6(const IPv6UnicastAnnounce& unicast_ipv6_announce, bool is_withdrawal) {
