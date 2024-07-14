@@ -3,6 +3,8 @@
 #include <grpc/grpc.h>
 #include <grpc++/channel.h>
 
+#include "../bgp_protocol.hpp"
+
 #include "../fastnetmon_networks.hpp"
 
 //
@@ -45,11 +47,18 @@ class GrpcClient {
     public:
     GrpcClient(std::shared_ptr<grpc::Channel> channel);
 
+    // Announce unicast or flow spec
+    bool AnnounceCommonPrefix(dynamic_binary_buffer_t binary_nlri,
+                              std::vector<dynamic_binary_buffer_t> bgp_attributes,
+                              bool is_withdrawal,
+                              unsigned int afi,
+                              unsigned int safi);
     bool AnnounceUnicastPrefixIPv4(std::string announced_address,
                                    std::string announced_prefix_nexthop,
                                    bool is_withdrawal,
                                    unsigned int cidr_mask,
                                    uint32_t community_as_32bit_int);
+    bool AnnounceUnicastPrefixLowLevelIPv6(const IPv6UnicastAnnounce& unicast_ipv6_announce, bool is_withdrawal);
 
     private:
     std::unique_ptr<apipb::GobgpApi::Stub> stub_;
