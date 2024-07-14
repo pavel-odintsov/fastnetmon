@@ -34,5 +34,19 @@ class fastnetmon_configuration_t {
     unsigned int graphite_port{ 2003 };
     std::string graphite_prefix{ "fastnetmon" };
     unsigned int graphite_push_period{ 1 };
+
+    // GoBGP
+    bool gobgp_announce_host{ false };
+    bool gobgp_announce_whole_subnet{ false };
+
+    bool gobgp_announce_host_ipv6{ false };
+    bool gobgp_announce_whole_subnet_ipv6{ false };
+
+    std::string gobgp_next_hop_ipv6{ "100::1" };
+    std::string gobgp_next_hop_host_ipv6{ "::0" };
+    std::string gobgp_next_hop_subnet_ipv6{ "::0" };
+
+    std::string gobgp_community_host_ipv6{ "65001:668" };
+    std::string gobgp_community_subnet_ipv6{ "65001:667" };
 };
 
