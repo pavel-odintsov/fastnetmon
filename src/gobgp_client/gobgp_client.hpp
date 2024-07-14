@@ -51,10 +51,6 @@ class GrpcClient {
                                    unsigned int cidr_mask,
                                    uint32_t community_as_32bit_int);
 
-    bool AnnounceUnicastPrefixIPv6(const subnet_ipv6_cidr_mask_t& client_ipv6,
-                                   const subnet_ipv6_cidr_mask_t& ipv6_next_hop,
-                                   bool is_withdrawal,
-                                   uint32_t community_as_32bit_int);
     private:
     std::unique_ptr<apipb::GobgpApi::Stub> stub_;
 };

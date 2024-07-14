@@ -84,9 +84,6 @@ void gobgp_action_init() {
         fastnetmon_global_configuration.gobgp_community_host_ipv6 = configuration_map["gobgp_community_host_ipv6"];	    
     }
 
-    logger << log4cpp::Priority::INFO << "GoBGP host IPv6 community: " << bgp_community_host_ipv6.asn_number << ":"
-           << bgp_community_host_ipv6.community_number;
-
     if (configuration_map.count("gobgp_community_subnet_ipv6")) {
         fastnetmon_global_configuration.gobgp_community_subnet_ipv6 = configuration_map["gobgp_community_subnet_ipv6"];
     }
