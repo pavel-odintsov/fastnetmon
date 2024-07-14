@@ -126,7 +126,11 @@ void gobgp_action_init() {
 void gobgp_action_shutdown() {
 }
 
-void gobgp_ban_manage(const std::string& action, bool ipv6, const std::string& ip_as_string, const subnet_ipv6_cidr_mask_t& client_ipv6, const subnet_cidr_mask_t& customer_network) {
+void gobgp_ban_manage(const std::string& action,
+                      bool ipv6,
+                      uint32_t client_ip,
+                      const subnet_ipv6_cidr_mask_t& client_ipv6,
+                      const attack_details_t& current_attack) {
     GrpcClient gobgp_client = GrpcClient(grpc::CreateChannel("localhost:50051", grpc::InsecureChannelCredentials()));
 
     bool is_withdrawal = false;
@@ -155,8 +159,14 @@ void gobgp_ban_manage(const std::string& action, bool ipv6, const std::string& i
         }
     } else {
         if (gobgp_announce_whole_subnet) {
+	    // By default use network from attack
+	    subnet_cidr_mask_t customer_network;
+	    customer_network.subnet_address     = current_attack.customer_network.subnet_address;
+	    customer_network.cidr_prefix_length = current_attack.customer_network.cidr_prefix_length;
+
             std::string subnet_as_string_with_mask = convert_subnet_to_string(customer_network);
-            logger << log4cpp::Priority::INFO << action_name << " "
+            
+	    logger << log4cpp::Priority::INFO << action_name << " "
                    << convert_subnet_to_string(customer_network) << " to GoBGP";
 
             // https://github.com/osrg/gobgp/blob/0aff30a74216f499b8abfabc50016b041b319749/internal/pkg/table/policy_test.go#L2870
@@ -169,6 +179,7 @@ void gobgp_ban_manage(const std::string& action, bool ipv6, const std::string& i
         }
 
         if (gobgp_announce_host) {
+	    std::string ip_as_string = convert_ip_as_uint_to_string(client_ip);
             std::string ip_as_string_with_mask = ip_as_string + "/32";
 
             logger << log4cpp::Priority::INFO << action_name << " " << ip_as_string_with_mask << " to GoBGP";

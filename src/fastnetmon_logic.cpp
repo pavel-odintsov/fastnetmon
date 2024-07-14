@@ -1282,7 +1282,7 @@ void call_blackhole_actions_per_host(attack_action_t attack_action,
     if (gobgp_enabled) {
         logger << log4cpp::Priority::INFO << "Call GoBGP for " << action_name << " client started: " << client_ip_as_string;
 
-        boost::thread gobgp_thread(gobgp_ban_manage, action_name, ipv6, client_ip_as_string, client_ipv6, current_attack.customer_network);
+        boost::thread gobgp_thread(gobgp_ban_manage, action_name, ipv6, client_ip, client_ipv6, current_attack);
         gobgp_thread.detach();
 
         logger << log4cpp::Priority::INFO << "Call to GoBGP for " << action_name << " client is finished: " << client_ip_as_string;
