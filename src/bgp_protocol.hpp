@@ -11,15 +11,11 @@
 #include "dynamic_binary_buffer.hpp"
 #include "fast_library.hpp"
 #include "fastnetmon_networks.hpp"
+#include "fast_endianless.hpp"
 
 #include <boost/serialization/nvp.hpp>
 
 #include "iana_ip_protocols.hpp"
-
-#include "all_logcpp_libraries.hpp"
-
-// Get log4cpp logger from main programme
-extern log4cpp::Category& logger;
 
 class bgp_attribute_origin;
 class bgp_attribute_next_hop_ipv4;
@@ -30,6 +26,8 @@ bool decode_bgp_subnet_encoding_ipv4_raw(uint8_t* value, subnet_cidr_mask_t& ext
 bool decode_bgp_subnet_encoding_ipv4(int len, uint8_t* value, subnet_cidr_mask_t& extracted_prefix, uint32_t& parsed_nlri_length);
 uint32_t how_much_bytes_we_need_for_storing_certain_subnet_mask(uint8_t prefix_bit_length);
 std::string get_bgp_attribute_name_by_number(uint8_t bgp_attribute_type);
+
+extern log4cpp::Category& logger;
 
 enum BGP_PROTOCOL_MESSAGE_TYPES_UNTYPED : uint8_t {
     BGP_PROTOCOL_MESSAGE_OPEN         = 1,
@@ -53,7 +51,7 @@ class __attribute__((__packed__)) bgp_message_header_t {
 
 static_assert(sizeof(bgp_message_header_t) == 19, "Broken size for bgp_message_header_t");
 
-// TODO: move to 
+// TODO: move to
 //
 // https://www.ietf.org/rfc/rfc4271.txt pages 15 and 16
 // https://github.com/osrg/gobgp/blob/d6148c75a30d87c3f8c1d0f68725127e4c5f3a65/packet/bgp.go#L3012
@@ -209,8 +207,8 @@ bool decode_attribute(int len, char* value, IPv4UnicastAnnounce& unicast_ipv4_an
 bool encode_bgp_subnet_encoding(const subnet_cidr_mask_t& prefix, dynamic_binary_buffer_t& buffer_result);
 std::string get_origin_name_by_value(uint8_t origin_value);
 
-const unsigned int AFI_IP                 = 1;
-const unsigned int AFI_IP6                = 2;
+const unsigned int AFI_IP  = 1;
+const unsigned int AFI_IP6 = 2;
 
 const unsigned int SAFI_UNICAST           = 1;
 const unsigned int SAFI_FLOW_SPEC_UNICAST = 133;
@@ -244,17 +242,26 @@ enum EXTENDED_COMMUNITY_TYPES_LOW_FOR_COMMUNITY_TRANSITIVE_EXPEREMENTAL : uint8_
 
 enum BGP_ATTRIBUTES_TYPES : uint8_t {
     // https://www.ietf.org/rfc/rfc4271.txt from page 17
-    BGP_ATTRIBUTE_ORIGIN           = 1,
-    BGP_ATTRIBUTE_AS_PATH          = 2,
-    BGP_ATTRIBUTE_NEXT_HOP         = 3,
-    BGP_ATTRIBUTE_MULTI_EXIT_DISC  = 4,
-    BGP_ATTRIBUTE_LOCAL_PREF       = 5,
+    BGP_ATTRIBUTE_ORIGIN = 1,
+
+    BGP_ATTRIBUTE_AS_PATH = 2,
+
+    BGP_ATTRIBUTE_NEXT_HOP = 3,
+
+    BGP_ATTRIBUTE_MULTI_EXIT_DISC = 4,
+
+    BGP_ATTRIBUTE_LOCAL_PREF = 5,
+
     BGP_ATTRIBUTE_ATOMIC_AGGREGATE = 6,
-    BGP_ATTRIBUTE_AGGREGATOR       = 7,
+
+    BGP_ATTRIBUTE_AGGREGATOR = 7,
+
     // https://tools.ietf.org/html/rfc1997 from page 1
     BGP_ATTRIBUTE_COMMUNITY = 8,
+
     // https://tools.ietf.org/html/rfc4760 from page 2
     BGP_ATTRIBUTE_MP_REACH_NLRI = 14,
+
     // https://tools.ietf.org/html/rfc4360 from page 1
     BGP_ATTRIBUTE_EXTENDED_COMMUNITY = 16,
 };
@@ -317,6 +324,54 @@ class __attribute__((__packed__)) bgp_attribute_community_t {
 
     // Here we have multiple elements of type: bgp_community_attribute_element_t
 };
+
+// Format of AS_PATH element described here: https://www.rfc-editor.org/rfc/rfc4271.html#page-17
+// And with 32 bit / 4 byte ASN corrections from here: https://www.rfc-editor.org/rfc/rfc6793 page 2
+// The AS path information exchanged between NEW BGP speakers is carried in the existing AS_PATH attribute,
+// except that each AS number in the attribute is encoded as a four-octet entity (instead of a two-octet entity).
+class __attribute__((__packed__)) bgp_as_path_segment_element_t {
+    public:
+    // Path segment type declares on of two possible types of segments:
+    // 1 AS_SET: unordered set of ASes a route in the UPDATE message has traversed
+    // 2 AS_SEQUENCE: ordered set of ASes a route in the UPDATE message has traversed
+    // We use AS_SEQUENCE as default option
+    uint8_t path_segment_type = 2;
+
+    // The path segment length is a 1-octet length field, containing the number of ASes (not the number of octets) in
+    // the path segment value field.
+    uint8_t path_segment_length = 0;
+
+    // Here we store list of 4 byte ASNs encoded in 4 byte format each
+};
+
+// BGP attribute AS_PATH
+// In RFC this encoding format is covered here: https://www.rfc-editor.org/rfc/rfc4271.html#page-18
+class __attribute__((__packed__)) bgp_attribute_as_path_t {
+    public:
+    bgp_attribute_as_path_t() {
+        attribute_type = BGP_ATTRIBUTE_AS_PATH;
+
+        // Set attribute flags
+        attribute_flags.set_transitive_bit(true);
+        attribute_flags.set_partial_bit(false);
+
+        // It's mandatory: https://www.rfc-editor.org/rfc/rfc4271.html#section-5.1.2
+        attribute_flags.set_optional_bit(false);
+
+        // Means that we using single octet length field encoding:
+        // https://www.rfc-editor.org/rfc/rfc4271.html#page-17
+        attribute_flags.set_extended_length_bit(false);
+    }
+
+    bgp_attribute_flags attribute_flags;
+    uint8_t attribute_type = 0;
+
+    // This variable store total size in bytes of all AS_PATH elements
+    uint8_t attribute_length = 0;
+
+    // Here we have multiple elements of type: bgp_as_path_segment_element_t
+};
+
 
 // This is new extended communities:
 // More details: https://tools.ietf.org/html/rfc4360
@@ -518,24 +573,81 @@ class IPv4UnicastAnnounce {
         // origin_attr.print() <<
         // std::endl;
 
+        dynamic_binary_buffer_t origin_as_binary_array;
+        origin_as_binary_array.set_maximum_buffer_size_in_bytes(sizeof(origin_attr));
+        origin_as_binary_array.append_data_as_object_ptr(&origin_attr);
+
         bgp_attribute_next_hop_ipv4 next_hop_attr(next_hop);
 
         // logger << log4cpp::Priority::WARN << "next_hop_attr: "          <<
         // next_hop_attr.print() <<
         // std::endl;
 
-        dynamic_binary_buffer_t origin_as_binary_array;
-        origin_as_binary_array.set_maximum_buffer_size_in_bytes(sizeof(origin_attr));
-        origin_as_binary_array.append_data_as_object_ptr(&origin_attr);
-
         dynamic_binary_buffer_t next_hop_as_binary_array;
         next_hop_as_binary_array.set_maximum_buffer_size_in_bytes(sizeof(next_hop_attr));
         next_hop_as_binary_array.append_data_as_object_ptr(&next_hop_attr);
 
-        // TODO: remove ugly code with custom build of each vector
+        // Vector should be ordered in ascending order of attribute types
+        // Check numbers in enum BGP_ATTRIBUTES_TYPES for information
+        std::vector<dynamic_binary_buffer_t> attributes_list;
+
+        // It has attribute #1 and will be first in all the cases
+        attributes_list.push_back(origin_as_binary_array);
+
+        // AS Path should be here and it's #2
+        if (this->as_path_asns.size() > 0) {
+            // We have ASNs for AS_PATH attribute
+            bgp_attribute_as_path_t bgp_attribute_as_path;
+
+            // Populate attribute length
+            bgp_attribute_as_path.attribute_length =
+                sizeof(bgp_as_path_segment_element_t) + this->as_path_asns.size() * sizeof(uint32_t);
+
+            logger << log4cpp::Priority::DEBUG << "AS_PATH attribute length: " << uint32_t(bgp_attribute_as_path.attribute_length);
+
+            uint32_t as_path_attribute_full_length = sizeof(bgp_attribute_as_path_t) + bgp_attribute_as_path.attribute_length;
+
+            logger << log4cpp::Priority::DEBUG << "AS_PATH attribute full length: " << as_path_attribute_full_length;
+
+            dynamic_binary_buffer_t as_path_as_binary_array;
+            as_path_as_binary_array.set_maximum_buffer_size_in_bytes(as_path_attribute_full_length);
+
+            // Append attribute header
+            as_path_as_binary_array.append_data_as_object_ptr(&bgp_attribute_as_path);
+
+            bgp_as_path_segment_element_t bgp_as_path_segment_element;
+
+            // Numbers of ASNs in list
+            bgp_as_path_segment_element.path_segment_length = this->as_path_asns.size();
+
+            logger << log4cpp::Priority::DEBUG
+                   << "AS_PATH segments number: " << uint32_t(bgp_as_path_segment_element.path_segment_length);
+
+            // Append segment header
+            as_path_as_binary_array.append_data_as_object_ptr(&bgp_as_path_segment_element);
+
+            logger << log4cpp::Priority::DEBUG << "AS_PATH ASN numner: " << this->as_path_asns.size();
+
+            for (auto asn : this->as_path_asns) {
+                // Append all ASNs in big endian encoding
+                uint32_t asn_big_endian = fast_hton(asn);
+
+                as_path_as_binary_array.append_data_as_object_ptr(&asn_big_endian);
+            }
+
+            if (as_path_as_binary_array.is_failed()) {
+                logger << log4cpp::Priority::ERROR << "Issue with storing AS_PATH";
+            }
+
+            attributes_list.push_back(as_path_as_binary_array);
+        }
+
+        // Vector should be ordered in ascending order of attribute types
+        // Next hop attribute is #3
+        attributes_list.push_back(next_hop_as_binary_array);
+
         if (community_list.empty()) {
-            // Vector should be ordered in ascending order of attribute types
-            return std::vector<dynamic_binary_buffer_t>{ origin_as_binary_array, next_hop_as_binary_array };
+            return attributes_list;
         } else {
             // We have communities
             bgp_attribute_community_t bgp_attribute_community;
@@ -556,8 +668,10 @@ class IPv4UnicastAnnounce {
                 communities_list_as_binary_array.append_data_as_object_ptr(&bgp_community_element);
             }
 
-            return std::vector<dynamic_binary_buffer_t>{ origin_as_binary_array, next_hop_as_binary_array,
-                                                         communities_list_as_binary_array };
+            // Community is attribute #8
+            attributes_list.push_back(communities_list_as_binary_array);
+
+            return attributes_list;
         }
     }
 
@@ -587,12 +701,25 @@ class IPv4UnicastAnnounce {
         return true;
     }
 
+    // Add ASN to AS_PATH
+    void add_asn_as_path(uint32_t asn) {
+        as_path_asns.push_back(asn);
+    }
+
+    // Sets AS_PATH to specified vector of uint32_t
+    void set_as_path(std::vector<uint32_t>& as_path_asns_param) {
+        as_path_asns = as_path_asns_param;
+    }
+
     private:
     uint32_t next_hop = 0;
     subnet_cidr_mask_t prefix;
     BGP_ORIGIN_TYPES origin = BGP_ORIGIN_INCOMPLETE;
     bool is_withdraw        = false;
     std::vector<bgp_community_attribute_element_t> community_list;
+
+    // List of ASNs in 32 bit format. May be empty
+    std::vector<uint32_t> as_path_asns;
 };
 
 class IPv6UnicastAnnounce {
@@ -663,12 +790,28 @@ class IPv6UnicastAnnounce {
         return community_list;
     }
 
+    // Add ASN to AS_PATH
+    void add_asn_as_path(uint32_t asn) {
+        as_path_asns.push_back(asn);
+    }
+
+    // Sets AS_PATH to specified vector of uint32_t
+    void set_as_path(std::vector<uint32_t>& as_path_asns_param) {
+        as_path_asns = as_path_asns_param;
+    }
+
     private:
     subnet_ipv6_cidr_mask_t next_hop{};
     subnet_ipv6_cidr_mask_t prefix{};
     BGP_ORIGIN_TYPES origin = BGP_ORIGIN_INCOMPLETE;
     bool is_withdraw        = false;
     std::vector<bgp_community_attribute_element_t> community_list;
+
+    // TODO: we need to rework AnnounceUnicastPrefixLowLevelIPv6
+    // and pull all logic from it into get_attributes() right here
+    public:
+    // List of ASNs in 32 bit format. May be empty
+    std::vector<uint32_t> as_path_asns;
 };
 
 static_assert(sizeof(bgp_attribute_flags) == 1, "broken size for bgp_attribute_flags");
@@ -686,4 +829,3 @@ bool encode_ipv6_announces_into_bgp_mp_reach_attribute(const IPv6UnicastAnnounce
 
                                                        dynamic_binary_buffer_t& bgp_mp_reach_ipv6_attribute);
 bool encode_ipv6_prefix(const subnet_ipv6_cidr_mask_t& prefix, dynamic_binary_buffer_t& dynamic_buffer);
-
