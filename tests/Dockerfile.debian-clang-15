@@ -1,0 +1,25 @@
+FROM debian:bookworm
+
+# non-interactive
+ENV DEBIAN_FRONTEND noninteractive
+
+# install build dependencies
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends build-essential git ca-certificates cmake libssl-dev\
+    capnproto libcapnp-dev libelf-dev libbpf-dev libpcap-dev libgrpc-dev libgrpc++-dev libprotobuf-dev\
+    protobuf-compiler libprotoc-dev libprotobuf-dev protobuf-compiler-grpc libboost-dev\
+    libboost-serialization-dev libboost-thread-dev libboost-regex-dev libboost-program-options-dev\
+    libmongoc-dev liblog4cpp5-dev libncurses-dev
+
+# install clang-15
+RUN apt-get install -y --no-install-recommends clang-15
+
+# set clang-15 as default compiler
+RUN update-alternatives --install /usr/bin/cc cc /usr/bin/clang-15 100
+RUN update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-15 100
+
+
+COPY src/ /src/
+WORKDIR /src
+RUN mkdir build && cd build && cmake .. -DLINK_WITH_ABSL=ON\
+    && make -j$(nproc)
