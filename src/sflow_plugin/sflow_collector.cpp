@@ -35,9 +35,6 @@ extern fastnetmon_configuration_t fastnetmon_global_configuration;
 std::string raw_udp_packets_received_desc = "Number of raw packets received without any errors";
 uint64_t raw_udp_packets_received         = 0;
 
-// We have an option to use IP length from the packet header because some vendors may lie about it: https://github.com/pavel-odintsov/fastnetmon/issues/893
-bool sflow_read_packet_length_from_ip_header = false;
-
 std::string udp_receive_errors_desc = "Number of failed receives";
 uint64_t udp_receive_errors         = 0;
 
@@ -73,6 +70,13 @@ uint64_t sflow_parse_error_nested_header = 0;
 std::string sflow_counter_sample_desc = "Number of counter samples, i.e. with port counters";
 uint64_t sflow_counter_sample         = 0;
 
+std::string sflow_expanded_counter_sample_desc = "Number of expanded counter samples, i.e. with port counters";
+uint64_t sflow_expanded_counter_sample         = 0;
+
+std::string sflow_generic_interface_counter_sample_desc =
+    "Number of counter samples with generic interface counter information";
+uint64_t sflow_generic_interface_counter_sample = 0;
+
 std::string sflow_raw_packet_headers_total_desc = "Number of packet headers from flow samples";
 uint64_t sflow_raw_packet_headers_total         = 0;
 
@@ -94,6 +98,9 @@ uint64_t sflow_ipv4_header_protocol         = 0;
 std::string sflow_ipv6_header_protocol_desc = "Number of samples with IPv6 packet headers";
 uint64_t sflow_ipv6_header_protocol         = 0;
 
+std::string sflow_packets_discarded_desc = "Number of packets discarded by device";
+uint64_t sflow_packets_discarded         = 0;
+
 std::vector<system_counter_t> get_sflow_stats() {
     std::vector<system_counter_t> counters;
 
@@ -113,6 +120,13 @@ std::vector<system_counter_t> get_sflow_stats() {
     counters.push_back(system_counter_t("sflow_parse_error_nested_header", sflow_parse_error_nested_header,
                                         metric_type_t::counter, sflow_parse_error_nested_header_desc));
     counters.push_back(system_counter_t("sflow_counter_sample", sflow_counter_sample, metric_type_t::counter, sflow_counter_sample_desc));
+    
+    counters.push_back(system_counter_t("sflow_expanded_counter_sample", sflow_expanded_counter_sample,
+                                        metric_type_t::counter, sflow_expanded_counter_sample_desc));
+
+    counters.push_back(system_counter_t("sflow_generic_interface_counter_sample", sflow_generic_interface_counter_sample,
+                                        metric_type_t::counter, sflow_generic_interface_counter_sample_desc));
+
     counters.push_back(system_counter_t("sflow_raw_packet_headers_total", sflow_raw_packet_headers_total,
                                         metric_type_t::counter, sflow_raw_packet_headers_total_desc));
     counters.push_back(system_counter_t("sflow_ipv4_header_protocol", sflow_ipv4_header_protocol,
@@ -127,6 +141,10 @@ std::vector<system_counter_t> get_sflow_stats() {
                                         metric_type_t::counter, sflow_extended_switch_data_records_desc));
     counters.push_back(system_counter_t("sflow_extended_gateway_data_records", sflow_extended_gateway_data_records,
                                         metric_type_t::counter, sflow_extended_gateway_data_records_desc));
+
+    counters.push_back(system_counter_t("sflow_packets_discarded", sflow_packets_discarded, metric_type_t::counter,
+                                        sflow_packets_discarded_desc));
+
 
     return counters;
 }
@@ -360,7 +378,7 @@ bool process_sflow_flow_sample(uint8_t* data_pointer,
                 auto result = parse_raw_packet_to_simple_packet_full_ng(header_payload_pointer,
                                                                         sflow_raw_protocol_header.frame_length_before_sampling,
                                                                         sflow_raw_protocol_header.header_size, packet,
-                                                                        unpack_gre, sflow_read_packet_length_from_ip_header);
+                                                                        unpack_gre, fastnetmon_global_configuration.sflow_read_packet_length_from_ip_header);
 
                 if (result != network_data_stuctures::parser_code_t::success) {
                     sflow_parse_error_nested_header++;
@@ -378,7 +396,7 @@ bool process_sflow_flow_sample(uint8_t* data_pointer,
                 auto result = parse_raw_ipv4_packet_to_simple_packet_full_ng(header_payload_pointer,
                                                                              sflow_raw_protocol_header.frame_length_before_sampling,
                                                                              sflow_raw_protocol_header.header_size, packet,
-                                                                             sflow_read_packet_length_from_ip_header);
+                                                                             fastnetmon_global_configuration.sflow_read_packet_length_from_ip_header);
 
                 if (result != network_data_stuctures::parser_code_t::success) {
                     sflow_parse_error_nested_header++;
