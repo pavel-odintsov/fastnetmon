@@ -1,0 +1,25 @@
+name: Run docker builds
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+    build_in_docker:
+        strategy:
+            matrix:
+                # gcc-13+,clang-16+ will fail due broken capnp supplied with debian bookworm
+                os: [debian, debian-gcc-12, debian-clang-15, ubuntu-24.04, ubuntu-24.10]
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+
+            - name: chdir
+              run: cd $GITHUB_WORKSPACE
+
+            - name: Build Docker image
+              run: docker build -t debian -f tests/Dockerfile.${{ matrix.os }} .
