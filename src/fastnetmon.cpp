@@ -291,7 +291,6 @@ bool enable_afpacket_collection         = false;
 bool enable_af_xdp_collection           = false;
 bool enable_data_collection_from_mirror = false;
 bool enable_netmap_collection           = false;
-bool enable_sflow_collection            = false;
 bool enable_netflow_collection          = false;
 bool enable_pcap_collection             = false;
 
@@ -774,9 +773,9 @@ bool load_configuration_file() {
 
     if (configuration_map.count("sflow") != 0) {
         if (configuration_map["sflow"] == "on") {
-            enable_sflow_collection = true;
+            fastnetmon_global_configuration.sflow = true;
         } else {
-            enable_sflow_collection = false;
+            fastnetmon_global_configuration.sflow = false;
         }
     }
 
@@ -2041,7 +2040,7 @@ int main(int argc, char** argv) {
     }
 #endif
 
-    if (enable_sflow_collection) {
+    if (fastnetmon_global_configuration.sflow) {
         packet_capture_plugin_thread_group.add_thread(new boost::thread(start_sflow_collection, process_packet));
     }
 

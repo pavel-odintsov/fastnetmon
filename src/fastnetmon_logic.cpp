@@ -110,7 +110,6 @@ extern bool enable_connection_tracking;
 extern bool enable_afpacket_collection;
 extern bool enable_data_collection_from_mirror;
 extern bool enable_netmap_collection;
-extern bool enable_sflow_collection;
 extern bool enable_netflow_collection;
 extern bool enable_pcap_collection;
 extern uint64_t incoming_total_flows_speed;
@@ -2951,7 +2950,7 @@ bool get_statistics(std::vector<system_counter_t>& system_counters) {
     system_counters.push_back(system_counter_t("influxdb_writes_failed", influxdb_writes_failed, metric_type_t::counter,
                                                influxdb_writes_failed_desc));
 
-    if (enable_sflow_collection) {
+    if (fastnetmon_global_configuration.sflow) {
         auto sflow_stats = get_sflow_stats();
         system_counters.insert(system_counters.end(), sflow_stats.begin(), sflow_stats.end());
     }
