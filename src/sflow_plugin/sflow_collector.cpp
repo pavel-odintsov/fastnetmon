@@ -151,7 +151,7 @@ std::vector<system_counter_t> get_sflow_stats() {
 
 // Prototypes
 
-bool process_sflow_counter_sample(uint8_t* data_pointer,
+bool process_sflow_counter_sample(const uint8_t* data_pointer,
                                   size_t data_length,
                                   bool expanded,
                                   const sflow_packet_header_unified_accessor& sflow_header_accessor);
@@ -163,7 +163,7 @@ void start_sflow_collector(const std::string& sflow_host, unsigned int sflow_por
 void init_sflow_module() {
 }
 
-// Deinitilize sflow module, we need it for deallocation module structures
+// De-initialise sflow module, we need it for deallocation module structures
 void deinit_sflow_module() {
 }
 
@@ -172,16 +172,22 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
     sflow_process_func_ptr = func_ptr;
 
     if (fastnetmon_global_configuration.sflow_ports.size() == 0) {
-        logger << log4cpp::Priority::ERROR << plugin_log_prefix << "Please specify least single port listen port for sFlow plugin";
+        logger << log4cpp::Priority::ERROR << plugin_log_prefix << "Please specify at least single port for sflow_port field";
         return;
     }
 
+    logger << log4cpp::Priority::DEBUG << plugin_log_prefix << "We parsed "
+           << fastnetmon_global_configuration.sflow_ports.size() << " ports for sFlow";
+
+
     boost::thread_group sflow_collector_threads;
 
-    logger << log4cpp::Priority::INFO << plugin_log_prefix << "We will listen on " << fastnetmon_global_configuration.sflow_ports.size() << " ports";
+    logger << log4cpp::Priority::DEBUG << plugin_log_prefix << "We will listen on "
+        << fastnetmon_global_configuration.sflow_ports.size() << " ports";
 
     for (auto sflow_port : fastnetmon_global_configuration.sflow_ports) {
-        sflow_collector_threads.add_thread(new boost::thread(start_sflow_collector, fastnetmon_global_configuration.sflow_host, sflow_port));
+        sflow_collector_threads.add_thread(
+            new boost::thread(start_sflow_collector, fastnetmon_global_configuration.sflow_host, sflow_port));
     }
 
     sflow_collector_threads.join_all();
@@ -298,12 +304,12 @@ void start_sflow_collector(const std::string& sflow_host, unsigned int sflow_por
     }
 }
 
-bool process_sflow_flow_sample(uint8_t* data_pointer,
+bool process_sflow_flow_sample(const uint8_t* data_pointer,
                                size_t data_length,
                                bool expanded,
                                const sflow_packet_header_unified_accessor& sflow_header_accessor,
                                uint32_t client_ipv4_address) {
-    uint8_t* current_packet_end = data_pointer + data_length;
+    const uint8_t* current_packet_end = data_pointer + data_length;
 
     sflow_sample_header_unified_accessor_t sflow_sample_header_unified_accessor;
 
@@ -322,7 +328,7 @@ bool process_sflow_flow_sample(uint8_t* data_pointer,
         return false;
     }
 
-    uint8_t* flow_record_zone_start = data_pointer + sflow_sample_header_unified_accessor.get_original_payload_length();
+    const uint8_t* flow_record_zone_start = data_pointer + sflow_sample_header_unified_accessor.get_original_payload_length();
 
     std::vector<record_tuple_t> vector_tuple;
     vector_tuple.reserve(sflow_sample_header_unified_accessor.get_number_of_flow_records());
