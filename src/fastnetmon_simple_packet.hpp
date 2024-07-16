@@ -91,7 +91,7 @@ class simple_packet_t {
     // Timestamp of packet as reported by Netflow or IPFIX agent on device, it may be very inaccurate as nobody cares about time on equipment
     struct timeval ts = { 0, 0 };
 
-    void* payload_pointer  = nullptr;
+    const void* payload_pointer  = nullptr;
 
     // Part of packet we captured from wire. It may not be full length of packet
     int32_t captured_payload_length = 0;
