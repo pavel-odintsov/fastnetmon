@@ -28,8 +28,12 @@ extern log4cpp::Category& logger;
 
 #include <boost/algorithm/string.hpp>
 
+#include "../fastnetmon_configuration_scheme.hpp"
+
 // Global configuration map
 extern std::map<std::string, std::string> configuration_map;
+
+extern fastnetmon_configuration_t fastnetmon_global_configuration;
 
 std::string raw_udp_packets_received_desc = "Number of raw packets received without any errors";
 uint64_t raw_udp_packets_received         = 0;
@@ -152,52 +156,17 @@ void start_sflow_collection(process_packet_pointer func_ptr) {
     logger << log4cpp::Priority::INFO << plugin_log_prefix << "plugin started";
     sflow_process_func_ptr = func_ptr;
 
-
-    std::string sflow_ports_string = "";
-
-    if (configuration_map.count("sflow_port") != 0) {
-        sflow_ports_string = configuration_map["sflow_port"];
-    }
-
-    std::vector<std::string> sflow_ports_for_listen;
-    boost::split(sflow_ports_for_listen, sflow_ports_string, boost::is_any_of(","), boost::token_compress_on);
-
-    std::vector<unsigned int> sflow_ports;
-
-    for (auto port_string : sflow_ports_for_listen) {
-        unsigned int sflow_port = convert_string_to_integer(port_string);
-
-        if (sflow_port == 0) {
-            logger << log4cpp::Priority::ERROR << plugin_log_prefix << "Cannot parse port: " << port_string;
-            continue;
-        }
-
-        sflow_ports.push_back(sflow_port);
-    }
-
-    if (sflow_ports.size() == 0) {
-        logger << log4cpp::Priority::ERROR << plugin_log_prefix << "Please specify least single port for sflow_port field!";
+    if (fastnetmon_global_configuration.sflow_ports.size() == 0) {
+        logger << log4cpp::Priority::ERROR << plugin_log_prefix << "Please specify least single port listen port for sFlow plugin";
         return;
     }
 
-    logger << log4cpp::Priority::INFO << plugin_log_prefix << "We parsed " << sflow_ports.size() << " ports for sflow";
-
     boost::thread_group sflow_collector_threads;
 
-    logger << log4cpp::Priority::INFO << plugin_log_prefix << "We will listen on " << sflow_ports.size() << " ports";
+    logger << log4cpp::Priority::INFO << plugin_log_prefix << "We will listen on " << fastnetmon_global_configuration.sflow_ports.size() << " ports";
 
-    std::string sflow_host;
-
-    if (configuration_map.count("sflow_host") != 0) {
-        sflow_host = configuration_map["sflow_host"];
-    }
-
-    if (configuration_map.count("sflow_read_packet_length_from_ip_header") != 0) {
-        sflow_read_packet_length_from_ip_header = configuration_map["sflow_read_packet_length_from_ip_header"] == "on";
-    }
-
-    for (auto sflow_port : sflow_ports) {
-        sflow_collector_threads.add_thread(new boost::thread(start_sflow_collector, sflow_host, sflow_port));
+    for (auto sflow_port : fastnetmon_global_configuration.sflow_ports) {
+        sflow_collector_threads.add_thread(new boost::thread(start_sflow_collector, fastnetmon_global_configuration.sflow_host, sflow_port));
     }
 
     sflow_collector_threads.join_all();

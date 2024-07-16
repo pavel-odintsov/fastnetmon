@@ -771,6 +771,7 @@ bool load_configuration_file() {
         }
     }
 
+    // sFlow section
     if (configuration_map.count("sflow") != 0) {
         if (configuration_map["sflow"] == "on") {
             fastnetmon_global_configuration.sflow = true;
@@ -779,6 +780,42 @@ bool load_configuration_file() {
         }
     }
 
+    if (configuration_map.count("sflow_host") != 0) {
+        fastnetmon_global_configuration.sflow_host = configuration_map["sflow_host"];
+    }
+
+    if (configuration_map.count("sflow_read_packet_length_from_ip_header") != 0) {
+        fastnetmon_global_configuration.sflow_read_packet_length_from_ip_header =
+	    configuration_map["sflow_read_packet_length_from_ip_header"] == "on";
+    }
+
+    // Read sFlow ports
+    std::string sflow_ports_string = "";
+
+    // Please note that it differs from field name in Advanced edition which uses "sflow_ports"
+    if (configuration_map.count("sflow_port") != 0) {
+        sflow_ports_string = configuration_map["sflow_port"];
+    }
+
+    std::vector<std::string> sflow_ports_for_listen;
+    boost::split(sflow_ports_for_listen, sflow_ports_string, boost::is_any_of(","), boost::token_compress_on);
+
+    std::vector<unsigned int> sflow_ports;
+
+    for (auto port_string : sflow_ports_for_listen) {
+        unsigned int sflow_port = convert_string_to_integer(port_string);
+
+        if (sflow_port == 0) {
+            logger << log4cpp::Priority::ERROR << "Cannot parse sFlow port: " << port_string;
+            continue;
+        }
+
+        fastnetmon_global_configuration.sflow_ports.push_back(sflow_port);
+    }
+
+    logger << log4cpp::Priority::INFO << "We parsed " << fastnetmon_global_configuration.sflow_ports.size() << " ports for sFlow";
+
+    // Netflow
     if (configuration_map.count("netflow") != 0) {
         if (configuration_map["netflow"] == "on") {
             enable_netflow_collection = true;
