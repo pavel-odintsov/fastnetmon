@@ -19,6 +19,7 @@ class fastnetmon_configuration_t {
     bool netflow{ false };
     std::vector<unsigned int> netflow_ports{};
     std::string netflow_host{ "0.0.0.0" };
+    unsigned int netflow_sampling_ratio{ 1 };
 
     // Clickhouse metrics
     bool clickhouse_metrics{ false };

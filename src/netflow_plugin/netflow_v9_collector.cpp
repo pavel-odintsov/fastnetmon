@@ -1252,7 +1252,7 @@ void netflow9_flowset_to_store(const uint8_t* pkt,
 
         if (itr == netflow9_sampling_rates.end()) {
             // Use global value
-            packet.sample_ratio = netflow_sampling_ratio;
+            packet.sample_ratio = fastnetmon_global_configuration.netflow_sampling_ratio;
         } else {
             packet.sample_ratio = itr->second;
         }

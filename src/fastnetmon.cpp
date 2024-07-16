@@ -823,6 +823,39 @@ bool load_configuration_file() {
         }
     }
 
+    if (configuration_map.count("netflow_host") != 0) {
+        fastnetmon_global_configuration.netflow_host = configuration_map["netflow_host"];
+    }
+
+    // Netflow ports
+    std::string netflow_ports_string = "";
+
+    if (configuration_map.count("netflow_port") != 0) {
+        netflow_ports_string = configuration_map["netflow_port"];
+    }
+
+    if (configuration_map.count("netflow_sampling_ratio") != 0) {
+        fastnetmon_global_configuration.netflow_sampling_ratio = convert_string_to_integer(configuration_map["netflow_sampling_ratio"]);
+
+        logger << log4cpp::Priority::INFO << "Using custom sampling ratio for Netflow v9 and IPFIX: " << fastnetmon_global_configuration.netflow_sampling_ratio;
+    }
+
+    std::vector<std::string> ports_for_listen;
+    boost::split(ports_for_listen, netflow_ports_string, boost::is_any_of(","), boost::token_compress_on);
+
+    std::vector<unsigned int> netflow_ports;
+
+    for (auto port : ports_for_listen) {
+        unsigned int netflow_port = convert_string_to_integer(port);
+
+        if (netflow_port == 0) {
+            logger << log4cpp::Priority::ERROR << "Cannot parse Netflow port: " << port;
+            continue;
+        }
+
+        fastnetmon_global_configuration.netflow_ports.push_back(netflow_port);
+    }
+
     if (configuration_map.count("exabgp_announce_whole_subnet") != 0) {
         exabgp_announce_whole_subnet = configuration_map["exabgp_announce_whole_subnet"] == "on" ? true : false;
     }

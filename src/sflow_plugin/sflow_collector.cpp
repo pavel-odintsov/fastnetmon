@@ -30,9 +30,6 @@ extern log4cpp::Category& logger;
 
 #include "../fastnetmon_configuration_scheme.hpp"
 
-// Global configuration map
-extern std::map<std::string, std::string> configuration_map;
-
 extern fastnetmon_configuration_t fastnetmon_global_configuration;
 
 std::string raw_udp_packets_received_desc = "Number of raw packets received without any errors";

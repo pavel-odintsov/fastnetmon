@@ -48,14 +48,12 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include "../fastnetmon_configuration_scheme.hpp"
+
 // Get it from main programme
 extern log4cpp::Category& logger;
 
-// Global configuration map
-extern std::map<std::string, std::string> configuration_map;
-
-// Sampling rate for Netflow v9 and IPFIX
-unsigned int netflow_sampling_ratio = 1;
+extern fastnetmon_configuration_t fastnetmon_global_configuration;
 
 // Sampling rates extracted from Netflow
 std::mutex netflow9_sampling_rates_mutex;
@@ -1020,50 +1018,16 @@ void start_netflow_collection(process_packet_pointer func_ptr) {
     logger << log4cpp::Priority::INFO << "netflow plugin started";
 
     netflow_process_func_ptr = func_ptr;
-    // By default we listen on IPv4
-    std::string netflow_host = "0.0.0.0";
-
-    // If we have custom port use it from configuration
-    if (configuration_map.count("netflow_host") != 0) {
-        netflow_host = configuration_map["netflow_host"];
-    }
-
-    std::string netflow_ports_string = "";
-
-    if (configuration_map.count("netflow_port") != 0) {
-        netflow_ports_string = configuration_map["netflow_port"];
-    }
-
-    if (configuration_map.count("netflow_sampling_ratio") != 0) {
-        netflow_sampling_ratio = convert_string_to_integer(configuration_map["netflow_sampling_ratio"]);
-
-        logger << log4cpp::Priority::INFO << "Using custom sampling ratio for Netflow v9 and IPFIX: " << netflow_sampling_ratio;
-    }
-
-    std::vector<std::string> ports_for_listen;
-    boost::split(ports_for_listen, netflow_ports_string, boost::is_any_of(","), boost::token_compress_on);
-
-    std::vector<unsigned int> netflow_ports;
-
-    for (auto port : ports_for_listen) {
-        unsigned int netflow_port = convert_string_to_integer(port);
-
-        if (netflow_port == 0) {
-            logger << log4cpp::Priority::ERROR << "Cannot parse Netflow port: " << port;
-            continue;
-        }
-
-        netflow_ports.push_back(netflow_port);
-    }
 
     boost::thread_group netflow_collector_threads;
 
-    logger << log4cpp::Priority::INFO << "Netflow plugin will listen on " << netflow_ports.size() << " ports";
+    logger << log4cpp::Priority::INFO << "Netflow plugin will listen on " << fastnetmon_global_configuration.netflow_ports.size() << " ports";
 
-    for (const auto& netflow_port : netflow_ports) {
+    for (const auto& netflow_port : fastnetmon_global_configuration.netflow_ports) {
         bool reuse_port = false;
 
-        auto netflow_processing_thread = new boost::thread(start_netflow_collector, netflow_host, netflow_port, reuse_port);
+        auto netflow_processing_thread = new boost::thread(start_netflow_collector,
+	    fastnetmon_global_configuration.netflow_host, netflow_port, reuse_port);
 
         // Set unique name
         std::string thread_name = "netflow_" + std::to_string(netflow_port);
