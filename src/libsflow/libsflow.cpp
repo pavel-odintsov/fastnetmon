@@ -58,11 +58,11 @@ std::tuple<int32_t, int32_t> split_mixed_enterprise_and_format(int32_t enterpris
 // Convert arbitrary flow record structure with record samples to well formed
 // data
 bool get_records(std::vector<record_tuple_t>& vector_tuple,
-                 uint8_t* flow_record_zone_start,
+                 const uint8_t* flow_record_zone_start,
                  uint32_t number_of_flow_records,
-                 uint8_t* current_packet_end,
+                 const uint8_t* current_packet_end,
                  bool& padding_found) {
-    uint8_t* flow_record_start = flow_record_zone_start;
+    const uint8_t* flow_record_start = flow_record_zone_start;
 
     for (uint32_t i = 0; i < number_of_flow_records; i++) {
         // Check that we have at least 2 4 byte integers here
@@ -86,8 +86,8 @@ bool get_records(std::vector<record_tuple_t>& vector_tuple,
             return false;
         }
 
-        uint8_t* flow_record_data_ptr = flow_record_start + sizeof(element_type) + sizeof(element_length);
-        uint8_t* flow_record_end      = flow_record_data_ptr + element_length;
+        const uint8_t* flow_record_data_ptr = flow_record_start + sizeof(element_type) + sizeof(element_length);
+        const uint8_t* flow_record_end      = flow_record_data_ptr + element_length;
 
         if (flow_record_end > current_packet_end) {
             logger << log4cpp::Priority::ERROR << sflow_parser_log_prefix << "flow record payload is outside packet bounds";
@@ -123,11 +123,11 @@ bool get_records(std::vector<record_tuple_t>& vector_tuple,
 // Convert arbitrary data structure with samples to vector with meta data and
 // pointers to real data
 bool get_all_samples(std::vector<sample_tuple_t>& vector_sample,
-                     uint8_t* samples_block_start,
-                     uint8_t* total_packet_end,
+                     const uint8_t* samples_block_start,
+                     const uint8_t* total_packet_end,
                      int32_t samples_count,
                      bool& discovered_padding) {
-    uint8_t* sample_start = samples_block_start;
+    const uint8_t* sample_start = samples_block_start;
 
     for (int i = 0; i < samples_count; i++) {
         if (total_packet_end - sample_start < 8) {
@@ -154,9 +154,9 @@ bool get_all_samples(std::vector<sample_tuple_t>& vector_sample,
         // Get last 12 bits as format, zeroify first 20 bits
         int32_t integer_format = enterprise_with_format & 0b00000000000000000000111111111111;
 
-        uint8_t* data_block_start = sample_start + sizeof(enterprise_with_format) + sizeof(sample_length);
+        const uint8_t* data_block_start = sample_start + sizeof(enterprise_with_format) + sizeof(sample_length);
         // Skip format,length and data
-        uint8_t* this_sample_end = data_block_start + sample_length;
+        const uint8_t* this_sample_end = data_block_start + sample_length;
 
         // Check sample bounds inside packet
         if (this_sample_end > total_packet_end) {
@@ -186,19 +186,19 @@ bool get_all_samples(std::vector<sample_tuple_t>& vector_sample,
     return true;
 }
 
-int32_t get_int_value_by_32bit_shift(uint8_t* payload_ptr, unsigned int shift) {
+int32_t get_int_value_by_32bit_shift(const uint8_t* payload_ptr, unsigned int shift) {
     return fast_ntoh(*(int32_t*)(payload_ptr + shift * 4));
 }
 
 bool get_all_counter_records(std::vector<counter_record_sample_t>& counter_record_sample_vector,
-                             uint8_t* data_block_start,
-                             uint8_t* data_block_end,
+                             const uint8_t* data_block_start,
+                             const uint8_t* data_block_end,
                              uint32_t number_of_records) {
 
-    uint8_t* record_start = data_block_start;
+    const uint8_t* record_start = data_block_start;
 
     for (uint32_t i = 0; i < number_of_records; i++) {
-        uint8_t* payload_ptr = record_start + sizeof(uint32_t) + sizeof(uint32_t);
+        const uint8_t* payload_ptr = record_start + sizeof(uint32_t) + sizeof(uint32_t);
 
         if (payload_ptr >= data_block_end) {
             logger << log4cpp::Priority::ERROR << sflow_parser_log_prefix << "we could not read flow counter record, too short packet";
@@ -218,7 +218,7 @@ bool get_all_counter_records(std::vector<counter_record_sample_t>& counter_recor
             return false;
         }
 
-        uint8_t* current_record_end = payload_ptr + record_length;
+        const uint8_t* current_record_end = payload_ptr + record_length;
 
         if (current_record_end > data_block_end) {
             logger << log4cpp::Priority::ERROR << sflow_parser_log_prefix << "record payload is outside of record border";
@@ -233,8 +233,14 @@ bool get_all_counter_records(std::vector<counter_record_sample_t>& counter_recor
         // std::cout << "enterprise: " << enterprise << " integer_format: " <<
         // integer_format <<
         // std::endl;
+        counter_record_sample_t counter_record_sample{};
 
-        counter_record_sample_vector.push_back(std::make_tuple(enterprise, integer_format, record_length, payload_ptr));
+        counter_record_sample.enterprise = enterprise;
+        counter_record_sample.format     = integer_format;
+        counter_record_sample.length     = record_length;
+        counter_record_sample.pointer    = payload_ptr;
+
+        counter_record_sample_vector.push_back(counter_record_sample);
 
         record_start = current_record_end;
     }
@@ -258,7 +264,7 @@ sflow_sample_type_t sflow_sample_type_from_integer(int32_t format_as_integer) {
     return static_cast<sflow_sample_type_t>(format_as_integer);
 }
 
-bool read_sflow_header(uint8_t* payload_ptr, unsigned int payload_length, sflow_packet_header_unified_accessor& sflow_header_accessor) {
+bool read_sflow_header(const uint8_t* payload_ptr, unsigned int payload_length, sflow_packet_header_unified_accessor& sflow_header_accessor) {
     // zero sized packet
     if (payload_ptr == NULL || payload_length == 0) {
         logger << log4cpp::Priority::ERROR << sflow_parser_log_prefix << "zero sized packet could not be parsed";
@@ -319,13 +325,10 @@ std::string print_counter_record_sample_vector(const std::vector<counter_record_
     std::stringstream buffer;
 
     int index = 0;
-    for (auto counter_record_sample : counter_record_sample_vector) {
-        buffer << "index: " << index << " enterprise: " << std::get<0>(counter_record_sample)
-               << " format: " << std::get<1>(counter_record_sample) << " length: "
-               << std::get<2>(counter_record_sample)
-               //<< " pointer: " << (void*)std::get<3>(counter_record_sample);
-               << " pointer: "
-               << "XXX";
+    for (const auto& counter_record_sample : counter_record_sample_vector) {
+        buffer << "index: " << index << " enterprise: " << counter_record_sample.enterprise
+               << " format: " << counter_record_sample.format << " length: " << counter_record_sample.length;
+        //<< " pointer: " << (void*)counter_record_sample.pointer;
 
         index++;
 
@@ -359,7 +362,7 @@ std::string print_vector_sample_tuple(const std::vector<sample_tuple_t>& vector_
     return buffer.str();
 }
 
-bool read_sflow_counter_header(uint8_t* data_pointer,
+bool read_sflow_counter_header(const uint8_t* data_pointer,
                                size_t data_length,
                                bool expanded,
                                sflow_counter_header_unified_accessor_t& sflow_counter_header_unified_accessor) {
@@ -414,7 +417,7 @@ std::tuple<uint32_t, uint32_t> split_32bit_integer_by_2_and_30_bits(uint32_t ori
 }
 
 bool read_sflow_sample_header_unified(sflow_sample_header_unified_accessor_t& sflow_sample_header_unified_accessor,
-                                      uint8_t* data_pointer,
+                                      const uint8_t* data_pointer,
                                       size_t data_length,
                                       bool expanded) {
 

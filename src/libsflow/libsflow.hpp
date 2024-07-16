@@ -30,6 +30,14 @@ enum sflow_header_protocol {
     SFLOW_HEADER_PROTOCOL_IPv6     = 12,
 };
 
+// https://sflow.org/sflow_version_5.txt
+// Formats 1 & 2 apply only to an output interface and never to an input interface. A packet is always received on a single (possibly unknown) interface.
+enum sflow_port_format {
+    SFLOW_PORT_FORMAT_SINGLE_INTERFACE    = 0,
+    SFLOW_PORT_FORMAT_PACKET_DISCARDED    = 1,
+    SFLOW_PORT_FORMAT_MULTIPLE_INTERFACES = 2,
+};
+
 // Old fashioned not typed enums for fast comparisons and assignments to
 // integers
 enum sflow_sample_type_not_typed_t {
@@ -53,15 +61,19 @@ enum class sample_counter_types_t : unsigned int {
 };
 
 // These types are not sFlow protocol specific, we use them only in our own logic
-
-// enterprise, format, length, pointer
-typedef std::tuple<uint32_t, uint32_t, ssize_t, uint8_t*> counter_record_sample_t;
+class counter_record_sample_t {
+    public:
+    uint32_t enterprise    = 0;
+    uint32_t format        = 0;
+    ssize_t length         = 0;
+    const uint8_t* pointer = nullptr;
+};
 
 // Element type, pointer, length
-typedef std::tuple<int32_t, uint8_t*, int32_t> record_tuple_t;
+typedef std::tuple<int32_t, const uint8_t*, int32_t> record_tuple_t;
 
 // Enterprise, integer_format, data_block_start, sample_length
-typedef std::tuple<int32_t, int32_t, uint8_t*, size_t> sample_tuple_t;
+typedef std::tuple<int32_t, int32_t, const uint8_t*, size_t> sample_tuple_t;
 
 // We keep these prototypes here because we use them from our class definitions
 std::tuple<uint32_t, uint32_t> split_32bit_integer_by_2_and_30_bits(uint32_t original_data);
@@ -147,8 +159,11 @@ class __attribute__((__packed__)) sflow_sample_header_t {
     uint32_t sampling_rate{ 0 }; // sampling ratio
     uint32_t sample_pool{ 0 }; // number of sampled packets
     uint32_t drops_count{ 0 }; // number of drops due to hardware overload
-    uint32_t input_port{ 0 }; // input  port + 2 bits port type
-    uint32_t output_port{ 0 }; // output port + 2 bits port type
+
+    // For both _port fields we have first two 2 bits identifying format of interface and remaining 30 bits are port number
+    uint32_t input_port{ 0 }; // input port
+    uint32_t output_port{ 0 }; // output port
+
     uint32_t number_of_flow_records{ 0 };
 
     // Convert all fields to host byte order (little endian)
@@ -203,8 +218,12 @@ class __attribute__((__packed__)) sflow_sample_expanded_header_t {
     uint32_t sampling_rate          = 0; // sampling ratio
     uint32_t sample_pool            = 0; // number of sampled packets
     uint32_t drops_count            = 0; // number of drops due to hardware overload
-    uint32_t input_port_type        = 0; // input port type
-    uint32_t input_port_index       = 0; // input port index
+
+    // Type 0 is single interface, 1 is discarded traffic, 2 is multiple interfaces
+    uint32_t input_port_type  = 0; // input port type
+    uint32_t input_port_index = 0; // input port index
+
+    // Type 0 is single interface, 1 is discarded traffic, 2 is multiple interfaces
     uint32_t output_port_type       = 0; // output port type
     uint32_t output_port_index      = 0; // outpurt port index
     uint32_t number_of_flow_records = 0;
@@ -251,8 +270,12 @@ class sflow_sample_header_unified_accessor_t {
     uint32_t sampling_rate          = 0; // sampling ratio
     uint32_t sample_pool            = 0; // number of sampled packets
     uint32_t drops_count            = 0; // number of drops due to hardware overload
-    uint32_t input_port_type        = 0; // input port type
-    uint32_t input_port_index       = 0; // input port index
+
+    // Type 0 is single interface, 1 is discarded traffic, 2 is multiple interfaces
+    uint32_t input_port_type  = 0; // input port type
+    uint32_t input_port_index = 0; // input port index
+
+    // Type 0 is single interface, 1 is discarded traffic, 2 is multiple interfaces
     uint32_t output_port_type       = 0; // output port type
     uint32_t output_port_index      = 0; // outpurt port index
     uint32_t number_of_flow_records = 0;
@@ -464,7 +487,7 @@ class sflow_packet_header_unified_accessor {
         return original_payload_length;
     }
 
-    std::string print() {
+    std::string print() const {
         std::stringstream buffer;
 
         buffer << "sflow_version: " << sflow_version << " "
@@ -529,7 +552,7 @@ class __attribute__((__packed__)) sflow_counter_header_t {
         number_of_counter_records = fast_ntoh(number_of_counter_records);
     }
 
-    std::string print() {
+    std::string print() const {
         std::stringstream buffer;
 
         buffer << "sample_sequence_number: " << sample_sequence_number << " "
@@ -557,7 +580,7 @@ class __attribute__((__packed__)) sflow_counter_expanded_header_t {
         number_of_counter_records = fast_ntoh(number_of_counter_records);
     }
 
-    std::string print() {
+    std::string print() const {
         std::stringstream buffer;
 
         buffer << "sample_sequence_number: " << sample_sequence_number << " "
@@ -586,18 +609,23 @@ class sflow_counter_header_unified_accessor_t {
     uint32_t get_sample_sequence_number() {
         return sample_sequence_number;
     }
+
     uint32_t get_source_id_type() {
         return source_id_type;
     }
+
     uint32_t get_source_id_index() {
         return source_id_index;
     }
+
     uint32_t get_number_of_counter_records() {
         return number_of_counter_records;
     }
+
     ssize_t get_original_payload_length() {
         return original_payload_length;
     }
+
     bool get_expaned() {
         return expanded;
     }
@@ -627,7 +655,7 @@ class sflow_counter_header_unified_accessor_t {
         expanded                = true;
     }
 
-    std::string print() {
+    std::string print() const {
         std::stringstream buffer;
 
         buffer << "sample_sequence_number: " << sample_sequence_number << " "
@@ -642,7 +670,7 @@ class sflow_counter_header_unified_accessor_t {
 };
 
 class __attribute__((__packed__)) ethernet_sflow_interface_counters_t {
-    public:
+    private:
     uint32_t alignment_errors             = 0;
     uint32_t fcs_errors                   = 0;
     uint32_t single_collision_frames      = 0;
@@ -657,41 +685,76 @@ class __attribute__((__packed__)) ethernet_sflow_interface_counters_t {
     uint32_t internal_mac_receive_errors  = 0;
     uint32_t symbol_errors                = 0;
 
-    ethernet_sflow_interface_counters_t(uint8_t* data_pointer) {
-        memcpy(this, data_pointer, sizeof(ethernet_sflow_interface_counters_t));
-        this->network_to_host_byte_order();
+    public:
+    uint32_t get_alignment_errors() const {
+        return fast_ntoh(alignment_errors);
     }
 
-    void network_to_host_byte_order() {
-        alignment_errors             = fast_ntoh(alignment_errors);
-        fcs_errors                   = fast_ntoh(alignment_errors);
-        single_collision_frames      = fast_ntoh(single_collision_frames);
-        multiple_collision_frames    = fast_ntoh(multiple_collision_frames);
-        sqe_test_errors              = fast_ntoh(sqe_test_errors);
-        deferred_transmissions       = fast_ntoh(deferred_transmissions);
-        late_collisions              = fast_ntoh(late_collisions);
-        excessive_collisions         = fast_ntoh(excessive_collisions);
-        internal_mac_transmit_errors = fast_ntoh(internal_mac_transmit_errors);
-        carrier_sense_errors         = fast_ntoh(carrier_sense_errors);
-        frame_too_longs              = fast_ntoh(frame_too_longs);
-        internal_mac_receive_errors  = fast_ntoh(internal_mac_receive_errors);
-        symbol_errors                = fast_ntoh(symbol_errors);
+    uint32_t get_fcs_errors() const {
+        return fast_ntoh(fcs_errors);
     }
 
-    std::string print() {
+    uint32_t get_single_collision_frames() const {
+        return fast_ntoh(single_collision_frames);
+    }
+
+    uint32_t get_multiple_collision_frames() const {
+        return fast_ntoh(multiple_collision_frames);
+    }
+
+    uint32_t get_sqe_test_errors() const {
+        return fast_ntoh(sqe_test_errors);
+    }
+
+    uint32_t get_deferred_transmissions() const {
+        return fast_ntoh(deferred_transmissions);
+    }
+
+    uint32_t get_late_collisions() const {
+        return fast_ntoh(late_collisions);
+    }
+
+    uint32_t get_excessive_collisions() const {
+        return fast_ntoh(excessive_collisions);
+    }
+
+    uint32_t get_internal_mac_transmit_errors() const {
+        return fast_ntoh(internal_mac_transmit_errors);
+    }
+
+    uint32_t get_carrier_sense_errors() const {
+        return fast_ntoh(carrier_sense_errors);
+    }
+
+    uint32_t get_frame_too_longs() const {
+        return fast_ntoh(frame_too_longs);
+    }
+
+    uint32_t get_internal_mac_receive_errors() const {
+        return fast_ntoh(internal_mac_receive_errors);
+    }
+
+    uint32_t get_symbol_errors() const {
+        return fast_ntoh(symbol_errors);
+    }
+
+    std::string print() const {
         std::stringstream buffer;
 
         std::string delimiter = ",";
 
-        buffer << "alignment_errors: " << alignment_errors << delimiter << "fcs_errors: " << fcs_errors << delimiter
-               << "single_collision_frames: " << single_collision_frames << delimiter
-               << "multiple_collision_frames: " << multiple_collision_frames << delimiter << "sqe_test_errors: " << sqe_test_errors
-               << delimiter << "deferred_transmissions: " << deferred_transmissions << delimiter
-               << "late_collisions: " << late_collisions << delimiter << "excessive_collisions: " << excessive_collisions
-               << delimiter << "internal_mac_transmit_errors: " << internal_mac_transmit_errors << delimiter
-               << "carrier_sense_errors: " << carrier_sense_errors << delimiter << "frame_too_longs: " << frame_too_longs
-               << delimiter << "internal_mac_receive_errors: " << internal_mac_receive_errors << delimiter
-               << "symbol_errors: " << symbol_errors;
+        buffer << "alignment_errors: " << get_alignment_errors() << delimiter << "fcs_errors: " << get_fcs_errors()
+               << delimiter << "single_collision_frames: " << get_single_collision_frames() << delimiter
+               << "multiple_collision_frames: " << get_multiple_collision_frames() << delimiter
+               << "sqe_test_errors: " << get_sqe_test_errors() << delimiter
+               << "deferred_transmissions: " << get_deferred_transmissions() << delimiter
+               << "late_collisions: " << get_late_collisions() << delimiter
+               << "excessive_collisions: " << get_excessive_collisions() << delimiter
+               << "internal_mac_transmit_errors: " << get_internal_mac_transmit_errors() << delimiter
+               << "carrier_sense_errors: " << get_carrier_sense_errors() << delimiter
+               << "frame_too_longs: " << get_frame_too_longs() << delimiter
+               << "internal_mac_receive_errors: " << get_internal_mac_receive_errors() << delimiter
+               << "symbol_errors: " << get_symbol_errors();
 
         return buffer.str();
     }
@@ -701,7 +764,7 @@ static_assert(sizeof(ethernet_sflow_interface_counters_t) == 52, "Broken size fo
 
 // http://www.sflow.org/SFLOW-STRUCTS5.txt
 class __attribute__((__packed__)) generic_sflow_interface_counters_t {
-    public:
+    private:
     uint32_t if_index     = 0;
     uint32_t if_type      = 0;
     uint64_t if_speed     = 0;
@@ -726,48 +789,88 @@ class __attribute__((__packed__)) generic_sflow_interface_counters_t {
     uint32_t if_out_errors         = 0;
     uint32_t if_promiscuous_mode   = 0;
 
-    generic_sflow_interface_counters_t(uint8_t* data_pointer) {
-        memcpy(this, data_pointer, sizeof(generic_sflow_interface_counters_t));
-        this->network_to_host_byte_order();
+    public:
+    uint32_t get_if_index() const {
+        return fast_ntoh(if_index);
     }
 
-    void network_to_host_byte_order() {
-        if_index              = fast_ntoh(if_index);
-        if_type               = fast_ntoh(if_type);
-        if_speed              = fast_ntoh(if_speed);
-        if_direction          = fast_ntoh(if_direction);
-        if_status             = fast_ntoh(if_status);
-        if_in_octets          = fast_ntoh(if_in_octets);
-        if_in_ucast_pkts      = fast_ntoh(if_in_ucast_pkts);
-        if_in_multicast_pkts  = fast_ntoh(if_in_multicast_pkts);
-        if_in_broadcast_pkts  = fast_ntoh(if_in_broadcast_pkts);
-        if_in_discards        = fast_ntoh(if_in_discards);
-        if_in_errors          = fast_ntoh(if_in_errors);
-        if_in_unknown_protos  = fast_ntoh(if_in_unknown_protos);
-        if_out_octets         = fast_ntoh(if_out_octets);
-        if_out_ucast_pkts     = fast_ntoh(if_out_ucast_pkts);
-        if_out_multicast_pkts = fast_ntoh(if_out_multicast_pkts);
-        if_out_broadcast_pkts = fast_ntoh(if_out_broadcast_pkts);
-        if_out_discards       = fast_ntoh(if_out_discards);
-        if_out_errors         = fast_ntoh(if_out_errors);
-        if_promiscuous_mode   = fast_ntoh(if_promiscuous_mode);
+    uint32_t get_if_type() const {
+        return fast_ntoh(if_type);
+    }
+    uint64_t get_if_speed() const {
+        return fast_ntoh(if_speed);
+    }
+    uint32_t get_if_direction() const {
+        return fast_ntoh(if_direction);
     }
 
-    std::string print() {
+    uint32_t get_if_status() const {
+        return fast_ntoh(if_status);
+    }
+
+    uint64_t get_if_in_octets() const {
+        return fast_ntoh(if_in_octets);
+    }
+
+    uint32_t get_if_in_ucast_pkts() const {
+        return fast_ntoh(if_in_ucast_pkts);
+    }
+
+    uint32_t get_if_in_multicast_pkts() const {
+        return fast_ntoh(if_in_multicast_pkts);
+    }
+    uint32_t get_if_in_broadcast_pkts() const {
+        return fast_ntoh(if_in_broadcast_pkts);
+    }
+    uint32_t get_if_in_discards() const {
+        return fast_ntoh(if_in_discards);
+    }
+    uint32_t get_if_in_errors() const {
+        return fast_ntoh(if_in_errors);
+    }
+    uint32_t get_if_in_unknown_protos() const {
+        return fast_ntoh(if_in_unknown_protos);
+    }
+    uint64_t get_if_out_octets() const {
+        return fast_ntoh(if_out_octets);
+    }
+    uint32_t get_if_out_ucast_pkts() const {
+        return fast_ntoh(if_out_ucast_pkts);
+    }
+    uint32_t get_if_out_multicast_pkts() const {
+        return fast_ntoh(if_out_multicast_pkts);
+    }
+    uint32_t get_if_out_broadcast_pkts() const {
+        return fast_ntoh(if_out_broadcast_pkts);
+    }
+    uint32_t get_if_out_discards() const {
+        return fast_ntoh(if_out_discards);
+    }
+    uint32_t get_if_out_errors() const {
+        return fast_ntoh(if_out_errors);
+    }
+    uint32_t get_if_promiscuous_mode() const {
+        return fast_ntoh(if_promiscuous_mode);
+    }
+
+    std::string print() const {
         std::stringstream buffer;
 
         std::string delimiter = ",";
 
-        buffer << "if_index: " << if_index << delimiter << "if_type: " << if_type << delimiter << "if_speed: " << if_speed
-               << delimiter << "if_direction: " << if_direction << delimiter << "if_status: " << if_status << delimiter
-               << "if_in_octets: " << if_in_octets << delimiter << "if_in_ucast_pkts: " << if_in_ucast_pkts << delimiter
-               << "if_in_multicast_pkts: " << if_in_multicast_pkts << delimiter << "if_in_broadcast_pkts: " << if_in_broadcast_pkts
-               << delimiter << "if_in_discards: " << if_in_discards << delimiter << "if_in_errors: " << if_in_errors
-               << delimiter << "if_in_unknown_protos: " << if_in_unknown_protos << delimiter
-               << "if_out_octets: " << if_out_octets << delimiter << "if_out_ucast_pkts: " << if_out_ucast_pkts << delimiter
-               << "if_out_multicast_pkts: " << if_out_multicast_pkts << delimiter << "if_out_broadcast_pkts: " << if_out_broadcast_pkts
-               << delimiter << "if_out_discards: " << if_out_discards << delimiter << "if_out_errors: " << if_out_errors
-               << delimiter << "if_promiscuous_mode: " << if_promiscuous_mode;
+        buffer << "if_index: " << get_if_index() << delimiter << "if_type: " << get_if_type() << delimiter
+               << "if_speed: " << get_if_speed() << delimiter << "if_direction: " << get_if_direction() << delimiter
+               << "if_status: " << get_if_status() << delimiter << "if_in_octets: " << get_if_in_octets() << delimiter
+               << "if_in_ucast_pkts: " << get_if_in_ucast_pkts() << delimiter
+               << "if_in_multicast_pkts: " << get_if_in_multicast_pkts() << delimiter
+               << "if_in_broadcast_pkts: " << get_if_in_broadcast_pkts() << delimiter
+               << "if_in_discards: " << get_if_in_discards() << delimiter << "if_in_errors: " << get_if_in_errors()
+               << delimiter << "if_in_unknown_protos: " << get_if_in_unknown_protos() << delimiter
+               << "if_out_octets: " << get_if_out_octets() << delimiter << "if_out_ucast_pkts: " << get_if_out_ucast_pkts()
+               << delimiter << "if_out_multicast_pkts: " << get_if_out_multicast_pkts() << delimiter
+               << "if_out_broadcast_pkts: " << get_if_out_broadcast_pkts() << delimiter
+               << "if_out_discards: " << get_if_out_discards() << delimiter << "if_out_errors: " << get_if_out_errors()
+               << delimiter << "if_promiscuous_mode: " << get_if_promiscuous_mode();
 
         return buffer.str();
     }
@@ -776,13 +879,13 @@ class __attribute__((__packed__)) generic_sflow_interface_counters_t {
 static_assert(sizeof(generic_sflow_interface_counters_t) == 88, "Broken size for generic_sflow_interface_counters_t");
 
 // High level processing functions. They uses classes defined upper
-bool read_sflow_header(uint8_t* payload_ptr, unsigned int payload_length, sflow_packet_header_unified_accessor& sflow_header_accessor);
-bool read_sflow_counter_header(uint8_t* data_pointer,
+bool read_sflow_header(const uint8_t* payload_ptr, unsigned int payload_length, sflow_packet_header_unified_accessor& sflow_header_accessor);
+bool read_sflow_counter_header(const uint8_t* data_pointer,
                                size_t data_length,
                                bool expanded,
                                sflow_counter_header_unified_accessor_t& sflow_counter_header_unified_accessor);
 bool read_sflow_sample_header_unified(sflow_sample_header_unified_accessor_t& sflow_sample_header_unified_accessor,
-                                      uint8_t* data_pointer,
+                                      const uint8_t* data_pointer,
                                       size_t data_length,
                                       bool expanded);
 
@@ -799,19 +902,18 @@ std::tuple<int32_t, int32_t> split_mixed_enterprise_and_format(int32_t enterpris
 unsigned int get_flow_enum_type_as_number(const sflow_sample_type_t& value);
 
 bool get_all_samples(std::vector<sample_tuple_t>& vector_sample,
-                     uint8_t* samples_block_start,
-                     uint8_t* total_packet_end,
+                     const uint8_t* samples_block_start,
+                     const uint8_t* total_packet_end,
                      int32_t samples_count,
                      bool& discovered_padding);
 bool get_records(std::vector<record_tuple_t>& vector_tuple,
-                 uint8_t* flow_record_zone_start,
+                 const uint8_t* flow_record_zone_start,
                  uint32_t number_of_flow_records,
-                 uint8_t* current_packet_end,
+                 const uint8_t* current_packet_end,
                  bool& padding_found);
 bool get_all_counter_records(std::vector<counter_record_sample_t>& counter_record_sample_vector,
-                             uint8_t* data_block_start,
-                             uint8_t* data_block_end,
+                             const uint8_t* data_block_start,
+                             const uint8_t* data_block_end,
                              uint32_t number_of_records);
 
-int32_t get_int_value_by_32bit_shift(uint8_t* payload_ptr, unsigned int shift);
-
+int32_t get_int_value_by_32bit_shift(const uint8_t* payload_ptr, unsigned int shift);
