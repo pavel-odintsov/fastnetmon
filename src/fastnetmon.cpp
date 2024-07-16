@@ -291,7 +291,6 @@ bool enable_afpacket_collection         = false;
 bool enable_af_xdp_collection           = false;
 bool enable_data_collection_from_mirror = false;
 bool enable_netmap_collection           = false;
-bool enable_netflow_collection          = false;
 bool enable_pcap_collection             = false;
 
 std::string speed_calculation_time_desc = "Time consumed by recalculation for all IPs";
@@ -818,9 +817,9 @@ bool load_configuration_file() {
     // Netflow
     if (configuration_map.count("netflow") != 0) {
         if (configuration_map["netflow"] == "on") {
-            enable_netflow_collection = true;
+            fastnetmon_global_configuration.netflow = true;
         } else {
-            enable_netflow_collection = false;
+            fastnetmon_global_configuration.netflow = false;
         }
     }
 
@@ -2081,7 +2080,7 @@ int main(int argc, char** argv) {
         packet_capture_plugin_thread_group.add_thread(new boost::thread(start_sflow_collection, process_packet));
     }
 
-    if (enable_netflow_collection) {
+    if (fastnetmon_global_configuration.netflow) {
         packet_capture_plugin_thread_group.add_thread(new boost::thread(start_netflow_collection, process_packet));
     }
 

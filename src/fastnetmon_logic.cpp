@@ -110,7 +110,6 @@ extern bool enable_connection_tracking;
 extern bool enable_afpacket_collection;
 extern bool enable_data_collection_from_mirror;
 extern bool enable_netmap_collection;
-extern bool enable_netflow_collection;
 extern bool enable_pcap_collection;
 extern uint64_t incoming_total_flows_speed;
 extern uint64_t outgoing_total_flows_speed;
@@ -2955,7 +2954,7 @@ bool get_statistics(std::vector<system_counter_t>& system_counters) {
         system_counters.insert(system_counters.end(), sflow_stats.begin(), sflow_stats.end());
     }
 
-    if (enable_netflow_collection) {
+    if (fastnetmon_global_configuration.netflow) {
         auto netflow_stats = get_netflow_stats();
 
         system_counters.insert(system_counters.end(), netflow_stats.begin(), netflow_stats.end());

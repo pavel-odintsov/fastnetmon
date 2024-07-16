@@ -15,6 +15,11 @@ class fastnetmon_configuration_t {
     std::string sflow_host{ "0.0.0.0" };
     bool sflow_read_packet_length_from_ip_header{ false };
 
+    // Netflow / IPFIX
+    bool netflow{ false };
+    std::vector<unsigned int> netflow_ports{};
+    std::string netflow_host{ "0.0.0.0" };
+
     // Clickhouse metrics
     bool clickhouse_metrics{ false };
     std::string clickhouse_metrics_database{ "fastnetmon" };
