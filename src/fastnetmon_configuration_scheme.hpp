@@ -29,6 +29,7 @@ class fastnetmon_configuration_t {
     std::string mirror_af_packet_fanout_mode{ "cpu" };
     bool af_packet_read_packet_length_from_ip_header{ false };
     bool af_packet_extract_tunnel_traffic{ false };
+    bool afpacket_execute_strict_cpu_affinity{ false };
 
     // Clickhouse metrics
     bool clickhouse_metrics{ false };
