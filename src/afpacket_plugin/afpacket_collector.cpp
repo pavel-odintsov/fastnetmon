@@ -20,7 +20,6 @@
 
 #include "../simple_packet_parser_ng.hpp"
 
-// For support: IPPROTO_TCP, IPPROTO_ICMP, IPPROTO_UDP
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -52,7 +51,7 @@ extern uint64_t total_unparsed_packets;
 // Global configuration map
 extern std::map<std::string, std::string> configuration_map;
 
-// This variable name should be uniq for every plugin!
+// This variable name should be unique for every plugin!
 process_packet_pointer afpacket_process_func_ptr = NULL;
 
 std::string socket_received_packets_desc = "Number of received packets";
@@ -78,8 +77,11 @@ uint32_t mirror_af_packet_custom_sampling_rate = 1;
 
 // 4194304 bytes
 unsigned int blocksiz = 1 << 22;
+
 // 2048 bytes
 unsigned int framesiz = 1 << 11;
+
+// Number of blocks
 unsigned int blocknum = 64;
 
 struct block_desc {
@@ -104,6 +106,11 @@ int fanout_type = PACKET_FANOUT_CPU;
 #define PACKET_FANOUT_QM 5
 #endif
 
+void start_af_packet_capture_for_interface(std::string capture_interface, int fanout_group_id, unsigned int num_cpus);
+
+// We keep all active AF_PACKET sockets here
+std::vector<int> active_af_packet_sockets;
+std::mutex active_af_packet_sockets_mutex;
 
 int get_fanout_by_name(std::string fanout_name) {
     if (fanout_name == "" || fanout_name == "cpu") {
@@ -126,18 +133,59 @@ int get_fanout_by_name(std::string fanout_name) {
     }
 }
 
+std::vector<system_counter_t> get_af_packet_stats() {
+    std::vector<system_counter_t> system_counter;
+
+    if (true) {
+        // We should iterate over all sockets because every socket has independent counter
+        std::lock_guard<std::mutex> lock_guard(active_af_packet_sockets_mutex);
+
+        for (auto socket : active_af_packet_sockets) {
+            struct tpacket_stats_v3 stats3;
+            memset(&stats3, 0, sizeof(struct tpacket_stats_v3));
+
+            socklen_t structure_length = sizeof(struct tpacket_stats_v3);
+
+            // Each per socket structure will reset to zero after reading
+            // We need to investigate that this system call is thread safe. I did not find any evidence of it and more detailed research is needed
+            int res = getsockopt(socket, SOL_PACKET, PACKET_STATISTICS, &stats3, &structure_length);
+
+            if (res != 0) {
+                logger << log4cpp::Priority::ERROR << "Cannot read socket stats with error code: " << res;
+            } else {
+                socket_received_packets += stats3.tp_packets;
+                socket_dropped_packets += stats3.tp_drops;
+            }
+        }
+    }
+
+    system_counter.push_back(system_counter_t("af_packet_socket_received_packets", socket_received_packets,
+                                              metric_type_t::counter, socket_received_packets_desc));
+    system_counter.push_back(system_counter_t("af_packet_socket_dropped_packets", socket_dropped_packets,
+                                              metric_type_t::counter, socket_dropped_packets_desc));
+
+    system_counter.push_back(system_counter_t("af_packet_blocks_read", blocks_read, metric_type_t::counter, blocks_read_desc));
+    system_counter.push_back(system_counter_t("af_packet_packets_raw", af_packet_packets_raw, metric_type_t::counter,
+                                              af_packet_packets_raw_desc));
+
+    system_counter.push_back(system_counter_t("af_packet_packets_parsed", af_packet_packets_parsed,
+                                              metric_type_t::counter, af_packet_packets_parsed_desc));
+    system_counter.push_back(system_counter_t("af_packet_packets_unparsed", af_packet_packets_unparsed,
+                                              metric_type_t::counter, af_packet_packets_unparsed_desc));
+
+    return system_counter;
+}
+
+
 void flush_block(struct block_desc* pbd) {
     pbd->h1.block_status = TP_STATUS_KERNEL;
 }
 
-void walk_block(struct block_desc* pbd, const int block_num) {
-    int num_pkts        = pbd->h1.num_pkts, i;
-    unsigned long bytes = 0;
-    struct tpacket3_hdr* ppd;
+void walk_block(struct block_desc* pbd) {
+    struct tpacket3_hdr* ppd = (struct tpacket3_hdr*)((uint8_t*)pbd + pbd->h1.offset_to_first_pkt);
 
-    ppd = (struct tpacket3_hdr*)((uint8_t*)pbd + pbd->h1.offset_to_first_pkt);
-    for (i = 0; i < num_pkts; ++i) {
-        bytes += ppd->tp_snaplen;
+    for (uint32_t i = 0; i < pbd->h1.num_pkts; ++i) {
+        af_packet_packets_raw++;
 
         // struct ethhdr *eth = (struct ethhdr *) ((uint8_t *) ppd + ppd->tp_mac);
         // Print packets
@@ -156,11 +204,8 @@ void walk_block(struct block_desc* pbd, const int block_num) {
             packet.sample_ratio = mirror_af_packet_custom_sampling_rate;
         }
 
-        // Not enabled by default
-        bool af_packet_extract_tunnel_traffic = false;
-
         auto result = parse_raw_packet_to_simple_packet_full_ng((u_char*)data_pointer, ppd->tp_snaplen, ppd->tp_snaplen,
-                                                                packet, af_packet_extract_tunnel_traffic,
+                                                                packet, fastnetmon_global_configuration.af_packet_extract_tunnel_traffic,
                                                                 fastnetmon_global_configuration.af_packet_read_packet_length_from_ip_header);
 
         if (result != network_data_stuctures::parser_code_t::success) {
@@ -179,6 +224,9 @@ void walk_block(struct block_desc* pbd, const int block_num) {
     }
 }
 
+void read_packets_from_socket(int packet_socket, struct iovec* rd);
+
+// Configures socket and starts traffic capture
 bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_group_id) {
     // More details here: http://man7.org/linux/man-pages/man7/packet.7.html
     // We could use SOCK_RAW or SOCK_DGRAM for second argument
@@ -198,7 +246,7 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
     int setsockopt_packet_version = setsockopt(packet_socket, SOL_PACKET, PACKET_VERSION, &version, sizeof(version));
 
     if (setsockopt_packet_version < 0) {
-        logger << log4cpp::Priority::ERROR << "Can't set packet v3 version";
+        logger << log4cpp::Priority::ERROR << "Can't set packet v3 version for " << interface_name;
         return false;
     }
 
@@ -211,6 +259,9 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
         return false;
     }
 
+    // Without PACKET_ADD_MEMBERSHIP step AF_PACKET will capture traffic on all interfaces which is not exactly what we
+    // want in this case We need to specify exact interface we're interested in here
+
     // Switch to PROMISC mode
     struct packet_mreq sock_params;
     memset(&sock_params, 0, sizeof(sock_params));
@@ -220,20 +271,14 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
     int set_promisc = setsockopt(packet_socket, SOL_PACKET, PACKET_ADD_MEMBERSHIP, (void*)&sock_params, sizeof(sock_params));
 
     if (set_promisc == -1) {
-        logger << log4cpp::Priority::ERROR << "Can't enable promisc mode";
+        logger << log4cpp::Priority::ERROR << "Can't enable promisc mode for " << interface_name;
         return false;
     }
 
-    struct sockaddr_ll bind_address;
-    memset(&bind_address, 0, sizeof(bind_address));
-
-    bind_address.sll_family   = AF_PACKET;
-    bind_address.sll_protocol = htons(ETH_P_ALL);
-    bind_address.sll_ifindex  = interface_number;
-
-    // We will follow http://yusufonlinux.blogspot.ru/2010/11/data-link-access-and-zero-copy.html
-    // And this: https://www.kernel.org/doc/Documentation/networking/packet_mmap.txt
-
+    // We will
+    // follow http://yusufonlinux.blogspot.ru/2010/11/data-link-access-and-zero-copy.html
+    // And this:
+    // https://www.kernel.org/doc/Documentation/networking/packet_mmap.txt
     struct tpacket_req3 req;
     memset(&req, 0, sizeof(req));
 
@@ -248,7 +293,7 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
     int setsockopt_rx_ring = setsockopt(packet_socket, SOL_PACKET, PACKET_RX_RING, (void*)&req, sizeof(req));
 
     if (setsockopt_rx_ring == -1) {
-        logger << log4cpp::Priority::ERROR << "Can't enable RX_RING for AF_PACKET socket";
+        logger << log4cpp::Priority::ERROR << "Can't enable RX_RING for AF_PACKET socket for " << interface_name;
         return false;
     }
 
@@ -272,6 +317,13 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
         rd[i].iov_base = mapped_buffer + (i * req.tp_block_size);
         rd[i].iov_len  = req.tp_block_size;
     }
+
+    struct sockaddr_ll bind_address;
+    memset(&bind_address, 0, sizeof(bind_address));
+
+    bind_address.sll_family   = AF_PACKET;
+    bind_address.sll_protocol = htons(ETH_P_ALL);
+    bind_address.sll_ifindex  = interface_number;
 
     int bind_result = bind(packet_socket, (struct sockaddr*)&bind_address, sizeof(bind_address));
 
@@ -310,7 +362,9 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
             continue;
         }
 
-        walk_block(pbd, current_block_num);
+        blocks_read++;
+
+        walk_block(pbd);
         flush_block(pbd);
         current_block_num = (current_block_num + 1) % blocknum;
     }
@@ -321,27 +375,6 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
 void start_af_packet_capture(std::string interface_name, bool enable_fanout, int fanout_group_id) {
     setup_socket(interface_name, enable_fanout, fanout_group_id);
 }
-
-std::vector<system_counter_t> get_af_packet_stats() {
-    std::vector<system_counter_t> system_counter;
-
-    system_counter.push_back(system_counter_t("af_packet_socket_received_packets", socket_received_packets,
-                                              metric_type_t::counter, socket_received_packets_desc));
-    system_counter.push_back(system_counter_t("af_packet_socket_dropped_packets", socket_dropped_packets,
-                                              metric_type_t::counter, socket_dropped_packets_desc));
-
-    system_counter.push_back(system_counter_t("af_packet_blocks_read", blocks_read, metric_type_t::counter, blocks_read_desc));
-    system_counter.push_back(system_counter_t("af_packet_packets_raw", af_packet_packets_raw, metric_type_t::counter,
-                                              af_packet_packets_raw_desc));
-
-    system_counter.push_back(system_counter_t("af_packet_packets_parsed", af_packet_packets_parsed,
-                                              metric_type_t::counter, af_packet_packets_parsed_desc));
-    system_counter.push_back(system_counter_t("af_packet_packets_unparsed", af_packet_packets_unparsed,
-                                              metric_type_t::counter, af_packet_packets_unparsed_desc));
-
-    return system_counter;
-}
-
 
 // Could get some speed up on NUMA servers
 bool afpacket_execute_strict_cpu_affinity = false;
