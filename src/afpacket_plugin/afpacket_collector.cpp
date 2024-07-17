@@ -402,9 +402,6 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
     logger << log4cpp::Priority::INFO << "AF_PACKET plugin started";
     afpacket_process_func_ptr = func_ptr;
 
-    unsigned int num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
-    logger.info("We have %d cpus for AF_PACKET", num_cpus);
-
     // It's not compatible with Advanced and has no alternative
     if (configuration_map.count("mirror_af_packet_custom_sampling_rate") != 0) {
         mirror_af_packet_custom_sampling_rate =
@@ -414,12 +411,16 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
     // Set FANOUT mode
     fanout_type = get_fanout_by_name(fastnetmon_global_configuration.mirror_af_packet_fanout_mode);
 
-    logger << log4cpp::Priority::INFO << "AF_PACKET will listen on " << fastnetmon_global_configuration.interfaces.size() << " interfaces";
+    unsigned int num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+    logger.info("We have %d cpus for AF_PACKET", num_cpus);
 
     if (fastnetmon_global_configuration.interfaces.size() == 0) {
         logger << log4cpp::Priority::ERROR << "Please specify intreface for AF_PACKET";
         return;
     }
+
+    logger << log4cpp::Priority::DEBUG << "AF_PACKET will listen on "
+           << fastnetmon_global_configuration.interfaces.size() << " interfaces";
 
     // Thread group for all "master" processes
     boost::thread_group af_packet_main_threads;
