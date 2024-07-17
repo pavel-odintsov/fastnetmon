@@ -5,7 +5,7 @@
 class fixed_size_packet_storage_t {
     public:
     fixed_size_packet_storage_t() = default;
-    fixed_size_packet_storage_t(void* payload_pointer, unsigned int captured_length, unsigned int real_packet_length) {
+    fixed_size_packet_storage_t(const void* payload_pointer, unsigned int captured_length, unsigned int real_packet_length) {
         // TODO: performance killer! Check it!
         bool we_do_timestamps = true;
 
