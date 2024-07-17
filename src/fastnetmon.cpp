@@ -287,7 +287,6 @@ void init_global_ban_settings() {
 
 bool enable_connection_tracking = true;
 
-bool enable_afpacket_collection         = false;
 bool enable_af_xdp_collection           = false;
 bool enable_data_collection_from_mirror = false;
 bool enable_netmap_collection           = false;
@@ -976,10 +975,10 @@ bool load_configuration_file() {
     }
 
     if (configuration_map.count("mirror_afpacket") != 0) {
-        enable_afpacket_collection = configuration_map["mirror_afpacket"] == "on";
+        fastnetmon_global_configuration.mirror_afpacket = configuration_map["mirror_afpacket"] == "on";
     }
 
-    if (enable_afpacket_collection && enable_af_xdp_collection) {
+    if (fastnetmon_global_configuration.mirror_afpacket && enable_af_xdp_collection) {
         logger << log4cpp::Priority::ERROR << "You cannot use AF_XDP and AF_PACKET in same time, select one";
         exit(1);
     }
@@ -2096,7 +2095,7 @@ int main(int argc, char** argv) {
 #endif
 
 #ifdef FASTNETMON_ENABLE_AFPACKET
-    if (enable_afpacket_collection) {
+    if (fastnetmon_global_configuration.mirror_afpacket) {
         packet_capture_plugin_thread_group.add_thread(new boost::thread(start_afpacket_collection, process_packet));
     }
 #endif

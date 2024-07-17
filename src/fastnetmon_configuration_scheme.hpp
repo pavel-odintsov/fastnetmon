@@ -22,6 +22,13 @@ class fastnetmon_configuration_t {
     std::string netflow_host{ "0.0.0.0" };
     unsigned int netflow_sampling_ratio{ 1 };
 
+    // Mirror AF_PACKET
+    bool mirror_afpacket{ false };
+    std::vector<std::string> interfaces{};
+    bool afpacket_strict_cpu_affinity{ false };
+    std::string mirror_af_packet_fanout_mode{ "cpu" };
+    bool af_packet_read_packet_length_from_ip_header{ false };
+
     // Clickhouse metrics
     bool clickhouse_metrics{ false };
     std::string clickhouse_metrics_database{ "fastnetmon" };

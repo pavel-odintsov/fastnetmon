@@ -107,7 +107,6 @@ extern uint64_t total_unparsed_packets;
 extern time_t current_inaccurate_time;
 extern uint64_t total_unparsed_packets_speed;
 extern bool enable_connection_tracking;
-extern bool enable_afpacket_collection;
 extern bool enable_data_collection_from_mirror;
 extern bool enable_netmap_collection;
 extern bool enable_pcap_collection;
@@ -2961,7 +2960,7 @@ bool get_statistics(std::vector<system_counter_t>& system_counters) {
     }
 
 #ifdef FASTNETMON_ENABLE_AFPACKET
-    if (enable_afpacket_collection) {
+    if (fastnetmon_global_configuration.mirror_afpacket) {
         auto af_packet_counters = get_af_packet_stats();
 
         system_counters.insert(system_counters.end(), af_packet_counters.begin(), af_packet_counters.end());
