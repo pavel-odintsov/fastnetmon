@@ -39,7 +39,9 @@
 
 #include <linux/filter.h> // for struct sock_filter
 
-bool afpacket_read_packet_length_from_ip_header = false;
+#include "../fastnetmon_configuration_scheme.hpp"
+
+extern fastnetmon_configuration_t fastnetmon_global_configuration;
 
 // Get log4cpp logger from main programme
 extern log4cpp::Category& logger;
@@ -159,7 +161,7 @@ void walk_block(struct block_desc* pbd, const int block_num) {
 
         auto result = parse_raw_packet_to_simple_packet_full_ng((u_char*)data_pointer, ppd->tp_snaplen, ppd->tp_snaplen,
                                                                 packet, af_packet_extract_tunnel_traffic,
-                                                                afpacket_read_packet_length_from_ip_header);
+                                                                fastnetmon_global_configuration.af_packet_read_packet_length_from_ip_header);
 
         if (result != network_data_stuctures::parser_code_t::success) {
             // This counter resets for speed calculation every second
@@ -351,32 +353,18 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
     unsigned int num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
     logger.info("We have %d cpus for AF_PACKET", num_cpus);
 
-    if (configuration_map.count("af_packet_read_packet_length_from_ip_header") != 0) {
-        afpacket_read_packet_length_from_ip_header = configuration_map["af_packet_read_packet_length_from_ip_header"] == "on";
-    }
-
-    std::string interfaces_list = "";
-
-    if (configuration_map.count("interfaces") != 0) {
-        interfaces_list = configuration_map["interfaces"];
-    }
-
+    // It's not compatible with Advanced and has no alternative
     if (configuration_map.count("mirror_af_packet_custom_sampling_rate") != 0) {
         mirror_af_packet_custom_sampling_rate =
             convert_string_to_integer(configuration_map["mirror_af_packet_custom_sampling_rate"]);
     }
 
-    if (configuration_map.count("mirror_af_packet_fanout_mode") != 0) {
-        // Set FANOUT mode
-        fanout_type = get_fanout_by_name(configuration_map["mirror_af_packet_fanout_mode"]);
-    }
+    // Set FANOUT mode
+    fanout_type = get_fanout_by_name(fastnetmon_global_configuration.mirror_af_packet_fanout_mode);
 
-    std::vector<std::string> interfaces_for_listen;
-    boost::split(interfaces_for_listen, interfaces_list, boost::is_any_of(","), boost::token_compress_on);
+    logger << log4cpp::Priority::INFO << "AF_PACKET will listen on " << fastnetmon_global_configuration.interfaces.size() << " interfaces";
 
-    logger << log4cpp::Priority::INFO << "AF_PACKET will listen on " << interfaces_for_listen.size() << " interfaces";
-
-    if (interfaces_for_listen.size() == 0) {
+    if (fastnetmon_global_configuration.interfaces.size() == 0) {
         logger << log4cpp::Priority::ERROR << "Please specify intreface for AF_PACKET";
         return;
     }
@@ -384,7 +372,7 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
     // Thread group for all "master" processes
     boost::thread_group af_packet_main_threads;
 
-    for (std::vector<std::string>::size_type i = 0; i < interfaces_for_listen.size(); i++) {
+    for (std::vector<std::string>::size_type i = 0; i < fastnetmon_global_configuration.interfaces.size(); i++) {
         // Use process id to identify particular fanout group
         int group_identifier = getpid();
 
@@ -393,7 +381,7 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
 
         int fanout_group_id = group_identifier & 0xffff;
 
-        std::string capture_interface = interfaces_for_listen[i];
+        std::string capture_interface = fastnetmon_global_configuration.interfaces[i];
 
         logger << log4cpp::Priority::INFO << "AF_PACKET will listen on " << capture_interface << " interface";
 

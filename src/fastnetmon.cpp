@@ -974,9 +974,32 @@ bool load_configuration_file() {
         }
     }
 
+    // AF_PACKET Mirror
     if (configuration_map.count("mirror_afpacket") != 0) {
         fastnetmon_global_configuration.mirror_afpacket = configuration_map["mirror_afpacket"] == "on";
     }
+
+    std::string interfaces_list;
+    if (configuration_map.count("interfaces") != 0) {
+        interfaces_list = configuration_map["interfaces"];
+
+        std::vector<std::string> interfaces_for_listen;
+        boost::split(fastnetmon_global_configuration.interfaces, interfaces_list, boost::is_any_of(","), boost::token_compress_on);
+    }
+
+    // Please note that field name does not match name of configuration option 
+    if (configuration_map.count("af_packet_read_packet_length_from_ip_header") != 0) {
+        fastnetmon_global_configuration.af_packet_read_packet_length_from_ip_header =
+            configuration_map["af_packet_read_packet_length_from_ip_header"] == "on";
+    }
+
+    if (configuration_map.count("mirror_af_packet_fanout_mode") != 0) {
+        fastnetmon_global_configuration.mirror_af_packet_fanout_mode =
+            configuration_map["mirror_af_packet_fanout_mode"] == "on";
+    }
+
+
+    // XDP
 
     if (fastnetmon_global_configuration.mirror_afpacket && enable_af_xdp_collection) {
         logger << log4cpp::Priority::ERROR << "You cannot use AF_XDP and AF_PACKET in same time, select one";
