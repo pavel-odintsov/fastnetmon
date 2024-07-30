@@ -139,7 +139,7 @@ bool execute_web_request(const std::string& address_param,
                          const std::map<std::string, std::string>& headers,
                          std::string& error_text);
 unsigned int get_total_memory();
-std::string get_cpu_model();
+bool get_cpu_model(std::string& cpu_model);
 bool execute_web_request_secure(std::string address,
                                 std::string request_type,
                                 std::string post_data,

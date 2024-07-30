@@ -3083,7 +3083,11 @@ void send_usage_data_to_reporting_server() {
         stats["traffic_db"]         = false;
         stats["prometheus"]         = false;
 
-        stats["cpu_model"]         = get_cpu_model();
+        std::string cpu_model;
+        get_cpu_model(cpu_model);
+
+        stats["cpu_model"]         = cpu_model;
+
         stats["cpu_logical_cores"] = get_logical_cpus_number();
 
         // Mbytes

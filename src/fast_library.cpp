@@ -2193,28 +2193,30 @@ bool get_cpu_flags(std::vector<std::string>& flags) {
     return false;
 }
 
-std::string get_cpu_model() {
+bool get_cpu_model(std::string& cpu_model) {
     extern log4cpp::Category& logger;
 
     std::ifstream cpuinfo_file("/proc/cpuinfo");
-    boost::regex processor_model_pattern("^model name\\s+:\\s(.*?)$");
 
     if (!cpuinfo_file.is_open()) {
-        logger << log4cpp::Priority::ERROR << "License: could not open cpuinfo";
-        return "";
+        logger << log4cpp::Priority::ERROR << "Could not open /proc/cpuinfo";
+        return false;
     }
 
+    boost::regex processor_model_pattern("^model name\\s+:\\s(.*?)$");
     std::string line;
+
     while (getline(cpuinfo_file, line)) {
         boost::match_results<std::string::const_iterator> regex_results;
 
         if (boost::regex_match(line, regex_results, processor_model_pattern)) {
-            return regex_results[1];
+            cpu_model = regex_results[1];
+            return true;
         }
     }
 
-    // For new ARMs (Cavium Thunder X for example) we do not have model name in 4.10 kernel
-#ifdef __aarch64__
+    // For ARM CPUs we have another format
+    // Even if we run in x86_64 mode we can have cpuinfo with such information on ARM64 based macOS platforms
     std::string implementer;
     std::string part;
     std::string revision;
@@ -2247,13 +2249,13 @@ std::string get_cpu_model() {
 
     // If we fould all of them, use these fields as model
     if (implementer.size() > 0 && part.size() > 0 && revision.size() > 0) {
-        return "implementer: " + implementer + " part: " + part + " revision: " + revision;
-    } else {
-        // logger << log4cpp::Priority::ERROR << "implementer: " << implementer << " part: " << part << " revision: " << revision;
+        cpu_model = "implementer: " + implementer + " part: " + part + " revision: " + revision;
+        return true;
     }
-#endif
 
-    return "";
+    // logger << log4cpp::Priority::ERROR << "implementer: " << implementer << " part: " << part << " revision: " << revision;
+
+    return false;
 }
 
 // returns forwarding status as string
