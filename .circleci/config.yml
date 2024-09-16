@@ -115,16 +115,30 @@ jobs:
           command: "sudo docker exec -it linux_priviledged_container pbuilder --create --basetgz /data/debian_base.tgz --distribution << parameters.debian_codename >>"
       - run: ls -la /data
       - run: sudo docker exec -it linux_priviledged_container pbuilder --build --basetgz /data/debian_base.tgz --debbuildopts "-sa" /fastnetmon_$(sudo docker exec -it linux_priviledged_container head -n 1 fastnetmon-debian-salsa/debian/changelog|awk '{print $2}'|sed 's/[()]//g').dsc
-  build_docker_x86_64:
+  build_docker:
     machine:
       image: ubuntu-2204:current
     steps:
-     - checkout
-     - run: docker build -t ghcr.io/pavel-odintsov/fastnetmon-community:<< pipeline.parameters.fastnetmon_build_version >> -t ghcr.io/pavel-odintsov/fastnetmon-community:latest - < src/Dockerfile
-     - run: sudo docker images
-     - run: echo $CR_PAT | sudo docker login ghcr.io -u pavel-odintsov --password-stdin
-     - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:<< pipeline.parameters.fastnetmon_build_version >>
-     - run: sudo docker push ghcr.io/pavel-odintsov/fastnetmon-community:latest
+      - checkout
+      - run:
+          name: Extract GitHub Username
+          command: |
+            GH_USERNAME=$(echo "<< pipeline.project.git_url >>" | sed -n 's#.*/\([^/]*\)/.*#\1#p')
+            echo "GitHub username is $GH_USERNAME"
+            echo "export GH_USERNAME=$GH_USERNAME" >> $BASH_ENV
+      - run:
+          name: Build Docker images
+          command: |
+            echo $CR_PAT | docker login ghcr.io -u $GH_USERNAME --password-stdin
+            docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+            docker buildx create --use
+            docker buildx inspect --bootstrap
+            docker buildx build \
+              --file src/Dockerfile \
+              --platform linux/amd64,linux/arm64 \
+              --tag ghcr.io/$GH_USERNAME/fastnetmon-community:<< pipeline.parameters.fastnetmon_build_version >> \
+              --tag ghcr.io/$GH_USERNAME/fastnetmon-community:latest \
+              --push .
   build_gce:
     machine:
       # We use this image because it uses GCE instead of AWS for testing
@@ -134,14 +148,6 @@ jobs:
     resource_class: large
     steps:
       - checkout
-  build_docker_arm64:
-    machine:
-      image: ubuntu-2204:current
-    resource_class: arm.large
-    steps:
-     - checkout
-     - run: docker build --build-arg installer_file_name=installer_arm64 -t ghcr.io/pavel-odintsov/fastnetmon-community:1.2.3 -t ghcr.io/pavel-odintsov/fastnetmon-community:latest - < src/Dockerfile
-     - run: sudo docker images
   build_fedora_upstream:
     parameters:
       docker_image:
@@ -436,10 +442,8 @@ workflows:
           distro_name: "debian"
           resource_class: "arm.large"
           debian_package_architecture: "arm64"
-      - build_docker_x86_64:
-          name: "Build Docker image on x86_64 platform"
-      # - build_docker_arm64:
-      #    name: "Build Docker image on ARM64 platform"
+      - build_docker:
+          name: "Build Docker images"
       - build_debian_upstream_package:
           name: "Debian Sid Upstream Build"
           debian_codename: "sid"
