@@ -214,6 +214,6 @@ void graphite_push_thread() {
         logger << log4cpp::Priority::DEBUG << "Graphite data pushed in: " << graphite_thread_execution_time.tv_sec
                << " sec " << graphite_thread_execution_time.tv_usec << " microseconds\n";
 
-        boost::this_thread::sleep(boost::posix_time::seconds(fastnetmon_global_configuration.clickhouse_metrics_push_period));
+        boost::this_thread::sleep(boost::posix_time::seconds(fastnetmon_global_configuration.graphite_push_period));
     }
 }
