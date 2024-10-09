@@ -464,10 +464,6 @@ void free_up_all_resources();
 void interruption_signal_handler(int signal_number);
 
 #ifdef FASTNETMON_API
-void silent_logging_function(gpr_log_func_args* args) {
-    // We do not want any logging here
-}
-
 // We could not define this variable in top of the file because we should define class before
 FastnetmonApiServiceImpl api_service;
 
@@ -1863,10 +1859,6 @@ int main(int argc, char** argv) {
         ifs.close();
         std::filesystem::remove(fastnetmon_platform_configuration.backtrace_path);
     }
-
-#ifdef FASTNETMON_API
-    gpr_set_log_function(silent_logging_function);
-#endif
 
     // Set default ban configuration
     init_global_ban_settings();
