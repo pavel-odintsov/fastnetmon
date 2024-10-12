@@ -34,6 +34,8 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/regex.hpp>
 
+#include "iana_ip_protocols.hpp"
+
 boost::regex regular_expression_cidr_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+\\/\\d+$");
 boost::regex regular_expression_host_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+$");
 
@@ -477,8 +479,13 @@ std::string print_simple_packet(simple_packet_t packet) {
         // WTF?
     }
 
+    std::string protocol_name = get_ip_protocol_name_by_number_iana(packet.protocol);
+
+    // We use lowercase format
+    boost::algorithm::to_lower(protocol_name);
+
     buffer << source_ip_as_string << ":" << packet.source_port << " > " << destination_ip_as_string << ":"
-           << packet.destination_port << " protocol: " << get_printable_protocol_name(packet.protocol);
+           << packet.destination_port << " protocol: " << protocol_name;
 
     // Print flags only for TCP
     if (packet.protocol == IPPROTO_TCP) {

@@ -850,6 +850,7 @@ endif()
 
 target_link_libraries(fast_library patricia)
 target_link_libraries(fast_library fastnetmon_pcap_format)
+target_link_libraries(fast_library iana_ip_protocols)
 
 # Try to find ncurses library
 find_package(Curses REQUIRED)
