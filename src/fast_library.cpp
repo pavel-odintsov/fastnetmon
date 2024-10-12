@@ -146,7 +146,7 @@ std::string get_net_address_from_network_as_string(std::string network_cidr_form
     split(subnet_as_string, network_cidr_format, boost::is_any_of("/"), boost::token_compress_on);
 
     if (subnet_as_string.size() != 2) {
-        return 0;
+        return std::string();
     }
 
     return subnet_as_string[0];

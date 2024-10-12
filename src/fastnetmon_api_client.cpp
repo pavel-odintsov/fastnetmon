@@ -90,10 +90,6 @@ class FastnetmonClient {
     std::unique_ptr<Fastnetmon::Stub> stub_;
 };
 
-void silent_logging_function(gpr_log_func_args* args) {
-    // We do not want any logging here
-}
-
 int main(int argc, char** argv) {
     std::string supported_commands_list = "ban, unban, get_banlist";
 
@@ -101,8 +97,6 @@ int main(int argc, char** argv) {
         std::cerr << "Please provide command as argument, supported commands: " << supported_commands_list << std::endl;
         return 1;
     }
-
-    gpr_set_log_function(silent_logging_function);
 
     // Instantiate the client. It requires a channel, out of which the actual RPCs
     // are created. This channel models a connection to an endpoint (in this case,

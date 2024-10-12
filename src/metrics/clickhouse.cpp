@@ -213,8 +213,6 @@ void increment_clickhouse_per_protocol_counters(PerProtocolMetrics& metrics, con
 
 // Populates Clickhouse host counters using speed_element
 void increment_clickhouse_host_counters(ClickhouseHostMetrics& metrics, const subnet_counter_t& current_speed_element) {
-    std::vector<direction_t> processed_directions = { INCOMING, OUTGOING };
-
     metrics.packets_incoming->Append(current_speed_element.total.in_packets);
     metrics.bits_incoming->Append(current_speed_element.total.in_bytes * 8);
     metrics.flows_incoming->Append(current_speed_element.in_flows);
@@ -496,8 +494,6 @@ template <typename T, typename C>
     (std::is_same_v<C, subnet_counter_t>)bool push_hosts_traffic_counters_to_clickhouse(clickhouse::Client* clickhouse_metrics_client,
                                                                                         abstract_subnet_counters_t<T, C>& host_counters,
                                                                                         const std::string& table_name) {
-    std::vector<direction_t> processed_directions = { INCOMING, OUTGOING };
-
     clickhouse::Block block;
 
     ClickhouseHostMetrics metrics;
