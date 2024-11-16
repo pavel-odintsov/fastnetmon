@@ -106,3 +106,4 @@ void inaccurate_time_generator();
 void collect_stats();
 void start_prometheus_web_server();
 std::string get_human_readable_attack_detection_direction(attack_detection_direction_type_t attack_detection_direction);
+void send_attack_data_to_reporting_server(const std::string& attack_json_string);

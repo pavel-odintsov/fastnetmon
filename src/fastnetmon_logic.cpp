@@ -1011,7 +1011,8 @@ std::string get_attack_description_in_json_for_web_hooks(uint32_t client_ip,
                                                          const subnet_ipv6_cidr_mask_t& client_ipv6,
                                                          bool ipv6,
                                                          const std::string& action_type,
-                                                         const attack_details_t& current_attack) {
+                                                         const attack_details_t& current_attack,
+							 const boost::circular_buffer<simple_packet_t>& simple_packets_buffer) {
     nlohmann::json callback_info;
 
     callback_info["alert_scope"] = "host";
@@ -1032,6 +1033,18 @@ std::string get_attack_description_in_json_for_web_hooks(uint32_t client_ip,
         callback_info["attack_details"] = attack_details;
     } else {
         logger << log4cpp::Priority::ERROR << "Cannot generate attack details for get_attack_description_in_json_for_web_hooks";
+    }
+
+    // We add these sections only if we have anything in packet dump
+    if (simple_packets_buffer.size() != 0) {
+        // Detailed per field packet dump
+        nlohmann::json packet_dump_per_field;
+
+        if (write_simple_packet_as_separate_fields_dump_to_json(simple_packets_buffer, packet_dump_per_field)) {
+            callback_info["packet_dump_detailed"] = packet_dump_per_field;
+        } else {
+            logger << log4cpp::Priority::ERROR << "Cannot generate detailed packet dump";
+        }
     }
 
 
@@ -1197,6 +1210,8 @@ void call_blackhole_actions_per_host(attack_action_t attack_action,
                                      const boost::circular_buffer<simple_packet_t>& simple_packets_buffer,
                                      const boost::circular_buffer<fixed_size_packet_storage_t>& raw_packets_buffer) { 
 
+    extern bool usage_stats;
+
     bool ipv4                       = !ipv6;
     std::string client_ip_as_string = "";
 
@@ -1218,7 +1233,7 @@ void call_blackhole_actions_per_host(attack_action_t attack_action,
     print_simple_packet_buffer_to_string(simple_packets_buffer, simple_packets_dump);
 
     std::string basic_attack_information_in_json =
-        get_attack_description_in_json_for_web_hooks(client_ip, subnet_ipv6_cidr_mask_t{}, false, action_name, current_attack);
+        get_attack_description_in_json_for_web_hooks(client_ip, subnet_ipv6_cidr_mask_t{}, false, action_name, current_attack, simple_packets_buffer);
 
     bool store_attack_details_to_file = true;
 
@@ -1315,7 +1330,7 @@ void call_blackhole_actions_per_host(attack_action_t attack_action,
                 boost::thread redis_store_thread(store_data_in_redis, redis_key_name, flow_attack_details);
                 redis_store_thread.detach();
                 logger << log4cpp::Priority::INFO << "Finish data save in redis in key: " << redis_key_name;
-            }
+	    }
 
         }
 #endif
@@ -1336,6 +1351,11 @@ void call_blackhole_actions_per_host(attack_action_t attack_action,
             logger << log4cpp::Priority::INFO << "Finish data save in Mongo in key: " << mongo_key_name;
         }
 #endif
+    }
+
+    if (usage_stats) {
+        boost::thread attack_report_thread(send_attack_data_to_reporting_server, basic_attack_information_in_json);
+        attack_report_thread.detach();
     }
 }
 
@@ -3173,6 +3193,7 @@ void send_usage_data_to_reporting_server() {
     }
 }
 
+
 void collect_stats() {
     extern unsigned int stats_thread_initial_call_delay;
     extern unsigned int stats_thread_sleep_time;
@@ -3451,3 +3472,42 @@ std::string get_human_readable_attack_detection_direction(attack_detection_direc
     }
 }
 
+// Sends attack information to reporting server
+void send_attack_data_to_reporting_server(const std::string& attack_json_string) {
+    extern std::string reporting_server;
+
+    // Build query
+    std::stringstream request_stream;
+
+    request_stream << "https://" << reporting_server << "/attacks_v1";
+
+    uint32_t response_code = 0;
+    std::string response_body;
+    std::string error_text;
+
+    std::map<std::string, std::string> headers;
+
+    // I think we need to do it to make clear about format for remote app
+    headers["Content-Type"] = "application/json";
+
+    // Just do it to know about DNS issues, execute_web_request can do DNS resolution on it's own
+    std::string reporting_server_ip_address = dns_lookup(reporting_server);
+
+    if (reporting_server_ip_address.empty()) {
+        logger << log4cpp::Priority::DEBUG << "Stats server resolver failed, please check your DNS";
+        return;
+    }
+
+    bool result = execute_web_request_secure(request_stream.str(), "post", attack_json_string, response_code,
+                                             response_body, headers, error_text);
+
+    if (!result) {
+        logger << log4cpp::Priority::DEBUG << "Can't collect attack stats data";
+        return;
+    }
+
+    if (response_code != 200) {
+        logger << log4cpp::Priority::DEBUG << "Got code " << response_code << " from stats server instead of 200";
+        return;
+    }
+}

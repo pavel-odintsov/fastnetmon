@@ -2475,3 +2475,39 @@ void print_simple_packet_buffer_to_string(const boost::circular_buffer<simple_pa
 }
 
 
+// Write circular buffer with simple packets to json document
+bool write_simple_packet_as_separate_fields_dump_to_json(const boost::circular_buffer<simple_packet_t>& simple_packets_buffer,
+                                                         nlohmann::json& packet_array) {
+    extern log4cpp::Category& logger;
+
+    // Even if we have no data we need empty array here
+    packet_array = nlohmann::json::array();
+
+    try {
+
+        if (simple_packets_buffer.size() == 0) {
+            logger << log4cpp::Priority::INFO << "Packet buffer is blank";
+            return true;
+        }
+
+        // Add all pack descriptions as strings array
+        for (const simple_packet_t& packet : simple_packets_buffer) {
+            nlohmann::json json_packet;
+
+            if (!serialize_simple_packet_to_json(packet, json_packet)) {
+                continue;
+            }
+
+            // Append to document as normal STL container
+            packet_array.push_back(json_packet);
+        }
+
+    } catch (...) {
+        logger << log4cpp::Priority::ERROR << "Cannot create packet list in JSON";
+        return false;
+    }
+
+    return true;
+}
+
+

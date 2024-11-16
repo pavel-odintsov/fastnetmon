@@ -256,6 +256,9 @@ std::vector<flow_spec_rule_t> static_flowspec_based_whitelist;
 std::string graphite_thread_execution_time_desc = "Time consumed by pushing data to Graphite";
 struct timeval graphite_thread_execution_time;
 
+// Run stats thread
+bool usage_stats = true;
+
 void init_global_ban_settings() {
     // ban Configuration params
     global_ban_settings.enable_ban_for_pps              = false;
@@ -2051,9 +2054,6 @@ int main(int argc, char** argv) {
     auto inaccurate_time_generator_thread = new boost::thread(inaccurate_time_generator);
     set_boost_process_name(inaccurate_time_generator_thread, "fast_time");
     service_thread_group.add_thread(inaccurate_time_generator_thread);
-
-    // Run stats thread
-    bool usage_stats = true;
 
     if (configuration_map.count("disable_usage_report") != 0 && configuration_map["disable_usage_report"] == "on") {
         usage_stats = false;
