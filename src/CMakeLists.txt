@@ -1201,3 +1201,12 @@ endif()
 
 # This must always be last!
 include(CPack)
+
+
+if (ENABLE_FUZZ_TEST)
+        add_executable(parse_sflow_v5_packet_fuzz tests/fuzz/parse_sflow_v5_packet_fuzz.cpp)
+        target_link_libraries(parse_sflow_v5_packet_fuzz sflow_plugin netflow_plugin example_plugin fastnetmon_logic ${LOG4CPP_LIBRARY_PATH})
+
+        add_executable(process_netflow_packet_v5_fuzz tests/fuzz/process_netflow_packet_v5_fuzz.cpp)
+        target_link_libraries(process_netflow_packet_v5_fuzz sflow_plugin netflow_plugin example_plugin fastnetmon_logic ${LOG4CPP_LIBRARY_PATH})
+endif()

@@ -20,7 +20,7 @@ COPY src/ /src/
 WORKDIR /src
 RUN mkdir build && cd build && \
       cmake .. -DLINK_WITH_ABSL=ON -DCMAKE_CXX_COMPILER=afl-clang-lto++ \
-      -DCMAKE_CXX_FLAGS="-g -fsanitize=address,bounds,undefined,null,float-divide-by-zero" \
+      -DCMAKE_CXX_FLAGS="-g -fsanitize=address,bounds,undefined,null,float-divide-by-zero"  -DENABLE_FUZZ_TEST=ON \
       && make -j$(nproc)
 
 
