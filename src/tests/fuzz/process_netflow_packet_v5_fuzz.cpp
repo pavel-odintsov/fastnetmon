@@ -17,11 +17,15 @@ uint64_t total_ipv4_packets         = 0;
 patricia_tree_t *lookup_tree_ipv4;
 patricia_tree_t *lookup_tree_ipv6;
 
+uint64_t total_flowspec_whitelist_packets         = 0;
 uint64_t total_simple_packets_processed         = 0;
 uint64_t unknown_ip_version_packets         = 0;
 bool process_incoming_traffic = true;
 bool process_outgoing_traffic = true;
+bool enable_connection_tracking = true;
+
 std::vector<flow_spec_rule_t> static_flowspec_based_whitelist;
+packet_buckets_storage_t<uint32_t> packet_buckets_ipv4_storage;
 
 total_speed_counters_t total_counters_ipv4;
 total_speed_counters_t total_counters_ipv6;
@@ -30,6 +34,10 @@ abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t, subnet_counter_t> ipv6_netwo
 abstract_subnet_counters_t<subnet_ipv6_cidr_mask_t, subnet_counter_t> ipv6_host_counters;
 abstract_subnet_counters_t<subnet_cidr_mask_t, subnet_counter_t> ipv4_network_counters;
 abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counters;
+
+map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
+std::mutex flow_counter_mutex;
+
 
 
 extern process_packet_pointer netflow_process_func_ptr = process_packet;
