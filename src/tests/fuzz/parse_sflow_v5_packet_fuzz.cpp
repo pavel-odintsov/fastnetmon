@@ -38,22 +38,16 @@ abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counters;
 map_of_vector_counters_for_flow_t SubnetVectorMapFlow;
 std::mutex flow_counter_mutex;
 
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+    if (Size < 2) {
+        return 0; // Минимальный размер данных для обработки
+    }
 
-extern process_packet_pointer sflow_process_func_ptr = process_packet;
+    uint32_t client_ipv4_address = 128;
+    uint16_t version = (Data[0] << 8) | Data[1]; // Версия из первых двух байт
 
-__AFL_FUZZ_INIT();
-int main(int argc, char** argv) {
-        uint32_t client_ipv4_address = 128;
-        std::string ip_add =  "192.168.0.1";
-        uint16_t version = 5;
+    // Вызов функции парсинга пакетов
+    parse_sflow_v5_packet(Data, Size, client_ipv4_address);
 
-        unsigned char* udp_buffer = __AFL_FUZZ_TESTCASE_BUF;
-        udp_buffer[0] = (version >> 8) & 0xFF; // Higher byte
-        udp_buffer[1] = version & 0xFF;
-
-        while (__AFL_LOOP(10000)) {
-               unsigned int received_bytes  = __AFL_FUZZ_TESTCASE_LEN;
-                parse_sflow_v5_packet( (uint8_t*)udp_buffer, received_bytes, client_ipv4_address);
-        }
-        return 0;
+    return 0; // Успешное завершение обработки
 }

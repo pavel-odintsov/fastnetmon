@@ -19,10 +19,8 @@ RUN git clone https://github.com/AFLplusplus/AFLplusplus  && cd AFLplusplus && m
 COPY src/ /src/
 WORKDIR /src
 RUN mkdir build && cd build && \
-      cmake .. -DLINK_WITH_ABSL=ON -DCMAKE_CXX_COMPILER=afl-clang-lto++ \
-      -DCMAKE_CXX_FLAGS="-g -fsanitize=address,bounds,undefined,null,float-divide-by-zero"  -DENABLE_FUZZ_TEST=ON \
-      && make -j$(nproc)
-
-
- 
-
+      cmake .. -DLINK_WITH_ABSL=ON -DENABLE_FUZZ_TEST=ON -DCMAKE_CXX_COMPILER=clang++ \
+      -DCMAKE_CXX_FLAGS="-g -fsanitize=address,bounds,undefined,null,float-divide-by-zero"   \
+      && make -j$(nproc) parse_sflow_v5_packet_fuzz \
+      && make -j$(nproc) process_netflow_packet_v5_fuzz
+      
