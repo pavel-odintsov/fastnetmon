@@ -40,7 +40,7 @@ for file in "$out_dir"/*/crashes/*; do
   # Check if the current item is a file
   if [ -f "$file" ]; then
     echo "Processing file: $file"
-    casr-san -o "new_out/$index.casrep" -- "$binary" < "$file"
+    casr-san -o "new_out/$index.casrep" -- "$binary" "$file"
     ((index++))
   else
     echo "Skipped (not a file): $file"
