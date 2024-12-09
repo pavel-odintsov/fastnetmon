@@ -23,8 +23,7 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 RUN cp /root/.cargo/bin/* /bin/
 
 # Install casr
-RUN mkdir casr && wget https://github.com/ispras/casr/archive/refs/tags/v2.4.0.tar.gz -O casr.tar.gz
-RUN tar xf casr.tar.gz -C casr/ --strip-components=1
+RUN mkdir casr && git clone https://github.com/ispras/casr/
 RUN cd casr/ && cargo build --release && cargo install casr
 RUN cp /root/.cargo/bin/* /bin/
 
