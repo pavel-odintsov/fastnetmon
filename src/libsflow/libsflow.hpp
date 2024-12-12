@@ -18,6 +18,12 @@ const uint32_t max_udp_packet_size = 65535;
 // We need to limit number of samples by reasonable number
 const int32_t max_sflow_sample_number = 256;
 
+// We need to limit number of counter samples by reasonable number
+const uint32_t max_number_of_counter_records = 256;
+
+// We need to limit number of flow samples by reasonable number
+const uint32_t max_number_of_flow_records = 256;
+
 enum class sflow_sample_type_t : unsigned int {
     FLOW_SAMPLE             = 1,
     COUNTER_SAMPLE          = 2,

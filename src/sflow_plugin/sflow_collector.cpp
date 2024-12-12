@@ -330,6 +330,17 @@ bool process_sflow_flow_sample(const uint8_t* data_pointer,
         return false;
     }
 
+    if (sflow_sample_header_unified_accessor.get_number_of_flow_records() > max_number_of_flow_records) {
+        logger << log4cpp::Priority::ERROR << plugin_log_prefix << "flow records number "
+            << sflow_sample_header_unified_accessor.get_number_of_flow_records()
+            << " exceeds maximum value "
+            << max_number_of_flow_records;
+
+        sflow_bad_flow_samples++;
+
+        return false;
+    }
+
     const uint8_t* flow_record_zone_start = data_pointer + sflow_sample_header_unified_accessor.get_original_payload_length();
 
     std::vector<record_tuple_t> vector_tuple;
@@ -606,6 +617,14 @@ bool process_sflow_counter_sample(const uint8_t* data_pointer,
 
     if (sflow_counter_header_unified_accessor.get_number_of_counter_records() == 0) {
         logger << log4cpp::Priority::ERROR << plugin_log_prefix << "get zero number of counter records";
+        return false;
+    }
+
+    if (sflow_counter_header_unified_accessor.get_number_of_counter_records() > max_number_of_counter_records) {
+        logger << log4cpp::Priority::ERROR << plugin_log_prefix << "number of counter records "
+                << sflow_counter_header_unified_accessor.get_number_of_counter_records()
+                << " exceeds maximum value "
+                << max_number_of_counter_records;
         return false;
     }
 
