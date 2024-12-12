@@ -15,6 +15,7 @@ INPUT_DIR="./input"
 OUTPUT_DIR="./output"
 DIR_NAME=$(basename $1)_dir
 DICT="/AFLplusplus/dictionaries/pcap.dict"
+MINIMIZE_SCRIPT=/src/tests/fuzz/scripts/minimize_out.sh
 
 if [ ! -d "$DIR_NAME" ]; then
     echo "Work directory '$DIR_NAME' does not exist. Creating it..."
@@ -39,6 +40,11 @@ if [ ! -f "$TARGET_PROGRAM" ]; then
     exit 1
 fi
 
+if [ ! -x "$MINIMIZE_SCRIPT" ]; then
+    echo "Minimization script not found or not executable."
+    exit 1
+fi
+
 wget https://raw.githubusercontent.com/catalyst/openstack-sflow-traffic-billing/refs/heads/master/examples/sample-sflow-packet -O input/1
 
 tmux new-session -d -s $SESSION_NAME -n master
@@ -49,7 +55,15 @@ tmux select-window -t ${SESSION_NAME}:slave
 tmux attach-session -t $SESSION_NAME
 
 
-#TOD 
-# start after exit all fuzzers instances
-/src/fuzz/scripts/minimize_out.sh $OUTPUT_DIR $TARGET_PROGRAM
+# Wait for all afl-fuzz processes to finish
+while pgrep -x "afl-fuzz" > /dev/null; do
+    echo "Waiting for afl-fuzz processes to finish..."
+    sleep 10
+done
+
+echo "All afl-fuzz processes have completed. Stopping tmux sessions."
+tmux kill-session -t $SESSION_NAME
+
+echo "Starting minimization."
+$MINIMIZE_SCRIPT $OUTPUT_DIR $TARGET_PROGRAM
 
