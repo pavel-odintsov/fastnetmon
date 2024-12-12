@@ -30,8 +30,24 @@ RUN cp /root/.cargo/bin/* /bin/
 
 COPY src/ /src/
 WORKDIR /src
-RUN mkdir build && cd build && \
-      cmake .. -DCMAKE_BUILD_TYPE=Debug -DLINK_WITH_ABSL=ON -DENABLE_FUZZ_TEST=ON -DCMAKE_CXX_COMPILER=afl-clang-lto++ \
+
+#Prepate
+RUN cp notify_about_attack.sh  /usr/local/bin/notify_about_attack.sh  && \
+    cp tests/fuzz/fastnetmon.conf /etc/ && \
+    mkdir -p /var/log/fastnetmon_attacks 
+
+#For AFL++
+RUN echo core |  tee /proc/sys/kernel/core_pattern
+
+RUN   mkdir build_fuzz && cd build_fuzz && \
+      cmake .. -DLINK_WITH_ABSL=ON -DENABLE_FUZZ_TEST=ON -DCMAKE_CXX_COMPILER=afl-clang-lto++ \
       -DCMAKE_CXX_FLAGS="-g -O0 -ggdb3 -fsanitize=address,bounds,undefined,null,float-divide-by-zero"   \
-      && make -j$(nproc) parse_sflow_v5_packet_fuzz \
-      && make -j$(nproc) process_netflow_packet_v5_fuzz
+      && make -j$(nproc)
+
+RUN mkdir build_debug && cd build_debug && \
+      cmake .. -DCMAKE_BUILD_TYPE=Debug -DLINK_WITH_ABSL=ON -DENABLE_FUZZ_TEST=ON -DCMAKE_CXX_COMPILER=afl-clang-lto++ \
+      -DCMAKE_CXX_FLAGS="-g -O0 -ggdb3"   \
+      && make -j$(nproc)
+      
+
+
