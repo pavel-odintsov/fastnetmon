@@ -27,6 +27,11 @@ RUN mkdir casr && git clone https://github.com/ispras/casr/
 RUN cd casr/ && cargo build --release && cargo install casr
 RUN cp /root/.cargo/bin/* /bin/
 
+#Install preeny for desock.so
+RUN git clone https://github.com/zardus/preeny/ && \
+    cd preeny && mkdir build && cd build && \
+    cmake ../ && make desock && cp lib/libdesock.so /usr/lib
+
 
 COPY src/ /src/
 WORKDIR /src
