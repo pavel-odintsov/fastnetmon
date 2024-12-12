@@ -1,0 +1,71 @@
+FROM ubuntu:24.04
+
+MAINTAINER Evgeny Shtanov
+
+# non-interactive
+ENV DEBIAN_FRONTEND noninteractive
+
+# install build dependencies
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends build-essential git ca-certificates cmake libssl-dev\
+    capnproto libcapnp-dev libelf-dev libbpf-dev libpcap-dev libgrpc-dev libgrpc++-dev libprotobuf-dev\
+    protobuf-compiler libprotoc-dev libprotobuf-dev protobuf-compiler-grpc libboost-dev\
+    libboost-serialization-dev libboost-thread-dev libboost-regex-dev libboost-program-options-dev\
+    libmongoc-dev liblog4cpp5-dev libncurses5-dev 
+
+# absl
+RUN apt-get install -y clang llvm llvm-dev lld tmux curl wget gdb vim netcat-traditional
+
+RUN git clone https://github.com/AFLplusplus/AFLplusplus  && cd AFLplusplus && make && make install 
+
+# Install cargo
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+RUN cp /root/.cargo/bin/* /bin/
+
+# Install casr
+RUN mkdir casr && git clone https://github.com/ispras/casr/
+RUN cd casr/ && cargo build --release && cargo install casr
+RUN cp /root/.cargo/bin/* /bin/
+
+#Install preeny for desock.so
+RUN git clone https://github.com/zardus/preeny/ && \
+    cd preeny && mkdir build && cd build && \
+    cmake ../ && make desock && cp lib/libdesock.so /usr/lib
+
+
+COPY src/ /src/
+WORKDIR /src
+
+# Prepare context
+RUN cp notify_about_attack.sh  /usr/local/bin/notify_about_attack.sh  && \
+    cp tests/fuzz/fastnetmon.conf /etc/ && \
+    mkdir -p /var/log/fastnetmon_attacks 
+
+# build dir for AFL++ fuzzing
+RUN mkdir build_fuzz && cd build_fuzz && \
+    cmake .. -DLINK_WITH_ABSL=ON -DENABLE_FUZZ_TEST=ON -DCMAKE_CXX_COMPILER=afl-clang-lto++ \
+    -DCMAKE_CXX_FLAGS="-g -O0 -ggdb3 -fsanitize=address,bounds,undefined,null,float-divide-by-zero"   && \
+    make -j$(nproc)
+
+# build dir for libfuzzer fuzzing
+RUN mkdir build_libfuzz && cd build_libfuzz && \
+    cmake .. -DLINK_WITH_ABSL=ON -DENABLE_FUZZ_TEST_LIBFUZZER=ON -DCMAKE_CXX_COMPILER=clang++ \
+    -DCMAKE_CXX_FLAGS="-g -O0 -ggdb3 -fsanitize=address,bounds,undefined,null,float-divide-by-zero"   && \
+    make -j$(nproc)
+
+# build dir for desock 
+RUN mkdir build_desock  && cd build_desock && \
+    cmake .. -DLINK_WITH_ABSL=ON -DENABLE_FUZZ_TEST_DESOCK=ON -DCMAKE_CXX_COMPILER=afl-clang-lto++ \
+    -DCMAKE_CXX_FLAGS="-g -O0 -ggdb3 -fsanitize=address,bounds,undefined,null,float-divide-by-zero"   && \
+    make -j$(nproc)
+
+# dir for verifying crashes and debug harnesses
+RUN mkdir build_debug && cd build_debug && \
+    cmake .. -DCMAKE_BUILD_TYPE=Debug -DLINK_WITH_ABSL=ON -DENABLE_FUZZ_TEST=ON -DCMAKE_CXX_COMPILER=afl-clang-lto++ \
+    -DCMAKE_CXX_FLAGS="-g -O0 -ggdb3"   && \
+    make -j$(nproc)
+  
+# dir for verifying crashes on vanilla binary
+RUN mkdir build_clean && cd build_clean && \
+    cmake .. -DLINK_WITH_ABSL=ON  && \
+    make -j$(nproc)
