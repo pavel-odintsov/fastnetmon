@@ -14,7 +14,7 @@ RUN apt-get install -y --no-install-recommends build-essential git ca-certificat
     libmongoc-dev liblog4cpp5-dev libncurses5-dev 
 
 # absl
-RUN apt-get install -y clang llvm llvm-dev lld tmux curl wget gdb vim
+RUN apt-get install -y clang llvm llvm-dev lld tmux curl wget gdb vim netcat-traditional
 
 RUN git clone https://github.com/AFLplusplus/AFLplusplus  && cd AFLplusplus && make && make install 
 
@@ -50,7 +50,7 @@ RUN   mkdir build_fuzz && cd build_fuzz && \
 
 # dir for verifying crashes and debug harnesses
 RUN mkdir build_debug && cd build_debug && \
-      cmake .. -DCMAKE_BUILD_TYPE=Debug -DLINK_WITH_ABSL=ON -DENABLE_FUZZ_TEST=ON -DCMAKE_CXX_COMPILER=afl-clang-lto++ \
+      cmake .. -DCMAKE_BUILD_TYPE=Debug -DLINK_WITH_ABSL=ON -DENABLE_FUZZ_TEST=ON  \
       -DCMAKE_CXX_FLAGS="-g -O0 -ggdb3"   \
       && make -j$(nproc)
       
