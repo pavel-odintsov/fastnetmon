@@ -54,7 +54,8 @@ docker  build -f tests/Dockerfile.ubuntu-24.04-afl++ . -t fuzz
 --------------------------------
 ```
 fuzz/
-├── README.md                                    
+├── README.md
+├── README_rus.md        
 ├── fastnetmon.conf                              
 ├── parse_sflow_v5_packet_fuzz.cpp               
 ├── parse_sflow_v5_packet_fuzz_libfuzzer.cpp     
@@ -71,7 +72,8 @@ fuzz/
 
 | Файл                                    | Описание                                                                                  |
 |-----------------------------------------|------------------------------------------------------------------------------------------|
-| `README.md`                             | Описание назначения и использования фуззинг-тестов.                                      |
+| `README.md`                             | Документация на **английском языке** о фаззинг-тестировании проекта.                                      |
+| `README_rus.md`                         | Документация на **русском языке** о фаззинг-тестировании проекта.                                      |
 | `fastnetmon.conf`                       | Конфигурационный файл для FastNetMon. Оставлены для работы только протоколы netflow и sflow             |
 | `parse_sflow_v5_packet_fuzz.cpp`        | Обертка для фаззинга функции `parse_sflow_v5_packet_fuzz` через `AFL++`.                                   |
 | `parse_sflow_v5_packet_fuzz_libfuzzer.cpp` | Обертка для фаззинга функции `parse_sflow_v5_packet_fuzz` через `libfuzzer`.|
