@@ -515,6 +515,16 @@ void parse_sflow_v5_packet(const uint8_t* payload_ptr, unsigned int payload_leng
         return;
     }
 
+    // As we're going to allocate memory using this value as number of elements 
+    // we need to ensure that we capped it by reasonable value
+    if (sflow_header_accessor.get_datagram_samples_count() > max_sflow_sample_number) {
+         logger << log4cpp::Priority::ERROR << plugin_log_prefix
+               << "Number of sFlow samples in packet " << sflow_header_accessor.get_datagram_samples_count()
+              << " exceeds allowed maximum value " << max_sflow_sample_number;
+        sflow_bad_packets++;
+        return;
+    }
+
     std::vector<sample_tuple_t> samples_vector;
     samples_vector.reserve(sflow_header_accessor.get_datagram_samples_count());
 
