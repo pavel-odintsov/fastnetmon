@@ -64,7 +64,9 @@ bool process_netflow_v9_options_template(const uint8_t* pkt, size_t flowset_leng
     std::vector<template_record_t> template_records_map;
     uint32_t total_size = 0;
 
-    for (; offset < fast_ntoh(options_nested_header->option_length);) {
+     uint32_t option_length = fast_ntoh(options_nested_header->option_length);
+
+    for (; offset < option_length;) {
         records_number++;
         const netflow9_template_flowset_record_t* tmplr =
             (const netflow9_template_flowset_record_t*)(zone_address_without_skopes + offset);
@@ -91,6 +93,15 @@ bool process_netflow_v9_options_template(const uint8_t* pkt, size_t flowset_leng
     field_template.total_length        = total_size + scopes_total_size;
     field_template.type                = netflow_template_type_t::Options;
     field_template.option_scope_length = scopes_total_size;
+
+    // Templates with total length which is zero do not make any sense and have to be ignored
+    // We need templates to decode data blob and decoding zero length value is meaningless
+    if (field_template.total_length == 0) {
+       logger << log4cpp::Priority::ERROR
+               << "Received zero length malformed options Netfow v9 template " << template_id
+               << " from " << client_addres_in_string_format;
+        return false;
+    }
 
     // We need to know when we received it
     field_template.timestamp = current_inaccurate_time;
@@ -181,6 +192,15 @@ bool process_netflow_v9_template(const uint8_t* pkt,
             total_size += record_length;
 
             // TODO: introduce netflow9_check_rec_len
+        }
+
+        // Templates with total length which is zero do not make any sense and have to be ignored
+        // We need templates to decode data blob and decoding zero length value is meaningless
+        if (total_size == 0) {
+            logger << log4cpp::Priority::ERROR
+                << "Received zero length malformed data Netflow v9 template " << template_id
+                << " from " << client_addres_in_string_format;
+            return false;
         }
 
         template_t field_template{};
@@ -1471,6 +1491,14 @@ bool process_netflow_v9_data(const uint8_t* pkt,
     if (field_template->records.empty()) {
         logger << log4cpp::Priority::ERROR << "Blank records in template";
         return false;
+    }
+
+    // Check that template total length is not zero as we're going to divide by it
+    if (field_template->total_length == 0) {
+        logger << log4cpp::Priority::ERROR
+               << "Zero template length is not valid "
+               << "client " << client_addres_in_string_format << " source_id: " << source_id;
+       return false;
     }
 
     uint32_t offset       = sizeof(*dath);
