@@ -44,7 +44,6 @@ docker  build -f tests/Dockerfile.ubuntu-24.04-afl++ . -t fuzz
 |    Опция                           |  Описание                                                   |
 |------------------------------------|-------------------------------------------------------------|
 |  `-DENABLE_FUZZ_TEST`              | Собирает две фаззинг обертки под `AFL++`. Использовать **только с копилятором `afl-c++`** или его вариациями                                                      |
-|  `DENABLE_FUZZ_TEST_LIBFUZZER`    | Собирает две фаззинг обертки под `libfuzzer`. Использовать **с копилятором `clang` или вариациями `afl-c++`**                                                      |
 |  `-DENABLE_FUZZ_TEST_DESOCK`       | Данная опция позволяет реализоват изменение поведения стандартной функции `socket`. Теперь данные будут браться не с сетевого сокета, из потока ввода. **Инструментирует оригинальный исполняемый файл `fastnetmon`** |
 |   `-DCMAKE_BUILD_TYPE=Debug`     | Отладочная опция, необходимая для корректной работы отладчиков. Внимание! **Не использовать на релизе и при тестах - будут ложные срабатывания санитайзера на таких функциях, как `assert()`
 
@@ -114,12 +113,12 @@ echo "1" >> in/1
 
 **Запустим фаззинг:**
 ```bash
-afl-fuzz -i in -o out -x -- ./parse_sflow_v5_packet_fuzz
+afl-fuzz -i in -o out -- ./parse_sflow_v5_packet_fuzz
 ```
 Или
 
 ```bash
-afl-fuzz -i in -o out -x -- ./process_netflow_packet_v5_fuzz
+afl-fuzz -i in -o out -- ./process_netflow_packet_v5_fuzz
 ```
 
 - В папке `build_netflow_pers_mod` будет находится код, сделанный для фаззинга функции `process_netflow_packet_v5` через AFL++ `persistant mode`.
@@ -158,7 +157,7 @@ afl-fuzz -i in -o out -- ./fastnetmon
 Или 
 
 ```bash
-/src/tests/fuzz/scripts/start_fuzz_harness.sh ./build_netflow_pers_mod/fastnetmon
+/src/tests/fuzz/scripts/start_fuzz_harness.sh ./build_sflow_pers_mod/fastnetmon
 ```
 
 
