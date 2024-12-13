@@ -874,10 +874,10 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, const ui
         // It's packet header as is in variable length encoding
         ipfix_inline_headers++;
 
-        // This packet is ended using IPFIX variable length encoding and it may have two possible ways of length encoding
-        // https://datatracker.ietf.org/doc/html/rfc7011#section-7
+        // This packet is ended using IPFIX variable length encoding and it may have two possible ways of length
+        // encoding https://datatracker.ietf.org/doc/html/rfc7011#section-7
         if (flow_meta.variable_field_length_encoding == variable_length_encoding_t::single_byte ||
-                flow_meta.variable_field_length_encoding == variable_length_encoding_t::two_byte) {
+            flow_meta.variable_field_length_encoding == variable_length_encoding_t::two_byte) {
 
             if (logger.getPriority() == log4cpp::Priority::DEBUG) {
                 logger << log4cpp::Priority::DEBUG << "Packet header length: " << flow_meta.variable_field_length;
@@ -1241,6 +1241,7 @@ bool ipfix_flowset_to_store(const uint8_t* pkt,
                             ssize_t flowset_maximum_length,
                             const template_t* field_template,
                             uint32_t client_ipv4_address,
+                            uint32_t& flowset_length,
                             const std::string& client_addres_in_string_format) {
     simple_packet_t packet;
     packet.source       = NETFLOW;
@@ -1503,6 +1504,7 @@ bool process_ipfix_data(const uint8_t* pkt,
                         uint32_t source_id,
                         const std::string& client_addres_in_string_format,
                         uint32_t client_ipv4_address) {
+    ipfix_total_packets++;
 
     const ipfix_data_flowset_header_t* flowset_header = (const ipfix_data_flowset_header_t*)pkt;
 
@@ -1541,6 +1543,8 @@ bool process_ipfix_data(const uint8_t* pkt,
     if (field_template->type == netflow_template_type_t::Data) {
 
         if (field_template->ipfix_variable_length_elements_used) {
+            // When we have variable length fields we need to use different logic which relies on flow length calculated during process of reading flow
+
             // Get clean flowsets length to use it as limit for our parser
             ssize_t current_flowset_length_no_header = flowset_length - sizeof(ipfix_data_flowset_header_t);
 
@@ -1548,12 +1552,48 @@ bool process_ipfix_data(const uint8_t* pkt,
                 logger << log4cpp::Priority::DEBUG << "IPFIX variable field element was used";
             }
 
-            // TODO: This implementation is rather limited as we read only single flowset here
-            // In many cases we use this stuff for IPFIX Inline monitoring and it uses just single flowset but it may change in future
-            // TODO: Juniper PTX uses multiple flowsets per packet
-            ipfix_flowset_to_store(pkt + sizeof(ipfix_data_flowset_header_t), ipfix_header, current_flowset_length_no_header,
-                                   field_template, client_ipv4_address, client_addres_in_string_format);
+            // Where all flows start in packet
+            const uint8_t* flow_section_start = pkt + sizeof(ipfix_data_flowset_header_t);
+
+            // Offset where flow starts
+            uint32_t flow_offset = 0;
+
+            // How much data we have in current flow set
+            uint32_t maximum_data_available_to_read = current_flowset_length_no_header;
+
+            // Run this loop until flow_offset reaches end of packet
+            while (flow_offset < current_flowset_length_no_header) {
+                // When variable fields present we need to read all fields before getting total length of flow
+                uint32_t read_flow_length = 0;
+
+                // In many cases we have just single flow per UDP packet but Juniper PTX uses multiple flows per packet
+                bool floset_processing_result =
+                    ipfix_flowset_to_store(flow_section_start + flow_offset, ipfix_header, maximum_data_available_to_read,
+                                           field_template, client_ipv4_address, read_flow_length, client_addres_in_string_format);
+
+                // If we cannot process this flowset then we must stop processing here because we need correct value of flowset_length to jump to next record
+                if (!floset_processing_result) {
+                    return false;
+                }
+
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG << "Total flow length: " << read_flow_length;
+                }
+
+                // Shift flowset offset by length of data read in this iteration
+                flow_offset += read_flow_length;
+
+                // And in the same time reduce amount of available to read data
+                maximum_data_available_to_read -= read_flow_length;
+            }
         } else {
+            // Check that template total length is not zero as we're going to divide by it
+            if (field_template->total_length == 0) {
+                logger << log4cpp::Priority::ERROR << "Zero IPFIX template length is not valid "
+                       << "client " << client_addres_in_string_format << " source_id: " << source_id;
+
+                return false;
+            }
 
             // This logic is pretty reliable but it works only if we do not have variable sized fields in template
             // In that case it's completely not applicable
@@ -1593,10 +1633,14 @@ bool process_ipfix_data(const uint8_t* pkt,
             }
 
             for (uint32_t i = 0; i < number_flowsets; i++) {
+                // We do not use it as we can use total_length directly instead of calculating it
+                uint32_t flowset_length = 0;
+
                 // We apply constraint that maximum potential length of flow set cannot exceed length of all fields in
                 // template In this case we have no fields with variable length which may affect it and we're safe
+                // We do not check response code as we can jump to next flow even if previous one failed
                 ipfix_flowset_to_store(pkt + offset, ipfix_header, field_template->total_length, field_template,
-                                       client_ipv4_address, client_addres_in_string_format);
+                                       client_ipv4_address, flowset_length, client_addres_in_string_format);
 
                 offset += field_template->total_length;
             }
@@ -1692,7 +1736,7 @@ bool process_ipfix_packet(const uint8_t* packet,
         uint32_t flowset_length = ntohs(flowset->length);
 
         // One more check to ensure that we have enough space in packet to read whole flowset
-	if (offset + flowset_length > ipfix_packet_length) {
+	    if (offset + flowset_length > ipfix_packet_length) {
             logger << log4cpp::Priority::ERROR
                    << "We tried to read from address outside IPFIX packet flowset agent IP: " << client_addres_in_string_format;
             return false;
