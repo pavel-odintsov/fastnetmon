@@ -42,7 +42,7 @@ RUN cp notify_about_attack.sh  /usr/local/bin/notify_about_attack.sh  && \
     mkdir -p /var/log/fastnetmon_attacks 
 
 # build dir for AFL++ fuzzing
-RUN mkdir build_fuzz && cd build_fuzz && \
+RUN mkdir build_fuzz_harness && cd build_fuzz_harness && \
     cmake .. -DLINK_WITH_ABSL=ON -DENABLE_FUZZ_TEST=ON -DCMAKE_CXX_COMPILER=afl-clang-lto++ \
     -DCMAKE_CXX_FLAGS="-g -O0 -ggdb3 -fsanitize=address,bounds,undefined,null,float-divide-by-zero"   && \
     make -j$(nproc)
@@ -62,4 +62,4 @@ RUN mkdir build_debug && cd build_debug && \
 # dir for verifying crashes on vanilla binary
 RUN mkdir build_clean && cd build_clean && \
     cmake .. -DLINK_WITH_ABSL=ON  && \
-    make -j$(nproc)
+    make -j$(nproc) fastnetmon

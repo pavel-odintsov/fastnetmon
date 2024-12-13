@@ -3,6 +3,8 @@
 # Check if two arguments are provided
 if [ $# -ne 1 ]; then
   echo "Usage: $0 <./bin>"
+  echo "Example: $0 ../../../build_fuzz_harness/parse_sflow_v5_packet_fuzz"
+  echo "Example: $0 ../../../build_fuzz_harness/process_netflow_packet_v5_fuzz"
   exit 1
 fi
 TARGET_PROGRAM="$1"
@@ -10,12 +12,14 @@ TARGET_PROGRAM="$1"
 ASAN_OPTIONS="detect_odr_violation=0:abort_on_error=1:symbolize=0"
 TIME_STOP=3600
 
-SESSION_NAME="process_netflow_packet_v5_fuzz"
 INPUT_DIR="./input"
 OUTPUT_DIR="./output"
 DIR_NAME=$(basename $1)_dir
 DICT="/AFLplusplus/dictionaries/pcap.dict"
 MINIMIZE_SCRIPT=/src/tests/fuzz/scripts/minimize_out.sh
+
+SESSION_NAME="$DIR_NAME"
+
 
 if [ ! -d "$DIR_NAME" ]; then
     echo "Work directory '$DIR_NAME' does not exist. Creating it..."
@@ -44,6 +48,8 @@ if [ ! -x "$MINIMIZE_SCRIPT" ]; then
     echo "Minimization script not found or not executable."
     exit 1
 fi
+
+echo core | tee /proc/sys/kernel/core_pattern
 
 wget https://raw.githubusercontent.com/catalyst/openstack-sflow-traffic-billing/refs/heads/master/examples/sample-sflow-packet -O input/1
 
