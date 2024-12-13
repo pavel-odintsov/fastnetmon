@@ -4,7 +4,7 @@ SESSION_NAME="config_file_fuzz"
 
 INPUT_DIR="./input"
 OUTPUT_DIR="/output"
-TARGET_PROGRAM="/src/build_fuzz/fastnetmon"
+TARGET_PROGRAM="/src/build_fuzz_harness/fastnetmon"
 
 if [ ! -d "$INPUT_DIR" ]; then
     echo "Input directory '$INPUT_DIR' does not exist. Creating it..."
