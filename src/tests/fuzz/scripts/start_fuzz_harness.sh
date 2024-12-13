@@ -50,7 +50,7 @@ wget https://raw.githubusercontent.com/catalyst/openstack-sflow-traffic-billing/
 tmux new-session -d -s $SESSION_NAME -n master
 tmux send-keys -t ${SESSION_NAME}:master "ASAN_OPTIONS=$ASAN_OPTIONS AFL_EXIT_ON_TIME=$TIME_STOP afl-fuzz -i $INPUT_DIR -o $OUTPUT_DIR -x $DICT -m none -M master -- ./$TARGET_PROGRAM " C-m
 tmux new-window -t $SESSION_NAME -n slave
-tmux send-keys -t ${SESSION_NAME}:slave "ASAN_OPTIONS=$ASAN_OPTIONS AFL_EXIT_ON_TIME=$TIME_STOP afl-fuzz -i $INPUT_DIR -o $OUTPUT_DIR -x $DICT -m none  -S fuzzer02 -- ./$TARGET_PROGRAM " C-m
+tmux send-keys -t ${SESSION_NAME}:slave "ASAN_OPTIONS=$ASAN_OPTIONS AFL_EXIT_ON_TIME=$TIME_STOP afl-fuzz -i $INPUT_DIR -o $OUTPUT_DIR -x $DICT -m none  -S slave -- ./$TARGET_PROGRAM " C-m
 tmux select-window -t ${SESSION_NAME}:slave
 tmux attach-session -t $SESSION_NAME
 

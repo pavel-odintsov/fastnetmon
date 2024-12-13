@@ -44,7 +44,6 @@ A number of options have been added to the source `CMakeLists.txt` file, allowin
 | Option                            | Description                                               |
 |-----------------------------------|-----------------------------------------------------------|
 | `-DENABLE_FUZZ_TEST`              | Builds two fuzzing wrappers for `AFL++`. Use **only with the `afl-c++` compiler** or its variations |
-| `DENABLE_FUZZ_TEST_LIBFUZZER`    | Builds two fuzzing wrappers for `libfuzzer`. Use **with the `clang` compiler or variations of `afl-c++`** |
 | `-DENABLE_FUZZ_TEST_DESOCK`       | This option allows modifying the behavior of the standard `socket` function. Now data will come from the input stream instead of the network socket. **Instruments the original `fastnetmon` executable** |
 | `-DCMAKE_BUILD_TYPE=Debug`        | Debugging option required for proper debugger functionality. **Do not use on release builds or during tests - false positives may occur with sanitizer functions like `assert()`** |
 
@@ -56,12 +55,11 @@ fuzz/
 ├── README_rus.md
 ├── fastnetmon.conf
 ├── parse_sflow_v5_packet_fuzz.cpp
-├── parse_sflow_v5_packet_fuzz_libfuzzer.cpp
 ├── process_netflow_packet_v5_fuzz.cpp
-├── process_netflow_packet_v5_fuzz_libfuzzer.cpp └── scripts/
-├── minimize_out.sh
-├── start_fuzz_conf_file.sh
-└── start_fuzz_harness.sh
+└── scripts/
+|   ├── minimize_out.sh
+|   ├── start_fuzz_conf_file.sh
+|   └── start_fuzz_harness.sh
 ```
 ### File Descriptions
 --------------------------------
@@ -72,9 +70,7 @@ fuzz/
 | `README_rus.md`                         | Documentation in **Russian** about the fuzz testing of the project.                            |
 | `fastnetmon.conf`                       | Configuration file for FastNetMon. Only the netflow and sflow protocols are left for operation. |
 | `parse_sflow_v5_packet_fuzz.cpp`        | Wrapper for fuzzing the `parse_sflow_v5_packet_fuzz` function using `AFL++`.                   |
-| `parse_sflow_v5_packet_fuzz_libfuzzer.cpp` | Wrapper for fuzzing the `parse_sflow_v5_packet_fuzz` function using `libfuzzer`.            |
 | `process_netflow_packet_v5_fuzz.cpp`    | Wrapper for fuzzing the `process_netflow_packet_v5_fuzz` function using `AFL++`.               |
-| `process_netflow_packet_v5_fuzz_libfuzzer.cpp` | Wrapper for fuzzing the `process_netflow_packet_v5_fuzz` function using `libfuzzer`.        |
 
 | File/Directory                         | Description                                                                                     | Run                                                                                                 |
 |----------------------------------------|-------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
@@ -134,10 +130,11 @@ How the instrumentation looks:
 6. Run fuzzing with: `afl-fuzz -i in -o out -- ./fastnetmon`
 
 
-### Techniques That Didn't Work
+### Other Fuzzing Techniques 
 --------------------------------
 
 | Name                | Description                                                                                          |
 |---------------------|------------------------------------------------------------------------------------------------------|
 | `AFLNet`            | The characteristics of the protocol (lack of feedback) prevent the use of this fuzzer.               |
 | `desock`            | Code instrumentation is successful, but the fuzzer does not start and cannot collect feedback. I consider this method **promising**, but the fuzzer requires adjustments. |
+| `libfuzzer`         | Wrappers for `libfuzzer` were written and implemented into cmake, but due to the peculiarities of the build and the project's focus on fuzzing via `AFL++`, they were removed from the project. Commit with a working [`libfuzzer`] wrappers (https://github.com/pavel-odintsov/fastnetmon/commit/c3b72c18f0bc7f43b535a5da015c3954d716be22)

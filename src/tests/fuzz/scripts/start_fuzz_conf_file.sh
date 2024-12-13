@@ -28,6 +28,6 @@ echo "a" >> "$INPUT_DIR"/2
 tmux new-session -d -s $SESSION_NAME -n afl1
 tmux send-keys -t ${SESSION_NAME}:afl1 "afl-fuzz -i $INPUT_DIR -o $OUTPUT_DIR -m none -M master -- $TARGET_PROGRAM --configuration_check --configuration_file @@" C-m
 tmux new-window -t $SESSION_NAME -n afl2
-tmux send-keys -t ${SESSION_NAME}:afl2 "afl-fuzz -i $INPUT_DIR -o $OUTPUT_DIR -m none  -S fuzzer02 -- $TARGET_PROGRAM --configuration_check --configuration_file @@" C-m
+tmux send-keys -t ${SESSION_NAME}:afl2 "afl-fuzz -i $INPUT_DIR -o $OUTPUT_DIR -m none  -S slave -- $TARGET_PROGRAM --configuration_check --configuration_file @@" C-m
 tmux select-window -t ${SESSION_NAME}:afl1
 tmux attach-session -t $SESSION_NAME

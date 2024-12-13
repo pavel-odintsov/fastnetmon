@@ -47,12 +47,6 @@ RUN mkdir build_fuzz && cd build_fuzz && \
     -DCMAKE_CXX_FLAGS="-g -O0 -ggdb3 -fsanitize=address,bounds,undefined,null,float-divide-by-zero"   && \
     make -j$(nproc)
 
-# build dir for libfuzzer fuzzing
-RUN mkdir build_libfuzz && cd build_libfuzz && \
-    cmake .. -DLINK_WITH_ABSL=ON -DENABLE_FUZZ_TEST_LIBFUZZER=ON -DCMAKE_CXX_COMPILER=clang++ \
-    -DCMAKE_CXX_FLAGS="-g -O0 -ggdb3 -fsanitize=address,bounds,undefined,null,float-divide-by-zero"   && \
-    make -j$(nproc)
-
 # build dir for desock 
 RUN mkdir build_desock  && cd build_desock && \
     cmake .. -DLINK_WITH_ABSL=ON -DENABLE_FUZZ_TEST_DESOCK=ON -DCMAKE_CXX_COMPILER=afl-clang-lto++ \
