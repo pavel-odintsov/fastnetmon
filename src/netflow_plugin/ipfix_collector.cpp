@@ -384,6 +384,85 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, const ui
         }
 
         break;
+    case IPFIX_TCP_SOURCE_PORT:
+        // This is unusual encoding used only by AMD Pensando
+        // We enable it only we know that packet is TCP
+        if (packet.protocol == IPPROTO_TCP) {
+
+            if (record_length == 2) {
+                uint16_t port = 0;
+                memcpy(&port, data, record_length);
+
+                packet.source_port = fast_ntoh(port);
+            } else {
+                ipfix_too_large_field++;
+
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG << "Unexpectedly big size for IPFIX_TCP_SOURCE_PORT: " << record_length;
+                }
+            }
+        }
+
+        break;
+    case IPFIX_TCP_DESTINATION_PORT:
+        // This is unusual encoding used only by AMD Pensando
+        // We enable it only we know that packet is TCP
+        if (packet.protocol == IPPROTO_TCP) {
+
+            if (record_length == 2) {
+                uint16_t port = 0;
+                memcpy(&port, data, record_length);
+
+                packet.destination_port = fast_ntoh(port);
+            } else {
+                ipfix_too_large_field++;
+
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG << "Unexpectedly big size for IPFIX_TCP_DESTINATION_PORT: " << record_length;
+                }
+            }
+        }
+
+        break;
+    case IPFIX_UDP_SOURCE_PORT:
+        // This is unusual encoding used only by AMD Pensando
+        // We enable it only we know that packet is UDP
+        if (packet.protocol == IPPROTO_UDP) {
+
+            if (record_length == 2) {
+                uint16_t port = 0;
+                memcpy(&port, data, record_length);
+
+                packet.source_port = fast_ntoh(port);
+            } else {
+                ipfix_too_large_field++;
+
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG << "Unexpectedly big size for IPFIX_UDP_SOURCE_PORT: " << record_length;
+                }
+            }
+        }
+
+        break;
+    case IPFIX_UDP_DESTINATION_PORT:
+        // This is unusual encoding used only by AMD Pensando
+        // We enable it only we know that packet is UDP
+        if (packet.protocol == IPPROTO_UDP) {
+
+            if (record_length == 2) {
+                uint16_t port = 0;
+                memcpy(&port, data, record_length);
+
+                packet.destination_port = fast_ntoh(port);
+            } else {
+                ipfix_too_large_field++;
+
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG << "Unexpectedly big size for IPFIX_UDP_DESTINATION_PORT: " << record_length;
+                }
+            }
+        }
+        break;
     case IPFIX_IPV4_SRC_ADDR:
         if (record_length > sizeof(packet.src_ip)) {
             ipfix_too_large_field++;
