@@ -47,6 +47,9 @@ RUN mkdir build_fuzz_harness && cd build_fuzz_harness && \
     -DCMAKE_CXX_FLAGS="-g -O0 -ggdb3 -fsanitize=address,bounds,undefined,null,float-divide-by-zero"   && \
     make -j$(nproc)
 
+
+
+
 # build dir for desock 
 RUN mkdir build_desock  && cd build_desock && \
     cmake .. -DLINK_WITH_ABSL=ON -DENABLE_FUZZ_TEST_DESOCK=ON -DCMAKE_CXX_COMPILER=afl-clang-lto++ \
