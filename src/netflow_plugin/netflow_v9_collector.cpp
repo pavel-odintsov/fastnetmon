@@ -1602,7 +1602,7 @@ bool process_netflow_packet_v9(const uint8_t* packet,
         uint32_t flowset_id     = ntohs(flowset->flowset_id);
         uint32_t flowset_length = ntohs(flowset->length);
 
-	// One more check to ensure that we have enough space in packet to read whole flowset
+        // One more check to ensure that we have enough space in packet to read whole flowset
         if (offset + flowset_length > packet_length) {
             logger << log4cpp::Priority::ERROR << "We tried to read from address outside Netflow's packet flowset agent IP: "
                    << client_addres_in_string_format << " flowset number: " << flowset_number
