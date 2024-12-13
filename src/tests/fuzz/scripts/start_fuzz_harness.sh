@@ -13,7 +13,7 @@ ASAN_OPTIONS="detect_odr_violation=0:abort_on_error=1:symbolize=0"
 TIME_STOP=3600
 
 INPUT_DIR="./input"
-OUTPUT_DIR="./output"
+OUTPUT_DIR="/output"
 DIR_NAME=$(basename $1)_dir
 DICT="/AFLplusplus/dictionaries/pcap.dict"
 MINIMIZE_SCRIPT=/src/tests/fuzz/scripts/minimize_out.sh
@@ -52,12 +52,11 @@ fi
 echo core | tee /proc/sys/kernel/core_pattern
 
 wget https://raw.githubusercontent.com/catalyst/openstack-sflow-traffic-billing/refs/heads/master/examples/sample-sflow-packet -O input/1
+echo "1" >> input/2
 
 tmux new-session -d -s $SESSION_NAME -n master
 tmux send-keys -t ${SESSION_NAME}:master "ASAN_OPTIONS=$ASAN_OPTIONS AFL_EXIT_ON_TIME=$TIME_STOP afl-fuzz -i $INPUT_DIR -o $OUTPUT_DIR -x $DICT -m none -M master -- ./$TARGET_PROGRAM " C-m
-tmux new-window -t $SESSION_NAME -n slave
-tmux send-keys -t ${SESSION_NAME}:slave "ASAN_OPTIONS=$ASAN_OPTIONS AFL_EXIT_ON_TIME=$TIME_STOP afl-fuzz -i $INPUT_DIR -o $OUTPUT_DIR -x $DICT -m none  -S slave -- ./$TARGET_PROGRAM " C-m
-tmux select-window -t ${SESSION_NAME}:slave
+tmux select-window -t ${SESSION_NAME}:master
 tmux attach-session -t $SESSION_NAME
 
 
