@@ -64,7 +64,7 @@ bool process_netflow_v9_options_template(const uint8_t* pkt, size_t flowset_leng
     std::vector<template_record_t> template_records_map;
     uint32_t total_size = 0;
 
-     uint32_t option_length = fast_ntoh(options_nested_header->option_length);
+    uint32_t option_length = fast_ntoh(options_nested_header->option_length);
 
     for (; offset < option_length;) {
         records_number++;
@@ -97,7 +97,7 @@ bool process_netflow_v9_options_template(const uint8_t* pkt, size_t flowset_leng
     // Templates with total length which is zero do not make any sense and have to be ignored
     // We need templates to decode data blob and decoding zero length value is meaningless
     if (field_template.total_length == 0) {
-       logger << log4cpp::Priority::ERROR
+        logger << log4cpp::Priority::ERROR
                << "Received zero length malformed options Netfow v9 template " << template_id
                << " from " << client_addres_in_string_format;
         return false;
@@ -637,41 +637,40 @@ bool netflow9_record_to_flow(uint32_t record_type,
         }
 
         break;
-    case NETFLOW9_LAYER2_PACKET_SECTION_DATA:
-        if (true) {
-            netflow_v9_lite_headers++;
+    case NETFLOW9_LAYER2_PACKET_SECTION_DATA: {
+        netflow_v9_lite_headers++;
 
-            bool read_packet_length_from_ip_header = true;
+        bool read_packet_length_from_ip_header = true;
 
-            // It's our safe fallback
-            uint64_t full_packet_length = record_length;
+        // It's our safe fallback
+        uint64_t full_packet_length = record_length;
 
-            // Device must provide this information on previous iteration, let's try to get it in case if we've got it:
-            if (flow_meta.data_link_frame_size != 0) {
-                full_packet_length = flow_meta.data_link_frame_size;
+        // Device must provide this information on previous iteration, let's try to get it in case if we've got it:
+        if (flow_meta.data_link_frame_size != 0) {
+            full_packet_length = flow_meta.data_link_frame_size;
+        }
+
+        bool extract_tunnel_traffic = false;
+
+        auto result = parse_raw_packet_to_simple_packet_full_ng((u_char*)(data), full_packet_length, record_length,
+            flow_meta.nested_packet, extract_tunnel_traffic,
+            read_packet_length_from_ip_header);
+
+        if (result != network_data_stuctures::parser_code_t::success) {
+            // Cannot decode data
+            netflow_v9_lite_header_parser_error++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Cannot parse packet header with error: " << network_data_stuctures::parser_code_to_string(result); 
             }
-
-            bool extract_tunnel_traffic = false;
-
-            auto result = parse_raw_packet_to_simple_packet_full_ng((u_char*)(data), full_packet_length, record_length,
-                                                                    flow_meta.nested_packet, extract_tunnel_traffic,
-                                                                    read_packet_length_from_ip_header);
-
-            if (result != network_data_stuctures::parser_code_t::success) {
-                // Cannot decode data
-                netflow_v9_lite_header_parser_error++;
-
-                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
-                    logger << log4cpp::Priority::DEBUG << "Cannot parse packet header with error: " << network_data_stuctures::parser_code_to_string(result); 
-                }
-            } else {
-                netflow_v9_lite_header_parser_success++;
-                // Successfully decoded data
-                flow_meta.nested_packet_parsed = true;
-            }
+        } else {
+            netflow_v9_lite_header_parser_success++;
+            // Successfully decoded data
+            flow_meta.nested_packet_parsed = true;
         }
 
         break;
+    }
     // There is a similar field NETFLOW9_BGP_NEXT_HOP_IPV4_ADDRESS but with slightly different meaning
     // https://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
     case NETFLOW9_IPV4_NEXT_HOP:
@@ -727,6 +726,14 @@ bool netflow9_record_to_flow(uint32_t record_type,
             // logger << log4cpp::Priority::DEBUG << "Got sampler id from data template: " << int(sampler_id);
         } else if (record_length == 2) {
             uint16_t sampler_id = 0;
+
+            memcpy(&sampler_id, data, record_length);
+
+            sampler_id = fast_ntoh(sampler_id);
+
+            // logger << log4cpp::Priority::DEBUG << "Got sampler id from data template: " << int(sampler_id);
+        } else if (record_length == 4) {
+            uint32_t sampler_id = 0;
 
             memcpy(&sampler_id, data, record_length);
 
