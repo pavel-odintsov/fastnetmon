@@ -933,6 +933,7 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, const ui
         }
 
         break;
+    }
     case IPFIX_FLOW_DIRECTION:
         // It should be 1 byte value
         if (record_length == 1) {
