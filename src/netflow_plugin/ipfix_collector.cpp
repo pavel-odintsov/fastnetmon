@@ -868,67 +868,67 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, const ui
         }
 
         break;
-    case IPFIX_DATALINK_FRAME_SECTION:
+    case IPFIX_DATALINK_FRAME_SECTION: {
         // Element 315: https://www.iana.org/assignments/ipfix/ipfix.xhtml
 
         // It's packet header as is in variable length encoding
-        if (true) {
-            ipfix_inline_headers++;
+        ipfix_inline_headers++;
 
-            // This packet is ended using IPFIX variable length encoding and it may have two possible ways of length encoding
-            // https://datatracker.ietf.org/doc/html/rfc7011#section-7
-            if (flow_meta.variable_field_length_encoding == variable_length_encoding_t::single_byte || flow_meta.variable_field_length_encoding == variable_length_encoding_t::two_byte) {
+        // This packet is ended using IPFIX variable length encoding and it may have two possible ways of length encoding
+        // https://datatracker.ietf.org/doc/html/rfc7011#section-7
+        if (flow_meta.variable_field_length_encoding == variable_length_encoding_t::single_byte ||
+                flow_meta.variable_field_length_encoding == variable_length_encoding_t::two_byte) {
 
-                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
-                    logger << log4cpp::Priority::DEBUG << "Packet header length: " << flow_meta.variable_field_length;
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Packet header length: " << flow_meta.variable_field_length;
+            }
+
+            if (flow_meta.variable_field_length != 0) {
+                bool read_packet_length_from_ip_header = true;
+
+                bool extract_tunnel_traffic = false;
+
+                const uint8_t* payload_shift = nullptr;
+
+                if (flow_meta.variable_field_length_encoding == variable_length_encoding_t::single_byte) {
+                    payload_shift = data + sizeof(uint8_t);
+                } else if (flow_meta.variable_field_length_encoding == variable_length_encoding_t::two_byte) {
+                    payload_shift = data + sizeof(uint8_t) + sizeof(uint16_t);
                 }
 
-                if (flow_meta.variable_field_length != 0) {
-                    bool read_packet_length_from_ip_header = true;
+                auto result =
+                    parse_raw_packet_to_simple_packet_full_ng(payload_shift, flow_meta.variable_field_length,
+                                                                flow_meta.variable_field_length, flow_meta.nested_packet,
+                                                              extract_tunnel_traffic, read_packet_length_from_ip_header);
 
-                    bool extract_tunnel_traffic = false;
-
-                    const uint8_t* payload_shift = nullptr;
-
-                    if (flow_meta.variable_field_length_encoding == variable_length_encoding_t::single_byte) {
-                        payload_shift = data + sizeof(uint8_t);
-                    } else if (flow_meta.variable_field_length_encoding == variable_length_encoding_t::two_byte) {
-                        payload_shift = data + sizeof(uint8_t) + sizeof(uint16_t);
-                    }
-
-                    auto result =
-                        parse_raw_packet_to_simple_packet_full_ng(payload_shift, flow_meta.variable_field_length,
-                                                                    flow_meta.variable_field_length, flow_meta.nested_packet,
-                                                                  extract_tunnel_traffic, read_packet_length_from_ip_header);
-
-                    if (result != network_data_stuctures::parser_code_t::success) {
-                        // Cannot decode data
-                        ipfix_inline_header_parser_error++;
-
-                        if (logger.getPriority() == log4cpp::Priority::DEBUG) {
-                            logger << log4cpp::Priority::DEBUG << "Cannot parse packet header with error: " << network_data_stuctures::parser_code_to_string(result);
-                        }
-
-                    } else {
-                        // Successfully decoded data
-                        ipfix_inline_header_parser_success++;
-
-                        flow_meta.nested_packet_parsed = true;
-                        // logger << log4cpp::Priority::DEBUG << "IPFIX inline extracted packet: " << print_simple_packet(flow_meta.nested_packet);
-                    }
-                } else {
-                    ipfix_inline_encoding_error++;
+                if (result != network_data_stuctures::parser_code_t::success) {
+                    // Cannot decode data
+                    ipfix_inline_header_parser_error++;
 
                     if (logger.getPriority() == log4cpp::Priority::DEBUG) {
-                        logger << log4cpp::Priority::DEBUG << "Zero length variable fields are not supported";
+                        logger << log4cpp::Priority::DEBUG << "Cannot parse packet header with error: "
+                            << network_data_stuctures::parser_code_to_string(result);
                     }
+
+                } else {
+                    // Successfully decoded data
+                    ipfix_inline_header_parser_success++;
+
+                    flow_meta.nested_packet_parsed = true;
+                    // logger << log4cpp::Priority::DEBUG << "IPFIX inline extracted packet: " << print_simple_packet(flow_meta.nested_packet);
                 }
             } else {
                 ipfix_inline_encoding_error++;
-                
+
                 if (logger.getPriority() == log4cpp::Priority::DEBUG) {
-                    logger << log4cpp::Priority::DEBUG << "Unknown variable field encoding type";
+                    logger << log4cpp::Priority::DEBUG << "Zero length variable fields are not supported";
                 }
+            }
+        } else {
+            ipfix_inline_encoding_error++;
+            
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Unknown variable field encoding type";
             }
         }
 
@@ -1012,7 +1012,8 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, const ui
         //
         // TODO: this logic must be enabled via flag only as this is non RFC compliant behavior and we need to have confirmation from J
         //
-        // We have this guide from J: https://www.juniper.net/documentation/us/en/software/junos/flow-monitoring/topics/concept/services-ipfix-flow-aggregation-ipv6-extended-attributes.html but it's written in exceptionally weird way and raises more questions then answers
+        // We have this guide from J: https://www.juniper.net/documentation/us/en/software/junos/flow-monitoring/topics/concept/services-ipfix-flow-aggregation-ipv6-extended-attributes.html
+        // but it's written in exceptionally weird way and raises more questions then answers
         //
 
         // It's exactly 4 bytes
@@ -1318,7 +1319,7 @@ bool ipfix_flowset_to_store(const uint8_t* pkt,
                 flow_meta.variable_field_length = fast_ntoh(*two_byte_field_length_ptr);
 
                 // Override field length with length extracted from two bytes + length of placeholder byte itself
-                record_length = flow_meta.variable_field_length + sizeof(uint8_t) + sizeof(uint16_t);;
+                record_length = flow_meta.variable_field_length + sizeof(uint8_t) + sizeof(uint16_t);
 
                 // Pass variable payload length
                 flow_meta.variable_field_length = fast_ntoh(*two_byte_field_length_ptr);
@@ -1354,6 +1355,9 @@ bool ipfix_flowset_to_store(const uint8_t* pkt,
 
         offset += record_length;
     }
+
+    // At this moment offset carries full length of all fields
+    flowset_length = offset;
 
     // If we were able to decode nested packet then it means that it was Netflow Lite and we can overwrite information in packet
     if (flow_meta.nested_packet_parsed) {
