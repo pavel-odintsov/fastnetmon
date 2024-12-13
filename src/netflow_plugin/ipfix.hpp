@@ -66,6 +66,14 @@
 #define IPFIX_FLOW_START_NANOSECONDS 156
 #define IPFIX_FLOW_END_NANOSECONDS 157
 
+// UDP ports
+#define IPFIX_UDP_SOURCE_PORT 180
+#define IPFIX_UDP_DESTINATION_PORT 181
+
+// TCP ports
+#define IPFIX_TCP_SOURCE_PORT 182
+#define IPFIX_TCP_DESTINATION_PORT 183
+
 #define IPFIX_SAMPLING_SELECTOR_ALGORITHM 304
 
 #define IPFIX_SAMPLING_PACKET_INTERVAL 305
@@ -130,4 +138,17 @@ class __attribute__((__packed__)) ipfix_options_header_t {
     uint16_t template_id       = 0;
     uint16_t field_count       = 0;
     uint16_t scope_field_count = 0;
+};
+
+
+// It's new RFC 4 byte long format which was introduced by IPFIX update https://datatracker.ietf.org/doc/draft-ietf-opsawg-ipfix-fixes/12/
+class __attribute__((__packed__)) ipfix_forwarding_status_4_bytes_t {
+    public:
+    // These fields carry no informatin and we have them here only to access reason_code and status
+    uint8_t first_empty  = 0;
+    uint8_t second_empty = 0;
+    uint8_t thrid_empty  = 0;
+
+    // That's only
+    uint8_t reason_code : 6, status : 2;
 };
