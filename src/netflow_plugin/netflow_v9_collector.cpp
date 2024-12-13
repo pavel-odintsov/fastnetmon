@@ -1580,18 +1580,22 @@ bool process_netflow_packet_v9(const uint8_t* packet,
             return false;
         }
 
+        // Check that we have enough space in packet to read flowset header
+        if (offset + sizeof(netflow9_flowset_header_common_t) > packet_length) {
+            logger << log4cpp::Priority::ERROR
+                   << "Flowset is too short: we do not have space for flowset header. "
+                   << "Netflow v9 packet agent IP:" << client_addres_in_string_format
+                   << " flowset number: " << flowset_number << " offset: " << offset << " packet_length: " << packet_length;
+            return false;
+        }
+
+        // Now we can safely read flowset header
         const netflow9_flowset_header_common_t* flowset = (const netflow9_flowset_header_common_t*)(packet + offset);
 
         uint32_t flowset_id     = ntohs(flowset->flowset_id);
         uint32_t flowset_length = ntohs(flowset->length);
 
-        /*
-         * Yes, this is a near duplicate of the short packet check
-         * above, but this one validates the flowset length from in
-         * the packet before we pass it to the flowset-specific
-         * handlers below.
-         */
-
+	// One more check to ensure that we have enough space in packet to read whole flowset
         if (offset + flowset_length > packet_length) {
             logger << log4cpp::Priority::ERROR << "We tried to read from address outside Netflow's packet flowset agent IP: "
                    << client_addres_in_string_format << " flowset number: " << flowset_number
