@@ -827,6 +827,22 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, const ui
             ipfix_forwarding_status++;
 
             // logger << log4cpp::Priority::DEBUG << "Forwarding status: " << int(forwarding_status_structure->status) << " reason code: " << int(forwarding_status_structure->reason_code);
+        } else if (record_length == 4) {
+            // We received 4 byte encoding from  Cisco ASR9006 running IOS XR 6.4.2
+            // It's new format which was added by RFC bugfix: https://datatracker.ietf.org/doc/draft-ietf-opsawg-ipfix-fixes/12/
+            // We still have only single byte with information but whole structure is larger
+            ipfix_forwarding_status_4_bytes_t forwarding_status{};
+
+            memcpy(&forwarding_status, data, record_length);
+
+            // Decode numbers into forwarding statuses
+            packet.forwarding_status             = forwarding_status_from_integer(forwarding_status.status);
+            flow_meta.received_forwarding_status = true;
+
+            ipfix_forwarding_status++;
+
+            // logger << log4cpp::Priority::DEBUG << "Forwarding status: " << int(forwarding_status.status) << " reason code: " << int(forwarding_status.reason_code);
+
         } else {
             // It must be exactly one byte
             ipfix_too_large_field++;
