@@ -48,3 +48,4 @@ for file in "$out_dir"/*/crashes/*; do
 done
 
 casr-cluster -c  "new_out" out-cluster
+cp -r out-cluster $out_dir/

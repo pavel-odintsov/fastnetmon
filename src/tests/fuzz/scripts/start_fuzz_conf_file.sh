@@ -3,8 +3,8 @@
 SESSION_NAME="config_file_fuzz"
 
 INPUT_DIR="./input"
-OUTPUT_DIR="./output"
-TARGET_PROGRAM="/src/build_fuzz/fastnetmon"
+OUTPUT_DIR="/output"
+TARGET_PROGRAM="/src/build_fuzz_harness/fastnetmon"
 
 if [ ! -d "$INPUT_DIR" ]; then
     echo "Input directory '$INPUT_DIR' does not exist. Creating it..."
@@ -25,9 +25,11 @@ fi
 echo "1" >> "$INPUT_DIR"/1
 echo "a" >> "$INPUT_DIR"/2
 
+echo core | tee /proc/sys/kernel/core_pattern
+
 tmux new-session -d -s $SESSION_NAME -n afl1
 tmux send-keys -t ${SESSION_NAME}:afl1 "afl-fuzz -i $INPUT_DIR -o $OUTPUT_DIR -m none -M master -- $TARGET_PROGRAM --configuration_check --configuration_file @@" C-m
 tmux new-window -t $SESSION_NAME -n afl2
-tmux send-keys -t ${SESSION_NAME}:afl2 "afl-fuzz -i $INPUT_DIR -o $OUTPUT_DIR -m none  -S fuzzer02 -- $TARGET_PROGRAM --configuration_check --configuration_file @@" C-m
+tmux send-keys -t ${SESSION_NAME}:afl2 "afl-fuzz -i $INPUT_DIR -o $OUTPUT_DIR -m none  -S slave -- $TARGET_PROGRAM --configuration_check --configuration_file @@" C-m
 tmux select-window -t ${SESSION_NAME}:afl1
 tmux attach-session -t $SESSION_NAME

@@ -44,12 +44,8 @@ __AFL_FUZZ_INIT();
 int main(int argc, char** argv) {
         uint32_t client_ipv4_address = 128;
         std::string ip_add =  "192.168.0.1";
-        uint16_t version = 5;
 
         unsigned char* udp_buffer = __AFL_FUZZ_TESTCASE_BUF;
-        udp_buffer[0] = (version >> 8) & 0xFF; // Higher byte
-        udp_buffer[1] = version & 0xFF;
-
         while (__AFL_LOOP(10000)) {
                unsigned int received_bytes  = __AFL_FUZZ_TESTCASE_LEN;
                process_netflow_packet(udp_buffer, received_bytes, ip_add, client_ipv4_address);

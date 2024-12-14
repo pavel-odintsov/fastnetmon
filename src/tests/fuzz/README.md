@@ -8,9 +8,9 @@ This section describes the fuzzing testing process, the approaches used, and met
 - [Docker Image](#docker-image)
 - [CMake](#cmake)
 - [File Structure](#file-structure)
-- [Example of Fuzzing Run](#example-of-fuzzing-run)
+- [Example of Fuzzing Run](#example-of-manual-fuzzing-launch-for-individual-fuzzing-wrappers)
 - [Other Fuzzing Techniques](#other-fuzzing-techniques)
-- [Techniques That Didn't Work](#techniques-that-didnt-work)
+- [Fuzzing Launch in Docker Container](#fuzzing-launch-in-docker-container)
 
 ## Docker Image
 --------------------------------
@@ -44,24 +44,23 @@ A number of options have been added to the source `CMakeLists.txt` file, allowin
 | Option                            | Description                                               |
 |-----------------------------------|-----------------------------------------------------------|
 | `-DENABLE_FUZZ_TEST`              | Builds two fuzzing wrappers for `AFL++`. Use **only with the `afl-c++` compiler** or its variations |
-| `DENABLE_FUZZ_TEST_LIBFUZZER`    | Builds two fuzzing wrappers for `libfuzzer`. Use **with the `clang` compiler or variations of `afl-c++`** |
 | `-DENABLE_FUZZ_TEST_DESOCK`       | This option allows modifying the behavior of the standard `socket` function. Now data will come from the input stream instead of the network socket. **Instruments the original `fastnetmon` executable** |
 | `-DCMAKE_BUILD_TYPE=Debug`        | Debugging option required for proper debugger functionality. **Do not use on release builds or during tests - false positives may occur with sanitizer functions like `assert()`** |
 
 ## File Structure
 --------------------------------
-```bash
-fuzz/ 
-├── README.md 
-├── README_rus.md
-├── fastnetmon.conf
-├── parse_sflow_v5_packet_fuzz.cpp
-├── parse_sflow_v5_packet_fuzz_libfuzzer.cpp
-├── process_netflow_packet_v5_fuzz.cpp
-├── process_netflow_packet_v5_fuzz_libfuzzer.cpp └── scripts/
-├── minimize_out.sh
-├── start_fuzz_conf_file.sh
-└── start_fuzz_harness.sh
+```
+fuzz/
+├── README.md
+├── README_rus.md        
+├── fastnetmon.conf                              
+├── parse_sflow_v5_packet_fuzz.cpp               
+├── process_netflow_packet_v5_fuzz.cpp           
+└──  scripts/                                    
+│   ├── minimize_out.sh
+│   ├── afl_pers_mod_instr.sh   
+│   ├── start_fuzz_conf_file.sh                  
+│   └── start_fuzz_harness.sh                    
 ```
 ### File Descriptions
 --------------------------------
@@ -72,9 +71,7 @@ fuzz/
 | `README_rus.md`                         | Documentation in **Russian** about the fuzz testing of the project.                            |
 | `fastnetmon.conf`                       | Configuration file for FastNetMon. Only the netflow and sflow protocols are left for operation. |
 | `parse_sflow_v5_packet_fuzz.cpp`        | Wrapper for fuzzing the `parse_sflow_v5_packet_fuzz` function using `AFL++`.                   |
-| `parse_sflow_v5_packet_fuzz_libfuzzer.cpp` | Wrapper for fuzzing the `parse_sflow_v5_packet_fuzz` function using `libfuzzer`.            |
 | `process_netflow_packet_v5_fuzz.cpp`    | Wrapper for fuzzing the `process_netflow_packet_v5_fuzz` function using `AFL++`.               |
-| `process_netflow_packet_v5_fuzz_libfuzzer.cpp` | Wrapper for fuzzing the `process_netflow_packet_v5_fuzz` function using `libfuzzer`.        |
 
 | File/Directory                         | Description                                                                                     | Run                                                                                                 |
 |----------------------------------------|-------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
@@ -82,37 +79,90 @@ fuzz/
 | `/scripts/minimize_out.sh`             | Script for minimizing, verifying, and clustering crash outputs.                                  | `./minimize_out.sh <path_to_out_directory> <./binary>`                                               |
 | `/scripts/start_fuzz_conf_file.sh`     | Script for running fuzzing on configuration files. Launches several tmux sessions. Uses options `./fastnetmon --configuration_check --configuration_file`. | Run from the current directory without additional options. The environment is automatically set up. |
 | `/scripts/start_fuzz_harness.sh`       | Script for testing binary files compiled from wrappers into separate executables. Designed for wrappers compiled for `AFL++`. It sets up the environment, creates folders, and launches two tmux sessions with fuzzer instances. After fuzzing ends, it runs the `minimize_out.sh` script for crash clustering. | `./start_fuzz_harness.sh <path/to/bin>` The script will stop if no new paths are found within a certain time. By default, the time is 1 hour. To change it, modify the `TIME` variable (in seconds) inside the script. |
+| `/scripts/afl_pers_mod_instr.sh` | A script that adds `AFL++` instrumentation for fuzzing in `persistent mode`. **Important! Currently used only with `netflow_collector.cpp` and `sflow_collector.cpp`** | `./afl_pers_mod_instr.sh <netflow_plugin/netflow_collector.cpp>` |
 
 
-## Example of Fuzzing Run
---------------------------------
+## Example of manual fuzzing launch for individual fuzzing wrappers  
+--------------------------------  
+Run the container:  
+```bash  
+docker run --privileged -it fuzz /bin/bash  
+```
+To run AFL++ fuzzing with multi-threading enabled:
 
-Run the container:
 ```bash
-docker run --privileged -it fuzz /bin/bash
+echo core | tee /proc/sys/kernel/core_pattern  
+```
+**Don't forget to collect the data corpus in the in folder**
+
+For a test run, use a single sed with a '1':
+```bash
+mkdir in  
+echo "1" >> in/1
 ```
 
-To enable multi-threaded fuzzing with AFL++, we set up core dumping:
-```bash
-echo core | tee /proc/sys/kernel/core_pattern
-```
-With the standard `docker image` build, the `build_fuzz` directory will be created, inside which the fuzzing wrappers will be compiled:
+With a standard docker image build, there will be a folder build_fuzz_harness where the following fuzzing wrappers will be compiled:
+
 - `parse_sflow_v5_packet_fuzz`
 - `process_netflow_packet_v5_fuzz`
 
-To run fuzzing, we use the `start_fuzz_harness` script:
+**Start fuzzing:**
+```bash
+afl-fuzz -i in -o out -- ./parse_sflow_v5_packet_fuzz  
+```
+Or
 
 ```bash
-/src/tests/fuzz/scripts/start_fuzz_harness.sh ./process_netflow_packet_v5_fuzz
+afl-fuzz -i in -o out -- ./process_netflow_packet_v5_fuzz  
 ```
-Or 
+- The `build_netflow_pers_mod` folder will contain the code for fuzzing the `process_netflow_packet_v5` function via `AFL++ persistent mode`.
+- The `build_sflow_pers_mod` folder will contain the code for fuzzing the `parse_sflow_v5_packet` function via `AFL++ persistent mode`.
+If the build is done manually, use the `afl_pers_mod_instr.sh` script to instrument the files.
+
+The fuzzing launch for these functions is the same, as the final executable file fastnetmon is instrumented:
+
 ```bash
-/src/tests/fuzz/scripts/start_fuzz_harness.sh ./parse_sflow_v5_packet_fuzz
+  afl-fuzz -i in -o out -- ./fastnetmon  
 ```
-After starting, a directory `<bin_name>_fuzz_dir` will be created, containing the input and output folders.
-A `tmux session` will be started with two tabs — each running an instance of the `AFL++` fuzzer.
-Fuzzing will continue until no new paths are found within one hour (this timeout value can be modified in the script).
-After that, the tmux session will end, and crash clustering and verification will begin with the `minimize_out.sh` script.
+
+**IMPORTANT!**
+For multi-thread fuzzing of the fastnetmon file, you need to provide a separate configuration file for each instance of the fuzzer for `fastnetmon`, specifying different ports for protocols, otherwise, the instances will conflict, and multiple threads will not be able to run.
+
+
+## Example of fuzzing launch via automation script  
+--------------------------------  
+*All actions take place inside the container, where the working directory is `src`, so paths are constructed relative to this folder.*
+
+For fuzzing, we use the `start_fuzz_harness` script.
+
+For wrappers compiled into binary files:
+
+```bash
+/src/tests/fuzz/scripts/start_fuzz_harness.sh ./build_fuzz_harness/process_netflow_packet_v5_fuzz
+```
+Or
+
+```bash
+/src/tests/fuzz/scripts/start_fuzz_harness.sh ./build_fuzz_harness/parse_sflow_v5_packet_fuzz
+```
+
+For instrumenting `fastnetmon`:
+```bash
+/src/tests/fuzz/scripts/start_fuzz_harness.sh ./build_netflow_pers_mod/fastnetmon
+```
+Or
+
+```bash
+/src/tests/fuzz/scripts/start_fuzz_harness.sh ./build_sflow_pers_mod/fastnetmon
+```
+
+After launching, a directory `<bin_name>_fuzz_dir` will be created, inside which a folder `input` will be generated.  
+A folder `/output` will be created at the root of the system, where fuzzing output files and clustering files will be sent.  
+This is necessary to easily access data after fuzzing inside the container (see below).  
+A `tmux` session with an AFL++ fuzzer instance will be started.  
+Fuzzing will continue until no new paths are found within an hour (this value can be changed inside the script).  
+Then, the tmux session will end, and clustering and crash checking will begin using the `minimize_out.sh` script.
+
 
 ## Other Fuzzing Techniques
 
@@ -133,11 +183,51 @@ How the instrumentation looks:
 5. Build with the AFL++ compiler and sanitizers. No wrappers are needed for compilation.
 6. Run fuzzing with: `afl-fuzz -i in -o out -- ./fastnetmon`
 
+For these two purposes, an automation script for code instrumentation has been created.  
+See more details in the script `/scripts/afl_pers_mod_instr.sh`.
 
-### Techniques That Didn't Work
+
+### Other Fuzzing Techniques 
 --------------------------------
 
 | Name                | Description                                                                                          |
 |---------------------|------------------------------------------------------------------------------------------------------|
 | `AFLNet`            | The characteristics of the protocol (lack of feedback) prevent the use of this fuzzer.               |
 | `desock`            | Code instrumentation is successful, but the fuzzer does not start and cannot collect feedback. I consider this method **promising**, but the fuzzer requires adjustments. |
+| `libfuzzer`         | Wrappers for `libfuzzer` were written and implemented into cmake, but due to the peculiarities of the build and the project's focus on fuzzing via `AFL++`, they were removed from the project. Commit with a working [`libfuzzer`] wrappers (https://github.com/pavel-odintsov/fastnetmon/commit/c3b72c18f0bc7f43b535a5da015c3954d716be22)
+
+
+## Fuzzing Launch in Docker Container
+
+### A Few Words for Context
+
+Each fuzzer thread requires one system thread.
+
+The `start_fuzz_harness.sh` script includes a time limit for fuzzing.  
+The `TIME` variable is responsible for the "last path found" time parameter.  
+If this parameter stops resetting, it means the fuzzer has hit a deadlock and there's no point in continuing fuzzing.  
+From empirical experience, this parameter should be set to 2 hours. The project has it set to 1 hour.  
+If shallow testing is needed, this parameter can be reduced to 10-15 minutes, making the total fuzzing time last a few hours.
+
+### Build and Launch
+
+Build:
+
+```bash
+cd fastnetmon
+docker build -f tests/Dockerfile.ubuntu-24.04-afl++ -t fuzz .
+```
+
+Launch the container:
+```
+mkdir work
+docker run -v $(pwd)/work:/output --privileged -it fuzz /bin/bash -c "/src/tests/fuzz/scripts/start_fuzz_harness.sh ./build_netflow_pers_mod/fastnetmon"
+```
+
+This method can be used to launch any wrapper / binary file by simply providing the command from the *Example of fuzzing launch via automation script* section in quotes after the `-c` argument.
+
+After fuzzing is completed, the results will be placed in the host system's work folder—both the results folder and the clustering folder will be there.
+
+The container will have a status exit. It can be manually restarted to check for crashes.
+
+

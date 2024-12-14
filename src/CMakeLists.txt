@@ -1211,19 +1211,6 @@ if (ENABLE_FUZZ_TEST)
         target_link_libraries(process_netflow_packet_v5_fuzz  sflow_plugin netflow_plugin example_plugin fastnetmon_logic ${LOG4CPP_LIBRARY_PATH})
 endif()
 
-# Fuzz test with AFL++ or clang
-if (ENABLE_FUZZ_TEST_LIBFUZZER)
-        add_executable(parse_sflow_v5_packet_fuzz tests/fuzz/parse_sflow_v5_packet_fuzz_libfuzzer.cpp)
-        target_link_libraries(parse_sflow_v5_packet_fuzz sflow_plugin netflow_plugin example_plugin fastnetmon_logic ${LOG4CPP_LIBRARY_PATH})
-        target_compile_options(parse_sflow_v5_packet_fuzz PRIVATE  -fsanitize=fuzzer)
-        target_link_options(parse_sflow_v5_packet_fuzz PRIVATE  -fsanitize=fuzzer)
-
-        add_executable(process_netflow_packet_v5_fuzz tests/fuzz/process_netflow_packet_v5_fuzz_libfuzzer.cpp)
-        target_link_libraries(process_netflow_packet_v5_fuzz  sflow_plugin netflow_plugin example_plugin fastnetmon_logic ${LOG4CPP_LIBRARY_PATH})
-        target_compile_options(process_netflow_packet_v5_fuzz PRIVATE  -fsanitize=fuzzer)
-        target_link_options(process_netflow_packet_v5_fuzz PRIVATE  -fsanitize=fuzzer)
-endif()
-
 # Chaged interface socket to console input
 if (ENABLE_FUZZ_TEST_DESOCK)
         target_link_libraries(fastnetmon desock) 
