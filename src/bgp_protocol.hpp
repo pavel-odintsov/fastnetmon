@@ -626,7 +626,7 @@ class IPv4UnicastAnnounce {
             // Append segment header
             as_path_as_binary_array.append_data_as_object_ptr(&bgp_as_path_segment_element);
 
-            logger << log4cpp::Priority::DEBUG << "AS_PATH ASN numner: " << this->as_path_asns.size();
+            logger << log4cpp::Priority::DEBUG << "AS_PATH ASN number: " << this->as_path_asns.size();
 
             for (auto asn : this->as_path_asns) {
                 // Append all ASNs in big endian encoding

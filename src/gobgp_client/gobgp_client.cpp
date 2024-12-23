@@ -234,7 +234,7 @@ bool GrpcClient::AnnounceUnicastPrefixLowLevelIPv6(const IPv6UnicastAnnounce& un
         // Append segment header
         as_path_as_binary_array.append_data_as_object_ptr(&bgp_as_path_segment_element);
 
-        logger << log4cpp::Priority::DEBUG << "AS_PATH ASN numner: " << unicast_ipv6_announce.as_path_asns.size();
+        logger << log4cpp::Priority::DEBUG << "AS_PATH ASN number: " << unicast_ipv6_announce.as_path_asns.size();
 
         for (auto asn : unicast_ipv6_announce.as_path_asns) {
             // Append all ASNs in big endian encoding
