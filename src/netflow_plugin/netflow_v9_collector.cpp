@@ -1344,7 +1344,7 @@ void netflow9_flowset_to_store(const uint8_t* pkt,
             // - Next hop for IPv4 is set and set to 0 OR next hop for IPv6 set and set to zero
             if (packet.output_interface == 0 &&
                 ((flow_meta.ip_next_hop_ipv4_set && flow_meta.ip_next_hop_ipv4 == 0) ||
-                 (is_zero_ipv6_address(flow_meta.bgp_next_hop_ipv6) && flow_meta.bgp_next_hop_ipv6_set))) {
+                 (flow_meta.bgp_next_hop_ipv6_set && is_zero_ipv6_address(flow_meta.bgp_next_hop_ipv6)))) {
 
                 packet.forwarding_status = forwarding_status_t::dropped;
                 netflow_v9_marked_zero_next_hop_and_zero_output_as_dropped++;

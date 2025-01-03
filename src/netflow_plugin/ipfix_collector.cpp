@@ -1399,7 +1399,7 @@ bool ipfix_flowset_to_store(const uint8_t* pkt,
             if (packet.output_interface == 0 &&
                 ((flow_meta.bgp_next_hop_ipv4_set && flow_meta.bgp_next_hop_ipv4 == 0) ||
                  (flow_meta.ip_next_hop_ipv4_set && flow_meta.ip_next_hop_ipv4 == 0) ||
-                 (is_zero_ipv6_address(flow_meta.bgp_next_hop_ipv6) && flow_meta.bgp_next_hop_ipv6_set))) {
+                 (flow_meta.bgp_next_hop_ipv6_set && is_zero_ipv6_address(flow_meta.bgp_next_hop_ipv6)))) {
 
                 packet.forwarding_status = forwarding_status_t::dropped;
                 ipfix_marked_zero_next_hop_and_zero_output_as_dropped++;
