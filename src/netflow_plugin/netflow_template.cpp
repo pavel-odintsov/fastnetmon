@@ -10,14 +10,10 @@ extern ipfix_information_database ipfix_db_instance;
 bool operator==(const template_t& lhs, const template_t& rhs) {
     // We do not use timestamp field for comparison here as we're interested only in comparing template fields
 
-    return
-        lhs.template_id  == rhs.template_id                                                &&
-        lhs.num_records  == rhs.num_records                                                &&
-        lhs.total_length == rhs.total_length                                               &&
-        lhs.option_scope_length == rhs.option_scope_length                                 &&
-        lhs.ipfix_variable_length_elements_used == rhs.ipfix_variable_length_elements_used &&
-        lhs.type == rhs.type                                                               &&
-        lhs.records == rhs.records;
+    return lhs.template_id == rhs.template_id && lhs.num_records == rhs.num_records &&
+           lhs.total_length == rhs.total_length && lhs.option_scope_length == rhs.option_scope_length &&
+           lhs.ipfix_variable_length_elements_used == rhs.ipfix_variable_length_elements_used && lhs.type == rhs.type &&
+           lhs.records == rhs.records;
 }
 
 bool operator!=(const template_t& lhs, const template_t& rhs) {
@@ -25,7 +21,8 @@ bool operator!=(const template_t& lhs, const template_t& rhs) {
 }
 
 bool operator==(const template_record_t& lhs, const template_record_t& rhs) {
-    return lhs.record_type == rhs.record_type && lhs.record_length == rhs.record_length;
+    return lhs.record_type == rhs.record_type && lhs.record_length == rhs.record_length &&
+           lhs.enterprise_bit == rhs.enterprise_bit && lhs.enterprise_number == rhs.enterprise_number;
 }
 
 bool operator!=(const template_record_t& lhs, const template_record_t& rhs) {
@@ -58,6 +55,8 @@ std::string print_template(const template_t& field_template) {
         buffer << "name:          " << ipfix_db_instance.get_name_by_id(elem.record_type) << "\n";
         buffer << "record_type:   " << elem.record_type << "\n";
         buffer << "record_length: " << elem.record_length << "\n";
+        buffer << "enterprise_bit: " << elem.enterprise_bit << "\n";
+        buffer << "enterprise_number: " << elem.enterprise_number << "\n";
 
         buffer << "\n";
     }

@@ -1,16 +1,26 @@
-#pragma once 
+#pragma once
 
-#include <vector>
-#include <cstdint>
 #include <boost/serialization/nvp.hpp>
+#include <cstdint>
+#include <vector>
+
+#include "../nlohmann/json.hpp"
 
 enum class netflow_template_type_t { Unknown, Data, Options };
 
-/* A record in a Netflow v9 template record */
+// A record in a Netflow v9 template aka IPFIX field specifier
 class template_record_t {
     public:
     uint32_t record_type   = 0;
     uint32_t record_length = 0;
+
+    // Enterprise bit used in IPFIX RFC:
+    // https://datatracker.ietf.org/doc/html/rfc7011#page-17
+    bool enterprise_bit = false;
+
+    // Enterprise number used in IPFIX RFC:
+    // https://datatracker.ietf.org/doc/html/rfc7011#page-17
+    uint32_t enterprise_number = 0;
 
     template_record_t(uint32_t record_type, uint32_t record_length) {
         this->record_type   = record_type;
@@ -24,20 +34,27 @@ class template_record_t {
     template <typename Archive> void serialize(Archive& ar, [[maybe_unused]] const unsigned int version) {
         ar& BOOST_SERIALIZATION_NVP(record_type);
         ar& BOOST_SERIALIZATION_NVP(record_length);
+        ar& BOOST_SERIALIZATION_NVP(enterprise_bit);
+        ar& BOOST_SERIALIZATION_NVP(enterprise_number);
     }
+
+    // Needed for JSON serialisation: https://json.nlohmann.me/api/macros/nlohmann_define_type_non_intrusive/
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(template_record_t, record_type, record_length, enterprise_bit, enterprise_number)
 };
 
 bool operator==(const template_record_t& lhs, const template_record_t& rhs);
 bool operator!=(const template_record_t& lhs, const template_record_t& rhs);
 
-/* Netflow v9 template record */
-/* It's not used for wire data decoding. Feel free to add any new fields */
+// Netflow v9 or IPFIX template record
+// It's not used for wire data decoding. Feel free to add any new fields
 class template_t {
     public:
     uint16_t template_id = 0;
     uint32_t num_records = 0;
 
     // Total length of all standard records and scope section records
+    // IPFIX: please note that we do not include "fake" length of variable length fields 
+    // In this case total length gets meaning "minimum data length" and will be useful for padding detection
     uint32_t total_length = 0;
 
     // Only for options templates
@@ -66,6 +83,8 @@ class template_t {
         ar& BOOST_SERIALIZATION_NVP(type);
         ar& BOOST_SERIALIZATION_NVP(records);
     }
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(template_t, template_id, num_records, total_length, option_scope_length, ipfix_variable_length_elements_used, timestamp, type, records)
 };
 
 std::string print_template(const template_t& field_template);
