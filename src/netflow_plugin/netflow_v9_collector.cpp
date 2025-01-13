@@ -1565,7 +1565,7 @@ bool process_netflow_packet_v9(const uint8_t* packet,
     uint32_t flowset_count_total = ntohs(netflow9_header->header.flowset_number);
 
     // Limit reasonable number of flow sets per packet
-    if (flowset_count_total > flowsets_per_packet_maximum_number) {
+    if (flowset_count_total > sets_per_packet_maximum_number) {
         logger << log4cpp::Priority::ERROR << "We have so many flowsets inside Netflow v9 packet: " << flowset_count_total
                << " Agent IP:" << client_addres_in_string_format;
 

@@ -32,7 +32,6 @@
 // Protocol specific things
 #include "netflow_v5.hpp"
 #include "netflow_v9.hpp"
-#include "ipfix.hpp"
 
 #include "netflow_template.hpp"
 #include "netflow_collector.hpp"
@@ -76,8 +75,6 @@ std::map<std::string, uint64_t> netflow9_packets_per_router;
 
 std::mutex ipfix_packets_per_router_mutex;
 std::map<std::string, uint64_t> ipfix_packets_per_router;
-
-ipfix_information_database ipfix_db_instance;
 
 // Counters section start
 
@@ -253,7 +250,7 @@ uint64_t netflow_v9_lite_headers         = 0;
 void increment_duration_counters_ipfix(int64_t duration);
 
 // We limit number of flowsets in packet Netflow v9 / IPFIX packets with some reasonable number to reduce possible attack's surface and reduce probability of infinite loop
-uint64_t flowsets_per_packet_maximum_number = 256;
+uint64_t sets_per_packet_maximum_number = 256;
 
 // TODO: add per source uniq templates support
 process_packet_pointer netflow_process_func_ptr = NULL;
@@ -436,11 +433,11 @@ int nf9_rec_to_flow(uint32_t record_type,
                     std::vector<template_record_t>& template_records,
                     netflow_meta_info_t& flow_meta);
 
-template_t* peer_find_template(std::map<std::string, std::map<uint32_t, template_t>>& table_for_lookup,
+const template_t* peer_find_template(const std::map<std::string, std::map<uint32_t, template_t>>& table_for_lookup,
                                       std::mutex& table_for_lookup_mutex,
                                       uint32_t source_id,
                                       uint32_t template_id,
-                                      std::string client_addres_in_string_format) {
+                                      const std::string& client_addres_in_string_format) {
 
     // We use source_id for distinguish multiple netflow agents with same IP
     std::string key = client_addres_in_string_format + "_" + std::to_string(source_id);
@@ -453,12 +450,18 @@ template_t* peer_find_template(std::map<std::string, std::map<uint32_t, template
         return NULL;
     }
 
-    // Well, we found it!
-    if (itr->second.count(template_id) > 0) {
-        return &itr->second[template_id];
-    } else {
+
+
+    // We found entry for specific agent instance and we need to find specific template in it
+    auto itr_template_id = itr->second.find(template_id);
+
+    // We have no such template
+    if (itr_template_id == itr->second.end()) {
         return NULL;
     }
+
+    // Return pointer to element
+    return &itr_template_id->second;
 }
 
 // Overrides some fields from specified nested packet

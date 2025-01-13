@@ -1,9 +1,11 @@
 // IPFIX
 
+#include "../fast_endianless.hpp"
+
 // Documentation about these fields can be found here: https://www.iana.org/assignments/ipfix/ipfix.xhtml
-#define IPFIX_TEMPLATE_FLOWSET_ID 2
-#define IPFIX_OPTIONS_FLOWSET_ID 3
-#define IPFIX_MIN_RECORD_FLOWSET_ID 256
+#define IPFIX_TEMPLATE_SET_ID 2
+#define IPFIX_OPTIONS_SET_ID 3
+#define IPFIX_MIN_RECORD_SET_ID 256
 
 #define IPFIX_ENTERPRISE (1 << 15)
 
@@ -95,51 +97,114 @@ class __attribute__((__packed__)) ipfix_header_common_t {
     uint16_t length = 0;
 };
 
+static_assert(sizeof(ipfix_header_common_t) == 4, "Bad size for ipfix_header_common_t");
+
+// Described here https://datatracker.ietf.org/doc/html/rfc7011#section-3.1
 class __attribute__((__packed__)) ipfix_header_t {
     public:
+    uint32_t get_package_sequence_host_byte_order() const {
+        return fast_ntoh(package_sequence);
+    }
+
+    uint32_t get_source_id_host_byte_order() const {
+        return fast_ntoh(source_id);
+    }
+
+    uint32_t get_time_sec_host_byte_order() const {
+        return fast_ntoh(time_sec);
+    }
+
+    uint16_t get_length_host_byte_order() const {
+        return fast_ntoh(header.length);
+    }
+
+    private:
     ipfix_header_common_t header;
     uint32_t time_sec         = 0;
     uint32_t package_sequence = 0;
     uint32_t source_id        = 0;
 };
 
-class __attribute__((__packed__)) ipfix_flowset_header_common_t {
+static_assert(sizeof(ipfix_header_t) == 16, "Bad size for ipfix_header_t");
+
+// Set header
+// Described here https://datatracker.ietf.org/doc/html/rfc7011#section-3.3.2
+class __attribute__((__packed__)) ipfix_set_header_common_t {
     public:
-    uint16_t flowset_id = 0;
-    uint16_t length     = 0;
+    uint16_t get_set_id_host_byte_order() const {
+        return fast_ntoh(set_id);
+    }
+
+    uint16_t get_length_host_byte_order() const {
+        return fast_ntoh(length);
+    }
+
+    private:
+    uint16_t set_id = 0;
+    uint16_t length = 0;
 };
 
-class __attribute__((__packed__)) ipfix_template_flowset_header_t {
+static_assert(sizeof(ipfix_set_header_common_t) == 4, "Bad size for ipfix_set_header_common_t");
+
+// Template record header https://datatracker.ietf.org/doc/html/rfc7011#section-3.4.1
+class __attribute__((__packed__)) ipfix_template_record_header_t {
     public:
-    uint16_t template_id  = 0;
-    uint16_t record_count = 0;
+    uint16_t get_template_id_host_byte_order() const {
+        return fast_ntoh(template_id);
+    }
+
+    uint16_t get_field_count_host_byte_order() const {
+        return fast_ntoh(field_count);
+    }
+
+    private:
+    uint16_t template_id = 0;
+    uint16_t field_count = 0;
 };
 
-class __attribute__((__packed__)) ipfix_template_flowset_record_t {
+static_assert(sizeof(ipfix_template_record_header_t) == 4, "Bad size for ipfix_template_record_header_t");
+
+// Field specifier https://datatracker.ietf.org/doc/html/rfc7011#page-17
+class __attribute__((__packed__)) ipfix_field_specifier_t {
     public:
+    uint16_t get_type_host_byte_order() const {
+        return fast_ntoh(type);
+    }
+
+    uint16_t get_length_host_byte_order() const {
+        return fast_ntoh(length);
+    }
+
+    private:
     uint16_t type   = 0;
     uint16_t length = 0;
 };
 
-class __attribute__((__packed__)) ipfix_data_flowset_header_t {
-    public:
-    ipfix_flowset_header_common_t header;
-};
+static_assert(sizeof(ipfix_field_specifier_t) == 4, "Bad size for ipfix_field_specifier_t");
 
-// IPFIX options structures
-class __attribute__((__packed__)) ipfix_options_header_common_t {
+// Options template record header
+// https://datatracker.ietf.org/doc/html/rfc7011#page-24
+class __attribute__((__packed__)) ipfix_options_template_record_header_t {
     public:
-    uint16_t flowset_id = 0;
-    uint16_t length     = 0;
-};
+    uint16_t get_template_id_host_byte_order() const {
+        return fast_ntoh(template_id);
+    }
 
-class __attribute__((__packed__)) ipfix_options_header_t {
-    public:
+    uint16_t get_field_count_host_byte_order() const {
+        return fast_ntoh(field_count);
+    }
+
+    uint16_t get_scope_field_count_host_byte_order() const {
+        return fast_ntoh(scope_field_count);
+    }
+
+    private:
     uint16_t template_id       = 0;
     uint16_t field_count       = 0;
     uint16_t scope_field_count = 0;
 };
 
+static_assert(sizeof(ipfix_options_template_record_header_t) == 6, "Bad size for ipfix_options_header_t");
 
 // It's new RFC 4 byte long format which was introduced by IPFIX update https://datatracker.ietf.org/doc/draft-ietf-opsawg-ipfix-fixes/12/
 class __attribute__((__packed__)) ipfix_forwarding_status_4_bytes_t {
@@ -152,3 +217,18 @@ class __attribute__((__packed__)) ipfix_forwarding_status_4_bytes_t {
     // That's only
     uint8_t reason_code : 6, status : 2;
 };
+
+// It's not wire friendly class, feel free to add any fields
+class variable_length_encoding_info_t {
+public:
+    // Length encoding type: one or two byte
+    variable_length_encoding_t variable_field_length_encoding = variable_length_encoding_t::unknown;
+
+    // Store variable field length
+    uint16_t variable_field_length = 0;
+
+    // Full length of variable length field (length header + payload)
+    uint32_t record_full_length = 0;
+};
+
+static_assert(sizeof(ipfix_forwarding_status_4_bytes_t) == 4, "Bad size for ipfix_forwarding_status_4_bytes_t");
