@@ -63,21 +63,6 @@ std::map<std::string, uint32_t> netflow9_sampling_rates;
 std::mutex ipfix_sampling_rates_mutex;
 std::map<std::string, uint32_t> ipfix_sampling_rates;
 
-// Active timeout for IPFIX
-class device_timeouts_t {
-    public:
-    // Both values use seconds
-    std::optional<uint32_t> active_timeout   = 0;
-    std::optional<uint32_t> inactive_timeout = 0;
-
-    bool operator!=(const device_timeouts_t& rhs) const {
-        return !(*this == rhs);
-    }
-
-    // We generate default == operator which compares each field in class using standard compare operators for each class
-    bool operator==(const device_timeouts_t& rhs) const = default;
-};
-
 // Variable encoding may be single or two byte and we need to distinguish them explicitly
 enum class variable_length_encoding_t { unknown, single_byte, two_byte };
 
