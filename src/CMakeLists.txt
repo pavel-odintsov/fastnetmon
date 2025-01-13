@@ -375,6 +375,10 @@ add_library(fast_library STATIC fast_library.cpp)
 # Our ipfix database library
 add_library(ipfix_rfc STATIC ipfix_fields/ipfix_rfc.cpp)
 
+# IPFIX collector as separate module
+add_library(ipfix_collector STATIC netflow_plugin/ipfix_collector.cpp)
+target_link_libraries(ipfix_collector ipfix_rfc)
+
 add_library(bgp_protocol STATIC bgp_protocol.cpp)
 
 # Here we store some service code for getting IP protocol name by number
@@ -582,7 +586,7 @@ add_library(netflow STATIC netflow_plugin/netflow.cpp)
 
 # netflow plugin
 add_library(netflow_plugin STATIC netflow_plugin/netflow_collector.cpp)
-target_link_libraries(netflow_plugin ipfix_rfc netflow netflow_template)
+target_link_libraries(netflow_plugin ipfix_collector netflow netflow_template)
 
 if (ENABLE_PCAP_SUPPORT) 
   # pcap plugin
