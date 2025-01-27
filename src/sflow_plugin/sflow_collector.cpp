@@ -390,12 +390,15 @@ bool process_sflow_flow_sample(const uint8_t* data_pointer,
             const uint8_t* header_payload_pointer = payload_ptr + sizeof(sflow_raw_protocol_header_t);
 
             if (sflow_raw_protocol_header.header_protocol == SFLOW_HEADER_PROTOCOL_ETHERNET) {
+                parser_options_t parser_options{};
+
+                parser_options.unpack_gre = fastnetmon_global_configuration.sflow_extract_tunnel_traffic;
+                parser_options.read_packet_length_from_ip_header = fastnetmon_global_configuration.sflow_read_packet_length_from_ip_header;
 
                 auto result =
                     parse_raw_packet_to_simple_packet_full_ng(header_payload_pointer, sflow_raw_protocol_header.frame_length_before_sampling,
                                                               sflow_raw_protocol_header.header_size, packet,
-                                                              fastnetmon_global_configuration.sflow_extract_tunnel_traffic,
-                                                              fastnetmon_global_configuration.sflow_read_packet_length_from_ip_header);
+                                                              parser_options);
 
                 if (result != network_data_stuctures::parser_code_t::success) {
                     sflow_parse_error_nested_header++;
@@ -409,12 +412,18 @@ bool process_sflow_flow_sample(const uint8_t* data_pointer,
                 // It's IPv4 without Ethernet header at all
                 sflow_ipv4_header_protocol++;
 
+                parser_options_t parser_options_ipv4{};
+
+                parser_options_ipv4.unpack_gre = false;
+                parser_options_ipv4.read_packet_length_from_ip_header =
+                    fastnetmon_global_configuration.sflow_read_packet_length_from_ip_header;
+
                 // We parse this packet using special version of our parser which looks only on IPv4 packet
                 auto result =
                     parse_raw_ipv4_packet_to_simple_packet_full_ng(header_payload_pointer,
                                                                    sflow_raw_protocol_header.frame_length_before_sampling,
                                                                    sflow_raw_protocol_header.header_size, packet,
-                                                                   fastnetmon_global_configuration.sflow_read_packet_length_from_ip_header);
+                                                                   parser_options_ipv4);
 
                 if (result != network_data_stuctures::parser_code_t::success) {
                     sflow_parse_error_nested_header++;
