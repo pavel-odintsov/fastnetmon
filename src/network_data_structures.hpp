@@ -391,6 +391,134 @@ class __attribute__((__packed__)) udp_header_t {
 
 static_assert(sizeof(udp_header_t) == 8, "Bad size for udp_header_t");
 
+// Encodes flags
+class __attribute__((__packed__)) gtp_v1_header_flags_t {
+    public:
+    uint8_t n_pdu_number : 1 = 0, sequence_number : 1 = 0, extension_header : 1 = 0, reserved : 1 = 0,
+                           protocol_type : 1 = 0, version : 3 = 0;
+
+    std::string print() const {
+        std::stringstream buffer;
+
+        buffer << "version: " << uint32_t(version) << " "
+               << "protocol_type: " << uint32_t(protocol_type) << " "
+               << "extension_header: " << uint32_t(extension_header) << " "
+               << "sequence_number: " << uint32_t(sequence_number) << " "
+               << "n_pdu_number: " << uint32_t(n_pdu_number);
+
+        return buffer.str();
+    }
+};
+
+static_assert(sizeof(gtp_v1_header_flags_t) == 1, "Bad size for gtp_v1_header_flags_t");
+
+/*
+
+  Source, page: 15, 3GPP TS 29.281 version 10.1.0 Release 10, ETSI TS 129 281 V10.1.0 (2011-05
+  https://www.etsi.org/deliver/etsi_ts/129200_129299/129281/10.01.00_60/ts_129281v100100p.pdf
+
+  Octets 8 7 6 5 4 3 2 1
+   1      Version PT (*) E S PN
+   2      Message Type
+   3      Length (1st Octet)
+   4      Length (2nd Octet)
+   5      Tunnel Endpoint Identifier (1st Octet)
+   6      Tunnel Endpoint Identifier (2nd Octet)
+   7      Tunnel Endpoint Identifier (3rd Octet)
+   8      Tunnel Endpoint Identifier (4th Octet)
+   9      Sequence Number (1st Octet) 1) 4)
+  10      Sequence Number (2nd Octet) 1) 4)
+  11      N-PDU Number 2) 4)
+  12      Next Extension Header Type3) 4)
+
+*/
+// This structure includes only mandatory fields
+class __attribute__((__packed__)) gtp_v1_header_t {
+    private:
+    uint8_t flags        = 0;
+    uint8_t message_type = 0;
+    uint16_t length      = 0;
+    uint32_t teid        = 0;
+
+    public:
+    uint8_t get_message_type() const {
+        return message_type;
+    }
+
+    uint16_t get_length_host_byte_order() const {
+        return fast_ntoh(length);
+    }
+
+    uint32_t get_teid_host_byte_order() const {
+        return fast_ntoh(teid);
+    }
+
+    std::string print() const {
+        std::stringstream buffer;
+
+        buffer << "flags: " << flags << " "
+               << "message_type: " << uint32_t(message_type) << " "
+               << "length: " << get_length_host_byte_order() << " "
+               << "teid: " << get_teid_host_byte_order();
+
+        return buffer.str();
+    }
+};
+
+static_assert(sizeof(gtp_v1_header_t) == 8, "Bad size for gtp_v1_header_t");
+
+// This one includes optional sequence_number when only sequence_number flag is set
+class __attribute__((__packed__)) gtp_v1_header_with_sequence_t {
+    private:
+    uint8_t flags            = 0;
+    uint8_t message_type     = 0;
+    uint16_t length          = 0;
+    uint32_t teid            = 0;
+    uint16_t sequence_number = 0;
+
+    // We do not evaluate it as we do not have n_pdu_number flag set but we still have it here
+    // NOTE 2: 2) This field shall only be evaluated when indicated by the PN flag set to 1.
+    // NOTE 4: 4) This field shall be present if and only if any one or more of the S, PN and E flags are set
+    uint8_t n_pdu_number = 0;
+
+
+    // We do not evaluate it as we do not have extension_header flag set but we still have it here
+    // NOTE 3: 3) This field shall only be evaluated when indicated by the E flag set to 1
+    // NOTE 4: 4) This field shall be present if and only if any one or more of the S, PN and E flags are set.
+    uint8_t next_extension_header_type = 0;
+
+    public:
+    uint16_t get_length_host_byte_order() const {
+        return fast_ntoh(length);
+    }
+
+    uint8_t get_message_type() const {
+        return message_type;
+    }
+
+    uint32_t get_teid_host_byte_order() const {
+        return fast_ntoh(teid);
+    }
+
+    uint16_t get_sequence_number_host_byte_order() const {
+        return fast_ntoh(sequence_number);
+    }
+
+    std::string print() const {
+        std::stringstream buffer;
+
+        buffer << "flags: " << flags << " "
+               << "message_type: " << uint32_t(message_type) << " "
+               << "length: " << get_length_host_byte_order() << " "
+               << "teid: " << get_teid_host_byte_order() << " "
+               << "sequence_number: " << get_sequence_number_host_byte_order();
+
+        return buffer.str();
+    }
+};
+
+static_assert(sizeof(gtp_v1_header_with_sequence_t) == 12, "Bad size for gtp_v1_header_with_sequence_t");
+
 // https://datatracker.ietf.org/doc/html/rfc2784
 class __attribute__((__packed__)) gre_header_t {
     // We must not access these fields directly as they may need conversion
