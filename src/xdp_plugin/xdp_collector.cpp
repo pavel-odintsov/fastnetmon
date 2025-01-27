@@ -51,10 +51,14 @@ extern "C" {
 // Our new generation parser
 #include "../simple_packet_parser_ng.hpp"
 
+#include "../fastnetmon_configuration_scheme.hpp"
+
 extern time_t current_inaccurate_time;
 
 // Global configuration map
 extern std::map<std::string, std::string> configuration_map;
+
+extern fastnetmon_configuration_t fastnetmon_global_configuration;
 
 std::string packets_received_desc = "Total number of packets received by AF_XDP";
 uint64_t packets_received         = 0;
@@ -496,11 +500,14 @@ void xdp_process_traffic(int xdp_socket, xsk_memory_configuration* mem_configura
             packet.source       = MIRROR;
             packet.arrival_time = current_inaccurate_time;
 
-            bool xdp_extract_tunnel_traffic = false;
+
+            parser_options_t parser_options{};
+
+            parser_options.unpack_gre = false;
+            parser_options.read_packet_length_from_ip_header = xdp_read_packet_length_from_ip_header;
 
             auto result = parse_raw_packet_to_simple_packet_full_ng((u_char*)packet_data, descs[i].len, descs[i].len,
-                                                                    packet, xdp_extract_tunnel_traffic,
-                                                                    xdp_read_packet_length_from_ip_header);
+                                                                    packet, parser_options);
 
             if (result != network_data_stuctures::parser_code_t::success) {
                 xdp_packets_unparsed++;
