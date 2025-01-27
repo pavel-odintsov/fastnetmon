@@ -17,13 +17,19 @@ bool decode_mpls = false;
 // We can strip only 3 nested vlans
 const uint32_t maximum_vlans_to_strip = 3;
 
+// GTPv1 encapsulation must use this port as destination
+// https://www.etsi.org/deliver/etsi_ts/129200_129299/129281/10.01.00_60/ts_129281v100100p.pdf
+const uint16_t gtp_port = 2152;
+
+// This is the type for packet which carries traffic
+const uint8_t gtp_v1_t_pdu_type = 255;
+
 // Our own native function to convert wire packet into simple_packet_t
 parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
                                                         int length_before_sampling,
                                                         int captured_length,
                                                         simple_packet_t& packet,
-                                                        bool unpack_gre,
-                                                        bool read_packet_length_from_ip_header) {
+                                                        const parser_options_t& parser_options) {
     // We are using pointer copy because we are changing it
     const uint8_t* local_pointer = pointer;
 
@@ -51,7 +57,7 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
     uint32_t number_of_stripped_vlans = 0;
 
     // This loop will not start if ethertype is not VLAN
-    while (ethertype == IanaEthertypeVLAN) { 
+    while (ethertype == IanaEthertypeVLAN) {
         // Return error if it's shorter than vlan header
         if (local_pointer + sizeof(ethernet_vlan_header_t) > end_pointer) {
             return parser_code_t::memory_violation;
@@ -63,7 +69,7 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
         if (number_of_stripped_vlans == 0) {
             packet.vlan = ethernet_vlan_header->get_vlan_id_host_byte_order();
         }
-    
+
         local_pointer += sizeof(ethernet_vlan_header_t);
 
         number_of_stripped_vlans++;
@@ -140,7 +146,7 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
         protocol        = ipv4_header->get_protocol();
         packet.protocol = protocol;
 
-        if (read_packet_length_from_ip_header) {
+        if (parser_options.read_packet_length_from_ip_header) {
             packet.length = ipv4_header->get_total_length_host_byte_order();
         } else {
             packet.length = length_before_sampling;
@@ -185,7 +191,7 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
         protocol        = ipv6_header->get_next_header();
         packet.protocol = protocol;
 
-        if (read_packet_length_from_ip_header) {
+        if (parser_options.read_packet_length_from_ip_header) {
             packet.length = ipv6_header->get_payload_length();
         } else {
             packet.length = length_before_sampling;
@@ -213,7 +219,8 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
 
             // We decided to parse only fragmentation header option as only this field may be found in the Wild
             if (protocol == IpProtocolNumberIPV6_FRAG) {
-                const ipv6_extension_header_fragment_t* ipv6_extension_header_fragment = (const ipv6_extension_header_fragment_t*)local_pointer;
+                const ipv6_extension_header_fragment_t* ipv6_extension_header_fragment =
+                    (const ipv6_extension_header_fragment_t*)local_pointer;
 
                 // If we received this header then we assume that packet was fragmented
                 packet.ip_fragmented = true;
@@ -278,8 +285,115 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
 
         packet.source_port      = udp_header->get_source_port_host_byte_order();
         packet.destination_port = udp_header->get_destination_port_host_byte_order();
+
+        // GTPv1 T-PDU packet which carries IPv4 or IPv6 as UDP payload
+        // Standard requires that only destination port is set to gtp_port but in all pcaps I've seen we have gtp_port
+        // for both source and destination port
+        if (parser_options.unpack_gtp_v1 && (packet.source_port == gtp_port || packet.destination_port == gtp_port)) {
+            // We need to read flags first
+            if (local_pointer + sizeof(gtp_v1_header_flags_t) > end_pointer) {
+                return parser_code_t::memory_violation;
+            }
+
+            local_pointer += sizeof(udp_header_t);
+
+            // Read flags first
+            const gtp_v1_header_flags_t* gtp_v1_header_flags = (const gtp_v1_header_flags_t*)local_pointer;
+
+            // That's how we distinguish our GTP traffic from all other packets
+            if (gtp_v1_header_flags->version == 1 && gtp_v1_header_flags->protocol_type == 1) {
+                // Keep parsing
+            } else {
+                // Stop processing and return packet as-is
+                return parser_code_t::success;
+            }
+
+            // Then we have multiple options how packets may look
+            if (gtp_v1_header_flags->extension_header == 0 && gtp_v1_header_flags->n_pdu_number == 0) {
+                // Keep parsing as we can parse such packets
+            } else {
+                // We do not support packets with extension headers or n_pdu_number_in_place
+                return parser_code_t::success;
+            }
+
+            if (gtp_v1_header_flags->sequence_number) {
+                // We need to use structure with sequence number in place
+                if (local_pointer + sizeof(gtp_v1_header_with_sequence_t) > end_pointer) {
+                    return parser_code_t::memory_violation;
+                }
+
+                const gtp_v1_header_with_sequence_t* gtp_v1_header = (const gtp_v1_header_with_sequence_t*)local_pointer;
+
+                if (gtp_v1_header->get_message_type() != gtp_v1_t_pdu_type) {
+                    // We are not interested in other message types and return them as-is
+                    return parser_code_t::success;
+                }
+
+                // std::cout << "GTPv1: " << gtp_v1_header->print() << " header: " << gtp_v1_header_flags->print() << std::endl;
+                local_pointer += sizeof(gtp_v1_header_with_sequence_t);
+
+                // TODO: we need to add support for IPv6 here
+
+                // This function will override all fields in original packet structure by new fields
+                parser_options_t gtp_parser_options;
+                gtp_parser_options.read_packet_length_from_ip_header = true;
+
+                // We need to calculate how much data we have after all parsed fields until end of packet to pass it to
+                // function below We have length in GTP header but I do not think taht we should trust it
+                int remaining_packet_length = end_pointer - local_pointer;
+
+                // Well, we need to reset ports for original packet as in case if we have protocol like ICMP internally
+                // it will inherit them and it will look weird
+                packet.source_port      = 0;
+                packet.destination_port = 0;
+
+                parser_code_t nested_packet_parse_result =
+                    parse_raw_ipv4_packet_to_simple_packet_full_ng(local_pointer, remaining_packet_length,
+                                                                   remaining_packet_length, packet, gtp_parser_options);
+
+                return nested_packet_parse_result;
+            } else {
+                // GTPv1 packet header withotu sequence number
+                if (local_pointer + sizeof(gtp_v1_header_t) > end_pointer) {
+                    return parser_code_t::memory_violation;
+                }
+
+                const gtp_v1_header_t* gtp_v1_header = (const gtp_v1_header_t*)local_pointer;
+
+                if (gtp_v1_header->get_message_type() != gtp_v1_t_pdu_type) {
+                    // We are not interested in other message types and return them as-is
+                    return parser_code_t::success;
+                }
+
+                // std::cout << "GTPv1: " << gtp_v1_header->print() << " header: " << gtp_v1_header_flags->print() << std::endl;
+
+                local_pointer += sizeof(gtp_v1_header_t);
+
+                // TODO: we need to add support for IPv6 here
+
+                // This function will override all fields in original packet structure by new fields
+                parser_options_t gtp_parser_options;
+                gtp_parser_options.read_packet_length_from_ip_header = true;
+
+                // We need to calculate how much data we have after all parsed fields until end of packet to pass it to
+                // function below We have length in GTP header but I do not think taht we should trust it
+                int remaining_packet_length = end_pointer - local_pointer;
+
+                // Well, we need to reset ports for original packet as in case if we have protocol like ICMP internally
+                // it will inherit them and it will look weird
+                packet.source_port      = 0;
+                packet.destination_port = 0;
+
+                parser_code_t nested_packet_parse_result =
+                    parse_raw_ipv4_packet_to_simple_packet_full_ng(local_pointer, remaining_packet_length,
+                                                                   remaining_packet_length, packet, gtp_parser_options);
+
+                return nested_packet_parse_result;
+            }
+        }
+
     } else if (protocol == IpProtocolNumberGRE) {
-        if (!unpack_gre) {
+        if (!parser_options.unpack_gre) {
             // We do not decode it automatically but we can report source and destination IPs for it to FNM processing
             return parser_code_t::success;
         }
@@ -303,14 +417,15 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
             local_pointer += sizeof(gre_header_t);
 
             // This function will override all fields in original packet structure by new fields
-            bool read_length_from_ip_header = true;
+            parser_options_t gre_parser_options;
+            gre_parser_options.read_packet_length_from_ip_header = true;
 
             // We need to calculate how much data we have after all parsed fields until end of packet to pass it to function below
             int remaining_packet_length = end_pointer - local_pointer;
 
             parser_code_t nested_packet_parse_result =
                 parse_raw_ipv4_packet_to_simple_packet_full_ng(local_pointer, remaining_packet_length,
-                                                               remaining_packet_length, packet, read_length_from_ip_header);
+                                                               remaining_packet_length, packet, gre_parser_options);
 
             return nested_packet_parse_result;
         } else if (gre_nested_protocol == IanaEthertypeERSPAN) {
@@ -319,15 +434,16 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
             // We need to calculate how much data we have after all parsed fields until end of packet to pass it to function below
             int remaining_packet_length = end_pointer - local_pointer;
 
-            bool read_length_from_ip_header_erspan = true;
+            parser_options_t erspan_parser_options;
+            erspan_parser_options.read_packet_length_from_ip_header = true;
 
             // We do not decode it second time
-            bool decode_nested_gre = false;
+            erspan_parser_options.unpack_gre = false;
 
             // We need to call same function because we have normal wire format encoded data with ethernet header here
             parser_code_t nested_packet_parse_result =
-                parse_raw_packet_to_simple_packet_full_ng(local_pointer, remaining_packet_length, remaining_packet_length,
-                                                          packet, decode_nested_gre, read_length_from_ip_header_erspan);
+                parse_raw_packet_to_simple_packet_full_ng(local_pointer, remaining_packet_length,
+                                                          remaining_packet_length, packet, erspan_parser_options);
 
             return nested_packet_parse_result;
         } else {
@@ -346,7 +462,7 @@ parser_code_t parse_raw_ipv4_packet_to_simple_packet_full_ng(const uint8_t* poin
                                                              int length_before_sampling,
                                                              int captured_length,
                                                              simple_packet_t& packet,
-                                                             bool read_packet_length_from_ip_header) {
+                                                             const parser_options_t& parser_options) {
     // We are using pointer copy because we are changing it
     const uint8_t* local_pointer = pointer;
 
@@ -387,7 +503,7 @@ parser_code_t parse_raw_ipv4_packet_to_simple_packet_full_ng(const uint8_t* poin
     protocol        = ipv4_header->get_protocol();
     packet.protocol = protocol;
 
-    if (read_packet_length_from_ip_header) {
+    if (parser_options.read_packet_length_from_ip_header) {
         packet.length = ipv4_header->get_total_length_host_byte_order();
     } else {
         packet.length = length_before_sampling;
