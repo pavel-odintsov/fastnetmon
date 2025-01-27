@@ -779,6 +779,40 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, const ui
         }
 
         break;
+    case IPFIX_TOTAL_PACKETS:
+        if (record_length == 8) {
+            uint64_t packets_number = 0;
+            memcpy(&packets_number, data, record_length);
+    
+            packet.number_of_packets = fast_ntoh(packets_number);
+        } else {
+            ipfix_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Unexpectedly big size for IPFIX_TOTAL_PACKETS: " << record_length;
+            }
+        }
+
+        break;
+    case IPFIX_TOTAL_BYTES:
+        if (record_length == 8) {
+            uint64_t bytes_number = 0;
+            memcpy(&bytes_number, data, record_length);
+
+            packet.length = fast_ntoh(bytes_number);
+
+            // IPFIX carries only information about number of octets including IP headers and IP payload
+            // which is exactly what we need for ip_length field
+            packet.ip_length = packet.length;
+        } else {
+            ipfix_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Unexpectedly big size for IPFIX_TOTAL_BYTES: " << record_length;
+            }
+        }
+
+        break;
     case IPFIX_IN_PROTOCOL:
         if (record_length > sizeof(packet.protocol)) {
             ipfix_too_large_field++;

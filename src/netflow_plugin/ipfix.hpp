@@ -56,6 +56,12 @@
 
 #define IPFIX_DESTINATION_MAC_ADDRESS 80
 
+// Juniper SRX uses this field to encode number of octets
+#define IPFIX_TOTAL_BYTES 85
+
+// Juniper SRX uses this field to encode number of packets
+#define IPFIX_TOTAL_PACKETS 86
+
 #define IPFIX_FORWARDING_STATUS 89
 
 #define IPFIX_FLOW_END_REASON 136
