@@ -1,7 +1,179 @@
-// That's not a module as we do refactoring right now in small steps
-// TODO: place make it proper module
+#include "netflow_v9_collector.hpp"
+
+#include <cstdint>
+#include <fstream>
+#include <string>
+
+#include "../fast_library.hpp"
+
+#include "netflow.hpp"
+
+#include "netflow_template.hpp"
+
+#include "netflow_meta_info.hpp"
+
+#include "netflow_v9.hpp"
+
+#include "netflow_v9_metrics.hpp"
+
+#include "../simple_packet_parser_ng.hpp"
+
+#include <boost/serialization/map.hpp>
+#include <boost/serialization/vector.hpp>
+
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
+
+#include "../fastnetmon_configuration_scheme.hpp"
+
+// Access to inaccurate but fast time
+extern time_t current_inaccurate_time;
+
+extern log4cpp::Category& logger;
+
+extern fastnetmon_configuration_t fastnetmon_global_configuration;
+
+extern process_packet_pointer netflow_process_func_ptr;
+
+extern uint64_t template_netflow_ipfix_disk_writes;
+
+extern uint64_t netflow_ignored_long_flows;
+
+extern uint64_t netflow_ipfix_all_protocols_total_flows;
+
+extern uint64_t sets_per_packet_maximum_number;
+
+// TODO: get rid of such tricks
+        
+const template_t* peer_find_template(const std::map<std::string, std::map<uint32_t, template_t>>& table_for_lookup,
+                                     std::mutex& table_for_lookup_mutex,
+                                     uint32_t source_id,
+                                     uint32_t template_id,
+                                     const std::string& client_addres_in_string_format);
+
+void add_update_peer_template(const netflow_protocol_version_t& netflow_version,
+                              std::map<std::string, std::map<uint32_t, template_t>>& table_for_add,
+                              std::mutex& table_for_add_mutex,
+                              uint32_t source_id,
+                              uint32_t template_id,
+                              const std::string& client_addres_in_string_format,
+                              const template_t& field_template,
+                              bool& updated,
+                              bool& updated_existing_template);
+
+void update_device_flow_timeouts(const device_timeouts_t& device_timeouts,
+                                 std::mutex& structure_mutex,
+                                 std::map<std::string, device_timeouts_t>& timeout_storage,
+                                 const std::string& client_addres_in_string_format,
+                                 const netflow_protocol_version_t& netflow_protocol_version);
+
+void override_packet_fields_from_nested_packet(simple_packet_t& packet, const simple_packet_t& nested_packet);
+
+
 
 void update_netflow_v9_sampling_rate(uint32_t new_sampling_rate, const std::string& client_addres_in_string_format);
+
+// Sampling rates extracted from Netflow
+std::mutex netflow9_sampling_rates_mutex;
+std::map<std::string, uint32_t> netflow9_sampling_rates;
+
+std::mutex global_netflow9_templates_mutex;
+std::map<std::string, std::map<uint32_t, template_t>> global_netflow9_templates;
+
+// Netflow v9 per device timeouts
+std::mutex netflow_v9_per_device_flow_timeouts_mutex;
+std::map<std::string, device_timeouts_t> netflow_v9_per_device_flow_timeouts;
+
+std::vector<system_counter_t> get_netflow_v9_stats() {
+    std::vector<system_counter_t> system_counter;
+
+    system_counter.push_back(system_counter_t("netflow_v9_total_packets", netflow_v9_total_packets,
+                                              metric_type_t::counter, netflow_v9_total_packets_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_total_flows", netflow_v9_total_flows, metric_type_t::counter,
+                                              netflow_v9_total_flows_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_total_ipv4_flows", netflow_v9_total_ipv4_flows,
+                                              metric_type_t::counter, netflow_v9_total_ipv4_flows_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_total_ipv6_flows", netflow_v9_total_ipv6_flows,
+                                              metric_type_t::counter, netflow_v9_total_ipv6_flows_desc));
+
+    system_counter.push_back(system_counter_t("netflow_v9_duration_0_seconds", netflow9_duration_0_seconds,
+                                              metric_type_t::counter, netflow9_duration_0_seconds_desc));
+
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_1_seconds", netflow9_duration_less_1_seconds,
+                                              metric_type_t::counter, netflow9_duration_less_1_seconds_desc));
+
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_2_seconds", netflow9_duration_less_2_seconds,
+                                              metric_type_t::counter, netflow9_duration_less_2_seconds_desc));
+
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_3_seconds", netflow9_duration_less_3_seconds,
+                                              metric_type_t::counter, netflow9_duration_less_3_seconds_desc));
+
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_5_seconds", netflow9_duration_less_5_seconds,
+                                              metric_type_t::counter, netflow9_duration_less_5_seconds_desc));
+
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_10_seconds", netflow9_duration_less_10_seconds,
+                                              metric_type_t::counter, netflow9_duration_less_10_seconds_desc));
+
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_15_seconds", netflow9_duration_less_15_seconds,
+                                              metric_type_t::counter, netflow9_duration_less_15_seconds_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_30_seconds", netflow9_duration_less_30_seconds,
+                                              metric_type_t::counter, netflow9_duration_less_30_seconds_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_60_seconds", netflow9_duration_less_60_seconds,
+                                              metric_type_t::counter, netflow9_duration_less_60_seconds_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_90_seconds", netflow9_duration_less_90_seconds,
+                                              metric_type_t::counter, netflow9_duration_less_90_seconds_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_duration_less_180_seconds", netflow9_duration_less_180_seconds,
+                                              metric_type_t::counter, netflow9_duration_less_180_seconds_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_duration_exceed_180_seconds", netflow9_duration_exceed_180_seconds,
+                                              metric_type_t::counter, netflow9_duration_exceed_180_seconds_desc));
+
+
+    system_counter.push_back(system_counter_t("netflow_v9_data_packet_number", netflow9_data_packet_number,
+                                              metric_type_t::counter, netflow9_data_packet_number_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_data_templates_number", netflow9_data_templates_number,
+                                              metric_type_t::counter, netflow9_data_templates_number_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_options_templates_number", netflow9_options_templates_number,
+                                              metric_type_t::counter, netflow9_options_templates_number_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_options_packet_number", netflow9_options_packet_number,
+                                              metric_type_t::counter, netflow9_options_packet_number_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_packets_with_unknown_templates", netflow9_packets_with_unknown_templates,
+                                              metric_type_t::counter, netflow9_packets_with_unknown_templates_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_custom_sampling_rate_received", netflow9_custom_sampling_rate_received,
+                                              metric_type_t::counter, netflow9_custom_sampling_rate_received_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_sampling_rate_changes", netflow9_sampling_rate_changes,
+                                              metric_type_t::counter, netflow9_sampling_rate_changes_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_protocol_version_adjustments", netflow9_protocol_version_adjustments,
+                                              metric_type_t::counter, netflow9_protocol_version_adjustments_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_template_updates_number_due_to_real_changes", netflow_v9_template_data_updates,
+                                              metric_type_t::counter, netflow_v9_template_data_updates_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_too_large_field", netflow_v9_too_large_field,
+                                              metric_type_t::counter, netflow_v9_too_large_field_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_lite_headers", netflow_v9_lite_headers,
+                                              metric_type_t::counter, netflow_v9_lite_headers_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_forwarding_status", netflow_v9_forwarding_status,
+                                              metric_type_t::counter, netflow_v9_forwarding_status_desc));
+
+    system_counter.push_back(system_counter_t("netflow_v9_lite_header_parser_success", netflow_v9_lite_header_parser_success,
+                                              metric_type_t::counter, netflow_v9_lite_header_parser_success_desc));
+
+    system_counter.push_back(system_counter_t("netflow_v9_lite_header_parser_error", netflow_v9_lite_header_parser_error,
+                                              metric_type_t::counter, netflow_v9_lite_header_parser_error_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_broken_packets", netflow_v9_broken_packets,
+                                              metric_type_t::counter, netflow_v9_broken_packets_desc));
+
+    system_counter.push_back(system_counter_t("netflow_v9_active_flow_timeout_received", netflow_v9_active_flow_timeout_received,
+                                              metric_type_t::counter, netflow_v9_active_flow_timeout_received_desc));
+    system_counter.push_back(system_counter_t("netflow_v9_inactive_flow_timeout_received", netflow_v9_inactive_flow_timeout_received,
+                                              metric_type_t::counter, netflow_v9_inactive_flow_timeout_received_desc));
+
+    system_counter.push_back(system_counter_t("netflow_v9_marked_zero_next_hop_and_zero_output_as_dropped",
+                                              netflow_v9_marked_zero_next_hop_and_zero_output_as_dropped, metric_type_t::counter,
+                                              netflow_v9_marked_zero_next_hop_and_zero_output_as_dropped_desc));
+
+    return system_counter;
+}
+
+
 
 // This function reads all available options templates
 // http://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
@@ -234,6 +406,10 @@ bool process_netflow_v9_template(const uint8_t* pkt,
 
     return true;
 }
+
+// TODO: get rid of it ASAP
+// Copy an int (possibly shorter than the target) keeping their LSBs aligned
+#define BE_COPY(a) memcpy((u_char*)&a + (sizeof(a) - record_length), data, record_length);
 
 bool netflow9_record_to_flow(uint32_t record_type,
                              uint32_t record_length,
@@ -1552,6 +1728,7 @@ bool process_netflow_packet_v9(const uint8_t* packet,
                                const std::string& client_addres_in_string_format,
                                uint32_t client_ipv4_address) {
     // logger<< log4cpp::Priority::INFO<<"We got Netflow  v9 packet!";
+    netflow_v9_total_packets++;
 
     const netflow9_header_t* netflow9_header = (const netflow9_header_t*)packet;
 

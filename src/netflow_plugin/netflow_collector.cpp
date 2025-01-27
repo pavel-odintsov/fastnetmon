@@ -53,20 +53,14 @@
 
 #include "netflow_v5_collector.hpp"
 
+#include "netflow_v9_collector.hpp"
+
 #include "netflow_meta_info.hpp"
 
 // Get it from main programme
 extern log4cpp::Category& logger;
 
 extern fastnetmon_configuration_t fastnetmon_global_configuration;
-
-// Sampling rates extracted from Netflow
-std::mutex netflow9_sampling_rates_mutex;
-std::map<std::string, uint32_t> netflow9_sampling_rates;
-
-// Netflow v9 per device timeouts
-std::mutex netflow_v9_per_device_flow_timeouts_mutex;
-std::map<std::string, device_timeouts_t> netflow_v9_per_device_flow_timeouts;
 
 // Per router packet counters
 std::mutex netflow5_packets_per_router_mutex;
@@ -89,113 +83,22 @@ uint64_t netflow_ipfix_total_ipv6_packets         = 0;
 std::string netflow_ipfix_total_packets_desc = "Total number of Netflow or IPFIX UDP packets received";
 uint64_t netflow_ipfix_total_packets         = 0;
 
-std::string netflow_v9_total_packets_desc = "Total number of Netflow v5 UDP packets received";
-uint64_t netflow_v9_total_packets         = 0;
-
-std::string netflow_v9_total_flows_desc = "Total number of Netflow v9 flows (multiple in each packet)";
-uint64_t netflow_v9_total_flows         = 0;
-
-std::string netflow_v9_total_ipv4_flows_desc = "Total number of Netflow v9 IPv4 flows (multiple in each packet)";
-uint64_t netflow_v9_total_ipv4_flows         = 0;
-
-std::string netflow_v9_total_ipv6_flows_desc = "Total number of Netflow v9 IPv6 flows (multiple in each packet)";
-uint64_t netflow_v9_total_ipv6_flows         = 0;
-
-std::string netflow_v9_forwarding_status_desc = "Number of Netflow v9 flows with forwarding status provided";
-uint64_t netflow_v9_forwarding_status         = 0;
-
-std::string netflow_v9_marked_zero_next_hop_and_zero_output_as_dropped_desc =
-    "Netflow v9 flow was marked as dropped from interface and next hop information";
-uint64_t netflow_v9_marked_zero_next_hop_and_zero_output_as_dropped = 0;
-
 std::string netflow_ipfix_all_protocols_total_flows_desc =
     "Total number of flows summarized for all kinds of Netflow and IPFIX";
 uint64_t netflow_ipfix_all_protocols_total_flows = 0;
 
-std::string netflow_v9_active_flow_timeout_received_desc = "Total number of received active Netflow v9 flow timeouts";
-uint64_t netflow_v9_active_flow_timeout_received         = 0;
-
-std::string netflow_v9_inactive_flow_timeout_received_desc =
-    "Total number of received inactive Netflow v9 flow timeouts";
-uint64_t netflow_v9_inactive_flow_timeout_received = 0;
-
-std::string netflow_v9_broken_packets_desc = "Netflow v9 packets we cannot decode";
-uint64_t netflow_v9_broken_packets         = 0;
-
 std::string netflow_ipfix_udp_packet_drops_desc = "Number of UDP packets dropped by system on our socket";
 uint64_t netflow_ipfix_udp_packet_drops         = 0;
-
-std::string netflow9_data_packet_number_desc = "Number of Netflow v9 data packets";
-uint64_t netflow9_data_packet_number         = 0;
-
-std::string netflow9_data_templates_number_desc = "Number of Netflow v9 data template packets";
-uint64_t netflow9_data_templates_number         = 0;
-
-std::string netflow9_options_templates_number_desc = "Number of Netflow v9 options templates packets";
-uint64_t netflow9_options_templates_number         = 0;
-
-std::string netflow9_custom_sampling_rate_received_desc =
-    "Number of times we received sampling rate from Netflow v9 agent";
-uint64_t netflow9_custom_sampling_rate_received = 0;
-
-std::string netflow9_options_packet_number_desc = "Number of Netflow v9 options data packets";
-uint64_t netflow9_options_packet_number         = 0;
-
-std::string netflow9_sampling_rate_changes_desc = "How much times we changed sampling rate for same agent. As change "
-                                                  "we also count when we received it for the first time";
-uint64_t netflow9_sampling_rate_changes         = 0;
 
 std::string netflow_ipfix_unknown_protocol_version_desc =
     "Number of packets with unknown Netflow version. In may be sign that some another protocol like sFlow is being "
     "send to Netflow or IPFIX port";
 uint64_t netflow_ipfix_unknown_protocol_version = 0;
 
-std::string netflow9_packets_with_unknown_templates_desc =
-    "Number of dropped Netflow v9 packets due to unknown template in message";
-uint64_t netflow9_packets_with_unknown_templates = 0;
-
-std::string netflow9_duration_0_seconds_desc = "Netflow v9 flows with duration 0 seconds";
-uint64_t netflow9_duration_0_seconds         = 0;
-
-std::string netflow9_duration_less_1_seconds_desc = "Netflow v9 flows with duration less then 1 seconds";
-uint64_t netflow9_duration_less_1_seconds         = 0;
-
-std::string netflow9_duration_less_2_seconds_desc = "Netflow v9 flows with duration less then 2 seconds";
-uint64_t netflow9_duration_less_2_seconds         = 0;
-
-std::string netflow9_duration_less_3_seconds_desc = "Netflow v9 flows with duration less then 3 seconds";
-uint64_t netflow9_duration_less_3_seconds         = 0;
-
-std::string netflow9_duration_less_5_seconds_desc = "Netflow v9 flows with duration less then 5 seconds";
-uint64_t netflow9_duration_less_5_seconds         = 0;
-
-std::string netflow9_duration_less_10_seconds_desc = "Netflow v9 flows with duration less then 10 seconds";
-uint64_t netflow9_duration_less_10_seconds         = 0;
-
-std::string netflow9_duration_less_15_seconds_desc = "Netflow v9 flows with duration less then 15 seconds";
-uint64_t netflow9_duration_less_15_seconds         = 0;
-
-std::string netflow9_duration_less_30_seconds_desc = "Netflow v9 flows with duration less then 30 seconds";
-uint64_t netflow9_duration_less_30_seconds         = 0;
-
-std::string netflow9_duration_less_60_seconds_desc = "Netflow v9 flows with duration less then 60 seconds";
-uint64_t netflow9_duration_less_60_seconds         = 0;
-
-std::string netflow9_duration_less_90_seconds_desc = "Netflow v9 flows with duration less then 90 seconds";
-uint64_t netflow9_duration_less_90_seconds         = 0;
-
-std::string netflow9_duration_less_180_seconds_desc = "Netflow v9 flows with duration less then 180 seconds";
-uint64_t netflow9_duration_less_180_seconds         = 0;
-
-std::string netflow9_duration_exceed_180_seconds_desc = "Netflow v9 flows with duration more then 180 seconds";
-uint64_t netflow9_duration_exceed_180_seconds         = 0;
-
 std::string template_update_attempts_with_same_template_data_desc =
     "Number of templates received with same data as inside known by us";
 uint64_t template_update_attempts_with_same_template_data = 0;
 
-std::string netflow_v9_template_data_updates_desc = "Count times when template data actually changed for Netflow v9";
-uint64_t netflow_v9_template_data_updates         = 0;
 
 std::string template_netflow_ipfix_disk_writes_desc =
     "Number of times when we write Netflow or ipfix templates to disk";
@@ -204,23 +107,6 @@ uint64_t template_netflow_ipfix_disk_writes = 0;
 
 std::string netflow_ignored_long_flows_desc = "Number of flows which exceed specified limit in configuration";
 uint64_t netflow_ignored_long_flows         = 0;
-
-std::string netflow9_protocol_version_adjustments_desc =
-    "Number of Netflow v9 flows with re-classified protocol version";
-uint64_t netflow9_protocol_version_adjustments = 0;
-
-std::string netflow_v9_too_large_field_desc = "We increment these counters when field we use to store particular type "
-                                              "of Netflow v9 record is smaller than we actually received from device";
-uint64_t netflow_v9_too_large_field         = 0;
-
-std::string netflow_v9_lite_header_parser_error_desc = "Netflow v9 Lite header parser errors";
-uint64_t netflow_v9_lite_header_parser_error         = 0;
-
-std::string netflow_v9_lite_header_parser_success_desc = "Netflow v9 Lite header parser success";
-uint64_t netflow_v9_lite_header_parser_success         = 0;
-
-std::string netflow_v9_lite_headers_desc = "Total number of headers in Netflow v9 lite received";
-uint64_t netflow_v9_lite_headers         = 0;
 
 // END of counters section
 
@@ -233,9 +119,6 @@ uint64_t sets_per_packet_maximum_number = 256;
 // TODO: add per source uniq templates support
 process_packet_pointer netflow_process_func_ptr = NULL;
 
-std::mutex global_netflow9_templates_mutex;
-std::map<std::string, std::map<uint32_t, template_t>> global_netflow9_templates;
-
 std::vector<system_counter_t> get_netflow_stats() {
     std::vector<system_counter_t> system_counter;
 
@@ -245,90 +128,12 @@ std::vector<system_counter_t> get_netflow_stats() {
     // Append Netflow v5 stats
     system_counter.insert(system_counter.end(), netflow_v5_stats.begin(), netflow_v5_stats.end());
 
-    // Netflow v9
-    system_counter.push_back(system_counter_t("netflow_v9_total_packets", netflow_v9_total_packets,
-                                              metric_type_t::counter, netflow_v9_total_packets_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_total_flows", netflow_v9_total_flows, metric_type_t::counter,
-                                              netflow_v9_total_flows_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_total_ipv4_flows", netflow_v9_total_ipv4_flows,
-                                              metric_type_t::counter, netflow_v9_total_ipv4_flows_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_total_ipv6_flows", netflow_v9_total_ipv6_flows,
-                                              metric_type_t::counter, netflow_v9_total_ipv6_flows_desc));
+    // Get Netflow v9 stats
+    std::vector<system_counter_t> netflow_v9_stats = get_netflow_v9_stats();
 
-    system_counter.push_back(system_counter_t("netflow_v9_duration_0_seconds", netflow9_duration_0_seconds,
-                                              metric_type_t::counter, netflow9_duration_0_seconds_desc));
-
-    system_counter.push_back(system_counter_t("netflow_v9_duration_less_1_seconds", netflow9_duration_less_1_seconds,
-                                              metric_type_t::counter, netflow9_duration_less_1_seconds_desc));
-
-    system_counter.push_back(system_counter_t("netflow_v9_duration_less_2_seconds", netflow9_duration_less_2_seconds,
-                                              metric_type_t::counter, netflow9_duration_less_2_seconds_desc));
-
-    system_counter.push_back(system_counter_t("netflow_v9_duration_less_3_seconds", netflow9_duration_less_3_seconds,
-                                              metric_type_t::counter, netflow9_duration_less_3_seconds_desc));
-
-    system_counter.push_back(system_counter_t("netflow_v9_duration_less_5_seconds", netflow9_duration_less_5_seconds,
-                                              metric_type_t::counter, netflow9_duration_less_5_seconds_desc));
-
-    system_counter.push_back(system_counter_t("netflow_v9_duration_less_10_seconds", netflow9_duration_less_10_seconds,
-                                              metric_type_t::counter, netflow9_duration_less_10_seconds_desc));
-
-
-    system_counter.push_back(system_counter_t("netflow_v9_duration_less_15_seconds", netflow9_duration_less_15_seconds,
-                                              metric_type_t::counter, netflow9_duration_less_15_seconds_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_duration_less_30_seconds", netflow9_duration_less_30_seconds,
-                                              metric_type_t::counter, netflow9_duration_less_30_seconds_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_duration_less_60_seconds", netflow9_duration_less_60_seconds,
-                                              metric_type_t::counter, netflow9_duration_less_60_seconds_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_duration_less_90_seconds", netflow9_duration_less_90_seconds,
-                                              metric_type_t::counter, netflow9_duration_less_90_seconds_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_duration_less_180_seconds", netflow9_duration_less_180_seconds,
-                                              metric_type_t::counter, netflow9_duration_less_180_seconds_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_duration_exceed_180_seconds", netflow9_duration_exceed_180_seconds,
-                                              metric_type_t::counter, netflow9_duration_exceed_180_seconds_desc));
-
-    system_counter.push_back(system_counter_t("netflow_v9_data_packet_number", netflow9_data_packet_number,
-                                              metric_type_t::counter, netflow9_data_packet_number_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_data_templates_number", netflow9_data_templates_number,
-                                              metric_type_t::counter, netflow9_data_templates_number_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_options_templates_number", netflow9_options_templates_number,
-                                              metric_type_t::counter, netflow9_options_templates_number_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_options_packet_number", netflow9_options_packet_number,
-                                              metric_type_t::counter, netflow9_options_packet_number_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_packets_with_unknown_templates", netflow9_packets_with_unknown_templates,
-                                              metric_type_t::counter, netflow9_packets_with_unknown_templates_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_custom_sampling_rate_received", netflow9_custom_sampling_rate_received,
-                                              metric_type_t::counter, netflow9_custom_sampling_rate_received_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_sampling_rate_changes", netflow9_sampling_rate_changes,
-                                              metric_type_t::counter, netflow9_sampling_rate_changes_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_protocol_version_adjustments", netflow9_protocol_version_adjustments,
-                                              metric_type_t::counter, netflow9_protocol_version_adjustments_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_template_updates_number_due_to_real_changes", netflow_v9_template_data_updates,
-                                              metric_type_t::counter, netflow_v9_template_data_updates_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_too_large_field", netflow_v9_too_large_field,
-                                              metric_type_t::counter, netflow_v9_too_large_field_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_lite_headers", netflow_v9_lite_headers,
-                                              metric_type_t::counter, netflow_v9_lite_headers_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_forwarding_status", netflow_v9_forwarding_status,
-                                              metric_type_t::counter, netflow_v9_forwarding_status_desc));
-
-    system_counter.push_back(system_counter_t("netflow_v9_lite_header_parser_success", netflow_v9_lite_header_parser_success,
-                                              metric_type_t::counter, netflow_v9_lite_header_parser_success_desc));
-
-    system_counter.push_back(system_counter_t("netflow_v9_lite_header_parser_error", netflow_v9_lite_header_parser_error,
-                                              metric_type_t::counter, netflow_v9_lite_header_parser_error_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_broken_packets", netflow_v9_broken_packets,
-                                              metric_type_t::counter, netflow_v9_broken_packets_desc));
-
-    system_counter.push_back(system_counter_t("netflow_v9_active_flow_timeout_received", netflow_v9_active_flow_timeout_received,
-                                              metric_type_t::counter, netflow_v9_active_flow_timeout_received_desc));
-    system_counter.push_back(system_counter_t("netflow_v9_inactive_flow_timeout_received", netflow_v9_inactive_flow_timeout_received,
-                                              metric_type_t::counter, netflow_v9_inactive_flow_timeout_received_desc));
-
-    system_counter.push_back(system_counter_t("netflow_v9_marked_zero_next_hop_and_zero_output_as_dropped",
-                                              netflow_v9_marked_zero_next_hop_and_zero_output_as_dropped, metric_type_t::counter,
-                                              netflow_v9_marked_zero_next_hop_and_zero_output_as_dropped_desc));
-
+    // Append Netflow v9 stats
+    system_counter.insert(system_counter.end(), netflow_v9_stats.begin(), netflow_v9_stats.end());
+ 
     // Get IPFIX stats
     std::vector<system_counter_t> ipfix_stats = get_ipfix_stats();
 
@@ -662,10 +467,6 @@ void update_device_flow_timeouts(const device_timeouts_t& device_timeouts,
     return;
 }
 
-
-// Temporary during migration
-#include "netflow_v9_collector.cpp"
-
 bool process_netflow_packet(uint8_t* packet, uint32_t len, std::string& client_addres_in_string_format, uint32_t client_ipv4_address) {
     netflow_header_common_t* hdr = (netflow_header_common_t*)packet;
 
@@ -673,7 +474,6 @@ bool process_netflow_packet(uint8_t* packet, uint32_t len, std::string& client_a
     case 5:
         return process_netflow_packet_v5(packet, len, client_addres_in_string_format, client_ipv4_address);
     case 9:
-        netflow_v9_total_packets++;
         return process_netflow_packet_v9(packet, len, client_addres_in_string_format, client_ipv4_address);
     case 10:
         netflow_ipfix_total_packets++;

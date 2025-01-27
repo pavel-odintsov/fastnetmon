@@ -379,6 +379,9 @@ add_library(ipfix_rfc STATIC ipfix_fields/ipfix_rfc.cpp)
 add_library(ipfix_collector STATIC netflow_plugin/ipfix_collector.cpp)
 target_link_libraries(ipfix_collector ipfix_rfc)
 
+# Netflow v9 collector as separate module
+add_library(netflow_v9_collector STATIC netflow_plugin/netflow_v9_collector.cpp)
+
 # Netflow v5 collector as separate module
 add_library(netflow_v5_collector STATIC netflow_plugin/netflow_v5_collector.cpp)
 
@@ -589,7 +592,7 @@ add_library(netflow STATIC netflow_plugin/netflow.cpp)
 
 # netflow plugin
 add_library(netflow_plugin STATIC netflow_plugin/netflow_collector.cpp)
-target_link_libraries(netflow_plugin ipfix_collector netflow_v5_collector netflow netflow_template)
+target_link_libraries(netflow_plugin ipfix_collector netflow_v9_collector netflow_v5_collector netflow netflow_template)
 
 if (ENABLE_PCAP_SUPPORT) 
   # pcap plugin
