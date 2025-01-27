@@ -51,6 +51,8 @@
 
 #include "ipfix_collector.hpp"
 
+#include "netflow_v5_collector.hpp"
+
 #include "netflow_meta_info.hpp"
 
 // Get it from main programme
@@ -86,12 +88,6 @@ uint64_t netflow_ipfix_total_ipv6_packets         = 0;
 
 std::string netflow_ipfix_total_packets_desc = "Total number of Netflow or IPFIX UDP packets received";
 uint64_t netflow_ipfix_total_packets         = 0;
-
-std::string netflow_v5_total_packets_desc = "Total number of Netflow v5 UDP packets received";
-uint64_t netflow_v5_total_packets         = 0;
-
-std::string netflow_v5_total_flows_desc = "Total number of Netflow v5 flows (multiple in each packet)";
-uint64_t netflow_v5_total_flows         = 0;
 
 std::string netflow_v9_total_packets_desc = "Total number of Netflow v5 UDP packets received";
 uint64_t netflow_v9_total_packets         = 0;
@@ -194,24 +190,6 @@ uint64_t netflow9_duration_less_180_seconds         = 0;
 std::string netflow9_duration_exceed_180_seconds_desc = "Netflow v9 flows with duration more then 180 seconds";
 uint64_t netflow9_duration_exceed_180_seconds         = 0;
 
-std::string netflow5_duration_less_15_seconds_desc = "Netflow v5 flows with duration less then 15 seconds";
-uint64_t netflow5_duration_less_15_seconds         = 0;
-
-std::string netflow5_duration_less_30_seconds_desc = "Netflow v5 flows with duration less then 30 seconds";
-uint64_t netflow5_duration_less_30_seconds         = 0;
-
-std::string netflow5_duration_less_60_seconds_desc = "Netflow v5 flows with duration less then 60 seconds";
-uint64_t netflow5_duration_less_60_seconds         = 0;
-
-std::string netflow5_duration_less_90_seconds_desc = "Netflow v5 flows with duration less then 90 seconds";
-uint64_t netflow5_duration_less_90_seconds         = 0;
-
-std::string netflow5_duration_less_180_seconds_desc = "Netflow v5 flows with duration less then 180 seconds";
-uint64_t netflow5_duration_less_180_seconds         = 0;
-
-std::string netflow5_duration_exceed_180_seconds_desc = "Netflow v5 flows with duration more then 180 seconds";
-uint64_t netflow5_duration_exceed_180_seconds         = 0;
-
 std::string template_update_attempts_with_same_template_data_desc =
     "Number of templates received with same data as inside known by us";
 uint64_t template_update_attempts_with_same_template_data = 0;
@@ -262,22 +240,10 @@ std::vector<system_counter_t> get_netflow_stats() {
     std::vector<system_counter_t> system_counter;
 
     // Netflow v5
-    system_counter.push_back(system_counter_t("netflow_v5_total_packets", netflow_v5_total_packets,
-                                              metric_type_t::counter, netflow_v5_total_packets_desc));
-    system_counter.push_back(system_counter_t("netflow_v5_total_flows", netflow_v5_total_flows, metric_type_t::counter,
-                                              netflow_v5_total_flows_desc));
-    system_counter.push_back(system_counter_t("netflow_v5_duration_less_15_seconds", netflow5_duration_less_15_seconds,
-                                              metric_type_t::counter, netflow5_duration_less_15_seconds_desc));
-    system_counter.push_back(system_counter_t("netflow_v5_duration_less_30_seconds", netflow5_duration_less_30_seconds,
-                                              metric_type_t::counter, netflow5_duration_less_30_seconds_desc));
-    system_counter.push_back(system_counter_t("netflow_v5_duration_less_60_seconds", netflow5_duration_less_60_seconds,
-                                              metric_type_t::counter, netflow5_duration_less_60_seconds_desc));
-    system_counter.push_back(system_counter_t("netflow_v5_duration_less_90_seconds", netflow5_duration_less_90_seconds,
-                                              metric_type_t::counter, netflow5_duration_less_90_seconds_desc));
-    system_counter.push_back(system_counter_t("netflow_v5_duration_less_180_seconds", netflow5_duration_less_180_seconds,
-                                              metric_type_t::counter, netflow5_duration_less_180_seconds_desc));
-    system_counter.push_back(system_counter_t("netflow_v5_duration_exceed_180_seconds", netflow5_duration_exceed_180_seconds,
-                                              metric_type_t::counter, netflow5_duration_exceed_180_seconds_desc));
+    std::vector<system_counter_t> netflow_v5_stats = get_netflow_v5_stats();
+    
+    // Append Netflow v5 stats
+    system_counter.insert(system_counter.end(), netflow_v5_stats.begin(), netflow_v5_stats.end());
 
     // Netflow v9
     system_counter.push_back(system_counter_t("netflow_v9_total_packets", netflow_v9_total_packets,
@@ -698,8 +664,6 @@ void update_device_flow_timeouts(const device_timeouts_t& device_timeouts,
 
 
 // Temporary during migration
-#include "netflow_v5_collector.cpp"
-
 #include "netflow_v9_collector.cpp"
 
 bool process_netflow_packet(uint8_t* packet, uint32_t len, std::string& client_addres_in_string_format, uint32_t client_ipv4_address) {
@@ -707,7 +671,6 @@ bool process_netflow_packet(uint8_t* packet, uint32_t len, std::string& client_a
 
     switch (ntohs(hdr->version)) {
     case 5:
-        netflow_v5_total_packets++;
         return process_netflow_packet_v5(packet, len, client_addres_in_string_format, client_ipv4_address);
     case 9:
         netflow_v9_total_packets++;

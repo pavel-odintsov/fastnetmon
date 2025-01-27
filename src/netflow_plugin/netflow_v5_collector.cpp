@@ -1,3 +1,28 @@
+#include "netflow_v5_collector.hpp"
+
+#include <cstdint>
+#include <fstream>
+#include <string>
+
+#include "../fast_library.hpp"
+
+#include "netflow.hpp"
+#include "netflow_v5.hpp"
+#include "netflow_v5_metrics.hpp"
+
+#include "../fast_endianless.hpp"
+
+#include "../fastnetmon_configuration_scheme.hpp"
+
+extern log4cpp::Category& logger;
+
+extern process_packet_pointer netflow_process_func_ptr;
+
+// Access to inaccurate but fast time
+extern time_t current_inaccurate_time;
+
+extern uint64_t netflow_ipfix_all_protocols_total_flows;
+
 // That's kind of histogram emulation
 void increment_duration_counters_netflow_v5(int64_t duration) {
     if (duration <= 15) {
@@ -17,13 +42,37 @@ void increment_duration_counters_netflow_v5(int64_t duration) {
     return;
 }
 
+std::vector<system_counter_t> get_netflow_v5_stats() {
+    std::vector<system_counter_t> system_counter;
+
+    system_counter.push_back(system_counter_t("netflow_v5_total_packets", netflow_v5_total_packets,
+                                              metric_type_t::counter, netflow_v5_total_packets_desc));
+    system_counter.push_back(system_counter_t("netflow_v5_total_flows", netflow_v5_total_flows, metric_type_t::counter,
+                                              netflow_v5_total_flows_desc));
+    system_counter.push_back(system_counter_t("netflow_v5_duration_less_15_seconds", netflow5_duration_less_15_seconds,
+                                              metric_type_t::counter, netflow5_duration_less_15_seconds_desc));
+    system_counter.push_back(system_counter_t("netflow_v5_duration_less_30_seconds", netflow5_duration_less_30_seconds,
+                                              metric_type_t::counter, netflow5_duration_less_30_seconds_desc));
+    system_counter.push_back(system_counter_t("netflow_v5_duration_less_60_seconds", netflow5_duration_less_60_seconds,
+                                              metric_type_t::counter, netflow5_duration_less_60_seconds_desc));
+    system_counter.push_back(system_counter_t("netflow_v5_duration_less_90_seconds", netflow5_duration_less_90_seconds,
+                                              metric_type_t::counter, netflow5_duration_less_90_seconds_desc));
+    system_counter.push_back(system_counter_t("netflow_v5_duration_less_180_seconds", netflow5_duration_less_180_seconds,
+                                              metric_type_t::counter, netflow5_duration_less_180_seconds_desc));
+    system_counter.push_back(system_counter_t("netflow_v5_duration_exceed_180_seconds", netflow5_duration_exceed_180_seconds,
+                                              metric_type_t::counter, netflow5_duration_exceed_180_seconds_desc));
+
+    return system_counter;
+}
+
 
 bool process_netflow_packet_v5(const uint8_t* packet,
                                uint32_t packet_length,
                                const std::string& client_addres_in_string_format,
                                uint32_t client_ipv4_address) {
     // logger<< log4cpp::Priority::INFO<<"We got Netflow v5 packet!";
-
+    netflow_v5_total_packets++;
+	
     const netflow5_header_t* netflow5_header = (const netflow5_header_t*)packet;
 
     if (packet_length < sizeof(*netflow5_header)) {
