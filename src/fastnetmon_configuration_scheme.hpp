@@ -30,6 +30,7 @@ class fastnetmon_configuration_t {
     bool af_packet_read_packet_length_from_ip_header{ false };
     bool af_packet_extract_tunnel_traffic{ false };
     bool afpacket_execute_strict_cpu_affinity{ false };
+    bool mirror_af_packet_sampling_rate = 1;
 
     // Clickhouse metrics
     bool clickhouse_metrics{ false };

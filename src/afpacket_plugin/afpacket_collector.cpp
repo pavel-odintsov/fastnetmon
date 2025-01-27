@@ -272,6 +272,86 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
         return false;
     }
 
+    if (false) {
+        //
+        // We need to apply BPF program right here but we have really tricky case explained here:
+        // https://natanyellin.com/posts/ebpf-filtering-done-right/
+        // When we created socket it started received *all* traffic for all interfaces without any BPF applied and we
+        // already have traffic waiting for us in buffer If we read it right now then we will receive large burs of
+        // non-sampled traffic which will cause enormous spike and false positive bans.
+        //
+        // Fortunately for us ADD_MEMBERSHIP will drain all traffic from buffer and will re-apply BPF for freshly added
+        // interface and everything will work just fine
+        //
+
+        /*
+
+        Source code for this BPF programme is afpacket_bpf_random.txt
+
+        ./bpf_asm -c afpacket_bpf_random.txt
+
+        bpf_asm build:
+
+        wget https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.4.12.tar.xz
+        tar -xf linux-6.4.12.tar.xz
+        cd linux-6.4.12/tools/bpf
+        sudo apt install -y binutils-dev libreadline-dev bison flex
+        make
+
+        */
+
+       // clang-format off
+        struct sock_filter bpf_random_sampler[5] = {
+            { 0x20,  0,  0, 0xfffff038 },
+            { 0x94,  0,  0, 0x00000004 }, // Sampling rate encoded here
+            { 0x15,  0,  1, 0x00000001 },
+            { 0x06,  0,  0, 0xffffffff },
+            { 0x06,  0,  0, 0000000000 },
+        };
+        // clang-format on
+
+        // Configure sampling rate
+        bpf_random_sampler[1].k = uint32_t(fastnetmon_global_configuration.mirror_af_packet_sampling_rate);
+
+        struct sock_fprog bpf_programm;
+
+        // We need number of elements in bpf_random_sampler array
+        bpf_programm.len    = 5;
+        bpf_programm.filter = bpf_random_sampler;
+
+        // It was added in Linux Kernel 3.16: https://pavel.network/linux-and-bpf-random-opcode/
+        // It was part of this patch: https://www.spinics.net/lists/netdev/msg279779.html
+        // Documentation: https://www.kernel.org/doc/Documentation/networking/filter.txt (look for random)
+        int attach_filter_result = setsockopt(packet_socket, SOL_SOCKET, SO_ATTACH_FILTER, &bpf_programm, sizeof(bpf_programm));
+
+        if (attach_filter_result != 0) {
+            logger << log4cpp::Priority::ERROR << "Can't attach BPF filter for interface " << interface_name
+                   << " errno: " << errno << " error: " << strerror(errno);
+
+            // Human readable error to provide more details about what's going on
+            logger << log4cpp::Priority::ERROR << "For some reasons BPF sampling is not supported on your platform";
+
+            // Retrieve kernel version to provide more detailed errors
+ std::string kernel_version;
+
+            if (!get_kernel_version(kernel_version)) {
+                logger << log4cpp::Priority::ERROR << "Cannot get kernel version";
+                return false;
+            }
+
+            if (kernel_version.starts_with("3.10.")) {
+                logger << log4cpp::Priority::ERROR << "You run CentOS 7 and BPF sampling is not supported on your kernel";
+                logger << log4cpp::Priority::ERROR << "You can disable sampling or upgrade to recent version of your Linux distribution";
+            }
+
+            return false;
+        }
+
+        logger << log4cpp::Priority::INFO << "Configured BPF sampling filter with rate: "
+               << fastnetmon_global_configuration.mirror_af_packet_sampling_rate << " for " << interface_name;
+    }
+
+
     // Without PACKET_ADD_MEMBERSHIP step AF_PACKET will capture traffic on all interfaces which is not exactly what we
     // want in this case We need to specify exact interface we're interested in here
 
