@@ -204,10 +204,15 @@ void walk_block(struct block_desc* pbd) {
             packet.sample_ratio = mirror_af_packet_custom_sampling_rate;
         }
 
+        parser_options_t parser_options{};
+
+        parser_options.unpack_gre    = fastnetmon_global_configuration.af_packet_extract_tunnel_traffic;
+        parser_options.unpack_gtp_v1 = false;
+        parser_options.read_packet_length_from_ip_header = fastnetmon_global_configuration.af_packet_read_packet_length_from_ip_header;
+
         auto result =
             parse_raw_packet_to_simple_packet_full_ng((u_char*)data_pointer, ppd->tp_snaplen, ppd->tp_snaplen, packet,
-                                                      fastnetmon_global_configuration.af_packet_extract_tunnel_traffic,
-                                                      fastnetmon_global_configuration.af_packet_read_packet_length_from_ip_header);
+                                                      parser_options);
 
         if (result != network_data_stuctures::parser_code_t::success) {
             // This counter resets for speed calculation every second
