@@ -1390,9 +1390,14 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, const ui
                     payload_shift = data + sizeof(uint8_t) + sizeof(uint16_t);
                 }
 
+                parser_options_t parser_options{};
+
+                parser_options.unpack_gre = false;
+                parser_options.read_packet_length_from_ip_header = true;
+
                 auto result = parse_raw_packet_to_simple_packet_full_ng(payload_shift, flow_meta.variable_field_length,
                                                                         flow_meta.variable_field_length,
-                                                                        flow_meta.nested_packet, false, true);
+                                                                        flow_meta.nested_packet, parser_options);
 
                 if (result != network_data_stuctures::parser_code_t::success) {
                     // Cannot decode data

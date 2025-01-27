@@ -816,8 +816,6 @@ bool netflow9_record_to_flow(uint32_t record_type,
     case NETFLOW9_LAYER2_PACKET_SECTION_DATA: {
         netflow_v9_lite_headers++;
 
-        bool read_packet_length_from_ip_header = true;
-
         // It's our safe fallback
         uint64_t full_packet_length = record_length;
 
@@ -826,11 +824,13 @@ bool netflow9_record_to_flow(uint32_t record_type,
             full_packet_length = flow_meta.data_link_frame_size;
         }
 
-        bool extract_tunnel_traffic = false;
+        parser_options_t parser_options{};
+
+        parser_options.unpack_gre = false;
+        parser_options.read_packet_length_from_ip_header = true;
 
         auto result = parse_raw_packet_to_simple_packet_full_ng((u_char*)(data), full_packet_length, record_length,
-            flow_meta.nested_packet, extract_tunnel_traffic,
-            read_packet_length_from_ip_header);
+            flow_meta.nested_packet, parser_options);
 
         if (result != network_data_stuctures::parser_code_t::success) {
             // Cannot decode data
