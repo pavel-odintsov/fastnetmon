@@ -21,6 +21,13 @@
 //
 
 struct {
+    __uint(type, BPF_MAP_TYPE_ARRAY);
+    __uint(max_entries, 1);
+    __type(key, int);
+    __type(value, int);
+} qidconf_map SEC(".maps");
+
+struct {
     __uint(type, BPF_MAP_TYPE_XSKMAP);
     __uint(max_entries, 4);
     __type(key, int);
