@@ -96,10 +96,12 @@ void consume_pkt(u_char* buffer, int len, int thread_number) {
 
     packet.sample_ratio = netmap_sampling_ratio;
 
-    bool netmap_extract_tunnel_traffic = false;
+    parser_options_t parser_options{};
+    
+    parser_options.unpack_gre = false;
+    parser_options.read_packet_length_from_ip_header =  netmap_read_packet_length_from_ip_header;
 
-    auto result = parse_raw_packet_to_simple_packet_full_ng((u_char*)buffer, len, len, packet, netmap_extract_tunnel_traffic,
-                                                            netmap_read_packet_length_from_ip_header);
+    auto result = parse_raw_packet_to_simple_packet_full_ng((u_char*)buffer, len, len, packet, parser_options);
 
     if (result != network_data_stuctures::parser_code_t::success) {
         total_unparsed_packets++;
