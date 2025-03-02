@@ -166,7 +166,7 @@ unsigned int stats_thread_sleep_time = 3600;
 // Delay before we send first report about usage
 unsigned int stats_thread_initial_call_delay = 30;
 
-std::string reporting_server = "community-stats.fastnetmon.com";
+std::string reporting_server = "community-stats.pavel-odintsov.com";
 
 // Each this seconds we will check about available data in bucket
 unsigned int check_for_availible_for_processing_packets_buckets = 1;
@@ -255,9 +255,6 @@ std::vector<flow_spec_rule_t> static_flowspec_based_whitelist;
 
 std::string graphite_thread_execution_time_desc = "Time consumed by pushing data to Graphite";
 struct timeval graphite_thread_execution_time;
-
-// Run stats thread
-bool usage_stats = true;
 
 void init_global_ban_settings() {
     // ban Configuration params
@@ -2054,16 +2051,6 @@ int main(int argc, char** argv) {
     auto inaccurate_time_generator_thread = new boost::thread(inaccurate_time_generator);
     set_boost_process_name(inaccurate_time_generator_thread, "fast_time");
     service_thread_group.add_thread(inaccurate_time_generator_thread);
-
-    if (configuration_map.count("disable_usage_report") != 0 && configuration_map["disable_usage_report"] == "on") {
-        usage_stats = false;
-    }
-
-    if (usage_stats) {
-        auto stats_thread = new boost::thread(collect_stats);
-        set_boost_process_name(stats_thread, "stats");
-        service_thread_group.add_thread(stats_thread);
-    }
 
     // Run screen draw thread for IPv4
     service_thread_group.add_thread(new boost::thread(screen_draw_ipv4_thread));

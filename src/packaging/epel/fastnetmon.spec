@@ -11,7 +11,7 @@ Release:           1.git%{commit0}%{?dist}
 
 Summary:           DDoS detection tool with sFlow, Netflow, IPFIX and port mirror support
 License:           GPLv2
-URL:               https://fastnetmon.com
+URL:               https://github.com/pavel-odintsov/fastnetmon
 
 Source0:           https://github.com/pavel-odintsov/fastnetmon/archive/%{commit0}.tar.gz
 Source1:           fastnetmon.sysusers

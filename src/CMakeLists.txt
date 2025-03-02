@@ -1194,7 +1194,7 @@ endif()
 # Configure cpack package builder
 # Run it with: cd build; cpack -G DEB ..
 set(CPACK_PACKAGE_NAME "fastnetmon")
-set(CPACK_PACKAGE_VENDOR "fastnetmon.com")
+set(CPACK_PACKAGE_VENDOR "github.com/pavel-odintsov/fastnetmon")
 set(CPACK_PACKAGE_CONTACT "pavel.odintsov@gmail.com")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "FastNetMon - very fast DoS/DDoS detector with sFlow/Netflow/mirror support")
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "")

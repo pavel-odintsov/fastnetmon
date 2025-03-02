@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 #
-# For FastNetMon Advanced you can use native integration: https://fastnetmon.com/docs-fnm-advanced/fastnetmon-advanced-and-slack-integration/
 #
 #
 # Instructions:

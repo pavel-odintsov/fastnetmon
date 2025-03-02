@@ -56,7 +56,7 @@ my $gcc_version = '12.1.0';
 #
 # Storage Object Creator permissions allow upload but do not allow replacement of same file and that's exactly what we need
 #
-my $s3_bucket_binary_dependency_name = 'fastnetmon_community_binary_dependencies';
+my $s3_bucket_binary_dependency_name = 'community_binary_dependencies';
 
 # We are using this for Boost build system
 # 5.3 instead of 5.3.0

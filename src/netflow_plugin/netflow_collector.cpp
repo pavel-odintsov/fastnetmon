@@ -389,7 +389,7 @@ void add_update_peer_template(
 
         // Warn user that something bad going on
         logger << log4cpp::Priority::ERROR << get_netflow_protocol_version_as_string(netflow_protocol_version)
-            << " template update may be sign of RFC violation by vendor and if you observe this behaviour please reach support@fastnetmon.com and share information about your equipment and firmware versions"; 
+            << " template update may be sign of RFC violation by vendor and if you observe this behaviour please reach pavel.odintsov@gmail.com and share information about your equipment and firmware versions"; 
 
 
         itr->second[template_id] = field_template;

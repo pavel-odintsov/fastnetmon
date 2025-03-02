@@ -12,7 +12,7 @@
  #include <netinet/ip.h>
  #include <netinet/ip_icmp.h>
 @@ -161,7 +161,7 @@ unsigned int stats_thread_initial_call_delay = 30;
- std::string reporting_server = "community-stats.fastnetmon.com";
+ std::string reporting_server = "community-stats.pavel-odintsov.com";
  
  // Path to temporarily store backtrace when fatal failure happened
 -std::string backtrace_path = "/var/log/fastnetmon_backtrace.dump";

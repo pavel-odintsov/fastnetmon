@@ -140,7 +140,7 @@ Release:           1%{?dist}
 Summary:           A high performance DoS/DDoS load analyzer built on top of multiple packet capture engines (NetFlow, IPFIX, sFLOW, Netmap, PCAP).
 Group:             System Environment/Daemons
 License:           GPLv2
-URL:               https://fastnetmon.com
+URL:               https://github.com/pavel-odintsov/fastnetmon
 
 # Top level fodler inside archive should be named as "fastnetmon-1.1.1" 
 Source0:           http://178.62.227.110/fastnetmon_binary_repository/test_binary_builds/this_fake_path_do_not_check_it/archive.tar.gz

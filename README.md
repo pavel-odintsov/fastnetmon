@@ -1,8 +1,6 @@
-![logo](https://fastnetmon.com/wp-content/uploads/2018/01/cropped-new_logo_3var-e1515443553507-1-300x146.png)
-
 Community Edition
 ===========
-FastNetMon - A high-performance DDoS detector/sensor built on top of multiple packet capture engines: NetFlow, IPFIX, sFlow, AF_PACKET (port mirror).
+It's a high-performance DDoS detector/sensor built on top of multiple packet capture engines: NetFlow, IPFIX, sFlow, AF_PACKET (port mirror).
 
 What do we do?
 --------------
@@ -11,22 +9,21 @@ perform a configurable action to handle that event. These configurable actions i
 
 Project 
 -------
-🌏️ [Official site](https://fastnetmon.com)  
-⭐️ [FastNetMon Advanced, Commercial Edition](https://fastnetmon.com/product-overview/)  
-🌟️ [FastNetMon Advanced, free one-month trial](https://fastnetmon.com/trial/)  
-📜️ [FastNetMon Advanced and Community difference table](https://fastnetmon.com/compare-community-and-advanced/)  
-📘️ [Detailed reference](https://fastnetmon.com/wp-content/uploads/2023/07/fastnetmon_community_book_20_jul_2023.pdf)  
+🌏️ [Official site](https://github.com/pavel-odintsov/fastnetmon)
+🌟️ [Author](https://pavel-odintsov.com/)  
+📜️ [Author LinkedIN](https://www.linkedin.com/in/podintsov/)  
 
 Legal
 --------------
 
-By installing or using this software, you confirm that you have read and agree to the FastNetMon Community Edition T&Cs and Privacy Notice, which will apply to your installation and use of the software
+Author and legal owner: Pavel Odintsov 
+
 
 ### Installation
-- [Linux install instructions](https://fastnetmon.com/install/)
+- [Linux install instructions](https://github.com/pavel-odintsov/fastnetmon/wiki/Install)
 - [macOS install instructions](https://formulae.brew.sh/formula/fastnetmon)
 - [FreeBSD port](https://www.freshports.org/net-mgmt/fastnetmon/)
-- [VyOS bundled support](https://fastnetmon.com/fastnetmon-community-on-vyos-rolling-1-3/)
+- [VyOS bundled support](https://vyos.io/)
 
 Supported packet capture engines
 --------------------------------
@@ -39,44 +36,37 @@ Supported packet capture engines
 - Netmap (deprecated, still supported only for FreeBSD)
 - PF_RING / PF_RING ZC (deprecated, available only for CentOS 6 in 1.2.0)
 
-You can check out the [comparison table](https://fastnetmon.com/docs/capture_backends/) for all available packet capture engines.
-
 Features
 --------
 - Detects DoS/DDoS in as little as 1-2 seconds
 - Scales up to terabits on single server (sFlow, Netflow, IPFIX) or to 40G + in mirror mode
 - Trigger block/notify script if an IP exceeds defined thresholds for packets/bytes/flows per second
 - Thresholds can be configured per-subnet basis with the hostgroups feature
-- [Email notifications](https://fastnetmon.com/docs/attack_report_example/) about detected attack
+- Email notifications about detected attack
 - Complete IPv6 support
 - Prometheus support: system metrics and total traffic counters
 - Flow and packet export to Kafka in JSON and Protobuf format
-- Announce blocked IPs via BGP to routers with [ExaBGP](https://fastnetmon.com/docs/exabgp_integration/) or [GoBGP](https://fastnetmon.com/docs/gobgp-integration/) (recommended)
-- Full integration with [Clickhouse](https://github.com/pavel-odintsov/fastnetmon/blob/7f0ad9c6cd2db3856607aeed04b5e8125fad3124/src/fastnetmon.conf#L287) [InfluxDB](https://fastnetmon.com/docs/influxdb_integration/) and [Graphite](https://fastnetmon.com/docs/graphite_integration/)
-- [API](https://fastnetmon.com/docs/fastnetmon-community-api/)
-- [Redis](https://fastnetmon.com/docs/redis/) integration
-- MongoDB protocol support compatible with native [MongoDB](https://fastnetmon.com/docs/mongodb/) and [FerretDB](https://github.com/FerretDB/FerretDB)
+- Announce blocked IPs via BGP to routers with [ExaBGP](https://github.com/pavel-odintsov/fastnetmon/blob/5b960f76d6bf3dca2c80ef13a3776dfa544fb897/src/fastnetmon.conf#L227) or [GoBGP](https://github.com/pavel-odintsov/fastnetmon/blob/5b960f76d6bf3dca2c80ef13a3776dfa544fb897/src/fastnetmon.conf#L249) (recommended)
+- Full integration with [Clickhouse](https://github.com/pavel-odintsov/fastnetmon/blob/7f0ad9c6cd2db3856607aeed04b5e8125fad3124/src/fastnetmon.conf#L287) [InfluxDB](https://github.com/pavel-odintsov/fastnetmon/blob/5b960f76d6bf3dca2c80ef13a3776dfa544fb897/src/fastnetmon.conf#L275) and [Graphite](https://github.com/pavel-odintsov/fastnetmon/blob/5b960f76d6bf3dca2c80ef13a3776dfa544fb897/src/fastnetmon.conf#L314)
+- [API](https://github.com/pavel-odintsov/fastnetmon/blob/5b960f76d6bf3dca2c80ef13a3776dfa544fb897/src/fastnetmon.conf#L357)
+- [Redis](https://github.com/pavel-odintsov/fastnetmon/blob/5b960f76d6bf3dca2c80ef13a3776dfa544fb897/src/fastnetmon.conf#L211) integration
+- MongoDB protocol support compatible with native [MongoDB](https://github.com/pavel-odintsov/fastnetmon/blob/5b960f76d6bf3dca2c80ef13a3776dfa544fb897/src/fastnetmon.conf#L221) and [FerretDB](https://github.com/FerretDB/FerretDB)
 - VLAN untagging in mirror and sFlow modes
 - Capture attack fingerprints in PCAP format
 
-We track [multiple](https://fastnetmon.com/docs-fnm-advanced/fastnetmon-usage-analytics/) platform and environment-specific metrics to understand ways how our product is being used and prioritise development accordingly. 
+We track [multiple](https://github.com/pavel-odintsov/fastnetmon/blob/5b960f76d6bf3dca2c80ef13a3776dfa544fb897/src/fastnetmon_logic.cpp#L3033) platform and environment-specific metrics to understand ways how our product is being used and prioritise development accordingly. 
 
 Official support groups:
 -------
 - [Mailing list](https://groups.google.com/g/fastnetmon)
-- [Slack](https://slack.fastnetmon.com)
+- [Slack](https://join.slack.com/t/fastnetmon/shared_invite/zt-1i2cutd07-qEafHVoJvAOV5ODlHFsLoQ)
 - IRC: #fastnetmon at irc.libera.chat:6697 (TLS) [web client](https://web.libera.chat/?channels=#fastnetmon)
 - Telegram: [fastnetmon](https://t.me/fastnetmon)
-- Discord: [fastnetmon](https://discord.fastnetmon.com)
+- Discord: [fastnetmon](https://discord.gg/Q4h9AUqFng)
 
 Follow us at social media:
 -------
-- [Twitter](https://twitter.com/fastnetmon)
-- [LinkedIn](https://www.linkedin.com/company/fastnetmon/)
-- [Facebook](https://www.facebook.com/fastnetmon/)
-
-### Router integration instructions
-- [Juniper MX Routers](https://fastnetmon.com/docs/junos_integration/)
+- [LinkedIn](https://www.linkedin.com/in/podintsov/)
 
 Complete integration with the following vendors
 --------------------------------
