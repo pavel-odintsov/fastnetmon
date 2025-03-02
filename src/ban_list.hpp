@@ -1,10 +1,5 @@
 #pragma once
 
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
-
-
 // This class stores blocked with blackhole hosts
 template <typename TemplateKeyType> class blackhole_ban_list_t {
     public:
@@ -37,7 +32,7 @@ template <typename TemplateKeyType> class blackhole_ban_list_t {
     }
 
     // Add host to blackhole
-    bool add_to_blackhole(TemplateKeyType client_id, attack_details_t current_attack) {
+    bool add_to_blackhole(TemplateKeyType client_id, const attack_details_t& current_attack) {
         std::lock_guard<std::mutex> lock_guard(structure_mutex);
 
         ban_list_storage[client_id] = current_attack;
@@ -70,7 +65,7 @@ template <typename TemplateKeyType> class blackhole_ban_list_t {
     }
 
     // Add blackholed hosts from external storage to internal
-    bool set_whole_banlist(std::map<TemplateKeyType, banlist_item_t>& ban_list_param) {
+    bool set_whole_banlist(const std::map<TemplateKeyType, attack_details_t>& ban_list_param) {
         std::lock_guard<std::mutex> lock_guard(structure_mutex);
 
         // Copy whole content of passed list to current list
@@ -90,7 +85,7 @@ template <typename TemplateKeyType> class blackhole_ban_list_t {
         return true;
     }
 
-    bool get_whole_banlist(std::map<TemplateKeyType, banlist_item_t>& ban_list_copy) {
+    bool get_whole_banlist(std::map<TemplateKeyType, attack_details_t>& ban_list_copy) {
         std::lock_guard<std::mutex> lock_guard(structure_mutex);
 
         // Copy whole content of this structure
@@ -99,7 +94,7 @@ template <typename TemplateKeyType> class blackhole_ban_list_t {
         return true;
     }
 
-    bool get_blackhole_details(TemplateKeyType client_id, banlist_item_t& banlist_item) {
+    bool get_blackhole_details(TemplateKeyType client_id, attack_details_t& banlist_item) {
         std::lock_guard<std::mutex> lock_guard(structure_mutex);
 
         auto itr = ban_list_storage.find(client_id);
@@ -112,7 +107,33 @@ template <typename TemplateKeyType> class blackhole_ban_list_t {
         return true;
     }
 
+    // Get blackhole details by UUID
+    bool get_blackhole_details_by_uuid(const boost::uuids::uuid& mitigation_uuid, TemplateKeyType& client_id, attack_details_t& banlist_item) {
+        std::lock_guard<std::mutex> lock_guard(structure_mutex);
+
+        auto itr = std::find_if(ban_list_storage.begin(), ban_list_storage.end(),
+                                [mitigation_uuid](const std::pair<const TemplateKeyType, attack_details_t>& pair) {
+                                    return pair.second.attack_uuid == mitigation_uuid;
+                                });
+
+        if (itr == ban_list_storage.end()) {
+            return false;
+        }
+
+        client_id    = itr->first;
+        banlist_item = itr->second;
+
+        return true;
+    }
+
+    // Returns number of blocked elements
+    size_t get_number_of_blocked_entries() {
+        std::lock_guard<std::mutex> lock_guard(structure_mutex);
+
+        return ban_list_storage.size();
+    }
+
     private:
-    std::map<TemplateKeyType, banlist_item_t> ban_list_storage;
+    std::map<TemplateKeyType, attack_details_t> ban_list_storage;
     std::mutex structure_mutex;
 };
