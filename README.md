@@ -19,10 +19,6 @@ Project
 
 Legal
 --------------
-📖 [FastNetMon Community Edition Terms and Conditions](https://fastnetmon.com/fastnetmon-community-edition-terms-and-conditions/)  
-🔏️ [FastNetMon Community Edition Privacy Notice](https://fastnetmon.com/fastnetmon-community-edition-privacy-notice/)  
-
-FastNetMon is a product of FastNetMon LTD, UK. FastNetMon ® is a registered trademark in the UK and EU.
 
 By installing or using this software, you confirm that you have read and agree to the FastNetMon Community Edition T&Cs and Privacy Notice, which will apply to your installation and use of the software
 

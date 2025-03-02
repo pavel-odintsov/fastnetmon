@@ -8,8 +8,6 @@
 #include <string>
 #include <vector>
 
-#include "fast_endianless.hpp"
-
 #include "dynamic_binary_buffer.hpp"
 #include "fast_library.hpp"
 #include "fastnetmon_networks.hpp"
@@ -19,6 +17,8 @@
 #include "iana_ip_protocols.hpp"
 
 #include "bgp_protocol.hpp"
+
+#include "ip_lookup_tree.hpp"
 
 class bgp_flow_spec_action_t;
 
@@ -85,7 +85,6 @@ enum class bgp_flow_spec_action_types_t {
 };
 
 
-
 bool read_flow_spec_action_type_from_string(const std::string& string_form, bgp_flow_spec_action_types_t& action_type);
 std::string serialize_action_type(const bgp_flow_spec_action_types_t& action_type);
 
@@ -118,7 +117,7 @@ class bgp_flow_spec_action_t {
     void set_redirect_as(uint16_t value) {
         redirect_as = value;
     }
-    
+
     void set_redirect_value(uint32_t value) {
         redirect_value = value;
     }
@@ -136,7 +135,7 @@ class bgp_flow_spec_action_t {
     unsigned int rate_limit                  = 0;
 
     // Values for redirect
-    uint16_t redirect_as = 0;
+    uint16_t redirect_as    = 0;
     uint32_t redirect_value = 0;
 };
 
@@ -180,17 +179,32 @@ class flow_spec_rule_t {
         this->destination_subnet_ipv6_used = true;
     }
 
-    void set_agent_subnet(subnet_cidr_mask_t subnet_param) {
-        this->agent_subnet      = subnet_param;
-        this->agent_subnet_used = true;
-    }
-
     void add_source_port(uint16_t source_port) {
         this->source_ports.push_back(source_port);
     }
 
     void add_destination_port(uint16_t destination_port) {
         this->destination_ports.push_back(destination_port);
+    }
+
+    void add_source_asn(uint32_t source_asn) {
+        this->source_asns.push_back(source_asn);
+    }
+
+    void add_destination_asn(uint32_t destination_asn) {
+        this->destination_asns.push_back(destination_asn);
+    }
+
+    void add_agent_address(uint32_t agent_ip) {
+        this->agent_addresses.push_back(agent_ip);
+    }
+
+    void add_input_interface(uint32_t interface) {
+        this->input_interfaces.push_back(interface);
+    }
+
+    void add_output_interface(uint32_t interface) {
+        this->output_interfaces.push_back(interface);
     }
 
     void add_packet_length(uint16_t packet_length) {
@@ -210,7 +224,7 @@ class flow_spec_rule_t {
     }
 
     void add_ttl(uint8_t ttl) {
-	 this->ttls.push_back(ttl);
+        this->ttls.push_back(ttl);
     }
 
     void add_fragmentation_flag(flow_spec_fragmentation_types_t flag) {
@@ -246,14 +260,19 @@ class flow_spec_rule_t {
         ar& BOOST_SERIALIZATION_NVP(destination_subnet_ipv6);
         ar& BOOST_SERIALIZATION_NVP(destination_subnet_ipv6_used);
 
-        ar& BOOST_SERIALIZATION_NVP(agent_subnet);
-        ar& BOOST_SERIALIZATION_NVP(agent_subnet_used);
-
         ar& BOOST_SERIALIZATION_NVP(source_ports);
         ar& BOOST_SERIALIZATION_NVP(destination_ports);
         ar& BOOST_SERIALIZATION_NVP(packet_lengths);
         ar& BOOST_SERIALIZATION_NVP(vlans);
-	ar& BOOST_SERIALIZATION_NVP(ttls);
+        ar& BOOST_SERIALIZATION_NVP(ttls);
+
+        ar& BOOST_SERIALIZATION_NVP(source_asns);
+        ar& BOOST_SERIALIZATION_NVP(destination_asns);
+	ar& BOOST_SERIALIZATION_NVP(agent_addresses);
+
+        ar& BOOST_SERIALIZATION_NVP(input_interfaces);
+	ar& BOOST_SERIALIZATION_NVP(output_interfaces);
+
         ar& BOOST_SERIALIZATION_NVP(ipv4_nexthops);
 
         ar& BOOST_SERIALIZATION_NVP(protocols);
@@ -281,9 +300,8 @@ class flow_spec_rule_t {
     subnet_ipv6_cidr_mask_t destination_subnet_ipv6;
     bool destination_subnet_ipv6_used = false;
 
-    // Agent subnet
-    subnet_cidr_mask_t agent_subnet;
-    bool agent_subnet_used = false;
+    // Agent IPv4 addresses
+    std::vector<uint32_t> agent_addresses;
 
     std::vector<uint16_t> source_ports;
     std::vector<uint16_t> destination_ports;
@@ -298,8 +316,16 @@ class flow_spec_rule_t {
     // This one is an non standard extension for our own purposes
     std::vector<uint8_t> ttls;
 
+    // This one is an non standard extension for our own purposes
+    std::vector<uint32_t> source_asns;
+    std::vector<uint32_t> destination_asns;
+
+    // This one is an non standard extension for our own purposes
+    std::vector<uint32_t> input_interfaces;
+    std::vector<uint32_t> output_interfaces;
+
     // IPv4 next hops for https://datatracker.ietf.org/doc/html/draft-ietf-idr-flowspec-redirect-ip-01
-    std::vector<uint32_t> ipv4_nexthops ;
+    std::vector<uint32_t> ipv4_nexthops;
 
     std::vector<ip_protocol_t> protocols;
     std::vector<flow_spec_fragmentation_types_t> fragmentation_flags;
@@ -329,16 +355,16 @@ bool decode_native_flow_spec_announce_from_binary_encoded_atributes(std::vector<
 bool encode_bgp_flow_spec_action_as_extended_attribute(const bgp_flow_spec_action_t& bgp_flow_spec_action,
                                                        dynamic_binary_buffer_t& extended_attributes_as_binary_array);
 
-// It's format of redirect target. So called route target community. Official spec RFC5575 is pretty vague about it: 
+// It's format of redirect target. So called route target community. Official spec RFC5575 is pretty vague about it:
 // https://datatracker.ietf.org/doc/html/rfc4360#section-4
 // But new BGP Flow Spec clarifies it as https://datatracker.ietf.org/doc/html/rfc8955#name-rt-redirect-rt-redirect-sub
 class __attribute__((__packed__)) redirect_2_octet_as_4_octet_value_t {
     // We must not access these fields directly as it requires explicit byte order conversion
     private:
-    uint16_t as = 0;
+    uint16_t as    = 0;
     uint32_t value = 0;
 
-public:
+    public:
     uint16_t get_as_host_byte_order() const {
         return fast_ntoh(as);
     }
@@ -346,8 +372,8 @@ public:
     uint32_t get_value_host_byte_order() const {
         return fast_ntoh(value);
     }
- 
-   std::string print() const {
+
+    std::string print() const {
         std::stringstream buffer;
 
         buffer << "as: " << get_as_host_byte_order() << " "
@@ -355,11 +381,9 @@ public:
 
         return buffer.str();
     }
-
 };
 
-static_assert(sizeof(redirect_2_octet_as_4_octet_value_t) == 6,
-              "Bad size for redirect_2_octet_as_4_octet_value_t");
+static_assert(sizeof(redirect_2_octet_as_4_octet_value_t) == 6, "Bad size for redirect_2_octet_as_4_octet_value_t");
 
 // More details at https://tools.ietf.org/html/rfc5575 page 6
 class __attribute__((__packed__)) bgp_flow_spec_operator_byte_t {
@@ -675,7 +699,7 @@ class __attribute__((__packed__)) bgp_extended_community_element_flow_spec_redir
     uint8_t type_low   = FLOW_SPEC_EXTENDED_COMMUNITY_SUBTYPE_REDIRECT_AS_TWO_BYTE;
 
     // 6 octet value
-    uint16_t redirect_as = 0;
+    uint16_t redirect_as    = 0;
     uint32_t redirect_value = 0;
 
     void set_redirect_as(uint16_t value) {
@@ -735,11 +759,25 @@ static_assert(sizeof(bgp_extended_community_element_flow_spec_ipv4_next_hop_t) =
 static_assert(sizeof(bgp_flow_spec_bitmask_operator_byte_t) == 1, "Bad size for bgp_flow_spec_bitmask_operator_byte_t");
 static_assert(sizeof(bgp_flow_spec_operator_byte_t) == 1, "Bad size for bgp_flow_spec_operator_byte_t");
 
+std::vector<dynamic_binary_buffer_t> build_attributes_for_flowspec_announce(flow_spec_rule_t flow_spec_rule);
+bool encode_bgp_flow_spec_elements_into_bgp_mp_attribute(const flow_spec_rule_t& flow_spec_rule,
+                                                         dynamic_binary_buffer_t& bgp_mp_ext_flow_spec_header_as_binary_array,
+                                                         bool add_preamble);
+
 bool read_flow_spec_tcp_flags_from_strig(const std::string& string_form, flow_spec_tcp_flagset_t& tcp_flagset);
 bool read_flow_spec_fragmentation_types_from_string(const std::string& string_form, flow_spec_fragmentation_types_t& fragment_flag);
+bgp_flowspec_one_byte_byte_encoded_tcp_flags_t return_in_one_byte_encoding(const flow_spec_tcp_flagset_t& flagset);
+flow_spec_tcp_flagset_t convert_one_byte_encoding_to_flowset(const bgp_flowspec_one_byte_byte_encoded_tcp_flags_t& ony_byte_flags);
+void uint8t_representation_of_tcp_flags_to_flow_spec(uint8_t tcp_flags, flow_spec_tcp_flagset_t& flagset);
+bool validate_flow_spec_ipv4(const flow_spec_rule_t& flow_spec_rule, uint32_t client_ip_as_integer);
 bool valid_port(int32_t port);
+bool validate_flow_spec_to_belong_to_patricia(const flow_spec_rule_t& flow_spec_rule,
+                                              const lookup_tree_32bit_t& lookup_tree_ipv4,
+                                              const lookup_tree_128bit_t& lookup_tree_ipv6,
+                                              uint32_t& client_ip);
+bool encode_bgp_flow_spec_next_hop_as_extended_attribute(uint32_t next_hop_ipv4,
+                                                         dynamic_binary_buffer_t& extended_attributes_as_binary_array);
+
 bool encode_flow_spec_to_json_raw(const flow_spec_rule_t& flow_spec_rule, bool add_uuid, nlohmann::json& flow_json);
 std::string flow_spec_fragmentation_flags_to_string(flow_spec_fragmentation_types_t const& fragment_flag);
 std::string flow_spec_tcp_flagset_to_string(flow_spec_tcp_flagset_t const& tcp_flagset);
-void uint8t_representation_of_tcp_flags_to_flow_spec(uint8_t tcp_flags, flow_spec_tcp_flagset_t& flagset);
-
