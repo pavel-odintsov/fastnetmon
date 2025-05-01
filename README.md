@@ -20,7 +20,7 @@ Author and legal owner: Pavel Odintsov
 
 
 ### Installation
-- [Linux install instructions](https://github.com/pavel-odintsov/fastnetmon/wiki/Install)
+- [Linux install instructions](https://fastnetmon.com/install/)
 - [macOS install instructions](https://formulae.brew.sh/formula/fastnetmon)
 - [FreeBSD port](https://www.freshports.org/net-mgmt/fastnetmon/)
 - [VyOS bundled support](https://vyos.io/)
