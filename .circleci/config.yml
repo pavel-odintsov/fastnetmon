@@ -94,7 +94,7 @@ jobs:
           name: Explicitly specify mirror to avoid pbuilder failure on configuration step
           command: echo "MIRRORSITE=http://http.us.debian.org/debian"|  sudo docker exec -i linux_priviledged_container tee /etc/pbuilderrc
       - run: sudo docker exec -it linux_priviledged_container cat /etc/pbuilderrc
-      - run: sudo docker exec -it linux_priviledged_container apt install -y dpkg-dev git pbuilder
+      - run: sudo docker exec -it linux_priviledged_container apt install -y dpkg-dev git pbuilder debhelper
       - run: sudo docker exec -it linux_priviledged_container git clone https://github.com/pavel-odintsov/fastnetmon
       - run: sudo docker exec -it linux_priviledged_container git clone https://salsa.debian.org/debian/fastnetmon.git fastnetmon-debian-salsa
       - run: sudo docker exec -it linux_priviledged_container rm -f fastnetmon-debian-salsa/debian/patches/series
