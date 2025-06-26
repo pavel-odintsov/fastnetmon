@@ -173,3 +173,7 @@ bool subnet_belongs_to_patricia_tree(patricia_tree_t* patricia_tree, const subne
 void print_simple_packet_buffer_to_string(const boost::circular_buffer<simple_packet_t>& simple_packets_buffer, std::string& output);
 bool write_simple_packet_as_separate_fields_dump_to_json(const boost::circular_buffer<simple_packet_t>& simple_packets_buffer,
                                                          nlohmann::json& packet_array);
+
+#ifdef ENABLE_CAPNP
+bool write_simple_packet_to_tls_socket(SSL* tls_fd, const simple_packet_t& packet);
+#endif

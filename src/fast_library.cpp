@@ -1364,6 +1364,78 @@ bool write_simple_packet(int fd, simple_packet_t& packet, bool populate_ipv6) {
     return true;
 }
 
+// Encode simple packet into special capnp structure for serialization
+bool write_simple_packet_to_tls_socket(SSL* tls_fd, const simple_packet_t& packet) {
+    ::capnp::MallocMessageBuilder message;
+
+    auto capnp_packet = message.initRoot<SimplePacketType>();
+
+    // Craft Capnp message
+    craft_capnp_for_simple_packet(packet, capnp_packet);
+
+    kj::Array<capnp::word> words;
+
+    // For some unknown reasons function writePackedMessageToFd sends incorrect, too short data and we use regular send for better flexibility
+
+    try {
+        words = messageToFlatArray(message);
+    } catch (...) {
+        logger << log4cpp::Priority::ERROR << "messageToFlatArray failed with error";
+        return false;
+    }
+
+    kj::ArrayPtr<kj::byte> bytes = words.asBytes();
+
+    size_t message_length = bytes.size();
+
+
+    // To avoid dependency on platform specific type size_t we use uint64_t instead
+    // https://en.cppreference.com/w/c/types/size_t
+    uint64_t portable_message_length = message_length;
+
+    // TODO: unfortunately, it can fire SIGPIPE signal and there are no documented way to stop it :(
+    // It's clearly topic to raise with OpenSSL team
+    // https://github.com/openssl/openssl/issues/16399
+    int message_length_write_result = SSL_write(tls_fd, &portable_message_length, sizeof(portable_message_length));
+
+    // If write returned error then stop processing
+    if (message_length_write_result <= 0) {
+        // unsigned long error_code = ERR_get_error();
+
+        // We had some issue with this logging function as it cropped output this way:
+        // "TLS write for header failed with error:"
+        // logger << log4cpp::Priority::ERROR << "TLS write for header failed with error: " << ERR_reason_error_string(error_code) << " error code " << error_code;
+        return false;
+    }
+
+    // we could not write whole packet notify caller about it
+    if (message_length_write_result != sizeof(portable_message_length)) {
+        logger << log4cpp::Priority::DEBUG << "write in write_simple_packet for message length did not write all data";
+        return false;
+    }
+
+    // TODO: unfortunately, it can fire SIGPIPE signal and there are no documented way to stop it :(
+    // It's clearly topic to raise with OpenSSL team
+    // https://github.com/openssl/openssl/issues/16399
+    int write_result = SSL_write(tls_fd, bytes.begin(), message_length);
+
+    // If write returned error then stop processing
+    if (write_result <= 0) {
+        // unsigned long error_code = ERR_get_error();
+
+        // logger << log4cpp::Priority::ERROR << "TLS write for message body failed with error: " << ERR_reason_error_string(error_code) << " error code " << error_code;
+        return false;
+    }
+
+    // we could not write whole packet notify caller about it
+    if (write_result != bytes.size()) {
+        logger << log4cpp::Priority::DEBUG << "write in write_simple_packet did not write all data";
+        return false;
+    }
+
+    return true;
+}
+
 #endif
 
 // Represent IPv6 cidr subnet in string form
