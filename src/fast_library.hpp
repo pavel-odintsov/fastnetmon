@@ -21,6 +21,8 @@
 
 #include <boost/circular_buffer.hpp>
 
+#include <openssl/ssl.h>
+
 #define TCP_FIN_FLAG_SHIFT 1
 #define TCP_SYN_FLAG_SHIFT 2
 #define TCP_RST_FLAG_SHIFT 3

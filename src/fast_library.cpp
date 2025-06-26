@@ -1215,6 +1215,51 @@ bool set_boost_process_name(boost::thread* thread, const std::string& process_na
 #endif
 
 #ifdef ENABLE_CAPNP
+
+
+// Crafts capnp packet
+void craft_capnp_for_simple_packet(const simple_packet_t& packet, SimplePacketType::Builder& capnp_packet) {
+    capnp_packet.setProtocol(packet.protocol);
+    capnp_packet.setSampleRatio(packet.sample_ratio);
+    capnp_packet.setSrcIp(packet.src_ip);
+    capnp_packet.setDstIp(packet.dst_ip);
+    capnp_packet.setIpProtocolVersion(packet.ip_protocol_version);
+    capnp_packet.setTtl(packet.ttl);
+    capnp_packet.setSourcePort(packet.source_port);
+    capnp_packet.setDestinationPort(packet.destination_port);
+    capnp_packet.setLength(packet.length);
+    capnp_packet.setIpLength(packet.ip_length);
+    capnp_packet.setNumberOfPackets(packet.number_of_packets);
+    capnp_packet.setFlags(packet.flags);
+    capnp_packet.setIpFragmented(packet.ip_fragmented);
+    capnp_packet.setTsSec(packet.ts.tv_sec);
+    capnp_packet.setTsMsec(packet.ts.tv_usec);
+    capnp_packet.setPacketPayloadLength(packet.captured_payload_length);
+    capnp_packet.setPacketPayloadFullLength(packet.payload_full_length);
+    capnp_packet.setPacketDirection(packet.packet_direction);
+    capnp_packet.setSource(packet.source);
+    capnp_packet.setSrcAsn(packet.src_asn);
+    capnp_packet.setDstAsn(packet.dst_asn);
+    capnp_packet.setInputInterface(packet.input_interface);
+    capnp_packet.setOutputInterface(packet.output_interface);
+    capnp_packet.setAgentIpAddress(packet.agent_ip_address);
+
+    if (packet.ip_protocol_version == 6) {
+        kj::ArrayPtr<kj::byte> src_ipv6_as_kj_array((kj::byte*)&packet.src_ipv6, sizeof(packet.src_ipv6));
+        capnp_packet.setSrcIpv6(capnp::Data::Reader(src_ipv6_as_kj_array));
+
+        kj::ArrayPtr<kj::byte> dst_ipv6_as_kj_array((kj::byte*)&packet.dst_ipv6, sizeof(packet.dst_ipv6));
+        capnp_packet.setDstIpv6(capnp::Data::Reader(dst_ipv6_as_kj_array));
+    }
+
+    // Add MAC addresses
+    kj::ArrayPtr<kj::byte> source_mac_as_kj_array((kj::byte*)&packet.source_mac, sizeof(packet.source_mac));
+    capnp_packet.setSrcMac(capnp::Data::Reader(source_mac_as_kj_array));
+
+    kj::ArrayPtr<kj::byte> destination_mac_as_kj_array((kj::byte*)&packet.destination_mac, sizeof(packet.destination_mac));
+    capnp_packet.setDstMac(capnp::Data::Reader(destination_mac_as_kj_array));
+}
+
 bool read_simple_packet(uint8_t* buffer, size_t buffer_length, simple_packet_t& packet) {
     extern log4cpp::Category& logger;
 
@@ -1291,81 +1336,82 @@ bool read_simple_packet(uint8_t* buffer, size_t buffer_length, simple_packet_t& 
     return true;
 }
 
-// Encode simple packet into special capnp structure for serialization
-bool write_simple_packet(int fd, simple_packet_t& packet, bool populate_ipv6) {
+bool write_simple_packet(int fd, bool write_message_length, const simple_packet_t& packet, int send_flags) {
     extern log4cpp::Category& logger;
     ::capnp::MallocMessageBuilder message;
 
     auto capnp_packet = message.initRoot<SimplePacketType>();
 
-    capnp_packet.setProtocol(packet.protocol);
-    capnp_packet.setSampleRatio(packet.sample_ratio);
-    capnp_packet.setSrcIp(packet.src_ip);
-    capnp_packet.setDstIp(packet.dst_ip);
-    capnp_packet.setIpProtocolVersion(packet.ip_protocol_version);
-    capnp_packet.setTtl(packet.ttl);
-    capnp_packet.setSourcePort(packet.source_port);
-    capnp_packet.setDestinationPort(packet.destination_port);
-    capnp_packet.setLength(packet.length);
-    capnp_packet.setNumberOfPackets(packet.number_of_packets);
-    capnp_packet.setFlags(packet.flags);
-    capnp_packet.setIpFragmented(packet.ip_fragmented);
-    capnp_packet.setTsSec(packet.ts.tv_sec);
-    capnp_packet.setTsMsec(packet.ts.tv_usec);
-    capnp_packet.setPacketPayloadLength(packet.captured_payload_length);
-    capnp_packet.setPacketPayloadFullLength(packet.payload_full_length);
-    capnp_packet.setPacketDirection(packet.packet_direction);
-    capnp_packet.setSource(packet.source);
-    capnp_packet.setSrcAsn(packet.src_asn);
-    capnp_packet.setDstAsn(packet.dst_asn);
-    capnp_packet.setInputInterface(packet.input_interface);
-    capnp_packet.setOutputInterface(packet.output_interface);
-    capnp_packet.setAgentIpAddress(packet.agent_ip_address);
+    // Craft Capnp message
+    craft_capnp_for_simple_packet(packet, capnp_packet);
 
-    if (populate_ipv6 && packet.ip_protocol_version == 6) {
-        kj::ArrayPtr<kj::byte> src_ipv6_as_kj_array((kj::byte*)&packet.src_ipv6, sizeof(packet.src_ipv6));
-        capnp_packet.setSrcIpv6(capnp::Data::Reader(src_ipv6_as_kj_array));
+    kj::Array<capnp::word> words;
 
-        kj::ArrayPtr<kj::byte> dst_ipv6_as_kj_array((kj::byte*)&packet.dst_ipv6, sizeof(packet.dst_ipv6));
-        capnp_packet.setDstIpv6(capnp::Data::Reader(dst_ipv6_as_kj_array));
+    // For some unknown reasons function writePackedMessageToFd sends incorrect, too short data and we use regular send for better flexibility
+
+    try {
+        words = messageToFlatArray(message);
+    } catch (...) {
+        logger << log4cpp::Priority::ERROR << "messageToFlatArray failed with error";
+        return false;
     }
 
-    // Capnp uses exceptions, let's wrap them out
-    try {
-        // For some unknown for me reasons this function sends incorrect (very short) data
-        // writePackedMessageToFd(fd, message);
+    kj::ArrayPtr<kj::byte> bytes = words.asBytes();
 
-        // Instead I'm using less optimal (non zero copy) approach but it's working well
-        kj::Array<capnp::word> words = messageToFlatArray(message);
-        kj::ArrayPtr<kj::byte> bytes = words.asBytes();
+    size_t message_length = bytes.size();
 
-        ssize_t write_result = write(fd, bytes.begin(), bytes.size());
+    if (write_message_length) {
+        // To avoid dependency on platform specific type size_t we use uint64_t instead
+        // https://en.cppreference.com/w/c/types/size_t
+        uint64_t portable_message_length = message_length;
+
+        ssize_t message_length_write_result = send(fd, &portable_message_length, sizeof(portable_message_length), send_flags);
 
         // If write returned error then stop processing
-        if (write_result < 0) {
+        if (message_length_write_result < 0) {
             // If we received error from it, let's provide details about it in DEBUG mode
-            if (write_result == -1) {
-                logger << log4cpp::Priority::DEBUG << "write in write_simple_packet returned error: " << errno;
+            if (message_length_write_result == -1) {
+                logger << log4cpp::Priority::DEBUG << "write in write_simple_packet for message length returned error: " << errno
+                       << " " << strerror(errno);
             }
 
             return false;
         }
 
         // we could not write whole packet notify caller about it
-        if (write_result != bytes.size()) {
-            logger << log4cpp::Priority::DEBUG << "write in write_simple_packet did not write all data";
+        if (message_length_write_result != sizeof(portable_message_length)) {
+            logger << log4cpp::Priority::DEBUG << "write in write_simple_packet for message length did not write all data";
             return false;
         }
-    } catch (...) {
-        // logger << log4cpp::Priority::ERROR << "writeSimplePacket failed with error";
+    }
+
+    ssize_t write_result = send(fd, bytes.begin(), message_length, send_flags);
+
+    // If write returned error then stop processing
+    if (write_result < 0) {
+        // If we received error from it, let's provide details about it in DEBUG mode
+        if (write_result == -1) {
+            logger << log4cpp::Priority::DEBUG << "write in write_simple_packet returned error: " << errno << " "
+                   << strerror(errno);
+        }
+
+        return false;
+    }
+
+    // we could not write whole packet notify caller about it
+    if (write_result != bytes.size()) {
+        logger << log4cpp::Priority::DEBUG << "write in write_simple_packet did not write all data";
         return false;
     }
 
     return true;
 }
 
+
+
 // Encode simple packet into special capnp structure for serialization
 bool write_simple_packet_to_tls_socket(SSL* tls_fd, const simple_packet_t& packet) {
+    extern log4cpp::Category& logger;
     ::capnp::MallocMessageBuilder message;
 
     auto capnp_packet = message.initRoot<SimplePacketType>();

@@ -9,6 +9,8 @@ struct SimplePacketType {
     dstIp @3 :UInt32;
     srcIpv6 @4 :Data;
     dstIpv6 @5 :Data;
+    srcMac @26 :Data;
+    dstMac @27 :Data;
     srcAsn @6 :UInt32;
     dstAsn @7 :UInt32;
     inputInterface @8 :UInt32;
@@ -19,6 +21,7 @@ struct SimplePacketType {
     destinationPort @13 :UInt16;
     protocol @14 :UInt32;
     length @15 :UInt64;
+    ipLength @28 :UInt64;
     numberOfPackets @16 :UInt64;
     flags @17 :UInt8;
     ipFragmented @18 :Bool;
@@ -29,4 +32,5 @@ struct SimplePacketType {
     packetPayloadFullLength @23 :UInt32;
     packetDirection @24 :UInt8;
     agentIpAddress @25 :UInt32;
+    
 }
