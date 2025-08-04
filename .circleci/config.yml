@@ -444,10 +444,10 @@ workflows:
           debian_package_architecture: "arm64"
       - build_docker:
           name: "Build Docker images"
-      - build_debian_upstream_package:
-          name: "Debian Sid Upstream Build"
-          debian_codename: "sid"
-          docker_image: "debian:bookworm"
+      #- build_debian_upstream_package:
+      #    name: "Debian Sid Upstream Build"
+      #    debian_codename: "sid"
+      #    docker_image: "debian:bookworm"
       # To offer great developer experience we ensure that FastNetMon can be built on latest Ubuntu LTS 
       - build_debian_system_dependencies:
           docker_image: "ubuntu:jammy"
