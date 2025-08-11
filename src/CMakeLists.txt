@@ -844,7 +844,7 @@ set(Boost_DETAILED_FAILURE_MSG ON)
 # Boost.System is a library that, in essence, defines four classes to identify errors. All four classes were added to the standard library with C++11. If your development environment supports C++11, you don’t need to use Boost.System. However, since many Boost libraries use Boost.System, you might encounter Boost.System through those other libraries.
 # Boost.System is a library that, in essence, defines four classes to identify errors. All four classes were added to the standard library with C++11. If your development environment supports C++11, you don’t need to use Boost.System. However, since many Boost libraries use Boost.System, you might encounter Boost.System through those other libraries.
 # TODO: we may not need system at all
-find_package(Boost COMPONENTS serialization thread regex program_options system REQUIRED ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
+find_package(Boost COMPONENTS serialization thread regex program_options OPTIONAL_COMPONENTS system REQUIRED ${DISABLE_DEFAULT_PATH_SEARCH_VAR})
 
 if(Boost_FOUND)
     message(STATUS "Found Boost: ${Boost_LIBRARIES} ${Boost_INCLUDE_DIRS}")
