@@ -1190,6 +1190,9 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     find_package(PkgConfig)
     pkg_get_variable(SYSTEMD_UNIT_DIR systemd systemdsystemunitdir)
     pkg_get_variable(SYSTEMD_SYSUSERS_DIR systemd sysusersdir)
+
+    set(SYSTEMD_UNIT_DIR "${SYSTEMD_UNIT_DIR}" CACHE PATH "Systemd system unit directory" FORCE)
+    set(SYSTEMD_SYSUSERS_DIR "${SYSTEMD_SYSUSERS_DIR}" CACHE PATH "Systemd system sysusers directory" FORCE)
     message(STATUS "systemd unit path: ${SYSTEMD_UNIT_DIR}")
     message(STATUS "systemd sysusers path: ${SYSTEMD_SYSUSERS_DIR}")
 
