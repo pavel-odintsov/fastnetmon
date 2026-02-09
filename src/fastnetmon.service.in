@@ -5,7 +5,7 @@ After=network.target remote-fs.target
  
 [Service]
 Type=simple
-ExecStart=@CMAKE_INSTALL_SBINDIR@/fastnetmon --log_to_console
+ExecStart=@FASTNETMON_EXECUTABLE@ --log_to_console
 User=fastnetmon
 Group=fastnetmon
 Restart=on-failure
