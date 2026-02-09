@@ -1186,17 +1186,15 @@ install(FILES networks_whitelist DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}")
 install(FILES man/fastnetmon.8 DESTINATION ${CMAKE_INSTALL_MANDIR}/man8)
 install(FILES man/fastnetmon_client.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
 
-if (SET_ABSOLUTE_INSTALL_PATH)
-    # Unfortunately, we have no cross-platform option to install systemd units in current versions of cmake
-    set(CMAKE_INSTALL_SYSTEMD_SERVICEDIR "/lib/systemd/system"  CACHE PATH "Location for systemd service files")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    find_package(PkgConfig)
+    pkg_get_variable(SYSTEMD_UNIT_DIR systemd systemdsystemunitdir)
+    message(STATUS "systemd unit path: ${SYSTEMD_UNIT_DIR}")
 
-    # Generate unit file
-    if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    if(SYSTEMD_UNIT_DIR)
         configure_file(fastnetmon.service.in "${CMAKE_CURRENT_BINARY_DIR}/fastnetmon.service" @ONLY)
-        install(FILES "${CMAKE_CURRENT_BINARY_DIR}/fastnetmon.service" DESTINATION ${CMAKE_INSTALL_SYSTEMD_SERVICEDIR})
+        install(FILES "${CMAKE_CURRENT_BINARY_DIR}/fastnetmon.service" DESTINATION ${SYSTEMD_UNIT_DIR})
     endif()
-else()
-    # We have no relative standard path for installation, skip any actions
 endif()
 
 # For Debian packages build please use our logic from upstream: https://salsa.debian.org/debian/fastnetmon
