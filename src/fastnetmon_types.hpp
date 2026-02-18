@@ -78,6 +78,13 @@ enum class attack_detection_threshold_type_t {
     ip_fragments_bytes_per_second,
 };
 
+// Attack classification type (single IP vs carpet bombing)
+enum class attack_classification_type_t : uint32_t {
+    unknown = 0,
+    single_ip_attack = 1,
+    carpet_bombing = 2,
+};
+
 // Types of metrics as in Prometheus:
 // https://prometheus.io/docs/concepts/metric_types/
 enum class metric_type_t { counter, gauge };
@@ -514,6 +521,29 @@ class packed_conntrack_hash_t {
     uint16_t dst_port;
 };
 
+// Carpet bombing attack details
+class carpet_bombing_details_t {
+    public:
+    carpet_bombing_details_t()
+        : affected_ip_count(0), total_addressable_ips(0), affected_percentage(0.0f) {
+    }
+
+    // Parent prefix under attack (e.g., 10.1.2.0/24)
+    subnet_cidr_mask_t parent_prefix;
+
+    // Number of IPs in prefix exceeding threshold
+    uint32_t affected_ip_count;
+
+    // Total addressable IPs in prefix
+    uint32_t total_addressable_ips;
+
+    // Percentage of IPs affected
+    float affected_percentage;
+
+    // List of individual attacking IPs
+    std::vector<uint32_t> attacking_ips;
+};
+
 // This class consists of all configuration of global or per subnet ban thresholds
 class ban_settings_t {
     public:
@@ -523,7 +553,9 @@ class ban_settings_t {
       enable_ban_for_udp_pps(false), enable_ban_for_udp_bandwidth(false), enable_ban_for_icmp_pps(false),
       enable_ban_for_icmp_bandwidth(false), ban_threshold_tcp_mbps(0), ban_threshold_tcp_pps(0),
       ban_threshold_udp_mbps(0), ban_threshold_udp_pps(0), ban_threshold_icmp_mbps(0), ban_threshold_icmp_pps(0),
-      ban_threshold_mbps(0), ban_threshold_flows(0), ban_threshold_pps(0) {
+      ban_threshold_mbps(0), ban_threshold_flows(0), ban_threshold_pps(0),
+      enable_carpet_bombing_detection(false), carpet_bombing_threshold_pps(0),
+      carpet_bombing_threshold_mbps(0), carpet_bombing_min_attacking_ips(5) {
     }
     bool enable_ban;
     bool enable_ban_ipv6;
@@ -553,6 +585,13 @@ class ban_settings_t {
     unsigned int ban_threshold_mbps;
     unsigned int ban_threshold_flows;
     unsigned int ban_threshold_pps;
+
+    // Carpet bombing detection parameters
+    bool enable_carpet_bombing_detection;
+    std::vector<uint32_t> carpet_bombing_prefix_sizes;  // e.g., [24, 23, 22]
+    unsigned int carpet_bombing_threshold_pps;
+    unsigned int carpet_bombing_threshold_mbps;
+    uint32_t carpet_bombing_min_attacking_ips;          // Minimum IPs needed to classify as carpet bombing
 };
 
 

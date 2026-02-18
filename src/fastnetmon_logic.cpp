@@ -175,6 +175,11 @@ extern std::string graphite_prefix;
 extern unsigned int ban_details_records_count;
 extern FastnetmonPlatformConfigurtion fastnetmon_platform_configuration;
 
+// Global state for carpet bombing detection
+// Maps network prefixes to the set of IPs under attack within that prefix
+std::map<subnet_cidr_mask_t, std::set<uint32_t>> prefix_to_attacking_ips_map;
+std::mutex prefix_attack_map_mutex;
+
 #include "api.hpp"
 
 #define my_max_on_defines(a, b) (a > b ? a : b)
@@ -395,6 +400,73 @@ logging_configuration_t read_logging_settings(configuration_map_t configuration_
     return logging_configuration_temp;
 }
 
+// Calculate parent prefixes for a given IP address at specified prefix sizes
+// Example: IP 10.1.2.5 with sizes [24, 23, 22] returns [10.1.2.0/24, 10.1.2.0/23, 10.1.0.0/22]
+std::vector<subnet_cidr_mask_t> get_parent_prefixes_for_ip(uint32_t client_ip, const std::vector<uint32_t>& prefix_sizes) {
+    std::vector<subnet_cidr_mask_t> parent_prefixes;
+
+    for (uint32_t prefix_len : prefix_sizes) {
+        // Create subnet mask based on prefix length
+        uint32_t mask = (0xFFFFFFFFU << (32 - prefix_len));
+        uint32_t network_address = client_ip & mask;
+
+        // Create subnet_cidr_mask_t structure
+        subnet_cidr_mask_t prefix;
+        prefix.first  = network_address;
+        prefix.second = prefix_len;
+
+        parent_prefixes.push_back(prefix);
+    }
+
+    return parent_prefixes;
+}
+
+// Track an IP address as being under attack within its prefix
+void track_ip_in_prefix_attack(const subnet_cidr_mask_t& prefix, uint32_t attacking_ip) {
+    std::unique_lock<std::mutex> lock(prefix_attack_map_mutex);
+    prefix_to_attacking_ips_map[prefix].insert(attacking_ip);
+}
+
+// Classify attack type: single IP attack vs carpet bombing
+attack_classification_type_t classify_attack_type(
+    uint32_t attacked_ip,
+    const subnet_counter_t& ip_speed_element,
+    const subnet_cidr_mask_t& parent_prefix,
+    const subnet_counter_t& prefix_speed_element,
+    const ban_settings_t& ban_settings,
+    uint32_t affected_ip_count) {
+
+    // Check if carpet bombing feature is enabled
+    if (!ban_settings.enable_carpet_bombing_detection) {
+        return attack_classification_type_t::single_ip_attack;
+    }
+
+    // Check if parent prefix exceeds carpet bombing threshold
+    bool prefix_exceeds_pps = ban_settings.carpet_bombing_threshold_pps > 0 &&
+        (prefix_speed_element.total.in_packets > ban_settings.carpet_bombing_threshold_pps ||
+         prefix_speed_element.total.out_packets > ban_settings.carpet_bombing_threshold_pps);
+
+    bool prefix_exceeds_mbps = ban_settings.carpet_bombing_threshold_mbps > 0 &&
+        (convert_speed_to_mbps(prefix_speed_element.total.in_bytes) > ban_settings.carpet_bombing_threshold_mbps ||
+         convert_speed_to_mbps(prefix_speed_element.total.out_bytes) > ban_settings.carpet_bombing_threshold_mbps);
+
+    // If prefix threshold is exceeded AND we have enough attacking IPs, classify as carpet bombing
+    if ((prefix_exceeds_pps || prefix_exceeds_mbps) &&
+        affected_ip_count >= ban_settings.carpet_bombing_min_attacking_ips) {
+        return attack_classification_type_t::carpet_bombing;
+    }
+
+    return attack_classification_type_t::single_ip_attack;
+}
+
+// Calculate the total addressable IPs in a subnet
+uint32_t get_addressable_ips_in_subnet(uint32_t prefix_len) {
+    if (prefix_len >= 31) {
+        return 1;
+    }
+    return (1U << (32 - prefix_len)) - 2;  // -2 for network and broadcast addresses
+}
+
 ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::string host_group_name) {
     ban_settings_t ban_settings;
 
@@ -489,6 +561,44 @@ ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::str
 
     if (configuration_map.count(prefix + "threshold_flows") != 0) {
         ban_settings.ban_threshold_flows = convert_string_to_integer(configuration_map[prefix + "threshold_flows"]);
+    }
+
+    // Carpet bombing detection configuration
+    if (configuration_map.count(prefix + "enable_carpet_bombing_detection") != 0) {
+        ban_settings.enable_carpet_bombing_detection = configuration_map[prefix + "enable_carpet_bombing_detection"] == "on";
+    }
+
+    if (configuration_map.count(prefix + "carpet_bombing_prefix_sizes") != 0) {
+        std::string prefix_sizes_str = configuration_map[prefix + "carpet_bombing_prefix_sizes"];
+        // Parse comma or space separated list of prefix sizes
+        std::istringstream iss(prefix_sizes_str);
+        std::string token;
+        while (std::getline(iss, token, ',')) {
+            // Trim whitespace
+            token.erase(0, token.find_first_not_of(" \t"));
+            token.erase(token.find_last_not_of(" \t") + 1);
+            if (!token.empty()) {
+                uint32_t prefix_len = convert_string_to_integer(token);
+                if (prefix_len > 0 && prefix_len <= 31) {  // Valid IPv4 prefix
+                    ban_settings.carpet_bombing_prefix_sizes.push_back(prefix_len);
+                }
+            }
+        }
+    }
+
+    if (configuration_map.count(prefix + "carpet_bombing_threshold_pps") != 0) {
+        ban_settings.carpet_bombing_threshold_pps =
+            convert_string_to_integer(configuration_map[prefix + "carpet_bombing_threshold_pps"]);
+    }
+
+    if (configuration_map.count(prefix + "carpet_bombing_threshold_mbps") != 0) {
+        ban_settings.carpet_bombing_threshold_mbps =
+            convert_string_to_integer(configuration_map[prefix + "carpet_bombing_threshold_mbps"]);
+    }
+
+    if (configuration_map.count(prefix + "carpet_bombing_min_attacking_ips") != 0) {
+        ban_settings.carpet_bombing_min_attacking_ips =
+            convert_string_to_integer(configuration_map[prefix + "carpet_bombing_min_attacking_ips"]);
     }
 
     return ban_settings;
@@ -1745,6 +1855,58 @@ void speed_callback_subnet_ipv6(subnet_ipv6_cidr_mask_t* subnet, subnet_counter_
     return;
 }
 
+// Speed recalculation callback for IPv4 network prefixes (used for carpet bombing detection)
+void speed_calculation_callback_prefix_ipv4(const subnet_cidr_mask_t& prefix, const subnet_counter_t& speed_element) {
+    extern abstract_subnet_counters_t<subnet_cidr_mask_t, subnet_counter_t> ipv4_network_counters;
+
+    // Only process if carpet bombing detection is enabled
+    if (!global_ban_settings.enable_carpet_bombing_detection) {
+        return;
+    }
+
+    // Check if this prefix exceeds thresholds
+    attack_detection_threshold_type_t attack_detection_source;
+    attack_detection_direction_type_t attack_detection_direction;
+
+    bool should_block = we_should_ban_this_entity(speed_element, global_ban_settings,
+                                                  attack_detection_source, attack_detection_direction);
+
+    if (!should_block) {
+        return;
+    }
+
+    // Log prefix-level attack detection (informational)
+    std::string ddos_detection_threshold_as_string = get_human_readable_threshold_type(attack_detection_source);
+
+    logger << log4cpp::Priority::INFO << "Carpet bombing: Prefix " << convert_ip_as_uint_to_string(prefix.first) << "/" << prefix.second
+           << " exceeds threshold: " << ddos_detection_threshold_as_string;
+}
+
+// Speed recalculation callback for IPv6 network prefixes (used for carpet bombing detection)
+void speed_calculation_callback_prefix_ipv6(const subnet_ipv6_cidr_mask_t& prefix, const subnet_counter_t& speed_element) {
+    // IPv6 carpet bombing detection (similar to IPv4 but for IPv6 prefixes)
+    // Only process if carpet bombing detection is enabled
+    if (!global_ban_settings.enable_carpet_bombing_detection) {
+        return;
+    }
+
+    attack_detection_threshold_type_t attack_detection_source;
+    attack_detection_direction_type_t attack_detection_direction;
+
+    bool should_block = we_should_ban_this_entity(speed_element, global_ban_settings,
+                                                  attack_detection_source, attack_detection_direction);
+
+    if (!should_block) {
+        return;
+    }
+
+    // Log prefix-level attack detection (informational)
+    std::string ddos_detection_threshold_as_string = get_human_readable_threshold_type(attack_detection_source);
+
+    logger << log4cpp::Priority::INFO << "Carpet bombing: IPv6 Prefix " << print_ipv6_cidr_subnet(prefix)
+           << " exceeds threshold: " << ddos_detection_threshold_as_string;
+}
+
 // This function works as callback from main speed calculation thread and decides when we should block host using static thresholds
 void speed_calculation_callback_local_ipv4(const uint32_t& client_ip, const subnet_counter_t& speed_element) {
     extern abstract_subnet_counters_t<uint32_t, subnet_counter_t> ipv4_host_counters;
@@ -1846,6 +2008,74 @@ void speed_calculation_callback_local_ipv4(const uint32_t& client_ip, const subn
 
     attack_details.customer_network = customer_subnet;
 
+    // Add carpet bombing classification if enabled
+    if (current_ban_settings.enable_carpet_bombing_detection &&
+        !current_ban_settings.carpet_bombing_prefix_sizes.empty()) {
+
+        extern abstract_subnet_counters_t<subnet_cidr_mask_t, subnet_counter_t> ipv4_network_counters;
+
+        // Get parent prefixes for this IP
+        std::vector<subnet_cidr_mask_t> parent_prefixes =
+            get_parent_prefixes_for_ip(client_ip, current_ban_settings.carpet_bombing_prefix_sizes);
+
+        // Analyze each parent prefix
+        for (const subnet_cidr_mask_t& parent_prefix : parent_prefixes) {
+            // Get counters for this prefix
+            const subnet_counter_t* prefix_counters = ipv4_network_counters.get_element_or_null(parent_prefix);
+
+            if (prefix_counters != nullptr) {
+                // Count affected IPs in this prefix that are also under attack
+                {
+                    std::unique_lock<std::mutex> lock(prefix_attack_map_mutex);
+                    uint32_t affected_ip_count = 0;
+
+                    if (prefix_to_attacking_ips_map.count(parent_prefix) > 0) {
+                        affected_ip_count = prefix_to_attacking_ips_map[parent_prefix].size();
+                    }
+
+                    // Add current IP to the tracking map
+                    prefix_to_attacking_ips_map[parent_prefix].insert(client_ip);
+
+                    // Classify the attack
+                    attack_details.attack_classification = classify_attack_type(
+                        client_ip,
+                        speed_element,
+                        parent_prefix,
+                        *prefix_counters,
+                        current_ban_settings,
+                        affected_ip_count + 1  // +1 for current IP being added
+                    );
+
+                    // If classified as carpet bombing, store the details
+                    if (attack_details.attack_classification == attack_classification_type_t::carpet_bombing) {
+                        attack_details.parent_prefix = parent_prefix;
+                        attack_details.carpet_bombing_info.parent_prefix = parent_prefix;
+                        attack_details.carpet_bombing_info.affected_ip_count = affected_ip_count + 1;
+                        attack_details.carpet_bombing_info.total_addressable_ips =
+                            get_addressable_ips_in_subnet(parent_prefix.second);
+                        attack_details.carpet_bombing_info.affected_percentage =
+                            (100.0f * attack_details.carpet_bombing_info.affected_ip_count) /
+                            attack_details.carpet_bombing_info.total_addressable_ips;
+
+                        // Store attacking IPs
+                        for (uint32_t ip : prefix_to_attacking_ips_map[parent_prefix]) {
+                            attack_details.carpet_bombing_info.attacking_ips.push_back(ip);
+                        }
+
+                        logger << log4cpp::Priority::INFO << "Attack classified as CARPET_BOMBING on prefix "
+                               << convert_ip_as_uint_to_string(parent_prefix.first) << "/" << parent_prefix.second
+                               << " with " << attack_details.carpet_bombing_info.affected_ip_count << " affected IPs";
+
+                        break;  // Use first matching prefix classification
+                    }
+                }
+            }
+        }
+    } else {
+        // Default to single IP attack if carpet bombing is disabled
+        attack_details.attack_classification = attack_classification_type_t::single_ip_attack;
+    }
+
     bool enable_backet_capture =
         packet_buckets_ipv4_storage.enable_packet_capture(client_ip, attack_details, collection_pattern_t::ONCE);
 
@@ -1943,7 +2173,7 @@ void recalculate_speed() {
     uint64_t incoming_total_flows = 0;
     uint64_t outgoing_total_flows = 0;
 
-    ipv4_network_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, nullptr);
+    ipv4_network_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, speed_calculation_callback_prefix_ipv4);
 
     uint64_t flow_exists_for_ip         = 0;
     uint64_t flow_does_not_exist_for_ip = 0;
@@ -1971,7 +2201,7 @@ void recalculate_speed() {
     });
 
     // Calculate IPv6 per network traffic
-    ipv6_network_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, nullptr);
+    ipv6_network_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, speed_calculation_callback_prefix_ipv6);
 
     // Recalculate traffic for hosts
     ipv6_host_counters.recalculate_speed(speed_calc_period, (double)average_calculation_amount, speed_calculation_callback_local_ipv6);

@@ -67,6 +67,15 @@ class attack_details_t {
     // Direction of threshold used to trigger this attack
     attack_detection_direction_type_t attack_detection_direction = attack_detection_direction_type_t::unknown;
 
+    // Attack classification: single IP vs carpet bombing
+    attack_classification_type_t attack_classification = attack_classification_type_t::unknown;
+
+    // Carpet bombing specific details
+    carpet_bombing_details_t carpet_bombing_info;
+
+    // Parent prefix (for carpet bombing attacks)
+    subnet_cidr_mask_t parent_prefix;
+
     std::string get_attack_uuid_as_string() const {
         return boost::uuids::to_string(attack_uuid);
     }

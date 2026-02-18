@@ -24,6 +24,23 @@ bool exceed_flow_speed(uint64_t in_counter, uint64_t out_counter, unsigned int t
 bool exceed_pps_speed(uint64_t in_counter, uint64_t out_counter, unsigned int threshold);
 ban_settings_t read_ban_settings(configuration_map_t configuration_map, std::string host_group_name);
 logging_configuration_t read_logging_settings(configuration_map_t configuration_map);
+
+// Carpet bombing detection functions
+std::vector<subnet_cidr_mask_t> get_parent_prefixes_for_ip(uint32_t client_ip, const std::vector<uint32_t>& prefix_sizes);
+void track_ip_in_prefix_attack(const subnet_cidr_mask_t& prefix, uint32_t attacking_ip);
+attack_classification_type_t classify_attack_type(
+    uint32_t attacked_ip,
+    const subnet_counter_t& ip_speed_element,
+    const subnet_cidr_mask_t& parent_prefix,
+    const subnet_counter_t& prefix_speed_element,
+    const ban_settings_t& ban_settings,
+    uint32_t affected_ip_count);
+uint32_t get_addressable_ips_in_subnet(uint32_t prefix_len);
+
+// Prefix detection callbacks for carpet bombing
+void speed_calculation_callback_prefix_ipv4(const subnet_cidr_mask_t& prefix, const subnet_counter_t& speed_element);
+void speed_calculation_callback_prefix_ipv6(const subnet_ipv6_cidr_mask_t& prefix, const subnet_counter_t& speed_element);
+
 void print_attack_details_to_file(const std::string& details, const std::string& client_ip_as_string, const attack_details_t& current_attack);
 std::string print_ban_thresholds(ban_settings_t current_ban_settings);
 std::string print_subnet_ipv4_load();
