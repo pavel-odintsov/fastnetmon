@@ -2,6 +2,12 @@
 
 #include <string>
 
+// Migrate to STL <format> after migration to GCC 13+
+
+#define FMT_HEADER_ONLY
+#include "../fmt/compile.h"
+#include "../fmt/format.h"
+
 #include "../fast_library.hpp"
 
 #include "../all_logcpp_libraries.hpp"
@@ -19,15 +25,15 @@ extern log4cpp::Category& logger;
 
 // Low level ExaBGP ban management
 void exabgp_prefix_ban_manage(std::string action, std::string prefix_as_string_with_mask, std::string exabgp_next_hop, std::string exabgp_community) {
-
-    /* Buffer for BGP message */
-    char bgp_message[256];
+    std::string bgp_message;
 
     if (action == "ban") {
-        sprintf(bgp_message, "announce route %s next-hop %s community %s\n", prefix_as_string_with_mask.c_str(),
-                exabgp_next_hop.c_str(), exabgp_community.c_str());
+        // Migrate fmt::format to std::format after migration to GCC 13+
+        bgp_message = fmt::format("announce route {} next-hop {} community {}\n",
+            prefix_as_string_with_mask, exabgp_next_hop, exabgp_community);
     } else {
-        sprintf(bgp_message, "withdraw route %s next-hop %s\n", prefix_as_string_with_mask.c_str(), exabgp_next_hop.c_str());
+        bgp_message = fmt::format("withdraw route {} next-hop {}\n",
+            prefix_as_string_with_mask, exabgp_next_hop);
     }
 
     logger << log4cpp::Priority::INFO << "ExaBGP announce message: " << bgp_message;
@@ -39,9 +45,9 @@ void exabgp_prefix_ban_manage(std::string action, std::string prefix_as_string_w
         return;
     }
 
-    int wrote_bytes = write(exabgp_pipe, bgp_message, strlen(bgp_message));
+    int wrote_bytes = write(exabgp_pipe, bgp_message.c_str(), bgp_message.size());
 
-    if (wrote_bytes != strlen(bgp_message)) {
+    if (wrote_bytes != bgp_message.size()) {
         logger << log4cpp::Priority::ERROR << "Can't write message to ExaBGP pipe";
     }
 
