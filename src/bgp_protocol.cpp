@@ -5,14 +5,9 @@
 #include "fast_library.hpp"
 
 #include "network_data_structures.hpp"
-
-#ifdef _WIN32
-#include <winsock2.h>
-#else
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-#endif 
 
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/join.hpp>
@@ -21,21 +16,6 @@
 
 #include "nlohmann/json.hpp"
 
-uint32_t convert_cidr_to_binary_netmask_local_function_copy(unsigned int cidr) {
-    uint32_t binary_netmask = 0xFFFFFFFF;
-    binary_netmask          = binary_netmask << (32 - cidr);
-    // htonl from host byte order to network
-    // ntohl from network byte order to host
-
-    // We need network byte order at output
-    return htonl(binary_netmask);
-}
-
-bool decode_nlri_ipv4(int len, uint8_t* value, subnet_cidr_mask_t& extracted_prefix) {
-    uint32_t not_used_number_of_scanned_bytes = 0;
-
-    return decode_bgp_subnet_encoding_ipv4(len, value, extracted_prefix, not_used_number_of_scanned_bytes);
-}
 
 // https://www.ietf.org/rfc/rfc4271.txt
 /*
@@ -118,7 +98,7 @@ bool decode_ipv6_announce_from_binary_encoded_atributes(std::vector<dynamic_bina
 
         if (bgp_attibute_common_header.attribute_type == BGP_ATTRIBUTE_MP_REACH_NLRI) {
             bool ipv6_decode_result =
-                decode_mp_reach_ipv6(binary_attribute.get_used_size(), (uint8_t*)binary_attribute.get_pointer(),
+                decode_mp_reach_attribute_to_ipv6_announce((uint8_t*)binary_attribute.get_pointer(), binary_attribute.get_used_size(), 
                                      bgp_attibute_common_header, ipv6_announce);
 
             if (!ipv6_decode_result) {
@@ -132,10 +112,16 @@ bool decode_ipv6_announce_from_binary_encoded_atributes(std::vector<dynamic_bina
 }
 
 // Decodes MP Reach NLRI attribute and populates IPv6 specific fields
-bool decode_mp_reach_ipv6(int len, uint8_t* value, bgp_attibute_common_header_t bgp_attibute_common_header, IPv6UnicastAnnounce& ipv6_announce) {
-    // TODO: we should add sanity checks to avoid reads after attribute's memory block
+bool decode_mp_reach_attribute_to_ipv6_announce(uint8_t* data, int length, bgp_attibute_common_header_t bgp_attibute_common_header, IPv6UnicastAnnounce& ipv6_announce) {
+    const uint8_t* mp_reach_attribute_shift = data + bgp_attibute_common_header.attribute_body_shift;
+    
+    // Handy for sanity checks
+    const uint8_t* buffer_end = data + length;
 
-    uint8_t* mp_reach_attribute_shift = (uint8_t*)value + bgp_attibute_common_header.attribute_body_shift;
+    if (mp_reach_attribute_shift + sizeof(bgp_mp_reach_short_header_t) > buffer_end) {
+        logger << log4cpp::Priority::ERROR << "Not enough data for reading MP Reach NLRI attribute header";
+        return false;
+    }
 
     // Read first part of MP Reach NLRI header
     bgp_mp_reach_short_header_t* bgp_mp_ext_header = (bgp_mp_reach_short_header_t*)mp_reach_attribute_shift;
@@ -144,30 +130,78 @@ bool decode_mp_reach_ipv6(int len, uint8_t* value, bgp_attibute_common_header_t 
     // logger << log4cpp::Priority::INFO << bgp_mp_ext_header->print();
 
     if (not(bgp_mp_ext_header->afi_identifier == AFI_IP6 and bgp_mp_ext_header->safi_identifier == SAFI_UNICAST)) {
-        logger << log4cpp::Priority::WARN << "We have got unexpected afi or safi numbers from IPv6 MP Reach NLRI";
+        logger << log4cpp::Priority::WARN << "We have got unexpected AFI or SAFI numbers from IPv6 MP Reach NLRI";
         return false;
     }
 
-    subnet_ipv6_cidr_mask_t next_hop_ipv6;
+    // https://www.rfc-editor.org/rfc/rfc2545?utm_source=chatgpt.com
+    // The value of the Length of Next Hop Network Address field on a
+    // MP_REACH_NLRI attribute shall be set to 16, when only a global
+    // address is present, or 32 if a link-local address is also included in
+    // the Next Hop field.
+
+    if (bgp_mp_ext_header->length_of_next_hop != 16 && bgp_mp_ext_header->length_of_next_hop != 32) {
+        logger << log4cpp::Priority::WARN << "We support only 16 or 32 byte next hop for IPv6 MP Reach NLRI but got "
+               << int(bgp_mp_ext_header->length_of_next_hop) << " byte long next hop";
+        return false;
+    }
+    
+    subnet_ipv6_cidr_mask_t next_hop_ipv6{};
 
     // We support only 16 byte (/128) next hops
     next_hop_ipv6.cidr_prefix_length = 128; //-V1048
 
-    if (bgp_mp_ext_header->length_of_next_hop != 16) {
-        logger << log4cpp::Priority::WARN << "We support only 16 byte next hop for IPv6 MP Reach NLRI";
+    // Please note that we ensure that we can read both 16 or 32 bytes of next hop data with this check 
+    if (mp_reach_attribute_shift + sizeof(bgp_mp_reach_short_header_t) + bgp_mp_ext_header->length_of_next_hop > buffer_end) {
+        logger << log4cpp::Priority::ERROR << "Not enough data for reading IPv6 next hop in MP Reach NLRI attribute";
         return false;
     }
 
-    memcpy(&next_hop_ipv6.subnet_address, mp_reach_attribute_shift + sizeof(bgp_mp_reach_short_header_t),
-           bgp_mp_ext_header->length_of_next_hop);
+    // Read only global IPv6 address which is 16 byte long
+    memcpy(&next_hop_ipv6.subnet_address, mp_reach_attribute_shift + sizeof(bgp_mp_reach_short_header_t), 16);
 
     ipv6_announce.set_next_hop(next_hop_ipv6);
 
+    // In case of 32 byte long next hop we can read link-local address which placed right after global IPv6 address 
+    if (bgp_mp_ext_header->length_of_next_hop == 32) {
+        // We read it but we do not store it anywhere else due to no customer demand
+        memcpy(&next_hop_ipv6.subnet_address, mp_reach_attribute_shift + sizeof(bgp_mp_reach_short_header_t) + sizeof(next_hop_ipv6.subnet_address), 16);
+    
+        // logger << log4cpp::Priority::INFO << "Got link-local next hop in MP Reach NLRI attribute: " << convert_ipv6_subnet_to_string(next_hop_ipv6) << std::endl;
+    }
+
     // logger << log4cpp::Priority::INFO << "IPv6 next hop is: "<< convert_ipv6_subnet_to_string(next_hop_ipv6);
 
-    // Strip single byte reserved field
-    uint8_t* prefix_length = mp_reach_attribute_shift + sizeof(bgp_mp_reach_short_header_t) +
+    // Check that we have enough data for SNPA bit 
+    if (mp_reach_attribute_shift + sizeof(bgp_mp_reach_short_header_t) + bgp_mp_ext_header->length_of_next_hop + sizeof(uint8_t) > buffer_end) {
+        logger << log4cpp::Priority::ERROR << "Not enough data for reading SNPA bit in MP Reach NLRI attribute";
+        return false;
+    }
+
+    const uint8_t* snpa_bit = mp_reach_attribute_shift + sizeof(bgp_mp_reach_short_header_t) + bgp_mp_ext_header->length_of_next_hop;
+
+    // It's expected to be zero all the time but when it's not we just warn about it
+    if (*snpa_bit != 0) {
+        logger << log4cpp::Priority::ERROR << "SNPA bit in MP Reach NLRI attribute is not zero as expected but " << int(*snpa_bit);
+    }
+
+    // Check that we have enough data for prefix length field
+    if (mp_reach_attribute_shift + sizeof(bgp_mp_reach_short_header_t) +
+                             bgp_mp_ext_header->length_of_next_hop + sizeof(uint8_t) + sizeof(uint8_t) > buffer_end) {
+        logger << log4cpp::Priority::ERROR << "Not enough data for reading prefix length field in MP Reach NLRI attribute";
+        return false;
+    }
+
+    const uint8_t* prefix_length = mp_reach_attribute_shift + sizeof(bgp_mp_reach_short_header_t) +
                              bgp_mp_ext_header->length_of_next_hop + sizeof(uint8_t);
+
+    subnet_ipv6_cidr_mask_t prefix_ipv6;
+    prefix_ipv6.cidr_prefix_length = *prefix_length;
+
+    if (prefix_ipv6.cidr_prefix_length > 128) {
+        logger << log4cpp::Priority::ERROR << "Too big prefix length in CIDR notation: " << int(prefix_ipv6.cidr_prefix_length);
+        return false;
+    }
 
     // We should cast it to int for proper print
     // logger << log4cpp::Priority::INFO << "NLRI length: " << int(*prefix_length);
@@ -175,8 +209,11 @@ bool decode_mp_reach_ipv6(int len, uint8_t* value, bgp_attibute_common_header_t 
 
     // logger << log4cpp::Priority::INFO << "We need " << number_of_bytes_required_for_prefix << " bytes for this prefix";
 
-    subnet_ipv6_cidr_mask_t prefix_ipv6;
-    prefix_ipv6.cidr_prefix_length = *prefix_length;
+    // Ensure that we have enough data for prefix itself
+    if (mp_reach_attribute_shift + sizeof(bgp_mp_reach_short_header_t) + bgp_mp_ext_header->length_of_next_hop + sizeof(uint8_t) + sizeof(uint8_t) + number_of_bytes_required_for_prefix > buffer_end) {
+        logger << log4cpp::Priority::ERROR << "Not enough data for reading prefix itself in MP Reach NLRI attribute";
+        return false;
+    }
 
     // Strip single byte for prefix_length and read network address
     memcpy(&prefix_ipv6.subnet_address, prefix_length + sizeof(uint8_t), number_of_bytes_required_for_prefix);
@@ -189,7 +226,7 @@ bool decode_mp_reach_ipv6(int len, uint8_t* value, bgp_attibute_common_header_t 
 }
 
 // https://github.com/osrg/gobgp/blob/d6148c75a30d87c3f8c1d0f68725127e4c5f3a65/packet/bgp.go#L5940
-bool decode_attribute(int len, char* value, IPv4UnicastAnnounce& unicast_ipv4_announce) {
+bool decode_attributes_to_ipv4_announce(char* value, int len, IPv4UnicastAnnounce& unicast_ipv4_announce) {
     bgp_attibute_common_header_t bgp_attibute_common_header;
 
     bool bgp_attrinute_read_result = bgp_attibute_common_header.parse_raw_bgp_attribute((uint8_t*)value, len);
@@ -202,7 +239,7 @@ bool decode_attribute(int len, char* value, IPv4UnicastAnnounce& unicast_ipv4_an
     switch (bgp_attibute_common_header.attribute_type) {
     case BGP_ATTRIBUTE_ORIGIN: {
         if (bgp_attibute_common_header.attribute_value_length != 1) {
-            logger << log4cpp::Priority::WARN
+            logger << log4cpp::Priority::ERROR
                    << "Broken size for BGP_ATTRIBUTE_ORIGIN: " << bgp_attibute_common_header.attribute_value_length;
             return false;
         }
@@ -211,7 +248,7 @@ bool decode_attribute(int len, char* value, IPv4UnicastAnnounce& unicast_ipv4_an
         memcpy(&origin_value,
                value + bgp_attibute_common_header.attribute_flag_and_type_length + bgp_attibute_common_header.length_of_length_field,
                sizeof(origin_value));
-        // logger << log4cpp::Priority::WARN << "BGP_ATTRIBUTE_ORIGIN: " <<
+        // logger << log4cpp::Priority::ERROR << "BGP_ATTRIBUTE_ORIGIN: " <<
         // get_origin_name_by_value(origin_value) <<
         // std::endl;
 
@@ -221,7 +258,9 @@ bool decode_attribute(int len, char* value, IPv4UnicastAnnounce& unicast_ipv4_an
     break;
 
     case BGP_ATTRIBUTE_AS_PATH: {
-        logger << log4cpp::Priority::DEBUG << "Got BGP_ATTRIBUTE_AS_PATH but I do not have code for parsing it";
+        if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+            logger << log4cpp::Priority::DEBUG << "Got BGP_ATTRIBUTE_AS_PATH but I do not have code for parsing it";
+        }
     }
 
     break;
@@ -248,19 +287,46 @@ bool decode_attribute(int len, char* value, IPv4UnicastAnnounce& unicast_ipv4_an
     break;
 
     case BGP_ATTRIBUTE_MULTI_EXIT_DISC: {
-        logger << log4cpp::Priority::DEBUG << "Got BGP_ATTRIBUTE_MULTI_EXIT_DISC but I do not have code for parsing it";
+        if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+            logger << log4cpp::Priority::DEBUG << "Got BGP_ATTRIBUTE_MULTI_EXIT_DISC but I do not have code for parsing it";
+        }
     }
 
     break;
 
     case BGP_ATTRIBUTE_LOCAL_PREF: {
-        logger << log4cpp::Priority::DEBUG << "Got BGP_ATTRIBUTE_LOCAL_PREF but I do not have code for parsing it";
+        if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+            logger << log4cpp::Priority::DEBUG << "Got BGP_ATTRIBUTE_LOCAL_PREF but I do not have code for parsing it";
+        }
     }
 
     break;
 
     case BGP_ATTRIBUTE_COMMUNITY: {
-        logger << log4cpp::Priority::DEBUG << "Got BGP_ATTRIBUTE_COMMUNITY but I do not have code for parsing it";
+        if (bgp_attibute_common_header.attribute_value_length % sizeof(bgp_community_attribute_element_t) != 0) {
+            logger << log4cpp::Priority::WARN << "BGP_ATTRIBUTE_COMMUNITY length "
+                   << bgp_attibute_common_header.attribute_value_length << " is not a multiple of community element size";
+            return false;
+        }
+
+        uint32_t number_of_communities =
+            bgp_attibute_common_header.attribute_value_length / sizeof(bgp_community_attribute_element_t);
+
+        uint8_t* community_data =
+            (uint8_t*)value + bgp_attibute_common_header.attribute_flag_and_type_length + bgp_attibute_common_header.length_of_length_field;
+
+        for (uint32_t i = 0; i < number_of_communities; i++) {
+            bgp_community_attribute_element_t community_element;
+            memcpy(&community_element, community_data + i * sizeof(bgp_community_attribute_element_t), sizeof(community_element));
+
+            // Convert from network byte order to host byte order
+            // TODO: it's REALLY BAD as we use both endian less versions of this strucutre in code
+            // We store it in little endian and then convert in place to big endian when push to wire
+            community_element.asn_number       = fast_ntoh(community_element.asn_number);
+            community_element.community_number = fast_ntoh(community_element.community_number);
+
+            unicast_ipv4_announce.add_community(community_element);
+        }
     }
 
     break;
@@ -278,14 +344,36 @@ bool decode_attribute(int len, char* value, IPv4UnicastAnnounce& unicast_ipv4_an
     break;
 
     case BGP_ATTRIBUTE_EXTENDED_COMMUNITY: {
-        logger << log4cpp::Priority::DEBUG
-               << "BGP_ATTRIBUTE_EXTENDED_COMMUNITY with length: " << bgp_attibute_common_header.attribute_value_length;
+        if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+            logger << log4cpp::Priority::DEBUG
+                   << "BGP_ATTRIBUTE_EXTENDED_COMMUNITY with length: " << bgp_attibute_common_header.attribute_value_length;
+        }
+    }
+
+    break;
+
+    case BGP_ATTRIBUTE_ORIGINATOR_ID: {
+        if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+            logger << log4cpp::Priority::DEBUG
+                   << "BGP_ATTRIBUTE_ORIGINATOR_ID with length: " << bgp_attibute_common_header.attribute_value_length;
+        }
+    }
+
+    break;
+
+    case BGP_ATTRIBUTE_CLUSTER_LIST: {
+        if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+            logger << log4cpp::Priority::DEBUG
+                   << "BGP_ATTRIBUTE_CLUSTER_LIST with length: " << bgp_attibute_common_header.attribute_value_length;
+        }
     }
 
     break;
 
     default: {
-        logger << log4cpp::Priority::DEBUG << "Unknown attribute: " << int(bgp_attibute_common_header.attribute_type);
+        if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+            logger << log4cpp::Priority::DEBUG << "Unknown attribute: " << int(bgp_attibute_common_header.attribute_type);
+        }
     }
 
     break;
@@ -320,9 +408,9 @@ bool encode_ipv6_announces_into_bgp_mp_reach_attribute_internal(const IPv6Unicas
     // Create short header
     bgp_mp_reach_short_header_t bgp_mp_reach_short_header;
 
-    bgp_mp_reach_short_header.afi_identifier     = AFI_IP6; //-V1048
-    bgp_mp_reach_short_header.safi_identifier    = SAFI_UNICAST; //-V1048
-    
+    bgp_mp_reach_short_header.afi_identifier  = AFI_IP6; //-V1048
+    bgp_mp_reach_short_header.safi_identifier = SAFI_UNICAST; //-V1048
+
     // Add next hop field
     bgp_mp_reach_short_header.length_of_next_hop = 16; //-V1048
 
@@ -332,8 +420,11 @@ bool encode_ipv6_announces_into_bgp_mp_reach_attribute_internal(const IPv6Unicas
     bgp_mp_reach_ipv6_attribute.append_data_as_object_ptr(&bgp_mp_reach_short_header);
 
     auto next_hop = ipv6_announce.get_next_hop();
-    logger << log4cpp::Priority::DEBUG << "Append next hop " << convert_ipv6_subnet_to_string(next_hop) << " with length of "
-        << sizeof(next_hop.subnet_address) << " bytes";
+
+    if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+        logger << log4cpp::Priority::DEBUG << "Append next hop " << convert_ipv6_subnet_to_string(next_hop)
+               << " with length of " << sizeof(next_hop.subnet_address) << " bytes";
+    }
 
     bgp_mp_reach_ipv6_attribute.append_data_as_pointer(&next_hop.subnet_address, sizeof(next_hop.subnet_address));
 
@@ -344,8 +435,10 @@ bool encode_ipv6_announces_into_bgp_mp_reach_attribute_internal(const IPv6Unicas
     // Get prefix for announce
     auto prefix = ipv6_announce.get_prefix();
 
-    logger << log4cpp::Priority::DEBUG << "Extracted prefix " << convert_ipv6_subnet_to_string(prefix);
-    
+    if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+        logger << log4cpp::Priority::DEBUG << "Extracted prefix " << convert_ipv6_subnet_to_string(prefix);
+    }
+
     if (!encode_ipv6_prefix(prefix, bgp_mp_reach_ipv6_attribute)) {
         logger << log4cpp::Priority::ERROR << "Cannot encode IPv6 prefix";
         return false;
@@ -361,7 +454,9 @@ bool encode_ipv6_prefix(const subnet_ipv6_cidr_mask_t& prefix, dynamic_binary_bu
     // Add prefix length
     uint8_t prefix_length = uint8_t(prefix.cidr_prefix_length);
 
-    logger << log4cpp::Priority::DEBUG << "Prefix length: " << uint32_t(prefix_length);
+    if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+        logger << log4cpp::Priority::DEBUG << "Prefix length: " << uint32_t(prefix_length);
+    }
 
     if (!dynamic_buffer.append_byte(prefix_length)) {
         logger << log4cpp::Priority::ERROR << "Cannot add prefix length";
@@ -370,7 +465,10 @@ bool encode_ipv6_prefix(const subnet_ipv6_cidr_mask_t& prefix, dynamic_binary_bu
 
     uint32_t prefix_byte_length = how_much_bytes_we_need_for_storing_certain_subnet_mask(prefix_length);
 
-    logger << log4cpp::Priority::DEBUG << "We need " << int(prefix_byte_length) << " bytes to encode IPv6 prefix " << convert_ipv6_subnet_to_string(prefix);
+    if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+        logger << log4cpp::Priority::DEBUG << "We need " << int(prefix_byte_length) << " bytes to encode IPv6 prefix "
+               << convert_ipv6_subnet_to_string(prefix);
+    }
 
     // We should copy only first meaningful bytes
     if (!dynamic_buffer.append_data_as_pointer(&prefix.subnet_address, prefix_byte_length)) {
@@ -442,7 +540,7 @@ bool encode_bgp_subnet_encoding(const subnet_cidr_mask_t& prefix, dynamic_binary
     // could store weird
     // information
 
-    uint32_t subnet_address_netmask_binary = convert_cidr_to_binary_netmask_local_function_copy(prefix_bit_length);
+    uint32_t subnet_address_netmask_binary = convert_cidr_to_binary_netmask(prefix_bit_length);
 
     // Zeroify useless bits
     subnet_address = subnet_address & subnet_address_netmask_binary;
@@ -510,8 +608,8 @@ std::string get_bgp_attribute_name_by_number(uint8_t bgp_attribute_type) {
 // This function calculates number of bytes required for store some certain
 // network
 // This is very useful if you are working with BGP encoded subnets
-uint32_t how_much_bytes_we_need_for_storing_certain_subnet_mask(uint8_t prefix_bit_length) {
-    return ceil(float(prefix_bit_length) / 8);
+uint32_t how_much_bytes_we_need_for_storing_certain_subnet_mask(uint8_t prefix_cidr_length) {
+    return ceil(float(prefix_cidr_length) / 8);
 }
 
 // Wrapper function which just checks correctness of bgp community

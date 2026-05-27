@@ -10,8 +10,8 @@
 
 #include "dynamic_binary_buffer.hpp"
 #include "fast_library.hpp"
-#include "fastnetmon_networks.hpp"
 #include "fast_endianless.hpp"
+#include "fastnetmon_networks.hpp"
 
 #include <boost/serialization/nvp.hpp>
 
@@ -22,11 +22,11 @@ class bgp_attribute_next_hop_ipv4;
 class IPv4UnicastAnnounce;
 class IPv6UnicastAnnounce;
 
+extern log4cpp::Category& logger;
+
 bool decode_bgp_subnet_encoding_ipv4(int len, uint8_t* value, subnet_cidr_mask_t& extracted_prefix, uint32_t& parsed_nlri_length);
 uint32_t how_much_bytes_we_need_for_storing_certain_subnet_mask(uint8_t prefix_bit_length);
 std::string get_bgp_attribute_name_by_number(uint8_t bgp_attribute_type);
-
-extern log4cpp::Category& logger;
 
 enum BGP_PROTOCOL_MESSAGE_TYPES_UNTYPED : uint8_t {
     BGP_PROTOCOL_MESSAGE_OPEN         = 1,
@@ -50,8 +50,6 @@ class __attribute__((__packed__)) bgp_message_header_t {
 
 static_assert(sizeof(bgp_message_header_t) == 19, "Broken size for bgp_message_header_t");
 
-// TODO: move to
-//
 // https://www.ietf.org/rfc/rfc4271.txt pages 15 and 16
 // https://github.com/osrg/gobgp/blob/d6148c75a30d87c3f8c1d0f68725127e4c5f3a65/packet/bgp.go#L3012
 struct __attribute__((__packed__)) bgp_attribute_flags {
@@ -201,8 +199,7 @@ class bgp_attibute_common_header_t {
     }
 };
 
-bool decode_nlri_ipv4(int len, uint8_t* value, subnet_cidr_mask_t& extracted_prefix);
-bool decode_attribute(int len, char* value, IPv4UnicastAnnounce& unicast_ipv4_announce);
+bool decode_attributes_to_ipv4_announce(char* value, int len, IPv4UnicastAnnounce& unicast_ipv4_announce);
 bool encode_bgp_subnet_encoding(const subnet_cidr_mask_t& prefix, dynamic_binary_buffer_t& buffer_result);
 std::string get_origin_name_by_value(uint8_t origin_value);
 
@@ -258,6 +255,12 @@ enum BGP_ATTRIBUTES_TYPES : uint8_t {
     // https://tools.ietf.org/html/rfc1997 from page 1
     BGP_ATTRIBUTE_COMMUNITY = 8,
 
+    // https://datatracker.ietf.org/doc/html/rfc4456#page-6
+    BGP_ATTRIBUTE_ORIGINATOR_ID = 9,
+
+    // https://datatracker.ietf.org/doc/html/rfc4456#page-6
+    BGP_ATTRIBUTE_CLUSTER_LIST = 10,
+
     // https://tools.ietf.org/html/rfc4760 from page 2
     BGP_ATTRIBUTE_MP_REACH_NLRI = 14,
 
@@ -283,11 +286,11 @@ class __attribute__((__packed__)) bgp_mp_reach_short_header_t {
     uint8_t length_of_next_hop = 16;
 
     void network_to_host_byte_order() {
-        afi_identifier = ntohs(afi_identifier);
+        afi_identifier = fast_ntoh(afi_identifier);
     }
 
     void host_byte_order_to_network_byte_order() {
-        afi_identifier = htons(afi_identifier);
+        afi_identifier = fast_hton(afi_identifier);
     }
 
     std::string print() const {
@@ -423,13 +426,18 @@ class __attribute__((__packed__)) bgp_community_attribute_element_t {
     uint16_t asn_number       = 0;
     uint16_t community_number = 0;
 
+    bool operator==(const bgp_community_attribute_element_t& other) const {
+        return asn_number == other.asn_number && community_number == other.community_number;
+    }
+
     void host_byte_order_to_network_byte_order() {
         asn_number       = htons(asn_number);
         community_number = htons(community_number);
     }
 };
 
-bool read_bgp_community_from_string(std::string community_as_string, bgp_community_attribute_element_t& bgp_community_attribute_element);
+bool encode_bgp_flow_spec_elements_into_bgp_mp_attributebgp_community_from_string(std::string community_as_string,
+                                                                                  bgp_community_attribute_element_t& bgp_community_attribute_element);
 
 static_assert(sizeof(bgp_community_attribute_element_t) == 4, "Broken size of bgp_community_attribute_element_t");
 
@@ -542,7 +550,7 @@ class IPv4UnicastAnnounce {
         return next_hop;
     }
 
-    subnet_cidr_mask_t get_prefix() {
+    subnet_cidr_mask_t get_prefix() const {
         return this->prefix;
     }
     BGP_ORIGIN_TYPES get_origin() {
@@ -558,7 +566,7 @@ class IPv4UnicastAnnounce {
         return encode_bgp_subnet_encoding(this->prefix, buffer_result);
     }
 
-     bool get_attributes(std::vector<dynamic_binary_buffer_t>& attributes_list) const {
+    bool get_attributes(std::vector<dynamic_binary_buffer_t>& attributes_list) const {
         /*
          *   The sender of an UPDATE message SHOULD order path attributes within
          *   the UPDATE message in ascending order of attribute type.  The
@@ -710,6 +718,10 @@ class IPv4UnicastAnnounce {
         return true;
     }
 
+    std::vector<bgp_community_attribute_element_t> get_communities() const {
+        return community_list;
+    }
+
     // Add ASN to AS_PATH
     void add_asn_as_path(uint32_t asn) {
         as_path_asns.push_back(asn);
@@ -725,6 +737,9 @@ class IPv4UnicastAnnounce {
     subnet_cidr_mask_t prefix;
     BGP_ORIGIN_TYPES origin = BGP_ORIGIN_INCOMPLETE;
     bool is_withdraw        = false;
+
+    // TODO: it's horrible encoding idea
+    // We store data here in little endian and then convert it into network byte order when need to send it to GoBGP
     std::vector<bgp_community_attribute_element_t> community_list;
 
     // List of ASNs in 32 bit format. May be empty
@@ -814,6 +829,9 @@ class IPv6UnicastAnnounce {
     subnet_ipv6_cidr_mask_t prefix{};
     BGP_ORIGIN_TYPES origin = BGP_ORIGIN_INCOMPLETE;
     bool is_withdraw        = false;
+
+    // TODO: it's horrible encoding idea
+    // We store data here in little endian and then convert it into network byte order when need to send it to GoBGP
     std::vector<bgp_community_attribute_element_t> community_list;
 
     // TODO: we need to rework AnnounceUnicastPrefixLowLevelIPv6
@@ -830,7 +848,10 @@ static_assert(sizeof(bgp_attribute_next_hop_ipv4) == 7, "Bad size for bgp_attrib
 bool is_bgp_community_valid(std::string community_as_string);
 bool decode_ipv6_announce_from_binary_encoded_atributes(std::vector<dynamic_binary_buffer_t> binary_attributes,
                                                         IPv6UnicastAnnounce& ipv6_announce);
-bool decode_mp_reach_ipv6(int len, uint8_t* value, bgp_attibute_common_header_t bgp_attibute_common_header, IPv6UnicastAnnounce& ipv6_announce);
+bool decode_mp_reach_attribute_to_ipv6_announce(uint8_t* data,
+                                                int length,
+                                                bgp_attibute_common_header_t bgp_attibute_common_header,
+                                                IPv6UnicastAnnounce& ipv6_announce);
 bool encode_ipv6_announces_into_bgp_mp_reach_attribute_internal(const IPv6UnicastAnnounce& ipv6_announce,
                                                                 dynamic_binary_buffer_t& bgp_mp_reach_ipv6_attribute);
 
@@ -838,3 +859,4 @@ bool encode_ipv6_announces_into_bgp_mp_reach_attribute(const IPv6UnicastAnnounce
 
                                                        dynamic_binary_buffer_t& bgp_mp_reach_ipv6_attribute);
 bool encode_ipv6_prefix(const subnet_ipv6_cidr_mask_t& prefix, dynamic_binary_buffer_t& dynamic_buffer);
+bool read_bgp_community_from_string(std::string community_as_string, bgp_community_attribute_element_t& bgp_community_attribute_element);
