@@ -123,7 +123,7 @@ bool process_netflow_packet_v5(const uint8_t* packet,
         current_packet.source       = NETFLOW;
         current_packet.arrival_time = current_inaccurate_time;
 
-        current_packet.agent_ip_address = client_ipv4_address;
+        current_packet.agent_ipv4_address = client_ipv4_address;
 
         current_packet.src_ip     = netflow5_flow->src_ip;
         current_packet.dst_ip     = netflow5_flow->dest_ip;

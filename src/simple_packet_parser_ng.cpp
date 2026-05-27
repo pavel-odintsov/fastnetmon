@@ -8,14 +8,12 @@
 #include <cstring>
 #include <iterator>
 
-using namespace network_data_stuctures;
-
-// By default, we do not touch MPLS
-// TODO: it's not working code yet
-bool decode_mpls = false;
 
 // We can strip only 3 nested vlans
 const uint32_t maximum_vlans_to_strip = 3;
+
+// We can strip only 10 MPLS tags
+const uint32_t maximum_mpls_tags_to_strip = 10;
 
 // GTPv1 encapsulation must use this port as destination
 // https://www.etsi.org/deliver/etsi_ts/129200_129299/129281/10.01.00_60/ts_129281v100100p.pdf
@@ -25,7 +23,7 @@ const uint16_t gtp_port = 2152;
 const uint8_t gtp_v1_t_pdu_type = 255;
 
 // Our own native function to convert wire packet into simple_packet_t
-parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
+parser_code_t parse_raw_packet_to_simple_packet_full(const uint8_t* pointer,
                                                         int length_before_sampling,
                                                         int captured_length,
                                                         simple_packet_t& packet,
@@ -83,26 +81,7 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
         ethertype = ethernet_vlan_header->get_ethertype_host_byte_order();
     }
 
-    if (decode_mpls) {
-        if (ethertype == IanaEthertypeMPLS_unicast) {
-        REPEAT_MPLS_STRIP:
-            if (local_pointer + sizeof(mpls_label_t) > end_pointer) {
-                return parser_code_t::memory_violation;
-            }
-
-            const mpls_label_t* mpls_label_header = (const mpls_label_t*)local_pointer;
-
-            std::cout << "MPLS header: " << mpls_label_header->print() << std::endl;
-
-            // Strip this MPLS label
-            local_pointer += sizeof(mpls_label_t);
-
-            // If it's not bottom of stack, repeat operation
-            if (mpls_label_header->bottom_of_stack == 0) {
-                goto REPEAT_MPLS_STRIP;
-            }
-        }
-    }
+    uint32_t number_of_stripped_mpls_tags = 0;
 
     // Here we store IPv4 or IPv6 l4 protocol numbers
     uint8_t protocol = 0;
@@ -160,8 +139,15 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
             return parser_code_t::success;
         }
 
-        // Ignore all IP options and shift pointer to L3 payload
-        local_pointer += 4 * ipv4_header->get_ihl();
+        uint8_t ip_header_length = ipv4_header->get_ihl() * 4;
+
+        // Ensure that we have enough data for IP header and options
+        if (local_pointer + ip_header_length > end_pointer) {
+            return parser_code_t::malformed_ip_header_length;
+        }
+
+        // Shift pointer to L3 payload
+        local_pointer += ip_header_length;
     } else if (ethertype == IanaEthertypeIPv6) {
         // Return error if pointer is shorter then IP header
         if (local_pointer + sizeof(ipv6_header_t) > end_pointer) {
@@ -241,6 +227,9 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
     } else if (ethertype == IanaEthertypeARP) {
         // it's not parser error of course but we need to have visibility about this case
         return parser_code_t::arp;
+    } else if (ethertype == IanaEthertypeMPLS_unicast) {
+        // it's not parser error of course but we need to have visibility about this case
+        return parser_code_t::mpls;
     } else {
         return parser_code_t::unknown_ethertype;
     }
@@ -272,9 +261,167 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
         packet.source_port      = tcp_header->get_source_port_host_byte_order();
         packet.destination_port = tcp_header->get_destination_port_host_byte_order();
 
+        packet.tcp_sequence_number = tcp_header->get_sequence_number_host_byte_order();
+        packet.tcp_ack_number      = tcp_header->get_ack_number_host_byte_order();
+        packet.tcp_window_size     = tcp_header->get_window_size_host_byte_order();
+
         // TODO: rework this code to use structs with bit fields
         packet.flags = tcp_header->get_fin() * 0x01 + tcp_header->get_syn() * 0x02 + tcp_header->get_rst() * 0x04 +
                        tcp_header->get_psh() * 0x08 + tcp_header->get_ack() * 0x10 + tcp_header->get_urg() * 0x20;
+
+    } else if (protocol == IpProtocolNumberICMP) {
+        // Please note that IPv4 and IPv6 ICMP are different protocols
+        // and we handle only IPv4 ICMP here
+        if (local_pointer + sizeof(icmp_header_t) > end_pointer) {
+            return parser_code_t::memory_violation;
+        }
+
+        const icmp_header_t* icmp_header = (const icmp_header_t*)local_pointer;
+
+        packet.icmp_type = icmp_header->get_type();
+        packet.icmp_code = icmp_header->get_code();
+    } else if (protocol == IpProtocolNumberIPV6_ICMP) {
+        // Please note that IPv4 and IPv6 ICMP are different protocols
+        // and we handle only IPv6 ICMP here which has same type and code fields as IPv4 ICMP
+        if (local_pointer + sizeof(icmp_header_t) > end_pointer) {
+            return parser_code_t::memory_violation;
+        }
+
+        const icmp_header_t* icmp_header = (const icmp_header_t*)local_pointer;
+
+        packet.icmp_type = icmp_header->get_type();
+        packet.icmp_code = icmp_header->get_code();
+    } else if (protocol == IpProtocolNumberUDP) {
+        if (local_pointer + sizeof(udp_header_t) > end_pointer) {
+            return parser_code_t::memory_violation;
+        }
+
+        const udp_header_t* udp_header = (const udp_header_t*)local_pointer;
+
+        packet.source_port      = udp_header->get_source_port_host_byte_order();
+        packet.destination_port = udp_header->get_destination_port_host_byte_order();
+
+        // Set L4 payload pointer and length (past UDP header)
+        packet.l4_payload_pointer = local_pointer + sizeof(udp_header_t);
+        packet.l4_payload_length  = end_pointer - (local_pointer + sizeof(udp_header_t));        
+    } else {
+        // That's fine, it's not some known protocol but we can export basic information retrieved from IP packet
+        return parser_code_t::success;
+    }
+
+    return parser_code_t::success;
+}
+
+
+// Our own native function to convert IPv6 packet into simple_packet_t
+parser_code_t parse_raw_ipv6_packet_to_simple_packet_full(const uint8_t* pointer,
+                                                             int length_before_sampling,
+                                                             int captured_length,
+                                                             simple_packet_t& packet,
+                                                             const parser_options_t& parser_options) {
+    // We are using pointer copy because we are changing it
+    const uint8_t* local_pointer = pointer;
+
+    // It's very nice for doing checks
+    const uint8_t* end_pointer = pointer + captured_length;
+
+
+    // Here we store IPv4 or IPv6 L4 protocol numbers
+    uint8_t protocol = 0;
+
+    // Return error if pointer is shorter then IPv6 header
+    if (local_pointer + sizeof(ipv6_header_t) > end_pointer) {
+        return parser_code_t::memory_violation;
+    }
+
+    const ipv6_header_t* ipv6_header = (const ipv6_header_t*)local_pointer;
+
+    // TODO: we may use std::copy for it to avoid touching memory with memcpy
+    memcpy(&packet.src_ipv6, ipv6_header->source_address, sizeof(packet.src_ipv6));
+    memcpy(&packet.dst_ipv6, ipv6_header->destination_address, sizeof(packet.dst_ipv6));
+
+    packet.ip_protocol_version = 6;
+
+    packet.ttl = ipv6_header->get_hop_limit();
+
+    // We need this specific field for Flow Spec mitigation mode
+    packet.ip_length = ipv6_header->get_payload_length();
+
+    // We keep these variables to maintain backward compatibility with parse_raw_packet_to_simple_packet_full()
+    packet.captured_payload_length = length_before_sampling;
+    packet.payload_full_length     = length_before_sampling;
+
+    // Pointer to payload
+    packet.payload_pointer = (void*)pointer;
+
+    protocol        = ipv6_header->get_next_header();
+    packet.protocol = protocol;
+
+    if (parser_options.read_packet_length_from_ip_header) {
+        packet.length = ipv6_header->get_payload_length();
+    } else {
+        packet.length = length_before_sampling;
+    }
+
+    // Just skip our simple IPv6 header and then code below will try to decode specific protocol
+    local_pointer += sizeof(ipv6_header_t);
+
+    // According to https://datatracker.ietf.org/doc/html/rfc8200#page-8
+    // these 6 options are mandatory for complete IPv6 implementations
+    //
+    //    IpProtocolNumberHOPOPT           = 0
+    //    IpProtocolNumberIPV6_ROUTE       = 43
+    //    IpProtocolNumberIPV6_FRAG        = 44
+    //    IpProtocolNumberESP              = 50
+    //    IpProtocolNumberAH               = 51
+    //    IpProtocolNumberIPV6_OPTS        = 60
+    //
+    // https://www.iana.org/assignments/ipv6-parameters/ipv6-parameters.xhtml
+    //
+    // We do not support all IPv6 options in current version of parser
+    // Some options are extremely rare in The Wild Internet: https://stats.labs.apnic.net/cgi-bin/v6frag_worldmap?w=7&d=f
+    if (protocol == IpProtocolNumberHOPOPT || protocol == IpProtocolNumberIPV6_ROUTE || protocol == IpProtocolNumberIPV6_FRAG ||
+        protocol == IpProtocolNumberIPV6_OPTS || protocol == IpProtocolNumberAH || protocol == IpProtocolNumberESP) {
+
+        // We decided to parse only fragmentation header option as only this field may be found in the Wild
+        if (protocol == IpProtocolNumberIPV6_FRAG) {
+            const ipv6_extension_header_fragment_t* ipv6_extension_header_fragment =
+                (const ipv6_extension_header_fragment_t*)local_pointer;
+
+            // If we received this header then we assume that packet was fragmented
+            packet.ip_fragmented = true;
+
+            packet.ip_more_fragments = ipv6_extension_header_fragment->get_more_fragments();
+
+            packet.ip_fragment_offset = ipv6_extension_header_fragment->get_fragment_offset_bytes();
+
+            // We stop processing here as I believe that it's enough to know that this traffic was fragmented
+            // We do not parse nested protocol in this case at all
+            // If we observe first fragment of UDP datagram we may see header but for consequent packets we cannot do it
+            // I think that's it's safer to avoid parsing such traffic deeper until we collect packet examples for all cases
+            return parser_code_t::success;
+        }
+
+        return parser_code_t::no_ipv6_options_support;
+    }
+
+    if (protocol == IpProtocolNumberTCP) {
+        if (local_pointer + sizeof(tcp_header_t) > end_pointer) {
+            return parser_code_t::memory_violation;
+        }
+
+        const tcp_header_t* tcp_header = (const tcp_header_t*)local_pointer;
+
+        packet.source_port      = tcp_header->get_source_port_host_byte_order();
+        packet.destination_port = tcp_header->get_destination_port_host_byte_order();
+
+        // TODO: rework this code to use structs with bit fields
+        packet.flags = tcp_header->get_fin() * 0x01 + tcp_header->get_syn() * 0x02 + tcp_header->get_rst() * 0x04 +
+                       tcp_header->get_psh() * 0x08 + tcp_header->get_ack() * 0x10 + tcp_header->get_urg() * 0x20;
+
+        packet.tcp_sequence_number = tcp_header->get_sequence_number_host_byte_order();
+        packet.tcp_ack_number      = tcp_header->get_ack_number_host_byte_order();
+        packet.tcp_window_size     = tcp_header->get_window_size_host_byte_order();
 
     } else if (protocol == IpProtocolNumberUDP) {
         if (local_pointer + sizeof(udp_header_t) > end_pointer) {
@@ -286,169 +433,18 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
         packet.source_port      = udp_header->get_source_port_host_byte_order();
         packet.destination_port = udp_header->get_destination_port_host_byte_order();
 
-        // GTPv1 T-PDU packet which carries IPv4 or IPv6 as UDP payload
-        // Standard requires that only destination port is set to gtp_port but in all pcaps I've seen we have gtp_port
-        // for both source and destination port
-        if (parser_options.unpack_gtp_v1 && (packet.source_port == gtp_port || packet.destination_port == gtp_port)) {
-            // We need to read flags first
-            if (local_pointer + sizeof(gtp_v1_header_flags_t) > end_pointer) {
-                return parser_code_t::memory_violation;
-            }
-
-            local_pointer += sizeof(udp_header_t);
-
-            // Read flags first
-            const gtp_v1_header_flags_t* gtp_v1_header_flags = (const gtp_v1_header_flags_t*)local_pointer;
-
-            // That's how we distinguish our GTP traffic from all other packets
-            if (gtp_v1_header_flags->version == 1 && gtp_v1_header_flags->protocol_type == 1) {
-                // Keep parsing
-            } else {
-                // Stop processing and return packet as-is
-                return parser_code_t::success;
-            }
-
-            // Then we have multiple options how packets may look
-            if (gtp_v1_header_flags->extension_header == 0 && gtp_v1_header_flags->n_pdu_number == 0) {
-                // Keep parsing as we can parse such packets
-            } else {
-                // We do not support packets with extension headers or n_pdu_number_in_place
-                return parser_code_t::success;
-            }
-
-            if (gtp_v1_header_flags->sequence_number) {
-                // We need to use structure with sequence number in place
-                if (local_pointer + sizeof(gtp_v1_header_with_sequence_t) > end_pointer) {
-                    return parser_code_t::memory_violation;
-                }
-
-                const gtp_v1_header_with_sequence_t* gtp_v1_header = (const gtp_v1_header_with_sequence_t*)local_pointer;
-
-                if (gtp_v1_header->get_message_type() != gtp_v1_t_pdu_type) {
-                    // We are not interested in other message types and return them as-is
-                    return parser_code_t::success;
-                }
-
-                // std::cout << "GTPv1: " << gtp_v1_header->print() << " header: " << gtp_v1_header_flags->print() << std::endl;
-                local_pointer += sizeof(gtp_v1_header_with_sequence_t);
-
-                // TODO: we need to add support for IPv6 here
-
-                // This function will override all fields in original packet structure by new fields
-                parser_options_t gtp_parser_options;
-                gtp_parser_options.read_packet_length_from_ip_header = true;
-
-                // We need to calculate how much data we have after all parsed fields until end of packet to pass it to
-                // function below We have length in GTP header but I do not think taht we should trust it
-                int remaining_packet_length = end_pointer - local_pointer;
-
-                // Well, we need to reset ports for original packet as in case if we have protocol like ICMP internally
-                // it will inherit them and it will look weird
-                packet.source_port      = 0;
-                packet.destination_port = 0;
-
-                parser_code_t nested_packet_parse_result =
-                    parse_raw_ipv4_packet_to_simple_packet_full_ng(local_pointer, remaining_packet_length,
-                                                                   remaining_packet_length, packet, gtp_parser_options);
-
-                return nested_packet_parse_result;
-            } else {
-                // GTPv1 packet header withotu sequence number
-                if (local_pointer + sizeof(gtp_v1_header_t) > end_pointer) {
-                    return parser_code_t::memory_violation;
-                }
-
-                const gtp_v1_header_t* gtp_v1_header = (const gtp_v1_header_t*)local_pointer;
-
-                if (gtp_v1_header->get_message_type() != gtp_v1_t_pdu_type) {
-                    // We are not interested in other message types and return them as-is
-                    return parser_code_t::success;
-                }
-
-                // std::cout << "GTPv1: " << gtp_v1_header->print() << " header: " << gtp_v1_header_flags->print() << std::endl;
-
-                local_pointer += sizeof(gtp_v1_header_t);
-
-                // TODO: we need to add support for IPv6 here
-
-                // This function will override all fields in original packet structure by new fields
-                parser_options_t gtp_parser_options;
-                gtp_parser_options.read_packet_length_from_ip_header = true;
-
-                // We need to calculate how much data we have after all parsed fields until end of packet to pass it to
-                // function below We have length in GTP header but I do not think taht we should trust it
-                int remaining_packet_length = end_pointer - local_pointer;
-
-                // Well, we need to reset ports for original packet as in case if we have protocol like ICMP internally
-                // it will inherit them and it will look weird
-                packet.source_port      = 0;
-                packet.destination_port = 0;
-
-                parser_code_t nested_packet_parse_result =
-                    parse_raw_ipv4_packet_to_simple_packet_full_ng(local_pointer, remaining_packet_length,
-                                                                   remaining_packet_length, packet, gtp_parser_options);
-
-                return nested_packet_parse_result;
-            }
-        }
-
-    } else if (protocol == IpProtocolNumberGRE) {
-        if (!parser_options.unpack_gre) {
-            // We do not decode it automatically but we can report source and destination IPs for it to FNM processing
-            return parser_code_t::success;
-        }
-
-        if (local_pointer + sizeof(gre_header_t) > end_pointer) {
+        // Set L4 payload pointer and length (past UDP header)
+        packet.l4_payload_pointer = local_pointer + sizeof(udp_header_t);
+        packet.l4_payload_length  = end_pointer - (local_pointer + sizeof(udp_header_t));
+    } else if (protocol == IpProtocolNumberICMP) {
+        if (local_pointer + sizeof(icmp_header_t) > end_pointer) {
             return parser_code_t::memory_violation;
         }
 
-        const gre_header_t* gre_header = (const gre_header_t*)local_pointer;
+        const icmp_header_t* icmp_header = (const icmp_header_t*)local_pointer;
 
-        // Current version of parser does not handle these special codes and we just fail parsing process
-        // These flags may extend length of GRE header and current logic is not ready to decode any of them
-        if (gre_header->get_checksum() != 0 || gre_header->get_reserved() != 0 || gre_header->get_version() != 0) {
-            return parser_code_t::broken_gre;
-        }
-
-        uint16_t gre_nested_protocol = gre_header->get_protocol_type_host_byte_order();
-
-        // We will try parsing IPv4 only for now
-        if (gre_nested_protocol == IanaEthertypeIPv4) {
-            local_pointer += sizeof(gre_header_t);
-
-            // This function will override all fields in original packet structure by new fields
-            parser_options_t gre_parser_options;
-            gre_parser_options.read_packet_length_from_ip_header = true;
-
-            // We need to calculate how much data we have after all parsed fields until end of packet to pass it to function below
-            int remaining_packet_length = end_pointer - local_pointer;
-
-            parser_code_t nested_packet_parse_result =
-                parse_raw_ipv4_packet_to_simple_packet_full_ng(local_pointer, remaining_packet_length,
-                                                               remaining_packet_length, packet, gre_parser_options);
-
-            return nested_packet_parse_result;
-        } else if (gre_nested_protocol == IanaEthertypeERSPAN) {
-            local_pointer += sizeof(gre_header_t);
-
-            // We need to calculate how much data we have after all parsed fields until end of packet to pass it to function below
-            int remaining_packet_length = end_pointer - local_pointer;
-
-            parser_options_t erspan_parser_options;
-            erspan_parser_options.read_packet_length_from_ip_header = true;
-
-            // We do not decode it second time
-            erspan_parser_options.unpack_gre = false;
-
-            // We need to call same function because we have normal wire format encoded data with ethernet header here
-            parser_code_t nested_packet_parse_result =
-                parse_raw_packet_to_simple_packet_full_ng(local_pointer, remaining_packet_length,
-                                                          remaining_packet_length, packet, erspan_parser_options);
-
-            return nested_packet_parse_result;
-        } else {
-            return parser_code_t::broken_gre;
-        }
+        packet.icmp_type = icmp_header->get_type();
+        packet.icmp_code = icmp_header->get_code();
     } else {
         // That's fine, it's not some known protocol but we can export basic information retrieved from IP packet
         return parser_code_t::success;
@@ -457,8 +453,9 @@ parser_code_t parse_raw_packet_to_simple_packet_full_ng(const uint8_t* pointer,
     return parser_code_t::success;
 }
 
+
 // Our own native function to convert IPv4 packet into simple_packet_t
-parser_code_t parse_raw_ipv4_packet_to_simple_packet_full_ng(const uint8_t* pointer,
+parser_code_t parse_raw_ipv4_packet_to_simple_packet_full(const uint8_t* pointer,
                                                              int length_before_sampling,
                                                              int captured_length,
                                                              simple_packet_t& packet,
@@ -479,7 +476,7 @@ parser_code_t parse_raw_ipv4_packet_to_simple_packet_full_ng(const uint8_t* poin
         return parser_code_t::memory_violation;
     }
 
-    ipv4_header_t* ipv4_header = (ipv4_header_t*)local_pointer;
+    const ipv4_header_t* ipv4_header = (const ipv4_header_t*)local_pointer;
 
     // Use network representation of addresses
     packet.src_ip = ipv4_header->get_source_ip_network_byte_order();
@@ -509,15 +506,22 @@ parser_code_t parse_raw_ipv4_packet_to_simple_packet_full_ng(const uint8_t* poin
         packet.length = length_before_sampling;
     }
 
+    uint8_t ip_header_length = ipv4_header->get_ihl() * 4;
+
+    // Ensure that we have enough data for IP header and options
+    if (local_pointer + ip_header_length > end_pointer) {
+        return parser_code_t::malformed_ip_header_length;
+    }
+
     // Ignore all IP options and shift pointer to L3 payload
-    local_pointer += 4 * ipv4_header->get_ihl();
+    local_pointer += ip_header_length;
 
     if (protocol == IpProtocolNumberTCP) {
         if (local_pointer + sizeof(tcp_header_t) > end_pointer) {
             return parser_code_t::memory_violation;
         }
 
-        tcp_header_t* tcp_header = (tcp_header_t*)local_pointer;
+        const tcp_header_t* tcp_header = (const tcp_header_t*)local_pointer;
 
         packet.source_port      = tcp_header->get_source_port_host_byte_order();
         packet.destination_port = tcp_header->get_destination_port_host_byte_order();
@@ -526,19 +530,75 @@ parser_code_t parse_raw_ipv4_packet_to_simple_packet_full_ng(const uint8_t* poin
         packet.flags = tcp_header->get_fin() * 0x01 + tcp_header->get_syn() * 0x02 + tcp_header->get_rst() * 0x04 +
                        tcp_header->get_psh() * 0x08 + tcp_header->get_ack() * 0x10 + tcp_header->get_urg() * 0x20;
 
+        packet.tcp_sequence_number = tcp_header->get_sequence_number_host_byte_order();
+        packet.tcp_ack_number      = tcp_header->get_ack_number_host_byte_order();
+        packet.tcp_window_size     = tcp_header->get_window_size_host_byte_order();
+
     } else if (protocol == IpProtocolNumberUDP) {
         if (local_pointer + sizeof(udp_header_t) > end_pointer) {
             return parser_code_t::memory_violation;
         }
 
-        udp_header_t* udp_header = (udp_header_t*)local_pointer;
+        const udp_header_t* udp_header = (const udp_header_t*)local_pointer;
 
         packet.source_port      = udp_header->get_source_port_host_byte_order();
         packet.destination_port = udp_header->get_destination_port_host_byte_order();
+
+        // Set L4 payload pointer and length (past UDP header)
+        packet.l4_payload_pointer = local_pointer + sizeof(udp_header_t);
+        packet.l4_payload_length  = end_pointer - (local_pointer + sizeof(udp_header_t));
+    } else if (protocol == IpProtocolNumberICMP) {
+        if (local_pointer + sizeof(icmp_header_t) > end_pointer) {
+            return parser_code_t::memory_violation;
+        }
+
+        const icmp_header_t* icmp_header = (const icmp_header_t*)local_pointer;
+
+        packet.icmp_type = icmp_header->get_type();
+        packet.icmp_code = icmp_header->get_code();
     } else {
         // That's fine, it's not some known protocol but we can export basic information retrieved from IP packet
         return parser_code_t::success;
     }
 
     return parser_code_t::success;
+}
+
+#include "network_data_structures.hpp"
+#include <cstring>
+
+std::string parser_code_to_string(parser_code_t code) {
+    if (code == parser_code_t::memory_violation) {
+        return "memory_violation";
+    } else if (code == parser_code_t::not_ipv4) {
+        return "not_ipv4";
+    } else if (code == parser_code_t::success) {
+        return "success";
+    } else if (code == parser_code_t::broken_gre) {
+        return "broken_gre";
+    } else if (code == parser_code_t::no_ipv6_support) {
+        return "no_ipv6_support";
+    } else if (code == parser_code_t::no_ipv6_options_support) {
+        return "no_ipv6_options_support";
+    } else if (code == parser_code_t::unknown_ethertype) {
+        return "unknown_ethertype";
+    } else if (code == parser_code_t::arp) {
+        return "arp";
+    } else if (code == parser_code_t::mpls) {
+        return "mpls";
+    } else if (code == parser_code_t::unknown_traffic_in_mpls) {
+        return "unknown_traffic_in_mpls";
+    } else if (code == parser_code_t::too_many_nested_vlans) {
+        return "too_many_nested_vlans";
+    } else if (code == parser_code_t::too_many_mpls_tags) {
+        return "too_many_mpls_tags";
+    } else if (code == parser_code_t::broken_pppoe) {
+        return "broken_pppoe";
+    } else if (code == parser_code_t::pppoe_ipv6) {
+        return "pppoe_ipv6";
+    } else if (code == parser_code_t::malformed_ip_header_length) {
+        return "malformed_ip_header_length";
+    } else {
+        return "unknown";
+    }
 }

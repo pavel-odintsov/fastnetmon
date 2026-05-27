@@ -4,7 +4,7 @@
 #include <map>
 #include <string>
 
-#include "../iana_ip_protocols.hpp"
+#include "../iana/iana_ip_protocols.hpp"
 
 #include "example_collector.hpp"
 

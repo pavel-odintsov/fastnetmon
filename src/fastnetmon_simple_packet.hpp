@@ -23,7 +23,7 @@ enum class forwarding_status_t { unknown, forwarded, dropped, consumed };
 
 // Our internal representation of all packet types
 class simple_packet_t {
-    public:
+ public:
     // Source plugin for this traffic type
     source_t source = UNKNOWN;
 
@@ -73,6 +73,11 @@ class simple_packet_t {
     // TCP flags
     uint8_t flags = 0;
 
+    // TCP numbers
+    uint32_t tcp_sequence_number = 0;
+    uint32_t tcp_ack_number      = 0;
+    uint16_t tcp_window_size     = 0;
+
     // If IP packet fragmented
     bool ip_fragmented = false;
 
@@ -85,19 +90,31 @@ class simple_packet_t {
     // Fragment offset in bytes when fragmentation involved
     uint16_t ip_fragment_offset = 0;
 
+    // ICMP type
+    uint8_t icmp_type = 0;
+
+    // ICMP code
+    uint8_t icmp_code = 0;
+
     // Time when we actually received this packet, we use quite rough and inaccurate but very fast time source for it
     time_t arrival_time = 0;
 
     // Timestamp of packet as reported by Netflow or IPFIX agent on device, it may be very inaccurate as nobody cares about time on equipment
     struct timeval ts = { 0, 0 };
 
-    const void* payload_pointer  = nullptr;
+    const void* payload_pointer = nullptr;
 
     // Part of packet we captured from wire. It may not be full length of packet
     int32_t captured_payload_length = 0;
 
     // Full length of packet we observed. It may be larger then packet_captured_payload_length in case of cropped mirror or sFlow traffic
     uint32_t payload_full_length = 0;
+
+    // Pointer to L4 (e.g. UDP/TCP) payload data, past the L4 header
+    const void* l4_payload_pointer = nullptr;
+
+    // Length of L4 payload
+    uint32_t l4_payload_length = 0;
 
     // Forwarding status
     forwarding_status_t forwarding_status = forwarding_status_t::unknown;
@@ -113,6 +130,9 @@ class simple_packet_t {
 
     direction_t packet_direction = OTHER;
 
-    // IP address of device which send this flow
-    uint32_t agent_ip_address = 0;
+    // IPv4 address of device which send this flow
+    uint32_t agent_ipv4_address = 0;
+
+    // IPv6 address of device which send this flow
+    in6_addr agent_ipv6_address{};
 };

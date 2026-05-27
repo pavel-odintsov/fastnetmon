@@ -9,8 +9,8 @@
 
 #include "fast_endianless.hpp"
 
-#include "iana_ethertypes.hpp"
-#include "iana_ip_protocols.hpp"
+#include "iana/iana_ethertypes.hpp"
+#include "iana/iana_ip_protocols.hpp"
 
 //
 // If you have an idea to add unions to "improve" this code please stop and think.
@@ -28,8 +28,6 @@
 template <typename dst_type, typename src_type> inline void* smart_memcpy(dst_type* dst, const src_type* src) {
     return memcpy(dst, src, sizeof(dst_type));
 }
-
-namespace network_data_stuctures {
 
 // We are using this structure as pretty interface for IPv4 address bytes in host byte order (little  endian)
 class __attribute__((__packed__)) ipv4_octets_form_little_endian_t {
@@ -125,10 +123,12 @@ inline std::string convert_mac_to_string(const uint8_t (&mac_as_array)[6]) {
     return buffer.str();
 }
 
-// TODO: it's not finished yet
+// Well, this one is special, it 4 bytes lkong one and we need to do big endian to little endian conversion before
+// reading any of these fields We cannot convert each field invidually as for other fields
+// https://datatracker.ietf.org/doc/html/rfc3032#page-3
 class __attribute__((__packed__)) mpls_label_t {
     public:
-    uint32_t label : 20 = 0, qos : 3 = 0, bottom_of_stack : 1 = 0, ttl : 8 = 0;
+    uint32_t ttl : 8 = 0, bottom_of_stack : 1 = 0, qos : 3 = 0, label : 20 = 0;
 
     std::string print() const {
         std::stringstream buffer;
@@ -141,6 +141,20 @@ class __attribute__((__packed__)) mpls_label_t {
         return buffer.str();
     }
 };
+
+// We use this structure to guess version of packet after last MPLS tag
+class __attribute__((__packed__)) ipv4_or_ipv6_header_t {
+    // We must not access these fields directly as they need conversion
+    private:
+    uint8_t ignore : 4 = 0, version : 4 = 0;
+
+    public:
+    uint8_t get_version() const {
+        return version;
+    }
+};
+
+static_assert(sizeof(ipv4_or_ipv6_header_t) == 1, "Bad size for ipv4_or_ipv6_header_t");
 
 static_assert(sizeof(mpls_label_t) == 4, "Bad size for mpls_label_t");
 
@@ -519,38 +533,113 @@ class __attribute__((__packed__)) gtp_v1_header_with_sequence_t {
 
 static_assert(sizeof(gtp_v1_header_with_sequence_t) == 12, "Bad size for gtp_v1_header_with_sequence_t");
 
-// https://datatracker.ietf.org/doc/html/rfc2784
-class __attribute__((__packed__)) gre_header_t {
-    // We must not access these fields directly as they may need conversion
+// https://datatracker.ietf.org/doc/html/rfc2516#page-4
+class __attribute__((__packed__)) pppoe_header_t {
     private:
-    // TODO: we have no pcaps where these fields are no zeros and we did not test this case
-    // For some reasons PVS thinks that we did not initialised all members. I think they're not that great with bitfields
-    uint16_t checksum : 1 = 0, reserved : 12 = 0, version : 3 = 0; //-V730
+    uint8_t version : 4 = 0, type : 4 = 0;
+    uint8_t code = 0;
+    uint16_t session_id = 0;
+    uint16_t length = 0;
+
+    public:
+    uint8_t get_version() const {
+        return version;
+    }
+
+    uint8_t get_type() const {
+        return type;
+    }
+
+    uint8_t get_code() const {
+        return code;
+    }
+
+    uint16_t get_session_id_host_byte_order() const {
+        return fast_ntoh(session_id);
+    }
+
+    uint16_t get_length_host_byte_order() const {
+        return fast_ntoh(length);
+    }
+
+    std::string print() const {
+        std::stringstream buffer;
+
+        buffer << "version: " << uint32_t(get_version()) << " "
+               << "type: " << uint32_t(get_type()) << " "
+               << "code: " << uint32_t(get_code()) << " "
+               << "session_id: " << get_session_id_host_byte_order() << " "
+               << "length: " << get_length_host_byte_order();
+
+        return buffer.str();
+    }
+};
+
+static_assert(sizeof(pppoe_header_t) == 6, "Bad size for pppoe_header_t");
+
+
+// https://datatracker.ietf.org/doc/html/rfc2784
+// Updated GRE specification: RFC 2890
+// https://datatracker.ietf.org/doc/html/rfc2890#section-2
+/*
+ *
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |C| |K|S| Reserved0       | Ver |         Protocol Type         |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |      Checksum (optional)      |       Reserved1 (Optional)    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                         Key (optional)                        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                 Sequence Number (Optional)                    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+*/
+class __attribute__((__packed__)) gre_header_t {
+    private:
+    // We have dump capture20260318-2.pcap which has non zero key bit
+    uint16_t flags;
     uint16_t protocol_type = 0;
 
     public:
-    uint16_t get_protocol_type_host_byte_order() const {
-        return fast_ntoh(protocol_type);
+    bool get_checksum() const {
+        return fast_ntoh(flags) & 0b1000000000000000;
+    }
+
+    // It's not called that way in RFC but I got name from Wireshark
+    bool get_routing_bit() const {
+        return fast_ntoh(flags) & 0b0100000000000000;
+    }
+
+    bool get_key_bit() const {
+        return fast_ntoh(flags) & 0b0010000000000000;
+    }
+
+    bool get_sequence_number_bit() const {
+        return fast_ntoh(flags) & 0b0001000000000000;
     }
 
     uint16_t get_reserved() const {
-        return reserved;
-    }
-
-    uint16_t get_checksum() const {
-        return checksum;
+        return (fast_ntoh(flags) & 0b0000111111111000) >> 3;
     }
 
     uint16_t get_version() const {
-        return version;
+        return fast_ntoh(flags) & 0b0000000000000111;
+    }
+
+    uint16_t get_protocol_type_host_byte_order() const {
+        return fast_ntoh(protocol_type);
     }
 
     std::string print() const {
         std::stringstream buffer;
 
         buffer << "checksum: " << get_checksum() << " "
-               << "reserved: " << get_reserved() << " "
-               << "version: " << get_version() << " "
+               << "routing_bit: " << get_routing_bit() << " "
+               << "key_bit: " << get_key_bit() << " "
+               << "squence_number_bit: " << get_sequence_number_bit() << " "
+               << "reserved: " << uint32_t(get_reserved()) << " "
+               << "version: " << uint32_t(get_version()) << " "
                << "protocol_type: " << get_protocol_type_host_byte_order();
 
         return buffer.str();
@@ -1195,17 +1284,4 @@ class __attribute__((__packed__)) ipv4_header_t {
 
 static_assert(sizeof(ipv4_header_t) == 20, "Bad size for ipv4_header_t");
 
-enum class parser_code_t {
-    memory_violation,
-    not_ipv4,
-    success,
-    broken_gre,
-    no_ipv6_support,
-    no_ipv6_options_support,
-    unknown_ethertype,
-    arp,
-    too_many_nested_vlans,
-};
 
-std::string parser_code_to_string(parser_code_t code);
-} // namespace network_data_stuctures

@@ -90,7 +90,7 @@ bool write_simple_packet_to_protobuf(const simple_packet_t& packet, TrafficData&
 
     // 22
     // In current version we support only IPv4 agent IP
-    traffic_data.set_agent_address(&packet.agent_ip_address, sizeof(packet.agent_ip_address));
+    traffic_data.set_agent_address(&packet.agent_ipv4_address, sizeof(packet.agent_ipv4_address));
 
     return true;
 }
