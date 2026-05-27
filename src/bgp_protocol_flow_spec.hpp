@@ -14,7 +14,7 @@
 
 #include <boost/serialization/nvp.hpp>
 
-#include "iana_ip_protocols.hpp"
+#include "iana/iana_ip_protocols.hpp"
 
 #include "bgp_protocol.hpp"
 

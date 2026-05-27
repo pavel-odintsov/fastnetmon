@@ -1395,17 +1395,17 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, const ui
                 parser_options.unpack_gre = false;
                 parser_options.read_packet_length_from_ip_header = true;
 
-                auto result = parse_raw_packet_to_simple_packet_full_ng(payload_shift, flow_meta.variable_field_length,
+                auto result = parse_raw_packet_to_simple_packet_full(payload_shift, flow_meta.variable_field_length,
                                                                         flow_meta.variable_field_length,
                                                                         flow_meta.nested_packet, parser_options);
 
-                if (result != network_data_stuctures::parser_code_t::success) {
+                if (result != parser_code_t::success) {
                     // Cannot decode data
                     ipfix_inline_header_parser_error++;
 
                     if (logger.getPriority() == log4cpp::Priority::DEBUG) {
                         logger << log4cpp::Priority::DEBUG << "Cannot parse packet header with error: "
-                               << network_data_stuctures::parser_code_to_string(result);
+                               << parser_code_to_string(result);
                     }
 
                 } else {
@@ -1861,7 +1861,7 @@ bool ipfix_data_set_to_store(const uint8_t* packet_ptr,
     packet.source       = NETFLOW;
     packet.arrival_time = current_inaccurate_time;
 
-    packet.agent_ip_address = client_ipv4_address;
+    packet.agent_ipv4_address = client_ipv4_address;
 
     // We use shifted values and should process only zeroed values
     // because we are working with little and big endian data in same time

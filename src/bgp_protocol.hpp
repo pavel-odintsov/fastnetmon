@@ -15,7 +15,7 @@
 
 #include <boost/serialization/nvp.hpp>
 
-#include "iana_ip_protocols.hpp"
+#include "iana/iana_ip_protocols.hpp"
 
 class bgp_attribute_origin;
 class bgp_attribute_next_hop_ipv4;

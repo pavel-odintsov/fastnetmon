@@ -506,14 +506,14 @@ void xdp_process_traffic(int xdp_socket, xsk_memory_configuration* mem_configura
             parser_options.unpack_gre = false;
             parser_options.read_packet_length_from_ip_header = xdp_read_packet_length_from_ip_header;
 
-            auto result = parse_raw_packet_to_simple_packet_full_ng((u_char*)packet_data, descs[i].len, descs[i].len,
+            auto result = parse_raw_packet_to_simple_packet_full((u_char*)packet_data, descs[i].len, descs[i].len,
                                                                     packet, parser_options);
 
-            if (result != network_data_stuctures::parser_code_t::success) {
+            if (result != parser_code_t::success) {
                 xdp_packets_unparsed++;
 
                 logger << log4cpp::Priority::DEBUG
-                       << "Cannot parse packet using ng parser: " << network_data_stuctures::parser_code_to_string(result);
+                       << "Cannot parse packet using ng parser: " << parser_code_to_string(result);
             } else {
                 // Successfully parsed packet
                 xdp_process_func_ptr(packet);

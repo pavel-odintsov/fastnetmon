@@ -829,15 +829,15 @@ bool netflow9_record_to_flow(uint32_t record_type,
         parser_options.unpack_gre = false;
         parser_options.read_packet_length_from_ip_header = true;
 
-        auto result = parse_raw_packet_to_simple_packet_full_ng((u_char*)(data), full_packet_length, record_length,
+        auto result = parse_raw_packet_to_simple_packet_full((u_char*)(data), full_packet_length, record_length,
             flow_meta.nested_packet, parser_options);
 
-        if (result != network_data_stuctures::parser_code_t::success) {
+        if (result != parser_code_t::success) {
             // Cannot decode data
             netflow_v9_lite_header_parser_error++;
 
             if (logger.getPriority() == log4cpp::Priority::DEBUG) {
-                logger << log4cpp::Priority::DEBUG << "Cannot parse packet header with error: " << network_data_stuctures::parser_code_to_string(result); 
+                logger << log4cpp::Priority::DEBUG << "Cannot parse packet header with error: " << parser_code_to_string(result); 
             }
         } else {
             netflow_v9_lite_header_parser_success++;
@@ -1438,7 +1438,7 @@ void netflow9_flowset_to_store(const uint8_t* pkt,
     packet.source       = NETFLOW;
     packet.arrival_time = current_inaccurate_time;
 
-    packet.agent_ip_address = client_ipv4_address;
+    packet.agent_ipv4_address = client_ipv4_address;
 
     // We use shifted values and should process only zeroed values
     // because we are working with little and big endian data in same time

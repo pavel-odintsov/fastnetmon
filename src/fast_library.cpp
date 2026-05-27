@@ -34,7 +34,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/regex.hpp>
 
-#include "iana_ip_protocols.hpp"
+#include "iana/iana_ip_protocols.hpp"
 
 boost::regex regular_expression_cidr_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+\\/\\d+$");
 boost::regex regular_expression_host_pattern("^\\d+\\.\\d+\\.\\d+\\.\\d+$");
@@ -420,7 +420,7 @@ bool serialize_simple_packet_to_json(const simple_packet_t& packet, nlohmann::js
         }
 
         // Add agent information
-        std::string agent_ip_as_string = convert_ip_as_uint_to_string(packet.agent_ip_address);
+        std::string agent_ip_as_string = convert_ip_as_uint_to_string(packet.agent_ipv4_address);
         json_packet["agent_address"]   = agent_ip_as_string;
 
         if (packet.protocol == IPPROTO_TCP) {
@@ -1242,7 +1242,7 @@ void craft_capnp_for_simple_packet(const simple_packet_t& packet, SimplePacketTy
     capnp_packet.setDstAsn(packet.dst_asn);
     capnp_packet.setInputInterface(packet.input_interface);
     capnp_packet.setOutputInterface(packet.output_interface);
-    capnp_packet.setAgentIpAddress(packet.agent_ip_address);
+    capnp_packet.setAgentIpAddress(packet.agent_ipv4_address);
 
     if (packet.ip_protocol_version == 6) {
         kj::ArrayPtr<kj::byte> src_ipv6_as_kj_array((kj::byte*)&packet.src_ipv6, sizeof(packet.src_ipv6));
@@ -1280,7 +1280,7 @@ bool read_simple_packet(uint8_t* buffer, size_t buffer_length, simple_packet_t& 
         packet.dst_asn             = root.getDstAsn();
         packet.input_interface     = root.getInputInterface();
         packet.output_interface    = root.getOutputInterface();
-        packet.agent_ip_address    = root.getAgentIpAddress();
+        packet.agent_ipv4_address    = root.getAgentIpAddress();
 
         // Extract IPv6 addresses from packet
         if (packet.ip_protocol_version == 6) {

@@ -118,9 +118,9 @@ void pcap_parse_packet(char* buffer, uint32_t len, uint32_t snap_len) {
     } else if (strcmp(flow_type, "raw") == 0) {
         simple_packet_t packet;
         // TODO: add support for caplen here!
-        auto result = parse_raw_packet_to_simple_packet_full_ng((u_char*)buffer, len, len, packet, false, false);
+        auto result = parse_raw_packet_to_simple_packet_full((u_char*)buffer, len, len, packet, false, false);
 
-        if (result == network_data_stuctures::parser_code_t::success) {
+        if (result == parser_code_t::success) {
             std::cout << "High level parser: " << print_simple_packet(packet) << std::endl;
         } else {
             printf("High level parser failed\n");

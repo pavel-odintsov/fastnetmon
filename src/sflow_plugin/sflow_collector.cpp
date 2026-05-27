@@ -367,7 +367,7 @@ bool process_sflow_flow_sample(const uint8_t* data_pointer,
     packet.source       = SFLOW;
     packet.arrival_time = current_inaccurate_time;
 
-    packet.agent_ip_address = client_ipv4_address;
+    packet.agent_ipv4_address = client_ipv4_address;
 
     for (auto record : vector_tuple) {
         int32_t record_type        = std::get<0>(record);
@@ -396,11 +396,11 @@ bool process_sflow_flow_sample(const uint8_t* data_pointer,
                 parser_options.read_packet_length_from_ip_header = fastnetmon_global_configuration.sflow_read_packet_length_from_ip_header;
 
                 auto result =
-                    parse_raw_packet_to_simple_packet_full_ng(header_payload_pointer, sflow_raw_protocol_header.frame_length_before_sampling,
+                    parse_raw_packet_to_simple_packet_full(header_payload_pointer, sflow_raw_protocol_header.frame_length_before_sampling,
                                                               sflow_raw_protocol_header.header_size, packet,
                                                               parser_options);
 
-                if (result != network_data_stuctures::parser_code_t::success) {
+                if (result != parser_code_t::success) {
                     sflow_parse_error_nested_header++;
 
                     logger << log4cpp::Priority::DEBUG << plugin_log_prefix
@@ -420,12 +420,12 @@ bool process_sflow_flow_sample(const uint8_t* data_pointer,
 
                 // We parse this packet using special version of our parser which looks only on IPv4 packet
                 auto result =
-                    parse_raw_ipv4_packet_to_simple_packet_full_ng(header_payload_pointer,
+                    parse_raw_ipv4_packet_to_simple_packet_full(header_payload_pointer,
                                                                    sflow_raw_protocol_header.frame_length_before_sampling,
                                                                    sflow_raw_protocol_header.header_size, packet,
                                                                    parser_options_ipv4);
 
-                if (result != network_data_stuctures::parser_code_t::success) {
+                if (result != parser_code_t::success) {
                     sflow_parse_error_nested_header++;
 
                     logger << log4cpp::Priority::DEBUG << plugin_log_prefix

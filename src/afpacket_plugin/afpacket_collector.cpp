@@ -211,10 +211,10 @@ void walk_block(struct block_desc* pbd) {
         parser_options.read_packet_length_from_ip_header = fastnetmon_global_configuration.af_packet_read_packet_length_from_ip_header;
 
         auto result =
-            parse_raw_packet_to_simple_packet_full_ng((u_char*)data_pointer, ppd->tp_snaplen, ppd->tp_snaplen, packet,
+            parse_raw_packet_to_simple_packet_full((u_char*)data_pointer, ppd->tp_snaplen, ppd->tp_snaplen, packet,
                                                       parser_options);
 
-        if (result != network_data_stuctures::parser_code_t::success) {
+        if (result != parser_code_t::success) {
             // This counter resets for speed calculation every second
             total_unparsed_packets++;
             af_packet_packets_unparsed++;
