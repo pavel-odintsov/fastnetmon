@@ -722,176 +722,274 @@ bool flow_spec_decode_nlri_value(uint8_t* data_ptr, uint32_t data_length, flow_s
 
         last_processed_type = *local_data_ptr;
 
-        // logger << log4cpp::Priority::WARN << "Process type: " <<
-        // get_flow_spec_type_name_by_number(last_processed_type)
-        //         ;
+        // logger << log4cpp::Priority::WARN << "Process type: " << get_flow_spec_type_name_by_number(last_processed_type);
+        // At this moment if loop is still running then we have at least one byte here and we can safely read it
+        uint8_t current_type = *local_data_ptr;
 
         // Decode IPv4 prefixes
-        if (*local_data_ptr == FLOW_SPEC_ENTITY_DESTINATION_PREFIX or *local_data_ptr == FLOW_SPEC_ENTITY_SOURCE_PREFIX) {
-            // Well, we've found BGP encoded subnet. Let's parse it!
+        if (current_type == FLOW_SPEC_ENTITY_SOURCE_PREFIX) {
+            // We've found BGP encoded subnet
 
-            if (*local_data_ptr == FLOW_SPEC_ENTITY_DESTINATION_PREFIX && flow_spec_rule.destination_subnet_ipv4_used) {
-                logger << log4cpp::Priority::WARN << "For some strange reasons we got two second destination prefix";
-                return false;
-            }
-
-            if (*local_data_ptr == FLOW_SPEC_ENTITY_SOURCE_PREFIX && flow_spec_rule.source_subnet_ipv4_used) {
+            if (current_type == FLOW_SPEC_ENTITY_SOURCE_PREFIX && flow_spec_rule.source_subnet_ipv4_used) {
                 logger << log4cpp::Priority::WARN
                        << "For some strange reasons we got second source prefix. "
                           "Only one allowed";
                 return false;
             }
 
+            // Calculate maximum length of current field
+            uint32_t field_length = packet_end - local_data_ptr;
+
             // We need least two bytes here (type + prefix length)
-            if (packet_end - local_data_ptr < 2) {
+            if (field_length < 2) {
                 logger << log4cpp::Priority::WARN << "Too short packet. We need more data for bgp encoded subnet";
                 return false;
             }
 
-            uint8_t prefix_bit_length   = *(local_data_ptr + 1);
-            uint32_t prefix_byte_length = how_much_bytes_we_need_for_storing_certain_subnet_mask(prefix_bit_length);
-
-            uint32_t full_size_of_bgp_encoded_subnet = 2 + prefix_byte_length;
-
-            if (packet_end - local_data_ptr < full_size_of_bgp_encoded_subnet) {
-                logger << log4cpp::Priority::WARN << "We haven't enough data for this prefix with length " << prefix_bit_length;
-                return false;
-            }
+            // Skip type field
+            local_data_ptr++;
 
             subnet_cidr_mask_t extracted_prefix;
+            uint32_t parsed_nlri_length = 0;
 
-            bool decode_nlri_result = decode_bgp_subnet_encoding_ipv4_raw(local_data_ptr + 1, extracted_prefix);
+            // We need to subtract 1 from field_length as we have Flow Spec type included in it
+            bool decode_nlri_result =
+                decode_bgp_subnet_encoding_ipv4(field_length - 1, local_data_ptr, extracted_prefix, parsed_nlri_length);
 
             if (!decode_nlri_result) {
                 logger << log4cpp::Priority::WARN << "Could not decode FLOW_SPEC_ENTITY_DESTINATION_PREFIX";
                 return false;
             }
 
-            if (*local_data_ptr == FLOW_SPEC_ENTITY_DESTINATION_PREFIX) {
-                flow_spec_rule.set_destination_subnet_ipv4(extracted_prefix);
-            }
-
-            if (*local_data_ptr == FLOW_SPEC_ENTITY_SOURCE_PREFIX) {
+            if (current_type == FLOW_SPEC_ENTITY_SOURCE_PREFIX) {
                 flow_spec_rule.set_source_subnet_ipv4(extracted_prefix);
             }
 
-            // Reduce packet length
-            // 1 means length of type
-            local_data_ptr += full_size_of_bgp_encoded_subnet;
-        } else if (*local_data_ptr == FLOW_SPEC_ENTITY_PORT or *local_data_ptr == FLOW_SPEC_ENTITY_DESTINATION_PORT or
-                   *local_data_ptr == FLOW_SPEC_ENTITY_SOURCE_PORT or *local_data_ptr == FLOW_SPEC_ENTITY_IP_PROTOCOL or
-                   *local_data_ptr == FLOW_SPEC_ENTITY_PACKET_LENGTH or *local_data_ptr == FLOW_SPEC_ENTITY_FRAGMENT or
-                   *local_data_ptr == FLOW_SPEC_ENTITY_TCP_FLAGS) {
-            uint8_t current_type = *local_data_ptr;
+            // Move forward on length of read prefix
+            local_data_ptr += parsed_nlri_length;
+        } else if (current_type == FLOW_SPEC_ENTITY_DESTINATION_PREFIX) {
+            // We've found BGP encoded subnet
+
+            if (current_type == FLOW_SPEC_ENTITY_DESTINATION_PREFIX && flow_spec_rule.destination_subnet_ipv4_used) {
+                logger << log4cpp::Priority::WARN << "For some strange reasons we got two second destination prefix";
+                return false;
+            }
+
+            // Calculate maximum length of current field
+            uint32_t field_length = packet_end - local_data_ptr;
+
+            // We need least two bytes here (type + prefix length)
+            if (field_length < 2) {
+                logger << log4cpp::Priority::WARN << "Too short packet. We need more data for bgp encoded subnet";
+                return false;
+            }
 
             // Skip type field
             local_data_ptr++;
 
+            subnet_cidr_mask_t extracted_prefix;
+            uint32_t parsed_nlri_length = 0;
+
+            // We need to subtract 1 from field_length as we have Flow Spec type included in it
+            bool decode_nlri_result =
+                decode_bgp_subnet_encoding_ipv4(field_length - 1, local_data_ptr, extracted_prefix, parsed_nlri_length);
+
+            if (!decode_nlri_result) {
+                logger << log4cpp::Priority::WARN << "Could not decode FLOW_SPEC_ENTITY_DESTINATION_PREFIX";
+                return false;
+            }
+
+            if (current_type == FLOW_SPEC_ENTITY_DESTINATION_PREFIX) {
+                flow_spec_rule.set_destination_subnet_ipv4(extracted_prefix);
+            }
+
+            // Move forward on length of read prefix
+            local_data_ptr += parsed_nlri_length;
+        } else if (current_type == FLOW_SPEC_ENTITY_PORT) {
             // Different type of port's
             if (current_type == FLOW_SPEC_ENTITY_PORT) {
                 logger << log4cpp::Priority::WARN << "We do not support common ports";
                 return false;
             }
+        } else if (current_type == FLOW_SPEC_ENTITY_IP_PROTOCOL) {
+            // Skip type field
+            local_data_ptr++;
 
             uint32_t scanned_bytes = 0;
             multiple_flow_spec_enumerable_items_t scanned_items;
             bool result = read_one_or_more_values_encoded_with_operator_byte(local_data_ptr, packet_end, scanned_bytes, scanned_items);
 
-            // This one is considered non fatal, we try to do our best in parsing it
             if (!result) {
                 logger << log4cpp::Priority::WARN << "read_one_or_more_values_encoded_with_operator_byte returned error but we may have some values parsed before issue happened";
+                return false;
             }
 
             for (auto extracted_item : scanned_items) {
-                if (current_type == FLOW_SPEC_ENTITY_TCP_FLAGS) {
-                    if (extracted_item.value_length != 1) {
-                        logger << log4cpp::Priority::WARN << "We do not support two byte encoded tcp fields";
-                        return false;
-                    }
-
-                    // logger << log4cpp::Priority::WARN << "We have " <<
-                    // extracted_item.value_length << " byte
-                    // encoded tcp
-                    // option field"         ;
-
-                    bgp_flowspec_one_byte_byte_encoded_tcp_flags_t* bgp_flowspec_one_byte_byte_encoded_tcp_flags =
-                        (bgp_flowspec_one_byte_byte_encoded_tcp_flags_t*)&extracted_item.one_byte_value;
-
-                    // logger << log4cpp::Priority::WARN << bgp_flowspec_one_byte_byte_encoded_tcp_flags->print();
-
-                    auto flagset = convert_one_byte_encoding_to_flowset(*bgp_flowspec_one_byte_byte_encoded_tcp_flags);
-
-                    if (flagset.we_have_least_one_flag_enabled()) {
-                        flow_spec_rule.add_tcp_flagset(flagset);
-                    }
-                } else if (current_type == FLOW_SPEC_ENTITY_FRAGMENT) {
-                    if (extracted_item.value_length != 1) {
-                        logger << log4cpp::Priority::WARN << "We could not encode fragmentation with two bytes";
-                        return false;
-                    }
-
-                    bgp_flow_spec_fragmentation_entity_t* bgp_flow_spec_fragmentation_entity =
-                        (bgp_flow_spec_fragmentation_entity_t*)&extracted_item.one_byte_value;
-
-                    // logger << log4cpp::Priority::WARN << "Fragmentation header: " <<
-                    // bgp_flow_spec_fragmentation_entity->print()         ;
-
-                    if (bgp_flow_spec_fragmentation_entity->last_fragment == 1) {
-                        flow_spec_rule.add_fragmentation_flag(flow_spec_fragmentation_types_t::FLOW_SPEC_LAST_FRAGMENT);
-                    }
-
-                    if (bgp_flow_spec_fragmentation_entity->first_fragment == 1) {
-                        flow_spec_rule.add_fragmentation_flag(flow_spec_fragmentation_types_t::FLOW_SPEC_FIRST_FRAGMENT);
-                    }
-
-                    if (bgp_flow_spec_fragmentation_entity->is_fragment == 1) {
-                        flow_spec_rule.add_fragmentation_flag(flow_spec_fragmentation_types_t::FLOW_SPEC_IS_A_FRAGMENT);
-                    }
-
-                    if (bgp_flow_spec_fragmentation_entity->dont_fragment == 1) {
-                        flow_spec_rule.add_fragmentation_flag(flow_spec_fragmentation_types_t::FLOW_SPEC_DONT_FRAGMENT);
-                    }
-
-                    // What we should do with flag FLOW_SPEC_NOT_A_FRAGMENT from bgp_flow_spec
-                    // class?
-                    // Very interesting because we haven't something like this in protocol
-                    // :)
-                    // In ExaBGP Thomas Mangin interpret this case as "not a fragment"
-                    // So when we haven't any other flags enabled we interpret it as "not
-                    // a
-                    // fragment"
-                    if (bgp_flow_spec_fragmentation_entity->last_fragment == 0 &&
-                        bgp_flow_spec_fragmentation_entity->first_fragment == 0 &&
-                        bgp_flow_spec_fragmentation_entity->is_fragment == 0 &&
-                        bgp_flow_spec_fragmentation_entity->dont_fragment == 0) {
-
-                        flow_spec_rule.add_fragmentation_flag(flow_spec_fragmentation_types_t::FLOW_SPEC_NOT_A_FRAGMENT);
-                    }
+                // Do sanity checks for protocol number
+                if (extracted_item.two_byte_value > 255) {
+                    logger << log4cpp::Priority::ERROR << "Protocol number value " << extracted_item.two_byte_value
+                           << " exceeds maximum 255";
+                    return false;
                 }
 
-                if (current_type == FLOW_SPEC_ENTITY_SOURCE_PORT) {
-                    flow_spec_rule.add_source_port(extracted_item.two_byte_value);
+
+                ip_protocol_t protocol = get_ip_protocol_enum_type_from_integer(uint8_t(extracted_item.two_byte_value));
+                flow_spec_rule.add_protocol(protocol);
+            }
+
+            local_data_ptr += scanned_bytes;
+        } else if (current_type == FLOW_SPEC_ENTITY_TCP_FLAGS) {
+            // Skip type field
+            local_data_ptr++;
+
+            uint32_t scanned_bytes = 0;
+            multiple_flow_spec_enumerable_items_t scanned_items;
+            bool result = read_one_or_more_values_encoded_with_operator_byte(local_data_ptr, packet_end, scanned_bytes, scanned_items);
+
+            if (!result) {
+                logger << log4cpp::Priority::WARN << "read_one_or_more_values_encoded_with_operator_byte returned error but we may have some values parsed before issue happened";
+                return false;
+            }
+
+            for (auto extracted_item : scanned_items) {
+                if (extracted_item.value_length != 1) {
+                    logger << log4cpp::Priority::WARN << "We do not support two byte encoded tcp fields";
+                    return false;
                 }
 
-                if (current_type == FLOW_SPEC_ENTITY_DESTINATION_PORT) {
-                    flow_spec_rule.add_destination_port(extracted_item.two_byte_value);
+                // logger << log4cpp::Priority::WARN << "We have " <<
+                // extracted_item.value_length << " byte
+                // encoded tcp
+                // option field"         ;
+
+                bgp_flowspec_one_byte_byte_encoded_tcp_flags_t* bgp_flowspec_one_byte_byte_encoded_tcp_flags =
+                    (bgp_flowspec_one_byte_byte_encoded_tcp_flags_t*)&extracted_item.one_byte_value;
+
+                // logger << log4cpp::Priority::WARN << bgp_flowspec_one_byte_byte_encoded_tcp_flags->print();
+
+                auto flagset = convert_one_byte_encoding_to_flowset(*bgp_flowspec_one_byte_byte_encoded_tcp_flags);
+
+                if (flagset.we_have_least_one_flag_enabled()) {
+                    flow_spec_rule.add_tcp_flagset(flagset);
+                }
+            }
+
+            local_data_ptr += scanned_bytes;
+
+        } else if (current_type == FLOW_SPEC_ENTITY_FRAGMENT) {
+
+            // Skip type field
+            local_data_ptr++;
+
+            uint32_t scanned_bytes = 0;
+            multiple_flow_spec_enumerable_items_t scanned_items;
+            bool result = read_one_or_more_values_encoded_with_operator_byte(local_data_ptr, packet_end, scanned_bytes, scanned_items);
+
+            if (!result) {
+                logger << log4cpp::Priority::WARN << "read_one_or_more_values_encoded_with_operator_byte returned error but we may have some values parsed before issue happened";
+                return false;
+            }
+
+            for (auto extracted_item : scanned_items) {
+                if (extracted_item.value_length != 1) {
+                    logger << log4cpp::Priority::WARN << "We could not encode fragmentation with two bytes";
+                    return false;
                 }
 
-                if (current_type == FLOW_SPEC_ENTITY_PACKET_LENGTH) {
-                    flow_spec_rule.add_packet_length(extracted_item.two_byte_value);
+                bgp_flow_spec_fragmentation_entity_t* bgp_flow_spec_fragmentation_entity =
+                    (bgp_flow_spec_fragmentation_entity_t*)&extracted_item.one_byte_value;
+
+                // logger << log4cpp::Priority::WARN << "Fragmentation header: " <<
+                // bgp_flow_spec_fragmentation_entity->print()         ;
+
+                if (bgp_flow_spec_fragmentation_entity->last_fragment == 1) {
+                    flow_spec_rule.add_fragmentation_flag(flow_spec_fragmentation_types_t::FLOW_SPEC_LAST_FRAGMENT);
                 }
 
-                if (current_type == FLOW_SPEC_ENTITY_IP_PROTOCOL) {
-                    // Do sanity checks for protocol number
-                    if (extracted_item.two_byte_value > 255) {
-                        logger << log4cpp::Priority::ERROR << "Protocol number value " << extracted_item.two_byte_value
-                               << " exceeds maximum 255";
-                        return false;
-                    }
-
-                    ip_protocol_t protocol = get_ip_protocol_enum_type_from_integer(uint8_t(extracted_item.two_byte_value));
-                    flow_spec_rule.add_protocol(protocol);
+                if (bgp_flow_spec_fragmentation_entity->first_fragment == 1) {
+                    flow_spec_rule.add_fragmentation_flag(flow_spec_fragmentation_types_t::FLOW_SPEC_FIRST_FRAGMENT);
                 }
+
+                if (bgp_flow_spec_fragmentation_entity->is_fragment == 1) {
+                    flow_spec_rule.add_fragmentation_flag(flow_spec_fragmentation_types_t::FLOW_SPEC_IS_A_FRAGMENT);
+                }
+
+                if (bgp_flow_spec_fragmentation_entity->dont_fragment == 1) {
+                    flow_spec_rule.add_fragmentation_flag(flow_spec_fragmentation_types_t::FLOW_SPEC_DONT_FRAGMENT);
+                }
+
+                // What we should do with flag FLOW_SPEC_NOT_A_FRAGMENT from bgp_flow_spec
+                // class?
+                // Very interesting because we haven't something like this in protocol
+                // :)
+                // In ExaBGP Thomas Mangin interpret this case as "not a fragment"
+                // So when we haven't any other flags enabled we interpret it as "not
+                // a
+                // fragment"
+                if (bgp_flow_spec_fragmentation_entity->last_fragment == 0 &&
+                    bgp_flow_spec_fragmentation_entity->first_fragment == 0 && bgp_flow_spec_fragmentation_entity->is_fragment == 0 &&
+                    bgp_flow_spec_fragmentation_entity->dont_fragment == 0) {
+
+                    flow_spec_rule.add_fragmentation_flag(flow_spec_fragmentation_types_t::FLOW_SPEC_NOT_A_FRAGMENT);
+                }
+            }
+
+            local_data_ptr += scanned_bytes;
+
+        } else if (current_type == FLOW_SPEC_ENTITY_PACKET_LENGTH) {
+
+            // Skip type field
+            local_data_ptr++;
+
+            uint32_t scanned_bytes = 0;
+            multiple_flow_spec_enumerable_items_t scanned_items;
+            bool result = read_one_or_more_values_encoded_with_operator_byte(local_data_ptr, packet_end, scanned_bytes, scanned_items);
+
+            if (!result) {
+                logger << log4cpp::Priority::WARN << "read_one_or_more_values_encoded_with_operator_byte returned error but we may have some values parsed before issue happened";
+                return false;
+            }
+
+            for (auto extracted_item : scanned_items) {
+                flow_spec_rule.add_packet_length(extracted_item.two_byte_value);
+            }
+
+            local_data_ptr += scanned_bytes;
+
+        } else if (current_type == FLOW_SPEC_ENTITY_SOURCE_PORT) {
+            // Skip type field
+            local_data_ptr++;
+
+            uint32_t scanned_bytes = 0;
+            multiple_flow_spec_enumerable_items_t scanned_items;
+            bool result = read_one_or_more_values_encoded_with_operator_byte(local_data_ptr, packet_end, scanned_bytes, scanned_items);
+
+            if (!result) {
+                logger << log4cpp::Priority::WARN << "read_one_or_more_values_encoded_with_operator_byte returned error but we may have some values parsed before issue happened";
+                return false;
+            }
+
+            for (auto extracted_item : scanned_items) {
+                flow_spec_rule.add_source_port(extracted_item.two_byte_value);
+            }
+
+            local_data_ptr += scanned_bytes;
+        } else if (current_type == FLOW_SPEC_ENTITY_DESTINATION_PORT) {
+
+            // Skip type field
+            local_data_ptr++;
+
+            uint32_t scanned_bytes = 0;
+            multiple_flow_spec_enumerable_items_t scanned_items;
+            bool result = read_one_or_more_values_encoded_with_operator_byte(local_data_ptr, packet_end, scanned_bytes, scanned_items);
+
+            if (!result) {
+                logger << log4cpp::Priority::WARN << "read_one_or_more_values_encoded_with_operator_byte returned error but we may have some values parsed before issue happened";
+                return false;
+            }
+
+            for (auto extracted_item : scanned_items) {
+                flow_spec_rule.add_destination_port(extracted_item.two_byte_value);
             }
 
             local_data_ptr += scanned_bytes;
@@ -903,11 +1001,12 @@ bool flow_spec_decode_nlri_value(uint8_t* data_ptr, uint32_t data_length, flow_s
     }
 
     if (local_data_ptr != packet_end) {
-        logger << log4cpp::Priority::WARN << "For some strange reasons we haven't parsed whole packet";
+        logger << log4cpp::Priority::WARN << "For some strange reasons we did not parse whole packet";
     }
 
     return true;
 }
+
 
 bool read_one_or_more_values_encoded_with_operator_byte(uint8_t* start,
                                                         uint8_t* packet_end,

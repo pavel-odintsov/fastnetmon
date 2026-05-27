@@ -22,7 +22,6 @@ class bgp_attribute_next_hop_ipv4;
 class IPv4UnicastAnnounce;
 class IPv6UnicastAnnounce;
 
-bool decode_bgp_subnet_encoding_ipv4_raw(uint8_t* value, subnet_cidr_mask_t& extracted_prefix);
 bool decode_bgp_subnet_encoding_ipv4(int len, uint8_t* value, subnet_cidr_mask_t& extracted_prefix, uint32_t& parsed_nlri_length);
 uint32_t how_much_bytes_we_need_for_storing_certain_subnet_mask(uint8_t prefix_bit_length);
 std::string get_bgp_attribute_name_by_number(uint8_t bgp_attribute_type);

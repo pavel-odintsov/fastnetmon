@@ -57,21 +57,22 @@ bool decode_nlri_ipv4(int len, uint8_t* value, subnet_cidr_mask_t& extracted_pre
 // https://github.com/Exa-Networks/exabgp/blob/master/lib/exabgp/bgp/message/update/nlri/cidr.py#L81
 // https://github.com/osrg/gobgp/blob/d6148c75a30d87c3f8c1d0f68725127e4c5f3a65/packet/bgp.go#L700
 bool decode_bgp_subnet_encoding_ipv4(int len, uint8_t* value, subnet_cidr_mask_t& extracted_prefix, uint32_t& parsed_nlri_length) {
-    // We have NLRI only for IPv4 announces! IPv6 and Flow Spec do not use it!
-
     if (len == 0 or value == NULL) {
         logger << log4cpp::Priority::WARN << "NLRI content is blank for this announce";
         return false;
     }
 
-    uint8_t prefix_bit_length = value[0];
-
-    // logger << log4cpp::Priority::WARN << "We extracted prefix length: " <<
-    // int(prefix_bit_length) <<
-    // std::endl;
-
-    // Rounds x upward
-    uint32_t prefix_byte_length = how_much_bytes_we_need_for_storing_certain_subnet_mask(prefix_bit_length);
+    // Here we have prefix length in CIDR notation, e.g. 24 for /24 subnet
+    uint8_t prefix_cidr_length = value[0];
+    
+    // We cap it by /32 as we deal with IPv4 only here
+    if (prefix_cidr_length > 32) {
+        logger << log4cpp::Priority::ERROR << "Too big prefix length in CIDR notation: " << int(prefix_cidr_length);
+        return false;
+    }
+    
+    // Calculate how many bytes we need to store this subnet
+    uint32_t prefix_byte_length = how_much_bytes_we_need_for_storing_certain_subnet_mask(prefix_cidr_length);
 
     // 1 means 1 byte size for prefix_bit_length itself
     uint32_t full_nlri_length = prefix_byte_length + 1;
@@ -84,40 +85,19 @@ bool decode_bgp_subnet_encoding_ipv4(int len, uint8_t* value, subnet_cidr_mask_t
     // We need number of scanned bytes for next parses
     parsed_nlri_length = full_nlri_length;
 
-    return decode_bgp_subnet_encoding_ipv4_raw(value, extracted_prefix);
-}
-
-// Same as decode_bgp_subnet_encoding but do not check array bounds at all
-// We need to ensure about enough length of data array before calling of this
-// code!
-bool decode_bgp_subnet_encoding_ipv4_raw(uint8_t* value, subnet_cidr_mask_t& extracted_prefix) {
-    if (value == NULL) {
-        logger << log4cpp::Priority::WARN << "Zero value unexpected for decode_bgp_subnet_encoding_ipv4_raw";
-        return false;
-    }
-
-    uint8_t prefix_bit_length   = value[0];
-    uint32_t prefix_byte_length = how_much_bytes_we_need_for_storing_certain_subnet_mask(prefix_bit_length);
-
-    // 1 means 1 byte size for prefix_bit_length itself
-    // uint32_t full_nlri_length = prefix_byte_length + 1;
-
+    // As we explicitly capped prefix_cidr_length by 32 we will never have more than 4 bytes for prefix storage
     uint32_t prefix_ipv4 = 0;
-    memcpy(&prefix_ipv4, value + 1, prefix_byte_length);
+    memcpy(&prefix_ipv4, value + sizeof(prefix_cidr_length), prefix_byte_length);
 
     // Then we should set to zero all non important bits in address because they
-    // could store weird
-    // information
-    uint32_t subnet_address_netmask_binary = convert_cidr_to_binary_netmask_local_function_copy(prefix_bit_length);
+    // could store weird information
+    uint32_t subnet_address_netmask_binary = convert_cidr_to_binary_netmask(prefix_cidr_length);
 
     // Remove useless bits with this approach
     prefix_ipv4 = prefix_ipv4 & subnet_address_netmask_binary;
 
-    // logger << log4cpp::Priority::WARN << "Extracted prefix: " <<
-    // convert_ip_as_uint_to_string(prefix_ipv4) << "/" <<
-    // int(prefix_bit_length)         ;
     extracted_prefix.subnet_address     = prefix_ipv4;
-    extracted_prefix.cidr_prefix_length = prefix_bit_length;
+    extracted_prefix.cidr_prefix_length = prefix_cidr_length;
 
     return true;
 }
