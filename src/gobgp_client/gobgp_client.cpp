@@ -167,7 +167,7 @@ bool GrpcClient::AnnounceUnicastPrefixLowLevelIPv6(const IPv6UnicastAnnounce& un
     // https://github.com/osrg/gobgp/blob/master/pkg/packet/bgp/bgp.go#L1440
 
     dynamic_binary_buffer_t ipv6_nlri{};
-    ipv6_nlri.set_maximum_buffer_size_in_bytes(256);
+    ipv6_nlri.set_buffer_size_in_bytes(256);
 
     if (!encode_ipv6_prefix(unicast_ipv6_announce.get_prefix(), ipv6_nlri)) {
         logger << log4cpp::Priority::ERROR << "Cannot encode prefix for IPv6 NLRI";
@@ -194,7 +194,7 @@ bool GrpcClient::AnnounceUnicastPrefixLowLevelIPv6(const IPv6UnicastAnnounce& un
     bgp_attribute_origin origin_attr;
 
     dynamic_binary_buffer_t origin_as_binary_array;
-    origin_as_binary_array.set_maximum_buffer_size_in_bytes(sizeof(origin_attr));
+    origin_as_binary_array.set_buffer_size_in_bytes(sizeof(origin_attr));
     origin_as_binary_array.append_data_as_object_ptr(&origin_attr);
 
     // It has attribute #1 and will be first in all the cases
@@ -218,7 +218,7 @@ bool GrpcClient::AnnounceUnicastPrefixLowLevelIPv6(const IPv6UnicastAnnounce& un
         logger << log4cpp::Priority::DEBUG << "AS_PATH attribute full length: " << as_path_attribute_full_length;
 
         dynamic_binary_buffer_t as_path_as_binary_array;
-        as_path_as_binary_array.set_maximum_buffer_size_in_bytes(as_path_attribute_full_length);
+        as_path_as_binary_array.set_buffer_size_in_bytes(as_path_attribute_full_length);
 
         // Append attribute header
         as_path_as_binary_array.append_data_as_object_ptr(&bgp_attribute_as_path);
@@ -263,7 +263,7 @@ bool GrpcClient::AnnounceUnicastPrefixLowLevelIPv6(const IPv6UnicastAnnounce& un
         uint32_t community_attribute_full_length = sizeof(bgp_attribute_community_t) + bgp_attribute_community.attribute_length;
 
         dynamic_binary_buffer_t communities_list_as_binary_array;
-        communities_list_as_binary_array.set_maximum_buffer_size_in_bytes(community_attribute_full_length);
+        communities_list_as_binary_array.set_buffer_size_in_bytes(community_attribute_full_length);
 
         communities_list_as_binary_array.append_data_as_object_ptr(&bgp_attribute_community);
 

@@ -319,7 +319,7 @@ bool decode_attribute(int len, char* value, IPv4UnicastAnnounce& unicast_ipv4_an
 bool encode_ipv6_announces_into_bgp_mp_reach_attribute_internal(const IPv6UnicastAnnounce& ipv6_announce,
                                                                 dynamic_binary_buffer_t& bgp_mp_reach_ipv6_attribute) {
     // Create internal content of IPv6 MP Reach NLRI
-    bgp_mp_reach_ipv6_attribute.set_maximum_buffer_size_in_bytes(2048);
+    bgp_mp_reach_ipv6_attribute.set_buffer_size_in_bytes(2048);
 
     /*
         +---------------------------------------------------------+
@@ -419,7 +419,7 @@ bool encode_ipv6_announces_into_bgp_mp_reach_attribute(const IPv6UnicastAnnounce
     bgp_attribute_multiprotocol_extensions_t bgp_attribute_multiprotocol_extensions;
     bgp_attribute_multiprotocol_extensions.attribute_length = mp_nlri_binary_buffer.get_used_size();
 
-    bgp_mp_reach_ipv6_attribute.set_maximum_buffer_size_in_bytes(2048);
+    bgp_mp_reach_ipv6_attribute.set_buffer_size_in_bytes(2048);
 
     bgp_mp_reach_ipv6_attribute.append_data_as_object_ptr(&bgp_attribute_multiprotocol_extensions);
     bgp_mp_reach_ipv6_attribute.append_dynamic_buffer(mp_nlri_binary_buffer);
@@ -449,7 +449,7 @@ bool encode_bgp_subnet_encoding(const subnet_cidr_mask_t& prefix, dynamic_binary
     // full_nlri_length << " bytes in buffer"
     //         ;
 
-    bool allocation_result = dynamic_binary_buffer.set_maximum_buffer_size_in_bytes(full_nlri_length);
+    bool allocation_result = dynamic_binary_buffer.set_buffer_size_in_bytes(full_nlri_length);
 
     if (!allocation_result) {
         logger << log4cpp::Priority::WARN << "Allocation error";

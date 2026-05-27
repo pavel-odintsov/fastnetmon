@@ -574,7 +574,7 @@ class IPv4UnicastAnnounce {
         // std::endl;
 
         dynamic_binary_buffer_t origin_as_binary_array;
-        origin_as_binary_array.set_maximum_buffer_size_in_bytes(sizeof(origin_attr));
+        origin_as_binary_array.set_buffer_size_in_bytes(sizeof(origin_attr));
         origin_as_binary_array.append_data_as_object_ptr(&origin_attr);
 
         bgp_attribute_next_hop_ipv4 next_hop_attr(next_hop);
@@ -584,7 +584,7 @@ class IPv4UnicastAnnounce {
         // std::endl;
 
         dynamic_binary_buffer_t next_hop_as_binary_array;
-        next_hop_as_binary_array.set_maximum_buffer_size_in_bytes(sizeof(next_hop_attr));
+        next_hop_as_binary_array.set_buffer_size_in_bytes(sizeof(next_hop_attr));
         next_hop_as_binary_array.append_data_as_object_ptr(&next_hop_attr);
 
         // Vector should be ordered in ascending order of attribute types
@@ -610,7 +610,7 @@ class IPv4UnicastAnnounce {
             logger << log4cpp::Priority::DEBUG << "AS_PATH attribute full length: " << as_path_attribute_full_length;
 
             dynamic_binary_buffer_t as_path_as_binary_array;
-            as_path_as_binary_array.set_maximum_buffer_size_in_bytes(as_path_attribute_full_length);
+            as_path_as_binary_array.set_buffer_size_in_bytes(as_path_attribute_full_length);
 
             // Append attribute header
             as_path_as_binary_array.append_data_as_object_ptr(&bgp_attribute_as_path);
@@ -657,7 +657,7 @@ class IPv4UnicastAnnounce {
             uint32_t community_attribute_full_length = sizeof(bgp_attribute_community_t) + bgp_attribute_community.attribute_length;
 
             dynamic_binary_buffer_t communities_list_as_binary_array;
-            communities_list_as_binary_array.set_maximum_buffer_size_in_bytes(community_attribute_full_length);
+            communities_list_as_binary_array.set_buffer_size_in_bytes(community_attribute_full_length);
 
             communities_list_as_binary_array.append_data_as_object_ptr(&bgp_attribute_community);
 
