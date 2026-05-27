@@ -9,8 +9,8 @@
 #include <vector>
 
 #include "dynamic_binary_buffer.hpp"
-#include "fast_library.hpp"
 #include "fast_endianless.hpp"
+#include "fast_library.hpp"
 #include "fastnetmon_networks.hpp"
 
 #include <boost/serialization/nvp.hpp>
@@ -153,11 +153,6 @@ class bgp_attibute_common_header_t {
         if (attr_flags.extended_length_bit == 1) {
             // When we have extended_length_bit we have two bytes for length
             // information
-            // TODO: add support for this type of attributes
-            // logger << log4cpp::Priority::WARN << "We haven't support for extended
-            // length attributes.
-            // Sorry!" <<
-            // std::endl;
             length_of_length_field = 2;
         }
 
@@ -167,23 +162,18 @@ class bgp_attibute_common_header_t {
             return false;
         }
 
-        attribute_value_length = value[2];
-
-        // logger << log4cpp::Priority::WARN << "Attribute type: " <<
-        // int(attribute_type)         ;
-        // logger << log4cpp::Priority::WARN << "Raw attribute length: " << len ;
-        // logger << log4cpp::Priority::WARN << "Attribute internal length: " <<
-        // int(attribute_value_length)
-        //         ;
+        if (length_of_length_field == 1) {
+            // Read one byte
+            attribute_value_length = value[2];
+        } else if (length_of_length_field == 2) {
+            // Read two bytes
+            attribute_value_length = fast_ntoh(*(uint16_t*)(value + 2));
+        } else {
+            logger << log4cpp::Priority::ERROR << "Broken length of length field: " << length_of_length_field;
+            return false;
+        }
 
         uint32_t total_attribute_length = attribute_flag_and_type_length + length_of_length_field + attribute_value_length;
-
-        // logger << log4cpp::Priority::WARN << "attribute_flag_and_type_length: "
-        // <<
-        // attribute_flag_and_type_length <<
-        // std::endl
-        //    << "length_of_length_field: " << length_of_length_field
-        //    << "attribute_value_length: " << attribute_value_length         ;
 
         if (len < total_attribute_length) {
             logger << log4cpp::Priority::WARN << "Atrribute value length: " << total_attribute_length
@@ -198,6 +188,7 @@ class bgp_attibute_common_header_t {
         return true;
     }
 };
+
 
 bool decode_attributes_to_ipv4_announce(char* value, int len, IPv4UnicastAnnounce& unicast_ipv4_announce);
 bool encode_bgp_subnet_encoding(const subnet_cidr_mask_t& prefix, dynamic_binary_buffer_t& buffer_result);
