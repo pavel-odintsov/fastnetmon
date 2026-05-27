@@ -1,12 +1,21 @@
 #pragma once
 
 #include "fastnetmon_pcap_format.hpp"
-
+#include <chrono>
+#include <iostream>
+#include <mutex>
 #include <stdlib.h>
 #include <string.h>
 
+#include <boost/circular_buffer.hpp>
+
+#include "all_logcpp_libraries.hpp"
+
 #include "fastnetmon_types.hpp"
+
 #include "fixed_size_packet_storage.hpp"
+
+extern log4cpp::Category& logger;
 
 // This is dynamically allocated packet storage
 class packet_storage_t {
@@ -16,15 +25,18 @@ class packet_storage_t {
         memory_pos     = NULL;
         buffer_size    = 0;
 
-        // TODO: fix hardcoded mtu size this!!!
+        // TODO: fix hardcoded MTU size this!!!
         max_captured_packet_size = 1500;
     }
 
     bool allocate_buffer(unsigned int buffer_size_in_packets) {
-        unsigned int memory_size_in_bytes =
-            buffer_size_in_packets * (max_captured_packet_size + sizeof(fastnetmon_pcap_pkthdr_t)) + sizeof(fastnetmon_pcap_file_header_t);
+        if (buffer_size_in_packets == 0) {
+            return false;
+        }
 
-        // std::cout << "We will allocate " << memory_size_in_bytes << std::endl;
+        size_t memory_size_in_bytes =
+            static_cast<size_t>(buffer_size_in_packets) * (max_captured_packet_size + sizeof(fastnetmon_pcap_pkthdr_t)) +
+            sizeof(fastnetmon_pcap_file_header_t);
 
         memory_pointer = (unsigned char*)malloc(memory_size_in_bytes);
 
@@ -32,7 +44,7 @@ class packet_storage_t {
             this->buffer_size = memory_size_in_bytes;
             memory_pos        = memory_pointer;
 
-            // Add header to newely allocated memory block
+            // Add header to freshly allocated memory block
             return this->write_header();
         } else {
             return false;
@@ -51,18 +63,14 @@ class packet_storage_t {
     }
 
     bool write_packet(void* payload_pointer, unsigned int captured_length, unsigned int real_packet_length) {
-        // TODO: performance killer! Check it!
-        bool we_do_timestamps = true;
-
         struct timeval current_time;
         current_time.tv_sec  = 0;
         current_time.tv_usec = 0;
 
-        if (we_do_timestamps) {
-            gettimeofday(&current_time, NULL);
-        }
+        // NB! This function is performance killer and can be used only when we have no more than thousand of packets
+        gettimeofday(&current_time, NULL);
 
-        fastnetmon_pcap_pkthdr_t pcap_packet_header;
+        fastnetmon_pcap_pkthdr_t pcap_packet_header{};
 
         pcap_packet_header.ts_sec  = current_time.tv_sec;
         pcap_packet_header.ts_usec = current_time.tv_usec;
@@ -93,7 +101,7 @@ class packet_storage_t {
     }
 
     bool write_header() {
-        fastnetmon_pcap_file_header_t pcap_header;
+        fastnetmon_pcap_file_header_t pcap_header{};
 
         fill_pcap_header(&pcap_header, max_captured_packet_size);
 
@@ -132,7 +140,7 @@ class packet_storage_t {
     private:
     unsigned char* memory_pointer;
     unsigned char* memory_pos;
-    unsigned int buffer_size;
+    size_t buffer_size;
 
     // We should not store packets with incl_len exceeding this value
     unsigned int max_captured_packet_size;
