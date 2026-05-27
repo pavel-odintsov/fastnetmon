@@ -141,7 +141,12 @@ bool GrpcClient::AnnounceUnicastPrefixLowLevelIPv4(const IPv4UnicastAnnounce& un
         return false;
     }
 
-    auto bgp_attributes = unicast_ipv4_announce.get_attributes();
+    std::vector<dynamic_binary_buffer_t> bgp_attributes;
+
+    if (!unicast_ipv4_announce.get_attributes(bgp_attributes)) {
+        logger << log4cpp::Priority::ERROR << "Could not get attributes for IPv4 unicast announce";
+        return false;
+    }
 
     if (bgp_attributes.size() == 0) {
         logger << log4cpp::Priority::ERROR << "We got zero number of attributes";

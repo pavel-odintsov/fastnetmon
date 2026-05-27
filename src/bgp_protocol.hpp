@@ -558,7 +558,7 @@ class IPv4UnicastAnnounce {
         return encode_bgp_subnet_encoding(this->prefix, buffer_result);
     }
 
-    std::vector<dynamic_binary_buffer_t> get_attributes() const {
+     bool get_attributes(std::vector<dynamic_binary_buffer_t>& attributes_list) const {
         /*
          *   The sender of an UPDATE message SHOULD order path attributes within
          *   the UPDATE message in ascending order of attribute type.  The
@@ -567,6 +567,7 @@ class IPv4UnicastAnnounce {
          */
 
         bgp_attribute_origin origin_attr;
+        origin_attr.attribute_value = static_cast<uint8_t>(this->origin);
 
         // logger << log4cpp::Priority::WARN << "origin_attr: "          <<
         // origin_attr.print() <<
@@ -588,7 +589,8 @@ class IPv4UnicastAnnounce {
 
         // Vector should be ordered in ascending order of attribute types
         // Check numbers in enum BGP_ATTRIBUTES_TYPES for information
-        std::vector<dynamic_binary_buffer_t> attributes_list;
+        // We expect that we receive empty vector here
+        attributes_list.clear();
 
         // It has attribute #1 and will be first in all the cases
         attributes_list.push_back(origin_as_binary_array);
@@ -598,9 +600,16 @@ class IPv4UnicastAnnounce {
             // We have ASNs for AS_PATH attribute
             bgp_attribute_as_path_t bgp_attribute_as_path;
 
+            uint64_t long_attribute_length = sizeof(bgp_as_path_segment_element_t) + this->as_path_asns.size() * sizeof(uint32_t);
+
+            // TODO: We need to enable extended length encoding when we have more than 255 bytes for attribute value
+            if (long_attribute_length > 255) {
+                logger << log4cpp::Priority::ERROR << "Too big AS_PATH attribute length: " << long_attribute_length;
+                return false;
+            }
+
             // Populate attribute length
-            bgp_attribute_as_path.attribute_length =
-                sizeof(bgp_as_path_segment_element_t) + this->as_path_asns.size() * sizeof(uint32_t);
+            bgp_attribute_as_path.attribute_length = (uint8_t)long_attribute_length;
 
             logger << log4cpp::Priority::DEBUG << "AS_PATH attribute length: " << uint32_t(bgp_attribute_as_path.attribute_length);
 
@@ -646,32 +655,33 @@ class IPv4UnicastAnnounce {
         attributes_list.push_back(next_hop_as_binary_array);
 
         if (community_list.empty()) {
-            return attributes_list;
-        } else {
-            // We have communities
-            bgp_attribute_community_t bgp_attribute_community;
-
-            // Each record has this of 4 bytes
-            bgp_attribute_community.attribute_length = community_list.size() * sizeof(bgp_community_attribute_element_t);
-            uint32_t community_attribute_full_length = sizeof(bgp_attribute_community_t) + bgp_attribute_community.attribute_length;
-
-            dynamic_binary_buffer_t communities_list_as_binary_array;
-            communities_list_as_binary_array.set_buffer_size_in_bytes(community_attribute_full_length);
-
-            communities_list_as_binary_array.append_data_as_object_ptr(&bgp_attribute_community);
-
-            for (auto bgp_community_element : community_list) {
-                // Encode they in network byte order
-                bgp_community_element.host_byte_order_to_network_byte_order();
-
-                communities_list_as_binary_array.append_data_as_object_ptr(&bgp_community_element);
-            }
-
-            // Community is attribute #8
-            attributes_list.push_back(communities_list_as_binary_array);
-
-            return attributes_list;
+            return true;
         }
+
+        // We have communities
+        bgp_attribute_community_t bgp_attribute_community;
+
+        // Each record has this of 4 bytes
+        bgp_attribute_community.attribute_length = community_list.size() * sizeof(bgp_community_attribute_element_t);
+        uint32_t community_attribute_full_length = sizeof(bgp_attribute_community_t) + bgp_attribute_community.attribute_length;
+
+        dynamic_binary_buffer_t communities_list_as_binary_array;
+        communities_list_as_binary_array.set_buffer_size_in_bytes(community_attribute_full_length);
+
+        communities_list_as_binary_array.append_data_as_object_ptr(&bgp_attribute_community);
+
+        for (auto bgp_community_element : community_list) {
+            // TODO: Encode they in network byte order
+            // That's HORRIBLE and very error prone approach
+            bgp_community_element.host_byte_order_to_network_byte_order();
+
+            communities_list_as_binary_array.append_data_as_object_ptr(&bgp_community_element);
+        }
+
+        // Community is attribute #8
+        attributes_list.push_back(communities_list_as_binary_array);
+
+        return true;
     }
 
     std::string print() const {
