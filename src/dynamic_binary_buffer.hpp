@@ -4,28 +4,27 @@
 
 class dynamic_binary_buffer_t {
     public:
-    dynamic_binary_buffer_t() : byte_storage(nullptr), maximum_internal_storage_size(0) {
+    dynamic_binary_buffer_t() : byte_storage(nullptr), internal_storage_size(0) {
         // std::cout << "Default constructor called" << std::endl;
     }
 
     dynamic_binary_buffer_t(dynamic_binary_buffer_t&& source) noexcept {
         // Just copy all field values from source and zeroify it
-        this->internal_data_shift = source.internal_data_shift;
+        this->internal_data_shift  = source.internal_data_shift;
         source.internal_data_shift = 0;
 
-        this->byte_storage = source.byte_storage;
+        this->byte_storage  = source.byte_storage;
         source.byte_storage = nullptr;
 
-        this->maximum_internal_storage_size = source.maximum_internal_storage_size;
-        source.maximum_internal_storage_size = 0;
+        this->internal_storage_size  = source.internal_storage_size;
+        source.internal_storage_size = 0;
 
-        this->errors_occured = source.errors_occured;
+        this->errors_occured  = source.errors_occured;
         source.errors_occured = false;
     }
 
-    // We should set maximum buffer size here.
-    // TODO: add ability to relocate memory of we need more memory
-    bool set_maximum_buffer_size_in_bytes(ssize_t size) {
+    // We should set buffer size here.
+    bool set_buffer_size_in_bytes(ssize_t size) {
         // Already allocated
         if (byte_storage) {
             return false;
@@ -35,7 +34,7 @@ class dynamic_binary_buffer_t {
         byte_storage = new (std::nothrow) uint8_t[size];
 
         if (byte_storage) {
-            maximum_internal_storage_size = size;
+            internal_storage_size = size;
             return true;
         } else {
             return false;
@@ -48,7 +47,7 @@ class dynamic_binary_buffer_t {
         if (byte_storage) {
             delete[] byte_storage;
             byte_storage                  = nullptr;
-            maximum_internal_storage_size = 0;
+            internal_storage_size = 0;
         }
     }
 
@@ -57,7 +56,7 @@ class dynamic_binary_buffer_t {
     // perfectly:
     // https://en.wikipedia.org/wiki/Return_value_optimization
     dynamic_binary_buffer_t(const dynamic_binary_buffer_t& that) {
-        this->maximum_internal_storage_size = that.maximum_internal_storage_size;
+        this->internal_storage_size = that.internal_storage_size;
 
         // Copy internal pointer too! It's very important!
         this->internal_data_shift = that.internal_data_shift;
@@ -69,11 +68,11 @@ class dynamic_binary_buffer_t {
         // std::endl;
 
         // We are copying all memory (unused too)
-        if (this->maximum_internal_storage_size > 0) {
+        if (this->internal_storage_size > 0) {
             // Allocate memory for new instance
-            this->set_maximum_buffer_size_in_bytes(this->maximum_internal_storage_size);
+            this->set_buffer_size_in_bytes(this->internal_storage_size);
 
-            memcpy(this->byte_storage, that.byte_storage, that.maximum_internal_storage_size);
+            memcpy(this->byte_storage, that.byte_storage, that.internal_storage_size);
         }
     }
 
@@ -83,8 +82,8 @@ class dynamic_binary_buffer_t {
     // They are very similar to std::stringstream but for binary data only
 
     bool append_byte(uint8_t byte_value) {
-        // Do bounds check
-        if (internal_data_shift > maximum_internal_storage_size - 1) {
+        // Do bounds check to ensure that we have enough space for one more byte
+        if (internal_data_shift + sizeof(uint8_t) > internal_storage_size) {
             errors_occured = true;
             return false;
         }
@@ -97,8 +96,7 @@ class dynamic_binary_buffer_t {
     // Use reference as argument
     bool append_dynamic_buffer(dynamic_binary_buffer_t& dynamic_binary_buffer) {
         // In this case we are copying only used memory
-        // TODO: Why +1?
-        if (internal_data_shift + dynamic_binary_buffer.get_used_size() > maximum_internal_storage_size + 1) {
+        if (internal_data_shift + dynamic_binary_buffer.get_used_size() > internal_storage_size) {
             errors_occured = true;
             return false;
         }
@@ -107,7 +105,7 @@ class dynamic_binary_buffer_t {
     }
 
     bool append_data_as_pointer(const void* ptr, size_t length) {
-        if (internal_data_shift + length > maximum_internal_storage_size + 1) {
+        if (internal_data_shift + length > internal_storage_size) {
             errors_occured = true;
             return false;
         }
@@ -118,7 +116,7 @@ class dynamic_binary_buffer_t {
     }
 
     template <typename src_type> bool append_data_as_object_ptr(src_type* ptr) {
-        if (internal_data_shift + sizeof(src_type) > maximum_internal_storage_size + 1) {
+        if (internal_data_shift + sizeof(src_type) > internal_storage_size) {
             errors_occured = true;
             return false;
         }
@@ -129,46 +127,9 @@ class dynamic_binary_buffer_t {
         return true;
     }
 
-    // All functions below DO NOT CHANGE internal buffer position! They are very
-    // low level and
-    // should be avoided!
-
-    // We could set arbitrary byte with this function
-    bool set_byte(uint32_t byte_number, uint8_t byte_value) {
-        // Do bounds check
-        if (byte_number > maximum_internal_storage_size - 1) {
-            errors_occured = true;
-            return false;
-        }
-
-        byte_storage[byte_number] = byte_value;
-        return true;
-    }
-
-    bool memcpy_from_ptr(uint32_t shift, const void* ptr, uint32_t length) {
-        if (shift + length > maximum_internal_storage_size + 1) {
-            errors_occured = true;
-            return false;
-        }
-
-        memcpy(byte_storage + shift, ptr, length);
-        return true;
-    }
-
-    // More user friendly version of previous function
-    template <typename src_type> bool memcpy_from_object_ptr(uint32_t shift, src_type* ptr) {
-        if (shift + sizeof(src_type) > maximum_internal_storage_size + 1) {
-            errors_occured = true;
-            return false;
-        }
-
-        memcpy(byte_storage + shift, ptr, sizeof(src_type));
-        return true;
-    }
-
     // Return full size (with non initialized data region too)
     uint32_t get_full_size() const {
-        return maximum_internal_storage_size;
+        return internal_storage_size;
     }
 
     // Return only used memory region
@@ -188,7 +149,7 @@ class dynamic_binary_buffer_t {
     private:
     size_t internal_data_shift            = 0;
     uint8_t* byte_storage                 = nullptr;
-    ssize_t maximum_internal_storage_size = 0;
+    ssize_t internal_storage_size = 0;
     // If any errors occurred in any time when we used this buffer
     bool errors_occured = false;
 };

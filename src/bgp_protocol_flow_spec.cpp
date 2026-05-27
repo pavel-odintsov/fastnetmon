@@ -218,7 +218,7 @@ std::vector<dynamic_binary_buffer_t> build_attributes_for_flowspec_announce(flow
     bgp_attribute_origin origin_attr;
 
     dynamic_binary_buffer_t origin_as_binary_array;
-    origin_as_binary_array.set_maximum_buffer_size_in_bytes(sizeof(origin_attr));
+    origin_as_binary_array.set_buffer_size_in_bytes(sizeof(origin_attr));
     origin_as_binary_array.append_data_as_object_ptr(&origin_attr);
 
     dynamic_binary_buffer_t bgp_mp_ext_flow_spec_header_as_binary_array;
@@ -287,7 +287,7 @@ std::vector<dynamic_binary_buffer_t> build_attributes_for_flowspec_announce(flow
 
 // Encode flow spec elements into MP NLRI
 bool encode_bgp_flow_spec_elements_as_mp_nlri(const flow_spec_rule_t& flow_spec_rule, dynamic_binary_buffer_t& mp_nlri_flow_spec) {
-    mp_nlri_flow_spec.set_maximum_buffer_size_in_bytes(2048);
+    mp_nlri_flow_spec.set_buffer_size_in_bytes(2048);
 
     // Encode IPv4 destination prefix
     if (flow_spec_rule.destination_subnet_ipv4_used) {
@@ -549,7 +549,7 @@ bool encode_bgp_flow_spec_elements_into_bgp_mp_attribute(const flow_spec_rule_t&
     logger << log4cpp::Priority::DEBUG
            << "BGP MP reach attribute length: " << int(bgp_attribute_multiprotocol_extensions.attribute_length);
     // Prepare flow spec MP Extenstion attribute
-    bgp_mp_ext_flow_spec_header_as_binary_array.set_maximum_buffer_size_in_bytes(2048);
+    bgp_mp_ext_flow_spec_header_as_binary_array.set_buffer_size_in_bytes(2048);
 
     bgp_mp_ext_flow_spec_header_t bgp_mp_ext_flow_spec_header;
     bgp_mp_ext_flow_spec_header.host_byte_order_to_network_byte_order();
@@ -578,7 +578,7 @@ bool encode_bgp_flow_spec_action_as_extended_attribute(const bgp_flow_spec_actio
     // We use two kind of structures here:
     // bgp_extended_community_element_flow_spec_rate_t and bgp_extended_community_element_flow_spec_redirect_2_octet_as_4_octet_value_t_t
     // As they have same size we use size from one of them
-    extended_attributes_as_binary_array.set_maximum_buffer_size_in_bytes(
+    extended_attributes_as_binary_array.set_buffer_size_in_bytes(
         sizeof(bgp_extended_community_attribute_t) + 1 * sizeof(bgp_extended_community_element_flow_spec_rate_t));
 
     bgp_extended_community_attribute_t bgp_extended_community_attribute;
@@ -628,7 +628,7 @@ bool encode_bgp_flow_spec_next_hop_as_extended_attribute(uint32_t next_hop_ipv4,
                                                          dynamic_binary_buffer_t& extended_attributes_as_binary_array) {
 
     // Allocate buffer
-    extended_attributes_as_binary_array.set_maximum_buffer_size_in_bytes(
+    extended_attributes_as_binary_array.set_buffer_size_in_bytes(
         sizeof(bgp_extended_community_attribute_t) + sizeof(bgp_extended_community_element_flow_spec_ipv4_next_hop_t));
 
     bgp_extended_community_attribute_t bgp_extended_community_attribute;
