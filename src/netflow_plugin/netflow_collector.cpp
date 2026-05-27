@@ -72,6 +72,8 @@ std::map<std::string, uint64_t> netflow9_packets_per_router;
 std::mutex ipfix_packets_per_router_mutex;
 std::map<std::string, uint64_t> ipfix_packets_per_router;
 
+uint64_t flows_per_packet_maximum_number = 256;
+
 // Counters section start
 
 std::string netflow_ipfix_total_ipv4_packets_desc = "Total number of Netflow or IPFIX UDP packets received over IPv4 protocol";

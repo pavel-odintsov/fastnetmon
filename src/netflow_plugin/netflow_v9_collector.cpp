@@ -18,6 +18,10 @@
 
 #include "../simple_packet_parser_ng.hpp"
 
+#include "../all_logcpp_libraries.hpp"
+
+#include "../fast_endianless.hpp"
+
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>
 
@@ -25,26 +29,9 @@
 #include <boost/archive/xml_oarchive.hpp>
 
 #include "../fastnetmon_configuration_scheme.hpp"
-
-// Access to inaccurate but fast time
-extern time_t current_inaccurate_time;
-
-extern log4cpp::Category& logger;
-
 extern fastnetmon_configuration_t fastnetmon_global_configuration;
 
-extern process_packet_pointer netflow_process_func_ptr;
-
-extern uint64_t template_netflow_ipfix_disk_writes;
-
-extern uint64_t netflow_ignored_long_flows;
-
-extern uint64_t netflow_ipfix_all_protocols_total_flows;
-
-extern uint64_t sets_per_packet_maximum_number;
-
 // TODO: get rid of such tricks
-        
 const template_t* peer_find_template(const std::map<std::string, std::map<uint32_t, template_t>>& table_for_lookup,
                                      std::mutex& table_for_lookup_mutex,
                                      uint32_t source_id,
@@ -69,9 +56,22 @@ void update_device_flow_timeouts(const device_timeouts_t& device_timeouts,
 
 void override_packet_fields_from_nested_packet(simple_packet_t& packet, const simple_packet_t& nested_packet);
 
-
-
 void update_netflow_v9_sampling_rate(uint32_t new_sampling_rate, const std::string& client_addres_in_string_format);
+
+// Access to inaccurate but fast time
+extern time_t current_inaccurate_time;
+
+extern log4cpp::Category& logger;
+
+extern process_packet_pointer netflow_process_func_ptr;
+
+extern uint64_t template_netflow_ipfix_disk_writes;
+
+extern uint64_t netflow_ignored_long_flows;
+
+extern uint64_t netflow_ipfix_all_protocols_total_flows;
+
+extern uint64_t sets_per_packet_maximum_number;
 
 // Sampling rates extracted from Netflow
 std::mutex netflow9_sampling_rates_mutex;
@@ -83,6 +83,26 @@ std::map<std::string, std::map<uint32_t, template_t>> global_netflow9_templates;
 // Netflow v9 per device timeouts
 std::mutex netflow_v9_per_device_flow_timeouts_mutex;
 std::map<std::string, device_timeouts_t> netflow_v9_per_device_flow_timeouts;
+
+// Return sampling rate for each device which sends data to us
+std::vector<system_counter_t> get_netflow_sampling_rates() {
+    std::vector<system_counter_t> system_counters;
+
+    // It should be enough in common cases
+    system_counters.reserve(15);
+
+    {
+        std::lock_guard<std::mutex> lock(netflow9_sampling_rates_mutex);
+
+        // Copy all elements to output
+        for (const auto& elem : netflow9_sampling_rates) {
+            system_counters.push_back(system_counter_t(elem.first, (uint64_t)elem.second, metric_type_t::gauge, "Sampling rate"));
+        }
+    }
+
+    return system_counters;
+}
+
 
 std::vector<system_counter_t> get_netflow_v9_stats() {
     std::vector<system_counter_t> system_counter;
@@ -153,6 +173,9 @@ std::vector<system_counter_t> get_netflow_v9_stats() {
     system_counter.push_back(system_counter_t("netflow_v9_forwarding_status", netflow_v9_forwarding_status,
                                               metric_type_t::counter, netflow_v9_forwarding_status_desc));
 
+    system_counter.push_back(system_counter_t("netflow_v9_nat_events", netflow_v9_nat_events, metric_type_t::counter,
+                                              netflow_v9_nat_events_desc));
+
     system_counter.push_back(system_counter_t("netflow_v9_lite_header_parser_success", netflow_v9_lite_header_parser_success,
                                               metric_type_t::counter, netflow_v9_lite_header_parser_success_desc));
 
@@ -170,81 +193,119 @@ std::vector<system_counter_t> get_netflow_v9_stats() {
                                               netflow_v9_marked_zero_next_hop_and_zero_output_as_dropped, metric_type_t::counter,
                                               netflow_v9_marked_zero_next_hop_and_zero_output_as_dropped_desc));
 
+    system_counter.push_back(system_counter_t("netflow_v9_flows_with_sampling_encoded_in_data_packet_number",
+                                              netflow_v9_flows_with_sampling_encoded_in_data_packet_number, metric_type_t::counter,
+                                              netflow_v9_flows_with_sampling_encoded_in_data_packet_number_desc));
+
     return system_counter;
 }
 
-
-
 // This function reads all available options templates
 // http://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
-bool process_netflow_v9_options_template(const uint8_t* pkt, size_t flowset_length, uint32_t source_id, const std::string& client_addres_in_string_format) {
-    const netflow9_options_header_common_t* options_template_header = (const netflow9_options_header_common_t*)pkt;
+bool process_netflow_v9_options_template(const uint8_t* pkt,
+                                         uint16_t flowset_id,
+                                         uint16_t flowset_length,
+                                         uint32_t source_id,
+                                         const std::string& client_addres_in_string_format) {
+    // We already parsed and validated netflow9_flowset_header_common_t header which carries
+    // flowset_id and flowset_length before calling this function 
+    // so we can be sure that we have enough space to read it and it has correct flowset_id
 
-    if (flowset_length < sizeof(*options_template_header)) {
-        logger << log4cpp::Priority::ERROR << "Short Netflow v9 options template header " << flowset_length
-               << " bytes agent IP: " << client_addres_in_string_format;
-        return false;
-    }
+    // Handy for sanity checking
+    const uint8_t* options_flowset_end = pkt + flowset_length;
 
-    if (ntohs(options_template_header->flowset_id) != NETFLOW9_OPTIONS_FLOWSET_ID) {
-        logger << log4cpp::Priority::ERROR
-               << "Function process_netflow_v9_options_template "
-                  "expects only NETFLOW9_OPTIONS_FLOWSET_ID but got "
-                  "another id: "
-               << ntohs(options_template_header->flowset_id) << " agent IP: " << client_addres_in_string_format;
-        return false;
-    }
-
-    const netflow9_options_header_t* options_nested_header =
-        (const netflow9_options_header_t*)(pkt + sizeof(*options_template_header));
-
-
-    if (flowset_length < sizeof(*options_template_header) + sizeof(*options_nested_header)) {
+    // Read Netflow v9 options header
+    if (sizeof(netflow9_flowset_header_common_t) + sizeof(netflow9_options_header_t) > flowset_length) {
         logger << log4cpp::Priority::ERROR << "Could not read specific header for Netflow v9 options template. "
                << " Agent IP: " << client_addres_in_string_format;
         return false;
     }
 
-    uint16_t template_id = fast_ntoh(options_nested_header->template_id);
+    const netflow9_options_header_t* netflow_options_header =
+        (const netflow9_options_header_t*)(pkt + sizeof(netflow9_flowset_header_common_t));
 
-    if (flowset_length < sizeof(*options_template_header) + sizeof(*options_nested_header) +
-                             fast_ntoh(options_nested_header->option_scope_length)) {
-        logger << log4cpp::Priority::ERROR << "Could not read specific header for Netflow v9 options template: need more space for scope"
+    uint16_t template_id = fast_ntoh(netflow_options_header->template_id);
+    uint16_t option_scope_length = fast_ntoh(netflow_options_header->option_scope_length);
+
+    // Validate that option_scope_length is a multiple of the record size to prevent misaligned reads
+    if (option_scope_length % sizeof(netflow9_template_flowset_record_t) != 0) {
+        logger << log4cpp::Priority::ERROR << "Netflow v9 options template has option_scope_length " << option_scope_length
+               << " which is not a multiple of " << sizeof(netflow9_template_flowset_record_t)
                << " agent IP: " << client_addres_in_string_format;
         return false;
     }
 
-    // I'm going to skip scope processing right now
-    const uint8_t* zone_address = pkt + sizeof(*options_template_header) + sizeof(*options_nested_header);
+    if (sizeof(netflow9_flowset_header_common_t) + sizeof(netflow9_options_header_t) + option_scope_length >
+        flowset_length) {
+        logger << log4cpp::Priority::ERROR << "Scope field is longer then flowset length"
+               << " agent IP: " << client_addres_in_string_format;
+        return false;
+    }
+
+    // Here we keep pointer to beginning of scopes zone
+    const uint8_t* scope_zone_address = pkt + sizeof(netflow9_flowset_header_common_t) + sizeof(netflow9_options_header_t);
 
     uint32_t scopes_offset     = 0;
     uint32_t scopes_total_size = 0;
 
-    // Here I should read all available scopes and calculate total size!
-    for (; scopes_offset < fast_ntoh(options_nested_header->option_scope_length);) {
-        netflow9_template_flowset_record_t* tmplr = (netflow9_template_flowset_record_t*)(zone_address + scopes_offset);
+    // Here I should read all available scopes and calculate total size
+    for (; scopes_offset < option_scope_length;) {
+        if (scope_zone_address + scopes_offset + sizeof(netflow9_template_flowset_record_t) > options_flowset_end) {
+            logger << log4cpp::Priority::ERROR << "Could not read scope record for Netflow v9 options template: need more space for scope record header"
+                   << " agent IP: " << client_addres_in_string_format;
+            return false;
+        }
 
-        scopes_total_size += fast_ntoh(tmplr->length);
-        scopes_offset += sizeof(*tmplr);
+        const netflow9_template_flowset_record_t* scope_record =
+            (const netflow9_template_flowset_record_t*)(scope_zone_address + scopes_offset);
+
+        uint32_t current_scope_size = fast_ntoh(scope_record->length);
+
+        scopes_total_size += current_scope_size;
+        scopes_offset += sizeof(*scope_record);
     }
-
-    const uint8_t* zone_address_without_skopes = zone_address + fast_ntoh(options_nested_header->option_scope_length);
 
     uint32_t offset         = 0;
     uint32_t records_number = 0;
 
     std::vector<template_record_t> template_records_map;
-    uint32_t total_size = 0;
+    uint32_t total_template_size = 0;
 
-    uint32_t option_length = fast_ntoh(options_nested_header->option_length);
+    // Length of all options remplate records
+    uint16_t option_length = fast_ntoh(netflow_options_header->option_length);
+
+    // Validate that option_length is a multiple of the record size to prevent misaligned reads
+    if (option_length % sizeof(netflow9_template_flowset_record_t) != 0) {
+        logger << log4cpp::Priority::ERROR << "Netflow v9 options template has option_length " << option_length
+               << " which is not a multiple of " << sizeof(netflow9_template_flowset_record_t)
+               << " agent IP: " << client_addres_in_string_format;
+        return false;
+    }
+
+    // Handy address for reading options records
+    const uint8_t* records_zone_address = scope_zone_address + option_scope_length;
+
+    // Ensure that flowset length is long enough to read all records
+    if (records_zone_address + option_length > options_flowset_end) {
+        logger << log4cpp::Priority::ERROR << "Could not read records for Netflow v9 options template: need more space for records"
+               << " agent IP: " << client_addres_in_string_format;
+        return false;
+    }
 
     for (; offset < option_length;) {
-        records_number++;
-        const netflow9_template_flowset_record_t* tmplr =
-            (const netflow9_template_flowset_record_t*)(zone_address_without_skopes + offset);
+        if (records_zone_address + offset + sizeof(netflow9_template_flowset_record_t) > options_flowset_end) {
+            logger << log4cpp::Priority::ERROR << "Could not read record for Netflow v9 options template: need more space for record header"
+                   << " agent IP: " << client_addres_in_string_format;
+            return false;
+        }
 
-        uint32_t record_type   = fast_ntoh(tmplr->type);
-        uint32_t record_length = fast_ntoh(tmplr->length);
+        records_number++;
+
+        const netflow9_template_flowset_record_t* flowset_record =
+            (const netflow9_template_flowset_record_t*)(records_zone_address + offset);
+
+        uint32_t record_type   = fast_ntoh(flowset_record->type);
+        uint32_t record_length = fast_ntoh(flowset_record->length);
 
         template_record_t current_record;
         current_record.record_type   = record_type;
@@ -253,8 +314,8 @@ bool process_netflow_v9_options_template(const uint8_t* pkt, size_t flowset_leng
         template_records_map.push_back(current_record);
 
         // logger << log4cpp::Priority::ERROR << "Got type " << record_type << " with length " << record_length;
-        offset += sizeof(*tmplr);
-        total_size += record_length;
+        offset += sizeof(*flowset_record);
+        total_template_size += record_length;
     }
 
     template_t field_template{};
@@ -262,16 +323,15 @@ bool process_netflow_v9_options_template(const uint8_t* pkt, size_t flowset_leng
     field_template.template_id         = template_id;
     field_template.records             = template_records_map;
     field_template.num_records         = records_number;
-    field_template.total_length        = total_size + scopes_total_size;
+    field_template.total_length        = total_template_size + scopes_total_size;
     field_template.type                = netflow_template_type_t::Options;
     field_template.option_scope_length = scopes_total_size;
 
     // Templates with total length which is zero do not make any sense and have to be ignored
     // We need templates to decode data blob and decoding zero length value is meaningless
     if (field_template.total_length == 0) {
-        logger << log4cpp::Priority::ERROR
-               << "Received zero length malformed options Netfow v9 template " << template_id
-               << " from " << client_addres_in_string_format;
+        logger << log4cpp::Priority::ERROR << "Received zero length malformed options Netfow v9 template "
+               << template_id << " from " << client_addres_in_string_format;
         return false;
     }
 
@@ -296,14 +356,16 @@ bool process_netflow_v9_options_template(const uint8_t* pkt, size_t flowset_leng
         netflow_v9_template_data_updates++;
     }
 
+
+
     return true;
 }
 
 bool process_netflow_v9_template(const uint8_t* pkt,
-                                 size_t flowset_length,
+                                 uint16_t flowset_length,
                                  uint32_t source_id,
                                  const std::string& client_addres_in_string_format,
-                                 uint64_t flowset_number) {
+                                 uint16_t flowset_number) {
     const netflow9_flowset_header_common_t* template_header = (const netflow9_flowset_header_common_t*)pkt;
 
     if (flowset_length < sizeof(*template_header)) {
@@ -320,6 +382,8 @@ bool process_netflow_v9_template(const uint8_t* pkt,
                << ntohs(template_header->flowset_id) << " agent IP: " << client_addres_in_string_format;
         return false;
     }
+
+    bool template_cache_update_required = false;
 
     for (uint32_t offset = sizeof(*template_header); offset < flowset_length;) {
         const netflow9_template_flowset_header_t* netflow9_template_flowset_header =
@@ -369,9 +433,8 @@ bool process_netflow_v9_template(const uint8_t* pkt,
         // Templates with total length which is zero do not make any sense and have to be ignored
         // We need templates to decode data blob and decoding zero length value is meaningless
         if (total_size == 0) {
-            logger << log4cpp::Priority::ERROR
-                << "Received zero length malformed data Netflow v9 template " << template_id
-                << " from " << client_addres_in_string_format;
+            logger << log4cpp::Priority::ERROR << "Received zero length malformed data Netflow v9 template "
+                   << template_id << " from " << client_addres_in_string_format;
             return false;
         }
 
@@ -394,6 +457,11 @@ bool process_netflow_v9_template(const uint8_t* pkt,
                                  global_netflow9_templates_mutex, source_id, template_id,
                                  client_addres_in_string_format, field_template, updated, updated_existing_template);
 
+        // If we have any changes for this template, let's flush them to disk
+        if (updated) {
+            template_cache_update_required = true;
+        }
+
         if (updated_existing_template) {
             netflow_v9_template_data_updates++;
         }
@@ -410,6 +478,7 @@ bool process_netflow_v9_template(const uint8_t* pkt,
 // TODO: get rid of it ASAP
 // Copy an int (possibly shorter than the target) keeping their LSBs aligned
 #define BE_COPY(a) memcpy((u_char*)&a + (sizeof(a) - record_length), data, record_length);
+
 
 bool netflow9_record_to_flow(uint32_t record_type,
                              uint32_t record_length,
@@ -561,6 +630,7 @@ bool netflow9_record_to_flow(uint32_t record_type,
 
         break;
     case NETFLOW9_IPV6_SRC_ADDR:
+        if (true) {
             // It should be 16 bytes only
             if (record_length == 16) {
                 memcpy(&packet.src_ipv6, data, record_length);
@@ -573,9 +643,11 @@ bool netflow9_record_to_flow(uint32_t record_type,
                     logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_IPV6_SRC_ADDR";
                 }
             }
+        }
 
         break;
     case NETFLOW9_IPV6_DST_ADDR:
+        if (true) {
             // It should be 16 bytes only
             if (record_length == 16) {
                 memcpy(&packet.dst_ipv6, data, record_length);
@@ -588,6 +660,7 @@ bool netflow9_record_to_flow(uint32_t record_type,
                     logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_IPV6_DST_ADDR";
                 }
             }
+        }
 
         break;
     case NETFLOW9_DST_AS:
@@ -799,8 +872,8 @@ bool netflow9_record_to_flow(uint32_t record_type,
 
         break;
     case NETFLOW9_LAYER2_PACKET_SECTION_SIZE:
-        if (record_length == 2) { 
-            uint16_t datalink_frame_size = 0; 
+        if (record_length == 2) {
+            uint16_t datalink_frame_size = 0;
 
             memcpy(&datalink_frame_size, data, record_length);
             flow_meta.data_link_frame_size = fast_ntoh(datalink_frame_size);
@@ -827,17 +900,18 @@ bool netflow9_record_to_flow(uint32_t record_type,
         parser_options_t parser_options{};
 
         parser_options.unpack_gre = false;
+        parser_options.parse_mpls = false;
         parser_options.read_packet_length_from_ip_header = true;
 
         auto result = parse_raw_packet_to_simple_packet_full((u_char*)(data), full_packet_length, record_length,
-            flow_meta.nested_packet, parser_options);
+                                                             flow_meta.nested_packet, parser_options);
 
         if (result != parser_code_t::success) {
             // Cannot decode data
             netflow_v9_lite_header_parser_error++;
 
             if (logger.getPriority() == log4cpp::Priority::DEBUG) {
-                logger << log4cpp::Priority::DEBUG << "Cannot parse packet header with error: " << parser_code_to_string(result); 
+                logger << log4cpp::Priority::DEBUG << "Cannot parse packet header with error: " << parser_code_to_string(result);
             }
         } else {
             netflow_v9_lite_header_parser_success++;
@@ -1072,6 +1146,8 @@ bool netflow9_record_to_flow(uint32_t record_type,
         // Well, this record type is expected to be only in options templates but Mikrotik in RouterOS v6.49.6 has
         // another opinion and we have dump which clearly confirms that they send this data in data templates
 
+        netflow_v9_flows_with_sampling_encoded_in_data_packet_number++;
+
         if (record_length == 4) {
             uint32_t current_sampling_rate = 0;
 
@@ -1107,11 +1183,71 @@ bool netflow9_record_to_flow(uint32_t record_type,
         }
 
         break;
+    case NETFLOW9_PERMANENT_PACKETS:
+        // Bison router uses this encoding when Cisco compatibility is not enabled
+        if (record_length == 8) {
+            uint64_t packets_number = 0;
+            memcpy(&packets_number, data, record_length);
+
+            packet.number_of_packets = fast_ntoh(packets_number);
+        } else {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Unexpectedly big size for NETFLOW9_PERMANENT_PACKETS: " << record_length;
+            }
+        }
+
+        break;
+
+    case NETFLOW9_PERMANENT_BYTES:
+        // Bison router uses this encoding when Cisco compatibility is not enabled
+        if (record_length == 8) {
+            uint64_t bytes_number = 0;
+            memcpy(&bytes_number, data, record_length);
+
+            packet.length = fast_ntoh(bytes_number);
+
+            // Netflow v9 carries only information about number of octets including IP headers and IP payload
+            // which is exactly what we need for ip_length field
+            packet.ip_length = packet.length;
+        } else {
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Unexpectedly big size for NETFLOW9_PERMANENT_BYTES: " << record_length;
+            }
+        }
+
+        break;
+    case NETFLOW9_NAT_EVENT:
+        // Documented here: https://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
+        // It is encoded on 1 byte with the 4 left bits giving the event and the 4 remaining bits giving the reason code.
+        if (record_length == 1) {
+            // Codes: https://www.iana.org/assignments/ipfix/ipfix.xhtml#ipfix-nat-event-type
+            uint8_t nat_event_type = 0;
+
+            memcpy(&nat_event_type, data, record_length);
+
+            flow_meta.nat_event = true;
+            netflow_v9_nat_events++;
+
+            // logger << log4cpp::Priority::DEBUG << "NAT event: " << int(nat_event_type);
+        } else {
+            // It must be exactly one byte
+            netflow_v9_too_large_field++;
+
+            if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                logger << log4cpp::Priority::DEBUG << "Too large field for NETFLOW9_NAT_EVENT";
+            }
+        }
+
+        break;
     }
 
     // We keep this logic under the fence flag because RouterOS v6 sampling implementation is exceptionally broken and
     // enabling it by default will not make any good
-    if (false) {
+    if (true) {
         // TODO: another issue with this logic that we will run it for each flow in packet which may cause additional
         // overhead during processing It's not significant and we will keep it that way for now
         update_netflow_v9_sampling_rate(sampling_rate, client_addres_in_string_format);
@@ -1324,7 +1460,9 @@ void netflow9_options_flowset_to_store(const uint8_t* pkt,
 
                 sampler_id = fast_ntoh(sampler_id);
 
-                logger << log4cpp::Priority::DEBUG << "Got sampler id from options template: " << int(sampler_id);
+                if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+                    logger << log4cpp::Priority::DEBUG << "Got sampler id from options template: " << int(sampler_id);
+                }
             } else {
                 netflow_v9_too_large_field++;
 
@@ -1363,6 +1501,8 @@ void update_netflow_v9_sampling_rate(uint32_t new_sampling_rate, const std::stri
     // logger<< log4cpp::Priority::INFO << "I extracted sampling rate: " << new_sampling_rate
     //    << "for " << client_address_in_string_format;
 
+    bool any_changes_for_sampling = false;
+
     {
         std::lock_guard<std::mutex> lock(netflow9_sampling_rates_mutex);
 
@@ -1377,6 +1517,7 @@ void update_netflow_v9_sampling_rate(uint32_t new_sampling_rate, const std::stri
             logger << log4cpp::Priority::INFO << "Learnt new Netflow v9 sampling rate " << new_sampling_rate << " for "
                    << client_addres_in_string_format;
 
+            any_changes_for_sampling = true;
         } else {
             auto old_sampling_rate = known_sampling_rate->second;
 
@@ -1388,6 +1529,7 @@ void update_netflow_v9_sampling_rate(uint32_t new_sampling_rate, const std::stri
                 logger << log4cpp::Priority::INFO << "Detected sampling rate change from " << old_sampling_rate
                        << " to " << new_sampling_rate << " for " << client_addres_in_string_format;
 
+                any_changes_for_sampling = true;
             }
         }
     }
@@ -1534,6 +1676,11 @@ void netflow9_flowset_to_store(const uint8_t* pkt,
 
     netflow_ipfix_all_protocols_total_flows++;
 
+    // We do not process NAT events as they do not represent actual flows
+    if (flow_meta.nat_event) {
+        return;
+    }
+
     // We may have cases like this from previous step:
     // :0000:443 > :0000:61444 protocol: tcp flags: psh,ack frag: 0  packets: 1 size: 205 bytes ip size: 205 bytes ttl:
     // 0 sample ratio: 1000 It happens when router sends IPv4 and zero IPv6 fields in same packet
@@ -1631,6 +1778,14 @@ void netflow9_flowset_to_store(const uint8_t* pkt,
         return;
     }
 
+    if (false) {
+        // Check that Netflow v9 flow has information only about dropped traffic
+        if (packet.forwarding_status != forwarding_status_t::dropped) {
+            // Discard everything else
+            return;
+        }
+    }
+
     // pass data to FastNetMon
     netflow_process_func_ptr(packet);
 }
@@ -1641,6 +1796,8 @@ bool process_netflow_v9_data(const uint8_t* pkt,
                              uint32_t source_id,
                              const std::string& client_addres_in_string_format,
                              uint32_t client_ipv4_address) {
+    extern uint64_t flows_per_packet_maximum_number;
+
     const netflow9_data_flowset_header_t* dath = (const netflow9_data_flowset_header_t*)pkt;
 
     // Store packet end, it's useful for sanity checks
@@ -1651,10 +1808,8 @@ bool process_netflow_v9_data(const uint8_t* pkt,
         return false;
     }
 
-    // uint32_t is a 4 byte integer. Any reason why we convert here 16 bit flowset_id to 32 bit? ... Strange
-    uint32_t flowset_id = ntohs(dath->header.flowset_id);
-    // logger<< log4cpp::Priority::INFO<<"We have data with flowset_id:
-    // "<<flowset_id;
+    uint16_t flowset_id = fast_ntoh(dath->header.flowset_id);
+    // logger<< log4cpp::Priority::INFO<<"We have data with flowset_id: " << flowset_id;
 
     // We should find template here
     const template_t* field_template = peer_find_template(global_netflow9_templates, global_netflow9_templates_mutex,
@@ -1663,11 +1818,14 @@ bool process_netflow_v9_data(const uint8_t* pkt,
     if (field_template == NULL) {
         netflow9_packets_with_unknown_templates++;
 
-        logger << log4cpp::Priority::DEBUG << "We don't have a Netflow 9 template for flowset_id: " << flowset_id
-               << " client " << client_addres_in_string_format << " source_id: " << source_id
-               << " but it's not an error if this message disappears in 5-10 "
-                  "seconds. We need some "
-                  "time to learn it!";
+        if (logger.getPriority() == log4cpp::Priority::DEBUG) {
+            logger << log4cpp::Priority::DEBUG << "We don't have a Netflow 9 template for flowset_id: " << flowset_id
+                   << " client " << client_addres_in_string_format << " source_id: " << source_id
+                   << " but it's not an error if this message disappears in 5-10 "
+                      "seconds. We need some "
+                      "time to learn it";
+        }
+
         return true;
     }
 
@@ -1678,23 +1836,27 @@ bool process_netflow_v9_data(const uint8_t* pkt,
 
     // Check that template total length is not zero as we're going to divide by it
     if (field_template->total_length == 0) {
-        logger << log4cpp::Priority::ERROR
-               << "Zero template length is not valid "
+        logger << log4cpp::Priority::ERROR << "Zero template length is not valid "
                << "client " << client_addres_in_string_format << " source_id: " << source_id;
-       return false;
+        return false;
     }
 
     uint32_t offset       = sizeof(*dath);
-    uint32_t num_flowsets = (flowset_length - offset) / field_template->total_length;
+    uint32_t number_of_flows = (flowset_length - offset) / field_template->total_length;
 
-    if (num_flowsets == 0 || num_flowsets > 0x4000) {
-        logger << log4cpp::Priority::ERROR << "Invalid number of data flowsets, strange number of flows: " << num_flowsets;
+    if (number_of_flows == 0 || number_of_flows > flows_per_packet_maximum_number) {
+        logger << log4cpp::Priority::ERROR << "Artificially high number of flows: " << number_of_flows;
         return false;
     }
 
     if (field_template->type == netflow_template_type_t::Data) {
-        for (uint32_t i = 0; i < num_flowsets; i++) {
-            // process whole flowset
+        for (uint32_t i = 0; i < number_of_flows; i++) {
+            if (pkt + offset + field_template->total_length > packet_end) {
+                logger << log4cpp::Priority::ERROR << "We tried to read data outside packet end in data flowset";
+                return false;
+            }
+
+            // Process whole flowset
             netflow9_flowset_to_store(pkt + offset, netflow9_header, field_template->records,
                                       client_addres_in_string_format, client_ipv4_address);
 
@@ -1706,9 +1868,9 @@ bool process_netflow_v9_data(const uint8_t* pkt,
 
         netflow9_options_packet_number++;
 
-        for (uint32_t i = 0; i < num_flowsets; i++) {
+        for (uint32_t i = 0; i < number_of_flows; i++) {
             if (pkt + offset + field_template->total_length > packet_end) {
-                logger << log4cpp::Priority::ERROR << "We tried to read data outside packet end";
+                logger << log4cpp::Priority::ERROR << "We tried to read data outside packet end for options flowset";
                 return false;
             }
 
@@ -1739,7 +1901,7 @@ bool process_netflow_packet_v9(const uint8_t* packet,
     }
 
     // Number of flow sets in packet, each flow set may carry multiple flows
-    uint32_t flowset_count_total = ntohs(netflow9_header->header.flowset_number);
+    uint16_t flowset_count_total = fast_ntoh(netflow9_header->header.flowset_number);
 
     // Limit reasonable number of flow sets per packet
     if (flowset_count_total > sets_per_packet_maximum_number) {
@@ -1755,7 +1917,7 @@ bool process_netflow_packet_v9(const uint8_t* packet,
     // logger<< log4cpp::Priority::INFO<<"Template source id: "<<source_id;
     // logger<< log4cpp::Priority::INFO<< "Total flowsets " << flowset_count_total;
 
-    for (uint32_t flowset_number = 0; flowset_number < flowset_count_total; flowset_number++) {
+    for (uint16_t flowset_number = 0; flowset_number < flowset_count_total; flowset_number++) {
         // Make sure we don't run off the end of the flow
         if (offset >= packet_length) {
             logger << log4cpp::Priority::ERROR
@@ -1766,18 +1928,17 @@ bool process_netflow_packet_v9(const uint8_t* packet,
 
         // Check that we have enough space in packet to read flowset header
         if (offset + sizeof(netflow9_flowset_header_common_t) > packet_length) {
-            logger << log4cpp::Priority::ERROR
-                   << "Flowset is too short: we do not have space for flowset header. "
-                   << "Netflow v9 packet agent IP:" << client_addres_in_string_format
-                   << " flowset number: " << flowset_number << " offset: " << offset << " packet_length: " << packet_length;
+            logger << log4cpp::Priority::ERROR << "Flowset is too short: we do not have space for flowset header. "
+                   << "Netflow v9 packet agent IP:" << client_addres_in_string_format << " flowset number: " << flowset_number
+                   << " offset: " << offset << " packet_length: " << packet_length;
             return false;
         }
 
         // Now we can safely read flowset header
         const netflow9_flowset_header_common_t* flowset = (const netflow9_flowset_header_common_t*)(packet + offset);
 
-        uint32_t flowset_id     = ntohs(flowset->flowset_id);
-        uint32_t flowset_length = ntohs(flowset->length);
+        uint16_t flowset_id     = fast_ntoh(flowset->flowset_id);
+        uint16_t flowset_length = fast_ntoh(flowset->length);
 
         // One more check to ensure that we have enough space in packet to read whole flowset
         if (offset + flowset_length > packet_length) {
@@ -1787,25 +1948,25 @@ bool process_netflow_packet_v9(const uint8_t* packet,
             return false;
         }
 
-        switch (flowset_id) {
-        case NETFLOW9_TEMPLATE_FLOWSET_ID:
+        if (flowset_id == NETFLOW9_TEMPLATE_FLOWSET_ID) {
             netflow9_data_templates_number++;
             // logger<< log4cpp::Priority::INFO<<"We read template";
             if (!process_netflow_v9_template(packet + offset, flowset_length, source_id, client_addres_in_string_format, flowset_number)) {
                 return false;
             }
-            break;
-        case NETFLOW9_OPTIONS_FLOWSET_ID:
+        } else if (flowset_id == NETFLOW9_OPTIONS_FLOWSET_ID) {
             netflow9_options_templates_number++;
-            if (!process_netflow_v9_options_template(packet + offset, flowset_length, source_id, client_addres_in_string_format)) {
+            if (!process_netflow_v9_options_template(packet + offset, flowset_id, flowset_length, source_id,
+                                                     client_addres_in_string_format)) {
                 return false;
             }
-            break;
-        default:
+        } else {
             if (flowset_id < NETFLOW9_MIN_RECORD_FLOWSET_ID) {
                 logger << log4cpp::Priority::ERROR << "Received unknown Netflow v9 reserved flowset type " << flowset_id
                        << " agent IP: " << client_addres_in_string_format;
-                break; // interrupts only switch!
+
+                // Skip current flowset and try to move forward
+                continue; 
             }
 
             netflow9_data_packet_number++;
@@ -1818,8 +1979,6 @@ bool process_netflow_packet_v9(const uint8_t* packet,
                 netflow_v9_broken_packets++;
                 return false;
             }
-
-            break;
         }
 
         // This logic will stop processing if we've reached end of flow set section before reading all flow sets
@@ -1827,6 +1986,7 @@ bool process_netflow_packet_v9(const uint8_t* packet,
         offset += flowset_length;
 
         if (offset == packet_length) {
+            // Stop for loop
             break;
         }
     }

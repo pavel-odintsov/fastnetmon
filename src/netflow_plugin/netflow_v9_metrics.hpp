@@ -15,6 +15,9 @@ uint64_t netflow_v9_total_ipv6_flows         = 0;
 std::string netflow_v9_forwarding_status_desc = "Number of Netflow v9 flows with forwarding status provided";
 uint64_t netflow_v9_forwarding_status         = 0;
 
+std::string netflow_v9_nat_events_desc = "Number of Netflow v9 flows with NAT event provided";
+uint64_t netflow_v9_nat_events         = 0;
+
 std::string netflow_v9_marked_zero_next_hop_and_zero_output_as_dropped_desc =
     "Netflow v9 flow was marked as dropped from interface and next hop information";
 uint64_t netflow_v9_marked_zero_next_hop_and_zero_output_as_dropped = 0;
@@ -110,3 +113,8 @@ uint64_t netflow9_options_packet_number         = 0;
 std::string netflow9_sampling_rate_changes_desc = "How much times we changed sampling rate for same agent. As change "
                                                   "we also count when we received it for the first time";
 uint64_t netflow9_sampling_rate_changes = 0;
+
+// Only Mikrotik uses this approach and we need to know when it happens
+std::string netflow_v9_flows_with_sampling_encoded_in_data_packet_number_desc =
+    "Number of Netflow v9 flows with sampling rate encoded in data section";
+uint64_t netflow_v9_flows_with_sampling_encoded_in_data_packet_number = 0;
