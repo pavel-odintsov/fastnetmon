@@ -56,6 +56,9 @@ class netflow_meta_info_t {
     // Cisco ASA flow identifier
     uint64_t flow_id = 0;
 
+    // Represents NAT events
+    bool nat_event = false;
+
     variable_length_encoding_t variable_field_length_encoding = variable_length_encoding_t::unknown;
 
     // Store variable field length here to avoid repeating parsing

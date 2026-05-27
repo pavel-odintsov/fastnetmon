@@ -1,6 +1,8 @@
-// Netflow v9
+#pragma once 
 
 #include "../fast_endianless.hpp"
+
+// Netflow v9
 
 #define NETFLOW9_TEMPLATE_FLOWSET_ID 0
 #define NETFLOW9_OPTIONS_FLOWSET_ID 1
@@ -59,6 +61,11 @@
 // Any length
 #define NETFLOW9_SAMPLER_NAME 84
 
+// It's used by Bison router when Cisco compatibility mode is disabled
+// Cisco also used them: https://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
+#define NETFLOW9_PERMANENT_BYTES 85
+#define NETFLOW9_PERMANENT_PACKETS 86
+
 #define NETFLOW9_FORWARDING_STATUS 89
 
 // Legacy field. Recommended replacement is NETFLOW9_DATALINK_FRAME_SIZE
@@ -72,6 +79,10 @@
 // Cisco calls them "timestamp absolute first" and "timestamp absolute last"
 #define NETFLOW9_START_MILLISECONDS 152
 #define NETFLOW9_END_MILLISECONDS 153
+
+// I did not find any examples if Cisco uses it but it's aligned with IPFIX field with same name and number: https://datatracker.ietf.org/doc/html/rfc7270#section-4.12.1
+// Bison router uses it to encode NAT Events
+#define NETFLOW9_NAT_EVENT 230
 
 // These fields have alternative naming initiator and responder and I find such naming just ridiculous and very tricky to understand
 // This Cisco ASA guide uses more clear way to name them as source and destination: https://www.cisco.com/c/en/us/td/docs/security/asa/special/netflow/asa_netflow.html
