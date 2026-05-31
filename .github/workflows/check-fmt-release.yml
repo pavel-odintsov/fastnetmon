@@ -1,0 +1,84 @@
+name: Check for new fmt release
+
+on:
+  schedule:
+    # Run daily at 06:00 UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+
+jobs:
+  check-fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get latest fmt release
+        id: latest
+        run: |
+          latest=$(curl -fsSL https://api.github.com/repos/fmtlib/fmt/releases/latest | jq -r .tag_name)
+          if [ -z "$latest" ] || [ "$latest" = "null" ]; then
+            echo "Failed to fetch latest fmt release tag" >&2
+            exit 1
+          fi
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          echo "Latest fmt release: $latest"
+          echo "Last seen version: ${{ vars.FMT_LAST_VERSION }}"
+
+      - name: Create issue for new fmt release
+        if: steps.latest.outputs.latest != vars.FMT_LAST_VERSION
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LATEST: ${{ steps.latest.outputs.latest }}
+          PREVIOUS: ${{ vars.FMT_LAST_VERSION }}
+          REPO: ${{ github.repository }}
+        run: |
+          title="New fmt release available: ${LATEST}"
+          body=$(cat <<EOF
+          A new release of [fmtlib/fmt](https://github.com/fmtlib/fmt) has been published.
+
+          - Latest version: \`${LATEST}\`
+          - Previously seen version: \`${PREVIOUS:-none}\`
+          - Release notes: https://github.com/fmtlib/fmt/releases/tag/${LATEST}
+
+          Please consider updating the bundled fmt version in this repository.
+
+          _This issue was created automatically by the \`check-fmt-release\` workflow._
+          EOF
+          )
+          curl -fsSL -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPO}/issues" \
+            -d "$(jq -n --arg title "$title" --arg body "$body" '{title:$title, body:$body, labels:["dependencies"]}')"
+
+      - name: Save new version to GitHub variable
+        if: steps.latest.outputs.latest != vars.FMT_LAST_VERSION
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LATEST: ${{ steps.latest.outputs.latest }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Try to update existing variable; if it does not exist (404), create it.
+          http_code=$(curl -s -o /tmp/resp.json -w "%{http_code}" -X PATCH \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPO}/actions/variables/FMT_LAST_VERSION" \
+            -d "$(jq -n --arg v "$LATEST" '{name:"FMT_LAST_VERSION", value:$v}')")
+
+          if [ "$http_code" = "404" ]; then
+            echo "Variable does not exist yet, creating it"
+            curl -fsSL -X POST \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${REPO}/actions/variables" \
+              -d "$(jq -n --arg v "$LATEST" '{name:"FMT_LAST_VERSION", value:$v}')"
+          elif [ "$http_code" -ge 300 ]; then
+            echo "Failed to update variable (HTTP $http_code):"
+            cat /tmp/resp.json
+            exit 1
+          else
+            echo "Variable FMT_LAST_VERSION updated to $LATEST"
+          fi
