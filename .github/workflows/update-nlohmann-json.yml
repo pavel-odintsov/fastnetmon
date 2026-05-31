@@ -1,0 +1,114 @@
+name: Update bundled nlohmann/json
+
+on:
+  schedule:
+    # Run daily at 06:10 UTC
+    - cron: '10 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-json:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read bundled nlohmann/json version
+        id: bundled
+        run: |
+          file="src/nlohmann/json.hpp"
+          if [ ! -f "$file" ]; then
+            echo "::error::$file not found"
+            exit 1
+          fi
+          major=$(grep -E '^#define NLOHMANN_JSON_VERSION_MAJOR' "$file" | awk '{print $3}')
+          minor=$(grep -E '^#define NLOHMANN_JSON_VERSION_MINOR' "$file" | awk '{print $3}')
+          patch=$(grep -E '^#define NLOHMANN_JSON_VERSION_PATCH' "$file" | awk '{print $3}')
+          if [ -z "$major" ] || [ -z "$minor" ] || [ -z "$patch" ]; then
+            echo "::error::Failed to parse NLOHMANN_JSON_VERSION_* from $file"
+            exit 1
+          fi
+          bundled="${major}.${minor}.${patch}"
+          echo "bundled=$bundled" >> "$GITHUB_OUTPUT"
+          echo "Bundled nlohmann/json version: $bundled"
+
+      - name: Get latest nlohmann/json release
+        id: latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(curl -fsSL \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/nlohmann/json/releases/latest | jq -r .tag_name)
+          if [ -z "$tag" ] || [ "$tag" = "null" ]; then
+            echo "::error::Failed to fetch latest nlohmann/json release tag"
+            exit 1
+          fi
+          # Release tags look like "v3.11.3"; strip the leading "v" for comparison.
+          version="${tag#v}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Latest nlohmann/json release: $tag (version $version)"
+
+      - name: Up to date
+        if: steps.latest.outputs.version == steps.bundled.outputs.bundled
+        run: echo "Bundled nlohmann/json (${{ steps.bundled.outputs.bundled }}) matches the latest release; nothing to do."
+
+      - name: Download new json.hpp from upstream release
+        if: steps.latest.outputs.version != steps.bundled.outputs.bundled
+        env:
+          TAG: ${{ steps.latest.outputs.tag }}
+        run: |
+          url="https://github.com/nlohmann/json/releases/download/${TAG}/json.hpp"
+          echo "Downloading $url"
+          # Download to a temporary file, then verify the version matches before
+          # overwriting the bundled header.
+          tmp=$(mktemp)
+          curl -fsSL --retry 3 -o "$tmp" "$url"
+
+          # Sanity check: ensure the downloaded file contains the expected version macros.
+          new_major=$(grep -E '^#define NLOHMANN_JSON_VERSION_MAJOR' "$tmp" | awk '{print $3}')
+          new_minor=$(grep -E '^#define NLOHMANN_JSON_VERSION_MINOR' "$tmp" | awk '{print $3}')
+          new_patch=$(grep -E '^#define NLOHMANN_JSON_VERSION_PATCH' "$tmp" | awk '{print $3}')
+          new_version="${new_major}.${new_minor}.${new_patch}"
+          expected="${TAG#v}"
+          if [ "$new_version" != "$expected" ]; then
+            echo "::error::Downloaded json.hpp version ($new_version) does not match release tag ($expected)"
+            exit 1
+          fi
+
+          mv "$tmp" src/nlohmann/json.hpp
+          echo "Replaced src/nlohmann/json.hpp with upstream $TAG"
+
+      - name: Create pull request
+        if: steps.latest.outputs.version != steps.bundled.outputs.bundled
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ github.token }}
+          branch: chore/update-nlohmann-json-${{ steps.latest.outputs.version }}
+          delete-branch: true
+          commit-message: |
+            Update bundled nlohmann/json to ${{ steps.latest.outputs.version }}
+
+            Replaces src/nlohmann/json.hpp with the upstream single-header release
+            from https://github.com/nlohmann/json/releases/tag/${{ steps.latest.outputs.tag }}.
+          title: "Update bundled nlohmann/json to ${{ steps.latest.outputs.version }}"
+          body: |
+            Automated update of the bundled [nlohmann/json](https://github.com/nlohmann/json) single-header library.
+
+            - Previous version: `${{ steps.bundled.outputs.bundled }}`
+            - New version: `${{ steps.latest.outputs.version }}` (tag `${{ steps.latest.outputs.tag }}`)
+            - Source: https://github.com/nlohmann/json/releases/download/${{ steps.latest.outputs.tag }}/json.hpp
+            - Release notes: https://github.com/nlohmann/json/releases/tag/${{ steps.latest.outputs.tag }}
+
+            The downloaded `json.hpp` was verified to advertise version `${{ steps.latest.outputs.version }}` via its `NLOHMANN_JSON_VERSION_*` macros before being committed.
+
+            _Opened automatically by the `update-nlohmann-json` workflow._
+          labels: dependencies
+          author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
