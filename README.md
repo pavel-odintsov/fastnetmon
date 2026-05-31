@@ -103,11 +103,6 @@ Example deployment scheme
 
 ![Network diagramm](docs/images/deploy.png)
 
-
-CI build status
---------------
-[![CircleCI](https://circleci.com/gh/pavel-odintsov/fastnetmon/tree/master.svg?style=svg)](https://circleci.com/gh/pavel-odintsov/fastnetmon/tree/master)
-
 Upstream versions in different distributions
 --------------
 
