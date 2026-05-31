@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - master
+  schedule:
+    # Daily rebuild at 04:00 UTC to pick up base image and dependency updates
+    - cron: "0 4 * * *"
   workflow_dispatch:
     inputs:
       version:
