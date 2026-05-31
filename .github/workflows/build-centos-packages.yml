@@ -1,0 +1,128 @@
+name: Build CentOS packages
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      fastnetmon_build_version:
+        description: "FastNetMon build version"
+        required: false
+        default: "1.2.10"
+
+permissions:
+  contents: read
+
+env:
+  # Keep in sync with .circleci/config.yml `fastnetmon_build_version`.
+  DEFAULT_BUILD_VERSION: "1.2.10"
+
+jobs:
+  build_centos:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: centos8
+            docker_image: "almalinux:8"
+            centos_version: "8"
+            centos_package_architecture: "x86_64"
+            runner: ubuntu-latest
+          - name: centos8_arm
+            docker_image: "almalinux:8"
+            centos_version: "8"
+            centos_package_architecture: "aarch64"
+            runner: ubuntu-24.04-arm
+          - name: centos9
+            docker_image: "almalinux:9"
+            centos_version: "9"
+            centos_package_architecture: "x86_64"
+            runner: ubuntu-latest
+          - name: centos9_arm
+            docker_image: "almalinux:9"
+            centos_version: "9"
+            centos_package_architecture: "aarch64"
+            runner: ubuntu-24.04-arm
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Resolve build version
+        id: meta
+        run: |
+          version="${{ github.event.inputs.fastnetmon_build_version }}"
+          if [ -z "$version" ]; then
+            version="${DEFAULT_BUILD_VERSION}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Start base container
+        run: docker run --name linux_docker -d -t ${{ matrix.docker_image }}
+
+      - name: Install base packages
+        run: docker exec linux_docker yum install -y perl wget python3-pip perl-Archive-Tar git
+
+      - name: Clone FastNetMon repository
+        run: docker exec linux_docker git clone https://github.com/pavel-odintsov/fastnetmon.git
+
+      - name: Install s3cmd
+        run: docker exec linux_docker pip3 install s3cmd
+
+      - name: Install GCC
+        timeout-minutes: 120
+        run: |
+          docker exec \
+            --env AWS_ACCESS_KEY_ID \
+            --env AWS_SECRET_ACCESS_KEY \
+            linux_docker perl fastnetmon/src/scripts/install_fastnetmon_dependencies.pl gcc_12_1_0
+
+      - name: Install dependencies
+        timeout-minutes: 180
+        run: |
+          docker exec \
+            --env AWS_ACCESS_KEY_ID \
+            --env AWS_SECRET_ACCESS_KEY \
+            linux_docker perl fastnetmon/src/scripts/install_fastnetmon_dependencies.pl
+
+      - name: Build FastNetMon
+        run: docker exec linux_docker perl fastnetmon/src/scripts/fastnetmon_build.pl
+
+      - name: Build library bundle
+        run: docker exec linux_docker perl fastnetmon/src/scripts/build_library_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
+
+      - name: Build RPM package
+        run: |
+          docker exec linux_docker \
+            fastnetmon/src/scripts/build_any_package.pl rpm \
+            /opt/fastnetmon_libraries_bundle.tar.gz \
+            ${{ steps.meta.outputs.version }} \
+            centos ${{ matrix.centos_version }}
+
+      - name: Upload RPM package to storage
+        run: |
+          docker exec \
+            --env AWS_ACCESS_KEY_ID \
+            --env AWS_SECRET_ACCESS_KEY \
+            linux_docker s3cmd --disable-multipart \
+              --host=storage.googleapis.com \
+              --host-bucket="%(bucket).storage.googleapis.com" \
+              put /tmp/result_data/fastnetmon-${{ steps.meta.outputs.version }}-1.el${{ matrix.centos_version }}.${{ matrix.centos_package_architecture }}.rpm \
+              s3://community_packages/${{ steps.meta.outputs.version }}/centos/${{ matrix.centos_version }}/fastnetmon-${{ steps.meta.outputs.version }}-1.el${{ matrix.centos_version }}.${{ matrix.centos_package_architecture }}.rpm
+
+      - name: Install default configuration
+        run: docker exec linux_docker cp fastnetmon/src/fastnetmon.conf /etc/fastnetmon.conf
+
+      - name: Inspect linked libraries
+        run: |
+          docker exec linux_docker ldd /opt/fastnetmon-community/app/bin/fastnetmon
+          docker exec linux_docker ldd /opt/fastnetmon-community/app/bin/fastnetmon_client
+          docker exec linux_docker ldd /opt/fastnetmon-community/app/bin/fastnetmon_api_client
+
+      - name: Smoke test binaries
+        run: |
+          docker exec linux_docker /opt/fastnetmon-community/app/bin/fastnetmon_api_client --help
+          docker exec linux_docker /opt/fastnetmon-community/app/bin/fastnetmon_client --help
+          docker exec linux_docker /opt/fastnetmon-community/app/bin/fastnetmon --configuration_check
