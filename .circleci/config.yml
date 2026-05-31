@@ -73,70 +73,11 @@ jobs:
       - run: sudo docker exec linux_docker /opt/fastnetmon-community/app/bin/fastnetmon_api_client --help
       - run: sudo docker exec linux_docker /opt/fastnetmon-community/app/bin/fastnetmon_client --help
       - run: sudo docker exec linux_docker /opt/fastnetmon-community/app/bin/fastnetmon --configuration_check
-  build_centos:
-    parameters:
-      docker_image:
-        type: string
-      centos_version:
-        type: string
-      resource_class:
-        type: string
-        default: large
-      centos_package_architecture:
-        type: string
-        default: "x86_64"
-    machine:
-      image: ubuntu-2204:current
-    resource_class: << parameters.resource_class >>
-    steps:
-      - run: sudo docker run --name  linux_docker -d -t << parameters.docker_image >>
-      - run: sudo docker exec linux_docker yum install -y perl wget python3-pip perl-Archive-Tar git
-      - run: sudo docker exec linux_docker git clone https://github.com/pavel-odintsov/fastnetmon.git
-      - run: sudo docker exec linux_docker pip3 install s3cmd
-      - run:
-          name: install_gcc
-          no_output_timeout: 120m 
-          command: sudo -E docker exec --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY linux_docker perl fastnetmon/src/scripts/install_fastnetmon_dependencies.pl gcc_12_1_0
-      - run:
-          name: install_dependencies
-          no_output_timeout: 180m
-          command: sudo -E docker exec --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY linux_docker perl fastnetmon/src/scripts/install_fastnetmon_dependencies.pl
-      - run: sudo docker exec linux_docker perl fastnetmon/src/scripts/fastnetmon_build.pl
-      - run: sudo docker exec linux_docker perl fastnetmon/src/scripts/build_library_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
-      - run: sudo docker exec linux_docker fastnetmon/src/scripts/build_any_package.pl rpm /opt/fastnetmon_libraries_bundle.tar.gz << pipeline.parameters.fastnetmon_build_version >> centos << parameters.centos_version >>
-      - run: sudo -E docker exec --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY linux_docker s3cmd --disable-multipart  --host=storage.googleapis.com --host-bucket="%(bucket).storage.googleapis.com" put /tmp/result_data/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el<< parameters.centos_version >>.<< parameters.centos_package_architecture >>.rpm s3://community_packages/<< pipeline.parameters.fastnetmon_build_version >>/centos/<< parameters.centos_version >>/fastnetmon-<< pipeline.parameters.fastnetmon_build_version >>-1.el<< parameters.centos_version >>.<< parameters.centos_package_architecture >>.rpm
-      - run: sudo docker exec linux_docker cp fastnetmon/src/fastnetmon.conf /etc/fastnetmon.conf
-      - run: sudo docker exec linux_docker ldd /opt/fastnetmon-community/app/bin/fastnetmon
-      - run: sudo docker exec linux_docker ldd /opt/fastnetmon-community/app/bin/fastnetmon_client
-      - run: sudo docker exec linux_docker ldd /opt/fastnetmon-community/app/bin/fastnetmon_api_client
-      - run: sudo docker exec linux_docker /opt/fastnetmon-community/app/bin/fastnetmon_api_client --help
-      - run: sudo docker exec linux_docker /opt/fastnetmon-community/app/bin/fastnetmon_client --help
-      - run: sudo docker exec linux_docker /opt/fastnetmon-community/app/bin/fastnetmon --configuration_check
 
 workflows:
   version: 2
   all_distros:
     jobs:
-      - build_centos:
-          docker_image: almalinux:8
-          centos_version: "8"
-          name: "centos8"
-      - build_centos:
-          docker_image: almalinux:8
-          centos_version: "8"
-          name: "centos8_arm"
-          resource_class: "arm.large"
-          centos_package_architecture: "aarch64"
-      - build_centos:
-          docker_image: almalinux:9
-          centos_version: "9"
-          name: "centos9"
-      - build_centos:
-          docker_image: almalinux:9
-          centos_version: "9"
-          name: "centos9_arm"
-          resource_class: "arm.large"
-          centos_package_architecture: "aarch64"
       - build_debian:
           docker_image: "ubuntu:jammy"
           distro_version: "22.04"
