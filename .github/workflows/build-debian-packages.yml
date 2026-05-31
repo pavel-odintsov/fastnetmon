@@ -1,0 +1,172 @@
+name: Build Debian/Ubuntu packages
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      fastnetmon_build_version:
+        description: "FastNetMon build version"
+        required: false
+        default: "1.2.10"
+
+permissions:
+  contents: read
+
+env:
+  # Keep in sync with .github/workflows/build-centos-packages.yml `DEFAULT_BUILD_VERSION`.
+  DEFAULT_BUILD_VERSION: "1.2.10"
+
+jobs:
+  build_debian:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubuntu2004
+            docker_image: "ubuntu:focal"
+            distro_name: "ubuntu"
+            distro_version: "20.04"
+            debian_package_architecture: "amd64"
+            runner: ubuntu-latest
+          - name: ubuntu2004_arm
+            docker_image: "ubuntu:focal"
+            distro_name: "ubuntu"
+            distro_version: "20.04"
+            debian_package_architecture: "arm64"
+            runner: ubuntu-24.04-arm
+          - name: ubuntu2204
+            docker_image: "ubuntu:jammy"
+            distro_name: "ubuntu"
+            distro_version: "22.04"
+            debian_package_architecture: "amd64"
+            runner: ubuntu-latest
+          - name: ubuntu2204_arm
+            docker_image: "ubuntu:jammy"
+            distro_name: "ubuntu"
+            distro_version: "22.04"
+            debian_package_architecture: "arm64"
+            runner: ubuntu-24.04-arm
+          - name: ubuntu2404
+            docker_image: "ubuntu:noble"
+            distro_name: "ubuntu"
+            distro_version: "24.04"
+            debian_package_architecture: "amd64"
+            runner: ubuntu-latest
+          - name: ubuntu2404_arm
+            docker_image: "ubuntu:noble"
+            distro_name: "ubuntu"
+            distro_version: "24.04"
+            debian_package_architecture: "arm64"
+            runner: ubuntu-24.04-arm
+          - name: debian11
+            docker_image: "debian:bullseye"
+            distro_name: "debian"
+            distro_version: "11"
+            debian_package_architecture: "amd64"
+            runner: ubuntu-latest
+          - name: debian11_arm
+            docker_image: "debian:bullseye"
+            distro_name: "debian"
+            distro_version: "11"
+            debian_package_architecture: "arm64"
+            runner: ubuntu-24.04-arm
+          - name: debian12
+            docker_image: "debian:bookworm"
+            distro_name: "debian"
+            distro_version: "12"
+            debian_package_architecture: "amd64"
+            runner: ubuntu-latest
+          - name: debian12_arm
+            docker_image: "debian:bookworm"
+            distro_name: "debian"
+            distro_version: "12"
+            debian_package_architecture: "arm64"
+            runner: ubuntu-24.04-arm
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Resolve build version
+        id: meta
+        run: |
+          version="${{ github.event.inputs.fastnetmon_build_version }}"
+          if [ -z "$version" ]; then
+            version="${DEFAULT_BUILD_VERSION}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Start base container
+        run: docker run --name linux_docker -d -t ${{ matrix.docker_image }}
+
+      - name: Update apt cache
+        run: docker exec --env DEBIAN_FRONTEND linux_docker bash -c "apt-get update || true"
+
+      - name: Install base packages
+        run: docker exec --env DEBIAN_FRONTEND linux_docker apt-get install -y perl wget git
+
+      - name: Install s3cmd
+        run: docker exec --env DEBIAN_FRONTEND linux_docker apt-get install -y s3cmd
+
+      - name: Clone FastNetMon repository
+        run: docker exec linux_docker git clone https://github.com/pavel-odintsov/fastnetmon.git
+
+      - name: Install GCC
+        timeout-minutes: 120
+        run: |
+          docker exec \
+            --env AWS_ACCESS_KEY_ID \
+            --env AWS_SECRET_ACCESS_KEY \
+            linux_docker perl fastnetmon/src/scripts/install_fastnetmon_dependencies.pl gcc_12_1_0
+
+      - name: Install dependencies
+        timeout-minutes: 180
+        run: |
+          docker exec \
+            --env AWS_ACCESS_KEY_ID \
+            --env AWS_SECRET_ACCESS_KEY \
+            linux_docker perl fastnetmon/src/scripts/install_fastnetmon_dependencies.pl
+
+      - name: Build FastNetMon
+        run: docker exec linux_docker perl fastnetmon/src/scripts/fastnetmon_build.pl
+
+      - name: Build library bundle
+        run: docker exec linux_docker perl fastnetmon/src/scripts/build_library_bundle.pl /opt/fastnetmon_libraries_bundle.tar.gz
+
+      - name: Build DEB package
+        run: |
+          docker exec linux_docker \
+            fastnetmon/src/scripts/build_any_package.pl deb \
+            /opt/fastnetmon_libraries_bundle.tar.gz \
+            ${{ steps.meta.outputs.version }} \
+            ${{ matrix.distro_name }} ${{ matrix.distro_version }}
+
+      - name: Upload DEB package to storage
+        run: |
+          docker exec \
+            --env AWS_ACCESS_KEY_ID \
+            --env AWS_SECRET_ACCESS_KEY \
+            linux_docker s3cmd --disable-multipart \
+              --host=storage.googleapis.com \
+              --host-bucket="%(bucket).storage.googleapis.com" \
+              put /tmp/fastnetmon_${{ steps.meta.outputs.version }}_${{ matrix.debian_package_architecture }}.deb \
+              s3://community_packages/${{ steps.meta.outputs.version }}/${{ matrix.distro_name }}/${{ matrix.distro_version }}/fastnetmon_${{ steps.meta.outputs.version }}_${{ matrix.debian_package_architecture }}.deb
+
+      - name: Install default configuration
+        run: docker exec linux_docker cp fastnetmon/src/fastnetmon.conf /etc/fastnetmon.conf
+
+      - name: Inspect linked libraries
+        run: |
+          docker exec linux_docker ldd /opt/fastnetmon-community/app/bin/fastnetmon
+          docker exec linux_docker ldd /opt/fastnetmon-community/app/bin/fastnetmon_client
+          docker exec linux_docker ldd /opt/fastnetmon-community/app/bin/fastnetmon_api_client
+
+      - name: Smoke test binaries
+        run: |
+          docker exec linux_docker /opt/fastnetmon-community/app/bin/fastnetmon_api_client --help
+          docker exec linux_docker /opt/fastnetmon-community/app/bin/fastnetmon_client --help
+          docker exec linux_docker /opt/fastnetmon-community/app/bin/fastnetmon --configuration_check
