@@ -1,0 +1,78 @@
+name: Build developer Docker image
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Rebuild weekly so the developer image stays fresh
+    - cron: "0 4 * * 1"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build_developer_image:
+    name: Build developer image (${{ matrix.pretty_tag_name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - docker_image: "ubuntu:24.04"
+            pretty_tag_name: "24-04"
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Start base container
+        run: |
+          docker run --name linux_docker \
+            --label "org.opencontainers.image.source=https://github.com/pavel-odintsov/fastnetmon" \
+            -d -t ${{ matrix.docker_image }}
+
+      - name: Update apt cache
+        run: docker exec linux_docker apt-get update || true
+
+      - name: Install base packages
+        run: docker exec --env DEBIAN_FRONTEND linux_docker apt-get install -y perl wget git s3cmd vim nano libncurses-dev
+
+      - name: Clone FastNetMon repository
+        run: docker exec linux_docker git clone https://github.com/pavel-odintsov/fastnetmon.git
+
+      - name: Install GCC
+        timeout-minutes: 120
+        run: |
+          docker exec \
+            --env AWS_ACCESS_KEY_ID \
+            --env AWS_SECRET_ACCESS_KEY \
+            linux_docker perl fastnetmon/src/scripts/install_fastnetmon_dependencies.pl gcc_12_1_0
+
+      - name: Install dependencies
+        timeout-minutes: 180
+        run: |
+          docker exec \
+            --env AWS_ACCESS_KEY_ID \
+            --env AWS_SECRET_ACCESS_KEY \
+            linux_docker perl fastnetmon/src/scripts/install_fastnetmon_dependencies.pl
+
+      - name: Show docker state
+        run: |
+          docker images
+          docker ps
+
+      - name: Commit container to image
+        run: |
+          container_id=$(docker ps | tail -1 | awk '{print $1}')
+          docker commit "$container_id" ghcr.io/pavel-odintsov/fastnetmon-community-developer-${{ matrix.pretty_tag_name }}:latest
+          docker images
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: pavel-odintsov
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push developer image
+        run: docker push ghcr.io/pavel-odintsov/fastnetmon-community-developer-${{ matrix.pretty_tag_name }}:latest
