@@ -34,7 +34,7 @@ int main() {
     // Dump buffer to memory
     std::string pcap_file_path = "/tmp/fastnetmon_example.pcap";
 
-    int filedesc = open(pcap_file_path.c_str(), O_WRONLY | O_CREAT);
+    int filedesc = open(pcap_file_path.c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
     if (filedesc <= 0) {
         printf("Can't open dump file for writing");
