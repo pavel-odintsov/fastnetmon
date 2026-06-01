@@ -199,7 +199,7 @@ int main() {
     unsigned long total_ops    = i_iter * j_iter;
     float megaops_per_second   = (float)total_ops / (float)used_seconds / 1000000;
 
-    printf("Total time is %d seconds total ops: %d\nMillion of ops per second: %.1f\n", used_seconds, total_ops, megaops_per_second);
+    printf("Total time is %lu seconds total ops: %lu\nMillion of ops per second: %.1f\n", used_seconds, total_ops, megaops_per_second);
 
     Destroy_Patricia(lookup_tree);
 }
