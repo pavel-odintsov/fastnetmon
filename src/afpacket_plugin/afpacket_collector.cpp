@@ -390,7 +390,7 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
         return false;
     }
 
-    size_t buffer_size = req.tp_block_size * req.tp_block_nr;
+    size_t buffer_size = static_cast<size_t>(req.tp_block_size) * static_cast<size_t>(req.tp_block_nr);
 
     logger << log4cpp::Priority::DEBUG << "Allocating " << buffer_size << " byte buffer for AF_PACKET interface: " << interface_name;
 
