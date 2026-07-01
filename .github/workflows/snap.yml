@@ -1,0 +1,105 @@
+name: Buld snap package
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "**"
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+
+permissions:
+  contents: read
+
+jobs:
+  build_snap:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: ./src
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Install tools
+        run: |
+          sudo snap install yq
+          sudo snap install snapcraft --classic
+          sudo snap install lxd
+          sudo lxd init --auto
+          sudo usermod -aG lxd "$USER"
+    # snapcraft don't like our src/packaging path
+      - name: Create symlink to snap
+        run: ln -s packaging/snap snap
+      - name: Prepare snapcraft.yaml
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -eux
+
+          SHORT_SHA="$(echo "$SHA" | cut -c1-7)"
+          BASE_VERSION="1.2.9"
+          SNAPCRAFT_FILE="snap/snapcraft.yaml"
+
+          if [ "$REF_TYPE" = "tag" ] && echo "$REF_NAME" | grep -Eq '^v[0-9]'; then
+            FNM_VERSION="${REF_NAME#v}"
+            FNM_GRADE="stable"
+          else
+            FNM_VERSION="${BASE_VERSION}-dev.${SHORT_SHA}"
+            FNM_GRADE="devel"
+          fi
+          export FNM_VERSION
+          export FNM_GRADE
+
+          yq -i '
+            .version = strenv(FNM_VERSION) |
+            .grade = strenv(FNM_GRADE)
+          ' "$SNAPCRAFT_FILE"
+
+          echo "FNM_VERSION=$FNM_VERSION" >> "$GITHUB_ENV"
+          cat "$SNAPCRAFT_FILE"
+
+      - name: Build snap
+        run: |
+            set -eux
+
+            #sg lxd -c 'snapcraft pack'
+            sudo snapcraft pack --destructive-mode
+
+            FNM_SNAP_PATH="$(ls -1 "$PWD"/fastnetmon-community_*.snap | tail -n1)"
+            FNM_SNAP_FILE="$(basename "$FNM_SNAP_PATH")"
+
+            echo "FNM_SNAP_PATH=$FNM_SNAP_PATH" >> "$GITHUB_ENV"
+            echo "FNM_SNAP_FILE=$FNM_SNAP_FILE" >> "$GITHUB_ENV"
+
+            ls -lah "$FNM_SNAP_PATH"
+
+
+
+      - name: Install local snap
+        run: |
+          sudo snap install "$FNM_SNAP_PATH" --dangerous --classic
+
+      - name: Smoke test
+        run: |
+          echo "snap list fastnetmon-community"
+          snap list fastnetmon-community
+          echo -e "\nsnap info fastnetmon-community"
+          snap info fastnetmon-community
+
+          echo -e "\n\nfastnetmon --version"
+          fastnetmon-community.fastnetmon --version
+          echo -e "fastnetmon --configuration_check"
+          sudo fastnetmon-community.fastnetmon --configuration_check
+
+          echo -e "\n\nfastnetmon-client --help"
+          fastnetmon-community.fastnetmon-client --help || true
+          echo -e "fastnetmon-api-client --help"
+          fastnetmon-community.fastnetmon-api-client --help || true
+
+          echo -e "\n\nsnap services fastnetmon-community"
+          snap services fastnetmon-community
