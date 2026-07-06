@@ -26,6 +26,12 @@
 #include <sys/endian.h>
 #endif
 
+// On Linux be64toh and htobe64 are declared in <endian.h>. glibc pulls it in
+// transitively via <arpa/inet.h>, but musl (Alpine) does not, so include it explicitly.
+#if defined(__linux__)
+#include <endian.h>
+#endif
+
 // Linux standard functions for endian conversions are ugly because there are no checks about arguments length
 // And you could accidentally use ntohs (suitable only for 16 bit) for 32 or 64 bit value and nobody will warning you
 // With this wrapper functions it's pretty complicated to use them for incorrect length type! :)
