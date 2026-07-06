@@ -549,6 +549,7 @@ void start_af_packet_capture_for_interface(std::string capture_interface, int fa
 
             boost::thread::attributes thread_attrs;
 
+
             if (fastnetmon_global_configuration.afpacket_execute_strict_cpu_affinity) {
                 cpu_set_t current_cpu_set;
 
@@ -557,12 +558,17 @@ void start_af_packet_capture_for_interface(std::string capture_interface, int fa
                 // We count cpus from zero
                 CPU_SET(cpu_to_bind, &current_cpu_set);
 
+#ifdef __GLIBC__
                 int set_affinity_result =
                     pthread_attr_setaffinity_np(thread_attrs.native_handle(), sizeof(cpu_set_t), &current_cpu_set);
 
                 if (set_affinity_result != 0) {
                     logger << log4cpp::Priority::ERROR << "Can't set CPU affinity for thread";
                 }
+#else
+                // Not supported on Musl
+                logger << log4cpp::Priority::ERROR << "CPU affinity is not supported on your platform";
+#endif
             }
 
             bool fanout = true;
