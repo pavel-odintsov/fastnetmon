@@ -10,6 +10,8 @@
 #include <sys/socket.h>
 #endif
 
+#include <sys/time.h>
+
 #include <boost/beast/core/static_string.hpp>
 
 enum direction_t { INCOMING = 0, OUTGOING = 1, INTERNAL = 2, OTHER = 3 };
