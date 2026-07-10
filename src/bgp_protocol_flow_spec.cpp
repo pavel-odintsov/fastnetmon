@@ -357,6 +357,26 @@ bool encode_bgp_flow_spec_elements_as_mp_nlri(const flow_spec_rule_t& flow_spec_
         }
     }
 
+    if (flow_spec_rule.ports.size() > 0) {
+        logger << log4cpp::Priority::DEBUG << "Encode flow spec attribute ports";
+
+        mp_nlri_flow_spec.append_byte(FLOW_SPEC_ENTITY_PORT);
+
+        for (auto itr = flow_spec_rule.ports.begin(); itr != flow_spec_rule.ports.end(); ++itr) {
+            bgp_flow_spec_operator_byte_t bgp_flow_spec_operator_byte;
+            bgp_flow_spec_operator_byte.set_length_in_bytes(sizeof(*itr));
+            bgp_flow_spec_operator_byte.set_equal_bit();
+
+            if (std::distance(itr, flow_spec_rule.ports.end()) == 1) {
+                bgp_flow_spec_operator_byte.set_end_of_list_bit();
+            }
+
+            mp_nlri_flow_spec.append_data_as_object_ptr(&bgp_flow_spec_operator_byte);
+            uint16_t port = htons(*itr);
+            mp_nlri_flow_spec.append_data_as_object_ptr(&port);
+        }
+    }
+
     if (flow_spec_rule.destination_ports.size() > 0) {
         logger << log4cpp::Priority::DEBUG << "Encode flow spec attribute desination ports";
 
@@ -806,11 +826,24 @@ bool flow_spec_decode_nlri_value(uint8_t* data_ptr, uint32_t data_length, flow_s
             // Move forward on length of read prefix
             local_data_ptr += parsed_nlri_length;
         } else if (current_type == FLOW_SPEC_ENTITY_PORT) {
-            // Different type of port's
-            if (current_type == FLOW_SPEC_ENTITY_PORT) {
-                logger << log4cpp::Priority::WARN << "We do not support common ports";
+            // RFC 8955 Section 4.2.2.4 applies this component to either the
+            // source or destination transport port.
+            local_data_ptr++;
+
+            uint32_t scanned_bytes = 0;
+            multiple_flow_spec_enumerable_items_t scanned_items;
+            bool result = read_one_or_more_values_encoded_with_operator_byte(local_data_ptr, packet_end, scanned_bytes, scanned_items);
+
+            if (!result) {
+                logger << log4cpp::Priority::WARN << "Could not decode FLOW_SPEC_ENTITY_PORT values";
                 return false;
             }
+
+            for (const auto& extracted_item : scanned_items) {
+                flow_spec_rule.add_port(extracted_item.two_byte_value);
+            }
+
+            local_data_ptr += scanned_bytes;
         } else if (current_type == FLOW_SPEC_ENTITY_IP_PROTOCOL) {
             // Skip type field
             local_data_ptr++;
@@ -1305,6 +1338,10 @@ bool operator==(const flow_spec_rule_t& lhs, const flow_spec_rule_t& rhs) {
         return false;
     }
 
+    if (lhs.ports != rhs.ports) {
+        return false;
+    }
+
     if (lhs.packet_lengths != rhs.packet_lengths) {
         return false;
     }
@@ -1491,6 +1528,29 @@ bool read_flow_spec_from_json_to_native_format(const std::string& json_encoded_f
             }
 
             flow_spec_rule.add_destination_port(port);
+        }
+    }
+
+    if (json_doc.contains("ports")) {
+        std::vector<int32_t> ports_vector_as_ints;
+
+        try {
+            ports_vector_as_ints = json_doc["ports"].get<std::vector<int32_t>>();
+        } catch (nlohmann::json::exception& e) {
+            logger << log4cpp::Priority::ERROR << "Could not decode ports " << e.what();
+            return false;
+        } catch (...) {
+            logger << log4cpp::Priority::ERROR << "Could not decode ports";
+            return false;
+        }
+
+        for (auto port : ports_vector_as_ints) {
+            if (!valid_port(port)) {
+                logger << log4cpp::Priority::ERROR << "Could not parse ports element: bad range " << port;
+                return false;
+            }
+
+            flow_spec_rule.add_port(port);
         }
     }
 
@@ -1997,6 +2057,10 @@ bool encode_flow_spec_to_json_raw(const flow_spec_rule_t& flow_spec_rule, bool a
 
     if (!flow_spec_rule.destination_ports.empty()) {
         flow_json["destination_ports"] = flow_spec_rule.destination_ports;
+    }
+
+    if (!flow_spec_rule.ports.empty()) {
+        flow_json["ports"] = flow_spec_rule.ports;
     }
 
     if (!flow_spec_rule.source_ports.empty()) {

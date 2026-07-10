@@ -21,6 +21,7 @@ bool filter_packet_by_flowspec_rule_list(const simple_packet_t& current_packet,
 bool filter_packet_by_flowspec_rule(const simple_packet_t& current_packet, const flow_spec_rule_t& flow_announce) {
     bool source_port_matches         = false;
     bool destination_port_matches    = false;
+    bool port_matches                = false;
     bool source_ip_matches           = false;
     bool destination_ip_matches      = false;
     bool packet_size_matches         = false;
@@ -47,6 +48,16 @@ bool filter_packet_by_flowspec_rule(const simple_packet_t& current_packet, const
             // We found this IP in list
             destination_port_matches = true;
         }
+    }
+
+    if (flow_announce.ports.size() == 0) {
+        port_matches = true;
+    } else if ((current_packet.protocol == IPPROTO_TCP || current_packet.protocol == IPPROTO_UDP) &&
+               (std::find(flow_announce.ports.begin(), flow_announce.ports.end(), current_packet.source_port) !=
+                    flow_announce.ports.end() ||
+                std::find(flow_announce.ports.begin(), flow_announce.ports.end(), current_packet.destination_port) !=
+                    flow_announce.ports.end())) {
+        port_matches = true;
     }
 
     if (flow_announce.protocols.size() == 0) {
@@ -224,7 +235,7 @@ bool filter_packet_by_flowspec_rule(const simple_packet_t& current_packet, const
     */
 
     // Return true only of all parts matched
-    if (source_port_matches && destination_port_matches && source_ip_matches && destination_ip_matches &&
+    if (source_port_matches && destination_port_matches && port_matches && source_ip_matches && destination_ip_matches &&
         packet_size_matches && tcp_flags_matches && fragmentation_flags_matches && protocol_matches && vlan_matches) {
         return true;
     }
