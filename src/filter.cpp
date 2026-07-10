@@ -29,10 +29,11 @@ bool filter_packet_by_flowspec_rule(const simple_packet_t& current_packet, const
     bool tcp_flags_matches           = false;
     bool fragmentation_flags_matches = false;
     bool protocol_matches            = false;
+    const bool is_tcp_or_udp          = current_packet.protocol == IPPROTO_TCP || current_packet.protocol == IPPROTO_UDP;
 
     if (flow_announce.source_ports.size() == 0) {
         source_port_matches = true;
-    } else {
+    } else if (is_tcp_or_udp) {
         if (std::find(flow_announce.source_ports.begin(), flow_announce.source_ports.end(), current_packet.source_port) !=
             flow_announce.source_ports.end()) {
             // We found this IP in list
@@ -42,7 +43,7 @@ bool filter_packet_by_flowspec_rule(const simple_packet_t& current_packet, const
 
     if (flow_announce.destination_ports.size() == 0) {
         destination_port_matches = true;
-    } else {
+    } else if (is_tcp_or_udp) {
         if (std::find(flow_announce.destination_ports.begin(), flow_announce.destination_ports.end(),
                       current_packet.destination_port) != flow_announce.destination_ports.end()) {
             // We found this IP in list
@@ -52,7 +53,7 @@ bool filter_packet_by_flowspec_rule(const simple_packet_t& current_packet, const
 
     if (flow_announce.ports.size() == 0) {
         port_matches = true;
-    } else if ((current_packet.protocol == IPPROTO_TCP || current_packet.protocol == IPPROTO_UDP) &&
+    } else if (is_tcp_or_udp &&
                (std::find(flow_announce.ports.begin(), flow_announce.ports.end(), current_packet.source_port) !=
                     flow_announce.ports.end() ||
                 std::find(flow_announce.ports.begin(), flow_announce.ports.end(), current_packet.destination_port) !=
