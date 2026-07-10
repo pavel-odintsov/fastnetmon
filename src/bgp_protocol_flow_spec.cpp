@@ -285,6 +285,32 @@ std::vector<dynamic_binary_buffer_t> build_attributes_for_flowspec_announce(flow
                                                  extended_attributes_as_binary_array };
 }
 
+static void encode_flow_spec_port_component(const std::vector<uint16_t>& ports,
+                                            FLOW_SPEC_ENTITY_TYPES component_type,
+                                            dynamic_binary_buffer_t& mp_nlri_flow_spec) {
+    if (ports.empty()) {
+        return;
+    }
+
+    mp_nlri_flow_spec.append_byte(component_type);
+
+    for (auto itr = ports.begin(); itr != ports.end(); ++itr) {
+        bgp_flow_spec_operator_byte_t operator_byte;
+        operator_byte.set_length_in_bytes(sizeof(*itr));
+
+        // We support only equal operations.
+        operator_byte.set_equal_bit();
+
+        if (std::distance(itr, ports.end()) == 1) {
+            operator_byte.set_end_of_list_bit();
+        }
+
+        mp_nlri_flow_spec.append_data_as_object_ptr(&operator_byte);
+        uint16_t port = htons(*itr);
+        mp_nlri_flow_spec.append_data_as_object_ptr(&port);
+    }
+}
+
 // Encode flow spec elements into MP NLRI
 bool encode_bgp_flow_spec_elements_as_mp_nlri(const flow_spec_rule_t& flow_spec_rule, dynamic_binary_buffer_t& mp_nlri_flow_spec) {
     mp_nlri_flow_spec.set_buffer_size_in_bytes(2048);
@@ -357,81 +383,9 @@ bool encode_bgp_flow_spec_elements_as_mp_nlri(const flow_spec_rule_t& flow_spec_
         }
     }
 
-    if (flow_spec_rule.ports.size() > 0) {
-        logger << log4cpp::Priority::DEBUG << "Encode flow spec attribute ports";
-
-        mp_nlri_flow_spec.append_byte(FLOW_SPEC_ENTITY_PORT);
-
-        for (auto itr = flow_spec_rule.ports.begin(); itr != flow_spec_rule.ports.end(); ++itr) {
-            bgp_flow_spec_operator_byte_t bgp_flow_spec_operator_byte;
-            bgp_flow_spec_operator_byte.set_length_in_bytes(sizeof(*itr));
-            bgp_flow_spec_operator_byte.set_equal_bit();
-
-            if (std::distance(itr, flow_spec_rule.ports.end()) == 1) {
-                bgp_flow_spec_operator_byte.set_end_of_list_bit();
-            }
-
-            mp_nlri_flow_spec.append_data_as_object_ptr(&bgp_flow_spec_operator_byte);
-            uint16_t port = htons(*itr);
-            mp_nlri_flow_spec.append_data_as_object_ptr(&port);
-        }
-    }
-
-    if (flow_spec_rule.destination_ports.size() > 0) {
-        logger << log4cpp::Priority::DEBUG << "Encode flow spec attribute desination ports";
-
-        mp_nlri_flow_spec.append_byte(FLOW_SPEC_ENTITY_DESTINATION_PORT);
-
-        for (auto itr = flow_spec_rule.destination_ports.begin(); itr != flow_spec_rule.destination_ports.end(); ++itr) {
-            bgp_flow_spec_operator_byte_t bgp_flow_spec_operator_byte;
-
-            // In destination_ports we encode porn number with two bytes
-            // I have not reasons to reduce amount of data here
-            bgp_flow_spec_operator_byte.set_length_in_bytes(sizeof(*itr));
-
-            // We support only equal operations
-            bgp_flow_spec_operator_byte.set_equal_bit();
-
-            // It's it's last element set end bit
-            if (std::distance(itr, flow_spec_rule.destination_ports.end()) == 1) {
-                bgp_flow_spec_operator_byte.set_end_of_list_bit();
-            }
-
-            mp_nlri_flow_spec.append_data_as_object_ptr(&bgp_flow_spec_operator_byte);
-            uint16_t destination_port = *itr;
-            destination_port          = htons(destination_port);
-
-            mp_nlri_flow_spec.append_data_as_object_ptr(&destination_port);
-        }
-    }
-
-    if (flow_spec_rule.source_ports.size() > 0) {
-        logger << log4cpp::Priority::DEBUG << "Encode flow spec attribute source ports";
-
-        mp_nlri_flow_spec.append_byte(FLOW_SPEC_ENTITY_SOURCE_PORT);
-
-        for (auto itr = flow_spec_rule.source_ports.begin(); itr != flow_spec_rule.source_ports.end(); ++itr) {
-            bgp_flow_spec_operator_byte_t bgp_flow_spec_operator_byte;
-
-            // In source_ports we encode porn number with two bytes
-            // I have not reasons to reduce amount of data here
-            bgp_flow_spec_operator_byte.set_length_in_bytes(sizeof(*itr));
-
-            // We support only equal operations
-            bgp_flow_spec_operator_byte.set_equal_bit();
-
-            // It's it's last element set end bit
-            if (std::distance(itr, flow_spec_rule.source_ports.end()) == 1) {
-                bgp_flow_spec_operator_byte.set_end_of_list_bit();
-            }
-
-            mp_nlri_flow_spec.append_data_as_object_ptr(&bgp_flow_spec_operator_byte);
-            uint16_t source_port = *itr;
-            source_port          = htons(source_port);
-
-            mp_nlri_flow_spec.append_data_as_object_ptr(&source_port);
-        }
-    }
+    encode_flow_spec_port_component(flow_spec_rule.ports, FLOW_SPEC_ENTITY_PORT, mp_nlri_flow_spec);
+    encode_flow_spec_port_component(flow_spec_rule.destination_ports, FLOW_SPEC_ENTITY_DESTINATION_PORT, mp_nlri_flow_spec);
+    encode_flow_spec_port_component(flow_spec_rule.source_ports, FLOW_SPEC_ENTITY_SOURCE_PORT, mp_nlri_flow_spec);
 
     if (flow_spec_rule.tcp_flags.size() > 0) {
         logger << log4cpp::Priority::DEBUG << "Encode flow spec attribute TCP flags";
@@ -711,6 +665,32 @@ std::string get_flow_spec_type_name_by_number(uint8_t flow_spec_type) {
     }
 }
 
+using flow_spec_uint16_adder_t = void (flow_spec_rule_t::*)(uint16_t);
+
+static bool decode_flow_spec_uint16_component(uint8_t*& local_data_ptr,
+                                              uint8_t* packet_end,
+                                              flow_spec_rule_t& flow_spec_rule,
+                                              flow_spec_uint16_adder_t add_value,
+                                              const char* component_name) {
+    // Skip the component type.
+    local_data_ptr++;
+
+    uint32_t scanned_bytes = 0;
+    multiple_flow_spec_enumerable_items_t scanned_items;
+
+    if (!read_one_or_more_values_encoded_with_operator_byte(local_data_ptr, packet_end, scanned_bytes, scanned_items)) {
+        logger << log4cpp::Priority::WARN << "Could not decode " << component_name << " values";
+        return false;
+    }
+
+    for (const auto& extracted_item : scanned_items) {
+        (flow_spec_rule.*add_value)(extracted_item.two_byte_value);
+    }
+
+    local_data_ptr += scanned_bytes;
+    return true;
+}
+
 bool flow_spec_decode_nlri_value(uint8_t* data_ptr, uint32_t data_length, flow_spec_rule_t& flow_spec_rule) {
     // We make copy because we will change this value so often
     uint8_t* local_data_ptr = data_ptr;
@@ -828,22 +808,10 @@ bool flow_spec_decode_nlri_value(uint8_t* data_ptr, uint32_t data_length, flow_s
         } else if (current_type == FLOW_SPEC_ENTITY_PORT) {
             // RFC 8955 Section 4.2.2.4 applies this component to either the
             // source or destination transport port.
-            local_data_ptr++;
-
-            uint32_t scanned_bytes = 0;
-            multiple_flow_spec_enumerable_items_t scanned_items;
-            bool result = read_one_or_more_values_encoded_with_operator_byte(local_data_ptr, packet_end, scanned_bytes, scanned_items);
-
-            if (!result) {
-                logger << log4cpp::Priority::WARN << "Could not decode FLOW_SPEC_ENTITY_PORT values";
+            if (!decode_flow_spec_uint16_component(local_data_ptr, packet_end, flow_spec_rule, &flow_spec_rule_t::add_port,
+                                                   "FLOW_SPEC_ENTITY_PORT")) {
                 return false;
             }
-
-            for (const auto& extracted_item : scanned_items) {
-                flow_spec_rule.add_port(extracted_item.two_byte_value);
-            }
-
-            local_data_ptr += scanned_bytes;
         } else if (current_type == FLOW_SPEC_ENTITY_IP_PROTOCOL) {
             // Skip type field
             local_data_ptr++;
@@ -970,62 +938,23 @@ bool flow_spec_decode_nlri_value(uint8_t* data_ptr, uint32_t data_length, flow_s
             local_data_ptr += scanned_bytes;
 
         } else if (current_type == FLOW_SPEC_ENTITY_PACKET_LENGTH) {
-
-            // Skip type field
-            local_data_ptr++;
-
-            uint32_t scanned_bytes = 0;
-            multiple_flow_spec_enumerable_items_t scanned_items;
-            bool result = read_one_or_more_values_encoded_with_operator_byte(local_data_ptr, packet_end, scanned_bytes, scanned_items);
-
-            if (!result) {
-                logger << log4cpp::Priority::WARN << "read_one_or_more_values_encoded_with_operator_byte returned error but we may have some values parsed before issue happened";
+            if (!decode_flow_spec_uint16_component(local_data_ptr, packet_end, flow_spec_rule,
+                                                   &flow_spec_rule_t::add_packet_length,
+                                                   "FLOW_SPEC_ENTITY_PACKET_LENGTH")) {
                 return false;
             }
-
-            for (auto extracted_item : scanned_items) {
-                flow_spec_rule.add_packet_length(extracted_item.two_byte_value);
-            }
-
-            local_data_ptr += scanned_bytes;
-
         } else if (current_type == FLOW_SPEC_ENTITY_SOURCE_PORT) {
-            // Skip type field
-            local_data_ptr++;
-
-            uint32_t scanned_bytes = 0;
-            multiple_flow_spec_enumerable_items_t scanned_items;
-            bool result = read_one_or_more_values_encoded_with_operator_byte(local_data_ptr, packet_end, scanned_bytes, scanned_items);
-
-            if (!result) {
-                logger << log4cpp::Priority::WARN << "read_one_or_more_values_encoded_with_operator_byte returned error but we may have some values parsed before issue happened";
+            if (!decode_flow_spec_uint16_component(local_data_ptr, packet_end, flow_spec_rule,
+                                                   &flow_spec_rule_t::add_source_port,
+                                                   "FLOW_SPEC_ENTITY_SOURCE_PORT")) {
                 return false;
             }
-
-            for (auto extracted_item : scanned_items) {
-                flow_spec_rule.add_source_port(extracted_item.two_byte_value);
-            }
-
-            local_data_ptr += scanned_bytes;
         } else if (current_type == FLOW_SPEC_ENTITY_DESTINATION_PORT) {
-
-            // Skip type field
-            local_data_ptr++;
-
-            uint32_t scanned_bytes = 0;
-            multiple_flow_spec_enumerable_items_t scanned_items;
-            bool result = read_one_or_more_values_encoded_with_operator_byte(local_data_ptr, packet_end, scanned_bytes, scanned_items);
-
-            if (!result) {
-                logger << log4cpp::Priority::WARN << "read_one_or_more_values_encoded_with_operator_byte returned error but we may have some values parsed before issue happened";
+            if (!decode_flow_spec_uint16_component(local_data_ptr, packet_end, flow_spec_rule,
+                                                   &flow_spec_rule_t::add_destination_port,
+                                                   "FLOW_SPEC_ENTITY_DESTINATION_PORT")) {
                 return false;
             }
-
-            for (auto extracted_item : scanned_items) {
-                flow_spec_rule.add_destination_port(extracted_item.two_byte_value);
-            }
-
-            local_data_ptr += scanned_bytes;
         } else {
             logger << log4cpp::Priority::WARN << "We could not handle flow spec element type "
                    << uint32_t(*local_data_ptr) << " pretty type: " << get_flow_spec_type_name_by_number(*local_data_ptr);
@@ -1416,6 +1345,7 @@ bool operator==(const flow_spec_tcp_flagset_t& lhs, const flow_spec_tcp_flagset_
 {
   "source_prefix": "4.0.0.0\/24",
   "destination_prefix": "127.0.0.0\/24",
+  "ports": [ 443 ],
   "destination_ports": [ 80 ],
   "source_ports": [ 53, 5353 ],
   "packet_lengths": [ 777, 1122 ],
@@ -1437,6 +1367,35 @@ bool read_flow_spec_from_json_to_native_format(const std::string& json_encoded_f
         logger << log4cpp::Priority::ERROR << "Cannot decode Flow Spec rule from JSON: '" << json_encoded_flow_spec << "'";
         return false;
     }
+
+    auto read_ports = [&](const char* field_name, flow_spec_uint16_adder_t add_port) -> bool {
+        if (!json_doc.contains(field_name)) {
+            return true;
+        }
+
+        std::vector<int32_t> ports_vector_as_ints;
+
+        try {
+            ports_vector_as_ints = json_doc[field_name].get<std::vector<int32_t>>();
+        } catch (nlohmann::json::exception& e) {
+            logger << log4cpp::Priority::ERROR << "Could not decode " << field_name << " " << e.what();
+            return false;
+        } catch (...) {
+            logger << log4cpp::Priority::ERROR << "Could not decode " << field_name;
+            return false;
+        }
+
+        for (auto port : ports_vector_as_ints) {
+            if (!valid_port(port)) {
+                logger << log4cpp::Priority::ERROR << "Could not parse " << field_name << " element: bad range " << port;
+                return false;
+            }
+
+            (flow_spec_rule.*add_port)(port);
+        }
+
+        return true;
+    };
 
     if (json_doc.contains("source_prefix")) {
         std::string source_prefix_string;
@@ -1508,73 +1467,10 @@ bool read_flow_spec_from_json_to_native_format(const std::string& json_encoded_f
         }
     }
 
-    if (json_doc.contains("destination_ports")) {
-        std::vector<int32_t> ports_vector_as_ints;
-
-        try {
-            ports_vector_as_ints = json_doc["destination_ports"].get<std::vector<int32_t>>();
-        } catch (nlohmann::json::exception& e) {
-            logger << log4cpp::Priority::ERROR << "Could not decode destination_ports " << e.what();
-            return false;
-        } catch (...) {
-            logger << log4cpp::Priority::ERROR << "Could not decode destination_ports";
-            return false;
-        }
-
-        for (auto port : ports_vector_as_ints) {
-            if (!valid_port(port)) {
-                logger << log4cpp::Priority::ERROR << "Could not parse destination_ports element: bad range " << port;
-                return false;
-            }
-
-            flow_spec_rule.add_destination_port(port);
-        }
-    }
-
-    if (json_doc.contains("ports")) {
-        std::vector<int32_t> ports_vector_as_ints;
-
-        try {
-            ports_vector_as_ints = json_doc["ports"].get<std::vector<int32_t>>();
-        } catch (nlohmann::json::exception& e) {
-            logger << log4cpp::Priority::ERROR << "Could not decode ports " << e.what();
-            return false;
-        } catch (...) {
-            logger << log4cpp::Priority::ERROR << "Could not decode ports";
-            return false;
-        }
-
-        for (auto port : ports_vector_as_ints) {
-            if (!valid_port(port)) {
-                logger << log4cpp::Priority::ERROR << "Could not parse ports element: bad range " << port;
-                return false;
-            }
-
-            flow_spec_rule.add_port(port);
-        }
-    }
-
-    if (json_doc.contains("source_ports")) {
-        std::vector<int32_t> ports_vector_as_ints;
-
-        try {
-            ports_vector_as_ints = json_doc["source_ports"].get<std::vector<int32_t>>();
-        } catch (nlohmann::json::exception& e) {
-            logger << log4cpp::Priority::ERROR << "Could not decode source_ports " << e.what();
-            return false;
-        } catch (...) {
-            logger << log4cpp::Priority::ERROR << "Could not decode source_ports";
-            return false;
-        }
-
-        for (auto port : ports_vector_as_ints) {
-            if (!valid_port(port)) {
-                logger << log4cpp::Priority::ERROR << "Could not parse source_ports element: bad range " << port;
-                return false;
-            }
-
-            flow_spec_rule.add_source_port(port);
-        }
+    if (!read_ports("ports", &flow_spec_rule_t::add_port) ||
+        !read_ports("destination_ports", &flow_spec_rule_t::add_destination_port) ||
+        !read_ports("source_ports", &flow_spec_rule_t::add_source_port)) {
+        return false;
     }
 
     if (json_doc.contains("packet_lengths")) {
