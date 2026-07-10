@@ -157,8 +157,14 @@ bool decode_native_flow_spec_announce_from_binary_encoded_atributes(std::vector<
             //        (uint8_t*)gobgp_lib_path->path_attributes[i]->value,
             //        gobgp_lib_path->path_attributes[i]->len) ;
 
+            if (bgp_attibute_common_header.attribute_value_length < sizeof(bgp_mp_ext_flow_spec_header_t) + 1) {
+                logger << log4cpp::Priority::WARN << "Flow Spec MP_REACH attribute is too short";
+                return false;
+            }
+
             uint8_t* flow_spec_attribute_shift =
                 (uint8_t*)binary_attribute.get_pointer() + bgp_attibute_common_header.attribute_body_shift;
+            uint8_t* flow_spec_attribute_end = flow_spec_attribute_shift + bgp_attibute_common_header.attribute_value_length;
 
             bgp_mp_ext_flow_spec_header_t* bgp_mp_ext_flow_spec_header = (bgp_mp_ext_flow_spec_header_t*)flow_spec_attribute_shift;
             bgp_mp_ext_flow_spec_header->network_to_host_byte_order();
@@ -171,6 +177,15 @@ bool decode_native_flow_spec_announce_from_binary_encoded_atributes(std::vector<
                 return false;
             }
 
+            // RFC 8955 requires FlowSpec advertisements to use a zero-length
+            // next hop. Reject a non-zero value instead of skipping it: apart
+            // from being non-compliant, accepting it would make the fixed
+            // header below interpret next-hop bytes as the NLRI length.
+            if (bgp_mp_ext_flow_spec_header->length_of_next_hop != 0) {
+                logger << log4cpp::Priority::WARN << "Flow Spec MP_REACH must use a zero-length next hop";
+                return false;
+            }
+
             uint8_t* flow_spec_types_shift = (uint8_t*)binary_attribute.get_pointer() + bgp_attibute_common_header.attribute_body_shift +
                                              sizeof(bgp_mp_ext_flow_spec_header_t);
 
@@ -179,17 +194,36 @@ bool decode_native_flow_spec_announce_from_binary_encoded_atributes(std::vector<
             uint16_t nlri_value_length           = 0;
             uint16_t nlri_length_of_length_field = 1;
 
-            // 240 is 0xf0
-            if (flow_spec_types_shift[0] < 240) {
+            // RFC 8955 Section 4.1 uses one octet below 240 and a 12-bit
+            // extended length with an 0xf high nibble for larger NLRIs.
+            if (flow_spec_types_shift[0] < 0xf0) {
                 nlri_value_length           = flow_spec_types_shift[0];
                 nlri_length_of_length_field = 1;
             } else {
                 nlri_length_of_length_field = 2;
-                logger << log4cpp::Priority::WARN << "We do not support for 2 byte NLRI length encoding yet";
+
+                if (flow_spec_attribute_end - flow_spec_types_shift < nlri_length_of_length_field) {
+                    logger << log4cpp::Priority::WARN << "Flow Spec NLRI is missing the second extended-length octet";
+                    return false;
+                }
+
+                nlri_value_length = uint16_t((uint16_t(flow_spec_types_shift[0] & 0x0f) << 8) | flow_spec_types_shift[1]);
+
+                if (nlri_value_length < 240) {
+                    logger << log4cpp::Priority::WARN << "Flow Spec NLRI uses extended encoding for a length below 240";
+                    return false;
+                }
+            }
+
+            const uint32_t available_nlri_bytes = flow_spec_attribute_end - flow_spec_types_shift;
+
+            if (uint32_t(nlri_length_of_length_field) + nlri_value_length > available_nlri_bytes) {
+                logger << log4cpp::Priority::WARN << "Flow Spec NLRI length " << nlri_value_length
+                       << " exceeds the " << available_nlri_bytes - nlri_length_of_length_field
+                       << " payload bytes available in MP_REACH";
                 return false;
             }
 
-            // TODO: add sanity checks for length
             // logger << log4cpp::Priority::WARN << "We have " <<
             // uint32_t(gobgp_lib_path->path_attributes[i]->len) << " byte length
             // attrinute" ;
