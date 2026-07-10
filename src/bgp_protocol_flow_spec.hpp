@@ -33,10 +33,13 @@ class flow_spec_tcp_flagset_t {
     bool psh_flag = false;
     bool rst_flag = false;
     bool urg_flag = false;
+    bool ece_flag = false;
+    bool cwr_flag = false;
+    bool ns_flag  = false;
 
     // Do we have least one flag enabled?
     bool we_have_least_one_flag_enabled() const {
-        return syn_flag || fin_flag || urg_flag || ack_flag || psh_flag || rst_flag;
+        return syn_flag || fin_flag || urg_flag || ack_flag || psh_flag || rst_flag || ece_flag || cwr_flag || ns_flag;
     }
 
     std::string print() const {
@@ -47,7 +50,10 @@ class flow_spec_tcp_flagset_t {
                << "fin: " << fin_flag << " "
                << "psh: " << psh_flag << " "
                << "rst: " << rst_flag << " "
-               << "urg: " << urg_flag;
+               << "urg: " << urg_flag << " "
+               << "ece: " << ece_flag << " "
+               << "cwr: " << cwr_flag << " "
+               << "ns: " << ns_flag;
 
         return buffer.str();
     }
@@ -59,6 +65,9 @@ class flow_spec_tcp_flagset_t {
         ar& BOOST_SERIALIZATION_NVP(psh_flag);
         ar& BOOST_SERIALIZATION_NVP(rst_flag);
         ar& BOOST_SERIALIZATION_NVP(urg_flag);
+        ar& BOOST_SERIALIZATION_NVP(ece_flag);
+        ar& BOOST_SERIALIZATION_NVP(cwr_flag);
+        ar& BOOST_SERIALIZATION_NVP(ns_flag);
     }
 };
 

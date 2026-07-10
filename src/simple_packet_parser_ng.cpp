@@ -267,7 +267,9 @@ parser_code_t parse_raw_packet_to_simple_packet_full(const uint8_t* pointer,
 
         // TODO: rework this code to use structs with bit fields
         packet.flags = tcp_header->get_fin() * 0x01 + tcp_header->get_syn() * 0x02 + tcp_header->get_rst() * 0x04 +
-                       tcp_header->get_psh() * 0x08 + tcp_header->get_ack() * 0x10 + tcp_header->get_urg() * 0x20;
+                       tcp_header->get_psh() * 0x08 + tcp_header->get_ack() * 0x10 + tcp_header->get_urg() * 0x20 +
+                       tcp_header->get_ece() * 0x40 + tcp_header->get_cwr() * 0x80;
+        packet.tcp_ns = tcp_header->get_ns();
 
     } else if (protocol == IpProtocolNumberICMP) {
         // Please note that IPv4 and IPv6 ICMP are different protocols
@@ -421,7 +423,9 @@ parser_code_t parse_raw_ipv6_packet_to_simple_packet_full(const uint8_t* pointer
 
         // TODO: rework this code to use structs with bit fields
         packet.flags = tcp_header->get_fin() * 0x01 + tcp_header->get_syn() * 0x02 + tcp_header->get_rst() * 0x04 +
-                       tcp_header->get_psh() * 0x08 + tcp_header->get_ack() * 0x10 + tcp_header->get_urg() * 0x20;
+                       tcp_header->get_psh() * 0x08 + tcp_header->get_ack() * 0x10 + tcp_header->get_urg() * 0x20 +
+                       tcp_header->get_ece() * 0x40 + tcp_header->get_cwr() * 0x80;
+        packet.tcp_ns = tcp_header->get_ns();
 
         packet.tcp_sequence_number = tcp_header->get_sequence_number_host_byte_order();
         packet.tcp_ack_number      = tcp_header->get_ack_number_host_byte_order();
@@ -534,7 +538,9 @@ parser_code_t parse_raw_ipv4_packet_to_simple_packet_full(const uint8_t* pointer
 
         // TODO: rework this code to use structs with bit fields
         packet.flags = tcp_header->get_fin() * 0x01 + tcp_header->get_syn() * 0x02 + tcp_header->get_rst() * 0x04 +
-                       tcp_header->get_psh() * 0x08 + tcp_header->get_ack() * 0x10 + tcp_header->get_urg() * 0x20;
+                       tcp_header->get_psh() * 0x08 + tcp_header->get_ack() * 0x10 + tcp_header->get_urg() * 0x20 +
+                       tcp_header->get_ece() * 0x40 + tcp_header->get_cwr() * 0x80;
+        packet.tcp_ns = tcp_header->get_ns();
 
         packet.tcp_sequence_number = tcp_header->get_sequence_number_host_byte_order();
         packet.tcp_ack_number      = tcp_header->get_ack_number_host_byte_order();

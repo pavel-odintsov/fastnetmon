@@ -193,10 +193,11 @@ bool filter_packet_by_flowspec_rule(const simple_packet_t& current_packet, const
 
     if (flow_announce.tcp_flags.size() == 0) {
         tcp_flags_matches = true;
-    } else {
+    } else if (current_packet.protocol == IPPROTO_TCP && current_packet.ip_fragment_offset == 0) {
         // Convert 8bit representation of flags for this packet into flagset representation for flow spec
         flow_spec_tcp_flagset_t flagset;
         uint8t_representation_of_tcp_flags_to_flow_spec(current_packet.flags, flagset);
+        flagset.ns_flag = current_packet.tcp_ns;
 
         // logger << log4cpp::Priority::WARN <<"Packet's tcp flagset: " << flagset.to_string();
 

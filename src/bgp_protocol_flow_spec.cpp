@@ -47,6 +47,14 @@ void uint8t_representation_of_tcp_flags_to_flow_spec(uint8_t tcp_flags, flow_spe
     if (extract_bit_value(tcp_flags, TCP_URG_FLAG_SHIFT)) {
         flagset.urg_flag = true;
     }
+
+    if (extract_bit_value(tcp_flags, 7)) {
+        flagset.ece_flag = true;
+    }
+
+    if (extract_bit_value(tcp_flags, 8)) {
+        flagset.cwr_flag = true;
+    }
 }
 
 bool decode_native_flow_spec_announce_from_binary_encoded_atributes(std::vector<dynamic_binary_buffer_t> binary_attributes,
@@ -453,7 +461,8 @@ bool encode_bgp_flow_spec_elements_as_mp_nlri(const flow_spec_rule_t& flow_spec_
 
         for (auto itr = flow_spec_rule.tcp_flags.begin(); itr != flow_spec_rule.tcp_flags.end(); ++itr) {
             bgp_flow_spec_bitmask_operator_byte_t bgp_flow_spec_operator_byte_tcp_flags;
-            bgp_flow_spec_operator_byte_tcp_flags.set_length_in_bytes(sizeof(bgp_flowspec_one_byte_byte_encoded_tcp_flags_t));
+            const bool needs_two_octets = itr->ns_flag;
+            bgp_flow_spec_operator_byte_tcp_flags.set_length_in_bytes(needs_two_octets ? 2 : 1);
 
             if (std::distance(itr, flow_spec_rule.tcp_flags.end()) == 1) {
                 bgp_flow_spec_operator_byte_tcp_flags.set_end_of_list_bit();
@@ -471,10 +480,17 @@ bool encode_bgp_flow_spec_elements_as_mp_nlri(const flow_spec_rule_t& flow_spec_
                 return false;
             }
 
-            bgp_flowspec_one_byte_byte_encoded_tcp_flags_t bgp_flowspec_one_byte_byte_encoded_tcp_flags =
-                return_in_one_byte_encoding(*itr);
+            bgp_flowspec_one_byte_byte_encoded_tcp_flags_t one_byte_flags = return_in_one_byte_encoding(*itr);
 
-            mp_nlri_flow_spec.append_data_as_object_ptr(&bgp_flowspec_one_byte_byte_encoded_tcp_flags);
+            if (needs_two_octets) {
+                uint8_t one_byte_flags_value = 0;
+                memcpy(&one_byte_flags_value, &one_byte_flags, sizeof(one_byte_flags_value));
+                uint16_t two_byte_flags = 0x0100 | one_byte_flags_value;
+                two_byte_flags          = htons(two_byte_flags);
+                mp_nlri_flow_spec.append_data_as_object_ptr(&two_byte_flags);
+            } else {
+                mp_nlri_flow_spec.append_data_as_object_ptr(&one_byte_flags);
+            }
         }
     }
 
@@ -941,8 +957,8 @@ bool flow_spec_decode_nlri_value(uint8_t* data_ptr, uint32_t data_length, flow_s
             }
 
             for (auto extracted_item : scanned_items) {
-                if (extracted_item.value_length != 1) {
-                    logger << log4cpp::Priority::WARN << "We do not support two byte encoded tcp fields";
+                if (extracted_item.value_length != 1 && extracted_item.value_length != 2) {
+                    logger << log4cpp::Priority::WARN << "TCP flags must use a one- or two-octet bitmask";
                     return false;
                 }
 
@@ -951,12 +967,17 @@ bool flow_spec_decode_nlri_value(uint8_t* data_ptr, uint32_t data_length, flow_s
                 // encoded tcp
                 // option field"         ;
 
-                bgp_flowspec_one_byte_byte_encoded_tcp_flags_t* bgp_flowspec_one_byte_byte_encoded_tcp_flags =
-                    (bgp_flowspec_one_byte_byte_encoded_tcp_flags_t*)&extracted_item.one_byte_value;
+                uint8_t tcp_control_bits = uint8_t(extracted_item.two_byte_value);
+                bgp_flowspec_one_byte_byte_encoded_tcp_flags_t bgp_flowspec_one_byte_byte_encoded_tcp_flags{};
+                memcpy(&bgp_flowspec_one_byte_byte_encoded_tcp_flags, &tcp_control_bits, sizeof(tcp_control_bits));
 
-                // logger << log4cpp::Priority::WARN << bgp_flowspec_one_byte_byte_encoded_tcp_flags->print();
+                // logger << log4cpp::Priority::WARN << bgp_flowspec_one_byte_byte_encoded_tcp_flags.print();
 
-                auto flagset = convert_one_byte_encoding_to_flowset(*bgp_flowspec_one_byte_byte_encoded_tcp_flags);
+                auto flagset = convert_one_byte_encoding_to_flowset(bgp_flowspec_one_byte_byte_encoded_tcp_flags);
+
+                if (extracted_item.value_length == 2 && (extracted_item.two_byte_value & 0x0100) != 0) {
+                    flagset.ns_flag = true;
+                }
 
                 if (flagset.we_have_least_one_flag_enabled()) {
                     flow_spec_rule.add_tcp_flagset(flagset);
@@ -1127,6 +1148,7 @@ bool read_one_or_more_values_encoded_with_operator_byte(uint8_t* start,
 
             // TODO: not sure about it? We really need it?
             element.two_byte_value = ntohs(element.two_byte_value);
+            element.value_length   = 2;
             element.operator_byte  = *bgp_flow_spec_operator_byte;
 
             multiple_flow_spec_enumerable_items.push_back(element);
@@ -1247,6 +1269,12 @@ bool read_flow_spec_tcp_flags_from_strig(const std::string& string_form, flow_sp
             flagset.psh_flag = true;
         } else if (tcp_flag_string == "rst") {
             flagset.rst_flag = true;
+        } else if (tcp_flag_string == "ece") {
+            flagset.ece_flag = true;
+        } else if (tcp_flag_string == "cwr") {
+            flagset.cwr_flag = true;
+        } else if (tcp_flag_string == "ns") {
+            flagset.ns_flag = true;
         } else {
             return false;
         }
@@ -1280,6 +1308,18 @@ std::string flow_spec_tcp_flagset_to_string(flow_spec_tcp_flagset_t const& tcp_f
 
     if (tcp_flagset.psh_flag) {
         output.push_back("push");
+    }
+
+    if (tcp_flagset.ece_flag) {
+        output.push_back("ece");
+    }
+
+    if (tcp_flagset.cwr_flag) {
+        output.push_back("cwr");
+    }
+
+    if (tcp_flagset.ns_flag) {
+        output.push_back("ns");
     }
 
     return boost::algorithm::join(output, "|");
@@ -1442,7 +1482,8 @@ bool operator!=(const flow_spec_tcp_flagset_t& lhs, const flow_spec_tcp_flagset_
 
 bool operator==(const flow_spec_tcp_flagset_t& lhs, const flow_spec_tcp_flagset_t& rhs) {
     if (lhs.syn_flag == rhs.syn_flag && lhs.ack_flag == rhs.ack_flag && lhs.rst_flag == rhs.rst_flag &&
-        lhs.psh_flag == rhs.psh_flag && lhs.urg_flag == rhs.urg_flag && lhs.fin_flag == rhs.fin_flag) {
+        lhs.psh_flag == rhs.psh_flag && lhs.urg_flag == rhs.urg_flag && lhs.fin_flag == rhs.fin_flag &&
+        lhs.ece_flag == rhs.ece_flag && lhs.cwr_flag == rhs.cwr_flag && lhs.ns_flag == rhs.ns_flag) {
         return true;
     } else {
         return false;
@@ -2254,11 +2295,19 @@ bgp_flowspec_one_byte_byte_encoded_tcp_flags_t return_in_one_byte_encoding(const
         one_byte_flags.rst = 1;
     }
 
+    if (flagset.ece_flag) {
+        one_byte_flags.ece = 1;
+    }
+
+    if (flagset.cwr_flag) {
+        one_byte_flags.cwr = 1;
+    }
+
     return one_byte_flags;
 }
 
 flow_spec_tcp_flagset_t convert_one_byte_encoding_to_flowset(const bgp_flowspec_one_byte_byte_encoded_tcp_flags_t& one_byte_flags) {
-    flow_spec_tcp_flagset_t flagset;
+    flow_spec_tcp_flagset_t flagset{};
 
     if (one_byte_flags.syn == 1) {
         flagset.syn_flag = true;
@@ -2283,6 +2332,14 @@ flow_spec_tcp_flagset_t convert_one_byte_encoding_to_flowset(const bgp_flowspec_
 
     if (one_byte_flags.rst == 1) {
         flagset.rst_flag = true;
+    }
+
+    if (one_byte_flags.ece == 1) {
+        flagset.ece_flag = true;
+    }
+
+    if (one_byte_flags.cwr == 1) {
+        flagset.cwr_flag = true;
     }
 
     return flagset;

@@ -75,6 +75,9 @@ class simple_packet_t {
     // TCP flags
     uint8_t flags = 0;
 
+    // TCP ECN nonce concealment protection flag from header octet 13.
+    bool tcp_ns = false;
+
     // TCP numbers
     uint32_t tcp_sequence_number = 0;
     uint32_t tcp_ack_number      = 0;
