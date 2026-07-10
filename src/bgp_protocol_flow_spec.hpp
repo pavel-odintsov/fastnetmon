@@ -187,6 +187,14 @@ class flow_spec_rule_t {
         this->ports.push_back(port);
     }
 
+    void add_icmp_type(uint8_t icmp_type) {
+        this->icmp_types.push_back(icmp_type);
+    }
+
+    void add_icmp_code(uint8_t icmp_code) {
+        this->icmp_codes.push_back(icmp_code);
+    }
+
     void add_destination_port(uint16_t destination_port) {
         this->destination_ports.push_back(destination_port);
     }
@@ -267,6 +275,8 @@ class flow_spec_rule_t {
         ar& BOOST_SERIALIZATION_NVP(source_ports);
         ar& BOOST_SERIALIZATION_NVP(destination_ports);
         ar& BOOST_SERIALIZATION_NVP(ports);
+        ar& BOOST_SERIALIZATION_NVP(icmp_types);
+        ar& BOOST_SERIALIZATION_NVP(icmp_codes);
         ar& BOOST_SERIALIZATION_NVP(packet_lengths);
         ar& BOOST_SERIALIZATION_NVP(vlans);
         ar& BOOST_SERIALIZATION_NVP(ttls);
@@ -313,6 +323,9 @@ class flow_spec_rule_t {
 
     // RFC 8955 type 4 ports match either the source or destination port.
     std::vector<uint16_t> ports;
+
+    std::vector<uint8_t> icmp_types;
+    std::vector<uint8_t> icmp_codes;
 
     // It's total IP packet length (excluding Layer 2 but including IP header)
     // https://datatracker.ietf.org/doc/html/rfc5575#section-4

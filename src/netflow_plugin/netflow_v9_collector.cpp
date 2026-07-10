@@ -1,5 +1,6 @@
 #include "netflow_v9_collector.hpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <fstream>
 #include <string>
@@ -581,6 +582,38 @@ bool netflow9_record_to_flow(uint32_t record_type,
             packet.destination_port = fast_ntoh(packet.destination_port);
         }
 
+        break;
+    case NETFLOW9_ICMP_TYPE_CODE_IPV4:
+    case NETFLOW9_ICMP_TYPE_CODE_IPV6:
+        // IEs 32 and 139 are the combined IPv4/IPv6 variants. IANA defines
+        // their network-order value as type * 256 + code. Decode bytes directly
+        // so the meaning is independent of host endianness.
+        if (record_length == 2) {
+            packet.icmp_type     = data[0];
+            packet.icmp_code     = data[1];
+            packet.icmp_type_set = true;
+            packet.icmp_code_set = true;
+        } else {
+            netflow_v9_too_large_field++;
+        }
+        break;
+    case NETFLOW9_ICMP_TYPE_IPV4:
+    case NETFLOW9_ICMP_TYPE_IPV6:
+        if (record_length == 1) {
+            packet.icmp_type     = data[0];
+            packet.icmp_type_set = true;
+        } else {
+            netflow_v9_too_large_field++;
+        }
+        break;
+    case NETFLOW9_ICMP_CODE_IPV4:
+    case NETFLOW9_ICMP_CODE_IPV6:
+        if (record_length == 1) {
+            packet.icmp_code     = data[0];
+            packet.icmp_code_set = true;
+        } else {
+            netflow_v9_too_large_field++;
+        }
         break;
     case NETFLOW9_IPV4_SRC_ADDR:
         if (record_length > sizeof(packet.src_ip)) {
@@ -1711,6 +1744,27 @@ void netflow9_flowset_to_store(const uint8_t* pkt,
 
     // Logical sources of this logic are unknown but I'm sure we had reasons to do so
     if (packet.protocol == IPPROTO_ICMP) {
+        const bool destination_port_was_exported =
+            std::any_of(template_records.begin(), template_records.end(), [](const template_record_t& record) {
+                return record.record_type == NETFLOW9_L4_DST_PORT;
+            });
+
+        // Many NetFlow exporters overload destination port for ICMP as
+        // type << 8 | code. Only use it when field 11 was present in the
+        // template; a default zero must not be mistaken for echo reply.
+        // Dedicated ICMP fields, when exported, remain authoritative.
+        if (destination_port_was_exported) {
+            if (!packet.icmp_type_set) {
+                packet.icmp_type     = uint8_t(packet.destination_port >> 8);
+                packet.icmp_type_set = true;
+            }
+
+            if (!packet.icmp_code_set) {
+                packet.icmp_code     = uint8_t(packet.destination_port & 0xff);
+                packet.icmp_code_set = true;
+            }
+        }
+
         // Explicitly set ports to zeros even if device sent something in these fields
         packet.source_port      = 0;
         packet.destination_port = 0;

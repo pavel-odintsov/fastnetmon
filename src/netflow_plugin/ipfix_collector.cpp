@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdint>
 #include <fstream>
 #include <string>
@@ -877,6 +878,38 @@ bool ipfix_record_to_flow(uint32_t record_type, uint32_t record_length, const ui
             packet.destination_port = fast_ntoh(packet.destination_port);
         }
 
+        break;
+    case IPFIX_ICMP_TYPE_CODE_IPV4:
+    case IPFIX_ICMP_TYPE_CODE_IPV6:
+        // IEs 32 and 139 are the combined IPv4/IPv6 variants: two bytes with
+        // type followed by code. Reading bytes avoids alignment and host-endian
+        // assumptions.
+        if (record_length == 2) {
+            packet.icmp_type     = data[0];
+            packet.icmp_code     = data[1];
+            packet.icmp_type_set = true;
+            packet.icmp_code_set = true;
+        } else {
+            ipfix_too_large_field++;
+        }
+        break;
+    case IPFIX_ICMP_TYPE_IPV4:
+    case IPFIX_ICMP_TYPE_IPV6:
+        if (record_length == 1) {
+            packet.icmp_type     = data[0];
+            packet.icmp_type_set = true;
+        } else {
+            ipfix_too_large_field++;
+        }
+        break;
+    case IPFIX_ICMP_CODE_IPV4:
+    case IPFIX_ICMP_CODE_IPV6:
+        if (record_length == 1) {
+            packet.icmp_code     = data[0];
+            packet.icmp_code_set = true;
+        } else {
+            ipfix_too_large_field++;
+        }
         break;
     case IPFIX_TCP_SOURCE_PORT:
         // This is unusual encoding used only by AMD Pensando
@@ -2032,6 +2065,27 @@ bool ipfix_data_set_to_store(const uint8_t* packet_ptr,
 
     // Logical sources of this logic are unknown but I'm sure we had reasons to do so
     if (packet.protocol == IPPROTO_ICMP) {
+        const bool destination_port_was_exported =
+            std::any_of(field_template->records.begin(), field_template->records.end(), [](const template_record_t& record) {
+                return record.record_type == IPFIX_L4_DST_PORT;
+            });
+
+        // Some IPFIX exporters retain the NetFlow convention of encoding ICMP
+        // as type << 8 | code in destination port. Use that fallback only when
+        // the template actually contains field 11, and never overwrite the
+        // standardized ICMP information elements decoded above.
+        if (destination_port_was_exported) {
+            if (!packet.icmp_type_set) {
+                packet.icmp_type     = uint8_t(packet.destination_port >> 8);
+                packet.icmp_type_set = true;
+            }
+
+            if (!packet.icmp_code_set) {
+                packet.icmp_code     = uint8_t(packet.destination_port & 0xff);
+                packet.icmp_code_set = true;
+            }
+        }
+
         // Explicitly set ports to zeros even if device sent something in these fields
         packet.source_port      = 0;
         packet.destination_port = 0;

@@ -311,6 +311,29 @@ static void encode_flow_spec_port_component(const std::vector<uint16_t>& ports,
     }
 }
 
+static void encode_flow_spec_uint8_component(const std::vector<uint8_t>& values,
+                                             FLOW_SPEC_ENTITY_TYPES component_type,
+                                             dynamic_binary_buffer_t& mp_nlri_flow_spec) {
+    if (values.empty()) {
+        return;
+    }
+
+    mp_nlri_flow_spec.append_byte(component_type);
+
+    for (auto itr = values.begin(); itr != values.end(); ++itr) {
+        bgp_flow_spec_operator_byte_t operator_byte;
+        operator_byte.set_length_in_bytes(sizeof(*itr));
+        operator_byte.set_equal_bit();
+
+        if (std::distance(itr, values.end()) == 1) {
+            operator_byte.set_end_of_list_bit();
+        }
+
+        mp_nlri_flow_spec.append_data_as_object_ptr(&operator_byte);
+        mp_nlri_flow_spec.append_byte(*itr);
+    }
+}
+
 // Encode flow spec elements into MP NLRI
 bool encode_bgp_flow_spec_elements_as_mp_nlri(const flow_spec_rule_t& flow_spec_rule, dynamic_binary_buffer_t& mp_nlri_flow_spec) {
     mp_nlri_flow_spec.set_buffer_size_in_bytes(2048);
@@ -386,6 +409,8 @@ bool encode_bgp_flow_spec_elements_as_mp_nlri(const flow_spec_rule_t& flow_spec_
     encode_flow_spec_port_component(flow_spec_rule.ports, FLOW_SPEC_ENTITY_PORT, mp_nlri_flow_spec);
     encode_flow_spec_port_component(flow_spec_rule.destination_ports, FLOW_SPEC_ENTITY_DESTINATION_PORT, mp_nlri_flow_spec);
     encode_flow_spec_port_component(flow_spec_rule.source_ports, FLOW_SPEC_ENTITY_SOURCE_PORT, mp_nlri_flow_spec);
+    encode_flow_spec_uint8_component(flow_spec_rule.icmp_types, FLOW_SPEC_ENTITY_ICMP_TYPE, mp_nlri_flow_spec);
+    encode_flow_spec_uint8_component(flow_spec_rule.icmp_codes, FLOW_SPEC_ENTITY_ICMP_CODE, mp_nlri_flow_spec);
 
     if (flow_spec_rule.tcp_flags.size() > 0) {
         logger << log4cpp::Priority::DEBUG << "Encode flow spec attribute TCP flags";
@@ -666,6 +691,7 @@ std::string get_flow_spec_type_name_by_number(uint8_t flow_spec_type) {
 }
 
 using flow_spec_uint16_adder_t = void (flow_spec_rule_t::*)(uint16_t);
+using flow_spec_uint8_adder_t  = void (flow_spec_rule_t::*)(uint8_t);
 
 static bool decode_flow_spec_uint16_component(uint8_t*& local_data_ptr,
                                               uint8_t* packet_end,
@@ -685,6 +711,34 @@ static bool decode_flow_spec_uint16_component(uint8_t*& local_data_ptr,
 
     for (const auto& extracted_item : scanned_items) {
         (flow_spec_rule.*add_value)(extracted_item.two_byte_value);
+    }
+
+    local_data_ptr += scanned_bytes;
+    return true;
+}
+
+static bool decode_flow_spec_uint8_component(uint8_t*& local_data_ptr,
+                                             uint8_t* packet_end,
+                                             flow_spec_rule_t& flow_spec_rule,
+                                             flow_spec_uint8_adder_t add_value,
+                                             const char* component_name) {
+    local_data_ptr++;
+
+    uint32_t scanned_bytes = 0;
+    multiple_flow_spec_enumerable_items_t scanned_items;
+
+    if (!read_one_or_more_values_encoded_with_operator_byte(local_data_ptr, packet_end, scanned_bytes, scanned_items)) {
+        logger << log4cpp::Priority::WARN << "Could not decode " << component_name << " values";
+        return false;
+    }
+
+    for (const auto& extracted_item : scanned_items) {
+        if (extracted_item.two_byte_value > 255) {
+            logger << log4cpp::Priority::WARN << component_name << " value exceeds 255";
+            return false;
+        }
+
+        (flow_spec_rule.*add_value)(uint8_t(extracted_item.two_byte_value));
     }
 
     local_data_ptr += scanned_bytes;
@@ -953,6 +1007,18 @@ bool flow_spec_decode_nlri_value(uint8_t* data_ptr, uint32_t data_length, flow_s
             if (!decode_flow_spec_uint16_component(local_data_ptr, packet_end, flow_spec_rule,
                                                    &flow_spec_rule_t::add_destination_port,
                                                    "FLOW_SPEC_ENTITY_DESTINATION_PORT")) {
+                return false;
+            }
+        } else if (current_type == FLOW_SPEC_ENTITY_ICMP_TYPE) {
+            if (!decode_flow_spec_uint8_component(local_data_ptr, packet_end, flow_spec_rule,
+                                                  &flow_spec_rule_t::add_icmp_type,
+                                                  "FLOW_SPEC_ENTITY_ICMP_TYPE")) {
+                return false;
+            }
+        } else if (current_type == FLOW_SPEC_ENTITY_ICMP_CODE) {
+            if (!decode_flow_spec_uint8_component(local_data_ptr, packet_end, flow_spec_rule,
+                                                  &flow_spec_rule_t::add_icmp_code,
+                                                  "FLOW_SPEC_ENTITY_ICMP_CODE")) {
                 return false;
             }
         } else {
@@ -1271,6 +1337,14 @@ bool operator==(const flow_spec_rule_t& lhs, const flow_spec_rule_t& rhs) {
         return false;
     }
 
+    if (lhs.icmp_types != rhs.icmp_types) {
+        return false;
+    }
+
+    if (lhs.icmp_codes != rhs.icmp_codes) {
+        return false;
+    }
+
     if (lhs.packet_lengths != rhs.packet_lengths) {
         return false;
     }
@@ -1348,6 +1422,8 @@ bool operator==(const flow_spec_tcp_flagset_t& lhs, const flow_spec_tcp_flagset_
   "ports": [ 443 ],
   "destination_ports": [ 80 ],
   "source_ports": [ 53, 5353 ],
+  "icmp_types": [ 8 ],
+  "icmp_codes": [ 0 ],
   "packet_lengths": [ 777, 1122 ],
   "protocols": [ "tcp" ],
   "fragmentation_flags":[ "is-fragment", "dont-fragment" ],
@@ -1392,6 +1468,35 @@ bool read_flow_spec_from_json_to_native_format(const std::string& json_encoded_f
             }
 
             (flow_spec_rule.*add_port)(port);
+        }
+
+        return true;
+    };
+
+    auto read_uint8_values = [&](const char* field_name, flow_spec_uint8_adder_t add_value) -> bool {
+        if (!json_doc.contains(field_name)) {
+            return true;
+        }
+
+        std::vector<int32_t> values;
+
+        try {
+            values = json_doc[field_name].get<std::vector<int32_t>>();
+        } catch (nlohmann::json::exception& e) {
+            logger << log4cpp::Priority::ERROR << "Could not decode " << field_name << " " << e.what();
+            return false;
+        } catch (...) {
+            logger << log4cpp::Priority::ERROR << "Could not decode " << field_name;
+            return false;
+        }
+
+        for (auto value : values) {
+            if (value < 0 || value > 255) {
+                logger << log4cpp::Priority::ERROR << "Could not parse " << field_name << " element: bad range " << value;
+                return false;
+            }
+
+            (flow_spec_rule.*add_value)(uint8_t(value));
         }
 
         return true;
@@ -1470,6 +1575,11 @@ bool read_flow_spec_from_json_to_native_format(const std::string& json_encoded_f
     if (!read_ports("ports", &flow_spec_rule_t::add_port) ||
         !read_ports("destination_ports", &flow_spec_rule_t::add_destination_port) ||
         !read_ports("source_ports", &flow_spec_rule_t::add_source_port)) {
+        return false;
+    }
+
+    if (!read_uint8_values("icmp_types", &flow_spec_rule_t::add_icmp_type) ||
+        !read_uint8_values("icmp_codes", &flow_spec_rule_t::add_icmp_code)) {
         return false;
     }
 
@@ -1961,6 +2071,14 @@ bool encode_flow_spec_to_json_raw(const flow_spec_rule_t& flow_spec_rule, bool a
 
     if (!flow_spec_rule.source_ports.empty()) {
         flow_json["source_ports"] = flow_spec_rule.source_ports;
+    }
+
+    if (!flow_spec_rule.icmp_types.empty()) {
+        flow_json["icmp_types"] = flow_spec_rule.icmp_types;
+    }
+
+    if (!flow_spec_rule.icmp_codes.empty()) {
+        flow_json["icmp_codes"] = flow_spec_rule.icmp_codes;
     }
 
     if (!flow_spec_rule.packet_lengths.empty()) {

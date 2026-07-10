@@ -253,6 +253,13 @@ void override_packet_fields_from_nested_packet(simple_packet_t& packet, const si
     packet.source_port      = nested_packet.source_port;
     packet.destination_port = nested_packet.destination_port;
 
+    // The embedded packet parser has authoritative ICMP metadata. Preserve its
+    // presence flags as zero is a valid type and code, not a missing sentinel.
+    packet.icmp_type     = nested_packet.icmp_type;
+    packet.icmp_code     = nested_packet.icmp_code;
+    packet.icmp_type_set = nested_packet.icmp_type_set;
+    packet.icmp_code_set = nested_packet.icmp_code_set;
+
     packet.protocol          = nested_packet.protocol;
     packet.length            = nested_packet.length;
     packet.ip_length         = nested_packet.ip_length;

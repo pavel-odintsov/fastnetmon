@@ -280,6 +280,8 @@ parser_code_t parse_raw_packet_to_simple_packet_full(const uint8_t* pointer,
 
         packet.icmp_type = icmp_header->get_type();
         packet.icmp_code = icmp_header->get_code();
+        packet.icmp_type_set = true;
+        packet.icmp_code_set = true;
     } else if (protocol == IpProtocolNumberIPV6_ICMP) {
         // Please note that IPv4 and IPv6 ICMP are different protocols
         // and we handle only IPv6 ICMP here which has same type and code fields as IPv4 ICMP
@@ -291,6 +293,8 @@ parser_code_t parse_raw_packet_to_simple_packet_full(const uint8_t* pointer,
 
         packet.icmp_type = icmp_header->get_type();
         packet.icmp_code = icmp_header->get_code();
+        packet.icmp_type_set = true;
+        packet.icmp_code_set = true;
     } else if (protocol == IpProtocolNumberUDP) {
         if (local_pointer + sizeof(udp_header_t) > end_pointer) {
             return parser_code_t::memory_violation;
@@ -445,6 +449,8 @@ parser_code_t parse_raw_ipv6_packet_to_simple_packet_full(const uint8_t* pointer
 
         packet.icmp_type = icmp_header->get_type();
         packet.icmp_code = icmp_header->get_code();
+        packet.icmp_type_set = true;
+        packet.icmp_code_set = true;
     } else {
         // That's fine, it's not some known protocol but we can export basic information retrieved from IP packet
         return parser_code_t::success;
@@ -556,6 +562,8 @@ parser_code_t parse_raw_ipv4_packet_to_simple_packet_full(const uint8_t* pointer
 
         packet.icmp_type = icmp_header->get_type();
         packet.icmp_code = icmp_header->get_code();
+        packet.icmp_type_set = true;
+        packet.icmp_code_set = true;
     } else {
         // That's fine, it's not some known protocol but we can export basic information retrieved from IP packet
         return parser_code_t::success;
