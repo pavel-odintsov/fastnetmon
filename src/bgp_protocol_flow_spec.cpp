@@ -582,34 +582,60 @@ bool encode_bgp_flow_spec_elements_into_bgp_mp_attribute(const flow_spec_rule_t&
         return false;
     }
 
-    uint8_t nlri_length = mp_nlri_binary_buffer.get_used_size();
+    const size_t nlri_length = mp_nlri_binary_buffer.get_used_size();
 
-    if (nlri_length >= 240) {
-        logger << log4cpp::Priority::WARN << "We should encode length in two bytes";
+    // RFC 8955 Section 4.1 reserves the one-octet form for lengths below 240
+    // and uses a two-octet 0xfnnn encoding for lengths up to 4095.
+    if (nlri_length > 0x0fff) {
+        logger << log4cpp::Priority::WARN << "Flow Spec NLRI length exceeds the 12-bit encoding limit";
         return false;
     }
 
-    logger << log4cpp::Priority::DEBUG << "Encoded flow spec elements as MP Reach NLRI with size: " << int(nlri_length);
+    const bool use_extended_nlri_length = nlri_length >= 240;
+    const size_t nlri_length_field_size = use_extended_nlri_length ? 2 : 1;
+    const size_t attribute_value_length =
+        sizeof(bgp_mp_ext_flow_spec_header_t) + nlri_length_field_size + nlri_length;
+
+    logger << log4cpp::Priority::DEBUG << "Encoded flow spec elements as MP Reach NLRI with size: " << nlri_length;
 
     bgp_attribute_multiprotocol_extensions_t bgp_attribute_multiprotocol_extensions;
-    bgp_attribute_multiprotocol_extensions.attribute_length =
-        sizeof(bgp_mp_ext_flow_spec_header_t) + sizeof(nlri_length) + mp_nlri_binary_buffer.get_used_size();
+    const bool use_extended_attribute_length = attribute_value_length > UINT8_MAX;
+    bgp_attribute_multiprotocol_extensions.attribute_flags.set_extended_length_bit(use_extended_attribute_length);
 
-    logger << log4cpp::Priority::DEBUG
-           << "BGP MP reach attribute length: " << int(bgp_attribute_multiprotocol_extensions.attribute_length);
+    logger << log4cpp::Priority::DEBUG << "BGP MP reach attribute length: " << attribute_value_length;
     // Prepare flow spec MP Extenstion attribute
-    bgp_mp_ext_flow_spec_header_as_binary_array.set_buffer_size_in_bytes(2048);
+    const size_t attribute_header_size = use_extended_attribute_length ? 4 : 3;
+    bgp_mp_ext_flow_spec_header_as_binary_array.set_buffer_size_in_bytes(
+        (add_preamble ? attribute_header_size + sizeof(bgp_mp_ext_flow_spec_header_t) : 0) + nlri_length_field_size + nlri_length);
 
     bgp_mp_ext_flow_spec_header_t bgp_mp_ext_flow_spec_header;
     bgp_mp_ext_flow_spec_header.host_byte_order_to_network_byte_order();
 
     // For one very special GoBGP specific encoding we need capability to strip these fields
     if (add_preamble) {
-        bgp_mp_ext_flow_spec_header_as_binary_array.append_data_as_object_ptr(&bgp_attribute_multiprotocol_extensions);
+        if (use_extended_attribute_length) {
+            bgp_mp_ext_flow_spec_header_as_binary_array.append_data_as_object_ptr(
+                &bgp_attribute_multiprotocol_extensions.attribute_flags);
+            bgp_mp_ext_flow_spec_header_as_binary_array.append_data_as_object_ptr(
+                &bgp_attribute_multiprotocol_extensions.attribute_type);
+
+            uint16_t extended_attribute_length = htons(uint16_t(attribute_value_length));
+            bgp_mp_ext_flow_spec_header_as_binary_array.append_data_as_object_ptr(&extended_attribute_length);
+        } else {
+            bgp_attribute_multiprotocol_extensions.attribute_length = uint8_t(attribute_value_length);
+            bgp_mp_ext_flow_spec_header_as_binary_array.append_data_as_object_ptr(&bgp_attribute_multiprotocol_extensions);
+        }
+
         bgp_mp_ext_flow_spec_header_as_binary_array.append_data_as_object_ptr(&bgp_mp_ext_flow_spec_header);
     }
 
-    bgp_mp_ext_flow_spec_header_as_binary_array.append_data_as_object_ptr(&nlri_length);
+    if (use_extended_nlri_length) {
+        const uint16_t extended_nlri_length = htons(uint16_t(0xf000 | nlri_length));
+        bgp_mp_ext_flow_spec_header_as_binary_array.append_data_as_object_ptr(&extended_nlri_length);
+    } else {
+        bgp_mp_ext_flow_spec_header_as_binary_array.append_byte(uint8_t(nlri_length));
+    }
+
     bgp_mp_ext_flow_spec_header_as_binary_array.append_dynamic_buffer(mp_nlri_binary_buffer);
 
     if (bgp_mp_ext_flow_spec_header_as_binary_array.is_failed()) {
