@@ -1121,9 +1121,9 @@ bool read_one_or_more_values_encoded_with_operator_byte(uint8_t* start,
                                                         uint8_t* packet_end,
                                                         uint32_t& readed_bytes,
                                                         multiple_flow_spec_enumerable_items_t& multiple_flow_spec_enumerable_items) {
-    // TODO: pretty danegrous idea to do infinite loop and we are using 100
-    // iterations here for
-    // worst case
+    // Bound the number of operands to limit work on hostile input. Reaching
+    // this cap without an end-of-list bit is malformed, not a partial success:
+    // otherwise the caller would interpret the next operator as a component type.
     uint8_t* local_data_ptr = start;
 
     for (int i = 0; i < 100; i++) {
@@ -1187,16 +1187,15 @@ bool read_one_or_more_values_encoded_with_operator_byte(uint8_t* start,
         // Shift pointer to next element
         local_data_ptr += sizeof(bgp_flow_spec_operator_byte_t) + bgp_flow_spec_operator_byte->get_value_length();
 
-        // If this was last lement in list just stop this loop
+        // A component ends only when an operator explicitly carries EOL.
         if (bgp_flow_spec_operator_byte->end_of_list == 1) {
-            break;
+            readed_bytes = local_data_ptr - start;
+            return true;
         }
     }
 
-    // Return number of scanned bytes
-    readed_bytes = local_data_ptr - start;
-
-    return true;
+    logger << log4cpp::Priority::WARN << "Flow Spec component exceeds 100 operands without an end-of-list bit";
+    return false;
 }
 
 bool read_flow_spec_fragmentation_types_from_string(const std::string& string_form, flow_spec_fragmentation_types_t& fragment_flag) {
