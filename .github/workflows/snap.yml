@@ -170,7 +170,7 @@ jobs:
           echo -e "\n\nfastnetmon --version"
           fastnetmon-community.fastnetmon --version
           echo -e "fastnetmon --configuration_check"
-          sudo fastnetmon-community.fastnetmon --configuration_check
+          sudo fastnetmon-community.fastnetmon --configuration_check --configuration_file /var/snap/fastnetmon-community/common/etc/fastnetmon.conf --log_to_console
 
           echo -e "\n\nfastnetmon-client --help"
           fastnetmon-community.fastnetmon-client --help || true
