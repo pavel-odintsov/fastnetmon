@@ -184,30 +184,42 @@ message(STATUS "Commit hash: ${GIT_LAST_COMMIT_HASH_SHORT}")
 
 set(FASTNETMON_APPLICATION_VERSION "${FASTNETMON_VERSION_MAJOR}.${FASTNETMON_VERSION_MINOR}.${FASTNETMON_VERSION_PATCH} ${GIT_LAST_COMMIT_HASH_SHORT}")
 
-# Set standard values which work for majority of platforms
-set(FASTNETMON_PID_PATH "/var/run/fastnetmon.pid")
-set(FASTNETMON_CONFIGURATION_PATH "/etc/fastnetmon.conf")
-set(FASTNETMON_LOG_FILE_PATH "/var/log/fastnetmon.log")
-set(FASTNETMON_ATTACK_DETAILS_FOLDER "/var/log/fastnetmon_attacks")
-set(FASTNETMON_NOTIFY_SCRIPT_PATH_DEFAULT "/usr/local/bin/notify_about_attack.sh")
-set(FASTNETMON_NETWORK_WHITELIST_PATH "/etc/networks_whitelist")
-set(FASTNETMON_NETWORKS_LIST_PATH "/etc/networks_list")
-set(FASTNETMON_BACKTRACE_PATH "/var/log/fastnetmon_backtrace.dump")
-set(FASTNETMON_WHITELIST_RULES_PATH "/etc/whitelist_rules")
+# Prepare default values which work for majority of platforms
+set(FASTNETMON_PID_PATH_DEFAULT_VALUE "/var/run/fastnetmon.pid")
+set(FASTNETMON_CONFIGURATION_PATH_DEFAULT_VALUE "/etc/fastnetmon.conf")
+set(FASTNETMON_LOG_FILE_PATH_DEFAULT_VALUE "/var/log/fastnetmon.log")
+set(FASTNETMON_ATTACK_DETAILS_FOLDER_DEFAULT_VALUE "/var/log/fastnetmon_attacks")
+set(FASTNETMON_NOTIFY_SCRIPT_PATH_DEFAULT_DEFAULT_VALUE "/usr/local/bin/notify_about_attack.sh")
+set(FASTNETMON_NETWORK_WHITELIST_PATH_DEFAULT_VALUE "/etc/networks_whitelist")
+set(FASTNETMON_NETWORKS_LIST_PATH_DEFAULT_VALUE "/etc/networks_list")
+set(FASTNETMON_BACKTRACE_PATH_DEFAULT_VALUE "/var/log/fastnetmon_backtrace.dump")
+set(FASTNETMON_WHITELIST_RULES_PATH_DEFAULT_VALUE "/etc/whitelist_rules")
 
 # For FreeBSD based platforms we need to adjust them
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" OR ${CMAKE_SYSTEM_NAME} STREQUAL "DragonFly")
   set(FREEBSD_DEFAULT_PREFIX "/usr/local")
 
-  set(FASTNETMON_PID_PATH "/var/run/fastnetmon/fastnetmon.pid")
-  set(FASTNETMON_CONFIGURATION_PATH "${FREEBSD_DEFAULT_PREFIX}/etc/fastnetmon.conf")
-  set(FASTNETMON_LOG_FILE_PATH "/var/log/fastnetmon/fastnetmon.log")
-  set(FASTNETMON_ATTACK_DETAILS_FOLDER "/var/log/fastnetmon_attacks")
-  set(FASTNETMON_NOTIFY_SCRIPT_PATH_DEFAULT "${FREEBSD_DEFAULT_PREFIX}/bin/notify_about_attack.sh")
-  set(FASTNETMON_NETWORK_WHITELIST_PATH "${FREEBSD_DEFAULT_PREFIX}/etc/networks_whitelist")
-  set(FASTNETMON_NETWORKS_LIST_PATH "${FREEBSD_DEFAULT_PREFIX}/etc/networks_list")
-  set(FASTNETMON_BACKTRACE_PATH "/var/log/fastnetmon/fastnetmon_backtrace.dump")
+  set(FASTNETMON_PID_PATH_DEFAULT_VALUE "/var/run/fastnetmon/fastnetmon.pid")
+  set(FASTNETMON_CONFIGURATION_PATH_DEFAULT_VALUE "${FREEBSD_DEFAULT_PREFIX}/etc/fastnetmon.conf")
+  set(FASTNETMON_LOG_FILE_PATH_DEFAULT_VALUE "/var/log/fastnetmon/fastnetmon.log")
+  set(FASTNETMON_ATTACK_DETAILS_FOLDER_DEFAULT_VALUE "/var/log/fastnetmon_attacks")
+  set(FASTNETMON_NOTIFY_SCRIPT_PATH_DEFAULT_DEFAULT_VALUE "${FREEBSD_DEFAULT_PREFIX}/bin/notify_about_attack.sh")
+  set(FASTNETMON_NETWORK_WHITELIST_PATH_DEFAULT_VALUE "${FREEBSD_DEFAULT_PREFIX}/etc/networks_whitelist")
+  set(FASTNETMON_NETWORKS_LIST_PATH_DEFAULT_VALUE "${FREEBSD_DEFAULT_PREFIX}/etc/networks_list")
+  set(FASTNETMON_BACKTRACE_PATH_DEFAULT_VALUE "/var/log/fastnetmon/fastnetmon_backtrace.dump")
 endif()
+
+# Declare cache variables which can be overridden via -D arguments, e.g. cmake .. -DFASTNETMON_CONFIGURATION_PATH=/usr/local/etc/fastnetmon.conf
+# When they are not specified explicitly we use platform specific default values prepared above
+set(FASTNETMON_PID_PATH "${FASTNETMON_PID_PATH_DEFAULT_VALUE}" CACHE FILEPATH "Path to pid file")
+set(FASTNETMON_CONFIGURATION_PATH "${FASTNETMON_CONFIGURATION_PATH_DEFAULT_VALUE}" CACHE FILEPATH "Path to configuration file")
+set(FASTNETMON_LOG_FILE_PATH "${FASTNETMON_LOG_FILE_PATH_DEFAULT_VALUE}" CACHE FILEPATH "Path to log file")
+set(FASTNETMON_ATTACK_DETAILS_FOLDER "${FASTNETMON_ATTACK_DETAILS_FOLDER_DEFAULT_VALUE}" CACHE PATH "Path to folder with attack details")
+set(FASTNETMON_NOTIFY_SCRIPT_PATH_DEFAULT "${FASTNETMON_NOTIFY_SCRIPT_PATH_DEFAULT_DEFAULT_VALUE}" CACHE FILEPATH "Path to notify script")
+set(FASTNETMON_NETWORK_WHITELIST_PATH "${FASTNETMON_NETWORK_WHITELIST_PATH_DEFAULT_VALUE}" CACHE FILEPATH "Path to networks whitelist file")
+set(FASTNETMON_NETWORKS_LIST_PATH "${FASTNETMON_NETWORKS_LIST_PATH_DEFAULT_VALUE}" CACHE FILEPATH "Path to networks list file")
+set(FASTNETMON_BACKTRACE_PATH "${FASTNETMON_BACKTRACE_PATH_DEFAULT_VALUE}" CACHE FILEPATH "Path to backtrace dump file")
+set(FASTNETMON_WHITELIST_RULES_PATH "${FASTNETMON_WHITELIST_RULES_PATH_DEFAULT_VALUE}" CACHE FILEPATH "Path to whitelist rules file")
 
 configure_file(fast_platform.h.template "${PROJECT_SOURCE_DIR}/fast_platform.hpp")
 
