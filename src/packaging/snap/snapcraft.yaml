@@ -12,7 +12,7 @@ issues: https://github.com/pavel-odintsov/fastnetmon/issues
 source-code: https://github.com/pavel-odintsov/fastnetmon
 
 grade: devel
-confinement: classic
+confinement: strict
 
 platforms:
   amd64:
@@ -29,9 +29,8 @@ apps:
       - network-bind
       - network-observe
   fastnetmon-service:
-    #command: usr/sbin/fastnetmon --configuration_file $SNAP_DATA/fastnetmon.conf
-    #command: usr/sbin/fastnetmon --configuration_file $SNAP_COMMON/etc/fastnetmon.conf
-    command: usr/sbin/fastnetmon --configuration_file /etc/fastnetmon.conf
+    command: usr/sbin/fastnetmon --configuration_file $SNAP_COMMON/etc/fastnetmon.conf --log_file $SNAP_COMMON/log/fastnetmon.log
+    #command: usr/sbin/fastnetmon --configuration_file /etc/fastnetmon.conf
       #environment:
       #   LD_LIBRARY_PATH: $SNAP/usr/lib/x86_64-linux-gnu
     daemon: simple
@@ -40,6 +39,8 @@ apps:
       - network
       - network-bind
       - network-observe
+      - network-control
+      - firewall-control
 
   fastnetmon-client:
     command: usr/bin/fastnetmon_client
@@ -71,15 +72,14 @@ parts:
     cmake-parameters:
       - -DCMAKE_BUILD_TYPE=Release
       - -DCMAKE_INSTALL_PREFIX=/usr
-
       # Flags from Debian/Ubuntu packaging
       - -DENABLE_CUSTOM_BOOST_BUILD=FALSE
       - -DDO_NOT_USE_SYSTEM_LIBRARIES_FOR_BUILD=FALSE
       - -DLINK_WITH_ABSL=TRUE
-
       # For snap we probably do not need real systemd unit installation,
       # but keeping the path harmlessly aligned with Debian is OK.
       - -DCMAKE_INSTALL_SYSTEMD_SERVICEDIR=/usr/lib/systemd/system
+      - -DFASTNETMON_ATTACK_DETAILS_FOLDER=/var/snap/fastnetmon-community/common/log/fastnetmon_attacks
 
 
     build-packages:

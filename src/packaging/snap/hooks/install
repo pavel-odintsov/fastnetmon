@@ -1,10 +1,10 @@
 #!/bin/sh
 set -eu
 
-#CONFIG_DIR="$SNAP_COMMON/etc"
-#LOG_DIR="$SNAP_COMMON/log"
-CONFIG_DIR="/etc"
-LOG_DIR="/var/log/fastnetmon_attacks"
+CONFIG_DIR="$SNAP_COMMON/etc"
+LOG_DIR="$SNAP_COMMON/log/fastnetmon_attacks"
+#CONFIG_DIR="/etc"
+#LOG_DIR="/var/log/fastnetmon_attacks"
 
 mkdir -p "$CONFIG_DIR"
 mkdir -p "$LOG_DIR"
@@ -37,7 +37,7 @@ copy_config_if_missing() {
 
         # Edit only the newly created writable copy.
         sed -i "s|^networks_list_path *=.*|networks_list_path = $CONFIG_DIR/networks_list|" "$dst"
-        sed -i "s|^networks_whitelist_path *=.*|networks_whitelist_path = $CONFIG_DIR/networks_whitelist|" "$dst"
+        sed -i "s|^white_list_path *=.*|white_list_path = $CONFIG_DIR/networks_whitelist|" "$dst"
 
         echo "Created initial config: $dst" >&2
     else
@@ -49,6 +49,3 @@ copy_config_if_missing() {
 copy_config_if_missing "$SNAP/etc/fastnetmon.conf" "$CONFIG_DIR/fastnetmon.conf"
 copy_if_missing "$SNAP/etc/networks_list" "$CONFIG_DIR/networks_list"
 copy_if_missing "$SNAP/etc/networks_whitelist" "$CONFIG_DIR/networks_whitelist"
-
-
-mkdir -p /var/log/fastnetmon_attacks
