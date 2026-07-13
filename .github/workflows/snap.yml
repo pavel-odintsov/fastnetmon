@@ -217,8 +217,8 @@ jobs:
     needs:
       - build_snap
       - test_snap_and_publish
-
-    if: always() && needs.build_snap.outputs.fnm_artifact_id != ''
+    # pull_request runs with restricted GITHUB_TOKEN permissions - have not rights for delete
+    if: always() && needs.build_snap.outputs.fnm_artifact_id != '' && github.event_name != 'pull_request'
 
     steps:
       - name: Delete temporary artifact
