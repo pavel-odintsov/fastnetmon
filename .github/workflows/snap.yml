@@ -15,53 +15,35 @@ permissions:
   actions: write
 
 jobs:
-  build_snap:
+  prepare_metadata:
+    name: Prepare package metadata
     runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: ./src
     outputs:
       fnm_version: ${{ steps.meta.outputs.fnm_version }}
       fnm_grade: ${{ steps.meta.outputs.fnm_grade }}
       fnm_channel: ${{ steps.meta.outputs.fnm_channel }}
       fnm_publishable: ${{ steps.meta.outputs.fnm_publishable }}
-      fnm_snap_file: ${{ steps.build.outputs.fnm_snap_file }}
-      fnm_artifact_name: ${{ steps.build.outputs.fnm_artifact_name }}
-      fnm_artifact_id: ${{ steps.upload.outputs.artifact-id }}
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v6
-
-      - name: Install tools
-        run: |
-          sudo snap install yq
-          sudo snap install snapcraft --classic
-        # Not needed, since switched to snapcraft pack with  --destructive-mode flag
-        # sudo snap install lxd
-        # sudo lxd init --auto
-        # sudo usermod -aG lxd "$USER"
-      # snapcraft don't like our src/packaging path
-      - name: Create symlink to snap
-        run: ln -s packaging/snap snap
-      - name: Prepare snapcraft.yaml
+      - name: Calculate package metadata
         id: meta
         env:
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
+          FULL_REF: ${{ github.ref }}
           SHA: ${{ github.sha }}
         run: |
           set -eux
 
-          SHORT_SHA="$(echo "$SHA" | cut -c1-7)"
+          SHORT_SHA="${SHA:0:7}"
           BASE_VERSION="1.2.9"
-          SNAPCRAFT_FILE="snap/snapcraft.yaml"
 
-          if [ "$REF_TYPE" = "tag" ] && echo "$REF_NAME" | grep -Eq '^v[0-9]'; then
+          if [ "$REF_TYPE" = "tag" ] &&
+             echo "$REF_NAME" | grep -Eq '^v[0-9]'; then
             FNM_VERSION="${REF_NAME#v}"
             FNM_GRADE="stable"
-            FNM_CHANNEL="stable"
+            FNM_CHANNEL="candidate"
             FNM_PUBLISHABLE="true"
-          elif [ "$GITHUB_REF" = "refs/heads/master" ]; then
+          elif [ "$FULL_REF" = "refs/heads/master" ]; then
             FNM_VERSION="${BASE_VERSION}-dev.${SHORT_SHA}"
             FNM_GRADE="devel"
             FNM_CHANNEL="edge"
@@ -72,10 +54,64 @@ jobs:
             FNM_CHANNEL=""
             FNM_PUBLISHABLE="false"
           fi
+
+          echo "Version:     $FNM_VERSION"
+          echo "Grade:       $FNM_GRADE"
+          echo "Channel:     $FNM_CHANNEL"
+          echo "Publishable: $FNM_PUBLISHABLE"
+
+          echo "fnm_version=$FNM_VERSION" >> "$GITHUB_OUTPUT"
+          echo "fnm_grade=$FNM_GRADE" >> "$GITHUB_OUTPUT"
+          echo "fnm_channel=$FNM_CHANNEL" >> "$GITHUB_OUTPUT"
+          echo "fnm_publishable=$FNM_PUBLISHABLE" >> "$GITHUB_OUTPUT"
+
+
+  build_snap:
+    name: Build snap ${{ matrix.architecture }}
+    needs: 
+      - prepare_metadata
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: amd64
+            runner: ubuntu-24.04
+          - architecture: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner}}
+    defaults:
+      run:
+        working-directory: ./src
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Install build tools
+        run: |
+          sudo snap install yq
+          sudo snap install snapcraft --classic
+          snapcraft version
+          yq --version
+          dpkg --print-architecture
+        # Not needed, since switched to snapcraft pack with  --destructive-mode flag
+        # sudo snap install lxd
+        # sudo lxd init --auto
+        # sudo usermod -aG lxd "$USER"
+      # snapcraft don't like our src/packaging path
+      - name: Create symlink to snap
+        run: ln -s packaging/snap snap
+      - name: Prepare snapcraft.yaml
+        id: meta
+        env:
+          FNM_VERSION: ${{ needs.prepare_metadata.outputs.fnm_version }}
+          FNM_GRADE: ${{ needs.prepare_metadata.outputs.fnm_grade }}
+        run: |
+          set -eux
+
+          SNAPCRAFT_FILE="snap/snapcraft.yaml"
           export FNM_VERSION
           export FNM_GRADE
 
-          echo "We have version: $FNM_VERSION grade: $FNM_GRADE channel: $FNM_CHANNEL publish: $FNM_PUBLISHABLE"
           echo "Update $SNAPCRAFT_FILE"
           yq -i '
             .version = strenv(FNM_VERSION) |
@@ -86,38 +122,33 @@ jobs:
           test "$(yq -r '.version' "$SNAPCRAFT_FILE")" = "$FNM_VERSION"
           test "$(yq -r '.grade' "$SNAPCRAFT_FILE")" = "$FNM_GRADE"
 
-
-          echo "Save variables to output"
-          echo "fnm_version=$FNM_VERSION" >> "$GITHUB_OUTPUT"
-          echo "fnm_grade=$FNM_GRADE" >> "$GITHUB_OUTPUT"
-          echo "fnm_channel=$FNM_CHANNEL" >> "$GITHUB_OUTPUT"
-          echo "fnm_publishable=$FNM_PUBLISHABLE" >> "$GITHUB_OUTPUT"
-
-          echo "FNM_VERSION=$FNM_VERSION" >> "$GITHUB_ENV"
           echo "\n\n OUR $SNAPCRAFT_FILE:"
           cat "$SNAPCRAFT_FILE"
 
       - name: Build snap
-        id: build
+        env:
+          FNM_ARCHITECTURE: ${{ matrix.architecture }}
         run: |
             set -eux
 
             #sg lxd -c 'snapcraft pack'
-            sudo snapcraft pack --destructive-mode
+            sudo snapcraft pack --destructive-mode --platform "$FNM_ARCHITECTURE"
 
-            FNM_SNAP_PATH="$(ls -1 "$PWD"/fastnetmon-community_*.snap | tail -n1)"
-            FNM_SNAP_FILE="$(basename "$FNM_SNAP_PATH")"
-            FNM_ARTIFACT_NAME="fastnetmon-community-snap"
+            FNM_SNAP_PATH="$(
+            find "$PWD" \
+              -maxdepth 1 \
+              -type f \
+              -name "fastnetmon-community_*_${FNM_ARCHITECTURE}.snap" \
+              -print \
+              -quit
+            )"
+
+            test -n "$FNM_SNAP_PATH"
+            test -f "$FNM_SNAP_PATH"
 
             sudo chown "$USER:$USER" "$FNM_SNAP_PATH"
 
-
             echo "FNM_SNAP_PATH=$FNM_SNAP_PATH" >> "$GITHUB_ENV"
-            echo "FNM_SNAP_FILE=$FNM_SNAP_FILE" >> "$GITHUB_ENV"
-            echo "FNM_ARTIFACT_NAME=$FNM_ARTIFACT_NAME" >> "$GITHUB_ENV"
-
-            echo "fnm_snap_file=$FNM_SNAP_FILE" >> "$GITHUB_OUTPUT"
-            echo "fnm_artifact_name=$FNM_ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
 
             ls -lah "$FNM_SNAP_PATH"
 
@@ -125,30 +156,50 @@ jobs:
         id: upload
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ steps.build.outputs.fnm_artifact_name }}
+          name: fastnetmon-community-snap-${{ matrix.architecture }}
           path: ${{ env.FNM_SNAP_PATH }}
+          if-no-files-found: error
           retention-days: 1
 
-  test_snap_and_publish:
-    runs-on: ubuntu-24.04
+  test_snap:
+    name: Test snap ${{ matrix.architecture }}
     needs:
+      - prepare_metadata
       - build_snap
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: amd64
+            runner: ubuntu-24.04
+          - architecture: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: Download snap artifact
         uses: actions/download-artifact@v6
         with:
-          name: ${{ needs.build_snap.outputs.fnm_artifact_name }}
+          name: fastnetmon-community-snap-${{ matrix.architecture }}
           path: ./artifact
+
       - name: Locate downloaded snap
+        env:
+          FNM_ARCHITECTURE: ${{ matrix.architecture }}
         run: |
           set -eux
 
-          FNM_SNAP_FILE="${{ needs.build_snap.outputs.fnm_snap_file }}"
-          FNM_SNAP_PATH="$PWD/artifact/$FNM_SNAP_FILE"
+          FNM_SNAP_PATH="$(
+            find "$PWD/artifact" \
+              -maxdepth 1 \
+              -type f \
+              -name "fastnetmon-community_*_${FNM_ARCHITECTURE}.snap" \
+              -print \
+              -quit
+          )"
 
+          test -n "$FNM_SNAP_PATH"
           test -f "$FNM_SNAP_PATH"
 
-          echo "FNM_SNAP_FILE=$FNM_SNAP_FILE" >> "$GITHUB_ENV"
           echo "FNM_SNAP_PATH=$FNM_SNAP_PATH" >> "$GITHUB_ENV"
 
           ls -lah "$FNM_SNAP_PATH"
@@ -158,7 +209,7 @@ jobs:
           sudo snap install snapcraft --classic
       - name: Install local snap
         run: |
-          sudo snap install "$FNM_SNAP_PATH" --dangerous --classic
+          sudo snap install "$FNM_SNAP_PATH" --dangerous
 
       - name: Smoke test
         run: |
@@ -170,7 +221,10 @@ jobs:
           echo -e "\n\nfastnetmon --version"
           fastnetmon-community.fastnetmon --version
           echo -e "fastnetmon --configuration_check"
-          sudo fastnetmon-community.fastnetmon --configuration_check --configuration_file /var/snap/fastnetmon-community/common/etc/fastnetmon.conf --log_to_console
+          sudo fastnetmon-community.fastnetmon \
+            --configuration_check \
+            --configuration_file /var/snap/fastnetmon-community/common/etc/fastnetmon.conf \
+            --log_to_console
 
           echo -e "\n\nfastnetmon-client --help"
           fastnetmon-community.fastnetmon-client --help || true
@@ -201,36 +255,87 @@ jobs:
               exit 1
             fi
           '
-      - name: Upload to Snap Store
-        if: needs.build_snap.outputs.fnm_publishable == 'true'
+
+  publish_snap:
+    name: Publish snaps
+    needs:
+      - prepare_metadata
+      - build_snap
+      - test_snap
+
+    if: needs.prepare_metadata.outputs.fnm_publishable == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download all snap artifacts
+        uses: actions/download-artifact@v6
+        with:
+          pattern: fastnetmon-community-snap-*
+          path: ./artifacts
+          merge-multiple: true
+
+      - name: Check downloaded snaps
+        run: |
+          set -eux
+
+          AMD64_SNAP="$(
+            find "$PWD/artifacts" \
+              -maxdepth 1 \
+              -type f \
+              -name 'fastnetmon-community_*_amd64.snap' \
+              -print \
+              -quit
+          )"
+
+          ARM64_SNAP="$(
+            find "$PWD/artifacts" \
+              -maxdepth 1 \
+              -type f \
+              -name 'fastnetmon-community_*_arm64.snap' \
+              -print \
+              -quit
+          )"
+
+          test -n "$AMD64_SNAP"
+          test -f "$AMD64_SNAP"
+
+          test -n "$ARM64_SNAP"
+          test -f "$ARM64_SNAP"
+
+          find "$PWD/artifacts" \
+            -maxdepth 1 \
+            -type f \
+            -name 'fastnetmon-community_*.snap' \
+            -exec ls -lah {} \;
+
+      - name: Install snapcraft
+        run: |
+          set -eux
+
+          sudo snap install snapcraft --classic
+          snapcraft version
+
+      - name: Upload snaps to Snap Store
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
-          FNM_CHANNEL: ${{ needs.build_snap.outputs.fnm_channel }}
+          FNM_CHANNEL: ${{ needs.prepare_metadata.outputs.fnm_channel }}
         run: |
           set -eux
 
+          test -n "$SNAPCRAFT_STORE_CREDENTIALS"
           test -n "$FNM_CHANNEL"
-          snapcraft upload "$FNM_SNAP_PATH" --release="$FNM_CHANNEL"
-        
-  cleanup_artifact:
-    runs-on: ubuntu-24.04
-    needs:
-      - build_snap
-      - test_snap_and_publish
-    # pull_request runs with restricted GITHUB_TOKEN permissions - have not rights for delete
-    if: always() && needs.build_snap.outputs.fnm_artifact_id != '' && github.event_name != 'pull_request'
 
-    steps:
-      - name: Delete temporary artifact
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          ARTIFACT_ID: ${{ needs.build_snap.outputs.fnm_artifact_id }}
-        run: |
-          set -eux
+          PACKAGE_COUNT=0
 
-          test -n "$ARTIFACT_ID"
+          for package in "$PWD"/artifacts/fastnetmon-community_*.snap; do
+            test -f "$package"
 
-          gh api \
-            --method DELETE \
-            "/repos/$REPO/actions/artifacts/$ARTIFACT_ID"
+            echo "Uploading $package to channel $FNM_CHANNEL"
+
+            snapcraft upload \
+              "$package" \
+              --release="$FNM_CHANNEL"
+
+            PACKAGE_COUNT=$((PACKAGE_COUNT + 1))
+          done
+
+          test "$PACKAGE_COUNT" -eq 2
