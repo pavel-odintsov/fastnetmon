@@ -16,8 +16,7 @@ confinement: strict
 
 platforms:
   amd64:
-    build-on: [amd64]
-    build-for: [amd64]
+  arm64:
 
 apps:
   fastnetmon:
@@ -155,20 +154,21 @@ parts:
       - zlib1g
       - libssl3
 
-    override-prime: |
-      craftctl default
+    # Old hack for classic amd64 only
+    #override-prime: |
+    #  craftctl default
 
-      RPATH='/snap/fastnetmon-community/current/usr/lib/x86_64-linux-gnu:/snap/fastnetmon-community/current/lib/x86_64-linux-gnu:/snap/fastnetmon-community/current/usr/lib:/snap/fastnetmon-community/current/lib'
-      INTERPRETER='/snap/core24/current/lib64/ld-linux-x86-64.so.2'
+    #  RPATH='/snap/fastnetmon-community/current/usr/lib/x86_64-linux-gnu:/snap/fastnetmon-community/current/lib/x86_64-linux-gnu:/snap/fastnetmon-community/current/usr/lib:/snap/fastnetmon-community/current/lib'
+    #  INTERPRETER='/snap/core24/current/lib64/ld-linux-x86-64.so.2'
 
-      for bin in \
-        usr/sbin/fastnetmon \
-        usr/bin/fastnetmon_client \
-        usr/bin/fastnetmon_api_client
-      do
-        if [ -f "$bin" ]; then
-          echo "Patching ELF: $bin"
-          patchelf --set-interpreter "$INTERPRETER" "$bin"
-          patchelf --force-rpath --set-rpath "$RPATH" "$bin"
-        fi
-      done
+    #  for bin in \
+    #    usr/sbin/fastnetmon \
+    #    usr/bin/fastnetmon_client \
+    #    usr/bin/fastnetmon_api_client
+    #  do
+    #    if [ -f "$bin" ]; then
+    #      echo "Patching ELF: $bin"
+    #      patchelf --set-interpreter "$INTERPRETER" "$bin"
+    #      patchelf --force-rpath --set-rpath "$RPATH" "$bin"
+    #    fi
+    #  done

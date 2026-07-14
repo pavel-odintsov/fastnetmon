@@ -107,3 +107,5 @@ Upstream versions in different distributions
 --------------
 
 [![FastNetMon upstream distro packaging status](https://repology.org/badge/vertical-allrepos/fastnetmon.svg)](https://repology.org/project/fastnetmon/versions) 
+
+Snap: [![fastnetmon-community](https://snapcraft.io/fastnetmon-community/badge.svg)](https://snapcraft.io/fastnetmon-community)
