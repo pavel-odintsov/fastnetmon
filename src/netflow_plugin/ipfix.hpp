@@ -38,6 +38,10 @@
 #define IPFIX_IPV6_SRC_MASK 29
 #define IPFIX_IPV6_DST_MASK 30
 
+// IANA IE 32 is icmpTypeCodeIPv4: a two-octet combined value encoded as
+// type * 256 + code, so the type and code are the first and second wire bytes.
+#define IPFIX_ICMP_TYPE_CODE_IPV4 32
+
 // RFC claims that this field is deprecated in favour of IPFIX_SAMPLING_PACKET_INTERVAL but many vendors use it, we need to support it too
 #define IPFIX_SAMPLING_INTERVAL 34
 
@@ -66,6 +70,10 @@
 
 #define IPFIX_FLOW_END_REASON 136
 
+// IANA IE 139 is the IPv6 counterpart, icmpTypeCodeIPv6, with the same
+// two-octet type-then-code wire encoding as IE 32.
+#define IPFIX_ICMP_TYPE_CODE_IPV6 139
+
 // We use 8 byte encoding for "dateTimeMilliseconds" https://tools.ietf.org/html/rfc7011#page-35
 #define IPFIX_FLOW_START_MILLISECONDS 152
 #define IPFIX_FLOW_END_MILLISECONDS 153
@@ -73,6 +81,14 @@
 // We use 8 byte encoding: https://datatracker.ietf.org/doc/html/rfc7011#section-6.1.10
 #define IPFIX_FLOW_START_NANOSECONDS 156
 #define IPFIX_FLOW_END_NANOSECONDS 157
+
+// IANA IEs 176-179 are the alternative separate one-octet ICMP fields.
+// Accept both variants; the collector gives these dedicated fields (and the
+// combined fields above) precedence over destination-port overloading.
+#define IPFIX_ICMP_TYPE_IPV4 176
+#define IPFIX_ICMP_CODE_IPV4 177
+#define IPFIX_ICMP_TYPE_IPV6 178
+#define IPFIX_ICMP_CODE_IPV6 179
 
 // UDP ports
 #define IPFIX_UDP_SOURCE_PORT 180
