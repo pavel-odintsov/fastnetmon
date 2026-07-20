@@ -23,6 +23,8 @@
 
 #include "../all_logcpp_libraries.hpp"
 
+#include "../simple_packet_parser_ng.hpp"
+
 #include "pcap_collector.hpp"
 
 // Standard shift for type DLT_EN10MB, Ethernet
@@ -44,6 +46,9 @@ unsigned int DATA_SHIFT_VALUE = 14;
 extern log4cpp::Category& logger;
 extern std::map<std::string, std::string> configuration_map;
 
+// Pass unparsed packets number to main programme
+extern uint64_t total_unparsed_packets;
+
 // This variable name should be uniq for every plugin!
 process_packet_pointer pcap_process_func_ptr = NULL;
 
@@ -52,6 +57,9 @@ unsigned int pcap_buffer_size_mbytes = 10;
 
 // pcap handler, we want it as global variable beacuse it used in singnal handler
 pcap_t* descr = NULL;
+
+// Data link layer type of active capture, set in pcap_main_loop before capture starts
+int pcap_data_link_type = DLT_EN10MB;
 
 char errbuf[PCAP_ERRBUF_SIZE];
 struct pcap_pkthdr hdr;
@@ -81,86 +89,58 @@ void stop_pcap_collection() {
     pcap_breakloop(descr);
 }
 
-// We do not use this function now! It's buggy!
 void parse_packet(u_char* user, struct pcap_pkthdr* packethdr, const u_char* packetptr) {
-    struct ip* iphdr;
-    struct tcphdr* tcphdr;
-    struct udphdr* udphdr;
-
-    struct ether_header* eptr; /* net/ethernet.h */
-    eptr = (struct ether_header*)packetptr;
-
-    if (ntohs(eptr->ether_type) == VLAN_ETHERTYPE) {
-        // It's tagged traffic we should sjoft for 4 bytes for getting the data
-        packetptr += DATA_SHIFT_VALUE + VLAN_HDRLEN;
-    } else if (ntohs(eptr->ether_type) == IP_ETHERTYPE) {
-        // Skip the datalink layer header and get the IP header fields.
-        packetptr += DATA_SHIFT_VALUE;
-    } else if (ntohs(eptr->ether_type) == IP6_ETHERTYPE or ntohs(eptr->ether_type) == ARP_ETHERTYPE) {
-        // we know about it but does't not care now
-    } else {
-        // printf("Packet with non standard ethertype found: 0x%x\n", ntohs(eptr->ether_type));
-    }
-
-    iphdr = (struct ip*)packetptr;
-
-    // src/dst UO is an in_addr, http://man7.org/linux/man-pages/man7/ip.7.html
-    uint32_t src_ip = iphdr->ip_src.s_addr;
-    uint32_t dst_ip = iphdr->ip_dst.s_addr;
-
-    // The ntohs() function converts the unsigned short integer netshort from network byte order to
-    // host byte order
-    unsigned int packet_length = ntohs(iphdr->ip_len);
-
     simple_packet_t current_packet;
+
     current_packet.source       = MIRROR;
     current_packet.arrival_time = current_inaccurate_time;
+    current_packet.sample_ratio = 1;
 
-    // Advance to the transport layer header then parse and display
-    // the fields based on the type of hearder: tcp, udp or icmp
-    packetptr += 4 * iphdr->ip_hl;
-    switch (iphdr->ip_p) {
-    case IPPROTO_TCP:
-        tcphdr = (struct tcphdr*)packetptr;
+    parser_options_t parser_options{};
 
-#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__DragonFly__) || defined(__OpenBSD__)
-        current_packet.source_port = ntohs(tcphdr->th_sport);
-#else
-        current_packet.source_port      = ntohs(tcphdr->source);
-#endif
+    parser_code_t result;
 
-#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__DragonFly__) || defined(__OpenBSD__)
-        current_packet.destination_port = ntohs(tcphdr->th_dport);
-#else
-        current_packet.destination_port = ntohs(tcphdr->dest);
-#endif
-        break;
-    case IPPROTO_UDP:
-        udphdr = (struct udphdr*)packetptr;
+    // We use the same shared parser as AF_PACKET plugin. It performs all required bounds checks internally.
+    if (pcap_data_link_type == DLT_LINUX_SLL) {
+        // Linux cooked capture (DLT_LINUX_SLL) header is 16 bytes and it is not an Ethernet header, so we cannot
+        // feed it to the Ethernet aware parser. We strip it and dispatch to the IP level parsers based on the
+        // protocol type field stored in the last two bytes of the SLL header.
+        const unsigned int sll_header_length = 16;
 
-#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__DragonFly__) || defined(__OpenBSD__)
-        current_packet.source_port = ntohs(udphdr->uh_sport);
-#else
-        current_packet.source_port      = ntohs(udphdr->source);
-#endif
+        if (packethdr->caplen < sll_header_length) {
+            total_unparsed_packets++;
+            return;
+        }
 
-#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__DragonFly__) || defined(__OpenBSD__)
-        current_packet.destination_port = ntohs(udphdr->uh_dport);
-#else
-        current_packet.destination_port = ntohs(udphdr->dest);
-#endif
-        break;
-    case IPPROTO_ICMP:
-        // there are no port for ICMP
-        current_packet.source_port      = 0;
-        current_packet.destination_port = 0;
-        break;
+        // Protocol type (ethertype) is stored in network byte order at offset 14 of the SLL header
+        uint16_t protocol_type = ntohs(*(const uint16_t*)(packetptr + 14));
+
+        const uint8_t* ip_pointer          = (const uint8_t*)packetptr + sll_header_length;
+        int length_before_sampling         = packethdr->len - sll_header_length;
+        int captured_length                = packethdr->caplen - sll_header_length;
+
+        if (protocol_type == IP_ETHERTYPE) {
+            result = parse_raw_ipv4_packet_to_simple_packet_full(ip_pointer, length_before_sampling,
+                                                                 captured_length, current_packet, parser_options);
+        } else if (protocol_type == IP6_ETHERTYPE) {
+            result = parse_raw_ipv6_packet_to_simple_packet_full(ip_pointer, length_before_sampling,
+                                                                 captured_length, current_packet, parser_options);
+        } else {
+            // Non IP traffic (ARP and others), we do not account it
+            return;
+        }
+    } else {
+        // Ethernet framing, the parser expects a raw frame starting from Ethernet header
+        result = parse_raw_packet_to_simple_packet_full((const uint8_t*)packetptr, packethdr->len,
+                                                        packethdr->caplen, current_packet, parser_options);
     }
 
-    current_packet.protocol = iphdr->ip_p;
-    current_packet.src_ip   = src_ip;
-    current_packet.dst_ip   = dst_ip;
-    current_packet.length   = packet_length;
+    if (result != parser_code_t::success) {
+        total_unparsed_packets++;
+
+        logger << log4cpp::Priority::DEBUG << "Cannot parse packet using ng parser: " << parser_code_to_string(result);
+        return;
+    }
 
     // Do packet processing
     pcap_process_func_ptr(current_packet);
@@ -220,6 +200,9 @@ void pcap_main_loop(const char* dev) {
         logger << log4cpp::Priority::INFO << "We did not support link type:" << link_layer_header_type;
         exit(0);
     }
+
+    // Store link layer type so parse_packet knows how to interpret each frame
+    pcap_data_link_type = link_layer_header_type;
 
     pcap_loop(descr, -1, (pcap_handler)parse_packet, NULL);
 }
