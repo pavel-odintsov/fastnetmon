@@ -101,6 +101,14 @@ uint64_t sflow_ipv6_header_protocol         = 0;
 std::string sflow_packets_discarded_desc = "Number of packets discarded by device";
 uint64_t sflow_packets_discarded         = 0;
 
+std::string sflow_invalid_raw_packet_header_desc =
+    "Number of raw packet header records with header size which does not fit into received data";
+uint64_t sflow_invalid_raw_packet_header = 0;
+
+std::string sflow_invalid_raw_packet_header_desc =
+    "Number of raw packet header records with header size which does not fit into received data";
++uint64_t sflow_invalid_raw_packet_header = 0;
+
 std::vector<system_counter_t> get_sflow_stats() {
     std::vector<system_counter_t> counters;
 
@@ -144,6 +152,9 @@ std::vector<system_counter_t> get_sflow_stats() {
 
     counters.push_back(system_counter_t("sflow_packets_discarded", sflow_packets_discarded, metric_type_t::counter,
                                         sflow_packets_discarded_desc));
+
+    counters.push_back(system_counter_t("sflow_invalid_raw_packet_header", sflow_invalid_raw_packet_header,
+                                        metric_type_t::counter, sflow_invalid_raw_packet_header_desc));
 
 
     return counters;
@@ -381,6 +392,22 @@ bool process_sflow_flow_sample(const uint8_t* data_pointer,
         if (record_type == SFLOW_RECORD_TYPE_RAW_PACKET_HEADER) {
             sflow_raw_packet_headers_total++;
 
+            if (record_length < 0) {
+                sflow_invalid_raw_packet_header++;
+                logger << log4cpp::Priority::ERROR << plugin_log_prefix
+                       << "raw packet header record has negative length: " << record_length;
+                return false;
+            }
+
+            // The record must be large enough to hold the fixed size raw protocol header before we copy it out
+            if ((size_t)record_length < sizeof(sflow_raw_protocol_header_t)) {
+                sflow_invalid_raw_packet_header++;
+
+                logger << log4cpp::Priority::ERROR << plugin_log_prefix
+                       << "raw packet header record is too short to hold protocol header, length: " << record_length;
+                return false;
+            }
+
             sflow_raw_protocol_header_t sflow_raw_protocol_header;
             memcpy(&sflow_raw_protocol_header, payload_ptr, sizeof(sflow_raw_protocol_header_t));
 
@@ -388,6 +415,20 @@ bool process_sflow_flow_sample(const uint8_t* data_pointer,
             // logger << log4cpp::Priority::DEBUG << "Raw protocol header: " << sflow_raw_protocol_header.print();
 
             const uint8_t* header_payload_pointer = payload_ptr + sizeof(sflow_raw_protocol_header_t);
+
+            // Number of bytes actually available for the sampled header after the fixed size protocol header.
+            // header_size is fully attacker controlled and read straight off the wire, so we must never trust it
+            // as a bound for the nested packet parser. Clamp / reject it against the real payload size to avoid
+            // out of bounds reads inside the nested Ethernet/IPv4 parsers.
+            const size_t available_header_payload_length = (size_t)record_length - sizeof(sflow_raw_protocol_header_t);
+
+            if (sflow_raw_protocol_header.header_size > available_header_payload_length) {
+                sflow_invalid_raw_packet_header++;
+                logger << log4cpp::Priority::ERROR << plugin_log_prefix << "raw packet header size "
+                       << sflow_raw_protocol_header.header_size << " exceeds available payload length "
+                       << available_header_payload_length;
+                return false;
+            }
 
             if (sflow_raw_protocol_header.header_protocol == SFLOW_HEADER_PROTOCOL_ETHERNET) {
                 parser_options_t parser_options{};
