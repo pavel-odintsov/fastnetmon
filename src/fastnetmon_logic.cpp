@@ -2086,64 +2086,35 @@ std::string draw_table_ipv4_hash(attack_detection_direction_type_t sort_directio
 
 
 std::string draw_table_ipv6(attack_detection_direction_type_t sort_direction, attack_detection_threshold_type_t sorter_type) {
-    std::vector<pair_of_map_for_ipv6_subnet_counters_elements_t> vector_for_sort;
-    ssize_t size_of_ipv6_counters_map = 0;
     std::stringstream output_buffer;
 
     extern blackhole_ban_list_t<subnet_ipv6_cidr_mask_t> ban_list_ipv6;
 
-    // TODO: implement method for such tasks
-    {
-        std::lock_guard<std::mutex> lock_guard(ipv6_host_counters.counter_map_mutex);
-        size_of_ipv6_counters_map = ipv6_host_counters.average_speed_map.size();
-    }
-
-    logger << log4cpp::Priority::DEBUG << "We create sort buffer with " << size_of_ipv6_counters_map << " elements";
-
-    vector_for_sort.reserve(size_of_ipv6_counters_map);
-
-    for (const auto& metric_pair : ipv6_host_counters.average_speed_map) {
-        vector_for_sort.push_back(metric_pair);
-    }
-
-    // If we have so small number of elements reduce list length
-    unsigned int vector_size = vector_for_sort.size();
-
     unsigned int shift_for_sort = max_ips_in_list;
 
-    if (vector_size < shift_for_sort) {
-        shift_for_sort = vector_size;
-    }
+    // Allocate vector with size which matches number of required elements
+    std::vector<pair_of_map_for_ipv6_subnet_counters_elements_t> vector_for_sort(shift_for_sort);
 
-    logger << log4cpp::Priority::DEBUG << "Start vector sort";
+    // This method handles all the locking and top-K selection internally
+    ipv6_host_counters.get_top_k_average_speed(vector_for_sort, sorter_type, sort_direction);
 
-    std::partial_sort(vector_for_sort.begin(), vector_for_sort.begin() + shift_for_sort, vector_for_sort.end(),
-                      TrafficComparatorClass<pair_of_map_for_ipv6_subnet_counters_elements_t>(sort_direction, sorter_type));
-
-    logger << log4cpp::Priority::DEBUG << "Finished vector sort";
-
-    unsigned int element_number = 0;
+    // Sentinel for empty slots left by partial_sort_copy when we have fewer hosts than shift_for_sort
+    const subnet_ipv6_cidr_mask_t empty_key{};
 
     // In this loop we print only top X talkers in our subnet to screen buffer
-    for (std::vector<pair_of_map_for_ipv6_subnet_counters_elements_t>::iterator ii = vector_for_sort.begin();
-         ii != vector_for_sort.end(); ++ii) {
-
-        // Print first max_ips_in_list elements in list, we will show top X "huge"
-        // channel loaders
-        if (element_number >= shift_for_sort) {
-            break;
+    for (const auto& metric_pair : vector_for_sort) {
+        // When we do not have enough hosts in output vector we will keep all entries nil, filter out them
+        if (metric_pair.first == empty_key) {
+            continue;
         }
-
-        element_number++;
-
 
         std::string client_ip_as_string;
 
-        if (ii->first.cidr_prefix_length == 128) {
+        if (metric_pair.first.cidr_prefix_length == 128) {
             // For host addresses we do not need prefix
-            client_ip_as_string = print_ipv6_address(ii->first.subnet_address);
+            client_ip_as_string = print_ipv6_address(metric_pair.first.subnet_address);
         } else {
-            client_ip_as_string = print_ipv6_cidr_subnet(ii->first);
+            client_ip_as_string = print_ipv6_cidr_subnet(metric_pair.first);
         }
 
         uint64_t pps   = 0;
@@ -2151,17 +2122,17 @@ std::string draw_table_ipv6(attack_detection_direction_type_t sort_direction, at
         uint64_t flows = 0;
 
         // Here we could have average or instantaneous speed
-        subnet_counter_t* current_speed_element = &ii->second;
+        const subnet_counter_t& current_speed_element = metric_pair.second;
 
         // Create polymorphic pps, byte and flow counters
         if (sort_direction == attack_detection_direction_type_t::incoming) {
-            pps   = current_speed_element->total.in_packets;
-            bps   = current_speed_element->total.in_bytes;
-            flows = current_speed_element->in_flows;
+            pps   = current_speed_element.total.in_packets;
+            bps   = current_speed_element.total.in_bytes;
+            flows = current_speed_element.in_flows;
         } else if (sort_direction == attack_detection_direction_type_t::outgoing) {
-            pps   = current_speed_element->total.out_packets;
-            bps   = current_speed_element->total.out_bytes;
-            flows = current_speed_element->out_flows;
+            pps   = current_speed_element.total.out_packets;
+            bps   = current_speed_element.total.out_bytes;
+            flows = current_speed_element.out_flows;
         }
 
         uint64_t mbps = convert_speed_to_mbps(bps);
@@ -2169,7 +2140,7 @@ std::string draw_table_ipv6(attack_detection_direction_type_t sort_direction, at
         // We use setw for alignment
         output_buffer << client_ip_as_string << "\t";
 
-        std::string is_banned = ban_list_ipv6.is_blackholed(ii->first) ? " *banned* " : "";
+        std::string is_banned = ban_list_ipv6.is_blackholed(metric_pair.first) ? " *banned* " : "";
 
         output_buffer << std::setw(6) << pps << " pps ";
         output_buffer << std::setw(6) << mbps << " mbps ";
