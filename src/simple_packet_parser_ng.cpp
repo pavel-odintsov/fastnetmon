@@ -205,6 +205,10 @@ parser_code_t parse_raw_packet_to_simple_packet_full(const uint8_t* pointer,
 
             // We decided to parse only fragmentation header option as only this field may be found in the Wild
             if (protocol == IpProtocolNumberIPV6_FRAG) {
+                if (local_pointer + sizeof(ipv6_extension_header_fragment_t) > end_pointer) {
+                    return parser_code_t::memory_violation;
+                }
+
                 const ipv6_extension_header_fragment_t* ipv6_extension_header_fragment =
                     (const ipv6_extension_header_fragment_t*)local_pointer;
 
@@ -385,6 +389,10 @@ parser_code_t parse_raw_ipv6_packet_to_simple_packet_full(const uint8_t* pointer
 
         // We decided to parse only fragmentation header option as only this field may be found in the Wild
         if (protocol == IpProtocolNumberIPV6_FRAG) {
+            if (local_pointer + sizeof(ipv6_extension_header_fragment_t) > end_pointer) {
+                return parser_code_t::memory_violation;
+            }
+
             const ipv6_extension_header_fragment_t* ipv6_extension_header_fragment =
                 (const ipv6_extension_header_fragment_t*)local_pointer;
 
