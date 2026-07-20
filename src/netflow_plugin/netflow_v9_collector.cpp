@@ -1349,7 +1349,9 @@ void netflow9_options_flowset_to_store(const uint8_t* pkt,
             } else {
                 // Find actual length of name ignoring zero characters
                 // In Cisco's encoding all empty symbols are zero bytes
-                size_t interface_name_length = strlen((const char*)data_shift);
+                // Use strnlen bounded by the declared field length so we never read past the
+                // field boundary if the packet has no null terminator inside the field
+                size_t interface_name_length = strnlen((const char*)data_shift, elem.record_length);
 
                 // It's not clear how strings which have same string length as field itself (i.e. X non zero chars in X
                 // length field) will be encoded I assume in that case router may skip zero byte?
