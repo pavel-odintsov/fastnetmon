@@ -1247,12 +1247,12 @@ bool netflow9_record_to_flow(uint32_t record_type,
 // Read options data packet with known template
 void netflow9_options_flowset_to_store(const uint8_t* pkt,
                                        const netflow9_header_t* netflow9_header,
-                                       const template_t* flow_template,
+                                       const template_t& flow_template,
                                        const std::string& client_addres_in_string_format) {
     // Skip scope fields, I really do not want to parse this informations
-    pkt += flow_template->option_scope_length;
+    pkt += flow_template.option_scope_length;
     // logger << log4cpp::Priority::ERROR << "We have following length for option_scope_length " <<
-    // flow_template->option_scope_length;
+    // flow_template.option_scope_length;
 
     uint32_t sampling_rate = 0;
     uint32_t offset        = 0;
@@ -1264,7 +1264,7 @@ void netflow9_options_flowset_to_store(const uint8_t* pkt,
 
     device_timeouts_t device_timeouts{};
 
-    for (const auto& elem : flow_template->records) {
+    for (const auto& elem : flow_template.records) {
         const uint8_t* data_shift = pkt + offset;
 
         // Time to extract sampling rate
@@ -1819,49 +1819,49 @@ bool process_netflow_v9_data(const uint8_t* pkt,
         return true;
     }
 
-    const template_t* field_template = &field_template_storage;
+    const template_t& field_template = field_template_storage;
 
-    if (field_template->records.empty()) {
+    if (field_template.records.empty()) {
         logger << log4cpp::Priority::ERROR << "Blank records in template";
         return false;
     }
 
     // Check that template total length is not zero as we're going to divide by it
-    if (field_template->total_length == 0) {
+    if (field_template.total_length == 0) {
         logger << log4cpp::Priority::ERROR << "Zero template length is not valid "
                << "client " << client_addres_in_string_format << " source_id: " << source_id;
         return false;
     }
 
     uint32_t offset       = sizeof(*dath);
-    uint32_t number_of_flows = (flowset_length - offset) / field_template->total_length;
+    uint32_t number_of_flows = (flowset_length - offset) / field_template.total_length;
 
     if (number_of_flows == 0 || number_of_flows > flows_per_packet_maximum_number) {
         logger << log4cpp::Priority::ERROR << "Artificially high number of flows: " << number_of_flows;
         return false;
     }
 
-    if (field_template->type == netflow_template_type_t::Data) {
+    if (field_template.type == netflow_template_type_t::Data) {
         for (uint32_t i = 0; i < number_of_flows; i++) {
-            if (pkt + offset + field_template->total_length > packet_end) {
+            if (pkt + offset + field_template.total_length > packet_end) {
                 logger << log4cpp::Priority::ERROR << "We tried to read data outside packet end in data flowset";
                 return false;
             }
 
             // Process whole flowset
-            netflow9_flowset_to_store(pkt + offset, netflow9_header, field_template->records,
+            netflow9_flowset_to_store(pkt + offset, netflow9_header, field_template.records,
                                       client_addres_in_string_format, client_ipv4_address);
 
-            offset += field_template->total_length;
+            offset += field_template.total_length;
         }
-    } else if (field_template->type == netflow_template_type_t::Options) {
+    } else if (field_template.type == netflow_template_type_t::Options) {
         // logger << log4cpp::Priority::INFO << "I have " << num_flowsets << " flowsets here";
-        // logger << log4cpp::Priority::INFO << "Flowset template total length: " << field_template->total_length;
+        // logger << log4cpp::Priority::INFO << "Flowset template total length: " << field_template.total_length;
 
         netflow9_options_packet_number++;
 
         for (uint32_t i = 0; i < number_of_flows; i++) {
-            if (pkt + offset + field_template->total_length > packet_end) {
+            if (pkt + offset + field_template.total_length > packet_end) {
                 logger << log4cpp::Priority::ERROR << "We tried to read data outside packet end for options flowset";
                 return false;
             }
@@ -1869,7 +1869,7 @@ bool process_netflow_v9_data(const uint8_t* pkt,
             // logger << log4cpp::Priority::INFO << "Process flowset: " << i;
             netflow9_options_flowset_to_store(pkt + offset, netflow9_header, field_template, client_addres_in_string_format);
 
-            offset += field_template->total_length;
+            offset += field_template.total_length;
         }
     }
 
