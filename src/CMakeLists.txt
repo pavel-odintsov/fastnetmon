@@ -599,12 +599,14 @@ target_link_libraries(sflow_plugin libsflow)
 # Netflow templates
 add_library(netflow_template STATIC netflow_plugin/netflow_template.cpp)
 
+add_library(netflow_template_storage STATIC netflow_plugin/netflow_template_storage.cpp)
+
 # netflow library
 add_library(netflow STATIC netflow_plugin/netflow.cpp)
 
 # netflow plugin
 add_library(netflow_plugin STATIC netflow_plugin/netflow_collector.cpp)
-target_link_libraries(netflow_plugin ipfix_collector netflow_v9_collector netflow_v5_collector netflow netflow_template)
+target_link_libraries(netflow_plugin ipfix_collector netflow_v9_collector netflow_v5_collector netflow netflow_template netflow_template_storage)
 
 if (ENABLE_PCAP_SUPPORT) 
   # pcap plugin

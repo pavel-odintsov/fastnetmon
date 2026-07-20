@@ -7,6 +7,7 @@
 #include <string>
 
 enum class netflow_protocol_version_t { netflow_v5, netflow_v9, ipfix };
+std::string get_netflow_protocol_version_as_string(const netflow_protocol_version_t& netflow_protocol_version);
 
 // Common header fields
 class __attribute__((__packed__)) netflow_header_common_t {
