@@ -2070,10 +2070,12 @@ bool process_ipfix_data_set(const uint8_t* packet,
 
     uint32_t set_id = set_header->get_set_id_host_byte_order();
 
-    const template_t* field_template = peer_find_template(global_ipfix_templates, global_ipfix_templates_mutex,
-                                                          source_id, set_id, client_addres_in_string_format);
+    template_t field_template_storage;
 
-    if (field_template == NULL) {
+    bool found_template = peer_find_template(global_ipfix_templates, global_ipfix_templates_mutex, source_id, set_id,
+                                             client_addres_in_string_format, field_template_storage);
+
+    if (!found_template) {
         ipfix_packets_with_unknown_templates++;
 
         logger << log4cpp::Priority::DEBUG << "We don't have a IPFIX template for set_id: " << set_id << " client "
@@ -2083,6 +2085,8 @@ bool process_ipfix_data_set(const uint8_t* packet,
 
         return false;
     }
+
+    const template_t* field_template = &field_template_storage;
 
     if (field_template->records.empty()) {
         logger << log4cpp::Priority::ERROR << "There are no records in IPFIX template. Agent: " << client_addres_in_string_format;

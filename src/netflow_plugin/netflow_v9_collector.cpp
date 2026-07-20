@@ -1800,10 +1800,12 @@ bool process_netflow_v9_data(const uint8_t* pkt,
     // logger<< log4cpp::Priority::INFO<<"We have data with flowset_id: " << flowset_id;
 
     // We should find template here
-    const template_t* field_template = peer_find_template(global_netflow9_templates, global_netflow9_templates_mutex,
-                                                          source_id, flowset_id, client_addres_in_string_format);
+    template_t field_template_storage;
 
-    if (field_template == NULL) {
+    bool found_template = peer_find_template(global_netflow9_templates, global_netflow9_templates_mutex, source_id,
+                                             flowset_id, client_addres_in_string_format, field_template_storage);
+
+    if (!found_template) {
         netflow9_packets_with_unknown_templates++;
 
         if (logger.getPriority() == log4cpp::Priority::DEBUG) {
@@ -1816,6 +1818,8 @@ bool process_netflow_v9_data(const uint8_t* pkt,
 
         return true;
     }
+
+    const template_t* field_template = &field_template_storage;
 
     if (field_template->records.empty()) {
         logger << log4cpp::Priority::ERROR << "Blank records in template";

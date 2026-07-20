@@ -600,6 +600,7 @@ target_link_libraries(sflow_plugin libsflow)
 add_library(netflow_template STATIC netflow_plugin/netflow_template.cpp)
 
 add_library(netflow_template_storage STATIC netflow_plugin/netflow_template_storage.cpp)
+target_link_libraries(netflow_template_storage netflow_template)
 
 # netflow library
 add_library(netflow STATIC netflow_plugin/netflow.cpp)
