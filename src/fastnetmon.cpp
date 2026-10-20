@@ -1443,6 +1443,11 @@ bool load_our_networks_list() {
         std::string network_address_in_cidr_form = *ii;
 
         unsigned int cidr_mask      = get_cidr_mask_from_network_as_string(network_address_in_cidr_form);
+
+        if (cidr_mask == 0) {
+            logger << log4cpp::Priority::ERROR << "IPv4 /0 prefix is not allowed: " << network_address_in_cidr_form;
+            continue;
+        }
         std::string network_address = get_net_address_from_network_as_string(network_address_in_cidr_form);
 
         double base = 2;
