@@ -8,6 +8,10 @@ src/gobgp_client/gobgp.grpc.pb.cc
 src/gobgp_client/gobgp.grpc.pb.h
 src/gobgp_client/gobgp.pb.cc
 src/gobgp_client/gobgp.pb.h
+src/rustbgpd_client/rustbgpd_injection.grpc.pb.cc
+src/rustbgpd_client/rustbgpd_injection.grpc.pb.h
+src/rustbgpd_client/rustbgpd_injection.pb.cc
+src/rustbgpd_client/rustbgpd_injection.pb.h
 src/fastnetmon_internal_api.grpc.pb.cc
 src/fastnetmon_internal_api.grpc.pb.h
 src/fastnetmon_internal_api.pb.cc

@@ -81,5 +81,33 @@ class fastnetmon_configuration_t {
 
     std::string gobgp_community_host_ipv6{ "65001:668" };
     std::string gobgp_community_subnet_ipv6{ "65001:667" };
+
+    // rustbgpd
+    bool rustbgpd{ false };
+
+    // unix:///path for owner-only Unix socket or loopback address and port
+    std::string rustbgpd_target{ "unix:///var/lib/rustbgpd/grpc.sock" };
+    std::string rustbgpd_token_file{ "" };
+
+    bool rustbgpd_announce_host{ true };
+    bool rustbgpd_announce_whole_subnet{ false };
+    bool rustbgpd_announce_host_ipv6{ true };
+
+    // Unspecified next hop means next hop self in rustbgpd
+    std::string rustbgpd_next_hop_host_ipv4{ "0.0.0.0" };
+    std::string rustbgpd_next_hop_subnet_ipv4{ "0.0.0.0" };
+    std::string rustbgpd_next_hop_host_ipv6{ "::" };
+
+    // RFC 7999 BLACKHOLE
+    std::string rustbgpd_community_host{ "65535:666" };
+    std::string rustbgpd_community_subnet{ "65535:666" };
+    std::string rustbgpd_community_host_ipv6{ "65535:666" };
+
+    unsigned int rustbgpd_reconcile_interval{ 30 };
+
+    // Injection leases are not part of rustbgpd's stable v1 API
+    bool rustbgpd_lease{ false };
+    std::string rustbgpd_lease_owner{ "fastnetmon" };
+    unsigned int rustbgpd_lease_time{ 30 };
 };
 

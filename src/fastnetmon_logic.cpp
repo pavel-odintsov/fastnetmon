@@ -45,6 +45,10 @@
 #include "actions/gobgp_action.hpp"
 #endif
 
+#ifdef ENABLE_RUSTBGPD
+#include "actions/rustbgpd_action.hpp"
+#endif
+
 #include "actions/exabgp_action.hpp"
 
 // Traffic output formats
@@ -1312,6 +1316,13 @@ void call_blackhole_actions_per_host(attack_action_t attack_action,
         gobgp_thread.detach();
 
         logger << log4cpp::Priority::INFO << "Call to GoBGP for " << action_name << " client is finished: " << client_ip_as_string;
+    }
+#endif
+
+#ifdef ENABLE_RUSTBGPD
+    if (fastnetmon_global_configuration.rustbgpd) {
+        // It does not block on network and must run in order of ban and unban calls, so we do not use thread here
+        rustbgpd_ban_manage(action_name, ipv6, client_ip, client_ipv6, current_attack);
     }
 #endif
 
