@@ -1,0 +1,132 @@
+// Subset of the rustbgpd gRPC API used by the rustbgpd action
+// (actions/rustbgpd_action.cpp): unicast route injection, optional injection
+// leases and the liveness probe.
+//
+// Copied from rustbgpd v0.79.0, proto/rustbgpd.proto, the file published as
+// the rustbgpd.proto release asset:
+//   https://github.com/lance0/rustbgpd/releases/download/v0.79.0/rustbgpd.proto
+//   SHA-256 21a7f5ca199184a0d4cf94414ed8dcfa49c660c1fbb8b4c79e076b9d7685dd62
+//
+// This is a reduced copy. Package, service, method and message names, field
+// numbers and enum values are kept exactly as upstream, so this file is wire
+// compatible with the full one. Services, methods and messages the action does
+// not use are left out, and so are two fields of AddPathRequest it never sets:
+// local_pref (6) and med (7), which are reserved here. To move to another
+// rustbgpd release, compare these definitions with that release's file.
+//
+// AddLeasedPath and RenewLease (injection leases) are outside rustbgpd's v1
+// stable API inventory in v0.79.0 and may change in a later release.
+
+syntax = "proto3";
+
+package rustbgpd.v1;
+
+service InjectionService {
+  // Inject or replace a locally originated unicast route, keyed on
+  // (prefix, prefix_length, path_id). Repeating an identical request returns
+  // UNCHANGED. Injected routes are process-local and lost on a daemon restart.
+  rpc AddPath(AddPathRequest) returns (AddPathResponse);
+  // Withdraw a locally injected unicast route. With allow_missing a key with
+  // no local route returns OK with outcome NOT_PRESENT instead of NOT_FOUND.
+  rpc DeletePath(DeletePathRequest) returns (DeletePathResponse);
+  // AddPath under an owner's lease. When the lease's deadline passes without
+  // a renewal or a further leased add, the daemon withdraws all of the
+  // owner's routes.
+  rpc AddLeasedPath(AddLeasedPathRequest) returns (AddLeasedPathResponse);
+  // Set the owner's lease deadline to now + lease_seconds. FAILED_PRECONDITION
+  // unless generation is the owner's live lease, for example after a daemon
+  // restart or an expiry; the controller then re-adds its routes.
+  rpc RenewLease(RenewLeaseRequest) returns (RenewLeaseResponse);
+}
+
+service ControlService {
+  // Answers only that the authenticated gRPC handler is serving.
+  rpc CheckLiveness(CheckLivenessRequest) returns (CheckLivenessResponse);
+}
+
+message AddPathRequest {
+  string prefix = 1;
+  uint32 prefix_length = 2;
+  // "0.0.0.0" or "::" means next-hop self, resolved per BGP session.
+  string next_hop = 3;
+  repeated uint32 as_path = 4;
+  uint32 origin = 5;
+  // local_pref and med are left out: the action does not set them, and they use proto3 optional, which protoc
+  // before 3.15 rejects without a flag
+  reserved 6, 7;
+  reserved "local_pref", "med";
+  repeated uint32 communities = 8;
+  repeated uint64 extended_communities = 9;
+  repeated string large_communities = 10;
+  uint32 path_id = 11;
+}
+
+enum PathInjectOutcome {
+  PATH_INJECT_OUTCOME_UNSPECIFIED = 0;
+  PATH_INJECT_OUTCOME_CREATED = 1;
+  PATH_INJECT_OUTCOME_REPLACED = 2;
+  PATH_INJECT_OUTCOME_UNCHANGED = 3;
+}
+
+message AddPathResponse {
+  reserved 1;
+  PathInjectOutcome outcome = 2;
+}
+
+message DeletePathRequest {
+  string prefix = 1;
+  uint32 prefix_length = 2;
+  reserved 3;
+  uint32 path_id = 4;
+  bool allow_missing = 5;
+  // Owner the caller expects the route to have; "" means unowned.
+  string owner = 6;
+  bool override_owner = 7;
+}
+
+enum PathDeleteOutcome {
+  PATH_DELETE_OUTCOME_UNSPECIFIED = 0;
+  PATH_DELETE_OUTCOME_DELETED = 1;
+  PATH_DELETE_OUTCOME_NOT_PRESENT = 2;
+}
+
+message DeletePathResponse {
+  PathDeleteOutcome outcome = 1;
+}
+
+message InjectionLease {
+  // 1-64 bytes of [A-Za-z0-9._-].
+  string owner = 1;
+  // 5-3600.
+  uint32 lease_seconds = 2;
+}
+
+message LeaseGeneration {
+  fixed64 incarnation = 1;
+  uint64 sequence = 2;
+}
+
+message AddLeasedPathRequest {
+  AddPathRequest path = 1;
+  InjectionLease lease = 2;
+}
+
+message AddLeasedPathResponse {
+  AddPathResponse result = 1;
+  LeaseGeneration generation = 2;
+}
+
+message RenewLeaseRequest {
+  string owner = 1;
+  LeaseGeneration generation = 2;
+  uint32 lease_seconds = 3;
+}
+
+message RenewLeaseResponse {
+  LeaseGeneration generation = 1;
+  uint32 lease_remaining_ms = 2;
+}
+
+message CheckLivenessRequest {}
+
+message CheckLivenessResponse {}
