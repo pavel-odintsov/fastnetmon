@@ -1932,11 +1932,9 @@ void recalculate_speed() {
         logger << log4cpp::Priority::DEBUG << "Sleep time expected: " << recalculate_speed_timeout
                << ". Sleep time experienced: " << time_difference;
         return;
-    } else if (int(time_difference) == int(speed_calc_period)) {
-        // All fine, we run on time
     } else {
-        // logger << log4cpp::Priority::INFO << "Time from last run of speed_recalc is soooo big, we got ugly lags: " <<
-        // time_difference << " seconds";
+        // Counters accumulate during both sleep and previous calculation, so we always divide by the real interval
+        // between starts of two iterations. Rounding it to whole seconds inflated speed by (1 + calculation time)
         speed_calc_period = time_difference;
     }
 
@@ -1996,8 +1994,9 @@ void recalculate_speed() {
     // Calculate total IPv4 + IPv6 traffic
     total_counters.calculate_speed(speed_calc_period, (double)average_calculation_amount);
 
-    // Set time of previous startup
-    last_call_of_traffic_recalculation = std::chrono::steady_clock::now();
+    // Set time of previous startup. We use start of this iteration as counters were read and zeroed during it
+    // and we need to include duration of this calculation into next speed_calc_period
+    last_call_of_traffic_recalculation = start_time;
 
     // Calculate time we spent to calculate speed in this function
     std::chrono::duration<double> speed_calculation_diff = std::chrono::steady_clock::now() - start_time;
