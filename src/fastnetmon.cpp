@@ -64,6 +64,11 @@
 #include "actions/gobgp_action.hpp"
 #endif
 
+#ifdef ENABLE_RUSTBGPD
+#include "actions/rustbgpd_action.hpp"
+#include <unistd.h>
+#endif
+
 #include "bgp_protocol_flow_spec.hpp"
 
 // Yes, maybe it's not an good idea but with this we can guarantee working code in example plugin
@@ -697,6 +702,13 @@ bool load_configuration_file() {
     // GoBGP configuration
     if (configuration_map.count("gobgp") != 0) {
         fastnetmon_global_configuration.gobgp = configuration_map["gobgp"] == "on";
+    }
+#endif
+
+#ifdef ENABLE_RUSTBGPD
+    // rustbgpd configuration
+    if (configuration_map.count("rustbgpd") != 0) {
+        fastnetmon_global_configuration.rustbgpd = configuration_map["rustbgpd"] == "on";
     }
 #endif
 
@@ -2004,6 +2016,15 @@ int main(int argc, char** argv) {
     }
 #endif
 
+#ifdef ENABLE_RUSTBGPD
+    if (fastnetmon_global_configuration.rustbgpd) {
+        if (!rustbgpd_action_init()) {
+            logger << log4cpp::Priority::ERROR << "rustbgpd action is disabled because of configuration errors";
+            fastnetmon_global_configuration.rustbgpd = false;
+        }
+    }
+#endif
+
 #ifdef KAFKA
     if (kafka_traffic_export) {
         if (kafka_traffic_export_brokers.size() == 0) {
@@ -2187,6 +2208,17 @@ void interruption_signal_handler(int signal_number) {
 
     logger << log4cpp::Priority::INFO << "Wait while they finished";
     packet_capture_plugin_thread_group.join_all();
+
+#ifdef ENABLE_RUSTBGPD
+    if (fastnetmon_global_configuration.rustbgpd) {
+        // No logging here: it would take a lock
+        if (!rustbgpd_action_signal_shutdown()) {
+            // Its worker still runs and exit() would destroy objects it uses. We leave at once with status 2.
+            // No message: even write() may block here when stderr is a full pipe
+            _exit(2);
+        }
+    }
+#endif
 
     logger << log4cpp::Priority::INFO << "Shutdown main process";
 
