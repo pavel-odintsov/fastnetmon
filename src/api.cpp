@@ -108,6 +108,8 @@
             return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, "This IP does not belong to our subnets");
         }
 
+        current_attack.customer_network = subnet;
+
         ban_list_ipv4.add_to_blackhole(client_ip, current_attack);
     } else {
         bool parsed_ipv6 = read_ipv6_host_from_string(request->ip_address(), ipv6_address.subnet_address);
