@@ -1209,6 +1209,19 @@ if (BUILD_TESTS)
     if (ENABLE_GOBGP_SUPPORT AND ENABLE_RUSTBGPD_SUPPORT)
         # rustbgpd action against in-process mock of rustbgpd's gRPC API
         add_executable(rustbgpd_action_tests tests/rustbgpd_action_tests.cpp)
+        # Certificates generated in the build directory avoid checked-in private keys. They are made once and again
+        # only when the script changes
+        set(RUSTBGPD_TEST_CERT_DIR "${CMAKE_CURRENT_BINARY_DIR}/rustbgpd-test-certs")
+        set(RUSTBGPD_TEST_CERT_SCRIPT "${PROJECT_SOURCE_DIR}/../tests/rustbgpd/make-test-certificates.sh")
+        set(RUSTBGPD_TEST_CERT_FILES ca.pem wrong-ca.pem server.key server.pem server-ip.key server-ip.pem client.key client.pem)
+        list(TRANSFORM RUSTBGPD_TEST_CERT_FILES PREPEND "${RUSTBGPD_TEST_CERT_DIR}/")
+        add_custom_command(OUTPUT ${RUSTBGPD_TEST_CERT_FILES}
+            COMMAND bash "${RUSTBGPD_TEST_CERT_SCRIPT}" "${RUSTBGPD_TEST_CERT_DIR}"
+            DEPENDS "${RUSTBGPD_TEST_CERT_SCRIPT}"
+            VERBATIM)
+        add_custom_target(rustbgpd_test_certificates DEPENDS ${RUSTBGPD_TEST_CERT_FILES})
+        add_dependencies(rustbgpd_action_tests rustbgpd_test_certificates)
+        target_compile_definitions(rustbgpd_action_tests PRIVATE RUSTBGPD_TEST_CERT_DIR="${RUSTBGPD_TEST_CERT_DIR}")
         target_link_libraries(rustbgpd_action_tests rustbgpd_action bgp_protocol fast_library ${LOG4CPP_LIBRARY_PATH})
         target_link_libraries(rustbgpd_action_tests ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${GTEST_LIBRARY_PATH})
     endif()

@@ -4,7 +4,7 @@ FastNetMon can announce blackhole routes through [rustbgpd](https://github.com/l
 
 The action handles IPv4 hosts, IPv4 customer subnets and IPv6 hosts, each with one community and next hop, like the GoBGP action. It can run at the same time as the GoBGP or ExaBGP actions.
 
-It was tested with rustbgpd 0.79.0. Earlier rustbgpd releases reject the `0.0.0.0` and `::` next hops this action uses by default.
+The local transport was tested with rustbgpd 0.79.0; the mTLS ban/unban lab uses rustbgpd 0.80.1. Earlier rustbgpd releases reject the `0.0.0.0` and `::` next hops this action uses by default.
 
 ## Build
 
@@ -39,8 +39,11 @@ rustbgpd_community_host_ipv6 = 65535:666
 | Option | Default | Meaning |
 |---|---|---|
 | `rustbgpd` | `off` | Enable the action |
-| `rustbgpd_target` | `unix:///var/lib/rustbgpd/grpc.sock` | rustbgpd gRPC endpoint: `unix:///absolute/path`, or a literal loopback address and port: `127.0.0.1:50051` (any address in 127.0.0.0/8) or `[::1]:50051`. Host names are not accepted |
-| `rustbgpd_token_file` | empty | File with the bearer token; sent as `authorization: Bearer <token>` on every call. Required for a TCP target. It must be a regular file (not a symbolic link) owned by the user who runs FastNetMon or by root, with no group or other permissions (`chmod 600`), at most 4096 bytes, one token of printable ASCII characters |
+| `rustbgpd_target` | `unix:///var/lib/rustbgpd/grpc.sock` | rustbgpd gRPC endpoint: `unix:///absolute/path`, or a literal loopback address and port: `127.0.0.1:50051` (any address in 127.0.0.0/8) or `[::1]:50051`. With mTLS, also accepts a host name or remote IP address and port |
+| `rustbgpd_token_file` | empty | File with the bearer token; sent as `authorization: Bearer <token>` on every call. Required for plaintext TCP; with mTLS, required only when the rustbgpd listener sets `token_file`. It must be a regular file (not a symbolic link) owned by the user who runs FastNetMon or by root, with no group or other permissions (`chmod 600`), at most 4096 bytes, one token of printable ASCII characters |
+| `rustbgpd_tls_ca_file` | empty | PEM CA bundle used to verify the server certificate; set together with the client certificate and key. Same owner and no-symbolic-link requirements as the token file; must not be writable by group or others |
+| `rustbgpd_tls_cert_file` | empty | PEM client certificate chain; its principal must have the `operator` role in rustbgpd. Same file requirements as the CA file |
+| `rustbgpd_tls_key_file` | empty | PEM client private key; same owner, mode and no-symbolic-link requirements as the token file |
 | `rustbgpd_next_hop_host_ipv4` | `0.0.0.0` | Next hop for IPv4 host announces; `0.0.0.0` means next hop self |
 | `rustbgpd_next_hop_subnet_ipv4` | `0.0.0.0` | Next hop for IPv4 subnet announces |
 | `rustbgpd_next_hop_host_ipv6` | `::` | Next hop for IPv6 host announces; `::` means next hop self |
@@ -53,11 +56,11 @@ rustbgpd_community_host_ipv6 = 65535:666
 | `rustbgpd_lease_owner` | `fastnetmon` | Lease owner name, 1-64 characters of `A-Z a-z 0-9 . _ -`, checked on start when leases are on |
 | `rustbgpd_lease_time` | `30` | Lease time in seconds, 5-3600 |
 
-FastNetMon does not start the action when an option is invalid, and logs which one. It never logs the token.
+FastNetMon does not start the action when an option is invalid, and logs which one. It never logs the token or private key. TLS files must be nonempty regular files, not symbolic links, at most 1 MiB each. Credentials are read on startup; restart FastNetMon after replacing them.
 
 ### Connecting to rustbgpd
 
-rustbgpd accepts plaintext gRPC only on its owner-only Unix socket or on a TCP listener with a bearer token. The action allows only a Unix socket or a literal loopback address, so the token never leaves the host, and it refuses a TCP target without a token. It ignores `grpc_proxy`, `https_proxy` and `http_proxy`, which gRPC would otherwise use even for a loopback address.
+rustbgpd accepts plaintext gRPC only on its owner-only Unix socket or on a TCP listener with a bearer token. Without TLS, the action allows only a Unix socket or a literal loopback address, so the token never leaves the host, and it refuses a TCP target without a token. It ignores `grpc_proxy`, `https_proxy` and `http_proxy`, which gRPC would otherwise use even for a loopback address.
 
 - **Unix socket** (default). rustbgpd authorizes clients of its owner-only socket as its local operator; no token is needed. FastNetMon must be able to open the socket: run it as rustbgpd's user, or as root.
 - **Loopback TCP with token.** Configure the listener in rustbgpd and map its principal to the `operator` role, which route injection requires:
@@ -78,6 +81,36 @@ rustbgpd accepts plaintext gRPC only on its owner-only Unix socket or on a TCP l
   rustbgpd_target = 127.0.0.1:50051
   rustbgpd_token_file = /etc/rustbgpd/grpc.token
   ```
+
+- **Remote TCP with mutual TLS.** Issue a server certificate whose DNS or IP SAN matches `rustbgpd_target`, and a client certificate signed by the CA rustbgpd trusts. For this example the client's URI SAN is `rustbgpd://operator/fastnetmon`:
+
+  ```toml
+  [global.telemetry.grpc_tcp]
+  address = "0.0.0.0:50051"
+  tls_cert_file = "/etc/rustbgpd/server.pem"
+  tls_key_file = "/etc/rustbgpd/server.key"
+  tls_client_ca_file = "/etc/rustbgpd/client-ca.pem"
+
+  [security.grpc.roles]
+  "rustbgpd://operator/fastnetmon" = "operator"
+  ```
+
+  Then in FastNetMon:
+
+  ```
+  rustbgpd_target = announcer.example.net:50051
+  rustbgpd_tls_ca_file = /etc/fastnetmon/server-ca.pem
+  rustbgpd_tls_cert_file = /etc/fastnetmon/client.pem
+  rustbgpd_tls_key_file = /etc/fastnetmon/client.key
+  ```
+
+  Set all three TLS files or none. All three must be owned by the user running FastNetMon or root. The client key must have no group or other permissions (`chmod 600`); the CA and certificate may be readable by anyone but writable only by their owner (`chmod 644`).
+
+  The bearer token is optional only when the rustbgpd listener has no `token_file`. If the listener sets `token_file`, rustbgpd checks the token in addition to the client certificate, so also set `rustbgpd_token_file`. When configured, the token is sent on each call. The role always comes from the certificate principal: the token only authenticates and never selects a role, and an mTLS listener cannot set `principal`.
+
+  gRPC verifies the server certificate and target name. There is no name override, verification bypass, or plaintext fallback. Invalid certificates, an untrusted CA or a SAN mismatch prevent RPCs from reaching rustbgpd; the worker logs connection failures and retries with the same TLS credentials, waiting up to about 5 seconds between attempts. Startup success alone does not prove a successful TLS handshake.
+
+  rustbgpd derives the client principal from its `rustbgpd:` URI SAN, then email SAN, then Subject CN. Map the exact resulting value to `operator`; an unmapped principal can complete TLS but receives `PERMISSION_DENIED` on RPCs. Several collectors can use separately issued client certificates and role mappings. The [mTLS lab](../tests/rustbgpd/README.md) exercises IPv4 and IPv6 bans and withdrawals against a separate rustbgpd container and FRR.
 
 ## rustbgpd configuration
 

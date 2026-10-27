@@ -85,9 +85,12 @@ class fastnetmon_configuration_t {
     // rustbgpd
     bool rustbgpd{ false };
 
-    // unix:///path for owner-only Unix socket or loopback address and port
+    // Unix socket or literal loopback; with TLS, any hostname or IP address and port
     std::string rustbgpd_target{ "unix:///var/lib/rustbgpd/grpc.sock" };
     std::string rustbgpd_token_file{ "" };
+    std::string rustbgpd_tls_ca_file{ "" };
+    std::string rustbgpd_tls_cert_file{ "" };
+    std::string rustbgpd_tls_key_file{ "" };
 
     bool rustbgpd_announce_host{ true };
     bool rustbgpd_announce_whole_subnet{ false };
