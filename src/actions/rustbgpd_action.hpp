@@ -31,6 +31,7 @@ void rustbgpd_ban_manage(const std::string& action,
                          const subnet_ipv6_cidr_mask_t& client_ipv6,
                          const attack_details_t& current_attack);
 
-// Decides whether metadata of rustbgpd_token_file allows us to use it: regular file owned by effective_uid or root,
-// no access for group or others. Returns empty string or reason to reject it
-std::string rustbgpd_check_token_file_metadata(const struct stat& file_stat, uid_t effective_uid);
+// Shared metadata check for credential files: regular file owned by effective_uid or root. Secret files (bearer
+// token, TLS private key) allow no access for group or others; CA and certificate files allow no write access for
+// them. Returns empty string or reason to reject it
+std::string rustbgpd_check_token_file_metadata(const struct stat& file_stat, uid_t effective_uid, bool secret = true);

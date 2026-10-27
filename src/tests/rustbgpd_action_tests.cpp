@@ -461,12 +461,51 @@ class RustbgpdActionTest : public ::testing::Test {
         return path;
     }
 
+    std::string tls_file(const std::string& name) {
+        std::ifstream input(std::string(RUSTBGPD_TEST_CERT_DIR) + "/" + name);
+        return std::string(std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>());
+    }
+
+    void configure_tls() {
+        configuration_map["rustbgpd_target"] = "localhost:50051";
+        configuration_map["rustbgpd_tls_ca_file"] = write_file("ca.pem", tls_file("ca.pem"), 0644);
+        configuration_map["rustbgpd_tls_cert_file"] = write_file("client.pem", tls_file("client.pem"), 0644);
+        configuration_map["rustbgpd_tls_key_file"] = write_file("client.key", tls_file("client.key"), 0600);
+    }
+
+    // Replaces Unix socket server. Sets target to localhost and bound port, and tcp_port to that port
+    void start_tcp_server(bool tls, const std::string& address = "127.0.0.1:0", const std::string& certificate = "server") {
+        server->Shutdown(std::chrono::system_clock::now() + 1s);
+        grpc::ServerBuilder builder;
+        std::shared_ptr<grpc::ServerCredentials> credentials;
+
+        if (tls) {
+            grpc::SslServerCredentialsOptions options;
+            options.pem_root_certs = tls_file("ca.pem");
+            options.pem_key_cert_pairs.push_back({ tls_file(certificate + ".key"), tls_file(certificate + ".pem") });
+            options.client_certificate_request = GRPC_SSL_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY;
+            credentials = grpc::SslServerCredentials(options);
+        } else {
+            credentials = grpc::InsecureServerCredentials();
+        }
+
+        tcp_port = 0;
+        builder.AddListeningPort(address, credentials, &tcp_port);
+        builder.RegisterService(injection.get());
+        builder.RegisterService(control.get());
+        server = builder.BuildAndStart();
+        ASSERT_TRUE(server);
+        ASSERT_GT(tcp_port, 0);
+        configuration_map["rustbgpd_target"] = "localhost:" + std::to_string(tcp_port);
+    }
+
     mock_state_t state;
     std::unique_ptr<mock_injection_t> injection;
     std::unique_ptr<mock_control_t> control;
     std::unique_ptr<grpc::Server> server;
     std::string directory;
     std::string socket_path;
+    int tcp_port = 0;
 };
 
 TEST_F(RustbgpdActionTest, announces_and_withdraws_host) {
@@ -1727,6 +1766,187 @@ TEST_F(RustbgpdActionTest, tcp_target_sends_token) {
     EXPECT_EQ(state.last_authorization, "Bearer secret-token");
 }
 
+TEST_F(RustbgpdActionTest, tls_options_must_be_complete) {
+    for (unsigned int mask = 1; mask < 7; mask++) {
+        configure_tls();
+
+        if (!(mask & 1)) {
+            configuration_map["rustbgpd_tls_ca_file"] = "";
+        }
+
+        if (!(mask & 2)) {
+            configuration_map["rustbgpd_tls_cert_file"] = "";
+        }
+
+        if (!(mask & 4)) {
+            configuration_map["rustbgpd_tls_key_file"] = "";
+        }
+
+        EXPECT_FALSE(rustbgpd_action_init()) << "accepted partial TLS set " << mask;
+        rustbgpd_action_shutdown();
+    }
+}
+
+TEST_F(RustbgpdActionTest, tls_key_file_checks) {
+    configure_tls();
+    auto good = configuration_map["rustbgpd_tls_key_file"];
+    auto link = directory + "/key-link";
+    ASSERT_EQ(symlink(good.c_str(), link.c_str()), 0);
+    auto fifo = directory + "/key-fifo";
+    ASSERT_EQ(mkfifo(fifo.c_str(), 0600), 0);
+    for (const auto& path : { link, fifo, directory, directory + "/missing",
+                             write_file("open.key", tls_file("client.key"), 0644),
+                             write_file("group.key", tls_file("client.key"), 0640),
+                             write_file("empty.key", "", 0600),
+                             write_file("large.key", std::string(1024 * 1024 + 1, 'x'), 0600) }) {
+        configuration_map["rustbgpd_tls_key_file"] = path;
+        auto result = std::async(std::launch::async, [] { return rustbgpd_action_init(); });
+        if (result.wait_for(2s) != std::future_status::ready) {
+            ADD_FAILURE() << "key check blocked on " << path;
+            int writer = open(fifo.c_str(), O_WRONLY | O_NONBLOCK);
+            close(writer);
+        }
+        EXPECT_FALSE(result.get()) << "accepted key " << path;
+        rustbgpd_action_shutdown();
+    }
+    EXPECT_EQ(captured_log->text().find("PRIVATE KEY"), std::string::npos);
+}
+
+// CA and certificate may be readable by others, but nobody else may replace them
+TEST_F(RustbgpdActionTest, tls_ca_and_certificate_file_checks) {
+    for (const std::string option : { "rustbgpd_tls_ca_file", "rustbgpd_tls_cert_file" }) {
+        SCOPED_TRACE(option);
+        configure_tls();
+        auto content = tls_file(option == "rustbgpd_tls_ca_file" ? "ca.pem" : "client.pem");
+        auto link    = directory + "/" + option + "-link";
+        ASSERT_EQ(symlink(configuration_map[option].c_str(), link.c_str()), 0);
+
+        for (const auto& path : { link, directory, directory + "/missing", write_file(option + "-empty", "", 0644),
+                                  write_file(option + "-group-writable", content, 0664),
+                                  write_file(option + "-world-writable", content, 0646),
+                                  write_file(option + "-group-only-writable", content, 0620) }) {
+            configuration_map[option] = path;
+            captured_log->clear();
+            EXPECT_FALSE(rustbgpd_action_init()) << "accepted " << path;
+            EXPECT_NE(captured_log->text().find(option), std::string::npos) << "no error names " << option;
+            rustbgpd_action_shutdown();
+        }
+
+        for (mode_t mode : { 0644, 0444, 0600 }) {
+            configuration_map[option] = write_file(option + "-mode-" + std::to_string(mode), content, mode);
+            EXPECT_TRUE(rustbgpd_action_init()) << "rejected mode " << std::oct << mode;
+            rustbgpd_action_shutdown();
+        }
+    }
+}
+
+// Hosts named like gRPC resolver schemes must stay DNS names. Before TLS targets were passed as dns:///host:port,
+// this target reached the mock below through its abstract Unix socket
+TEST_F(RustbgpdActionTest, tls_host_named_like_resolver_scheme_is_dns_name) {
+    configure_tls();
+    std::string target = "unix-abstract:" + std::to_string(10000 + getpid() % 50000);
+    start_tcp_server(true, target);
+    configuration_map["rustbgpd_target"] = target;
+
+    ASSERT_TRUE(rustbgpd_action_init());
+    ipv4_action("ban", "203.0.113.7");
+    EXPECT_FALSE(wait_for([&] { return state.adds_started > 0; }, 4s)) << "target was used as resolver URI";
+    rustbgpd_action_shutdown();
+    EXPECT_FALSE(state.has("203.0.113.7/32"));
+    EXPECT_NE(captured_log->text().find("did not answer liveness probe"), std::string::npos);
+}
+
+// Literal address target is checked against IP address SAN of server certificate
+TEST_F(RustbgpdActionTest, tls_verifies_ip_address_san) {
+    for (const std::string host : { "127.0.0.1", "[::1]" }) {
+        SCOPED_TRACE(host);
+        configure_tls();
+        start_tcp_server(true, host + ":0", "server-ip");
+        configuration_map["rustbgpd_target"] = host + ":" + std::to_string(tcp_port);
+
+        ASSERT_TRUE(rustbgpd_action_init());
+        ipv4_action("ban", "203.0.113.7");
+        ASSERT_TRUE(wait_for([&] { return state.has("203.0.113.7/32"); }, 3s));
+        ipv4_action("unban", "203.0.113.7");
+        ASSERT_TRUE(wait_for([&] { return !state.has("203.0.113.7/32"); }, 3s));
+        rustbgpd_action_shutdown();
+    }
+}
+
+// Remote rustbgpd which closes every connection must not get a TLS attempt each 250 ms
+TEST_F(RustbgpdActionTest, tls_reconnect_backoff_grows) {
+    configure_tls();
+    connection_counter_t closing_server;
+    configuration_map["rustbgpd_target"] = "127.0.0.1:" + std::to_string(closing_server.port);
+
+    ASSERT_TRUE(rustbgpd_action_init());
+    ipv4_action("ban", "203.0.113.7");
+    std::this_thread::sleep_for(6s);
+    rustbgpd_action_shutdown();
+
+    // 250 ms maximum makes about 24 attempts in 6 seconds, 5 seconds maximum about 7
+    EXPECT_GE(closing_server.connections, 2);
+    EXPECT_LE(closing_server.connections, 12);
+}
+
+TEST_F(RustbgpdActionTest, tls_accepts_remote_targets_but_not_resolver_uris) {
+    configure_tls();
+    for (const std::string target : { "announcer.example:50051", "192.0.2.1:443", "[2001:db8::1]:50051" }) {
+        configuration_map["rustbgpd_target"] = target;
+        EXPECT_TRUE(rustbgpd_action_init()) << target;
+        rustbgpd_action_shutdown();
+    }
+    for (const std::string target : { "dns:///localhost:50051", "localhost:0", "localhost:65536", "localhost:1x",
+                                      ":50051", "unix:///tmp/grpc.sock", "[invalid]:443", "local host:443" }) {
+        configuration_map["rustbgpd_target"] = target;
+        EXPECT_FALSE(rustbgpd_action_init()) << target;
+        rustbgpd_action_shutdown();
+    }
+}
+
+TEST_F(RustbgpdActionTest, tls_announces_and_withdraws_with_optional_token) {
+    for (bool token : { false, true }) {
+        configure_tls();
+        start_tcp_server(true);
+        if (token) {
+            configuration_map["rustbgpd_token_file"] = write_file("token", "secret-token\n", 0600);
+        }
+        ASSERT_TRUE(rustbgpd_action_init());
+        ipv4_action("ban", "203.0.113.7");
+        ASSERT_TRUE(wait_for([&] { return state.has("203.0.113.7/32"); }, 3s));
+        {
+            std::lock_guard<std::mutex> lock_guard(state.mutex);
+            EXPECT_EQ(state.last_authorization, token ? "Bearer secret-token" : "");
+        }
+        ipv4_action("unban", "203.0.113.7");
+        ASSERT_TRUE(wait_for([&] { return !state.has("203.0.113.7/32"); }, 3s));
+        rustbgpd_action_shutdown();
+    }
+}
+
+TEST_F(RustbgpdActionTest, tls_wrong_ca_name_and_plaintext_server_fail_closed) {
+    for (const std::string failure : { "wrong CA", "wrong name", "plaintext server" }) {
+        SCOPED_TRACE(failure);
+        configure_tls();
+        start_tcp_server(failure != "plaintext server");
+        if (failure == "wrong CA") {
+            configuration_map["rustbgpd_tls_ca_file"] = write_file("wrong-ca.pem", tls_file("wrong-ca.pem"), 0644);
+        } else if (failure == "wrong name") {
+            auto& target = configuration_map["rustbgpd_target"];
+            target.replace(0, std::string("localhost").size(), "127.0.0.1");
+        }
+        captured_log->clear();
+        ASSERT_TRUE(rustbgpd_action_init());
+        ipv4_action("ban", "203.0.113.7");
+        ASSERT_TRUE(wait_for([&] { return captured_log->text().find("did not answer liveness probe") != std::string::npos; }, 4s));
+        // Observe further retries after the first failed probe; no RPC may reach the mock.
+        EXPECT_FALSE(wait_for([&] { return state.adds_started > 0; }, 2s));
+        rustbgpd_action_shutdown();
+        EXPECT_EQ(state.adds_started, 0);
+        EXPECT_FALSE(state.has("203.0.113.7/32"));
+    }
+}
+
 TEST_F(RustbgpdActionTest, token_file_checks) {
     auto good = write_file("good", "secret-token\n", 0600);
 
@@ -1746,7 +1966,8 @@ TEST_F(RustbgpdActionTest, token_file_checks) {
         { "group readable", write_file("group", "secret-token\n", 0640) },
         { "directory", directory },
         { "missing", directory + "/missing" },
-        { "empty", write_file("empty", "\n", 0600) },
+        { "empty", write_file("empty", "", 0600) },
+        { "only whitespace", write_file("blank", " \t\n", 0600) },
         { "too large", write_file("large", std::string(5000, 'a'), 0600) },
         { "space in token", write_file("space", "secret token\n", 0600) },
         { "fifo", fifo },
@@ -1771,6 +1992,14 @@ TEST_F(RustbgpdActionTest, token_file_checks) {
     }
 
     EXPECT_EQ(captured_log->text().find("secret"), std::string::npos) << "token content in log";
+}
+
+TEST_F(RustbgpdActionTest, whitespace_only_token_is_reported_as_empty) {
+    configuration_map["rustbgpd_token_file"] = write_file("blank", " \t\n", 0600);
+
+    EXPECT_FALSE(rustbgpd_action_init());
+    EXPECT_NE(captured_log->text().find("it is empty or contains only whitespace"), std::string::npos);
+    EXPECT_EQ(captured_log->text().find("printable ASCII"), std::string::npos);
 }
 
 TEST(rustbgpd_token_file_metadata, owner_and_mode) {
@@ -1803,6 +2032,36 @@ TEST(rustbgpd_token_file_metadata, owner_and_mode) {
 
     file_stat.st_mode = S_IFIFO | 0600;
     EXPECT_NE(rustbgpd_check_token_file_metadata(file_stat, me), "");
+}
+
+// CA and certificate files: like secrets, but group and others may read them
+TEST(rustbgpd_token_file_metadata, public_file_owner_and_mode) {
+    uid_t me = 1000;
+
+    struct stat file_stat {};
+
+    for (mode_t mode : { 0644, 0444, 0600, 0640, 0604 }) {
+        file_stat.st_mode = S_IFREG | mode;
+        file_stat.st_uid  = me;
+        EXPECT_EQ(rustbgpd_check_token_file_metadata(file_stat, me, false), "") << std::oct << mode;
+        file_stat.st_uid = 0;
+        EXPECT_EQ(rustbgpd_check_token_file_metadata(file_stat, me, false), "") << std::oct << mode;
+    }
+
+    file_stat.st_uid = me;
+
+    for (mode_t mode : { 0664, 0646, 0620, 0602, 0666 }) {
+        file_stat.st_mode = S_IFREG | mode;
+        EXPECT_NE(rustbgpd_check_token_file_metadata(file_stat, me, false), "") << std::oct << mode;
+    }
+
+    file_stat.st_mode = S_IFREG | 0644;
+    file_stat.st_uid  = me + 1;
+    EXPECT_NE(rustbgpd_check_token_file_metadata(file_stat, me, false), "") << "accepted file of another user";
+
+    file_stat.st_uid  = me;
+    file_stat.st_mode = S_IFDIR | 0755;
+    EXPECT_NE(rustbgpd_check_token_file_metadata(file_stat, me, false), "");
 }
 
 TEST_F(RustbgpdActionTest, lease_owner_checked_when_leases_enabled) {

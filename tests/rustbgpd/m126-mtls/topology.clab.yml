@@ -1,0 +1,47 @@
+name: fnm-mtls
+
+topology:
+  nodes:
+    detector:
+      kind: linux
+      image: ${FNM_MTLS_IMAGE:=fastnetmon-rustbgpd:mtls}
+      cmd: sleep infinity
+      binds:
+        - ${MTLS_CERT_DIR}/ca.pem:/certs-source/ca.pem:ro
+        - ${MTLS_CERT_DIR}/client.pem:/certs-source/client.pem:ro
+        - ${MTLS_CERT_DIR}/client.key:/certs-source/client.key:ro
+      exec:
+        - ip addr add 10.126.0.2/24 dev eth1
+        - ip link set eth1 up
+        - sh -c 'echo "10.126.0.1 rustbgpd" >> /etc/hosts'
+        - ip link add fnmmirror0 type veth peer name fnmmirror1
+        - ip link set fnmmirror0 up
+        - ip link set fnmmirror1 up promisc on
+    rustbgpd:
+      kind: linux
+      image: ${RUSTBGPD_IMAGE:=rustbgpd:dev}
+      cmd: sleep infinity
+      binds:
+        - ./rustbgpd.toml:/etc/rustbgpd/config.toml:ro
+        - ${MTLS_CERT_DIR}/ca.pem:/certs/ca.pem:ro
+        - ${MTLS_CERT_DIR}/server.pem:/certs/server.pem:ro
+        - ${MTLS_CERT_DIR}/server.key:/certs-source/server.key:ro
+      exec:
+        - ip addr add 10.126.0.1/24 dev eth1
+        - ip link set eth1 up
+        - ip addr add 10.0.0.1/24 dev eth2
+        - ip -6 addr add 2001:db8:126::1/64 dev eth2 nodad
+        - ip link set eth2 up
+    frr:
+      kind: linux
+      image: quay.io/frrouting/frr:10.7.1
+      binds:
+        - ./frr-daemons:/etc/frr/daemons:ro
+        - ./frr.conf:/etc/frr/frr.conf:ro
+      exec:
+        - ip addr add 10.0.0.2/24 dev eth1
+        - ip -6 addr add 2001:db8:126::2/64 dev eth1 nodad
+        - ip link set eth1 up
+  links:
+    - endpoints: ["detector:eth1", "rustbgpd:eth1"]
+    - endpoints: ["rustbgpd:eth2", "frr:eth1"]
