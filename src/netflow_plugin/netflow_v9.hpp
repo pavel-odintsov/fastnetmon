@@ -31,6 +31,12 @@
 #define NETFLOW9_IPV6_DST_ADDR 28
 #define NETFLOW9_IPV6_SRC_MASK 29
 #define NETFLOW9_IPV6_DST_MASK 30
+
+// ICMP has several export encodings in the wild. IANA IPFIX IE 32
+// (icmpTypeCodeIPv4) and IE 139 (icmpTypeCodeIPv6) are two-octet combined
+// values encoded as type * 256 + code, i.e. type is the first wire byte.
+// Flexible NetFlow v9 exporters commonly reuse these IPFIX element numbers.
+#define NETFLOW9_ICMP_TYPE_CODE_IPV4 32
 // Juniper MX things,
 // http://www.juniper.net/techpubs/en_US/junos/topics/task/configuration/flow-aggregation-template-id-configuring-version9-ipfix.html
 #define NETFLOW9_SAMPLING_INTERVAL 34
@@ -74,7 +80,17 @@
 
 #define NETFLOW9_LAYER2_PACKET_SECTION_DATA 104
 
+#define NETFLOW9_ICMP_TYPE_CODE_IPV6 139
+
 #define NETFLOW9_FLOW_ID 148
+
+// IANA IEs 176-179 carry type and code as separate one-octet fields. Support
+// both the combined and separate variants; collectors prefer either dedicated
+// representation over the legacy destination-port overload.
+#define NETFLOW9_ICMP_TYPE_IPV4 176
+#define NETFLOW9_ICMP_CODE_IPV4 177
+#define NETFLOW9_ICMP_TYPE_IPV6 178
+#define NETFLOW9_ICMP_CODE_IPV6 179
 
 // Cisco calls them "timestamp absolute first" and "timestamp absolute last"
 #define NETFLOW9_START_MILLISECONDS 152
