@@ -19,6 +19,14 @@ void gobgp_action_init() {
         fastnetmon_global_configuration.gobgp_next_hop = configuration_map["gobgp_next_hop"];
     }
 
+    if (configuration_map.count("gobgp_next_hop_host_ipv4")) {
+        fastnetmon_global_configuration.gobgp_next_hop_host_ipv4 = configuration_map["gobgp_next_hop_host_ipv4"];
+    }
+
+    if (configuration_map.count("gobgp_next_hop_subnet_ipv4")) {
+        fastnetmon_global_configuration.gobgp_next_hop_subnet_ipv4 = configuration_map["gobgp_next_hop_subnet_ipv4"];
+    }
+
     if (configuration_map.count("gobgp_next_hop_ipv6")) {
         fastnetmon_global_configuration.gobgp_next_hop_ipv6 = configuration_map["gobgp_next_hop_ipv6"];
     }
