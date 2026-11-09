@@ -175,6 +175,13 @@ bool process_netflow_packet_v5(const uint8_t* packet,
         case 1: {
             // ICMP
             current_packet.protocol = IPPROTO_ICMP;
+
+            // NetFlow v5 stores ICMP type and code in the destination-port
+            // field as type << 8 | code.
+            current_packet.icmp_type = uint8_t(current_packet.destination_port >> 8);
+            current_packet.icmp_code = uint8_t(current_packet.destination_port & 0xff);
+            current_packet.icmp_type_set = true;
+            current_packet.icmp_code_set = true;
         } break;
 
         case 6: {
@@ -197,5 +204,3 @@ bool process_netflow_packet_v5(const uint8_t* packet,
 
     return true;
 }
-
-
