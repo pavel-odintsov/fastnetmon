@@ -1006,7 +1006,7 @@ bool load_configuration_file() {
 
     if (configuration_map.count("mirror_af_packet_fanout_mode") != 0) {
         fastnetmon_global_configuration.mirror_af_packet_fanout_mode =
-            configuration_map["mirror_af_packet_fanout_mode"] == "on";
+            configuration_map["mirror_af_packet_fanout_mode"];
     }
 
 
