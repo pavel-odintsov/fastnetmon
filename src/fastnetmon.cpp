@@ -2193,8 +2193,10 @@ void interruption_signal_handler(int signal_number) {
     logger << log4cpp::Priority::INFO << "SIGNAL captured, prepare toolkit shutdown";
 
 #ifdef FASTNETMON_API
-    logger << log4cpp::Priority::INFO << "Send shutdown command to API server";
-    api_server->Shutdown();
+    if (api_server) {
+        logger << log4cpp::Priority::INFO << "Send shutdown command to API server";
+        api_server->Shutdown();
+    }
 #endif
 
     logger << log4cpp::Priority::INFO << "Interrupt service threads";
