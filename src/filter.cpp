@@ -21,6 +21,9 @@ bool filter_packet_by_flowspec_rule_list(const simple_packet_t& current_packet,
 bool filter_packet_by_flowspec_rule(const simple_packet_t& current_packet, const flow_spec_rule_t& flow_announce) {
     bool source_port_matches         = false;
     bool destination_port_matches    = false;
+    bool port_matches                = false;
+    bool icmp_type_matches           = false;
+    bool icmp_code_matches           = false;
     bool source_ip_matches           = false;
     bool destination_ip_matches      = false;
     bool packet_size_matches         = false;
@@ -28,10 +31,15 @@ bool filter_packet_by_flowspec_rule(const simple_packet_t& current_packet, const
     bool tcp_flags_matches           = false;
     bool fragmentation_flags_matches = false;
     bool protocol_matches            = false;
+    const bool port_component_applies =
+        (current_packet.protocol == IPPROTO_TCP || current_packet.protocol == IPPROTO_UDP) &&
+        current_packet.ip_fragment_offset == 0;
+    const bool icmp_component_applies =
+        current_packet.protocol == IPPROTO_ICMP && current_packet.ip_fragment_offset == 0;
 
     if (flow_announce.source_ports.size() == 0) {
         source_port_matches = true;
-    } else {
+    } else if (port_component_applies) {
         if (std::find(flow_announce.source_ports.begin(), flow_announce.source_ports.end(), current_packet.source_port) !=
             flow_announce.source_ports.end()) {
             // We found this IP in list
@@ -41,12 +49,38 @@ bool filter_packet_by_flowspec_rule(const simple_packet_t& current_packet, const
 
     if (flow_announce.destination_ports.size() == 0) {
         destination_port_matches = true;
-    } else {
+    } else if (port_component_applies) {
         if (std::find(flow_announce.destination_ports.begin(), flow_announce.destination_ports.end(),
                       current_packet.destination_port) != flow_announce.destination_ports.end()) {
             // We found this IP in list
             destination_port_matches = true;
         }
+    }
+
+    if (flow_announce.ports.size() == 0) {
+        port_matches = true;
+    } else if (port_component_applies &&
+               (std::find(flow_announce.ports.begin(), flow_announce.ports.end(), current_packet.source_port) !=
+                    flow_announce.ports.end() ||
+                std::find(flow_announce.ports.begin(), flow_announce.ports.end(), current_packet.destination_port) !=
+                    flow_announce.ports.end())) {
+        port_matches = true;
+    }
+
+    if (flow_announce.icmp_types.empty()) {
+        icmp_type_matches = true;
+    } else if (icmp_component_applies && current_packet.icmp_type_set &&
+               std::find(flow_announce.icmp_types.begin(), flow_announce.icmp_types.end(), current_packet.icmp_type) !=
+                   flow_announce.icmp_types.end()) {
+        icmp_type_matches = true;
+    }
+
+    if (flow_announce.icmp_codes.empty()) {
+        icmp_code_matches = true;
+    } else if (icmp_component_applies && current_packet.icmp_code_set &&
+               std::find(flow_announce.icmp_codes.begin(), flow_announce.icmp_codes.end(), current_packet.icmp_code) !=
+                   flow_announce.icmp_codes.end()) {
+        icmp_code_matches = true;
     }
 
     if (flow_announce.protocols.size() == 0) {
@@ -161,10 +195,11 @@ bool filter_packet_by_flowspec_rule(const simple_packet_t& current_packet, const
 
     if (flow_announce.tcp_flags.size() == 0) {
         tcp_flags_matches = true;
-    } else {
+    } else if (current_packet.protocol == IPPROTO_TCP && current_packet.ip_fragment_offset == 0) {
         // Convert 8bit representation of flags for this packet into flagset representation for flow spec
         flow_spec_tcp_flagset_t flagset;
         uint8t_representation_of_tcp_flags_to_flow_spec(current_packet.flags, flagset);
+        flagset.ns_flag = current_packet.tcp_ns;
 
         // logger << log4cpp::Priority::WARN <<"Packet's tcp flagset: " << flagset.to_string();
 
@@ -224,8 +259,9 @@ bool filter_packet_by_flowspec_rule(const simple_packet_t& current_packet, const
     */
 
     // Return true only of all parts matched
-    if (source_port_matches && destination_port_matches && source_ip_matches && destination_ip_matches &&
-        packet_size_matches && tcp_flags_matches && fragmentation_flags_matches && protocol_matches && vlan_matches) {
+    if (source_port_matches && destination_port_matches && port_matches && icmp_type_matches && icmp_code_matches &&
+        source_ip_matches && destination_ip_matches && packet_size_matches && tcp_flags_matches &&
+        fragmentation_flags_matches && protocol_matches && vlan_matches) {
         return true;
     }
 

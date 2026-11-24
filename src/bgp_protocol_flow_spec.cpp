@@ -47,6 +47,14 @@ void uint8t_representation_of_tcp_flags_to_flow_spec(uint8_t tcp_flags, flow_spe
     if (extract_bit_value(tcp_flags, TCP_URG_FLAG_SHIFT)) {
         flagset.urg_flag = true;
     }
+
+    if (extract_bit_value(tcp_flags, 7)) {
+        flagset.ece_flag = true;
+    }
+
+    if (extract_bit_value(tcp_flags, 8)) {
+        flagset.cwr_flag = true;
+    }
 }
 
 bool decode_native_flow_spec_announce_from_binary_encoded_atributes(std::vector<dynamic_binary_buffer_t> binary_attributes,
@@ -157,8 +165,14 @@ bool decode_native_flow_spec_announce_from_binary_encoded_atributes(std::vector<
             //        (uint8_t*)gobgp_lib_path->path_attributes[i]->value,
             //        gobgp_lib_path->path_attributes[i]->len) ;
 
+            if (bgp_attibute_common_header.attribute_value_length < sizeof(bgp_mp_ext_flow_spec_header_t) + 1) {
+                logger << log4cpp::Priority::WARN << "Flow Spec MP_REACH attribute is too short";
+                return false;
+            }
+
             uint8_t* flow_spec_attribute_shift =
                 (uint8_t*)binary_attribute.get_pointer() + bgp_attibute_common_header.attribute_body_shift;
+            uint8_t* flow_spec_attribute_end = flow_spec_attribute_shift + bgp_attibute_common_header.attribute_value_length;
 
             bgp_mp_ext_flow_spec_header_t* bgp_mp_ext_flow_spec_header = (bgp_mp_ext_flow_spec_header_t*)flow_spec_attribute_shift;
             bgp_mp_ext_flow_spec_header->network_to_host_byte_order();
@@ -171,6 +185,15 @@ bool decode_native_flow_spec_announce_from_binary_encoded_atributes(std::vector<
                 return false;
             }
 
+            // RFC 8955 requires FlowSpec advertisements to use a zero-length
+            // next hop. Reject a non-zero value instead of skipping it: apart
+            // from being non-compliant, accepting it would make the fixed
+            // header below interpret next-hop bytes as the NLRI length.
+            if (bgp_mp_ext_flow_spec_header->length_of_next_hop != 0) {
+                logger << log4cpp::Priority::WARN << "Flow Spec MP_REACH must use a zero-length next hop";
+                return false;
+            }
+
             uint8_t* flow_spec_types_shift = (uint8_t*)binary_attribute.get_pointer() + bgp_attibute_common_header.attribute_body_shift +
                                              sizeof(bgp_mp_ext_flow_spec_header_t);
 
@@ -179,17 +202,36 @@ bool decode_native_flow_spec_announce_from_binary_encoded_atributes(std::vector<
             uint16_t nlri_value_length           = 0;
             uint16_t nlri_length_of_length_field = 1;
 
-            // 240 is 0xf0
-            if (flow_spec_types_shift[0] < 240) {
+            // RFC 8955 Section 4.1 uses one octet below 240 and a 12-bit
+            // extended length with an 0xf high nibble for larger NLRIs.
+            if (flow_spec_types_shift[0] < 0xf0) {
                 nlri_value_length           = flow_spec_types_shift[0];
                 nlri_length_of_length_field = 1;
             } else {
                 nlri_length_of_length_field = 2;
-                logger << log4cpp::Priority::WARN << "We do not support for 2 byte NLRI length encoding yet";
+
+                if (flow_spec_attribute_end - flow_spec_types_shift < nlri_length_of_length_field) {
+                    logger << log4cpp::Priority::WARN << "Flow Spec NLRI is missing the second extended-length octet";
+                    return false;
+                }
+
+                nlri_value_length = uint16_t((uint16_t(flow_spec_types_shift[0] & 0x0f) << 8) | flow_spec_types_shift[1]);
+
+                if (nlri_value_length < 240) {
+                    logger << log4cpp::Priority::WARN << "Flow Spec NLRI uses extended encoding for a length below 240";
+                    return false;
+                }
+            }
+
+            const uint32_t available_nlri_bytes = flow_spec_attribute_end - flow_spec_types_shift;
+
+            if (uint32_t(nlri_length_of_length_field) + nlri_value_length > available_nlri_bytes) {
+                logger << log4cpp::Priority::WARN << "Flow Spec NLRI length " << nlri_value_length
+                       << " exceeds the " << available_nlri_bytes - nlri_length_of_length_field
+                       << " payload bytes available in MP_REACH";
                 return false;
             }
 
-            // TODO: add sanity checks for length
             // logger << log4cpp::Priority::WARN << "We have " <<
             // uint32_t(gobgp_lib_path->path_attributes[i]->len) << " byte length
             // attrinute" ;
@@ -285,6 +327,55 @@ std::vector<dynamic_binary_buffer_t> build_attributes_for_flowspec_announce(flow
                                                  extended_attributes_as_binary_array };
 }
 
+static void encode_flow_spec_port_component(const std::vector<uint16_t>& ports,
+                                            FLOW_SPEC_ENTITY_TYPES component_type,
+                                            dynamic_binary_buffer_t& mp_nlri_flow_spec) {
+    if (ports.empty()) {
+        return;
+    }
+
+    mp_nlri_flow_spec.append_byte(component_type);
+
+    for (auto itr = ports.begin(); itr != ports.end(); ++itr) {
+        bgp_flow_spec_operator_byte_t operator_byte;
+        operator_byte.set_length_in_bytes(sizeof(*itr));
+
+        // We support only equal operations.
+        operator_byte.set_equal_bit();
+
+        if (std::distance(itr, ports.end()) == 1) {
+            operator_byte.set_end_of_list_bit();
+        }
+
+        mp_nlri_flow_spec.append_data_as_object_ptr(&operator_byte);
+        uint16_t port = htons(*itr);
+        mp_nlri_flow_spec.append_data_as_object_ptr(&port);
+    }
+}
+
+static void encode_flow_spec_uint8_component(const std::vector<uint8_t>& values,
+                                             FLOW_SPEC_ENTITY_TYPES component_type,
+                                             dynamic_binary_buffer_t& mp_nlri_flow_spec) {
+    if (values.empty()) {
+        return;
+    }
+
+    mp_nlri_flow_spec.append_byte(component_type);
+
+    for (auto itr = values.begin(); itr != values.end(); ++itr) {
+        bgp_flow_spec_operator_byte_t operator_byte;
+        operator_byte.set_length_in_bytes(sizeof(*itr));
+        operator_byte.set_equal_bit();
+
+        if (std::distance(itr, values.end()) == 1) {
+            operator_byte.set_end_of_list_bit();
+        }
+
+        mp_nlri_flow_spec.append_data_as_object_ptr(&operator_byte);
+        mp_nlri_flow_spec.append_byte(*itr);
+    }
+}
+
 // Encode flow spec elements into MP NLRI
 bool encode_bgp_flow_spec_elements_as_mp_nlri(const flow_spec_rule_t& flow_spec_rule, dynamic_binary_buffer_t& mp_nlri_flow_spec) {
     mp_nlri_flow_spec.set_buffer_size_in_bytes(2048);
@@ -357,61 +448,11 @@ bool encode_bgp_flow_spec_elements_as_mp_nlri(const flow_spec_rule_t& flow_spec_
         }
     }
 
-    if (flow_spec_rule.destination_ports.size() > 0) {
-        logger << log4cpp::Priority::DEBUG << "Encode flow spec attribute desination ports";
-
-        mp_nlri_flow_spec.append_byte(FLOW_SPEC_ENTITY_DESTINATION_PORT);
-
-        for (auto itr = flow_spec_rule.destination_ports.begin(); itr != flow_spec_rule.destination_ports.end(); ++itr) {
-            bgp_flow_spec_operator_byte_t bgp_flow_spec_operator_byte;
-
-            // In destination_ports we encode porn number with two bytes
-            // I have not reasons to reduce amount of data here
-            bgp_flow_spec_operator_byte.set_length_in_bytes(sizeof(*itr));
-
-            // We support only equal operations
-            bgp_flow_spec_operator_byte.set_equal_bit();
-
-            // It's it's last element set end bit
-            if (std::distance(itr, flow_spec_rule.destination_ports.end()) == 1) {
-                bgp_flow_spec_operator_byte.set_end_of_list_bit();
-            }
-
-            mp_nlri_flow_spec.append_data_as_object_ptr(&bgp_flow_spec_operator_byte);
-            uint16_t destination_port = *itr;
-            destination_port          = htons(destination_port);
-
-            mp_nlri_flow_spec.append_data_as_object_ptr(&destination_port);
-        }
-    }
-
-    if (flow_spec_rule.source_ports.size() > 0) {
-        logger << log4cpp::Priority::DEBUG << "Encode flow spec attribute source ports";
-
-        mp_nlri_flow_spec.append_byte(FLOW_SPEC_ENTITY_SOURCE_PORT);
-
-        for (auto itr = flow_spec_rule.source_ports.begin(); itr != flow_spec_rule.source_ports.end(); ++itr) {
-            bgp_flow_spec_operator_byte_t bgp_flow_spec_operator_byte;
-
-            // In source_ports we encode porn number with two bytes
-            // I have not reasons to reduce amount of data here
-            bgp_flow_spec_operator_byte.set_length_in_bytes(sizeof(*itr));
-
-            // We support only equal operations
-            bgp_flow_spec_operator_byte.set_equal_bit();
-
-            // It's it's last element set end bit
-            if (std::distance(itr, flow_spec_rule.source_ports.end()) == 1) {
-                bgp_flow_spec_operator_byte.set_end_of_list_bit();
-            }
-
-            mp_nlri_flow_spec.append_data_as_object_ptr(&bgp_flow_spec_operator_byte);
-            uint16_t source_port = *itr;
-            source_port          = htons(source_port);
-
-            mp_nlri_flow_spec.append_data_as_object_ptr(&source_port);
-        }
-    }
+    encode_flow_spec_port_component(flow_spec_rule.ports, FLOW_SPEC_ENTITY_PORT, mp_nlri_flow_spec);
+    encode_flow_spec_port_component(flow_spec_rule.destination_ports, FLOW_SPEC_ENTITY_DESTINATION_PORT, mp_nlri_flow_spec);
+    encode_flow_spec_port_component(flow_spec_rule.source_ports, FLOW_SPEC_ENTITY_SOURCE_PORT, mp_nlri_flow_spec);
+    encode_flow_spec_uint8_component(flow_spec_rule.icmp_types, FLOW_SPEC_ENTITY_ICMP_TYPE, mp_nlri_flow_spec);
+    encode_flow_spec_uint8_component(flow_spec_rule.icmp_codes, FLOW_SPEC_ENTITY_ICMP_CODE, mp_nlri_flow_spec);
 
     if (flow_spec_rule.tcp_flags.size() > 0) {
         logger << log4cpp::Priority::DEBUG << "Encode flow spec attribute TCP flags";
@@ -420,7 +461,8 @@ bool encode_bgp_flow_spec_elements_as_mp_nlri(const flow_spec_rule_t& flow_spec_
 
         for (auto itr = flow_spec_rule.tcp_flags.begin(); itr != flow_spec_rule.tcp_flags.end(); ++itr) {
             bgp_flow_spec_bitmask_operator_byte_t bgp_flow_spec_operator_byte_tcp_flags;
-            bgp_flow_spec_operator_byte_tcp_flags.set_length_in_bytes(sizeof(bgp_flowspec_one_byte_byte_encoded_tcp_flags_t));
+            const bool needs_two_octets = itr->ns_flag;
+            bgp_flow_spec_operator_byte_tcp_flags.set_length_in_bytes(needs_two_octets ? 2 : 1);
 
             if (std::distance(itr, flow_spec_rule.tcp_flags.end()) == 1) {
                 bgp_flow_spec_operator_byte_tcp_flags.set_end_of_list_bit();
@@ -438,10 +480,17 @@ bool encode_bgp_flow_spec_elements_as_mp_nlri(const flow_spec_rule_t& flow_spec_
                 return false;
             }
 
-            bgp_flowspec_one_byte_byte_encoded_tcp_flags_t bgp_flowspec_one_byte_byte_encoded_tcp_flags =
-                return_in_one_byte_encoding(*itr);
+            bgp_flowspec_one_byte_byte_encoded_tcp_flags_t one_byte_flags = return_in_one_byte_encoding(*itr);
 
-            mp_nlri_flow_spec.append_data_as_object_ptr(&bgp_flowspec_one_byte_byte_encoded_tcp_flags);
+            if (needs_two_octets) {
+                uint8_t one_byte_flags_value = 0;
+                memcpy(&one_byte_flags_value, &one_byte_flags, sizeof(one_byte_flags_value));
+                uint16_t two_byte_flags = 0x0100 | one_byte_flags_value;
+                two_byte_flags          = htons(two_byte_flags);
+                mp_nlri_flow_spec.append_data_as_object_ptr(&two_byte_flags);
+            } else {
+                mp_nlri_flow_spec.append_data_as_object_ptr(&one_byte_flags);
+            }
         }
     }
 
@@ -533,34 +582,60 @@ bool encode_bgp_flow_spec_elements_into_bgp_mp_attribute(const flow_spec_rule_t&
         return false;
     }
 
-    uint8_t nlri_length = mp_nlri_binary_buffer.get_used_size();
+    const size_t nlri_length = mp_nlri_binary_buffer.get_used_size();
 
-    if (nlri_length >= 240) {
-        logger << log4cpp::Priority::WARN << "We should encode length in two bytes";
+    // RFC 8955 Section 4.1 reserves the one-octet form for lengths below 240
+    // and uses a two-octet 0xfnnn encoding for lengths up to 4095.
+    if (nlri_length > 0x0fff) {
+        logger << log4cpp::Priority::WARN << "Flow Spec NLRI length exceeds the 12-bit encoding limit";
         return false;
     }
 
-    logger << log4cpp::Priority::DEBUG << "Encoded flow spec elements as MP Reach NLRI with size: " << int(nlri_length);
+    const bool use_extended_nlri_length = nlri_length >= 240;
+    const size_t nlri_length_field_size = use_extended_nlri_length ? 2 : 1;
+    const size_t attribute_value_length =
+        sizeof(bgp_mp_ext_flow_spec_header_t) + nlri_length_field_size + nlri_length;
+
+    logger << log4cpp::Priority::DEBUG << "Encoded flow spec elements as MP Reach NLRI with size: " << nlri_length;
 
     bgp_attribute_multiprotocol_extensions_t bgp_attribute_multiprotocol_extensions;
-    bgp_attribute_multiprotocol_extensions.attribute_length =
-        sizeof(bgp_mp_ext_flow_spec_header_t) + sizeof(nlri_length) + mp_nlri_binary_buffer.get_used_size();
+    const bool use_extended_attribute_length = attribute_value_length > UINT8_MAX;
+    bgp_attribute_multiprotocol_extensions.attribute_flags.set_extended_length_bit(use_extended_attribute_length);
 
-    logger << log4cpp::Priority::DEBUG
-           << "BGP MP reach attribute length: " << int(bgp_attribute_multiprotocol_extensions.attribute_length);
+    logger << log4cpp::Priority::DEBUG << "BGP MP reach attribute length: " << attribute_value_length;
     // Prepare flow spec MP Extenstion attribute
-    bgp_mp_ext_flow_spec_header_as_binary_array.set_buffer_size_in_bytes(2048);
+    const size_t attribute_header_size = use_extended_attribute_length ? 4 : 3;
+    bgp_mp_ext_flow_spec_header_as_binary_array.set_buffer_size_in_bytes(
+        (add_preamble ? attribute_header_size + sizeof(bgp_mp_ext_flow_spec_header_t) : 0) + nlri_length_field_size + nlri_length);
 
     bgp_mp_ext_flow_spec_header_t bgp_mp_ext_flow_spec_header;
     bgp_mp_ext_flow_spec_header.host_byte_order_to_network_byte_order();
 
     // For one very special GoBGP specific encoding we need capability to strip these fields
     if (add_preamble) {
-        bgp_mp_ext_flow_spec_header_as_binary_array.append_data_as_object_ptr(&bgp_attribute_multiprotocol_extensions);
+        if (use_extended_attribute_length) {
+            bgp_mp_ext_flow_spec_header_as_binary_array.append_data_as_object_ptr(
+                &bgp_attribute_multiprotocol_extensions.attribute_flags);
+            bgp_mp_ext_flow_spec_header_as_binary_array.append_data_as_object_ptr(
+                &bgp_attribute_multiprotocol_extensions.attribute_type);
+
+            uint16_t extended_attribute_length = htons(uint16_t(attribute_value_length));
+            bgp_mp_ext_flow_spec_header_as_binary_array.append_data_as_object_ptr(&extended_attribute_length);
+        } else {
+            bgp_attribute_multiprotocol_extensions.attribute_length = uint8_t(attribute_value_length);
+            bgp_mp_ext_flow_spec_header_as_binary_array.append_data_as_object_ptr(&bgp_attribute_multiprotocol_extensions);
+        }
+
         bgp_mp_ext_flow_spec_header_as_binary_array.append_data_as_object_ptr(&bgp_mp_ext_flow_spec_header);
     }
 
-    bgp_mp_ext_flow_spec_header_as_binary_array.append_data_as_object_ptr(&nlri_length);
+    if (use_extended_nlri_length) {
+        const uint16_t extended_nlri_length = htons(uint16_t(0xf000 | nlri_length));
+        bgp_mp_ext_flow_spec_header_as_binary_array.append_data_as_object_ptr(&extended_nlri_length);
+    } else {
+        bgp_mp_ext_flow_spec_header_as_binary_array.append_byte(uint8_t(nlri_length));
+    }
+
     bgp_mp_ext_flow_spec_header_as_binary_array.append_dynamic_buffer(mp_nlri_binary_buffer);
 
     if (bgp_mp_ext_flow_spec_header_as_binary_array.is_failed()) {
@@ -691,6 +766,61 @@ std::string get_flow_spec_type_name_by_number(uint8_t flow_spec_type) {
     }
 }
 
+using flow_spec_uint16_adder_t = void (flow_spec_rule_t::*)(uint16_t);
+using flow_spec_uint8_adder_t  = void (flow_spec_rule_t::*)(uint8_t);
+
+static bool decode_flow_spec_uint16_component(uint8_t*& local_data_ptr,
+                                              uint8_t* packet_end,
+                                              flow_spec_rule_t& flow_spec_rule,
+                                              flow_spec_uint16_adder_t add_value,
+                                              const char* component_name) {
+    // Skip the component type.
+    local_data_ptr++;
+
+    uint32_t scanned_bytes = 0;
+    multiple_flow_spec_enumerable_items_t scanned_items;
+
+    if (!read_one_or_more_values_encoded_with_operator_byte(local_data_ptr, packet_end, scanned_bytes, scanned_items)) {
+        logger << log4cpp::Priority::WARN << "Could not decode " << component_name << " values";
+        return false;
+    }
+
+    for (const auto& extracted_item : scanned_items) {
+        (flow_spec_rule.*add_value)(extracted_item.two_byte_value);
+    }
+
+    local_data_ptr += scanned_bytes;
+    return true;
+}
+
+static bool decode_flow_spec_uint8_component(uint8_t*& local_data_ptr,
+                                             uint8_t* packet_end,
+                                             flow_spec_rule_t& flow_spec_rule,
+                                             flow_spec_uint8_adder_t add_value,
+                                             const char* component_name) {
+    local_data_ptr++;
+
+    uint32_t scanned_bytes = 0;
+    multiple_flow_spec_enumerable_items_t scanned_items;
+
+    if (!read_one_or_more_values_encoded_with_operator_byte(local_data_ptr, packet_end, scanned_bytes, scanned_items)) {
+        logger << log4cpp::Priority::WARN << "Could not decode " << component_name << " values";
+        return false;
+    }
+
+    for (const auto& extracted_item : scanned_items) {
+        if (extracted_item.two_byte_value > 255) {
+            logger << log4cpp::Priority::WARN << component_name << " value exceeds 255";
+            return false;
+        }
+
+        (flow_spec_rule.*add_value)(uint8_t(extracted_item.two_byte_value));
+    }
+
+    local_data_ptr += scanned_bytes;
+    return true;
+}
+
 bool flow_spec_decode_nlri_value(uint8_t* data_ptr, uint32_t data_length, flow_spec_rule_t& flow_spec_rule) {
     // We make copy because we will change this value so often
     uint8_t* local_data_ptr = data_ptr;
@@ -806,9 +936,10 @@ bool flow_spec_decode_nlri_value(uint8_t* data_ptr, uint32_t data_length, flow_s
             // Move forward on length of read prefix
             local_data_ptr += parsed_nlri_length;
         } else if (current_type == FLOW_SPEC_ENTITY_PORT) {
-            // Different type of port's
-            if (current_type == FLOW_SPEC_ENTITY_PORT) {
-                logger << log4cpp::Priority::WARN << "We do not support common ports";
+            // RFC 8955 Section 4.2.2.4 applies this component to either the
+            // source or destination transport port.
+            if (!decode_flow_spec_uint16_component(local_data_ptr, packet_end, flow_spec_rule, &flow_spec_rule_t::add_port,
+                                                   "FLOW_SPEC_ENTITY_PORT")) {
                 return false;
             }
         } else if (current_type == FLOW_SPEC_ENTITY_IP_PROTOCOL) {
@@ -852,8 +983,8 @@ bool flow_spec_decode_nlri_value(uint8_t* data_ptr, uint32_t data_length, flow_s
             }
 
             for (auto extracted_item : scanned_items) {
-                if (extracted_item.value_length != 1) {
-                    logger << log4cpp::Priority::WARN << "We do not support two byte encoded tcp fields";
+                if (extracted_item.value_length != 1 && extracted_item.value_length != 2) {
+                    logger << log4cpp::Priority::WARN << "TCP flags must use a one- or two-octet bitmask";
                     return false;
                 }
 
@@ -862,12 +993,17 @@ bool flow_spec_decode_nlri_value(uint8_t* data_ptr, uint32_t data_length, flow_s
                 // encoded tcp
                 // option field"         ;
 
-                bgp_flowspec_one_byte_byte_encoded_tcp_flags_t* bgp_flowspec_one_byte_byte_encoded_tcp_flags =
-                    (bgp_flowspec_one_byte_byte_encoded_tcp_flags_t*)&extracted_item.one_byte_value;
+                uint8_t tcp_control_bits = uint8_t(extracted_item.two_byte_value);
+                bgp_flowspec_one_byte_byte_encoded_tcp_flags_t bgp_flowspec_one_byte_byte_encoded_tcp_flags{};
+                memcpy(&bgp_flowspec_one_byte_byte_encoded_tcp_flags, &tcp_control_bits, sizeof(tcp_control_bits));
 
-                // logger << log4cpp::Priority::WARN << bgp_flowspec_one_byte_byte_encoded_tcp_flags->print();
+                // logger << log4cpp::Priority::WARN << bgp_flowspec_one_byte_byte_encoded_tcp_flags.print();
 
-                auto flagset = convert_one_byte_encoding_to_flowset(*bgp_flowspec_one_byte_byte_encoded_tcp_flags);
+                auto flagset = convert_one_byte_encoding_to_flowset(bgp_flowspec_one_byte_byte_encoded_tcp_flags);
+
+                if (extracted_item.value_length == 2 && (extracted_item.two_byte_value & 0x0100) != 0) {
+                    flagset.ns_flag = true;
+                }
 
                 if (flagset.we_have_least_one_flag_enabled()) {
                     flow_spec_rule.add_tcp_flagset(flagset);
@@ -937,62 +1073,35 @@ bool flow_spec_decode_nlri_value(uint8_t* data_ptr, uint32_t data_length, flow_s
             local_data_ptr += scanned_bytes;
 
         } else if (current_type == FLOW_SPEC_ENTITY_PACKET_LENGTH) {
-
-            // Skip type field
-            local_data_ptr++;
-
-            uint32_t scanned_bytes = 0;
-            multiple_flow_spec_enumerable_items_t scanned_items;
-            bool result = read_one_or_more_values_encoded_with_operator_byte(local_data_ptr, packet_end, scanned_bytes, scanned_items);
-
-            if (!result) {
-                logger << log4cpp::Priority::WARN << "read_one_or_more_values_encoded_with_operator_byte returned error but we may have some values parsed before issue happened";
+            if (!decode_flow_spec_uint16_component(local_data_ptr, packet_end, flow_spec_rule,
+                                                   &flow_spec_rule_t::add_packet_length,
+                                                   "FLOW_SPEC_ENTITY_PACKET_LENGTH")) {
                 return false;
             }
-
-            for (auto extracted_item : scanned_items) {
-                flow_spec_rule.add_packet_length(extracted_item.two_byte_value);
-            }
-
-            local_data_ptr += scanned_bytes;
-
         } else if (current_type == FLOW_SPEC_ENTITY_SOURCE_PORT) {
-            // Skip type field
-            local_data_ptr++;
-
-            uint32_t scanned_bytes = 0;
-            multiple_flow_spec_enumerable_items_t scanned_items;
-            bool result = read_one_or_more_values_encoded_with_operator_byte(local_data_ptr, packet_end, scanned_bytes, scanned_items);
-
-            if (!result) {
-                logger << log4cpp::Priority::WARN << "read_one_or_more_values_encoded_with_operator_byte returned error but we may have some values parsed before issue happened";
+            if (!decode_flow_spec_uint16_component(local_data_ptr, packet_end, flow_spec_rule,
+                                                   &flow_spec_rule_t::add_source_port,
+                                                   "FLOW_SPEC_ENTITY_SOURCE_PORT")) {
                 return false;
             }
-
-            for (auto extracted_item : scanned_items) {
-                flow_spec_rule.add_source_port(extracted_item.two_byte_value);
-            }
-
-            local_data_ptr += scanned_bytes;
         } else if (current_type == FLOW_SPEC_ENTITY_DESTINATION_PORT) {
-
-            // Skip type field
-            local_data_ptr++;
-
-            uint32_t scanned_bytes = 0;
-            multiple_flow_spec_enumerable_items_t scanned_items;
-            bool result = read_one_or_more_values_encoded_with_operator_byte(local_data_ptr, packet_end, scanned_bytes, scanned_items);
-
-            if (!result) {
-                logger << log4cpp::Priority::WARN << "read_one_or_more_values_encoded_with_operator_byte returned error but we may have some values parsed before issue happened";
+            if (!decode_flow_spec_uint16_component(local_data_ptr, packet_end, flow_spec_rule,
+                                                   &flow_spec_rule_t::add_destination_port,
+                                                   "FLOW_SPEC_ENTITY_DESTINATION_PORT")) {
                 return false;
             }
-
-            for (auto extracted_item : scanned_items) {
-                flow_spec_rule.add_destination_port(extracted_item.two_byte_value);
+        } else if (current_type == FLOW_SPEC_ENTITY_ICMP_TYPE) {
+            if (!decode_flow_spec_uint8_component(local_data_ptr, packet_end, flow_spec_rule,
+                                                  &flow_spec_rule_t::add_icmp_type,
+                                                  "FLOW_SPEC_ENTITY_ICMP_TYPE")) {
+                return false;
             }
-
-            local_data_ptr += scanned_bytes;
+        } else if (current_type == FLOW_SPEC_ENTITY_ICMP_CODE) {
+            if (!decode_flow_spec_uint8_component(local_data_ptr, packet_end, flow_spec_rule,
+                                                  &flow_spec_rule_t::add_icmp_code,
+                                                  "FLOW_SPEC_ENTITY_ICMP_CODE")) {
+                return false;
+            }
         } else {
             logger << log4cpp::Priority::WARN << "We could not handle flow spec element type "
                    << uint32_t(*local_data_ptr) << " pretty type: " << get_flow_spec_type_name_by_number(*local_data_ptr);
@@ -1012,9 +1121,9 @@ bool read_one_or_more_values_encoded_with_operator_byte(uint8_t* start,
                                                         uint8_t* packet_end,
                                                         uint32_t& readed_bytes,
                                                         multiple_flow_spec_enumerable_items_t& multiple_flow_spec_enumerable_items) {
-    // TODO: pretty danegrous idea to do infinite loop and we are using 100
-    // iterations here for
-    // worst case
+    // Bound the number of operands to limit work on hostile input. Reaching
+    // this cap without an end-of-list bit is malformed, not a partial success:
+    // otherwise the caller would interpret the next operator as a component type.
     uint8_t* local_data_ptr = start;
 
     for (int i = 0; i < 100; i++) {
@@ -1065,6 +1174,7 @@ bool read_one_or_more_values_encoded_with_operator_byte(uint8_t* start,
 
             // TODO: not sure about it? We really need it?
             element.two_byte_value = ntohs(element.two_byte_value);
+            element.value_length   = 2;
             element.operator_byte  = *bgp_flow_spec_operator_byte;
 
             multiple_flow_spec_enumerable_items.push_back(element);
@@ -1077,16 +1187,15 @@ bool read_one_or_more_values_encoded_with_operator_byte(uint8_t* start,
         // Shift pointer to next element
         local_data_ptr += sizeof(bgp_flow_spec_operator_byte_t) + bgp_flow_spec_operator_byte->get_value_length();
 
-        // If this was last lement in list just stop this loop
+        // A component ends only when an operator explicitly carries EOL.
         if (bgp_flow_spec_operator_byte->end_of_list == 1) {
-            break;
+            readed_bytes = local_data_ptr - start;
+            return true;
         }
     }
 
-    // Return number of scanned bytes
-    readed_bytes = local_data_ptr - start;
-
-    return true;
+    logger << log4cpp::Priority::WARN << "Flow Spec component exceeds 100 operands without an end-of-list bit";
+    return false;
 }
 
 bool read_flow_spec_fragmentation_types_from_string(const std::string& string_form, flow_spec_fragmentation_types_t& fragment_flag) {
@@ -1185,6 +1294,12 @@ bool read_flow_spec_tcp_flags_from_strig(const std::string& string_form, flow_sp
             flagset.psh_flag = true;
         } else if (tcp_flag_string == "rst") {
             flagset.rst_flag = true;
+        } else if (tcp_flag_string == "ece") {
+            flagset.ece_flag = true;
+        } else if (tcp_flag_string == "cwr") {
+            flagset.cwr_flag = true;
+        } else if (tcp_flag_string == "ns") {
+            flagset.ns_flag = true;
         } else {
             return false;
         }
@@ -1218,6 +1333,18 @@ std::string flow_spec_tcp_flagset_to_string(flow_spec_tcp_flagset_t const& tcp_f
 
     if (tcp_flagset.psh_flag) {
         output.push_back("push");
+    }
+
+    if (tcp_flagset.ece_flag) {
+        output.push_back("ece");
+    }
+
+    if (tcp_flagset.cwr_flag) {
+        output.push_back("cwr");
+    }
+
+    if (tcp_flagset.ns_flag) {
+        output.push_back("ns");
     }
 
     return boost::algorithm::join(output, "|");
@@ -1305,6 +1432,18 @@ bool operator==(const flow_spec_rule_t& lhs, const flow_spec_rule_t& rhs) {
         return false;
     }
 
+    if (lhs.ports != rhs.ports) {
+        return false;
+    }
+
+    if (lhs.icmp_types != rhs.icmp_types) {
+        return false;
+    }
+
+    if (lhs.icmp_codes != rhs.icmp_codes) {
+        return false;
+    }
+
     if (lhs.packet_lengths != rhs.packet_lengths) {
         return false;
     }
@@ -1368,7 +1507,8 @@ bool operator!=(const flow_spec_tcp_flagset_t& lhs, const flow_spec_tcp_flagset_
 
 bool operator==(const flow_spec_tcp_flagset_t& lhs, const flow_spec_tcp_flagset_t& rhs) {
     if (lhs.syn_flag == rhs.syn_flag && lhs.ack_flag == rhs.ack_flag && lhs.rst_flag == rhs.rst_flag &&
-        lhs.psh_flag == rhs.psh_flag && lhs.urg_flag == rhs.urg_flag && lhs.fin_flag == rhs.fin_flag) {
+        lhs.psh_flag == rhs.psh_flag && lhs.urg_flag == rhs.urg_flag && lhs.fin_flag == rhs.fin_flag &&
+        lhs.ece_flag == rhs.ece_flag && lhs.cwr_flag == rhs.cwr_flag && lhs.ns_flag == rhs.ns_flag) {
         return true;
     } else {
         return false;
@@ -1379,8 +1519,11 @@ bool operator==(const flow_spec_tcp_flagset_t& lhs, const flow_spec_tcp_flagset_
 {
   "source_prefix": "4.0.0.0\/24",
   "destination_prefix": "127.0.0.0\/24",
+  "ports": [ 443 ],
   "destination_ports": [ 80 ],
   "source_ports": [ 53, 5353 ],
+  "icmp_types": [ 8 ],
+  "icmp_codes": [ 0 ],
   "packet_lengths": [ 777, 1122 ],
   "protocols": [ "tcp" ],
   "fragmentation_flags":[ "is-fragment", "dont-fragment" ],
@@ -1400,6 +1543,64 @@ bool read_flow_spec_from_json_to_native_format(const std::string& json_encoded_f
         logger << log4cpp::Priority::ERROR << "Cannot decode Flow Spec rule from JSON: '" << json_encoded_flow_spec << "'";
         return false;
     }
+
+    auto read_ports = [&](const char* field_name, flow_spec_uint16_adder_t add_port) -> bool {
+        if (!json_doc.contains(field_name)) {
+            return true;
+        }
+
+        std::vector<int32_t> ports_vector_as_ints;
+
+        try {
+            ports_vector_as_ints = json_doc[field_name].get<std::vector<int32_t>>();
+        } catch (nlohmann::json::exception& e) {
+            logger << log4cpp::Priority::ERROR << "Could not decode " << field_name << " " << e.what();
+            return false;
+        } catch (...) {
+            logger << log4cpp::Priority::ERROR << "Could not decode " << field_name;
+            return false;
+        }
+
+        for (auto port : ports_vector_as_ints) {
+            if (!valid_port(port)) {
+                logger << log4cpp::Priority::ERROR << "Could not parse " << field_name << " element: bad range " << port;
+                return false;
+            }
+
+            (flow_spec_rule.*add_port)(port);
+        }
+
+        return true;
+    };
+
+    auto read_uint8_values = [&](const char* field_name, flow_spec_uint8_adder_t add_value) -> bool {
+        if (!json_doc.contains(field_name)) {
+            return true;
+        }
+
+        std::vector<int32_t> values;
+
+        try {
+            values = json_doc[field_name].get<std::vector<int32_t>>();
+        } catch (nlohmann::json::exception& e) {
+            logger << log4cpp::Priority::ERROR << "Could not decode " << field_name << " " << e.what();
+            return false;
+        } catch (...) {
+            logger << log4cpp::Priority::ERROR << "Could not decode " << field_name;
+            return false;
+        }
+
+        for (auto value : values) {
+            if (value < 0 || value > 255) {
+                logger << log4cpp::Priority::ERROR << "Could not parse " << field_name << " element: bad range " << value;
+                return false;
+            }
+
+            (flow_spec_rule.*add_value)(uint8_t(value));
+        }
+
+        return true;
+    };
 
     if (json_doc.contains("source_prefix")) {
         std::string source_prefix_string;
@@ -1471,50 +1672,15 @@ bool read_flow_spec_from_json_to_native_format(const std::string& json_encoded_f
         }
     }
 
-    if (json_doc.contains("destination_ports")) {
-        std::vector<int32_t> ports_vector_as_ints;
-
-        try {
-            ports_vector_as_ints = json_doc["destination_ports"].get<std::vector<int32_t>>();
-        } catch (nlohmann::json::exception& e) {
-            logger << log4cpp::Priority::ERROR << "Could not decode destination_ports " << e.what();
-            return false;
-        } catch (...) {
-            logger << log4cpp::Priority::ERROR << "Could not decode destination_ports";
-            return false;
-        }
-
-        for (auto port : ports_vector_as_ints) {
-            if (!valid_port(port)) {
-                logger << log4cpp::Priority::ERROR << "Could not parse destination_ports element: bad range " << port;
-                return false;
-            }
-
-            flow_spec_rule.add_destination_port(port);
-        }
+    if (!read_ports("ports", &flow_spec_rule_t::add_port) ||
+        !read_ports("destination_ports", &flow_spec_rule_t::add_destination_port) ||
+        !read_ports("source_ports", &flow_spec_rule_t::add_source_port)) {
+        return false;
     }
 
-    if (json_doc.contains("source_ports")) {
-        std::vector<int32_t> ports_vector_as_ints;
-
-        try {
-            ports_vector_as_ints = json_doc["source_ports"].get<std::vector<int32_t>>();
-        } catch (nlohmann::json::exception& e) {
-            logger << log4cpp::Priority::ERROR << "Could not decode source_ports " << e.what();
-            return false;
-        } catch (...) {
-            logger << log4cpp::Priority::ERROR << "Could not decode source_ports";
-            return false;
-        }
-
-        for (auto port : ports_vector_as_ints) {
-            if (!valid_port(port)) {
-                logger << log4cpp::Priority::ERROR << "Could not parse source_ports element: bad range " << port;
-                return false;
-            }
-
-            flow_spec_rule.add_source_port(port);
-        }
+    if (!read_uint8_values("icmp_types", &flow_spec_rule_t::add_icmp_type) ||
+        !read_uint8_values("icmp_codes", &flow_spec_rule_t::add_icmp_code)) {
+        return false;
     }
 
     if (json_doc.contains("packet_lengths")) {
@@ -1999,8 +2165,20 @@ bool encode_flow_spec_to_json_raw(const flow_spec_rule_t& flow_spec_rule, bool a
         flow_json["destination_ports"] = flow_spec_rule.destination_ports;
     }
 
+    if (!flow_spec_rule.ports.empty()) {
+        flow_json["ports"] = flow_spec_rule.ports;
+    }
+
     if (!flow_spec_rule.source_ports.empty()) {
         flow_json["source_ports"] = flow_spec_rule.source_ports;
+    }
+
+    if (!flow_spec_rule.icmp_types.empty()) {
+        flow_json["icmp_types"] = flow_spec_rule.icmp_types;
+    }
+
+    if (!flow_spec_rule.icmp_codes.empty()) {
+        flow_json["icmp_codes"] = flow_spec_rule.icmp_codes;
     }
 
     if (!flow_spec_rule.packet_lengths.empty()) {
@@ -2142,11 +2320,19 @@ bgp_flowspec_one_byte_byte_encoded_tcp_flags_t return_in_one_byte_encoding(const
         one_byte_flags.rst = 1;
     }
 
+    if (flagset.ece_flag) {
+        one_byte_flags.ece = 1;
+    }
+
+    if (flagset.cwr_flag) {
+        one_byte_flags.cwr = 1;
+    }
+
     return one_byte_flags;
 }
 
 flow_spec_tcp_flagset_t convert_one_byte_encoding_to_flowset(const bgp_flowspec_one_byte_byte_encoded_tcp_flags_t& one_byte_flags) {
-    flow_spec_tcp_flagset_t flagset;
+    flow_spec_tcp_flagset_t flagset{};
 
     if (one_byte_flags.syn == 1) {
         flagset.syn_flag = true;
@@ -2171,6 +2357,14 @@ flow_spec_tcp_flagset_t convert_one_byte_encoding_to_flowset(const bgp_flowspec_
 
     if (one_byte_flags.rst == 1) {
         flagset.rst_flag = true;
+    }
+
+    if (one_byte_flags.ece == 1) {
+        flagset.ece_flag = true;
+    }
+
+    if (one_byte_flags.cwr == 1) {
+        flagset.cwr_flag = true;
     }
 
     return flagset;

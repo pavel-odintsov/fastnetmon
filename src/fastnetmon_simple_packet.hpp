@@ -75,6 +75,9 @@ class simple_packet_t {
     // TCP flags
     uint8_t flags = 0;
 
+    // TCP ECN nonce concealment protection flag from header octet 13.
+    bool tcp_ns = false;
+
     // TCP numbers
     uint32_t tcp_sequence_number = 0;
     uint32_t tcp_ack_number      = 0;
@@ -92,11 +95,12 @@ class simple_packet_t {
     // Fragment offset in bytes when fragmentation involved
     uint16_t ip_fragment_offset = 0;
 
-    // ICMP type
+    // ICMP type and code may legitimately be zero. Keep presence separately so
+    // collectors which do not export them cannot accidentally match type/code 0.
     uint8_t icmp_type = 0;
-
-    // ICMP code
     uint8_t icmp_code = 0;
+    bool icmp_type_set = false;
+    bool icmp_code_set = false;
 
     // Time when we actually received this packet, we use quite rough and inaccurate but very fast time source for it
     time_t arrival_time = 0;
