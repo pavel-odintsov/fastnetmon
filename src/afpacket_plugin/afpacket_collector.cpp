@@ -106,7 +106,7 @@ int fanout_type = PACKET_FANOUT_CPU;
 #define PACKET_FANOUT_QM 5
 #endif
 
-void start_af_packet_capture_for_interface(std::string capture_interface, int fanout_group_id, unsigned int num_cpus);
+void start_af_packet_capture_for_interface(std::string capture_interface, int interface_number, unsigned int num_cpus);
 
 // We keep all active AF_PACKET sockets here
 std::vector<int> active_af_packet_sockets;
@@ -232,8 +232,35 @@ void walk_block(struct block_desc* pbd) {
 
 void read_packets_from_socket(int packet_socket, struct iovec* rd);
 
-// Configures socket and starts traffic capture
-bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_group_id) {
+struct af_packet_socket {
+    int packet_socket      = -1;
+    struct iovec* rd       = NULL;
+    uint8_t* mapped_buffer = NULL;
+    size_t buffer_size     = 0;
+};
+
+// Frees an AF_PACKET socket and related resources
+void release_af_packet_socket(const struct af_packet_socket& af_packet_socket) {
+    if (af_packet_socket.rd != NULL) {
+        free(af_packet_socket.rd);
+    }
+
+    if (af_packet_socket.mapped_buffer != NULL && af_packet_socket.mapped_buffer != MAP_FAILED) {
+        munmap(af_packet_socket.mapped_buffer, af_packet_socket.buffer_size);
+    }
+
+    if (af_packet_socket.packet_socket != -1) {
+        close(af_packet_socket.packet_socket);
+    }
+}
+
+// Configures socket and prepares packet ring for traffic capture
+bool setup_socket(std::string interface_name,
+                  int interface_number,
+                  bool enable_fanout,
+                  bool allocate_fanout_group_id,
+                  uint16_t& fanout_group_id,
+                  struct af_packet_socket& af_packet_socket) {
     // More details here: http://man7.org/linux/man-pages/man7/packet.7.html
     // We could use SOCK_RAW or SOCK_DGRAM for second argument
     // SOCK_RAW - raw packets pass from the kernel
@@ -247,11 +274,7 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
         return false;
     }
 
-    if (true) {
-        // Add socket to global structure, we will use it to get statistics for each of them
-        std::lock_guard<std::mutex> lock_guard(active_af_packet_sockets_mutex);
-        active_af_packet_sockets.push_back(packet_socket);
-    }
+    af_packet_socket.packet_socket = packet_socket;
 
     // We should use V3 because it could read/pool in per block basis instead per
     // packet
@@ -260,15 +283,6 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
 
     if (setsockopt_packet_version < 0) {
         logger << log4cpp::Priority::ERROR << "Can't set packet v3 version for " << interface_name;
-        return false;
-    }
-
-    int interface_number = 0;
-
-    bool get_interface_number_result = get_interface_number_by_device_name(packet_socket, interface_name, interface_number);
-
-    if (!get_interface_number_result) {
-        logger << log4cpp::Priority::ERROR << "Can't get interface number by interface name for " << interface_name;
         return false;
     }
 
@@ -391,6 +405,7 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
     }
 
     size_t buffer_size = static_cast<size_t>(req.tp_block_size) * static_cast<size_t>(req.tp_block_nr);
+    af_packet_socket.buffer_size = buffer_size;
 
     logger << log4cpp::Priority::DEBUG << "Allocating " << buffer_size << " byte buffer for AF_PACKET interface: " << interface_name;
 
@@ -402,6 +417,8 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
         return false;
     }
 
+    af_packet_socket.mapped_buffer = mapped_buffer;
+
     // Allocate iov structure for each block
     struct iovec* rd = (struct iovec*)malloc(req.tp_block_nr * sizeof(struct iovec));
 
@@ -409,6 +426,8 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
         logger << log4cpp::Priority::ERROR << "Cannot allocate memory for iovecs for " << interface_name;
         return false;
     }
+
+    af_packet_socket.rd = rd;
 
     // Initialise iov structures
     for (unsigned int i = 0; i < req.tp_block_nr; ++i) {
@@ -431,7 +450,14 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
     }
 
     if (enable_fanout) {
-        int fanout_arg = (fanout_group_id | (fanout_type << 16));
+        int fanout_arg = fanout_type << 16;
+
+        if (allocate_fanout_group_id) {
+            // Let the kernel allocate a unique group id
+            fanout_arg |= PACKET_FANOUT_FLAG_UNIQUEID << 16;
+        } else {
+            fanout_arg |= fanout_group_id;
+        }
 
         int setsockopt_fanout = setsockopt(packet_socket, SOL_PACKET, PACKET_FANOUT, &fanout_arg, sizeof(fanout_arg));
 
@@ -441,10 +467,22 @@ bool setup_socket(std::string interface_name, bool enable_fanout, int fanout_gro
 
             return false;
         }
-    }
 
-    // Start traffic collection loop
-    read_packets_from_socket(packet_socket, rd);
+        if (allocate_fanout_group_id) {
+            socklen_t fanout_arg_len = sizeof(fanout_arg);
+
+            int getsockopt_fanout = getsockopt(packet_socket, SOL_PACKET, PACKET_FANOUT, &fanout_arg, &fanout_arg_len);
+
+            if (getsockopt_fanout < 0) {
+                logger << log4cpp::Priority::ERROR << "Can't get fanout group id for interface " << interface_name
+                    << " error number: " << errno << " error: " << strerror(errno);
+
+                return false;
+            }
+
+            fanout_group_id = fanout_arg;
+        }
+    }
 
     return true;
 }
@@ -479,10 +517,6 @@ void read_packets_from_socket(int packet_socket, struct iovec* rd) {
     return;
 }
 
-void start_af_packet_capture(std::string interface_name, bool enable_fanout, int fanout_group_id) {
-    setup_socket(interface_name, enable_fanout, fanout_group_id);
-}
-
 void start_afpacket_collection(process_packet_pointer func_ptr) {
     logger << log4cpp::Priority::INFO << "AF_PACKET plugin started";
     afpacket_process_func_ptr = func_ptr;
@@ -510,74 +544,115 @@ void start_afpacket_collection(process_packet_pointer func_ptr) {
     // Thread group for all "master" processes
     boost::thread_group af_packet_main_threads;
 
+    // One socket is enough to resolve every interface index with SIOCGIFINDEX.
+    int lookup_socket = socket(AF_INET, SOCK_DGRAM, 0);
+
+    if (lookup_socket == -1) {
+        logger << log4cpp::Priority::ERROR
+               << "Can't create socket to look up interface indexes. Error number: " << errno
+               << " error text: " << strerror(errno);
+        return;
+    }
+
     for (std::vector<std::string>::size_type i = 0; i < fastnetmon_global_configuration.interfaces.size(); i++) {
-        // Use process id to identify particular fanout group
-        int group_identifier = getpid();
-
-        // And add number for current interface to distinguish them
-        group_identifier += i;
-
-        int fanout_group_id = group_identifier & 0xffff;
-
         std::string capture_interface = fastnetmon_global_configuration.interfaces[i];
+
+        int interface_number = 0;
+
+        if (!get_interface_number_by_device_name(lookup_socket, capture_interface, interface_number)) {
+            logger << log4cpp::Priority::ERROR << "Can't get interface number by interface name for "
+                   << capture_interface;
+            continue;
+        }
 
         logger << log4cpp::Priority::INFO << "AF_PACKET will listen on " << capture_interface << " interface";
 
         boost::thread* af_packet_interface_thread =
-            new boost::thread(start_af_packet_capture_for_interface, capture_interface, fanout_group_id, num_cpus);
+            new boost::thread(start_af_packet_capture_for_interface, capture_interface, interface_number, num_cpus);
 
         af_packet_main_threads.add_thread(af_packet_interface_thread);
     }
+
+    close(lookup_socket);
 
     af_packet_main_threads.join_all();
 }
 
 // Starts traffic capture for particular interface
-void start_af_packet_capture_for_interface(std::string capture_interface, int fanout_group_id, unsigned int num_cpus) {
+void start_af_packet_capture_for_interface(std::string capture_interface, int interface_number, unsigned int num_cpus) {
+    bool enable_fanout = true;
+
     if (num_cpus == 1) {
         logger << log4cpp::Priority::INFO << "Disable AF_PACKET fanout because you have only single CPU";
 
-        bool fanout = false;
-        start_af_packet_capture(capture_interface, fanout, 0);
-    } else {
-        // We have two or more CPUs
-        boost::thread_group packet_receiver_thread_group;
+        enable_fanout = false;
+    }
 
-        for (unsigned int cpu = 0; cpu < num_cpus; cpu++) {
-            logger << log4cpp::Priority::INFO << "Start AF_PACKET worker process for " << capture_interface
-                   << " with fanout group id " << fanout_group_id << " on CPU " << cpu;
+    std::vector<struct af_packet_socket> af_packet_sockets;
+    uint16_t fanout_group_id = 0;
 
-            boost::thread::attributes thread_attrs;
+    for (unsigned int cpu = 0; cpu < num_cpus; cpu++) {
+        bool allocate_fanout_group_id = enable_fanout && cpu == 0;
 
+        af_packet_sockets.emplace_back();
 
-            if (fastnetmon_global_configuration.afpacket_execute_strict_cpu_affinity) {
-                cpu_set_t current_cpu_set;
-
-                int cpu_to_bind = cpu % num_cpus;
-                CPU_ZERO(&current_cpu_set);
-                // We count cpus from zero
-                CPU_SET(cpu_to_bind, &current_cpu_set);
-
-#ifdef __GLIBC__
-                int set_affinity_result =
-                    pthread_attr_setaffinity_np(thread_attrs.native_handle(), sizeof(cpu_set_t), &current_cpu_set);
-
-                if (set_affinity_result != 0) {
-                    logger << log4cpp::Priority::ERROR << "Can't set CPU affinity for thread";
-                }
-#else
-                // Not supported on Musl
-                logger << log4cpp::Priority::ERROR << "CPU affinity is not supported on your platform";
-#endif
+        if (!setup_socket(capture_interface, interface_number, enable_fanout, allocate_fanout_group_id, fanout_group_id,
+                          af_packet_sockets.back())) {
+            for (const auto& created_socket : af_packet_sockets) {
+                release_af_packet_socket(created_socket);
             }
 
-            bool fanout = true;
+            return;
+        }
+    }
 
-            packet_receiver_thread_group.add_thread(
-                new boost::thread(thread_attrs, boost::bind(start_af_packet_capture, capture_interface, fanout, fanout_group_id)));
+    if (true) {
+        // Add socket to global structure, we will use it to get statistics for each of them
+        std::lock_guard<std::mutex> lock_guard(active_af_packet_sockets_mutex);
+
+        for (auto created_socket : af_packet_sockets) {
+            active_af_packet_sockets.push_back(created_socket.packet_socket);
+        }
+    }
+
+    boost::thread_group packet_receiver_thread_group;
+
+    for (unsigned int cpu = 0; cpu < num_cpus; cpu++) {
+        if (enable_fanout) {
+            logger << log4cpp::Priority::INFO << "Start AF_PACKET worker process for " << capture_interface
+                   << " with fanout group id " << fanout_group_id << " on CPU " << cpu;
         }
 
-        // Wait all processes for finish
-        packet_receiver_thread_group.join_all();
+        boost::thread::attributes thread_attrs;
+
+
+        if (fastnetmon_global_configuration.afpacket_execute_strict_cpu_affinity) {
+            cpu_set_t current_cpu_set;
+
+            int cpu_to_bind = cpu % num_cpus;
+            CPU_ZERO(&current_cpu_set);
+            // We count cpus from zero
+            CPU_SET(cpu_to_bind, &current_cpu_set);
+
+#ifdef __GLIBC__
+            int set_affinity_result =
+                pthread_attr_setaffinity_np(thread_attrs.native_handle(), sizeof(cpu_set_t), &current_cpu_set);
+
+            if (set_affinity_result != 0) {
+                logger << log4cpp::Priority::ERROR << "Can't set CPU affinity for thread";
+            }
+#else
+            // Not supported on Musl
+            logger << log4cpp::Priority::ERROR << "CPU affinity is not supported on your platform";
+#endif
+        }
+
+        const struct af_packet_socket& af_packet_socket = af_packet_sockets[cpu];
+
+        packet_receiver_thread_group.add_thread(new boost::thread(
+            thread_attrs, boost::bind(read_packets_from_socket, af_packet_socket.packet_socket, af_packet_socket.rd)));
     }
+
+    // Wait all processes for finish
+    packet_receiver_thread_group.join_all();
 }
